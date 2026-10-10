@@ -6,17 +6,15 @@ ork touch (tusks, horns, bones) on each. All nineteen catalog buildings have one
 
 | sheet | buildings | state |
 |---|---|---|
-| 1 | Town Hall, War Drum, Watchtower, Forge, Scroll Dump, Barracks, Lake of Insight, Loot Vault | done (redrawn, cut at `--cell 11 --scale 2`) |
-| 2 | Mill, Horn, Signpost, Pit, Catapult, Workshop, Task Fields, Council | done (redrawn, cut at `--cell 16.6 --scale 2`) |
-| 3 | File Forest, Tally Crag, Custom | done (`--cell 16.6 --scale 2`) |
-| — | Test bench (the Mechanic): a garage with tusked eaves, a cogwheel on its gable, a dark open gate and a gauge with a gold needle | done from a generated picture: `tools/sheet.py --cell 30 --scale 2`, the gear redrawn on the grid (its teeth were finer than the sheet's pixel), the gate filled dark |
-| — | UX bench (the Alchemy Lab, to come): a horned tower, a flask beside it fed by a tube, one gold bubble — the Test bench's first sprite, kept in git before the Mechanic's (commit 9d9a1ce) | drawn; it is put back under the UX bench's type when that is built |
-| — | Barracks, redrawn as a war hall (tusked roof ends, ridge spikes, a palisade, crossed gold axes) | done by hand on the grid from a generated picture (its uneven pixels did not cut cleanly) |
+| 4 (2026-10-10) | all twenty in one sheet (the Agent pool, the Review board and Research kept their first sprites: at the map's size the tents and the stones blurred, the mine was only a cart), each with a silhouette of its own: Town Hall the only gabled house; External listeners a tower on stilts with ear-trumpets; Task board a notice board; Calendar a war drum; Agent pool three tents; Review board a ring of stones round a fire; Wiki a pyramid of scrolls; Research a mine cart with ore; Audio briefing a gramophone; Branches & PRs a furnace with a chimney to one side; Review gate a gatehouse; Publisher a catapult; Test bench an open gantry with a cog and a gauge; UX bench a round tower with a flask; Script a lean-to over a workbench; Drop files a pit; Router a signpost; Transformer a windmill; Metrics a rock spire; Sound alerts a horn on a stand | done: `tools/sheet.py SHEET <the twenty types> --cell 7.5 --scale 2`, the dark inside the Test bench's and the Catapult's open frames made transparent; the flag points (`js/icons.js` `FLAG_AT`) found again. The UX bench's waits under `ux_lab/` for its type |
+| 1–3 and the single ones before | the first flat set: most of them a box with a gabled roof and a door, told apart only by their details | replaced by sheet 4; File Forest, Lake and Custom keep theirs (retired types, old scrolls only) |
 
 ## Making a sheet
 
-An image model draws eight buildings on one sheet, so they share a palette, a pixel size and a ground
-line (one at a time they drift apart). The prompt:
+An image model draws the buildings on one sheet, so they share a palette, a pixel size and a ground
+line (one at a time they drift apart). Sheet 4 asked for all twenty at once, 5 × 4, the first rule being
+that each has a silhouette of its own and only the Town Hall is a gabled house; the eight-building
+prompt it grew from:
 
 ```
 A sprite sheet of 8 minimal flat pixel-art buildings for an orc-themed developer tool, arranged in
