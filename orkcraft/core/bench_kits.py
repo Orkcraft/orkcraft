@@ -85,8 +85,10 @@ def on_tool(w, tool: str, tier: str) -> None:
         return
     kind = w.TYPE or w.btype.id
 
+    own = w.steward_pick                  # with no tier, each task keeps the tier its steward picks for it
+
     def runner(use: str, setting: str = ""):
-        return builders.tagged(builders.runner_for("" if tool == "main" else tool, tier or None),
+        return builders.tagged(builders.runner_for("" if tool == "main" else tool, tier or own(use, setting).tier or None),
                                steward_models.purpose_of(use, kind), w.building_id)
 
     w.steward_runner = runner

@@ -343,3 +343,21 @@ def test_a_lab_case_goes_into_its_entry_and_a_blind_judge_scores_both_sides(tmp_
     assert report.building.error == "" and report.building.passed is True
     assert report.bare.passed is False
     assert report.building.score == 7.0 and report.bare.score == 7.0
+
+
+def test_on_the_bench_s_tool_each_task_keeps_its_steward_s_tier(monkeypatch):
+    # `--tool agy` with no tier: the steward's call goes to agy on the tier it picks for the task, never agy's default
+    from orkcraft.core import bench_kits as code_kits
+    from orkcraft.realm import builders, steward_models
+    seen = []
+    monkeypatch.setattr(builders, "runner_for", lambda tool, model=None: seen.append((tool, model)) or (lambda p, m=None: ("", 0)))
+
+    class W:
+        TYPE, building_id = "watchtower", "w"
+        steward_pick = staticmethod(lambda use, setting="": steward_models.Pick("gemini-flash-low", "laborer", "level"))
+    w = W()
+    code_kits.on_tool(w, "agy", "")
+    w.steward_runner("judge")
+    code_kits.on_tool(w, "agy", "elder")
+    w.steward_runner("judge")
+    assert seen == [("agy", "laborer"), ("agy", "elder")]
