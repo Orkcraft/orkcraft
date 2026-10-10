@@ -177,11 +177,11 @@ function Against({ s }) {
   return html`<section class="gui-bench__section">
     <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">${say(`The ${s.word} against the bare AI tool`)}</h4>
       ${s.against_copy && html`<button class="ok-btn" onClick=${() => copyText(s.against_copy, "Copied the summary")}>Copy for analysis</button>`}</div>
-    <p class="ok-font-status ok-tone-muted">${say(`The latest run of each case. Time and spend: how much more the ${s.word} took. Within ${limit}%: no worse on the check, and at most ${limit}% more time and spend. ${ok} of ${s.against.length} are.`)}</p>
+    <p class="ok-font-status ok-tone-muted">${say(`The latest run of each case. Time and spend: how much more the ${s.word} took; where the AI tool says no price, spend is counted in tokens. Within ${limit}%: no worse on the check, and at most ${limit}% more time and spend. ${ok} of ${s.against.length} are.`)}</p>
     <table class="gui-bench__table gui-bench__against">
       <thead><tr><th>Case</th><th>Level</th><th>Time</th><th>Spend</th><th>Check</th><th>${`Within ${limit}%`}</th></tr></thead>
       <tbody>${s.against.map((r) => html`<tr key=${r.case}><th>${r.case}</th><td>${r.level || "—"}</td>
-        <td>${pct(r.time)}</td><td>${pct(r.spend)}</td>
+        <td>${pct(r.time)}</td><td title=${r.spend_by === "tokens" ? "The AI tool says no price: spend is counted in tokens" : ""}>${pct(r.spend)}${r.spend != null && r.spend_by === "tokens" ? " tokens" : ""}</td>
         <td title=${`${say(s.word)}: ${r.building} · bare: ${r.bare}`}>${quality(r)}</td>
         <td><span class=${cls("gui-bench__verdict", { "is-ok": r.within, "is-bad": !r.within })}>${r.within ? "yes" : "no"}</span></td></tr>`)}</tbody>
     </table>

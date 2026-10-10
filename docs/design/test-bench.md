@@ -110,7 +110,8 @@ shows the last runs and any two can be compared.
 **A series**: `orkcraft bench --case all`, or `--level simple|medium|parallel`, runs the cases one after
 another (each with its own spend limit) and ends with a summary: per case, how much more time and spend the
 building took than the bare tool, and its check against the bare tool's. A case is **within 10 %**
-(`bench.GAP_LIMIT`) when its check is no worse and both time and spend are at most 10 % over. The window's
+(`bench.GAP_LIMIT`) when its check is no worse and both time and spend are at most 10 % over. A tool that says
+no price (agy) leaves both sides at $0, so its spend is held by tokens, and the summary says so. The window's
 Case list offers the same series, and *The Agent pool against the bare AI tool* holds the latest run of each
 case so (`bench.against`).
 

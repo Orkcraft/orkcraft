@@ -241,6 +241,16 @@ def test_the_gaps_say_how_far_the_building_is_from_the_bare_tool():
     assert "slugify  +10%   +0%" in text and "+100%" in text and text.count("yes") == 1
 
 
+def test_a_tool_with_no_price_is_held_by_its_tokens():
+    r = _report("c", (10, 0.0, True), (10, 0.0, True))
+    r.building.tokens, r.bare.tokens = 147_000, 70_000
+    g = bench.gaps(r)
+    assert g["spend_by"] == "tokens" and round(g["spend"], 2) == 1.1 and not bench.within(g)
+    r.building.tokens = 72_000
+    assert bench.within(bench.gaps(r)) and "+3% tokens" in bench.summary([r])
+    assert bench.gaps(_report("c", (10, 0.1, True), (10, 0.1, True)))["spend_by"] == "$"
+
+
 def test_the_latest_run_of_each_case_is_held_against_the_bare_tool(tmp_path):
     for r in (_report("ledger", (60, 0.9, True), (30, 0.3, True), "20261009-000000"),
               _report("ledger", (31, 0.31, True), (30, 0.3, True), "20261010-000000"),
