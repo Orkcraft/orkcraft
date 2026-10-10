@@ -21,9 +21,10 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
 import time
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from orkcraft.env import getenv
@@ -53,6 +54,10 @@ class CalendarEvent:
     end: dt.datetime | dt.date | None = None
     location: str = ""
     uid: str = ""
+    # What a meeting's brief needs beyond its title: who comes, and what its invitation says. Not part of what
+    # makes an event the same one (a changed agenda is not a moved meeting).
+    description: str = field(default="", compare=False)
+    attendees: tuple[str, ...] = field(default=(), compare=False)
 
     @property
     def all_day(self) -> bool:
@@ -326,6 +331,19 @@ def _text(v) -> str:
     return " ".join(str(v).split()) if v is not None else ""
 
 
+DESCRIPTION_CHARS = 2000
+
+
+def _who(value: str, cn: str = "") -> str:
+    """An attendee as a person reads it: the name it carries, else its address without `mailto:`."""
+    name = cn.strip().strip('"')
+    return name or re.sub(r"(?i)^mailto:", "", value.strip())
+
+
+def _description(v) -> str:
+    return "\n".join(ln.rstrip() for ln in str(v or "").strip().splitlines())[:DESCRIPTION_CHARS]
+
+
 def _parse_rfc(text: str, calendar: str, win_start: dt.date, win_end: dt.date) -> list[CalendarEvent]:
     cal = icalendar.Calendar.from_ical(text)
     found = recurring_ical_events.of(cal, skip_bad_series=True).between(win_start, win_end + dt.timedelta(days=1))
@@ -344,7 +362,11 @@ def _parse_rfc(text: str, calendar: str, win_start: dt.date, win_end: dt.date) -
         if not uid:
             seed = f"{calendar}|{summary}|{start.isoformat()}"
             uid = hashlib.sha256(seed.encode()).hexdigest()[:16] + "@hash"
-        events.append(CalendarEvent(calendar, summary, start, end, _text(comp.get("LOCATION")), uid))
+        found_who = comp.get("ATTENDEE") or []
+        who = tuple(_who(str(a), str(getattr(a, "params", {}).get("CN", "")))
+                    for a in (found_who if isinstance(found_who, list) else [found_who]))
+        events.append(CalendarEvent(calendar, summary, start, end, _text(comp.get("LOCATION")), uid,
+                                    _description(comp.get("DESCRIPTION")), tuple(w for w in who if w)))
     events.sort(key=lambda e: (e.day, not e.all_day, e.start if isinstance(e.start, dt.datetime) else dt.datetime.min))
     return events
 
@@ -355,7 +377,7 @@ def parse_plain(text: str, calendar: str, win_start: dt.date, win_end: dt.date) 
     cur: dict | None = None
     for line in _unfold(text):
         if line == "BEGIN:VEVENT":
-            cur = {"exdates": set()}
+            cur = {"exdates": set(), "ATTENDEE": []}
             continue
         if line == "END:VEVENT" and cur is not None:
             events += _materialise(cur, calendar, win_start, win_end)
@@ -375,6 +397,11 @@ def parse_plain(text: str, calendar: str, win_start: dt.date, win_end: dt.date) 
                 cur["UID"] = value.strip()
             elif name in ("SUMMARY", "LOCATION", "STATUS"):
                 cur[name] = _unescape(value)
+            elif name == "DESCRIPTION":
+                cur[name] = value.replace("\\n", "\n").replace("\\N", "\n").replace("\\,", ",") \
+                    .replace("\\;", ";").replace("\\\\", "\\")
+            elif name == "ATTENDEE":
+                cur["ATTENDEE"].append(_who(value, params.get("CN", "")))
         except ValueError:
             continue
     return events
@@ -396,6 +423,7 @@ def _materialise(ev: dict, calendar: str, win_start: dt.date, win_end: dt.date) 
         seed = f"{calendar}|{summary}|{start.isoformat()}"
         ev["UID"] = hashlib.sha256(seed.encode()).hexdigest()[:16] + "@hash"
     return [
-        CalendarEvent(calendar, summary, s, s + duration if duration else None, ev.get("LOCATION", ""), ev["UID"])
+        CalendarEvent(calendar, summary, s, s + duration if duration else None, ev.get("LOCATION", ""), ev["UID"],
+                      _description(ev.get("DESCRIPTION")), tuple(w for w in ev.get("ATTENDEE", []) if w))
         for s in starts
     ]

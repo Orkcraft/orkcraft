@@ -1,0 +1,74 @@
+/* 🧪 The Test bench (js/bench.js): a wide dialog of three tabs. A run's numbers side by side, the building's
+   decisions on a time axis, the reviewers' findings each with a tick for Make tasks. */
+.gui-modal .ok-dialog.gui-bench { width: min(1040px, calc(100vw - 32px)); height: min(860px, calc(100vh - 48px)); display: flex; flex-direction: column; }
+.gui-bench__tabs { flex: none; margin-bottom: var(--space-2); }
+.gui-bench__body { flex: 1; gap: var(--space-4); }
+.gui-bench__section { display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-bench__h { margin: 0; display: inline-flex; align-items: center; gap: var(--space-2); }
+.gui-bench__row { display: flex; align-items: center; gap: var(--space-2) var(--space-3); flex-wrap: wrap; justify-content: space-between; }
+.gui-bench__row > .ok-btn.primary { flex: none; }
+.gui-bench__grow { flex: 1; min-width: 200px; }
+.gui-bench__pick { width: auto; max-width: 320px; }
+.gui-bench__form { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--space-2) var(--space-3); }
+.gui-bench__more > summary { cursor: pointer; padding: var(--space-1) 0; }
+.gui-bench__log { margin: 0; max-height: 240px; overflow: auto; padding: var(--space-2) var(--space-3); white-space: pre-wrap; word-break: break-word;
+  font: 12px/17px var(--font-mono); color: var(--ink); background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+
+/* The run, side by side. */
+.gui-bench__table { border-collapse: collapse; width: 100%; max-width: 640px; font-variant-numeric: tabular-nums; }
+.gui-bench__table th, .gui-bench__table td { text-align: left; padding: var(--space-1) var(--space-3); border-bottom: 1px solid var(--frame); }
+.gui-bench__table tbody th { font-weight: 400; color: var(--ink-muted); width: 110px; }
+.gui-bench__verdict { font-weight: 700; }
+.gui-bench__verdict.is-ok { color: var(--success); }
+.gui-bench__verdict.is-bad { color: var(--danger); }
+
+.gui-bench__missed { margin: 0; padding-left: var(--space-4); display: flex; flex-direction: column; gap: 2px; font-size: 12px; line-height: 17px; }
+
+/* Inside the run: a lane per ork. */
+.gui-bench__timeline { display: flex; flex-direction: column; gap: var(--space-1); }
+.gui-bench__lane { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: center; gap: var(--space-2); }
+.gui-bench__who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--ink-muted); }
+.gui-bench__track { position: relative; height: 18px; background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.gui-bench__span { position: absolute; top: 7px; height: 4px; background: var(--road); }
+.gui-bench__mark { position: absolute; top: 3px; width: 12px; height: 12px; margin-left: -6px; padding: 0; border: 0; cursor: pointer;
+  background: var(--ink-gold); box-shadow: 0 0 0 1px var(--frame-strong); }
+.gui-bench__mark.is-on, .gui-bench__mark:hover, .gui-bench__mark:focus-visible { background: var(--frame-focus); outline: none; }
+.gui-bench__axis { display: flex; justify-content: space-between; margin-left: calc(120px + var(--space-2)); font-size: 11px; color: var(--ink-muted); }
+.gui-bench__step { min-height: 20px; }
+
+/* Cases. */
+.gui-bench__cases { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.gui-bench__case { padding: var(--space-1) var(--space-3); background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.gui-bench__case summary { cursor: pointer; padding: var(--space-1) 0; }
+.gui-bench__case details > *:not(summary) { margin: var(--space-1) 0; }
+.gui-bench__case.is-unread { box-shadow: inset 0 0 0 1px var(--warning); }
+.gui-bench__badge { color: var(--warning); }
+
+/* Reviewers and their findings. */
+.gui-bench__role { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3); background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.gui-bench__role p { margin: 0; }
+.gui-bench__findings { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-bench__finding { display: flex; flex-direction: column; gap: 2px; padding: var(--space-1) 0; border-top: 1px solid var(--frame); }
+.gui-bench__finding p { margin: 0 0 0 26px; }
+.gui-bench__finding.is-picked { background: var(--selection); }
+.gui-bench__sev { display: inline-block; padding: 0 5px; font: 700 10px/16px var(--ok-font); letter-spacing: .06em; text-transform: uppercase;
+  box-shadow: inset 0 0 0 1px var(--frame); color: var(--ink-muted); }
+.gui-bench__sev.is-high { color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); }
+.gui-bench__sev.is-medium { color: var(--warning); }
+.gui-bench__aha { padding: var(--space-2) var(--space-3); box-shadow: inset 0 0 0 2px var(--ink-gold); }
+.gui-bench__aha p, .gui-bench__script { margin: 0; }
+.gui-bench__script { padding-left: var(--space-4); line-height: 1.5; }
+
+.gui-bench__spin { display: inline-block; width: 10px; height: 10px; border: 2px solid var(--frame); border-top-color: var(--ink-gold);
+  border-radius: 50%; animation: gui-bench-spin .9s linear infinite; vertical-align: -1px; }
+@keyframes gui-bench-spin { to { transform: rotate(360deg); } }
+
+[data-theme="office"] .gui-bench__log, [data-theme="office"] .gui-bench__track, [data-theme="office"] .gui-bench__case,
+[data-theme="office"] .gui-bench__role { box-shadow: inset 0 0 0 1px var(--frame); border-radius: var(--radius-md); }
+[data-theme="office"] .gui-bench__aha { box-shadow: inset 0 0 0 1px var(--frame-strong); border-radius: var(--radius-md); }
+[data-theme="office"] .gui-bench__mark { border-radius: 50%; }
+
+@media (max-width: 640px) {
+  .gui-bench__lane { grid-template-columns: 72px minmax(0, 1fr); }
+  .gui-bench__axis { margin-left: calc(72px + var(--space-2)); }
+}

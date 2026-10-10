@@ -118,6 +118,51 @@ def _launching(args) -> bool:
     return args.subcommand in (None, "gui")
 
 
+TIER_WORDS = {"novice": "laborer", "seasoned": "warrior", "veteran": "elder"}
+
+
+def _bench(root: Path, args: argparse.Namespace) -> int:
+    """`orkcraft bench`: a building on a test case beside the bare AI tool (docs/design/test-bench.md)."""
+    from orkcraft.core import bench as building_bench
+    from orkcraft.realm import bench, lexicon
+    if args.type not in building_bench.TYPES:
+        sys.stderr.write(f"orkcraft error: the Test bench runs {', '.join(building_bench.TYPES)} so far\n")
+        return 2
+    cases = bench.cases(root, args.type)
+    if args.list:
+        for c in cases:
+            print(f"{c.id:16} {c.title}" + ("" if c.reviewed else "  (not read yet: it does not count)"))
+        for r in bench.runs(root, args.type)[:10]:
+            sides = [s for s in (r.building, r.bare) if s]
+            print(f"{r.id}: " + " · ".join(f"{s.name} {bench.verdict(s)}, {s.seconds:.0f} s, ${s.cost:.2f}" for s in sides))
+        return 0
+    case = bench.case(root, args.type, args.case) if args.case else next(iter(cases), None)
+    if case is None:
+        known = ", ".join(c.id for c in cases) or "none"
+        sys.stderr.write(f"orkcraft error: no case {args.case!r}; the {args.type} cases: {known}\n")
+        return 2
+    tier = TIER_WORDS.get(args.tier.lower(), args.tier.lower())
+    if tier and tier not in TIER_WORDS.values():
+        sys.stderr.write("orkcraft error: --tier is novice, seasoned or veteran\n")
+        return 2
+    max_spend = bench.DEFAULT_MAX_SPEND if args.max_spend is None else args.max_spend
+    sides = (args.only,) if args.only else ("building", "bare")
+    print(f"Test bench: {case.title}. It runs AI tools and spends up to ${max_spend:.2f} on the building's side; "
+          "nothing leaves the copies it makes.", flush=True)
+    try:
+        orders = args.orders.read_text(encoding="utf-8") if args.orders else None
+        report, folder = building_bench.run(root, case, args.tool, tier, args.building, max_spend, sides,
+                                            say=lambda line: print(line, flush=True), orders=orders)
+    except (ValueError, RuntimeError, OSError) as e:
+        sys.stderr.write(f"orkcraft error: {e}\n")
+        return 1
+    print()
+    print(bench.render(report, lexicon.term(args.type)))
+    print(f"\nKept in {folder}")
+    print(f"{bench.DONE}{report.id}", flush=True)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="orkcraft",
@@ -165,6 +210,17 @@ def main(argv: list[str] | None = None) -> int:
     fb_p = subparsers.add_parser("feedback", help="What the operator's quiet feedback weighs: calibrate the weights")
     fb_p.add_argument("action", choices=("calibrate",))
     fb_p.add_argument("--days", type=int, default=None, help="Only the last N days (default: all kept)")
+    bench_p = subparsers.add_parser("bench", help="Test bench: run a building on a test case beside the bare AI tool")
+    bench_p.add_argument("type", nargs="?", default="barracks", help="The building type (default: barracks)")
+    bench_p.add_argument("--case", default="", help="The case's id (default: the first); --list shows them")
+    bench_p.add_argument("--list", action="store_true", help="List the type's cases and its last runs")
+    bench_p.add_argument("--tool", default="main", help="The AI tool both sides run on (default: the main tool)")
+    bench_p.add_argument("--tier", default="", help="novice, seasoned or veteran (default: the building's own)")
+    bench_p.add_argument("--building", default="", help="Which of your buildings of the type to copy the settings of")
+    bench_p.add_argument("--max-spend", type=float, default=None, help="$ the building's side may spend (default: 2)")
+    bench_p.add_argument("--only", choices=("building", "bare"), default=None, help="Run one side only")
+    bench_p.add_argument("--orders", type=Path, default=None,
+                         help="A file with the building's instructions for this run only (default: its own)")
     up_p = subparsers.add_parser("update", help="Install the latest version, see what is out, or say what installs by itself")
     up_p.add_argument("action", nargs="?", choices=("check", "auto", "critical", "ask"), default=None,
                       help="check: only say what is out · auto | critical | ask: which updates install by "
@@ -240,6 +296,14 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(calibrate.render(calibrate.report(root, args.days)))
         return 0
+
+    if args.subcommand == "bench":
+        try:
+            root = find_project_root(args.repo)
+        except FileNotFoundError as e:
+            sys.stderr.write(f"orkcraft error: {e}\n{NOT_A_PROJECT_HINT}\n")
+            return 1
+        return _bench(root, args)
 
     # No subcommand: the window.
     if args.subcommand is None:
