@@ -534,9 +534,13 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         else:
             env = {"ORKCRAFT_ORC": f"{self.building_id}/steward"}
             runner = lambda h, p, w, c, m: roads.run_agent(h, p, w, env, c, m)[:2]      # noqa: E731
-        with telemetry.tagged(steward.purpose_of(use, self.TYPE), self.building_id):
-            text, cost = runner(harness, prompt, workdir, cancel, model)
-        out.steward_cost += cost or 0.0
+        text = ""
+        for _ in range(2):        # an empty answer is no verdict (agy ends a turn empty on a denied command): once more
+            with telemetry.tagged(steward.purpose_of(use, self.TYPE), self.building_id):
+                text, cost = runner(harness, prompt, workdir, cancel, model)
+            out.steward_cost += cost or 0.0
+            if (text or "").strip():
+                break
         return text or ""
 
     def _prompt(self, task: bk.PoolTask, orc: bk.PoolOrc, follow: bool, related: bool,
