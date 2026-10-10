@@ -109,3 +109,22 @@ Series 3 (20261010-1123, stopped in ledger) — **environment, not fixed in code
   this machine). The next runs put `/usr/bin` first for the bench only; removing or upgrading
   `/usr/local/bin/git` fixes it for the town.
 - agy's quota ran out ("Individual quota reached … Resets in 36m"): the bare side failed in 7 s.
+
+## 2026-10-10 — Research (mine) on claude
+
+Found first: every non-code building's run crashed when its spend was read (`telemetry.calls`
+compared the bench's start, with no zone, to the ledger's times, with one). **Fix:** a time with no zone
+is read as local. Merged to main on its own.
+
+| run | case | building | bare |
+|---|---|---|---|
+| 20261010-114616 | eu-ai-act-dates | passed 4/4, 141 s, $0.77 | passed 4/4, 59 s, $0.34 |
+| 20261010-114936 | http3 | **passed 5/5**, 100 s, $0.61 | failed 4/5 (one site only), 47 s, $0.28 |
+
+The building's calls: the plan on sonnet ≈ 10 s, the search on opus 80–120 s, the check on sonnet ≈ 10 s.
+Its search answers 5–6 sub-questions with a source per claim, so it does more than the bare tool and
+takes about twice the time and spend; on http3 that is what passes the check.
+
+Tried: a plan of "the fewest sub-questions, what it asks, not what is near it" (instead of 3 to 7).
+eu-ai-act-dates 114 s / $0.60 (passed), http3 37 s / $0.41 but **failed 3/5** — worse than the bare tool.
+Reverted. Within 10 % is out of reach for Research without making it shallower than its design.
