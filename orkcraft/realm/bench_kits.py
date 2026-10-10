@@ -395,8 +395,9 @@ def judged(side: bench.Side, c: bench.Case, kit: Kit, result: dict) -> bench.Sid
 
 def bare(c: bench.Case, workdir: Path, tool: str = "main", tier: str = "", cancel: threading.Event | None = None,
          runner=None) -> bench.Side:
-    """The bare AI tool on the case: its kit's prompt, in a copy of the project it may read, one call; then the
-    same checks as the building's result."""
+    """The bare AI tool on the case: its kit's prompt, in a copy of the project it may read (unchained, as the
+    building's orks: agy refuses a command it would ask about and ends its turn empty), one call; then the same
+    checks as the building's result."""
     kit = KITS[c.type]
     model = tiers.resolve(tool, tier) if tier else ""
     side, start = bench.Side("bare", where=str(workdir), model=tier), time.monotonic()
@@ -408,8 +409,8 @@ def bare(c: bench.Case, workdir: Path, tool: str = "main", tier: str = "", cance
                 text, cost, tokens, _ = runner(tool, kit.prompt(c), workdir, cancel, model)
             elif kit.web:                         # as the building's researchers do: the open web
                 text, cost, tokens = roads.run_agent(tool, kit.prompt(c), workdir, {}, cancel, model, web=True)
-            else:
-                text, cost, tokens, _ = jobs.run_read(tool, kit.prompt(c), workdir, cancel, model)
+            else:                                 # in its copy, as the building's orks work: it may look around
+                text, cost, tokens, _ = jobs.run_work(tool, kit.prompt(c), workdir, cancel, model, free=True)
             spent, used = spent + float(cost or 0.0), used + int(tokens or 0)
             if (text or "").strip():
                 break
