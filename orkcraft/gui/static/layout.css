@@ -46,7 +46,7 @@ button { font: inherit; color: inherit; }
 /* The Warchief's line: the face (the Town Hall), the chips it is about, the field; over it the last of his
    chat, what a command said, the hints or the commands and names as typed. */
 .gui-warchief { flex: 1 1 auto; position: relative; display: flex; flex-direction: column; align-items: center; min-width: 0; }
-.gui-warchief__bar { display: flex; align-items: center; gap: var(--space-2); width: min(640px, 100%); box-sizing: border-box;
+.gui-warchief__bar { display: flex; align-items: center; gap: var(--space-2); width: min(720px, 100%); box-sizing: border-box;
   padding: var(--space-1) var(--space-2); background: var(--panel); border: var(--ok-frame) solid var(--frame);
   border-radius: var(--ok-radius-lg); box-shadow: var(--shadow-window); }
 .gui-warchief.is-focused .gui-warchief__bar { border-color: var(--frame-focus); }
@@ -87,7 +87,7 @@ button { font: inherit; color: inherit; }
   .gui-warchief__speaks { display: none; }
   .gui-warchief__buttons .ok-btn { padding-left: var(--space-2); padding-right: var(--space-2); }
 }
-.gui-warchief__over { position: absolute; bottom: calc(100% + var(--space-2)); width: min(640px, 100%); max-height: 50vh; }
+.gui-warchief__over { position: absolute; bottom: calc(100% + var(--space-2)); width: min(720px, 100%); max-height: 50vh; }
 /* A building just raised, set up in a question or two over the line (js/warchief.js, js/build.js raised). */
 .gui-warchief__setup .ok-win__body { display: grid; gap: var(--space-2); }
 .gui-warchief__setup-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
@@ -872,7 +872,7 @@ button { font: inherit; color: inherit; }
 .gui-warchief__grown .ok-win__body { gap: 2px; padding-top: var(--space-1); padding-bottom: var(--space-1); }
 .gui-build { display: grid; gap: 2px; min-width: 0; }
 .gui-build__said { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gui-build__row { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); padding-bottom: 1px; }
+.gui-build__row { display: flex; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; gap: var(--space-2) var(--space-3); padding-bottom: 1px; }
 /* A group by what it is for (js/build.js GROUPS): its word over its icons, a rule under the word as wide as the group. */
 .gui-build__group { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .gui-build__group-word { padding-bottom: 2px; border-bottom: 2px solid var(--frame-strong); font: 600 10px/12px var(--ok-font);
@@ -914,7 +914,7 @@ button { font: inherit; color: inherit; }
 .gui-panel .ok-win__bar > .ok-win__title { flex: 0 1 auto; min-width: 4em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* In Camp the Warchief speaks as his orks do (yards.css .gui-out__bubble): a pixel bubble of parchment that pops up
    over the line, its tail down to his face at the line's left end. Office keeps the plain bubble above. */
-[data-look="camp"] .gui-warchief > .gui-warchief__speaks { left: calc(50% - min(320px, 50%)); transform: none; transform-origin: 24px 100%;
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks { left: calc(50% - min(360px, 50%)); transform: none; transform-origin: 24px 100%;
   bottom: calc(100% + 14px); padding: 2px 6px; margin: 0; border: 8px solid transparent; border-radius: 0; box-shadow: none;
   background: none; image-rendering: pixelated; overflow: visible; color: var(--ink-on-parchment, #3b2a17);
   font: 700 14px/18px var(--font-camp);
@@ -931,7 +931,7 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) { .gui-warchief > .gui-warchief__speaks { animation: none !important; } }
 /* Office: the same bubble, calm — from the line's left end, a small tail down to it, popping in without steps. */
 [data-look="office"] .gui-warchief > .gui-warchief__speaks {
-  left: calc(50% - min(320px, 50%)); transform: none; transform-origin: 24px 100%; bottom: calc(100% + 10px); overflow: visible;
+  left: calc(50% - min(360px, 50%)); transform: none; transform-origin: 24px 100%; bottom: calc(100% + 10px); overflow: visible;
   animation: gui-warchief-pop .18s ease-out both; }
 [data-look="office"] .gui-warchief > .gui-warchief__speaks::after { content: ""; position: absolute; left: 18px; top: 100%;
   width: 10px; height: 10px; margin-top: -5px; background: var(--panel); border: inherit; border-width: 0 var(--ok-frame, 2px) var(--ok-frame, 2px) 0;
