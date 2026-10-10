@@ -201,7 +201,7 @@ def test_cli_lists_the_cases(fake_repo, capsys):
 
 def test_cli_refuses_an_unknown_case_type_or_tier(fake_repo, capsys):
     assert cli.main(["--repo", str(fake_repo), "bench", "--case", "nope"]) == 2
-    assert cli.main(["--repo", str(fake_repo), "bench", "watchtower"]) == 2
+    assert cli.main(["--repo", str(fake_repo), "bench", "mill"]) == 2
     assert cli.main(["--repo", str(fake_repo), "bench", "--tier", "grandmaster"]) == 2
     err = capsys.readouterr().err
-    assert "slugify" in err and "barracks so far" in err and "novice, seasoned or veteran" in err
+    assert "slugify" in err and "barracks, watchtower, fields, war_drum so far" in err and "novice, seasoned or veteran" in err

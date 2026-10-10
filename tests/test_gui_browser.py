@@ -1838,3 +1838,36 @@ def test_five_clicks_on_a_hut_open_its_test_bench_with_the_flag(page, gui, monke
     server.host.town.worker(bid).stop()
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
     del pg_build
+
+
+def test_the_test_bench_of_external_listeners_shows_its_checks(page, gui, monkeypatch):
+    """docs/design/test-bench.md §3.5: a building that is not about code shows its checks, the model each side ran
+    on, and what each side missed."""
+    import json as _json
+    from orkcraft.realm import bench, bench_review
+    server, _ = gui
+    monkeypatch.setenv("ORKCRAFT_BENCH", "1")
+    monkeypatch.setattr(bench_review.jobs, "run_read", lambda *a, **kw: (_json.dumps({"findings": []}), 0.0, 0, ""))
+    root = server.host.town.repo_root
+    ok = [{"name": f"#{n} kept", "ok": True, "detail": ""} for n in range(1, 9)]
+    side = bench.Side("building", seconds=31, cost=0.03, tokens=6100, passed=False, model="laborer",
+                      checks=ok + [{"name": "#5 You charged me twice!!: importance high", "ok": False, "detail": "said normal"}],
+                      how=["#1: kept · normal · answer person · a bug report"])
+    bare = bench.Side("bare", seconds=12, cost=0.01, tokens=2400, passed=True, model="laborer", checks=ok)
+    bench.Report("20261010-130000-watchtower-feedback-inbox", "watchtower", "feedback-inbox", at="2026-10-10T13:00:00",
+                 building=side, bare=bare).save(root / bench.RUNS / "20261010-130000-watchtower-feedback-inbox")
+    bid = page.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'watchtower' }))")
+    server.host.on_change()
+    page.wait_for_function("() => import('/static/js/link.js').then(m => m.town.value.bench)", timeout=WAIT_MS)
+    page.evaluate("id => import('/static/js/bench.js').then(m => { m.benchOpen.value = id; })", bid)
+    dialog = page.locator(".gui-bench")
+    dialog.wait_for(state="visible", timeout=WAIT_MS)
+    table = dialog.locator(".gui-bench__table")
+    table.wait_for(state="visible", timeout=WAIT_MS)
+    text = table.inner_text()
+    assert "8 of 9" in text and "9 of 9" not in text and "8 of 8" in text and "Novice" in text
+    assert "importance high" in dialog.locator(".gui-bench__missed").inner_text()
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        page.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-watchtower.png"))
+    dialog.locator(".ok-dialog__actions .ok-btn", has_text="Close").click()
+    page.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
