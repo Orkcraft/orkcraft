@@ -44,7 +44,7 @@ const COLS = 4, ROWS = 3;
 const MARGIN = 24;                          // between the room's edge and the outermost huts
 const STRIP = 64;                          // the town's foot (the orkspaces, the Warchief's line, layout.css .gui-foot): no hut under it
 const DEFAULT_SIZE = { w: 240, h: 64 };     // a hut not drawn yet
-const RAISING_SIZE = { w: 140, h: 60 };     // a building under scaffolding (js/build.js raised): its house, where it was placed
+const RAISING_SIZE = { w: 160, h: 110 };    // a building under scaffolding (js/build.js raised): its house at its real size, its name and plinth
 
 // A card that shows something and has no size of its own takes the free room right of it and under it
 // (docs/design/yards.md §7): the more room, the more it shows (js/hut.js levelOf). It keeps a road's gap from every
@@ -664,7 +664,7 @@ export function Town({ buildings, roads }) {
       ${onboardingPlan().filter((g) => !shown.has(g.id)).map((g) => html`<${Ghost} key=${`plan-${g.id}`} g=${g}
           spot=${place({ id: g.id, hut: g.hut }, 0, DEFAULT_SIZE)} biome=${activeBiome()} />`)}
       ${buildings.map((b, i) => going[b.id] !== undefined ? html`<${Ghost} key=${`up-${b.id}`}
-          g=${{ id: b.id, type: b.type, title: b.title, state: "raising" }} spot=${spots[b.id]} biome=${activeBiome()} bare=${bareOf(b)} />`
+          g=${{ id: b.id, type: b.type, title: b.title, state: "raising" }} spot=${spots[b.id]} biome=${activeBiome()} bare=${bareOf(b)} built=${true} />`
         : html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} dim=${dim(b.id)} auto=${auto[b.id] || null}
           fresh=${fresh.has(b.id)} onMoved=${moved} onSized=${sized} />`)}
       ${ghost && html`<${Footprint} g=${ghost} />`}
