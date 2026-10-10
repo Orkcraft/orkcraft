@@ -912,3 +912,27 @@ button { font: inherit; color: inherit; }
 .gui-orkcard__who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .gui-orkcard__why { margin: 0; white-space: normal; color: var(--ink); }
 .gui-panel .ok-win__bar > .ok-win__title { flex: 0 1 auto; min-width: 4em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* In Camp the Warchief speaks as his orks do (yards.css .gui-out__bubble): a pixel bubble of parchment that pops up
+   over the line, its tail down to his face at the line's left end. Office keeps the plain bubble above. */
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks { left: calc(50% - min(320px, 50%)); transform: none; transform-origin: 24px 100%;
+  bottom: calc(100% + 14px); padding: 2px 6px; margin: 0; border: 8px solid transparent; border-radius: 0; box-shadow: none;
+  background: none; image-rendering: pixelated; overflow: visible; color: var(--ink-on-parchment, #3b2a17);
+  font: 700 14px/18px var(--font-camp);
+  border-image: image-set(url("/ds/sprites/icons/bubble.png") 1x, url("/ds/sprites/icons/bubble@2x.png") 2x) 8 fill / 8px;
+  animation: gui-warchief-pop .22s steps(4, end) both; }
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks::after { content: ""; position: absolute; left: 14px; top: 100%; margin-top: 8px;
+  width: 10px; height: 8px; background: image-set(url("/ds/sprites/icons/bubble-tail.png") 1x, url("/ds/sprites/icons/bubble-tail@2x.png") 2x) 0 0 / 10px 8px; }
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks > .gui-warchief__long,
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks > .gui-link { overflow: hidden; text-overflow: ellipsis; color: inherit; font: inherit; }
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks.ok-tone-fire,
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks.ok-tone-wait { color: var(--ink-on-parchment, #3b2a17); }
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks.ok-tone-fire::before { content: none; }
+@keyframes gui-warchief-pop { from { transform: scale(.6) translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .gui-warchief > .gui-warchief__speaks { animation: none !important; } }
+/* Office: the same bubble, calm — from the line's left end, a small tail down to it, popping in without steps. */
+[data-look="office"] .gui-warchief > .gui-warchief__speaks {
+  left: calc(50% - min(320px, 50%)); transform: none; transform-origin: 24px 100%; bottom: calc(100% + 10px); overflow: visible;
+  animation: gui-warchief-pop .18s ease-out both; }
+[data-look="office"] .gui-warchief > .gui-warchief__speaks::after { content: ""; position: absolute; left: 18px; top: 100%;
+  width: 10px; height: 10px; margin-top: -5px; background: var(--panel); border: inherit; border-width: 0 var(--ok-frame, 2px) var(--ok-frame, 2px) 0;
+  transform: rotate(45deg); }
