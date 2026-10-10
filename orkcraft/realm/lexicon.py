@@ -73,6 +73,7 @@ TERMS: tuple[Term, ...] = (
     _t("look", "Look", "Looks"),                                   # how the town is drawn: never its words
     _t("look.camp", "Camp"),                                       # the default look: sprites, the mascot, flames
     _t("look.office", "Office"),                                   # the calm look: monochrome, no sprites
+    _t("bench", "Test bench"),                                     # one building on a test case, beside the bare AI tool (realm/bench.py)
     _t("dnd", "Do not disturb"),                                   # sounds, pushes, the Warchief's news wait
     # -- what a thing does, costs or risks: plain words ---------------------------------------------
     _t("ghost", "preview", "", "ghost"),
