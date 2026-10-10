@@ -44,6 +44,7 @@ def test_follow_up_reuse_hire_queue():
     assert f.decide(task("Brand new"), orcs, waiting, 0.0).action == "queue"   # Grub is spoken for
     assert f.decide(task("Brand new"), orcs, [], 0.0).action == "reuse"
     assert bk.Foreman({"budget_usd": 1}).decide(task("x"), [], [], 1.5).action == "budget"
+    assert bk.Foreman({"providers": ["claude"]}).priced and not bk.Foreman({"providers": ["agy:warrior"]}).priced
     assert f.decide(task("x"), orcs, [], 0.0, paused=True).action == "paused"
     assert f.next_for(grub, [bk.PoolTask("a", "a", "a"), bk.PoolTask("b", "b", "b", wait_for="Grub")]).id == "b"
 

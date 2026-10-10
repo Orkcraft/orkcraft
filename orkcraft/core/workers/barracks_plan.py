@@ -248,7 +248,7 @@ class PlanMixin:
         st, f, goal, camp = self.state, self.foreman, self.goal, self.quota()
         for s in subs:
             s.tier = plans.shift(s.tier, goal.shift)
-        left = round(f.budget - st.spent, 4) if f.budget else None
+        left = round(f.budget - st.spent, 4) if f.budget and f.priced else None
         tokens_left = camp.left * plans.QUOTA_SHARE if camp is not None else None
         costs, per = plans.tier_costs(st.stats), plans.tier_tokens(st.stats)
         limits = " · ".join(x for x in (f"${left:.2f} left" if left is not None else "",
