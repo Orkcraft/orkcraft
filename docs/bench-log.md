@@ -128,3 +128,41 @@ takes about twice the time and spend; on http3 that is what passes the check.
 Tried: a plan of "the fewest sub-questions, what it asks, not what is near it" (instead of 3 to 7).
 eu-ai-act-dates 114 s / $0.60 (passed), http3 37 s / $0.41 but **failed 3/5** — worse than the bare tool.
 Reverted. Within 10 % is out of reach for Research without making it shallower than its design.
+
+Series 4 (20261010-1222…, `/usr/bin` first on PATH): the plan now runs to the end on every case — no
+rework, every part merged, the whole accepted — so both fixes above hold (gradebook: did not finish →
+passed). But planned, the pool is far slower:
+
+| case | building | bare | time | tokens |
+|---|---|---|---|---|
+| ledger | passed, 707 s | passed, 359 s | +97 % | +215 % |
+| gradebook | passed, 636 s | passed, 305 s | +108 % | +258 % |
+| route | passed, 696 s | passed, 267 s | +161 % | +273 % |
+| toc | passed, 1053 s | passed, 609 s | +73 % | +176 % |
+| invoice | passed, 1538 s | passed, 414 s | +272 % | +326 % |
+
+**Cause (building):** an agy session costs 3–5 minutes even on a small part, about what the bare tool
+takes for the whole task; with the plan (≈70 s), a review per part, the merges and the final look on top,
+the critical path is longer than one session whatever the steward does. The sort said "in doubt: plan".
+**Fix:** the sort weighs what an ork costs to start; a task one ork finishes in one sitting is `single`,
+in doubt `single`.
+
+Series 5 (20261010-1356…), every case sorted single:
+
+| case | building | bare | time | tokens |
+|---|---|---|---|---|
+| ledger | passed, 273 s | passed, 284 s | −4 % | +4 % |
+| gradebook | passed, 361 s | passed, 268 s | +35 % | +17 % |
+| route | passed, 285 s | passed, 309 s | −8 % | −28 % |
+| toc | passed, 497 s | passed, 552 s | −10 % | +20 % |
+| invoice | passed, 621 s | passed, 533 s | +17 % | +48 % |
+
+All pass; 2 of 5 within 10 %. What is left over is the sort and review calls (≈ 30–60 s, 30–40k
+tokens on agy) and the ork's own run, which varies between runs as much as the gap.
+
+### The Agent pool, where it stands
+
+Every case of the three levels passes on agy, on both sides. Within 10 % on time and tokens: simple 1
+of 5 (series ran before tokens were counted: by time 3 of 5), medium 2 of 5, parallel 2 of 5. The rest
+is within the run-to-run spread of one agy session (slugify: 255 s, then 129 s); deciding below that
+wants several runs per case (`--times`, still to come).
