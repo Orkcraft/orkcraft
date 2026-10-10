@@ -403,4 +403,92 @@ CASES: dict[str, list[dict]] = {
             },
         },
     ],
+    # Research: questions whose answers are settled facts on the open web, so a run today and one next month agree.
+    "mine": [
+        {
+            "id": "eu-ai-act-dates",
+            "title": "The EU AI Act's dates",
+            "expect": "The three dates, each with a source, from more than one site (the Official Journal, the "
+                      "Commission, a law firm's summary).",
+            "inputs": {
+                "question": "When did the EU AI Act (Regulation (EU) 2024/1689) enter into force, and from when do its "
+                            "bans on prohibited AI practices and its obligations for general-purpose AI models apply?",
+                "rounds": 1,
+                "expect_facts": [["1 August 2024", "August 1, 2024", "2024-08-01", "1st August 2024"],
+                                 ["2 February 2025", "February 2, 2025", "2025-02-02", "2nd February 2025"],
+                                 ["2 August 2025", "August 2, 2025", "2025-08-02", "2nd August 2025"]],
+                "expect_sites": 2,
+            },
+        },
+        {
+            "id": "http3",
+            "title": "HTTP/3: its RFC and its transport",
+            "expect": "RFC 9114 of June 2022, over QUIC, which RFC 9000 defines; sources on more than one site.",
+            "inputs": {
+                "question": "Which RFC defines HTTP/3 and when was it published? Which transport protocol does HTTP/3 "
+                            "run over, and which RFC defines that protocol?",
+                "rounds": 1,
+                "expect_facts": [["RFC 9114", "RFC9114"], ["June 2022", "2022-06"], ["QUIC"], ["RFC 9000", "RFC9000"]],
+                "expect_sites": 2,
+            },
+        },
+    ],
+    # Review board: a design with flaws planted in it, and a request to send down the right exit.
+    "council": [
+        {
+            "id": "planted-flaws",
+            "title": "A login design with three planted flaws",
+            "expect": "Sent back for rework, naming the weak password hashing, reset links that never expire and a "
+                      "login with no limit on tries.",
+            "inputs": {
+                "title": "Login and password reset for the booking app",
+                "roles": ["Architect", "Security reviewer"],
+                "expect_verdict": "rework",
+                "expect_flaws": [["MD5", "bcrypt", "argon2", "scrypt"],
+                                 ["expire", "expiry", "expiration", "never expire", "lifetime", "TTL"],
+                                 ["rate limit", "rate-limit", "rate limiting", "brute", "lockout", "throttl", "attempts"]],
+                "document": """# Login and password reset
+
+## Goal
+Customers log in to manage their bookings; staff log in to the studio view.
+
+## Design
+- Accounts live in the `users` table: email, name, and the password stored as an MD5 hash of it.
+- Login: `POST /login` with email and password; on success we set a session cookie for 30 days.
+- A wrong password returns "wrong password"; an unknown email returns "no such account".
+- Password reset: `POST /reset` emails a link `https://book.example/reset?token=<token>`. The token is the
+  user's id and a random number; it stays valid until the password is changed.
+- Staff accounts work the same way as customers'.
+- The database is backed up every night to a folder on the same server.
+
+## Rollout
+Ship to all studios next Tuesday; no feature flag, the old login page is removed the same day.
+""",
+            },
+        },
+        {
+            "id": "route-a-request",
+            "title": "Send a customer's request down the right exit",
+            "expect": "A bug report goes to Development, not to a meeting or a reply.",
+            "inputs": {
+                "title": "Export to CSV fails since yesterday",
+                "exits": ["Development: a bug to fix or a feature to build in the product",
+                          "Meeting: something only a call or a meeting can settle",
+                          "Reply: a question that a written answer settles"],
+                "expect_route": "development",
+                "document": """From: Priya Raman <priya@harbor-yoga.example>
+Subject: Export to CSV fails since yesterday
+
+Hi,
+
+Since yesterday's update the "Export to CSV" button on the Bookings page gives an error page ("500 Internal
+Server Error") for every account in our studio. It worked on Monday. We need the export for our accountant by
+Friday. Steps: Bookings → filter "This month" → Export to CSV.
+
+Thanks,
+Priya
+""",
+            },
+        },
+    ],
 }

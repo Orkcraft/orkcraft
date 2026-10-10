@@ -11,6 +11,8 @@ A result per type:
     watchtower  {"messages": [{"n", "kept", "importance", "answer", "why"}]}
     fields      {"titles": [{"n", "title"}], "plans": [{"n", "steps": […]}]}
     war_drum    {"briefs": [{"n", "text"}]}
+    mine        {"claims": [{"claim", "sources": [url…], "state"}]}
+    council     {"verdict": "approve" | "rework" | "ask", "notes", "route"}
 
 A check of words matches their stem (the first `STEM` letters), case and accents aside, so "booking" finds
 "bookings"; a group of words passes when any of them is there.
@@ -27,7 +29,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
-from orkcraft.realm import bench, jobs, tiers
+from orkcraft.realm import bench, jobs, roads, tiers
 
 STEM = 5
 _JSON = re.compile(r"\{.*\}", re.S)
@@ -89,6 +91,7 @@ class Kit:
     parse: Callable[[str], dict]
     check: Callable[[bench.Case, dict], list[dict]]
     bare_use: str = ""            # the building's own model use whose tier the bare tool runs on, when none is picked
+    web: bool = False             # the bare AI tool searches the web too, as the building does
 
 
 def _ok(name: str, ok: bool, detail: str = "") -> dict:
@@ -265,10 +268,88 @@ def _wd_check(c: bench.Case, result: dict) -> list[dict]:
     return out
 
 
+# -- Research ----------------------------------------------------------------------------------------------------
+
+def _mn_prompt(c: bench.Case) -> str:
+    from orkcraft.realm import research
+    return ("You research on the open web. Search, open the pages, read them, and answer the question below with "
+            "the facts you found, each as a short claim with the pages that say it and the line they say it in. "
+            "Only what a page you opened says; no claim without a source. Prefer primary sources.\n"
+            f"Question: {c.inputs.get('question', '')}\n" + research._FINDINGS_JSON)
+
+
+def _mn_parse(text: str) -> dict:
+    from orkcraft.realm import research
+    claims = [{"claim": f["claim"], "sources": [s["url"] for s in f["sources"]], "state": "single"}
+              for f in research.parse_findings(text, "bare", "bare")]
+    return {"claims": claims}
+
+
+def _mn_check(c: bench.Case, result: dict) -> list[dict]:
+    from orkcraft.realm import research
+    claims = [x for x in result.get("claims") or [] if x.get("sources")]
+    out = []
+    for group in c.inputs.get("expect_facts") or []:
+        hit = next((x for x in claims if has(x["claim"], group)), None)
+        out.append(_ok(f"found {_said(group)} with a source", hit is not None,
+                       f"{hit['claim'][:160]} ({hit.get('state', '')})" if hit else f"{len(claims)} claims, none says it"))
+    sites = {research.domain(u) for x in claims for u in x["sources"]}
+    need = int(c.inputs.get("expect_sites") or 2)
+    out.append(_ok(f"sources on at least {need} sites", len(sites) >= need, ", ".join(sorted(sites))[:200] or "none"))
+    return out
+
+
+# -- Review board --------------------------------------------------------------------------------------------------
+
+def exits_of(c: bench.Case) -> list[tuple[str, str]]:
+    """The case's exits as (id, "Name: rule"), as the board names them (realm/team.py `exit_id`)."""
+    from orkcraft.realm import team
+    return [(team.exit_id(e.partition(":")[0]), e) for e in c.inputs.get("exits") or []]
+
+
+def _cn_prompt(c: bench.Case) -> str:
+    roles = ", ".join(c.inputs.get("roles") or ["Product manager", "Architect"])
+    exits = exits_of(c)
+    routes = ("\nWhen you approve, name where it goes, by its id:\n" + "\n".join(f"- `{i}` — {e}" for i, e in exits)
+              if exits else "")
+    return f"""You are a review board of these roles: {roles}. Review the document below, each role from its own view,
+then decide as one: approve it, or send it back for rework with what must change.{routes}
+
+<document>
+{c.inputs.get('document', '')}
+</document>
+
+Answer with JSON only:
+{{"verdict": "approve | rework", "notes": "what must change and why, every point the roles raised", "route": "{'an id from the list' if exits else ''}"}}"""
+
+
+def _cn_parse(text: str) -> dict:
+    data = answer_json(text)
+    verdict = str(data.get("verdict") or "").strip().lower()
+    return {"verdict": {"approved": "approve", "changes": "rework"}.get(verdict, verdict),
+            "notes": str(data.get("notes") or "")[:6000], "route": str(data.get("route") or "").strip().strip("`")}
+
+
+def _cn_check(c: bench.Case, result: dict) -> list[dict]:
+    out = []
+    want = c.inputs.get("expect_verdict")
+    if want:
+        out.append(_ok(f"verdict {want}", result.get("verdict") == want, f"said {result.get('verdict') or 'nothing'}"))
+    notes = result.get("notes") or ""
+    for group in c.inputs.get("expect_flaws") or []:
+        out.append(_ok(f"names {_said(group)}", has(notes, group), notes[:200]))
+    if c.inputs.get("expect_route"):
+        out.append(_ok(f"routed to {c.inputs['expect_route']}", result.get("route") == c.inputs["expect_route"],
+                       f"routed to {result.get('route') or 'nowhere'}"))
+    return out
+
+
 KITS: dict[str, Kit] = {
     "watchtower": Kit("watchtower", _wt_prompt, _wt_parse, _wt_check, "judge"),
     "fields": Kit("fields", _fd_prompt, _fd_parse, _fd_check, "plan"),
     "war_drum": Kit("war_drum", _wd_prompt, _wd_parse, _wd_check, ""),
+    "mine": Kit("mine", _mn_prompt, _mn_parse, _mn_check, "search", web=True),
+    "council": Kit("council", _cn_prompt, _cn_parse, _cn_check, ""),
 }
 
 
@@ -288,7 +369,13 @@ def bare(c: bench.Case, workdir: Path, tool: str = "main", tier: str = "", cance
     model = tiers.resolve(tool, tier) if tier else ""
     side, start = bench.Side("bare", where=str(workdir), model=tier), time.monotonic()
     try:
-        text, cost, tokens, _ = (runner or jobs.run_read)(tool, kit.prompt(c), workdir, cancel or threading.Event(), model)
+        cancel = cancel or threading.Event()
+        if runner is not None:
+            text, cost, tokens, _ = runner(tool, kit.prompt(c), workdir, cancel, model)
+        elif kit.web:                             # as the building's researchers do: the open web
+            text, cost, tokens = roads.run_agent(tool, kit.prompt(c), workdir, {}, cancel, model, web=True)
+        else:
+            text, cost, tokens, _ = jobs.run_read(tool, kit.prompt(c), workdir, cancel, model)
         side.text, side.cost, side.tokens = (text or "")[:6000], float(cost or 0.0), int(tokens or 0)
         judged(side, c, kit, kit.parse(text))
     except (RuntimeError, OSError) as e:

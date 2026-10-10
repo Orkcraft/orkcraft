@@ -22,7 +22,7 @@ from orkcraft.core.town import Town
 from orkcraft.core import bench_kits
 from orkcraft.realm import bench, bench_kits as kits, checkpoint, masonry
 
-TYPES = ("barracks", "watchtower", "fields", "war_drum")   # what the bench runs so far
+TYPES = ("barracks", "watchtower", "fields", "war_drum", "mine", "council")   # what the bench runs so far
 # A building that hands its work to an Agent pool: its instructions are the pool's (the Calendar's briefs).
 POOLED = {"war_drum": "barracks"}
 KIT_PROJECT = {"README.md": "# Test bench\n\nA copy the Test bench made for one run.\n"}
