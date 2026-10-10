@@ -50,6 +50,9 @@ export const BIOMES = {
 };
 export const BIOME_ORDER = Object.keys(BIOMES);
 const DRAWN_FOR = new Set(["ice", "dust", "void", "lava", "meadow"]);   // header-<biome>.png (tools/growth_sprites.py)
+// Headers kept as they were painted (tools/painted.py): drawn smoothly, not as pixels, their @2x on a retina screen.
+const PAINTED = new Set(["town_hall", "watchtower", "fields", "war_drum", "barracks", "council", "scrolls", "mine",
+  "gramophone", "forge", "loot", "catapult", "lab", "workshop", "pit", "signpost", "mill", "crag", "horn"]);
 
 function spriteName(type) {
   return type === "loot_vault" ? "loot" : PATHS[type] ? type : "custom";
@@ -62,16 +65,15 @@ export function headerSprite(type, biome = "") {
   return `/ds/sprites/buildings/${name}/${DRAWN_FOR.has(biome) ? `header-${biome}` : "header"}.png`;
 }
 
-// Where the goal flag stands on each roof (docs/design/growth.md §5): [x, y, height] in the header's own
-// pixels (2 screen px each): the pole's foot at (x, y), the sprite `height` tall. The top of each sprite's
-// middle third, a few moved by hand: off the Watchtower's lamp and beside the Crag's own flag;
-// the Agent pool, the Review board and Research keep their first sprites and points.
+// Where the goal flag stands on each roof (docs/design/growth.md §5): [x, y, height] in units of 2 screen px over
+// the header: the pole's foot at (x, y), the sprite `height` tall. The top of each sprite's middle third
+// (tools/painted.py's headers are measured on their 1x).
 const FLAG_AT = {
-  barracks: [19, 4, 21], catapult: [9, 7, 24], council: [11, 0, 23], crag: [20, 9, 27], custom: [17, 1, 26],
-  fields: [13, 0, 21], forest: [17, 0, 27], forge: [8, 7, 27], gramophone: [8, 0, 26], horn: [8, 13, 23],
-  lab: [10, 1, 25], lake: [17, 0, 33], loot: [13, 0, 26], mill: [11, 4, 28], mine: [16, 3, 21], pit: [13, 0, 19],
-  scrolls: [9, 1, 23], signpost: [11, 0, 26], town_hall: [11, 0, 24], war_drum: [10, 0, 24], watchtower: [6, 6, 28],
-  workshop: [8, 2, 24],
+  barracks: [19, 2, 34], catapult: [12, 8, 32], council: [28, 1, 33], crag: [17, 0, 38], custom: [17, 1, 26],
+  fields: [16, 0, 33], forest: [17, 0, 27], forge: [24, 0, 40], gramophone: [18, 0, 37], horn: [16, 13, 32],
+  lab: [21, 8, 40], lake: [17, 0, 33], loot: [17, 14, 37], mill: [11, 4, 38], mine: [17, 0, 32], pit: [12, 0, 27],
+  scrolls: [15, 0, 34], signpost: [9, 0, 38], town_hall: [23, 0, 38], war_drum: [9, 3, 40], watchtower: [10, 0, 44],
+  workshop: [25, 1, 32],
 };
 
 const FOOTING_ROWS = { 1: 2, 2: 4, 3: 6 };     // the footing's height in its pixels (2 screen px each), by level
@@ -84,10 +86,13 @@ export function HutSprite({ type, biome, goal, level, className = "", onError })
   const at = FLAG_AT[spriteName(type)];
   const n = Math.min(Math.max(level || 0, 0), 3);
   const annex = goal === "thrift" || goal === "quality" ? goal : "";
+  const src = headerSprite(type, biome);
+  const painted = PAINTED.has(spriteName(type));
   return html`<span class=${`gui-sprite ${className}`} data-goal=${goal || "balance"} data-level=${n}>
     <span class="gui-sprite__hut">
       <span class="gui-sprite__walls">
-        <img class="ok-sprite" src=${headerSprite(type, biome)} alt="" draggable="false" onError=${onError} />
+        <img class=${`ok-sprite${painted ? " is-painted" : ""}`} src=${src} alt="" draggable="false" onError=${onError}
+          srcset=${painted ? `${src} 1x, ${src.replace(/\.png$/, "@2x.png")} 2x` : null} />
         ${n > 0 && at && html`<img class=${`ok-sprite gui-sprite__flag${biome === "ice" ? " is-on-snow" : ""}`}
           src=${`/ds/sprites/flags/level-${n}.png`} alt="" draggable="false"
           style=${`left:${at[0] * 2}px;bottom:${(at[2] - at[1]) * 2}px`} />`}

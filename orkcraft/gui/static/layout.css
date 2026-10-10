@@ -936,3 +936,4 @@ button { font: inherit; color: inherit; }
 [data-look="office"] .gui-warchief > .gui-warchief__speaks::after { content: ""; position: absolute; left: 18px; top: 100%;
   width: 10px; height: 10px; margin-top: -5px; background: var(--panel); border: inherit; border-width: 0 var(--ok-frame, 2px) var(--ok-frame, 2px) 0;
   transform: rotate(45deg); }
+.gui-sprite__walls > .ok-sprite.is-painted { image-rendering: auto; }   /* a painted header (tools/painted.py): smooth */
