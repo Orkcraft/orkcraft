@@ -12,6 +12,7 @@ A run never touches the town it was started from: its copies have no remote and 
 from __future__ import annotations
 
 import datetime as dt
+import functools
 import json
 import re
 import shutil
@@ -216,7 +217,7 @@ def bare(c: Case, workdir: Path, tool: str = "main", tier: str = "", cancel: thr
          runner=None) -> Side:
     """The AI tool alone in `workdir`, on the tier's model, with the task as its only prompt, then the check."""
     model = tiers.resolve(tool, tier) if tier else ""
-    run = runner or jobs.run_work
+    run = runner or functools.partial(jobs.run_work, free=True)     # as the building's orks: it asks nothing
     side, start = Side("bare", where=str(workdir)), time.monotonic()
     base = git(workdir, "rev-parse", "HEAD")
     try:
@@ -355,10 +356,11 @@ GAP_LIMIT = 0.10                    # how far the building may be from the bare 
 
 def gaps(r: Report) -> dict[str, float | None]:
     """How far the building is from the bare tool: time and spend as a share over it (0.25: 25 % more, below 0:
-    less), quality 0 when both checks agree, 1 when the building's is worse, -1 when better. None: not measured."""
+    less), quality 0 when both checks agree, 1 when the building's is worse, -1 when better. None: not measured.
+    A tool that says no price (agy) leaves both sides at $0: its spend is then held by tokens (`spend_by`)."""
     b, t = r.building, r.bare
     if b is None or t is None:
-        return {"time": None, "spend": None, "quality": None}
+        return {"time": None, "spend": None, "quality": None, "spend_by": "$"}
 
     def over(mine: float, theirs: float) -> float | None:
         return (mine - theirs) / theirs if theirs > 0 else None
@@ -367,7 +369,10 @@ def gaps(r: Report) -> dict[str, float | None]:
         return -2 if s.error else {True: 1, None: 0, False: -1}[s.passed]
 
     quality = float((score(t) > score(b)) - (score(b) > score(t)))
-    return {"time": over(b.seconds, t.seconds), "spend": over(b.cost, t.cost), "quality": quality}
+    priced = b.cost > 0 or t.cost > 0
+    spend = over(b.cost, t.cost) if priced else over(b.tokens, t.tokens)
+    return {"time": over(b.seconds, t.seconds), "spend": spend, "quality": quality,
+            "spend_by": "$" if priced else "tokens"}
 
 
 def summary(reports: list[Report], building_word: str = "Building", limit: float = GAP_LIMIT) -> str:
@@ -380,9 +385,10 @@ def summary(reports: list[Report], building_word: str = "Building", limit: float
     for r in reports:
         g, b, t = gaps(r), r.building, r.bare
         check = f"{verdict(b)} / {verdict(t)}" if b and t else "—"
-        rows.append((r.case, pct(g["time"]), pct(g["spend"]), check, "yes" if within(g, limit) else "no"))
+        spend = pct(g["spend"]) + (" tokens" if g["spend"] is not None and g["spend_by"] == "tokens" else "")
+        rows.append((r.case, pct(g["time"]), spend, check, "yes" if within(g, limit) else "no"))
     width = [max(len(row[i]) for row in rows) for i in range(len(rows[0]))]
-    out = [f"{building_word} against the bare AI tool (time and spend: how much more; check: {building_word} / bare)", ""]
+    out = [f"{building_word} against the bare AI tool (time and spend: how much more, spend in tokens where the tool says no price; check: {building_word} / bare)", ""]
     out += ["  ".join(cell.ljust(width[i]) for i, cell in enumerate(row)).rstrip() for row in rows]
     return "\n".join(out)
 

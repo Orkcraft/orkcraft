@@ -51,6 +51,9 @@ def test_the_newest_of_a_family_by_its_version():
 
 def test_a_tools_list_is_read():
     assert model_families.parse_agy(AGY_LIST)[:2] == ["gemini-3.7-flash-high", "gemini-3.8-flash-high"]
+    # agy 1.3.3 puts a tab between the id and the name, after a line that is not a model
+    tabbed = "Fetching available models...\ngemini-3.8-flash-low\tGemini 3.8 Flash (Low)\n"
+    assert model_families.parse_agy(tabbed) == ["gemini-3.8-flash-low"]
     codex = json.dumps({"models": [{"slug": "gpt-6-astra", "visibility": "list"},
                                    {"slug": "gpt-daybreak-blue-latest", "visibility": "hide"}]})
     assert model_families.parse_codex(codex) == ["gpt-6-astra"]

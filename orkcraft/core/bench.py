@@ -81,6 +81,7 @@ def run_building(case: bench.Case, project: Path, base: str, template: dict, too
         built = buildings.raise_spec(town, spec)
         if built is None:
             raise ValueError("the building was refused: " + "; ".join(town.scroll_problems[-3:]))
+        bench_kits.unchain(town, built.id)
         w = town.worker(built.id)
         task = w.new_task(case.title, case.task)
         if task is None:

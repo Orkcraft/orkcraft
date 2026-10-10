@@ -189,6 +189,9 @@ class Harness:
     # (folders outside the workdir) → what a working agent's argv gets to read them, never write them (the
     # Wiki's folders outside the project: docs/design/wiki-folders-rules.md §1). None: it reads anywhere.
     read_dirs: Callable[[list[str]], list[str]] | None = None
+    # What a working agent's argv gets when its building is unchained (autonomy.FREE): a tool that cannot ask
+    # in a headless run and refuses what it would have asked about.
+    free_args: tuple[str, ...] = ()
     # (h) → the commands that print the models it has, tried in order, and the reader of their output.
     # None: it cannot say, and a family in its table runs on its own default.
     models_cmd: Callable[["Harness"], list[list[str]]] | None = None
@@ -237,9 +240,9 @@ class Harness:
         return self.read_cmd(self, prompt, str(workdir), self.pick(model), web)
 
     def work(self, prompt: str, workdir: str | Path, model: str = "", resume: str = "",
-             dirs: Iterable[str] = ()) -> list[str]:
-        """`dirs`: folders outside `workdir` it may read too."""
-        cmd = self.work_cmd(self, prompt, str(workdir), self.pick(model), resume)
+             dirs: Iterable[str] = (), free: bool = False) -> list[str]:
+        """`dirs`: folders outside `workdir` it may read too; `free`: its building is unchained."""
+        cmd = self.work_cmd(self, prompt, str(workdir), self.pick(model), resume) + list(self.free_args if free else ())
         dirs = [str(d) for d in dirs if str(d)]
         return cmd + self.read_dirs(dirs) if dirs and self.read_dirs else cmd
 
@@ -503,6 +506,9 @@ register(Harness(
     task_models={"code": "gemini-flash-high", "docs": "gemini-pro-high"},
     models_cmd=lambda h: [[h.bin, "models"]], parse_models=model_families.parse_agy,
     read_dirs=lambda dirs: [a for d in dirs for a in ("--add-dir", d)],    # its sandbox sees only these
+    # `--print` denies every terminal command it would ask about and ends the turn with no answer (1.3.3), so a
+    # task whose ork runs its tests first comes back empty. Unchained, it asks nothing; `--sandbox` still holds.
+    free_args=("--dangerously-skip-permissions",),
     resume_cmd=lambda h, sid: [h.bin, "--conversation", sid]))
 register(Harness(
     "codex", "Codex", "codex", "npm i -g @openai/codex", "codex login",

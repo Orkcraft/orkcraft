@@ -110,20 +110,22 @@ def run_script(command: str, stdin: str, repo_root: Path, cancel: threading.Even
 
 
 def work_cmd(harness: str, prompt: str, workdir: Path, model: str = "", resume: str = "",
-             dirs: tuple = ()) -> list[str]:
-    """An agent that may change files — only inside `workdir` (a Barracks worktree); `dirs` it may read too."""
+             dirs: tuple = (), free: bool = False) -> list[str]:
+    """An agent that may change files — only inside `workdir` (a Barracks worktree); `dirs` it may read too;
+    `free`: its building is unchained (autonomy.FREE), so it asks nothing."""
     h = harnesses.get(roads.resolve(harness))
     if h is None:
         raise RuntimeError(f"harness {harness!r} cannot work in a worktree")
-    return h.work(prompt, workdir, model, resume if h.resumable else "", dirs)
+    return h.work(prompt, workdir, model, resume if h.resumable else "", dirs, free)
 
 
 def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, model: str = "",
              env: dict | None = None, resume: str = "",
-             timeout_s: int = WORK_TIMEOUT_S, dirs: tuple = ()) -> tuple[str, float | None, int | None, str]:
+             timeout_s: int = WORK_TIMEOUT_S, dirs: tuple = (),
+             free: bool = False) -> tuple[str, float | None, int | None, str]:
     """(text, cost, tokens, session) of an agent working in `workdir` (and reading `dirs` too)."""
     harness = roads.resolve(harness)
-    cmd = work_cmd(harness, prompt, workdir, model, resume, dirs)
+    cmd = work_cmd(harness, prompt, workdir, model, resume, dirs, free)
     tool_env = h.env("work", workdir) if (h := harnesses.get(harness)) else {}
     run_env = {**os.environ, **tool_env, **(env or {})}
     resumed = roads.codex_thread_usage(resume, run_env) if harness == "codex" and resume else None

@@ -125,7 +125,8 @@ shows the last runs and any two can be compared.
 **A series**: `orkcraft bench --case all`, or `--level simple|medium|parallel`, runs the cases one after
 another (each with its own spend limit) and ends with a summary: per case, how much more time and spend the
 building took than the bare tool, and its check against the bare tool's. A case is **within 10 %**
-(`bench.GAP_LIMIT`) when its check is no worse and both time and spend are at most 10 % over. The window's
+(`bench.GAP_LIMIT`) when its check is no worse and both time and spend are at most 10 % over. A tool that says
+no price (agy) leaves both sides at $0, so its spend is held by tokens, and the summary says so. The window's
 Case list offers the same series, and *The Agent pool against the bare AI tool* holds the latest run of each
 case so (`bench.against`).
 
@@ -135,6 +136,9 @@ As built (stage 1):
   which), drops what points at the operator's project (`repo`, `notes`, `base`), and sets
   `worktrees`, `budget_usd` (the spend limit) and `test_cmd` (the case's check; the
   pool and Branches & PRs now start a test command that needs a shell through `sh -c`). `--tool` / `--tier` set its `providers` and `steward`.
+- Nobody watches the copy, so its pool runs **unchained** (`autonomy.FREE`), and the bare tool works as its
+  orks do: agy then gets `--dangerously-skip-permissions` beside `--sandbox`, because in `--print` it
+  denies every command it would ask about and ends its turn with no answer (`realm/harnesses.py` `free_args`).
 - It is done when its task is done or failed, or when the steward asks the operator (the bench says
   so and stops: nobody is there to answer), or at its spend limit or 45 minutes (*cut*).
 - Tokens are the orks' only: the pool does not count the steward's yet. Spend counts both.

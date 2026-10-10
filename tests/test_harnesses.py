@@ -30,6 +30,16 @@ def test_a_prompt_never_reads_as_a_flag(tool, tmp_path):
     assert h.interactive("-x") in (None, [*h.interactive(), *h.deploy_args, "Orders: -x"])
 
 
+def test_an_unchained_agy_asks_nothing_and_stays_in_its_sandbox(tmp_path):
+    # agy's --print denies every command it would ask about and ends its turn empty, so an ork that runs its
+    # tests first came back with nothing; unchained (autonomy.FREE) it skips the asking, never the sandbox.
+    h = harnesses.need("agy")
+    assert "--dangerously-skip-permissions" not in h.work("x", tmp_path)
+    free = h.work("x", tmp_path, free=True)
+    assert "--dangerously-skip-permissions" in free and "--sandbox" in free
+    assert harnesses.need("claude").work("x", tmp_path, free=True) == harnesses.need("claude").work("x", tmp_path)
+
+
 def test_hermes_reads_its_stream():
     out = _lines({"type": "system", "subtype": "init", "model": "m", "session_id": "20261007_120000_abcdef"},
                  {"type": "text", "text": "par"}, {"type": "text", "text": "tial"},
