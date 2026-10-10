@@ -58,7 +58,8 @@ window of labelled tiles, stood six times as tall: the owner's call, 2026-10-09)
 For you only frames its icons in gold. A placed ghost over another building turns red and builds nothing; once
 placed, the building stands up from its scaffolding in the ghost's box, at the ghost's corner, and stays there
 (a hut's spot no longer hangs on its size, js/town.js `free`; huts the person placed or stretched are held, the
-others make way). The Warchief's news is a bubble over the line, never in it, so the line never shifts; the line is
+others make way). The Warchief's news is a speech bubble over the line, never in it, so the line never shifts: in Camp the ork's pixel
+bubble of parchment, in Office a calm one, both from the line's left end with a tail down to his face, popping in; the line is
 640px wide at most.
 
 ## 3. Place first, then set up
