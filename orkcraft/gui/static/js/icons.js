@@ -25,6 +25,7 @@ const PATHS = {
   catapult: "M14.5 1.5 1.5 7l5 2.5 2.5 5zM14.5 1.5 6.5 9.5",                                        // send
   town_hall: "M2.5 4h7M12.5 4h1M2.5 12h1M6.5 12h7M9.5 2.5v3M5 10.5v3M2.5 8h4M9.5 8h4M6.5 6.5v3",      // sliders
   workshop: "M2 2.5h12v11H2zM4.5 6l2 2-2 2M8 10.5h3.5",                                              // terminal
+  lab: "M6 1.5h4M6.8 1.5v4.8L3 12.6a1.4 1.4 0 0 0 1.2 1.9h7.6a1.4 1.4 0 0 0 1.2-1.9L9.2 6.3V1.5M4.6 10h6.8",   // flask
   custom: "M8 1.5 14 4.5v7L8 14.5 2 11.5v-7zM2 4.5 8 7.5l6-3M8 7.5v7",                                // box
 };
 PATHS.loot_vault = PATHS.loot;
@@ -69,6 +70,7 @@ const FLAG_AT = {
   fields: [12, 3, 26], forest: [17, 0, 27], forge: [20, 0, 27], gramophone: [6, 14, 30], horn: [12, 11, 23],
   lake: [17, 0, 33], loot: [16, 0, 30], mill: [13, 0, 22], mine: [16, 3, 21], pit: [12, 9, 24], scrolls: [16, 0, 30],
   signpost: [11, 0, 24], town_hall: [19, 1, 31], war_drum: [16, 0, 25], watchtower: [12, 0, 33], workshop: [12, 0, 23],
+  lab: [9, 2, 25],
 };
 
 const FOOTING_ROWS = { 1: 2, 2: 4, 3: 6 };     // the footing's height in its pixels (2 screen px each), by level
