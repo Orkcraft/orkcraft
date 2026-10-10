@@ -167,7 +167,7 @@
 .gui-onb__ghost.is-raising .gui-onb__ghost-card { border-color: var(--frame-focus); opacity: 1; background: var(--panel); }
 /* A building raised by Build (js/onboarding.js Ghost `built`): under scaffolding at the size it will stand at — the
    sprite as a yard's (.9, yards.css), its name over it as the finished one wears it, on a plinth — so it never jumps. */
-.gui-onb__ghost.is-built { width: auto; margin-left: 0; align-items: flex-start; gap: 0; padding-top: 16px; }
+.gui-onb__ghost.is-built { box-sizing: border-box; width: auto; margin-left: 0; align-items: flex-start; gap: 0; padding-top: 16px; }
 .gui-onb__ghost.is-built .gui-onb__ghost-roof { min-height: 0; justify-content: flex-start; }
 .gui-onb__ghost.is-built :is(.gui-onb__ghost-plan, .gui-onb__ghost-rise) { width: auto; zoom: .9; }
 .gui-onb__ghost.is-built .gui-onb__scaffold { inset: -4px -6px 0; }

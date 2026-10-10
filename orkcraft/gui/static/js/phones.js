@@ -18,7 +18,8 @@ function Offer({ offer, left, onCancel }) {
   return html`<div class="gui-phones__offer">
     ${offer.qr
       ? html`<img class="gui-phones__qr" src=${offer.qr} width="240" height="240" alt=${say("QR code to pair a phone")} />`
-      : html`<code class="gui-phones__link">${offer.link}</code>`}
+      : html`<div><p class="ok-font-status ok-tone-wait">${say("No QR code: this install lacks segno. Run pip install segno and open the town again — or type this link on the phone:")}</p>
+          <code class="gui-phones__link">${offer.link}</code></div>`}
     <div class="gui-phones__how">
       <span class="ok-font-status">${say(`Scan it with the Orkcraft app on the phone. Good for ${left} s, once.`)}</span>
       <span class="ok-font-status ok-tone-muted">${say(`Address: ${offer.address}`)}</span>
@@ -90,7 +91,8 @@ export function PairQr({ pairing: { offer } }) {
   if (!offer) return null;
   return offer.qr
     ? html`<img class="gui-phones__qr gui-you__qr" src=${offer.qr} width="128" height="128" alt=${say("QR code to pair a phone")} />`
-    : html`<code class="gui-phones__link gui-you__qr">${offer.link}</code>`;
+    : html`<div class="gui-you__qr"><p class="ok-font-status ok-tone-wait">${say("No QR code: this install lacks segno. Run pip install segno and open the town again — or type this link on the phone:")}</p>
+      <code class="gui-phones__link">${offer.link}</code></div>`;
 }
 
 /** Under the head's name: Pair a phone, or while a code shows how to scan it, the address, the fingerprint and Cancel. */

@@ -124,10 +124,10 @@ def test_a_yard_shows_no_ork_of_its_own_and_a_hut_does(demo_page):
     assert hut.locator(".gui-hut__keeper").count() == 1
 
 
-def test_a_yard_is_fenced_and_the_ork_that_asks_waits_on_its_plinth(demo_page):
-    """docs/design/yards.md §3–§4 in Camp: a yard's name stands over its building, which stands on its title bar —
-    a picket fence; a hut says what its orks do over its roof; the ork that asks comes out onto its plinth by itself,
-    and a press on it opens its question."""
+def test_a_yard_is_fenced_and_one_that_asks_glows_and_opens_its_question(demo_page):
+    """docs/design/yards.md §3–§4, §8 in Camp: a yard's name stands over its building, which stands on its title bar —
+    a picket fence; a hut says what its orks do over its roof; a yard has no ork to come out: one that asks glows
+    yellow, and a press on it opens its question."""
     pg = demo_page
     _call(pg, "orkspace.select", {"id": "my_day"})
     calendar = pg.locator('.gui-hut[data-id="days"]')
@@ -140,9 +140,10 @@ def test_a_yard_is_fenced_and_the_ork_that_asks_waits_on_its_plinth(demo_page):
     assert calendar.locator(".gui-hut__doing").count() == 0               # a yard: nobody lives in it
 
     _call(pg, "orkspace.select", {"id": "agent_yard"})
-    caller = pg.locator('.gui-hut[data-id="outputs"] .ok-head .gui-out.is-asking')   # the Review gate's ork asks
-    caller.wait_for(state="visible", timeout=WAIT_MS)
-    caller.click()
+    gate = pg.locator('.gui-hut.is-alert[data-id="outputs"]')            # the Review gate asks
+    gate.wait_for(state="visible", timeout=WAIT_MS)
+    assert gate.locator(".gui-out").count() == 0                          # a yard: no ork comes out
+    gate.locator(".gui-hut__sprite").click()
     dialog = pg.locator(".ok-dialog", has_text="Awaiting an answer")
     dialog.wait_for(state="visible", timeout=WAIT_MS)
     assert "carts wait" in dialog.inner_text()
@@ -152,8 +153,8 @@ def test_a_yard_is_fenced_and_the_ork_that_asks_waits_on_its_plinth(demo_page):
 
 def test_a_selected_buildings_ork_walks_out_onto_the_plinth_and_its_bubble_rates_its_work(demo_page):
     """docs/design/yards.md §4, §7: the mouse over a building brings nobody out; selected, its ork walks out onto the
-    plinth's left end, beside the house, and its bubble holds 👎 and (a hut's) a gear, its settings; a 👎 asks what went
-    wrong; let go, it walks back in."""
+    plinth's left end, beside the house, and its bubble holds 👎 and a gear, its settings; a 👎 asks what went
+    wrong; let go, it walks back in. A yard has no ork: selected, nobody comes out (§8)."""
     pg = demo_page
     _call(pg, "orkspace.select", {"id": "my_day"})
     hut = pg.locator('.gui-hut[data-id="todo"]')
@@ -177,8 +178,9 @@ def test_a_selected_buildings_ork_walks_out_onto_the_plinth_and_its_bubble_rates
     hut.locator(".gui-out").wait_for(state="detached", timeout=WAIT_MS)
     days = pg.locator('.gui-hut[data-id="days"]')
     days.locator(".gui-hut__title").click()
-    days.locator(".gui-out__bubble").wait_for(state="visible", timeout=WAIT_MS)
-    assert days.locator(".gui-out__bubble button").count() == 1                    # a yard: 👎 alone, on the building
+    days.locator(".is-selected, .gui-hut__title").first.wait_for(state="visible", timeout=WAIT_MS)
+    pg.wait_for_timeout(400)
+    assert days.locator(".gui-out").count() == 0                                  # a yard: no ork lives there (§8)
 
 
 def test_the_road_gate_comes_where_the_mouse_nears_the_edge_and_the_corner_resizes(demo_page):

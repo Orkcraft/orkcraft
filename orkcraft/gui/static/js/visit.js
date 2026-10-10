@@ -58,12 +58,14 @@ function usePlace(want) {
 
 /** The ork outside its building, and its bubble. `selected`: its building is the one selected (js/hut.js). */
 export function Outside({ b, selected }) {
+  // a yard has no ork of its own and asks nothing an ork would: it only breaks, and breaking is fire (hut.js); nobody
+  // comes out of it (docs/design/yards.md §8)
   const o = b.yard ? null : lead(b);
   const asking = !!b.alert;
   const visiting = !!(b.yard && b.visit);
   const rates = !asking && (b.yard || !!o);
-  const place = usePlace(asking || visiting || (rates && selected));
-  if (place === "in" || (!o && !b.yard)) return null;
+  const place = usePlace(!b.yard && (asking || visiting || (rates && selected)));
+  if (b.yard || place === "in" || !o) return null;
   const who = o ? o.name : say(b.title);
   const stop = (e) => e.stopPropagation();
 
