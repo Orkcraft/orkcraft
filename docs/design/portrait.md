@@ -65,7 +65,7 @@ you, and whether it may disturb you.
 ## 1. The portrait
 
 ```
-┌[▣]┬ orkcraft ▾ · Stop all · Answers (2) ············ Spend · Context · Agents ┐
+┌[▣]┬ Menu ▾    · Stop all · Answers (2) ············ Spend · Context · Agents ┐
 │ II                                                                            │
 │                                                                               │
 ```
