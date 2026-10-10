@@ -114,7 +114,7 @@ class ReviewMixin:
             if not passed:
                 out.accepted, out.notes = False, f"the tests fail (`{cmd}`):\n\n```\n{tail.strip()}\n```"
                 return
-            tests = f"`{cmd}` passes"
+            tests = f"`{cmd}` passes: the barracks ran it on the branch itself, after the ork"
         extra, out.clashes, met = self._review_context(task, files, git, task.branch)
         if task.parent:                                   # a part: no pull request of its own
             if self.goal.sub_review:

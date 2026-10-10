@@ -191,7 +191,8 @@ the TUI opens as before.
 `theme.py`, `demo/screens.py` (the TUI's screenshots) and their tests, and Textual from the dependencies.
 `orkcraft` always opens the window; without `pywebview` the town opens in the browser. `orkcraft tui`
 only says the TUI was removed. `websockets` became a dependency of every install (the GUI's server);
-`pywebview`, `cryptography` and `segno` stay in `orkcraft[gui]`. `tests/test_architecture.py`
+`pywebview` and `cryptography` stay in `orkcraft[gui]`; `segno` (the pairing QR code, pure Python) became a
+dependency of every install (2026-10-10): without it a phone got only a link to type. `tests/test_architecture.py`
 `test_the_terminal_ui_stays_gone` keeps Textual and Rich out.
 
 ## 10. Words

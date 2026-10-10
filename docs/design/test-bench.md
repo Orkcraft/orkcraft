@@ -1,6 +1,6 @@
 # Design — the Test bench: one building on its own, measured
 
-Status: stages 1–7 built 2026-10-10 (runs for the Agent pool only); §9 says how it is built.
+Status: stages 1–9 built 2026-10-10 (runs for the Agent pool, External listeners, the Task board, the Calendar, Research and the Review board); §9 says how it is built.
 For the operator only: hidden behind a flag, maybe later for developers. GUI and CLI, no TUI
 ([calm-town.md](calm-town.md) §9).
 
@@ -13,7 +13,9 @@ For the operator only: hidden behind a flag, maybe later for developers. GUI and
 | 5 | UX: two reviewers read the building's code and flow and name where a person would stop | built (reading code; the browser walk with screenshots later) |
 | 6 | Product: the building's AHA moment, its script and its measure | built |
 | 7 | **Make tasks**: the ticked findings sent to the Agent pool picked, by a button, never by themselves | built |
-| 8 | runs for the other buildings: External listeners and Research first | |
+| 8 | runs for External listeners, the Task board and the Calendar (§3.5) | built |
+| 9 | runs for Research and the Review board (§3.5) | built |
+| 10 | runs for the other buildings | |
 
 ## 1. Why
 
@@ -72,6 +74,18 @@ A case is one JSON file: the project it starts from, the task, and how the resul
   case counts only after the operator has read it (`"reviewed": true`), so runs stay comparable:
   a case is never written again on each open.
 
+**The Agent pool's sets** (`realm/bench_sets.py`, with `realm/bench_cases.py`'s own four): fifteen cases, five
+of each `level`, the path the pool should take on it:
+
+| level | what it is | the path in the pool |
+|---|---|---|
+| `simple` | short, no list of steps (`plans.clearly_simple`) | one ork of the goal's tier at once; with a `test_cmd`, no steward call at all: its tests are its review |
+| `medium` | one ork's job that needs thought | the steward's sort, one ork, then the steward's review |
+| `parallel` | three independent parts, then one that needs them all | the steward's sort and plan, parts at once, the last one after them |
+
+Each has a known solution in `tests/bench_solutions/<case>/`: `tests/test_bench_sets.py` checks that the
+case's check fails as given and passes on it, and that its level is the path the rules give.
+
 ### 3.2 A run
 
 One run is one case, two sides, the same model:
@@ -92,6 +106,13 @@ of its plan, its reworks.
 
 The run is kept in `.orkcraft/bench/runs/<run>/report.json`, next to both copies, so the bench window
 shows the last runs and any two can be compared.
+
+**A series**: `orkcraft bench --case all`, or `--level simple|medium|parallel`, runs the cases one after
+another (each with its own spend limit) and ends with a summary: per case, how much more time and spend the
+building took than the bare tool, and its check against the bare tool's. A case is **within 10 %**
+(`bench.GAP_LIMIT`) when its check is no worse and both time and spend are at most 10 % over. The window's
+Case list offers the same series, and *The Agent pool against the bare AI tool* holds the latest run of each
+case so (`bench.against`).
 
 As built (stage 1):
 
@@ -117,6 +138,34 @@ inner agents. The events come from the bus (`core/bus.py`) and the building's de
 In the bench every ork's tier (Novice, Seasoned, Veteran) and AI tool can be changed, and the
 steward's and the orks' instructions edited, for the next run only. Two runs differing in one of
 them are put side by side.
+
+### 3.5 Buildings whose work is not code (stage 8)
+
+A case of such a building carries its `inputs` and, item by item, what each should come to; its kit
+(`realm/bench_kits.py`) says what the bare AI tool is asked and how its JSON reads, and one check judges
+both results. The building's side (`core/bench_kits.py`) opens a town on the copy, raises the building
+as it is in the operator's town (its sources, accounts and paths left out: a copy never listens to the
+operator's mail), gives the input the way its sources would, and reads the result back. Spend and tokens
+come from the copy's own ledger of model calls, so every call counts. The bare AI tool runs on the
+tier the building's own call ran on when no tier is picked, in a copy of the project it may read.
+
+| building | given | the building's way | checked |
+|---|---|---|---|
+| External listeners | an intent and a morning's messages (sender, subject, body, list headers) | each message as it arrives (`add_signal`), judged by its Listener with triage | kept or left out per message, importance and who answers where the case says |
+| Task board | long cards to name; to-dos to plan; wiki pages in the copy | `write` (its steward names the card), `add` to the person's to-dos, its context from the wiki, `plan` | 2–4 words and the key words for a title; 3–7 steps and the case's words for a plan (the wiki's facts: a policy number, who to call) |
+| Calendar | a week's meetings with attendees and invitations; how a brief is written | the calendar reads the copy's `.ics`; `meeting soon` goes along a road to an Agent pool raised with the operator's pool's settings; the brief comes back along `pool.done` | a brief per meeting, the sections asked for, the names and the invitation's points |
+
+| Research | a question whose answer is settled on the open web, the facts it should find, how many sites | `ask`; its plan, a web search by every tool at once, grouping and its code check, rounds; the case's `rounds`, the run's spend as its limit | each fact in a claim that has a source; sources on enough sites. The bare AI tool searches the web too, and its findings are read by the Mine's own parser |
+| Review board | a document with flaws planted in it and the roles to read it; or a request and the board's exits | `review`; each role in turn, then its steward; members and moderator on the run's AI tool and tier | the verdict; each planted flaw named in what the board said (never in the document); the exit it was sent down |
+
+Research needs the open web: it cannot read local files, so its cases ask about dates and numbers that do
+not move. With one web tool on, nothing can reach *confirmed* (two minds are needed), so its check asks
+for a sourced claim, not a confirmed one.
+
+Found and fixed on the way: Research ran its rounds of web searching even with fewer tools than a
+confirmation needs, spending its limit on what could never be confirmed; now it runs them only when it
+could. The calendar dropped an invitation's attendees and description, so a brief
+never knew who comes or what the agenda was (`sources/ics.py`, `daybook.invitation`).
 
 ## 4. UX (stage 5)
 
