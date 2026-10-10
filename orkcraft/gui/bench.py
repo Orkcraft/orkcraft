@@ -97,6 +97,7 @@ class Bench:
         spec = self.host.town.spec_of(bid) or {}
         t = catalog.TYPES.get(type_id)
         job = self.jobs.get(type_id)
+        done_runs = bench.runs(self.root, type_id)
         reviews = {}
         for tab in bench_review.TABS:
             kept = bench_review.load(self.root, type_id, tab)
@@ -118,8 +119,9 @@ class Bench:
             "orders_of": building_bench.POOLED.get(type_id, type_id) if type_id in ("barracks", *building_bench.POOLED) else "",
             "cases": [{**asdict(c), "own": (self.root / bench.BENCH / type_id / f"{c.id}.json").is_file()}
                       for c in bench.cases(self.root, type_id)],
-            "runs": [asdict(r) for r in bench.runs(self.root, type_id)[:12]],
+            "runs": [{**asdict(r), "copy": bench.analysis(r, lexicon.term(type_id))} for r in done_runs[:12]],
             "against": bench.against(self.root, type_id),
+            "against_copy": self._against_copy(type_id, done_runs),
             "levels": {lvl: sum(c.level == lvl and c.reviewed for c in bench.cases(self.root, type_id))
                        for lvl in bench.LEVELS},
             "gap_limit": bench.GAP_LIMIT,
@@ -131,6 +133,14 @@ class Bench:
             "pools": [{"id": b.id, "title": b.title} for b in self.host.town.scroll.buildings
                       if not b.demolished and self.host.type_of(b.id) == "barracks"],
         }
+
+    def _against_copy(self, type_id: str, kept: list) -> str:
+        """The latest run of each case side by side, as text to paste into an analysis."""
+        latest: dict = {}
+        for r in kept:                                     # newest first
+            if r.building is not None and r.bare is not None and r.case not in latest:
+                latest[r.case] = r
+        return bench.summary(list(latest.values()), lexicon.term(type_id)) if latest else ""
 
     def _orders(self, bid: str, type_id: str) -> str:
         """The instructions a run may change: the Agent pool's own; for a building that hands its work to one,

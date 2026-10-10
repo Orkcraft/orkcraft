@@ -201,6 +201,16 @@ def test_a_type_the_bench_cannot_run_yet_is_said(host):
         host.command("bench.run", {"id": bid, "case": "slugify"})
 
 
+def test_the_window_gives_each_run_and_the_summary_as_text_to_copy(host):
+    bid = _raised(host, "barracks", worktrees=False)
+    side = bench.Side("building", seconds=10, cost=0.2, passed=True)
+    bench.Report("r9", "barracks", "slugify", at="2026-10-10T12:00:00", building=side,
+                 bare=bench.Side("bare", seconds=8, cost=0.1, passed=False)).save(host.town.repo_root / bench.RUNS / "r9")
+    s = host.command("bench.open", {"id": bid})
+    assert s["runs"][0]["copy"].startswith("Test bench: slugify") and "## Bare AI tool" in s["runs"][0]["copy"]
+    assert "slugify" in s["against_copy"] and "against the bare AI tool" in s["against_copy"]
+
+
 def test_a_kept_run_reads_back_with_its_steps(tmp_path):
     side = bench.Side("building", steps=[{"t": 1.0, "who": "Grub", "action": "hire", "why": "first"}])
     bench.Report("r1", "barracks", "slugify", building=side, orders_changed=True).save(tmp_path / bench.RUNS / "r1")

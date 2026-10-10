@@ -158,6 +158,13 @@ tier the building's own call ran on when no tier is picked, in a copy of the pro
 | Research | a question whose answer is settled on the open web, the facts it should find, how many sites | `ask`; its plan, a web search by every tool at once, grouping and its code check, rounds; the case's `rounds`, the run's spend as its limit | each fact in a claim that has a source; sources on enough sites. The bare AI tool searches the web too, and its findings are read by the Mine's own parser |
 | Review board | a document with flaws planted in it and the roles to read it; or a request and the board's exits | `review`; each role in turn, then its steward; members and moderator on the run's AI tool and tier | the verdict; each planted flaw named in what the board said (never in the document); the exit it was sent down |
 
+Their cases come in the Agent pool's levels (`realm/bench_kit_cases.py`): **simple** — a few clear
+items; **medium** — items that take judgement (what only looks like what is wanted, a wiki to use, an
+invitation to read, a to-do in Russian, an email the plan must bring back as it was); **parallel** — many
+at once (a burst of 14 messages, a board of six cards and two plans, a day of four meetings). Every one
+is checked against an ideal answer built from its own expectations, so a case never asks what its
+check cannot see.
+
 Research needs the open web: it cannot read local files, so its cases ask about dates and numbers that do
 not move. With one web tool on, nothing can reach *confirmed* (two minds are needed), so its check asks
 for a sourced claim, not a confirmed one.
@@ -236,5 +243,9 @@ Agents are started through `jobs.run_work`, so Stop all stops them (`realm/halt.
   Orkcraft version: a newer version marks it to review again.
 - **On open.** A building whose type has no review kept gets all seven reviewers at once, the first
   time its bench opens (what the operator asked for); after that only **Review again** starts them.
+- **Copying for an analysis.** A run's terminal keeps to its last four lines; **Copy** takes every line it
+  wrote. **Copy for analysis** on a run gives the whole of it as text (`bench.analysis`): the table, then
+  each side's model, every check, how it went, its decisions on the clock, its check's last lines and its
+  report. On the summary of cases it gives the building against the bare tool, case by case.
 - **Make tasks.** The ticked findings of any tab go to the Agent pool picked, one task each, with the
   reviewer, the tab, the finding, where, its severity and Orkcraft's version.

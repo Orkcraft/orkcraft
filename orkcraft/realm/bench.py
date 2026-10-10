@@ -320,6 +320,35 @@ def render(r: Report, building_word: str = "Building") -> str:
     return "\n".join(out)
 
 
+def analysis(r: Report, building_word: str = "Building") -> str:
+    """Everything one run says, as text to paste into an analysis: the table, then each side in full — the model it
+    ran on, every check, how it went, its decisions on the clock, its check's last lines and its report."""
+    names = {"building": building_word, "bare": "Bare AI tool"}
+    out = [render(r, building_word), "", f"Run {r.id} · {r.at} · case {r.case}" + (f" ({r.type})" if r.type else "")
+           + (" · instructions changed for this run" if r.orders_changed else "")]
+    for s in (r.building, r.bare):
+        if s is None:
+            continue
+        name = names.get(s.name, s.name)
+        out += ["", f"## {name}", f"model: {s.model or 'its default'} · {s.seconds:.0f} s · ${s.cost:.4f} · "
+                                   f"{s.tokens or 'no'} tokens · {verdict(s)}"]
+        if s.error:
+            out += [f"error: {s.error}"]
+        if s.checks:
+            out += ["", "checks:"] + [f"  {'✓' if x.get('ok') else '✗'} {x['name']}" + (f" — {x['detail']}" if x.get("detail") else "")
+                                      for x in s.checks]
+        if s.how:
+            out += ["", "how it went:"] + [f"  {h}" for h in s.how]
+        if s.steps:
+            out += ["", "decisions on the clock:"] + [f"  +{st['t']:.0f}s {st['who']}: {st['action']} — {st['why']}"
+                                                      for st in s.steps]
+        if s.check_tail:
+            out += ["", "the check's last lines:", s.check_tail]
+        if s.text:
+            out += ["", "its report:", s.text]
+    return "\n".join(out)
+
+
 GAP_LIMIT = 0.10                    # how far the building may be from the bare tool, on time and on spend
 
 

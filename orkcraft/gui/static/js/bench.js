@@ -5,7 +5,7 @@
 import { signal } from "@preact/signals";
 import { useEffect, useLayoutEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { command, say, town } from "./link.js";
+import { command, say, toast, town } from "./link.js";
 
 export const benchOpen = signal(null);          // the building whose bench is open
 
@@ -18,6 +18,27 @@ export function benchClick(id) {
   const now = Date.now();
   clicks = { id, at: [...(clicks.id === id ? clicks.at : []), now].filter((t) => now - t < WITHIN_MS) };
   if (clicks.at.length >= CLICKS) { clicks = { id: null, at: [] }; benchOpen.value = id; }
+}
+
+const LOG_LINES = 4;                              // the run's terminal shows its last lines; Copy takes them all
+
+/** Text onto the clipboard for an analysis elsewhere: the clipboard when the page may write it, else a selection. */
+export function copyText(text, what = "Copied") {
+  const done = () => toast(what);
+  const fallback = () => {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand && document.execCommand("copy");
+    area.remove();
+    ok ? done() : toast("Could not copy: select the text and copy it", "warning");
+  };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fallback);
+  else fallback();
 }
 
 const TABS = [["tech", "Tech"], ["ux", "UX"], ["product", "Product"]];
@@ -137,10 +158,14 @@ function JobLog({ s, call }) {
     <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">
       ${on && html`<span class="gui-bench__spin" aria-hidden="true"></span>`}
       ${j.what === "case" ? "Writing a case" : `Run: ${j.label}`} · ${clock(j.seconds)}</h4>
-      ${on && html`<button class="ok-btn" onClick=${() => call("bench.stop")}>Stop</button>`}</div>
+      <span class="gui-bench__acts">
+        ${j.lines.length > 0 && html`<button class="ok-btn" title=${`Copy all ${j.lines.length} lines`}
+          onClick=${() => copyText([`${j.what === "case" ? "Writing a case" : `Run: ${j.label}`} · ${clock(j.seconds)}`, ...(j.error ? [`error: ${j.error}`] : []), ...j.lines].join("\n"),
+                                   `Copied ${many(j.lines.length, "line")}`)}>Copy</button>`}
+        ${on && html`<button class="ok-btn" onClick=${() => call("bench.stop")}>Stop</button>`}</span></div>
     ${j.error && html`<p class="ok-font-status ok-tone-error">${j.error}</p>`}
     ${j.done && !j.error && j.what === "case" && html`<p class="ok-font-status">The case <b>${j.result}</b> is written. Read it below before it counts.</p>`}
-    ${j.lines.length > 0 && html`<pre class="gui-bench__log">${j.lines.slice(-14).join("\n")}</pre>`}
+    ${j.lines.length > 0 && html`<pre class="gui-bench__log gui-bench__term" title=${j.lines.length > LOG_LINES ? `${j.lines.length - LOG_LINES} earlier lines: Copy takes them all` : ""}>${j.lines.slice(-LOG_LINES).join("\n")}</pre>`}
   </section>`;
 }
 
@@ -150,7 +175,8 @@ function Against({ s }) {
   const ok = s.against.filter((r) => r.within).length;
   const quality = (r) => (r.quality > 0 ? "worse" : r.quality < 0 ? "better" : "same");
   return html`<section class="gui-bench__section">
-    <h4 class="ok-font-label gui-bench__h">${say(`The ${s.word} against the bare AI tool`)}</h4>
+    <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">${say(`The ${s.word} against the bare AI tool`)}</h4>
+      ${s.against_copy && html`<button class="ok-btn" onClick=${() => copyText(s.against_copy, "Copied the summary")}>Copy for analysis</button>`}</div>
     <p class="ok-font-status ok-tone-muted">${say(`The latest run of each case. Time and spend: how much more the ${s.word} took. Within ${limit}%: no worse on the check, and at most ${limit}% more time and spend. ${ok} of ${s.against.length} are.`)}</p>
     <table class="gui-bench__table gui-bench__against">
       <thead><tr><th>Case</th><th>Level</th><th>Time</th><th>Spend</th><th>Check</th><th>${`Within ${limit}%`}</th></tr></thead>
@@ -182,8 +208,11 @@ function Runs({ s }) {
   ];
   return html`<section class="gui-bench__section">
     <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">Runs</h4>
-      <select class="ok-input gui-bench__pick" value=${pick} onChange=${(e) => setPick(+e.target.value)}>
-        ${s.runs.map((x, i) => html`<option key=${x.id} value=${i}>${x.at.replace("T", " ")} · ${x.case}</option>`)}</select></div>
+      <span class="gui-bench__acts">
+        <button class="ok-btn" title="The whole run as text: both sides, every check, how it went, the reports"
+          onClick=${() => copyText(r.copy, "Copied the run")}>Copy for analysis</button>
+        <select class="ok-input gui-bench__pick" value=${pick} onChange=${(e) => setPick(+e.target.value)}>
+          ${s.runs.map((x, i) => html`<option key=${x.id} value=${i}>${x.at.replace("T", " ")} · ${x.case}</option>`)}</select></span></div>
     <p class="ok-font-status ok-tone-muted">${r.case} · ${r.tool === "main" ? "main tool" : r.tool}${tier && r.tier ? ` · ${tier}` : ""}${r.orders_changed ? " · instructions changed for this run" : ""}</p>
     <table class="gui-bench__table">
       <thead><tr><th></th>${sides.map((x) => html`<th key=${x.name}>${name(x)}</th>`)}</tr></thead>

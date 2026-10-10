@@ -10,6 +10,10 @@
 .gui-bench__grow { flex: 1; min-width: 200px; }
 .gui-bench__pick { width: auto; max-width: 320px; }
 .gui-bench__form { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: var(--space-2) var(--space-3); }
+/* The run's terminal: its last four lines, the newest at the bottom; Copy takes them all. */
+.gui-bench__term { max-height: none; height: calc(4 * 17px); overflow: hidden; white-space: pre;
+  padding-top: var(--space-1); padding-bottom: var(--space-1); box-sizing: content-box; }
+.gui-bench__acts { display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
 .gui-bench__more > summary { cursor: pointer; padding: var(--space-1) 0; }
 .gui-bench__log { margin: 0; max-height: 240px; overflow: auto; padding: var(--space-2) var(--space-3); white-space: pre-wrap; word-break: break-word;
   font: 12px/17px var(--font-mono); color: var(--ink); background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
