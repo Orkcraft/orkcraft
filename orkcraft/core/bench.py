@@ -19,9 +19,13 @@ from typing import Callable
 
 from orkcraft.core import buildings
 from orkcraft.core.town import Town
-from orkcraft.realm import bench, checkpoint, masonry
+from orkcraft.core import bench_kits
+from orkcraft.realm import bench, bench_kits as kits, checkpoint, masonry
 
-TYPES = ("barracks",)                    # what the bench runs so far
+TYPES = ("barracks", "watchtower", "fields", "war_drum")   # what the bench runs so far
+# A building that hands its work to an Agent pool: its instructions are the pool's (the Calendar's briefs).
+POOLED = {"war_drum": "barracks"}
+KIT_PROJECT = {"README.md": "# Test bench\n\nA copy the Test bench made for one run.\n"}
 TIMEOUT_S = 45 * 60                      # the building's side gives up after this
 POLL_S = 1.0
 # The bench's own say over a raised building: its work stays in the copy, the case's check is its tests,
@@ -66,8 +70,7 @@ def run_building(case: bench.Case, project: Path, base: str, template: dict, too
                  say: Callable[[str], None] = lambda _line: None) -> bench.Side:
     """The building on the case, in a town of its own on `project`; then its result's check in `check_dir`.
     `say` hears each of its decisions as it is taken."""
-    checkpoint.ensure(project)
-    town = Town(project, auto_commit=False, layout_file=project / ".orkcraft.json")
+    town = bench_kits.open_town(project)
     side, start, started = bench.Side("building"), time.monotonic(), dt.datetime.now()
     try:
         spec = buildings.type_spec(town, case.type)
@@ -191,6 +194,9 @@ def run(root: Path, case: bench.Case, tool: str = "main", tier: str = "", buildi
     report = bench.Report(id=folder.name, type=case.type, case=case.id, tool=tool, tier=tier,
                           at=now.isoformat(timespec="seconds"), orders_changed=orders is not None)
     template = template_of(root, case.type, building_id)
+    if case.type != "barracks":
+        return _run_kit(root, case, folder, report, template, tool, tier, max_spend, sides, say, cancel, bare_runner,
+                        orders)
     if orders is not None:
         template["orders"] = orders
     if "building" in sides:
@@ -205,5 +211,29 @@ def run(root: Path, case: bench.Case, tool: str = "main", tier: str = "", buildi
         project = folder / "bare"
         bench.make_project(case, root, project)
         report.bare = bench.bare(case, project, tool, tier, cancel, runner=bare_runner)
+    report.save(folder)
+    return report, folder
+
+
+def _run_kit(root: Path, case: bench.Case, folder: Path, report: bench.Report, template: dict, tool: str, tier: str,
+             max_spend: float, sides: tuple[str, ...], say, cancel, bare_runner, orders) -> tuple[bench.Report, Path]:
+    """A building whose work is not code (realm/bench_kits.py): its input given, its result read and checked; the
+    bare AI tool gets the same input and, when no tier is picked, the tier the building's own call ran on."""
+    if not case.files:
+        case.files = dict(KIT_PROJECT)
+    if "building" in sides:
+        say("the building works on the case…")
+        project = folder / "building"
+        bench.make_project(case, root, project)
+        ctx = bench_kits.Ctx(case, project, template, tool, tier, max_spend, cancel=cancel, say=say, orders=orders,
+                             pool_template=template_of(root, POOLED[case.type]) if case.type in POOLED else {})
+        report.building = bench_kits.RUNS[case.type](ctx)
+        report.save(folder)
+    if "bare" in sides and not (cancel is not None and cancel.is_set()):
+        on = tier or (report.building.model if report.building else "")
+        say(f"the bare AI tool works on the case{f' ({on})' if on else ''}…")
+        project = folder / "bare"
+        bench.make_project(case, root, project)
+        report.bare = kits.bare(case, project, tool, on, cancel, runner=bare_runner)
     report.save(folder)
     return report, folder

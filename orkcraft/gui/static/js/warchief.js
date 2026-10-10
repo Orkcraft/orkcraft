@@ -377,9 +377,8 @@ function Thread({ data }) {
   </ul>`;
 }
 
-/** What wants a decision first, while the line is left alone: an ork's question, else the spend at its
- *  limit. Always mounted: a part before the field that comes and goes would move the field, and a moved
- *  field loses its focus. */
+/** What wants a decision first, while the line is left alone: an ork's question, else the news, else the spend at its
+ *  limit — a bubble over the line (layout.css), never a part of it: the line's buttons and field never move. */
 function Speaks({ hidden }) {
   const t = town.value;
   const a = t.alerts[0];
@@ -607,6 +606,7 @@ export function WarchiefLine() {
         ${said && html`<p class="ok-font-status ok-tone-wait gui-warchief__said">${said}</p>`}
         ${focused && html`<${Over} text=${l.text} about=${[...l.about, ...(auto ? [auto.id] : [])]} onPick=${pick} />`}
       </div></div></div>` : null}
+    <${Speaks} hidden=${!!card || buildOn || focused || thread || !!said || !!setting || !!l.text || chips.length > 0} />
     <div key="bar" class="gui-warchief__bar">
       ${face}
       ${card && html`<span class="gui-warchief__who ok-font-status"
@@ -615,7 +615,6 @@ export function WarchiefLine() {
         <button class="gui-link gui-warchief__back" title=${say(`The ${name} again (${card.title} stays selected)`)}
           aria-label=${say(`The ${name} again`)} onMouseDown=${(e) => e.preventDefault()}
           onClick=${() => { givenBack.value = card.id; }}>✕</button></span>`}
-      <${Speaks} hidden=${!!card || buildOn || focused || !!l.text || chips.length > 0} />
       ${chips.map((x) => html`<${Chip} key=${x.id} b=${x} onDrop=${() => { line.value = { ...l, about: l.about.filter((id) => id !== x.id) }; }} />`)}
       <span class="gui-warchief__buttons" onMouseDown=${(e) => e.preventDefault()}>
         ${card && opened.value.active !== card.id && html`<button class="ok-btn primary gui-warchief__open"

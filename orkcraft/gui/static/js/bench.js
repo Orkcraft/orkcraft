@@ -80,7 +80,7 @@ export function Bench() {
 function Tech({ s, call, picks, flip }) {
   return html`
     ${s.can_run ? html`<${RunForm} s=${s} call=${call} />`
-      : html`<p class="ok-font-status ok-tone-muted">${say(`Runs come to the ${s.word} later: the Test bench runs the Agent pool so far. Its reviews below work now.`)}</p>`}
+      : html`<p class="ok-font-status ok-tone-muted">${say(`Runs come to the ${s.word} later: the Test bench runs ${s.runs_for} so far. Its reviews below work now.`)}</p>`}
     ${s.job && html`<${JobLog} s=${s} call=${call} />`}
     ${s.against.length > 0 && html`<${Against} s=${s} />`}
     ${s.runs.length > 0 && html`<${Runs} s=${s} />`}
@@ -95,10 +95,11 @@ function RunForm({ s, call }) {
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const on = s.job && !s.job.done;
   const series = f.case === "all" || f.case.startsWith("level:");
+  const pooled = s.orders_of && s.orders_of !== s.type;
   const field = (label, control) => html`<label class="gui-field"><span class="ok-font-label">${label}</span>${control}</label>`;
   return html`<section class="gui-bench__section">
     <h4 class="ok-font-label gui-bench__h">Run a case</h4>
-    <p class="ok-font-status ok-tone-muted">${say(`The same task goes to the ${s.word} and to the bare AI tool on the same model, each in a copy of the project with no remote: nothing is pushed and your town is not changed.`)}</p>
+    <p class="ok-font-status ok-tone-muted">${say(`The same case goes to the ${s.word} and to the bare AI tool on the same model, each in a copy of the project with no remote: nothing is pushed and your town is not changed.`)}</p>
     <div class="gui-bench__form">
       ${field("Case", html`<select class="ok-input" value=${f.case} onChange=${set("case")}>
         ${ready.length > 1 && html`<optgroup label="One after another">
@@ -108,18 +109,20 @@ function RunForm({ s, call }) {
         <optgroup label="One case">${ready.map((c) => html`<option key=${c.id} value=${c.id}>${c.title}${c.level ? ` · ${c.level}` : ""}</option>`)}</optgroup></select>`)}
       ${field("AI tool", html`<select class="ok-input" value=${f.tool} onChange=${set("tool")}>
         ${s.tools.map((t) => html`<option key=${t.id} value=${t.id}>${t.title}</option>`)}</select>`)}
-      ${field("Orks' tier", html`<select class="ok-input" value=${f.tier} onChange=${set("tier")}>
+      ${field(s.type === "barracks" || pooled ? "Orks' tier" : "Tier", html`<select class="ok-input" value=${f.tier} onChange=${set("tier")}>
         ${s.tiers.map((t) => html`<option key=${t.id} value=${t.id}>${t.title}</option>`)}</select>`)}
       ${field("Sides", html`<select class="ok-input" value=${f.only} onChange=${set("only")}>
         ${SIDES.map(([v, l]) => html`<option key=${v} value=${v}>${say(l)}</option>`)}</select>`)}
       ${field("Spend limit, $", html`<input class="ok-input" type="number" min="0.1" max="50" step="0.5" value=${f.max_spend}
         onInput=${set("max_spend")} />`)}
     </div>
-    <details class="gui-bench__more"><summary class="ok-font-label">Instructions for this run${f.orders !== s.orders ? " (changed)" : ""}</summary>
-      <p class="ok-font-status ok-tone-muted">${say(`What the ${s.word}'s steward keeps as its rules. A change here is for this run only; the building keeps its own.`)}</p>
+    ${s.orders_of && html`<details class="gui-bench__more"><summary class="ok-font-label">${pooled ? "The Agent pool's instructions for this run" : "Instructions for this run"}${f.orders !== s.orders ? " (changed)" : ""}</summary>
+      <p class="ok-font-status ok-tone-muted">${pooled
+        ? say(`The ${s.word} hands its work to an Agent pool. Empty: the case's own instructions; what you write here is for this run only.`)
+        : say(`What the ${s.word}'s steward keeps as its rules. A change here is for this run only; the building keeps its own.`)}</p>
       <textarea class="ok-input gui-textarea" rows="6" value=${f.orders} onInput=${set("orders")}></textarea>
-      ${f.orders !== s.orders && html`<button class="ok-btn" onClick=${() => setF({ ...f, orders: s.orders })}>Back to the building's own</button>`}
-    </details>
+      ${f.orders !== s.orders && html`<button class="ok-btn" onClick=${() => setF({ ...f, orders: s.orders })}>${pooled ? "Back to the case's own" : "Back to the building's own"}</button>`}
+    </details>`}
     <div class="gui-bench__row">
       <button class="ok-btn primary" disabled=${on || !f.case} onClick=${() => call("bench.run", f)}>Run</button>
       <span class="ok-font-status ok-tone-muted">${say(`It runs AI tools: the building's side stops at ${money(+f.max_spend)}${series ? " for each case" : ""}; the bare AI tool's run is one call${series ? " a case" : ""}.`)}</span>
@@ -171,8 +174,11 @@ function Runs({ s }) {
     ["Spend", (x) => money(x.cost)],
     ["Tokens", (x) => (x.tokens ? x.tokens.toLocaleString() : "not reported")],
     ["Check", (x) => html`<span class=${cls("gui-bench__verdict", { "is-ok": x.passed === true && !x.error, "is-bad": x.passed === false || !!x.error })}>${verdict(x)}</span>`],
-    ["Change", (x) => `${many(x.files.length, "file")}, ${many(x.lines, "line")}`],
-    ["Orks", (x) => (x.name === "building" ? String(x.orks) : "one AI tool")],
+    ...(sides.some((x) => x.checks && x.checks.length)
+      ? [["Checks", (x) => (x.checks && x.checks.length ? `${x.checks.filter((c) => c.ok).length} of ${x.checks.length}` : "—")],
+         ["Model", (x) => (x.model ? (s.tiers.find((t) => t.id === x.model) || {}).title || x.model : "its default")]]
+      : [["Change", (x) => `${many(x.files.length, "file")}, ${many(x.lines, "line")}`]]),
+    ...(sides.some((x) => x.orks) ? [["Orks", (x) => (x.name === "building" ? String(x.orks) : "one AI tool")]] : []),
   ];
   return html`<section class="gui-bench__section">
     <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">Runs</h4>
@@ -183,10 +189,16 @@ function Runs({ s }) {
       <thead><tr><th></th>${sides.map((x) => html`<th key=${x.name}>${name(x)}</th>`)}</tr></thead>
       <tbody>${rows.map(([label, cell]) => html`<tr key=${label}><th>${label}</th>${sides.map((x) => html`<td key=${x.name}>${cell(x)}</td>`)}</tr>`)}</tbody>
     </table>
+    ${sides.filter((x) => x.checks && x.checks.some((c) => !c.ok)).map((x) => html`<details key=${`m-${x.name}`} class="gui-bench__more" open>
+      <summary class="ok-font-label">${name(x)} missed ${x.checks.filter((c) => !c.ok).length}</summary>
+      <ul class="gui-bench__missed">${x.checks.filter((c) => !c.ok).map((c, i) => html`<li key=${i}><b>${c.name}</b>${c.detail ? html` <span class="ok-tone-muted">— ${c.detail}</span>` : ""}</li>`)}</ul>
+    </details>`)}
     ${sides.filter((x) => x.error || (x.passed === false && x.check_tail)).map((x) => html`<details key=${x.name} class="gui-bench__more">
       <summary class="ok-font-label">${name(x)}: ${x.error ? "why it did not finish" : "the check's last lines"}</summary>
       <pre class="gui-bench__log">${x.error || x.check_tail}</pre></details>`)}
     ${r.building && r.building.steps && r.building.steps.length > 0 && html`<${Timeline} side=${r.building} />`}
+    ${r.building && !(r.building.steps && r.building.steps.length) && r.building.how && r.building.how.length > 0 && html`<details class="gui-bench__more" open>
+      <summary class="ok-font-label">Inside the run</summary><pre class="gui-bench__log">${r.building.how.join("\n")}</pre></details>`}
     ${sides.filter((x) => x.text).map((x) => html`<details key=${x.name} class="gui-bench__more">
       <summary class="ok-font-label">${name(x)}: its report</summary><pre class="gui-bench__log">${x.text}</pre></details>`)}
     ${sides.filter((x) => x.where).map((x) => html`<p key=${x.name} class="ok-font-status ok-tone-muted">${name(x)}'s result: <code>${x.where}</code></p>`)}
@@ -218,6 +230,12 @@ function Timeline({ side }) {
   </div>`;
 }
 
+/** What a case gives a building that is not about code, in a line: "8 messages · intent: …". */
+function given(inputs) {
+  return Object.entries(inputs).map(([k, v]) => (Array.isArray(v) ? (k === "expect_headings" ? `sections: ${v.join(", ")}` : many(v.length, k.replace(/s$/, "")))
+    : typeof v === "string" ? `${k}: ${v.length > 120 ? `${v.slice(0, 120)}…` : v}` : k)).join(" · ");
+}
+
 function Cases({ s, call }) {
   const [brief, setBrief] = useState("");
   const on = s.job && !s.job.done;
@@ -227,9 +245,11 @@ function Cases({ s, call }) {
       ${s.cases.map((c) => html`<li key=${c.id} class=${cls("gui-bench__case", { "is-unread": !c.reviewed })}>
         <details><summary><b>${c.title}</b> <span class="ok-tone-muted">${c.id}${c.own ? "" : " · shipped"}</span>
           ${!c.reviewed && html` <span class="ok-word gui-bench__badge">not read yet</span>`}</summary>
-          <p class="ok-font-status">${c.task}</p>
+          ${c.task && html`<p class="ok-font-status">${c.task}</p>`}
+          ${Object.keys(c.inputs || {}).length > 0 && html`<p class="ok-font-status">${given(c.inputs)}</p>`}
           ${c.expect && html`<p class="ok-font-status ok-tone-muted">A good result: ${c.expect}</p>`}
-          <p class="ok-font-status">Check: <code>${c.check || "none"}</code></p>
+          ${c.check ? html`<p class="ok-font-status">Check: <code>${c.check}</code></p>`
+            : Object.keys(c.inputs || {}).length > 0 && html`<p class="ok-font-status ok-tone-muted">Checked in code, item by item, the same way on both sides.</p>`}
           ${Object.keys(c.files).length > 0 && html`<p class="ok-font-status ok-tone-muted">Its project: ${Object.keys(c.files).join(", ")}</p>`}
           ${!c.reviewed && html`<button class="ok-btn" onClick=${() => call("bench.case.read", { case: c.id })}>I read it: it counts</button>`}
         </details></li>`)}

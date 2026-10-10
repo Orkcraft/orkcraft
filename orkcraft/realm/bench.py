@@ -46,6 +46,7 @@ class Case:
     expect: str = ""                                       # what a good result has, in words (for a judge)
     reviewed: bool = True                                  # an agent's case counts once the operator read it
     level: str = ""                                        # simple | medium | parallel: the path it should take
+    inputs: dict = field(default_factory=dict)             # what a building that is not about code is given
 
     @classmethod
     def of(cls, data: dict, type_id: str = "") -> Case:
@@ -55,7 +56,8 @@ class Case:
                    task=str(data.get("task") or ""),
                    files={str(k): str(v) for k, v in files.items()} if isinstance(files, dict) else {},
                    check=str(data.get("check") or ""), expect=str(data.get("expect") or ""),
-                   reviewed=data.get("reviewed", True) is not False, level=str(data.get("level") or ""))
+                   reviewed=data.get("reviewed", True) is not False, level=str(data.get("level") or ""),
+                   inputs=dict(data["inputs"]) if isinstance(data.get("inputs"), dict) else {})
 
 
 def slug(text: str) -> str:
@@ -75,7 +77,7 @@ def cases(root: Path, type_id: str) -> list[Case]:
         if isinstance(data, dict):
             c = Case.of({"id": path.stem, **data}, type_id)
             found[c.id] = c
-    return [c for c in found.values() if c.task]
+    return [c for c in found.values() if c.task or c.inputs]
 
 
 def case(root: Path, type_id: str, case_id: str) -> Case | None:
@@ -205,6 +207,9 @@ class Side:
     orks: int = 0
     where: str = ""                    # the tree its result is in
     steps: list[dict] = field(default_factory=list)   # its decisions on the run's clock: {t, who, action, why}
+    checks: list[dict] = field(default_factory=list)  # a kit's checks (realm/bench_kits.py): {name, ok, detail}
+    result: dict = field(default_factory=dict)        # what it made, as its kit reads it
+    model: str = ""                                    # the tier or model it ran on, when the bench knows it
 
 
 def bare(c: Case, workdir: Path, tool: str = "main", tier: str = "", cancel: threading.Event | None = None,
@@ -277,6 +282,9 @@ def runs(root: Path, type_id: str = "") -> list[Report]:
 def verdict(s: Side) -> str:
     if s.error:
         return "did not finish"
+    if s.checks:
+        ok = sum(1 for x in s.checks if x.get("ok"))
+        return f"{'passed' if s.passed else 'failed'}, {ok} of {len(s.checks)} checks"
     return {True: "passed", False: "failed", None: "no check"}[s.passed]
 
 
@@ -300,6 +308,10 @@ def render(r: Report, building_word: str = "Building") -> str:
             out += ["", f"{names.get(s.name, s.name)} did not finish: {s.error}"]
         if s.passed is False and s.check_tail:
             out += ["", f"{names.get(s.name, s.name)}'s check, last lines:", s.check_tail[-600:]]
+        missed = [x for x in s.checks if not x.get("ok")]
+        if missed:
+            out += ["", f"{names.get(s.name, s.name)} missed:"] + [f"  ✗ {x['name']}: {x.get('detail', '')}"[:220]
+                                                                  for x in missed]
     if r.building and r.building.how:
         out += ["", f"How the {building_word} went ({r.building.orks} ork{'' if r.building.orks == 1 else 's'}):"] + [f"  {h}" for h in r.building.how]
     for s in sides:

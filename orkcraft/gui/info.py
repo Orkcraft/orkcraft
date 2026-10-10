@@ -20,7 +20,7 @@ from orkcraft.core import buildings as core_buildings
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.gui import views
-from orkcraft.realm import (catalog, checkpoint, chronicles, feedback, growth, inventory, modes, pipes, roads, script_first,
+from orkcraft.realm import (catalog, checkpoint, chronicles, feedback, growth, inventory, modes, ork_roles, pipes, roads, script_first,
                             steward, tiers, unit_info)
 from orkcraft.realm.orcs import RESIDENT, WORKER, Orc
 
@@ -278,6 +278,7 @@ def building(town: Town, muster: Muster, building_id: str) -> dict[str, Any] | N
         "others": _others(town, muster, building_id),
         "rules": _rules(town, building_id),
         "steward": _steward(town, muster, building_id),
+        "ork_why": ork_roles.why(catalog.type_of(spec).id if spec else "", bool(code and code["on"])),
         "script_first": code,
         "quick": [] if getattr(views.of(catalog.type_of(spec).id if spec else ""), "OWN_QUICK", False) else
                  [{"id": a.id, "label": a.label, "glyph": a.glyph} for a in catalog.quick_actions_of(spec)],
