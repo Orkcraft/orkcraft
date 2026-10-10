@@ -166,3 +166,48 @@ Every case of the three levels passes on agy, on both sides. Within 10 % on time
 of 5 (series ran before tokens were counted: by time 3 of 5), medium 2 of 5, parallel 2 of 5. The rest
 is within the run-to-run spread of one agy session (slugify: 255 s, then 129 s); deciding below that
 wants several runs per case (`--times`, still to come).
+
+## 2026-10-10 — External listeners (watchtower) on agy
+
+Series 1 (20261010-152…):
+
+| case | building | bare |
+|---|---|---|
+| customer-orders | passed 4/4, 185 s, 67k tokens | passed 4/4, 38 s, 6k |
+| feedback-inbox | **did not finish**: the judge timed out (240 s), all mail through unchecked | passed 9/9, 458 s |
+| on-call | **did not finish**: the same timeout | failed 0/6: an empty answer (agy, see below) |
+| sales-leads | passed 5/5, 295 s, 63k | passed 5/5, 77 s, 11k |
+| key-clients-burst | **did not finish**: "no JSON in the answer" | failed 0/14: an empty answer |
+
+Causes and fixes, one commit each:
+
+1. **The Lookout never saw who wrote a message** (building): its prompt had the source, title and body,
+   not the sender, so "anything written by people at our three key clients" could not be judged. Each
+   line now says `from <sender>`.
+2. **The judge ran on warrior** (building): on agy, flash-high thought 12–17k tokens over eight mails,
+   85–145 s, and timed out at 240 s. Replayed on all five cases: the light tier judged every message
+   right on agy in 11–22 s; on claude haiku was right on all five at $0.001–0.004 a call, sonnet missed
+   one at $0.08–0.12. Balance now judges on laborer (quality keeps warrior).
+3. **The bench measured the building on a heavier model than the bare tool** (bench): with `--tool` and no
+   `--tier` the copy's steward ran every task on the tool's default model, while the bare side ran on the
+   tier the steward picks. Each task now keeps its steward's tier.
+4. **An alert the intent asks for stayed low** (building): code sorts a machine's mail low first, and that
+   stood over the model's rating, so on-call's PagerDuty and Uptime Robot alerts were kept but low. When
+   an intent asks and the model keeps it, its rating stands.
+5. **A burst was judged in two calls** (building): the first message started the judge alone. The first
+   batch now waits 1.5 s for what arrived with it.
+
+Not fixed (environment): the bare side's empty answers are agy ending a read-mode turn after a denied
+command, as the pool's steward did; the bare prompt is the comparison's, so it is left as it is.
+
+Series 4 (20261010-163…), after all five:
+
+| case | building | bare |
+|---|---|---|
+| customer-orders | passed 4/4, 17 s | passed 4/4, 24 s |
+| feedback-inbox | passed 9/9, 12 s | passed 9/9, 16 s |
+| on-call | passed 8/8, 14 s | passed 8/8, 12 s |
+| sales-leads | passed 5/5, 11 s | passed 5/5, 11 s |
+| key-clients-burst | passed 14/14, 20 s | passed 14/14, 12 s (the run before: 13 s / 25 s) |
+
+Every case passes; the rest is a few seconds either way, within the spread of one call.
