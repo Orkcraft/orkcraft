@@ -13,12 +13,13 @@ import { command, say } from "./link.js";
 import { openOrders } from "./orders.js";
 import { DislikeDialog, NoteDialog } from "./console.js";
 import { openBuilding } from "./windows.js";
-import { HATS } from "./icons.js";
+import { HATS, ToolMark } from "./icons.js";
 
 const WALK_MS = 240;               // out of the door to its place on the plinth, or back
 const STAY_MS = 400;               // the mouse gone, it waits this long before it walks back in
 const RANK = { laborer: 1, warrior: 2, elder: 3 };              // the chevrons it wears (icons/rank-N.png)
 const TIER_WORD = { laborer: "Novice", warrior: "Seasoned", elder: "Veteran" };   // realm/tiers.py TIER_LABELS
+const TOOL_MARKS = new Set(["✻", "✦", "⌬", "☤", "π", "◆"]);   // an AI tool's text mark (js/icons.js ToolMark)
 
 const visitDialog = signal(null);  // {kind: "ork-bad" | "dislike", b, o?}
 
@@ -73,11 +74,17 @@ export function Outside({ b, selected }) {
   // its frames are the stylesheet's (yards.css); it wears its tier's chevrons, how seasoned its mind is (realm/tiers.py)
   const rank = o && RANK[o.rank || o.tier];
   const hat = o && o.lead && HATS[b.type];        // a steward wears its building's hat (tools/hat_sprites.py)
+  const tools = o && o.kind !== "chain" && o.kind !== "script" && o.scheme;
+  // the AI tool it thinks with, over its other shoulder from its chevrons: the scheme's first tool (`✦→✻` → ✦); a yard's
+  // visiting steward wears its own, the model it is woken to think with
+  const thinker = o || (b.yard && lead(b));
+  const harness = thinker && thinker.kind !== "chain" && thinker.kind !== "script" && thinker.scheme
+    && [...thinker.scheme].find((c) => TOOL_MARKS.has(c));
   const body = html`<i class="gui-out__ork" aria-hidden="true"></i>${hat && html`<i class=${`gui-out__hat is-${hat}`}
     aria-hidden="true"></i>`}${rank && html`<img class="gui-out__rank ok-sprite"
     src=${`/ds/sprites/icons/rank-${rank}.png`} srcset=${`/ds/sprites/icons/rank-${rank}@2x.png 2x`} width="16" height="16"
-    alt="" title=${say(TIER_WORD[o.rank || o.tier])} draggable="false" />`}`;
-  const tools = o && o.kind !== "chain" && o.kind !== "script" && o.scheme;
+    alt="" title=${say(TIER_WORD[o.rank || o.tier])} draggable="false" />`}${harness && html`<span class="gui-out__tool"
+    title=${`${say("AI tool")}: ${thinker.scheme}`}><${ToolMark} mark=${harness} /></span>`}`;
   const bubble = place !== "out" ? null
     : asking ? html`<span class="gui-out__bubble is-ask" aria-hidden="true">!</span>`
     : rates && selected ? html`<span class="gui-out__bubble" role="group" aria-label=${`${who}: ${say("rate its work")}`}
