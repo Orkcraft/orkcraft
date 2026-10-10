@@ -326,6 +326,11 @@ def steward_answer_of(text: str) -> str:
     return m.group(1).strip() if m else ""
 
 
+# The steward's call may run in an empty folder (agy's does): it looked for the files, was denied the command and
+# ended its turn with no answer. What it judges is in its prompt.
+FROM_ABOVE = "What is above is all you need: judge from it and do not run commands."
+
+
 def _rules(orders: str) -> str:
     return f"## Your rules\n\n{orders.strip()}" if orders.strip() else "## Your rules\n\n(none written yet)"
 
@@ -337,7 +342,7 @@ def steward_question_prompt(keeper: str, orders: str, task: PoolTask, question: 
         f"## The orc working on it asks\n\n{question}",
         "If your rules, the task or plain good practice settle it, answer `ANSWER: …` with the decision. "
         "If only the operator can decide (taste, scope, money, anything your rules do not cover), answer "
-        "`ASK` and nothing else."])
+        "`ASK` and nothing else.", FROM_ABOVE])
 
 
 def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: str, tests: str,
@@ -358,7 +363,7 @@ def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: s
         "The report ends with a draft to post (`PUBLISH:`): judge it as the work. Nothing is posted until the "
         "operator approves it." if publish_of(report)[2] else "",
         "Judge whether the task is done and your rules are kept. Answer `ACCEPT` on the first line, or "
-        "`REWORK: …` with what exactly to fix.",
+        "`REWORK: …` with what exactly to fix. " + FROM_ABOVE,
         "" if scope else
         "Only documents changed. After ACCEPT add one line `SCOPE: local` when they are only for the operator's "
         "own use and stay in the camp (notes, a meeting's prep), or `SCOPE: external` when they go out — to the "
