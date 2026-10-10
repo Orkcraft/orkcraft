@@ -85,7 +85,7 @@ export const INTENTS = [
   { id: "route", word: "Route", type: "signpost", group: "make" },
   { id: "check", word: "Validate", type: "loot", group: "check" },
   { id: "chart", word: "Chart", type: "crag", group: "check" },
-  { id: "test", word: "Test", type: "lab", group: "check" },
+  { id: "test", word: "Improve", type: "lab", group: "check" },
   { id: "tasks", word: "Tasks", type: "fields", group: "plan" },
   { id: "calendar", word: "Calendar", type: "war_drum", group: "plan" },
   { id: "wiki", word: "Wiki", type: "scrolls", group: "know" },

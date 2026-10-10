@@ -72,3 +72,11 @@ def test_the_glossary_says_what_each_word_replaced():
     rows = {key: (word, was) for key, word, was in lexicon.glossary()}
     assert rows["watchtower"] == ("External listeners", "Watchtower")
     assert rows["ork"] == ("ork", "")
+
+
+def test_the_test_bench_reads_as_itself_under_every_name_it_had():
+    """The Mechanic today, the Alchemist's Lab with a Brewmaster before: older towns keep those titles."""
+    assert lexicon.words("🧪 Mechanic") == "🧪 Test bench"
+    assert lexicon.words("Alchemist's Lab") == "Test bench"
+    assert lexicon.words("Gearhead") == lexicon.words("Brewmaster") == "Tester"
+    assert lexicon.words("a mechanic, a reference") == "a mechanic, a reference"

@@ -199,7 +199,7 @@ TERMS: tuple[Term, ...] = (
     _t("scrolls", "Wiki", "", "Scroll Dump"),
     _t("mine", "Research", "", "The Mine"),                         # "Mine" alone stays: a Task board's lane says it
     _t("gramophone", "Audio briefing", "", "The Gramophone"),
-    _t("lab", "Test bench", "", "Alchemist's Lab"),                 # a building on its test cases (docs/design/test-bench.md)       # a result spoken (docs/design/audio-briefing.md)
+    _t("lab", "Test bench", "", "Mechanic"),                 # a building on its test cases (docs/design/test-bench.md)       # a result spoken (docs/design/audio-briefing.md)
     _t("lake", "Inspector", "", "Lake of Insight"),
     _t("forge", "Branches & PRs", "", "The Forge"),
     _t("loot_vault", "Review gate", "", "Loot Vault"),
@@ -219,7 +219,7 @@ TERMS: tuple[Term, ...] = (
     _t("orc.forest", "File picker", "", "Woodcutter"),
     _t("orc.scrolls", "Librarian", "", "Scroll Scrapper"),
     _t("orc.gramophone", "Narrator", "", "Bard"),
-    _t("orc.lab", "Tester", "Testers", "Brewmaster", "Brewmasters"),
+    _t("orc.lab", "Tester", "Testers", "Gearhead", "Gearheads"),
     _t("orc.mine", "Researcher", "Researchers", "Prospector", "Prospectors"),
     _t("orc.lake", "Inspector", "", "Seer"),
     _t("orc.forge", "Merger", "Mergers", "Smith", "Smiths"),
@@ -232,7 +232,9 @@ TERMS: tuple[Term, ...] = (
 
 # Short names the interface uses for a building as well as its full title.
 _ALSO = {"lake": ("Lake",), "pit": ("Pit",), "mill": ("Mill",), "horn": ("Horn",), "forge": ("Forge",),
-         "catapult": ("Catapult",), "gramophone": ("Gramophone",), "town_hall": ("Town hall",)}
+         "catapult": ("Catapult",), "gramophone": ("Gramophone",), "town_hall": ("Town hall",),
+         # the Test bench was the Alchemist's Lab with a Brewmaster before it was the Mechanic: older towns keep those
+         "lab": ("Alchemist's Lab",), "orc.lab": ("Brewmaster",)}
 
 # Whole phrases first: where a word for word would read wrong.
 _PHRASES = {"Into the pit": "Dropped", "the Elders' advice": "the advisors' advice",
