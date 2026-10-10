@@ -469,8 +469,22 @@ export function risen() {
 
 /** A building not standing yet: planned, or going up (`g.state` "raising"). `bare`: a building with no card of its own
  *  (js/hut.js bareOf) is its house alone, here too. */
-export function Ghost({ g, spot, biome, bare = false }) {
+export function Ghost({ g, spot, biome, bare = false, built = false }) {
   const now = g.state === "raising";
+  // Raised by Build where it will stand (`built`): the building at its real size, its name over it as the finished one
+  // wears it, on its plinth, so nothing jumps when it stands; the onboarding's plan keeps its small card.
+  if (built) return html`<div class="gui-onb__ghost is-raising is-built" style=${`left:${spot.x}px;top:${spot.y}px`}
+      aria-label=${say(`${g.title}: being built`)}>
+    <span class="gui-onb__built-name"><${TypeIcon} type=${g.type} />${say(g.title)}</span>
+    <div class="gui-onb__ghost-roof">
+      <img class="ok-sprite gui-onb__ghost-plan" src=${headerSprite(g.type, biome)} alt="" draggable="false" />
+      <span class="gui-onb__icon"><${TypeIcon} type=${g.type} /></span>
+      <img class="ok-sprite gui-onb__ghost-rise" src=${headerSprite(g.type, biome)} alt="" draggable="false" />
+      <span class="gui-onb__scaffold" aria-hidden="true"></span><span class="gui-onb__hammer" aria-hidden="true">⚒</span>
+    </div>
+    <span class="gui-onb__built-plinth" aria-hidden="true"></span>
+    <span class="ok-font-status ok-tone-muted gui-onb__built-state">building…</span>
+  </div>`;
   return html`<div class=${cls("gui-onb__ghost", { "is-raising": now, "is-bare": bare })} style=${`left:${spot.x}px;top:${spot.y}px`}
       aria-label=${say(now ? `${g.title}: being built` : `${g.title}: planned`)}>
     <div class="gui-onb__ghost-roof">

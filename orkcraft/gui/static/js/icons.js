@@ -42,9 +42,9 @@ export const BIOMES = {
   dirt: { ground: "#141210", land: "#3a3326" },
   forest: { ground: "#101a0b", land: "#22341a" },
   ice: { ground: "#070d14", land: "#1c2c3c" },
-  dust: { ground: "#1c160e", land: "#5a462a" },
+  dust: { ground: "#1a1712", land: "#5a462a" },   // a step greyer than the fence's wood, so the two part
   void: { ground: "#0e0c14", land: "#2c263c" },
-  lava: { ground: "#131010", land: "#342c2a" },
+  lava: { ground: "#170f0d", land: "#342c2a" },   // basalt night, a breath of ember in it; the huts ash-grey on it
   meadow: { ground: "#0d1a16", land: "#24443a" },   // the knights' open field: cool spring green, not forest's
 };
 export const BIOME_ORDER = Object.keys(BIOMES);

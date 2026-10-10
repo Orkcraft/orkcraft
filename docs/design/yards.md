@@ -110,13 +110,15 @@ Office draws a yard as any card: nothing of this stage is drawn there (`yards.cs
   every card. One plain rail between the pickets, not two, so the fence reads as one calm line. The yard's
   inside is a step over the ground (the ink at 6 %, *Card background: Yard*), so inside and outside part. Five fences on a map stay quieter
   than one fire, and gold and fire stay the brightest things on it. Ice and void get their own wood tints, as their stone panels do.
-- **The orks' fence, sparingly** (2026-10-09): each picket is lashed to its rail with rope, no nails. The one
-  ornament is a **bone tusk at each corner** (the bottom corners and the top fence's end, `corner-<n>[-r].png`), its
-  tip curling out, away from the card (in, over the card, read as a bracket round the words). The building's renown (growth.md §5) adds iron, never more bone: II an iron band
-  with a spike out at each side round each tusk's root, III a pair of crossed axes where the top fence meets the house
-  (`axes.png`). The bone is old bone (`#b8ac90`, about 8:1 to the ground): a white one (14:1) measured as bright as
-  the card's text and pulled the eye round every card; the iron is as quiet as the wood. A selected yard glows round
-  its tusks (they stand where the selection's corner brackets would).
+- **The orks' fence, sparingly** (2026-10-10): each picket is lashed to its rail with rope, no nails. Its corners
+  are its one ornament: at the top fence's end a **bone tusk curling in over the card** (`tusk-<n>.png`), at the bottom
+  corners a **stout post with an iron head** (`corner-post.png`) — neat and quiet, where tusks out at every corner
+  crowded the card. The building's renown (growth.md §5) shows along the whole fence, so a level reads from across the
+  town (one corner's change did not): II caps every picket with iron, gives the posts a spiked collar and the tusk an
+  iron band; III binds the rail in iron too, grows two small bone horns on each post and sets crossed axes where the top
+  fence meets the house (`axes.png`; `row-<n>`, `side-<n>`, `corner-post-<n>`). The
+  bone is old bone (`#b8ac90`, about 8:1 to the ground): a white one (14:1) measured as bright as the card's text; the
+  iron is as quiet as the wood. A selected yard glows round its tusk and posts (where the corner brackets would be).
 - **It tiles**: a card that is stretched (`hut_size`, building-views.md §1a) repeats its pickets at any
   level. The lower half of the picket row stands over the ground, not the panel, so it reads as a fence.
 - **States ride on the fence.** Selected: the pickets lit `frame-focus`. Fire: the fence takes the
@@ -232,6 +234,8 @@ leaves the title bar on every card, hut and yard; the building says what its ork
 - Under `prefers-reduced-motion`, nothing paces or floats. Office draws none of it: it keeps its words
   (`busy`, `?`, `visiting`) in the title bar.
 - What the head told — its name, its AI tool — is in Info and in the caller's tooltip.
+- **Its marks out on the plinth** (2026-10-10): its tier's chevrons over one shoulder, the AI tool it thinks with, at half size (8 px: a hint, not a badge),
+  (the scheme's first tool's pixel mark, `ToolMark`) over the other; a yard's visiting steward wears its own.
 - Code: `js/hut.js` `Doing`, `js/visit.js` `Outside` and `VisitDialogs`; `yards.css`; `office.css` hides them;
   the sprites `tools/visit_sprites.py`.
 - Later: a building's own "at work" (smoke, sparks) instead of the wheel.

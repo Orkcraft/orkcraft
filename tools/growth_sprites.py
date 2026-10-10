@@ -13,8 +13,8 @@ docs/design/war-map.md):
   a tile of the stones under it, a course more at each level; `annex-thrift.png` (a lean-to over a stack
   of logs) and `annex-quality.png` (a crystal on a whetstone), beside it by its goal. Balance has none.
 - `design-system/sprites/buildings/<type>/header-<biome>.png` (and `@2x`): each flat header redrawn
-  for ice (snow on the edges facing the sky), dust (dry olive, sand at the foot), void (ashen violet)
-  lava (basalt, embers at the foot) and meadow (spring green, daisies at the foot). Dirt and forest keep
+  for ice (snow on the edges facing the sky), dust (sun-bleached sandstone, sand at the foot), void (ashen violet)
+  lava (ash-grey basalt, embers at the foot) and meadow (spring green, daisies at the foot). Dirt and forest keep
   `header.png`.
 
 Needs Pillow.
@@ -417,7 +417,10 @@ def biome_sprite(native: Image.Image, biome: str) -> Image.Image:
                     if y + 1 < h and _near(px[x, y + 1], GREEN):
                         px[x, y + 1] = rgb(IVORY)
                 break
-    swaps = {"dust": ("#a8a05c", "#7a7040"), "void": ("#8e88a8", "#5e587a"), "lava": ("#5e5652", "#3c3634"),
+    # dust: sun-bleached sandstone, lighter than the fence's wood (olive sank into the wood and the ground);
+    # lava: ash-grey basalt, light enough to stand off the dark (dark grey on black read as one smear). Each at about
+    # the contrast dirt's green has to its ground (light ~9:1 / ~7:1, dark ~4:1 / ~3:1).
+    swaps = {"dust": ("#d4b77a", "#9c7a46"), "void": ("#8e88a8", "#5e587a"), "lava": ("#a49a96", "#6a605c"),
              "meadow": ("#7fbf9a", "#4f8a6c")}
     if biome in swaps:
         light, dark = swaps[biome]

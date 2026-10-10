@@ -30,6 +30,10 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
   background: image-set(url("/ds/sprites/orks/ork-stand.png") 1x, url("/ds/sprites/orks/ork-stand@2x.png") 2x) 0 0 / 24px 18px no-repeat; }
 /* Its tier's chevrons on its shoulder: how seasoned the mind at work is, seen without opening anything. */
 .gui-out__rank { position: absolute; right: -10px; top: -10px; width: 16px; height: 16px; image-rendering: pixelated; pointer-events: none; }
+/* Its AI tool over its other shoulder (js/visit.js): the tool's pixel mark, as on the steward's line in Info. */
+.gui-out__tool { position: absolute; left: -5px; top: -6px; width: 8px; height: 8px; pointer-events: auto; }
+.gui-out__tool .gui-toolmark { display: block; }
+.gui-out__tool .gui-toolmark img { display: block; width: 8px; height: 8px; image-rendering: pixelated; }   /* half its size: a hint, not a badge */
 .gui-out.is-step .gui-out__ork { animation: gui-step .24s steps(1) infinite; }
 /* A steward wears its building's hat (tools/hat_sprites.py) over its head: two pixels over the stand's blank top row,
    bobbing with the head as it walks. */
@@ -113,21 +117,25 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
     var(--fence-rail) 4px 0 / 7px 100% no-repeat,
     var(--fence-rail) right 4px top 0 / 7px 100% no-repeat; }
 [data-look="camp"] .gui-hut.is-fenced.is-folded .ok-hut__card::before { display: none; }
-/* Its corners: a bone tusk curling out, away from the card, at the bottom corners and the top fence's end, the fence's one
-   ornament; the building's renown adds iron, never more bone (tools/fence_sprites.py; docs/design/yards.md §3): II an
-   iron band with spikes round each tusk's root, III crossed axes where the top fence meets the house. */
-[data-look="camp"] .gui-hut.is-fenced { --tusk-l: image-set(url("/ds/sprites/fence/corner-1-r.png") 1x, url("/ds/sprites/fence/corner-1-r@2x.png") 2x); --tusk-r: image-set(url("/ds/sprites/fence/corner-1.png") 1x, url("/ds/sprites/fence/corner-1@2x.png") 2x); }
-[data-look="camp"] .gui-hut.is-fenced.is-renown-2 { --tusk-l: image-set(url("/ds/sprites/fence/corner-2-r.png") 1x, url("/ds/sprites/fence/corner-2-r@2x.png") 2x); --tusk-r: image-set(url("/ds/sprites/fence/corner-2.png") 1x, url("/ds/sprites/fence/corner-2@2x.png") 2x); }
-[data-look="camp"] .gui-hut.is-fenced.is-renown-3 { --tusk-l: image-set(url("/ds/sprites/fence/corner-3-r.png") 1x, url("/ds/sprites/fence/corner-3-r@2x.png") 2x); --tusk-r: image-set(url("/ds/sprites/fence/corner-3.png") 1x, url("/ds/sprites/fence/corner-3@2x.png") 2x); }
+/* Its corners: at the top fence's end a bone tusk curling in over the card; at the bottom corners a stout post with an
+   iron head, neat and quiet. The building's renown adds iron, never more bone (tools/fence_sprites.py; docs/design/
+   yards.md §3): II an iron band round the tusk's root, III crossed axes where the top fence meets the house. */
+[data-look="camp"] .gui-hut.is-fenced { --tusk: image-set(url("/ds/sprites/fence/tusk-1.png") 1x, url("/ds/sprites/fence/tusk-1@2x.png") 2x); --corner-post: image-set(url("/ds/sprites/fence/corner-post.png") 1x, url("/ds/sprites/fence/corner-post@2x.png") 2x); }
+/* Renown along the whole fence: II iron caps on every picket and a spiked collar on the posts; III an iron-bound rail
+   and two bone horns on the posts, and the axes by the house. */
+[data-look="camp"] .gui-hut.is-fenced.is-renown-2 { --tusk: image-set(url("/ds/sprites/fence/tusk-2.png") 1x, url("/ds/sprites/fence/tusk-2@2x.png") 2x); --corner-post: image-set(url("/ds/sprites/fence/corner-post-2.png") 1x, url("/ds/sprites/fence/corner-post-2@2x.png") 2x);
+  --fence-row: image-set(url("/ds/sprites/fence/row-2.png") 1x, url("/ds/sprites/fence/row-2@2x.png") 2x); --fence-side: image-set(url("/ds/sprites/fence/side-2.png") 1x, url("/ds/sprites/fence/side-2@2x.png") 2x); }
+[data-look="camp"] .gui-hut.is-fenced.is-renown-3 { --tusk: image-set(url("/ds/sprites/fence/tusk-3.png") 1x, url("/ds/sprites/fence/tusk-3@2x.png") 2x); --corner-post: image-set(url("/ds/sprites/fence/corner-post-3.png") 1x, url("/ds/sprites/fence/corner-post-3@2x.png") 2x);
+  --fence-row: image-set(url("/ds/sprites/fence/row-3.png") 1x, url("/ds/sprites/fence/row-3@2x.png") 2x); --fence-side: image-set(url("/ds/sprites/fence/side-3.png") 1x, url("/ds/sprites/fence/side-3@2x.png") 2x); --fence-m: #4e585e; --fence-h: #6e7a80; }
 [data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card::after { content: ""; position: absolute; left: -8px; right: -8px;
   top: calc(var(--titlebar) - 27px); bottom: 0; pointer-events: none; image-rendering: pixelated; animation: none; background:
-    var(--tusk-r) right top / 21px 27px no-repeat,
-    var(--tusk-l) left bottom / 21px 27px no-repeat,
-    var(--tusk-r) right bottom / 21px 27px no-repeat; }
+    var(--tusk) right 11px top / 21px 27px no-repeat,
+    var(--corner-post) left 2px bottom / 27px 36px no-repeat,
+    var(--corner-post) right 2px bottom / 27px 36px no-repeat; }
 [data-look="camp"] .gui-hut.is-fenced.is-renown-3:not(.is-folded) .gui-hut__title::after { content: ""; position: absolute;
   left: calc(var(--house-w, 15px) + 2px); bottom: 2px; width: 27px; height: 21px; pointer-events: none; image-rendering: pixelated;
   background: image-set(url("/ds/sprites/fence/axes.png") 1x, url("/ds/sprites/fence/axes@2x.png") 2x) 0 0 / 27px 21px no-repeat; }
-/* Selected: a gold glow round the fence and its tusks (they stand where the brackets would). Asking: the inside takes the fire's ground and
+/* Selected: a gold glow round the fence, its tusk and its posts (they stand where the brackets would). Asking: the inside takes the fire's ground and
    the fence its glow, as a hut's card does. */
 [data-look="camp"] .gui-hut.is-fenced.is-selected .ok-hut__card { filter: drop-shadow(0 0 2px var(--frame-focus)); }
 [data-look="camp"] .gui-hut.is-fenced.is-alert .ok-hut__card { --yard-ground: var(--fire-ground); filter: drop-shadow(0 0 6px var(--fire-glow)); }
