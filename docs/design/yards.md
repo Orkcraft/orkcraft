@@ -292,3 +292,21 @@ own needs no card at all.
 - **Buildings drawn at 0.9 of their sprite** (a fenced or bare one; the Town Hall at 0.75).
 - **The parts' checkboxes live in the yard** (Task board: Ork work, My to-dos, Notes): a row at the top of its card,
   as the Calendar's legend, always there — no tray popping out over the card, under the mouse or when selected.
+
+## 8. A question is an ork's; a fire is a building's (built 2026-10-10)
+
+- Only a building with orks asks. Its ork comes out onto the plinth with ❓, the building glows yellow
+  (`--warning`), and a press on the building opens its question in Answers at once (js/hut.js) — no select first.
+- Anything that breaks — an exception in its script, a failed model call, a failed task — is fire: the flames
+  of js/hut.js `Flames` on the building, red ground (`brokenOf`: its state ERROR or its mark's tone error).
+- A yard (its work is code, no ork lives there) never shows an ork outside, selected or asking (js/visit.js):
+  it can only burn, or glow when something it holds waits for the person (a cart for review).
+- Pin and fold are in the building's menu (right click, ⋯), not on its title bar; a drag on a pinned building says
+  why in a toast.
+
+## 9. Info: the building, then its ork (built 2026-10-10)
+
+The Info tab has two parts, each with its own label: **The building** (what it does, its settings, quick actions,
+roads) and **Its ork** (its face at full size, its name, and why an ork is needed here at all —
+`realm/ork_roles.py` `WHY`, one line per type; a yard says no ork lives there). The window's tabs stand in its title
+bar, after the name: no ork head and no tab row above the content.

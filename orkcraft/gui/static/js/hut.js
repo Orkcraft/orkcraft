@@ -20,8 +20,9 @@ import { reasons, busy as busyOf, fold } from "./fold.js";
 import { openMenu } from "./menu.js";
 import { mention } from "./warchief.js";
 import { typeModule, runQuick } from "./types.js";
-import { town, say, command } from "./link.js";
+import { town, say, command, toast } from "./link.js";
 import { Outside } from "./visit.js";
+import { openOrders } from "./orders.js";
 import { TypeIcon, HutSprite, OrkHead, Scheme, activeBiome } from "./icons.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
@@ -46,23 +47,18 @@ export function levelOf(b, auto = null) {
   return w >= 520 && h >= 400 ? "l" : w >= 360 && h >= 240 ? "m" : "s";
 }
 export const pulling = signal(null);       // {from, x, y, over}: a road being pulled out of a hut, to the pointer; `over` the hut under it
-const WARN_MS = 2000;                      // a drag on a pinned hut turns its pin red this long
-const warned = signal({});                 // building id → true while its pin says it holds the hut
+const WARN_MS = 4000;                      // a drag on a pinned hut says why once in this long
 const putAway = signal({});                // building id → the peek reasons the person put away (▸ on a peek)
 const dragOver = signal(null);             // the folded hut a drag is held over: it peeks
 // Caught first, let go after the drop reached the card, so the peek holds till the Pit took what fell on it.
 for (const end of ["drop", "dragend"]) window.addEventListener(end, () => setTimeout(() => { dragOver.value = null; }), true);
-const warnings = new Map();                // building id → the timer that lets the pin go back
+const warnings = new Map();                // building id → the timer before it may say so again
 
-/** A drag on a pinned hut: its pin turns red for WARN_MS, so the person sees why it does not move. */
+/** A drag on a pinned hut: a toast says why it does not move (once per WARN_MS). */
 function warnPinned(id) {
-  clearTimeout(warnings.get(id));
-  warned.value = { ...warned.value, [id]: true };
-  warnings.set(id, setTimeout(() => {
-    warnings.delete(id);
-    const { [id]: _, ...rest } = warned.value;
-    warned.value = rest;
-  }, WARN_MS));
+  if (warnings.has(id)) return;
+  warnings.set(id, setTimeout(() => warnings.delete(id), WARN_MS));
+  toast(say("Pinned in place — unpin it from its menu (right click) to move it"), "information");
 }
 
 function togglePin(e, id) {
@@ -71,32 +67,7 @@ function togglePin(e, id) {
 }
 
 /** The pin by a hut's name: on, the hut keeps its place; off, a drag moves it. */
-function PinButton({ b }) {
-  const on = !!b.pinned;
-  const label = on ? say("Unpin to move it") : say("Pin it in place");
-  return html`<button class=${cls("gui-hut__pin", { "is-on": on, "is-warn": !!warned.value[b.id] })} title=${label} aria-label=${label} aria-pressed=${on}
-      onPointerDown=${(e) => e.stopPropagation()} onClick=${(e) => togglePin(e, b.id)}>
-    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
-      <path d="M6 1.5h4M7 1.5v4.5L4.5 9h7L9 6V1.5M8 9v5.5" />
-    </svg></button>`;
-}
-
 const peekReasons = (b) => { const away = putAway.value[b.id] || []; return reasons(b).filter((r) => !away.includes(r)); };
-
-/** ▾ folds an open card, ▸ unfolds a folded one; on a peek ▸ puts it away while the same reasons stand. A
- *  chevron in a 24px box, so it is found and hit in either look. */
-function FoldButton({ b, peek }) {
-  const label = !b.folded ? say("Fold the card") : peek ? say("Put it away") : say("Unfold the card");
-  const press = (e) => {
-    e.stopPropagation();
-    if (peek) putAway.value = { ...putAway.value, [b.id]: reasons(b) };
-    else fold(b);
-  };
-  return html`<button class=${cls("gui-hut__fold", { "is-on": !!b.folded })} title=${label} aria-label=${label} aria-expanded=${!b.folded || peek}
-      onPointerDown=${(e) => e.stopPropagation()} onClick=${press}>
-    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d=${b.folded ? "M6 3.5 10.5 8 6 12.5" : "M3.5 6 8 10.5 12.5 6"} /></svg>
-  </button>`;
-}
 
 /** A folded hut's mark: what its card would have said first — an error, a pause, else its type's own `mark(b)`. */
 export function Mark({ b }) {
@@ -200,11 +171,20 @@ function YardName({ b, number }) {
     <span class="no">${number}</span><${TypeIcon} type=${b.type} /><span class="gui-hut__yard-title">${say(b.title)}</span></span>`;
 }
 
-// -- fire: a building whose ork waits for you burns (design-system README: States and motion) --------------
-// Its card is ablaze from the first second (components.css); from FIRE_FROM s flames climb its roof, one more
-// a minute until FIRE_FULL s covers it. Never in quiet hours, nor when the portrait's menu turned them off; under
-// prefers-reduced-motion they stand still (components.css).
-const FIRE_FROM = 60, FIRE_FULL = 300;
+// -- fire: a building that broke burns (docs/design/yards.md §8) ------------------------------------------------
+// A question is not fire: its ork comes out with a `!` and the card glows yellow (yards.css .is-alert); a press on
+// it opens the question. Fire is for what broke — a script's exception, a model call that failed, a source that
+// fails: the card is ablaze at once and flames climb its roof, one more a minute until FIRE_FULL s covers it. Never in
+// quiet hours, nor when the portrait's menu turned them off; under prefers-reduced-motion they stand still.
+const FIRE_FROM = 0, FIRE_FULL = 240;
+
+/** What broke a building, if anything: its worker in ERROR, or its own mark said error (a source failing). */
+export function brokenOf(b) {
+  if (b.state === "ERROR") return "error";
+  const mod = b.page ? typeModule(b.type) : null;
+  const m = mod && mod.mark ? mod.mark(b) : null;
+  return m && m.tone === "error" ? String(m.text || "error") : "";
+}
 const FLAMES = [[50, 46], [24, 26], [76, 30], [38, 4], [62, 8]];        // where each flame stands: % of the roof
 const now = signal(Date.now());
 setInterval(() => { now.value = Date.now(); }, 10_000);
@@ -349,7 +329,8 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   }, [b.id]);
   const free = !b.pinned && b.id !== CORNER;   // pinned by the person, or the Hall: never moves
   const busy = busyOf(b);
-  const hot = b.alert && b.alert.waited >= 30;
+  const broken = brokenOf(b);
+  const hot = !!broken;                      // fire is what broke; a question only glows (yards.css .is-alert)
   const folded = !!b.folded && b.id !== CORNER;
   const peek = folded && (peekReasons(b).length > 0 || dragOver.value === b.id);
   // A drag held over a folded hut peeks it, so a drop target (the Pit) is never a title bar alone.
@@ -379,6 +360,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       dragging.value = null;
       if (gone) return;
       if (moved) { if (free) { onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y); } }
+      else if (b.alert) openOrders(b.alert.id);   // a question: a press opens it at once
       else pickBuilding(b.id);                  // selected; the selected one again: opened
     };
     el.addEventListener("pointermove", move);
@@ -402,11 +384,10 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       <${Keeper} garrison=${b.garrison} alert=${b.alert} yard=${!!b.yard} visit=${b.visit || ""} />
       ${b.alert && html`<span class="ok-word gui-hut__ask">?</span>`}
       ${folded && html`<${Mark} b=${b} />`}
-      ${b.id !== CORNER && html`<${PinButton} b=${b} />`}
-      ${b.id !== CORNER && html`<${FoldButton} b=${b} peek=${peek} />`}</span>`;
+</span>`;      // pin and fold live in its menu (right click): the card carries no controls of its own
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px` + (sized ? `;width:${w}px` : "")}
       class=${cls("ok-hut m gui-hut", { "is-selected": selected.value === b.id, "is-busy": busy, "is-yard": !!b.yard, "is-fenced": fenced(b), "is-bare": bareOf(b),
-                                        "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
+                                        "is-alert": !!b.alert, "is-broken": !!broken, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id,
                                         "is-fresh": fresh, "is-folded": folded, "is-peek": peek,
                                         "is-sized": !!sized, [`is-size-${level}`]: !!sized, [`is-renown-${Math.min(Math.max(b.level || 0, 1), 3)}`]: true,
@@ -414,7 +395,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       onPointerDown=${down} onContextMenu=${(e) => buildingMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}
 >
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
-      level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} />
+      level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${broken ? { id: `broken:${b.id}:${broken}`, waited: 0 } : null} />
       <${Doing} b=${b} busy=${busy} />${b.id !== CORNER && html`<${YardName} b=${b} number=${number} />`}
       ${bareOf(b) && html`<span class="gui-hut__badge"><${Mark} b=${b} /></span>`}
       <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} selected=${selected.value === b.id} /></span></div>

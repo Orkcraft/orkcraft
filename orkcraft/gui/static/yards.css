@@ -138,8 +138,12 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 /* Selected: a gold glow round the fence, its tusk and its posts (they stand where the brackets would). Asking: the inside takes the fire's ground and
    the fence its glow, as a hut's card does. */
 [data-look="camp"] .gui-hut.is-fenced.is-selected .ok-hut__card { filter: drop-shadow(0 0 2px var(--frame-focus)); }
-[data-look="camp"] .gui-hut.is-fenced.is-alert .ok-hut__card { --yard-ground: var(--fire-ground); filter: drop-shadow(0 0 6px var(--fire-glow)); }
-[data-look="camp"] .gui-hut.is-fenced.is-alert.is-hot .ok-hut__card { --yard-ground: var(--fire-ground-hot); }
+/* A question glows yellow, the ork out by its door with its `!` (a press opens the question); what broke burns
+   (docs/design/yards.md §8). Broken outranks asking. */
+[data-look="camp"] .gui-hut.is-fenced.is-alert:not(.is-broken) .ok-hut__card { --yard-ground: color-mix(in srgb, var(--warning) 12%, transparent);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--warning) 70%, transparent)); }
+[data-look="camp"] .gui-hut.is-fenced.is-broken .ok-hut__card { --yard-ground: var(--fire-ground); filter: drop-shadow(0 0 6px var(--fire-glow)); }
+[data-look="camp"] .gui-hut.is-fenced.is-broken.is-hot .ok-hut__card { --yard-ground: var(--fire-ground-hot); }
 
 /* The title bar is the top fence: its pickets start where the house ends (--house-w, js/hut.js measure) and run to the
    edge; its words went over the building (§3b). Fold keeps 26 px clear of the road handle at its right. */
@@ -164,7 +168,8 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 [data-look="camp"] .gui-hut:is(.is-fenced, .is-bare) .gui-hut__yard-name .gui-type-icon { width: 12px; height: 12px; filter: drop-shadow(1px 1px 0 #000); }
 [data-look="camp"] .gui-hut:is(.is-fenced, .is-bare) .gui-hut__yard-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 [data-look="camp"] .gui-hut:is(.is-fenced, .is-bare).is-selected .gui-hut__yard-name { color: var(--ink-gold); }
-[data-look="camp"] .gui-hut:is(.is-fenced, .is-bare).is-alert .gui-hut__yard-name { color: var(--alert); }
+[data-look="camp"] .gui-hut:is(.is-fenced, .is-bare).is-alert .gui-hut__yard-name { color: var(--warning); }
+[data-look="camp"] .gui-hut:is(.is-fenced, .is-bare).is-broken .gui-hut__yard-name { color: var(--alert); }
 
 /* Folded: its name, its building and the top fence alone. */
 [data-look="camp"] .gui-hut.is-fenced.is-folded .ok-hut__card { border-color: transparent; background: none; box-shadow: none; }
@@ -195,10 +200,11 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 [data-look="camp"] .gui-hut.is-bare .gui-hut__badge .gui-hut__mark.ok-tone-error { color: var(--danger); border-color: var(--danger); }
 [data-look="camp"] .gui-hut.is-bare .gui-hut__badge .gui-hut__mark.ok-tone-wait { color: var(--warning); }
 [data-look="camp"] .gui-hut.is-bare.is-selected .gui-hut__plinth { filter: drop-shadow(0 0 2px var(--frame-focus)); }
-[data-look="camp"] .gui-hut.is-bare.is-alert .gui-hut__plinth { filter: drop-shadow(0 0 6px var(--fire-glow)); }
+[data-look="camp"] .gui-hut.is-bare.is-alert .gui-hut__plinth { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--warning) 70%, transparent)); }
+[data-look="camp"] .gui-hut.is-bare.is-broken .gui-hut__plinth { filter: drop-shadow(0 0 6px var(--fire-glow)); }
 
 /* -- the cards' background off (§3e): the town's ground shows through ------------------------------------------ */
 /* Chosen in the portrait's menu and kept in this browser (js/portrait.js): Ground (the default) draws the cards on the
    town's ground, Panel on their own. The title bar keeps its plate; a card that asks keeps the fire's ground. */
 [data-look="camp"][data-cards="ground"] .gui-hut:not(.is-alert):not(.is-fenced):not(.is-bare) > .ok-hut__card { background: transparent; }
-[data-look="camp"][data-cards="ground"] .gui-hut.is-fenced:not(.is-alert) { --yard-ground: transparent; }
+[data-look="camp"][data-cards="ground"] .gui-hut.is-fenced:not(.is-alert):not(.is-broken) { --yard-ground: transparent; }

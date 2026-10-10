@@ -24,6 +24,7 @@ dependencies = [
     "jsonschema>=4.18",
     "markdown-it-py>=3.0",       # the GUI renders Markdown
     "websockets>=13.0",          # the GUI's server: the town is always drawn by it
+    "segno>=1.5",                # the QR code a phone pairs with (gui/phones.py): pure Python, never left out
 ]
 
 [project.optional-dependencies]

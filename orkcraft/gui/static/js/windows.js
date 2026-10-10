@@ -15,7 +15,6 @@ import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 import { typeModule } from "./types.js";
 import { lake, tabs as docTabs, DocTab, DocBody } from "./lake.js";
 import { InfoTab, OrkView, RuleView } from "./console.js";
-import { OrkHead, Scheme } from "./icons.js";
 import { setupBack } from "./setup.js";
 import { buildingMenu } from "./hut.js";
 
@@ -148,20 +147,6 @@ effect(() => {
   if (online.value) command("watch", { ids: [...new Set([HALL, ...(id ? [id] : []), ...peeked])] }).catch(() => {});
 });
 
-/** The garrison badge: the lead ork's name, how many more, the harness scheme, `?` while asking. */
-function Badge({ garrison, alert }) {
-  if (!garrison.length) return null;
-  const lead = garrison.find((o) => o.lead) || garrison[0];
-  const more = garrison.length - 1;
-  const busy = garrison.some((o) => o.status === "busy");
-  return html`<span class=${cls("ok-badge", { "is-alert": !!alert })}>
-    <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} />
-    ${say(lead.name)}${more > 0 ? `+${more}` : ""}
-    ${lead.scheme && html` <${Scheme} scheme=${lead.scheme} />`}
-    ${alert ? html` <span class="ok-word">?</span>` : busy ? html` <span class="ok-word">busy</span>` : ""}
-  </span>`;
-}
-
 function Question({ alert }) {
   return html`<p class="ok-font-body ok-tone-fire gui-alert">${alert.title}
     <button class="ok-act" onClick=${() => openOrders(alert.id)}><span class="ok-act__label">Answer</span></button></p>`;
@@ -242,7 +227,14 @@ export function Panel() {
       <div class="ok-win__bar" onDblClick=${toggleFull}>
         ${b && html`<span class="ok-win__no">${numberOf(b)}</span>`}
         <span class="ok-win__title">${b ? say(b.title) : say("Lake")}</span>
-        ${b && html`<${Badge} garrison=${b.garrison} alert=${b.alert} />`}
+        <div class="ok-tabs gui-panel__tabs" role="tablist" onDblClick=${(e) => e.stopPropagation()}>
+          ${b && work && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "work" })} role="tab"
+              aria-selected=${!front && tab === "work"} onClick=${() => pickTab("work")}>${say("Work")}</button>`}
+          ${b && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "info" })} role="tab"
+              aria-selected=${!front && tab === "info"} onClick=${() => pickTab("info")}>${say("Info")}</button>`}
+          ${l.shown && docs.map((t) => html`<${DocTab} key=${t.id} t=${t} active=${front && activeDoc && t.id === activeDoc.id}
+              onPick=${() => pickDoc(t.id)} />`)}
+        </div>
         <span class="gui-head__spacer"></span>
         ${b && !front && setupBack.value[b.id] && html`<button class="ok-btn gui-panel__back" title=${say("One step back")}
           onClick=${setupBack.value[b.id]}>← ${say("Back")}</button>`}
@@ -253,14 +245,6 @@ export function Panel() {
           onClick=${closePanel}>×</button>
       </div>
       ${b && b.alert && html`<${Question} alert=${b.alert} />`}
-      <div class="ok-tabs gui-panel__tabs" role="tablist">
-        ${b && work && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "work" })} role="tab"
-            aria-selected=${!front && tab === "work"} onClick=${() => pickTab("work")}>${say("Work")}</button>`}
-        ${b && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "info" })} role="tab"
-            aria-selected=${!front && tab === "info"} onClick=${() => pickTab("info")}>${say("Info")}</button>`}
-        ${l.shown && docs.map((t) => html`<${DocTab} key=${t.id} t=${t} active=${front && activeDoc && t.id === activeDoc.id}
-            onPick=${() => pickDoc(t.id)} />`)}
-      </div>
       ${front ? html`<${DocBody} />`
         : tab === "work" ? html`<${Work} b=${b} />`
         : o.ork && b.garrison.some((x) => x.ref === o.ork) ? html`<${OrkView} b=${b} orkRef=${o.ork} />`

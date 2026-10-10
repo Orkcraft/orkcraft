@@ -59,29 +59,37 @@ export function raised(id, type) {
 
 // Build is a row of small icons the Warchief's line grows upward (docs/design/warchief-line-and-cards.md §2): each says
 // what you want done — take in what comes, work in parallel, talk a hard topic over — not which house does it
-// (tools/intent_sprites.py); where it listens or what it reads is its setup's. All of them, small, in one row: the ten
-// people need most first, in that order, a thin rule, then the rest. The line's own field filters it while Build is
-// on (js/warchief.js), Enter takes the first icon left or, with none, asks the Warchief what to build. One line over
-// the row says what the icon under the mouse raises. First three for you (the onboarding's role's own, not standing
-// yet), framed in gold. A press picks one and its ghost follows the mouse (`place`), a double press builds it at a free
-// spot; from the map's menu (*Build here*) a press builds it on that spot.
+// (tools/intent_sprites.py); where it listens or what it reads is its setup's. The icons stand in small groups by what
+// they are for, two or three each, the group's word over them and a rule under the word, always in this order: an icon
+// never moves (the role's own are framed in gold where they stand). The line's own field filters it while Build is on
+// (js/warchief.js), Enter takes the first icon left or, with none, asks the Warchief what to build. One line over the
+// row says what the icon under the mouse raises. A press picks one and its ghost follows the mouse (`place`), a double
+// press builds it at a free spot; from the map's menu (*Build here*) a press builds it on that spot.
+export const GROUPS = [
+  { id: "in", word: "Take in" },
+  { id: "think", word: "Think" },
+  { id: "make", word: "Make" },
+  { id: "check", word: "Check" },
+  { id: "plan", word: "Plan" },
+  { id: "tell", word: "Tell" },
+];
 export const INTENTS = [
-  { id: "incoming", word: "Incoming", type: "watchtower" },
-  { id: "agents", word: "In parallel", type: "barracks" },
-  { id: "discuss", word: "Discuss", type: "council" },
-  { id: "calendar", word: "Calendar", type: "war_drum" },
-  { id: "transform", word: "Process data", type: "mill" },
-  { id: "research", word: "Deep research", type: "mine" },
-  { id: "check", word: "Validate", type: "loot" },
-  { id: "drop", word: "Drop files", type: "pit" },
-  { id: "tasks", word: "Tasks", type: "fields" },
-  { id: "wiki", word: "Wiki", type: "scrolls" },
-  { id: "code", word: "Code", type: "forge", more: true },          // `more`: past the thin rule
-  { id: "send", word: "Send", type: "catapult", more: true },
-  { id: "route", word: "Route", type: "signpost", more: true },
-  { id: "chart", word: "Chart", type: "crag", more: true },
-  { id: "sound", word: "Sound", type: "horn", more: true },
-  { id: "listen", word: "Listen", type: "gramophone", more: true },
+  { id: "incoming", word: "Incoming", type: "watchtower", group: "in" },
+  { id: "drop", word: "Drop files", type: "pit", group: "in" },
+  { id: "listen", word: "Listen", type: "gramophone", group: "in" },
+  { id: "agents", word: "In parallel", type: "barracks", group: "think" },
+  { id: "discuss", word: "Discuss", type: "council", group: "think" },
+  { id: "research", word: "Deep research", type: "mine", group: "think" },
+  { id: "code", word: "Code", type: "forge", group: "make" },
+  { id: "transform", word: "Process data", type: "mill", group: "make" },
+  { id: "route", word: "Route", type: "signpost", group: "make" },
+  { id: "check", word: "Validate", type: "loot", group: "check" },
+  { id: "chart", word: "Chart", type: "crag", group: "check" },
+  { id: "tasks", word: "Tasks", type: "fields", group: "plan" },
+  { id: "calendar", word: "Calendar", type: "war_drum", group: "plan" },
+  { id: "wiki", word: "Wiki", type: "scrolls", group: "plan" },
+  { id: "send", word: "Send", type: "catapult", group: "tell" },
+  { id: "sound", word: "Sound", type: "horn", group: "tell" },
 ];
 const FOR_YOU = 3;
 const DOUBLE_MS = 240;                             // a second press within this builds at a free spot
@@ -94,7 +102,7 @@ function tilesOf(types) {
   const byType = Object.fromEntries(types.map((t) => [t.id, t]));
   const tiles = INTENTS.filter((i) => byType[i.type]).map((i) => ({ ...i, t: byType[i.type] }));
   const covered = new Set(tiles.map((x) => x.type));
-  for (const t of types) if (!covered.has(t.id)) tiles.push({ id: t.id, word: t.title, type: t.id, t, house: true, more: true });
+  for (const t of types) if (!covered.has(t.id)) tiles.push({ id: t.id, word: t.title, type: t.id, t, house: true, group: "more" });
   return tiles;
 }
 
@@ -107,7 +115,7 @@ function found(tiles, q) {
   return tiles.filter(({ t }) => [t.title, t.summary, t.intent, t.id, ...(t.sends || [])].some((w) => norm(w).includes(q)));
 }
 
-/** Its first three for the role: its buildings not standing yet. */
+/** Its first three for the role: its buildings not standing yet, framed in gold where they stand (never moved). */
 function forYou(tiles, standing) {
   return tiles.filter((x) => x.t.yours >= 0 && !standing.has(x.type)).sort((a, b) => a.t.yours - b.t.yours).slice(0, FOR_YOU);
 }
@@ -145,25 +153,29 @@ export function BuildRow({ query }) {
   const q = norm((query || "").trim());
   const shown = found(tiles, q);
   const yours = q ? [] : forYou(shown, new Set(town.value.buildings.map((b) => b.type)));
-  const row = [...yours, ...shown.filter((x) => !yours.includes(x))];
+  const row = shown;                              // always in INTENTS' order: an icon never moves
   enter = () => { if (!row.length) return false; pick(row[0]); return true; };
   const biome = activeBiome();
   const said = over ? `${say(over.word)} — ${say(over.t.title)}: ${over.t.summary}`
     : types === null ? say("Looking…")
     : !row.length ? say("Nothing by that name — Enter asks the Warchief what to build.")
-    : yours.length ? say(`For you: ${yours.map((x) => x.word).join(", ")}. ${hut ? "A press builds it here." : "A press places it; twice builds it at a free spot."}`)
+    : yours.length ? say(`For you, in gold: ${yours.map((x) => x.word).join(", ")}. ${hut ? "A press builds it here." : "A press places it; twice builds it at a free spot."}`)
     : say(hut ? "A press builds it here." : "A press places it; a double press builds it at a free spot.");
+  const groups = [...GROUPS, { id: "more", word: "More" }]
+    .map((g) => ({ ...g, tiles: row.filter((x) => (x.group || "more") === g.id) })).filter((g) => g.tiles.length);
+  const tile = (x) => html`<button key=${x.id} class=${cls("gui-catalog__item gui-build__tile", { "is-yours": yours.includes(x) })}
+      data-type=${x.type} data-intent=${x.id} aria-label=${`${say(x.word)}: ${say(x.t.title)}`} title=${say(x.word)}
+      onMouseEnter=${() => setOver(x)} onFocus=${() => setOver(x)} onClick=${() => press(x)}>
+    ${x.house ? html`<${HutSprite} type=${x.type} biome=${biome} />`
+      : html`<img class="ok-sprite" src=${`/ds/sprites/intents/${x.id}.png`} srcset=${`/ds/sprites/intents/${x.id}@2x.png 2x`}
+          width="32" height="32" alt="" draggable="false" />`}
+    <span class="gui-build__word">${say(x.word)}</span></button>`;
   return html`<div class="gui-build" role="group" aria-label=${say("Build")} onMouseDown=${(e) => e.preventDefault()}>
     <p class="ok-font-status ok-tone-muted gui-build__said" title=${said}>${said}</p>
     <div class="gui-build__row" onMouseLeave=${() => setOver(null)}>
-      ${row.map((x, n) => html`<button key=${x.id} class=${cls("gui-catalog__item gui-build__tile", {
-          "is-yours": yours.includes(x), "is-first": n > 0 && ((!yours.includes(x) && yours.includes(row[n - 1])) || (x.more && !row[n - 1].more)) })}
-          data-type=${x.type} data-intent=${x.id} aria-label=${`${say(x.word)}: ${say(x.t.title)}`} title=${say(x.word)}
-          onMouseEnter=${() => setOver(x)} onFocus=${() => setOver(x)} onClick=${() => press(x)}>
-        ${x.house ? html`<${HutSprite} type=${x.type} biome=${biome} />`
-          : html`<img class="ok-sprite" src=${`/ds/sprites/intents/${x.id}.png`} srcset=${`/ds/sprites/intents/${x.id}@2x.png 2x`}
-              width="32" height="32" alt="" draggable="false" />`}
-        <span class="gui-build__word">${say(x.word)}</span></button>`)}
+      ${groups.map((g) => html`<div key=${g.id} class="gui-build__group" role="group" aria-label=${say(g.word)}>
+        <span class="gui-build__group-word">${say(g.word)}</span>
+        <div class="gui-build__group-tiles">${g.tiles.map(tile)}</div></div>`)}
     </div>
   </div>`;
 }

@@ -254,10 +254,11 @@ def test_huts_move_until_the_person_pins_them(page):
                          arg=bid, timeout=WAIT_MS)
     s, c = sprite.bounding_box(), card.bounding_box()           # its building at 0.9, at the card's left
     assert s["width"] < 100 and s["x"] + s["width"] / 2 < c["x"] + c["width"] / 2
-    pin, name = title.locator(".gui-hut__pin").bounding_box(), _name(hut).bounding_box()
-    assert pin["x"] >= name["x"] + name["width"]                  # the pin at the right
+    assert title.locator(".gui-hut__pin, .gui-hut__fold").count() == 0   # pin and fold live in its menu, not its title
     assert "is-free" in hut.get_attribute("class")              # a new hut moves: nothing pins it but the person
-    hut.locator(".gui-hut__pin").click()
+    menu = lambda label: (title.click(button="right"),
+                          pg.locator(".gui-menu__item, [role=menuitem]", has_text=label).first.click())
+    menu("Pin it in place")
     pg.wait_for_function("id => !document.querySelector(`.gui-hut[data-id=\"${id}\"]`).classList.contains('is-free')",
                          arg=bid, timeout=WAIT_MS)
     start = hut.bounding_box()
@@ -266,11 +267,9 @@ def test_huts_move_until_the_person_pins_them(page):
     pg.mouse.move(start["x"] + start["width"] / 2 + 100, start["y"] + start["height"] / 2 + 50, steps=5)
     pg.mouse.up()
     assert hut.bounding_box()["x"] == start["x"]                 # pinned: a drag does nothing
-    assert "is-warn" in hut.locator(".gui-hut__pin").get_attribute("class")    # …and its pin says why, in red
-    pg.wait_for_function("id => !document.querySelector(`.gui-hut[data-id=\"${id}\"] .gui-hut__pin`).classList.contains('is-warn')",
-                         arg=bid, timeout=4_000)                 # for a moment
+    pg.get_by_text("Pinned in place").first.wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    hut.locator(".gui-hut__pin").click()
+    menu("Unpin to move it")
     pg.wait_for_function("id => document.querySelector(`.gui-hut[data-id=\"${id}\"]`).classList.contains('is-free')",
                          arg=bid, timeout=WAIT_MS)
     pg.wait_for_timeout(6_000)
@@ -1285,7 +1284,8 @@ def test_a_loot_cart_is_edited_in_the_window_and_a_file_of_its_branch_rejected(p
     cart = pipes.Payload(pipes.TEXT, "## Done\n\nthe notes", "camp", "pool.done", "The notes", (hop,), "LB-1")
     town.call(lambda: town.worker(bid).receive(cart, "The notes", cart.value))
     pg.keyboard.press("Escape")
-    _hut(pg, bid).locator(".gui-hut__title").dblclick()
+    _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)     # it asks: a click on it opens its question (yards.md §8)
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id))", bid)
     pg.locator(".gui-panel .gui-panel__full").click()
     pg.locator(".loot-card", has_text="The notes").click()
     files = pg.locator(".loot-detail .ok-file")
@@ -1351,8 +1351,8 @@ def test_a_folded_hut_shows_its_title_peeks_under_a_drag_and_unfolds(page):
     pg.evaluate("() => window.dispatchEvent(new Event('dragend'))")
     peek.wait_for(state="detached", timeout=WAIT_MS)                    # the drag gone, it folds again
     assert pg.locator(".gui-panel").count() == 0
-    hut.hover()
-    hut.locator(".gui-hut__fold").click()                               # ▸ unfolds it for good
+    hut.locator(".gui-hut__title").click(button="right")                 # Unfold in its menu unfolds it for good
+    pg.locator(".gui-menu__item, [role=menuitem]", has_text="Unfold the card").first.click()
     hut.locator(".gui-hut__body").first.wait_for(state="visible", timeout=WAIT_MS)
     shot("fold-3-unfolded")
     assert server_building(pg, forge)["pinned"] is False and pg.locator(".gui-panel").count() == 0
