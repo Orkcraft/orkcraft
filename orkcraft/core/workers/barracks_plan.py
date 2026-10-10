@@ -6,8 +6,9 @@ A task that arrives is judged before any ork takes it:
     sorted    else the steward's light look (its `triage`, realm/steward.py `WORK`): `trivial` → one light ork at once, no
               review but its tests; `single` → one ork of the tier the sort names, then the review;
               `plan` (stages, parallel parts) → the steward plans it on the goal's tier (its `plan`).
-              A short task with no steps (`plans.clearly_simple`) is never planned: not trivial, it goes
-              to one ork of the tier the building's goal names, reviewed
+              A short task with no steps (`plans.clearly_simple`) is never planned: with a `test_cmd` it
+              is not even sorted — one ork of the goal's tier, its tests the review (trivial); without
+              one, not trivial, it goes to one ork of the tier the building's goal names, reviewed
     planned   the steward answers `SIMPLE` (one ork, as `simple`) or a plan → the task becomes the parent
               of subtasks: each a task here of its own (`parent`, `sub`), with its tier, its persona, the
               files it touches and the parts it waits for. A part starts when what it waits for is
@@ -86,7 +87,12 @@ class PlanMixin:
         if not self.plans_on:
             task.tier = self.goal.simple
             return True
-        self._triage(task, short=plans.clearly_simple(task.title, task.text))
+        short = plans.clearly_simple(task.title, task.text)
+        if short and self.config.get("test_cmd"):         # its tests judge it: no steward call before or after
+            task.kind, task.tier = plans.TRIVIAL, self.goal.simple
+            st.log(bk.Decision(bk.now_iso(), task.id, "plan", why=f"whole, {task.tier}: short, its tests judge it"))
+            return True
+        self._triage(task, short=short)
         return False
 
     def _take(self, task: bk.PoolTask, why: str) -> threading.Event:

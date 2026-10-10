@@ -45,6 +45,7 @@ class Case:
     check: str = ""                                        # run in the result's tree: exit 0 passes
     expect: str = ""                                       # what a good result has, in words (for a judge)
     reviewed: bool = True                                  # an agent's case counts once the operator read it
+    level: str = ""                                        # simple | medium | parallel: the path it should take
 
     @classmethod
     def of(cls, data: dict, type_id: str = "") -> Case:
@@ -54,7 +55,7 @@ class Case:
                    task=str(data.get("task") or ""),
                    files={str(k): str(v) for k, v in files.items()} if isinstance(files, dict) else {},
                    check=str(data.get("check") or ""), expect=str(data.get("expect") or ""),
-                   reviewed=data.get("reviewed", True) is not False)
+                   reviewed=data.get("reviewed", True) is not False, level=str(data.get("level") or ""))
 
 
 def slug(text: str) -> str:
@@ -79,6 +80,22 @@ def cases(root: Path, type_id: str) -> list[Case]:
 
 def case(root: Path, type_id: str, case_id: str) -> Case | None:
     return next((c for c in cases(root, type_id) if c.id == case_id), None)
+
+
+LEVELS = ("simple", "medium", "parallel")      # the path a case should take in the building
+ALL = "all"
+
+
+def series(found: list[Case], case_id: str = "", level: str = "") -> list[Case]:
+    """The cases a run takes, in order: one by its id, `all` of them, every one of a level, else the first. Only
+    the cases the operator read count in a series."""
+    if level:
+        return [c for c in found if c.level == level and c.reviewed]
+    if case_id == ALL:
+        return [c for c in found if c.reviewed]
+    if case_id:
+        return [c for c in found if c.id == case_id][:1]
+    return found[:1]
 
 
 def bench_cases_of(type_id: str) -> list[dict]:
@@ -289,3 +306,63 @@ def render(r: Report, building_word: str = "Building") -> str:
         if s.where:
             out += [f"{names.get(s.name, s.name)}'s result: {s.where}"]
     return "\n".join(out)
+
+
+GAP_LIMIT = 0.10                    # how far the building may be from the bare tool, on time and on spend
+
+
+def gaps(r: Report) -> dict[str, float | None]:
+    """How far the building is from the bare tool: time and spend as a share over it (0.25: 25 % more, below 0:
+    less), quality 0 when both checks agree, 1 when the building's is worse, -1 when better. None: not measured."""
+    b, t = r.building, r.bare
+    if b is None or t is None:
+        return {"time": None, "spend": None, "quality": None}
+
+    def over(mine: float, theirs: float) -> float | None:
+        return (mine - theirs) / theirs if theirs > 0 else None
+
+    def score(s: Side) -> int:
+        return -2 if s.error else {True: 1, None: 0, False: -1}[s.passed]
+
+    quality = float((score(t) > score(b)) - (score(b) > score(t)))
+    return {"time": over(b.seconds, t.seconds), "spend": over(b.cost, t.cost), "quality": quality}
+
+
+def summary(reports: list[Report], building_word: str = "Building", limit: float = GAP_LIMIT) -> str:
+    """The runs of several cases side by side: each one's time, spend and check, the building against the bare
+    tool, and whether it stays within `limit`."""
+    def pct(v: float | None) -> str:
+        return "—" if v is None else f"{v:+.0%}"
+
+    rows = [("Case", "Time", "Spend", "Check", f"Within {limit:.0%}")]
+    for r in reports:
+        g, b, t = gaps(r), r.building, r.bare
+        check = f"{verdict(b)} / {verdict(t)}" if b and t else "—"
+        rows.append((r.case, pct(g["time"]), pct(g["spend"]), check, "yes" if within(g, limit) else "no"))
+    width = [max(len(row[i]) for row in rows) for i in range(len(rows[0]))]
+    out = [f"{building_word} against the bare AI tool (time and spend: how much more; check: {building_word} / bare)", ""]
+    out += ["  ".join(cell.ljust(width[i]) for i, cell in enumerate(row)).rstrip() for row in rows]
+    return "\n".join(out)
+
+
+def against(root: Path, type_id: str) -> list[dict]:
+    """The latest run with both sides of each case, by the cases' order: how far the building is from the bare tool.
+    For the bench window's summary."""
+    order = {c.id: (n, c.level) for n, c in enumerate(cases(root, type_id))}
+    latest: dict[str, Report] = {}
+    for r in runs(root, type_id):                      # newest first
+        if r.building is not None and r.bare is not None and r.case not in latest:
+            latest[r.case] = r
+    rows = []
+    for cid, r in sorted(latest.items(), key=lambda kv: order.get(kv[0], (len(order), ""))[0]):
+        g = gaps(r)
+        rows.append({"case": cid, "level": order.get(cid, (0, ""))[1], "run": r.id, "tool": r.tool, **g,
+                     "building": verdict(r.building), "bare": verdict(r.bare),
+                     "within": within(g)})
+    return rows
+
+
+def within(g: dict, limit: float = GAP_LIMIT) -> bool:
+    """The building is no worse on its check and at most `limit` over the bare tool on time and on spend."""
+    return g["quality"] is not None and g["quality"] <= 0 and \
+        all(v is not None and v <= limit for v in (g["time"], g["spend"]))

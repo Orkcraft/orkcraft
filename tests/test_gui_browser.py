@@ -1815,7 +1815,12 @@ def test_five_clicks_on_a_hut_open_its_test_bench_with_the_flag(page, gui, monke
     dialog.wait_for(state="visible", timeout=WAIT_MS)
     assert "Test bench" in dialog.locator(".ok-dialog__title").inner_text()
     pg.wait_for_selector(".gui-bench__table", timeout=WAIT_MS)
-    assert "passed" in dialog.locator(".gui-bench__table").inner_text() and "failed" in dialog.locator(".gui-bench__table").inner_text()
+    runs = dialog.locator(".gui-bench__table:not(.gui-bench__against)")
+    assert "passed" in runs.inner_text() and "failed" in runs.inner_text()
+    against = dialog.locator(".gui-bench__against").inner_text()      # the latest run of each case against the bare tool
+    assert "slugify" in against and "+138%" in against and "better" in against
+    case = dialog.locator(".gui-bench__form select").first
+    assert "Every parallel case (5)" in case.inner_text() and "Every case (15)" in case.inner_text()
     assert dialog.locator(".gui-bench__lane").count() == 3                # the steward and two orks
     pg.wait_for_selector(".gui-bench__finding", timeout=WAIT_MS)
     if os.environ.get("ORKCRAFT_SHOTS"):

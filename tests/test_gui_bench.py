@@ -205,3 +205,27 @@ def test_a_kept_run_reads_back_with_its_steps(tmp_path):
     bench.Report("r1", "barracks", "slugify", building=side, orders_changed=True).save(tmp_path / bench.RUNS / "r1")
     kept = bench.runs(tmp_path, "barracks")[0]
     assert kept.building.steps[0]["who"] == "Grub" and kept.orders_changed is True
+
+
+def test_a_series_runs_every_case_or_every_case_of_a_level(host, monkeypatch):
+    bid = _raised(host, "barracks", worktrees=False)
+    s = host.command("bench.open", {"id": bid})
+    _settled(host, bid)
+    assert s["levels"] == {"simple": 5, "medium": 5, "parallel": 5} and s["against"] == []
+    seen = []
+    real = subprocess.Popen
+
+    def popen(argv, **kw):
+        seen.append(argv)
+        return real(["sh", "-c", f'echo "{bench.DONE}r"'], **kw)
+
+    monkeypatch.setattr(gui_bench.subprocess, "Popen", popen)
+    with pytest.raises(CommandError, match="No such level"):
+        host.command("bench.run", {"id": bid, "case": "level:hard"})
+    s = host.command("bench.run", {"id": bid, "case": "level:parallel"})
+    assert seen[-1][seen[-1].index("bench") + 1:seen[-1].index("bench") + 4] == ["barracks", "--level", "parallel"]
+    assert s["job"]["label"] == "every parallel case (5)"
+    assert _until(lambda: host.bench.jobs["barracks"].done)
+    s = host.command("bench.run", {"id": bid, "case": "all"})
+    assert "--case" in seen[-1] and seen[-1][seen[-1].index("--case") + 1] == "all"
+    assert s["job"]["label"] == "every case (15)"

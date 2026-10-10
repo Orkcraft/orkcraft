@@ -72,6 +72,18 @@ A case is one JSON file: the project it starts from, the task, and how the resul
   case counts only after the operator has read it (`"reviewed": true`), so runs stay comparable:
   a case is never written again on each open.
 
+**The Agent pool's sets** (`realm/bench_sets.py`, with `realm/bench_cases.py`'s own four): fifteen cases, five
+of each `level`, the path the pool should take on it:
+
+| level | what it is | the path in the pool |
+|---|---|---|
+| `simple` | short, no list of steps (`plans.clearly_simple`) | one ork of the goal's tier at once; with a `test_cmd`, no steward call at all: its tests are its review |
+| `medium` | one ork's job that needs thought | the steward's sort, one ork, then the steward's review |
+| `parallel` | three independent parts, then one that needs them all | the steward's sort and plan, parts at once, the last one after them |
+
+Each has a known solution in `tests/bench_solutions/<case>/`: `tests/test_bench_sets.py` checks that the
+case's check fails as given and passes on it, and that its level is the path the rules give.
+
 ### 3.2 A run
 
 One run is one case, two sides, the same model:
@@ -92,6 +104,13 @@ of its plan, its reworks.
 
 The run is kept in `.orkcraft/bench/runs/<run>/report.json`, next to both copies, so the bench window
 shows the last runs and any two can be compared.
+
+**A series**: `orkcraft bench --case all`, or `--level simple|medium|parallel`, runs the cases one after
+another (each with its own spend limit) and ends with a summary: per case, how much more time and spend the
+building took than the bare tool, and its check against the bare tool's. A case is **within 10 %**
+(`bench.GAP_LIMIT`) when its check is no worse and both time and spend are at most 10 % over. The window's
+Case list offers the same series, and *The Agent pool against the bare AI tool* holds the latest run of each
+case so (`bench.against`).
 
 As built (stage 1):
 
