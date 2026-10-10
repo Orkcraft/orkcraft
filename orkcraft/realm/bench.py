@@ -284,7 +284,7 @@ def render(r: Report, building_word: str = "Building") -> str:
         if s.passed is False and s.check_tail:
             out += ["", f"{names.get(s.name, s.name)}'s check, last lines:", s.check_tail[-600:]]
     if r.building and r.building.how:
-        out += ["", f"How the {building_word} went ({r.building.orks} orks):"] + [f"  {h}" for h in r.building.how]
+        out += ["", f"How the {building_word} went ({r.building.orks} ork{'' if r.building.orks == 1 else 's'}):"] + [f"  {h}" for h in r.building.how]
     for s in sides:
         if s.where:
             out += [f"{names.get(s.name, s.name)}'s result: {s.where}"]

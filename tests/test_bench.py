@@ -12,6 +12,7 @@ import pytest
 from orkcraft import cli
 from orkcraft.core import bench as building_bench
 from orkcraft.core.workers.barracks import BarracksWorker
+from orkcraft.realm import barracks as bk
 from orkcraft.realm import bench
 from tests.pool_fakes import Steward
 
@@ -205,3 +206,17 @@ def test_cli_refuses_an_unknown_case_type_or_tier(fake_repo, capsys):
     assert cli.main(["--repo", str(fake_repo), "bench", "--tier", "grandmaster"]) == 2
     err = capsys.readouterr().err
     assert "slugify" in err and "barracks so far" in err and "novice, seasoned or veteran" in err
+
+
+def test_the_building_feed_reads_its_decisions_oldest_first_and_folds_a_report(tmp_path, faked_pool):
+    c = _slugify_case(tmp_path)
+    project = tmp_path / "run" / "building"
+    base = bench.make_project(c, tmp_path, project)
+    heard: list[str] = []
+    side = building_bench.run_building(c, project, base, {}, timeout_s=60, say=heard.append)
+    actions = [ln.split(" ", 1)[1].split(":", 1)[0] for ln in heard]
+    assert len(actions) == len(set(heard)) and "hire" in actions and actions[-1] == "accept"   # each once, in order
+    assert side.how[-1].startswith("accept") and "\n" not in "".join(side.how)
+    long = bk.Decision("t", "x", "accept", "Grub", "I checked it.\n\n- **`json` " + "word " * 80)
+    line = building_bench._line(long)
+    assert len(line) <= 200 and line.endswith("…") and "\n" not in line

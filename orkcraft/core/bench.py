@@ -83,7 +83,7 @@ def run_building(case: bench.Case, project: Path, base: str, template: dict, too
             raise ValueError("the case has no task")
         root_id, how, heard = task.id, "", 0
         while True:
-            decisions = w.state.decisions(500)
+            decisions = _in_order(w.state)
             for d in decisions[heard:]:
                 say(f"+{_clock(time.monotonic() - start)} {_line(d)}")
             heard = len(decisions)
@@ -123,8 +123,17 @@ def _clock(seconds: float) -> str:
     return f"{int(seconds // 60)}:{int(seconds % 60):02d}"
 
 
-def _line(d) -> str:
-    return f"{d.action}: {d.orc + ' — ' if d.orc else ''}{d.why}"[:200]
+def _in_order(st) -> list:
+    """The building's decisions, oldest first (its state reads them newest first)."""
+    return list(reversed(st.decisions(500)))
+
+
+def _line(d, limit: int = 200) -> str:
+    """One line: a report's Markdown is folded onto it and cut on a word."""
+    text = " ".join(f"{d.action}: {d.orc + ' — ' if d.orc else ''}{d.why}".split())
+    if len(text) <= limit:
+        return text
+    return text[:limit - 1].rsplit(" ", 1)[0].rstrip(" ,;:—-") + "…"
 
 
 def _steps(decisions, started: dt.datetime) -> list[dict]:
@@ -160,7 +169,7 @@ def _read(w, root_id: str, how: str, side: bench.Side, started: dt.datetime) -> 
             side.how.append(f"planned in {len(parts)} parts: " + ", ".join(p.sub or p.title for p in parts))
         if task.attempts > 1:
             side.how.append(f"{task.attempts - 1} rework(s)")
-    decisions = st.decisions(500)
+    decisions = _in_order(st)
     side.how += [_line(d) for d in decisions[-40:]]
     side.steps = _steps(decisions, started)
 
