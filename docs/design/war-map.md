@@ -172,9 +172,9 @@ The prototype's "Attack: a question" and "Attack: a failure" buttons play it.
 | **dirt** | `#1a1813` (today's Office ground) | `#3a3326` | as drawn |
 | **forest** | `#101a0b` | `#22341a` | as drawn (the ground says forest; moss at the foot was tried and does not read) |
 | **ice** | `#070d14` | `#1c2c3c` | snow: the two top pixels of every edge that faces the sky go ivory |
-| **dust** | `#2a2014` | `#5a462a` | the greens dry to olive (`#a8a05c`, `#7a7040`), sand drifts along the foot |
+| **dust** | `#1a1712` | `#5a462a` | the greens bleach to sandstone (`#d4b77a`, `#9c7a46`; olive sank into the fence's wood and the ground, 2026-10-10), sand drifts along the foot |
 | **void** | `#0e0c14` | `#2c263c` | the greens go ashen violet (`#8e88a8`, `#5e587a`) |
-| **lava** | `#161212` | `#342c2a` | basalt, embers at the foot (§3.4) |
+| **lava** | `#170f0d` | `#342c2a` | ash-grey basalt, embers at the foot (§3.4) |
 | **meadow** | `#0d1a16` | `#24443a` | spring green with a turn to teal (not forest's), daisies at the foot; glyphs `· , ʷ ✿` — the knights' open field |
 
 - **One flat colour per biome**, dark and low in saturation, as sprites.md has it: the cards, their
@@ -217,7 +217,7 @@ middle row) a burning hut barely differs from a quiet one, and the call weakens.
 |---|---|
 | the town's ground | `#161212`, a cold near-black |
 | the land on the map | `#342c2a` |
-| the huts | the greens to basalt greys (`#5e5652`, `#3c3634`); a dull ember (`#8a2a10`, darker than any alert) in every sixth pair of pixels along the foot |
+| the huts | the greens to ash-grey basalt (`#a49a96`, `#6a605c`; the darker greys read as one smear on the ground, 2026-10-10); a dull ember (`#8a2a10`, darker than any alert) in every sixth pair of pixels along the foot |
 
 It reads as volcanic by the grey stone and the embers, and leaves the colour of fire to fire. With
 six biomes, §3.3's "any but its neighbour's" has five to choose from. The prototype has it.
