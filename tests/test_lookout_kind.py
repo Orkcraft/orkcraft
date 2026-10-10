@@ -87,3 +87,22 @@ def test_the_lookouts_kind_goes_on_the_cart(host, monkeypatch):
         time.sleep(0.02)
     kinds = {p.title.split(" · ")[-1]: p.want for p in sent}
     assert kinds == {"Ann: login is broken": "change", "Ann: when is the demo?": "reply", "Lee: please fix it": "reply"}
+
+
+def test_an_alert_the_intent_asks_for_is_rated_by_the_model(host, monkeypatch):
+    # a machine's mail is sorted low by code, but an on-call intent listens for exactly that: the model's rating stands
+    def judge(prompt, model=None):
+        return json.dumps({"keep": [{"n": 1, "why": "production down", "asks": "action", "urgency": "now",
+                                     "risk": "high", "tone": "urgent", "agent": False}]}), 0.0
+    monkeypatch.setattr(WatchtowerWorker, "judge_runner", staticmethod(judge))
+    spec = buildings.type_spec(host.town, "watchtower")
+    spec["config"] = {**(spec.get("config") or {}), "intent": "production is down", "triage": True}
+    w = host.town.worker(buildings.raise_spec(host.town, spec).id)
+    alert = watch.Signal(watch.now_iso(), "mail", "Monitor is DOWN: checkout", "HTTP 502", "/a",
+                         sender="alerts@uptime-robot.com")
+    w.add_signal(alert)
+    for _ in range(200):
+        if alert.kept is not None:
+            break
+        time.sleep(0.02)
+    assert alert.kept and alert.importance == "high"

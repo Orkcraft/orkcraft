@@ -71,3 +71,13 @@ class Opener:
             if part in req.full_url:
                 return io.BytesIO(json.dumps(answer).encode())
         raise OSError(f"no route to {req.full_url}")
+
+
+def test_the_lookout_sees_who_wrote_it():
+    # an intent about people ("anything from our key clients") is judged on the sender, so the Lookout reads it
+    asked: list[str] = []
+    mail = watch.Signal(watch.now_iso(), "mail", "Lunch next week?", "We're in town Tuesday.", "/m",
+                        sender="m.ruiz@fabrikam.example")
+    lookout.judge("anything written by people at Fabrikam", [mail, sig("no sender")], keeper("fabrikam", asked))
+    assert "[1] mail · from m.ruiz@fabrikam.example · Lunch next week?" in asked[0]
+    assert "[2] webhook · no sender" in asked[0]

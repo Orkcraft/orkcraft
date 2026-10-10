@@ -107,7 +107,9 @@ def judge(intent: str, signals: list, runner, kinds=None, triage: bool = False) 
         batch = signals[at:at + BATCH]
         allowed = [tuple(kinds(s)) if kinds is not None else () for s in batch]
         choose = any(len(k) > 1 for k in allowed)
-        messages = "\n\n".join(f"[{i + 1}] {s.source} · {_fence(s.title)}"
+        messages = "\n\n".join(f"[{i + 1}] {s.source}"
+                                 f"{' · from ' + _fence(sender) if (sender := getattr(s, 'sender', '')) else ''}"
+                                 f" · {_fence(s.title)}"
                                  f"{' · kinds: ' + ', '.join(allowed[i]) if len(allowed[i]) > 1 else ''}"
                                  f"\n{_fence(s.body)}" for i, s in enumerate(batch))
         try:
