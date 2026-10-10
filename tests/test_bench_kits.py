@@ -361,3 +361,13 @@ def test_on_the_bench_s_tool_each_task_keeps_its_steward_s_tier(monkeypatch):
     code_kits.on_tool(w, "agy", "elder")
     w.steward_runner("judge")
     assert seen == [("agy", "laborer"), ("agy", "elder")]
+
+
+def test_an_empty_bare_answer_is_asked_once_more(tmp_path):
+    # agy ends a turn empty when it was denied a command: the tool failed, the bare side did not answer
+    c, answers = _case("watchtower"), ["", '{"messages": []}', "", ""]
+    runner = lambda tool, prompt, workdir, cancel, model: (answers.pop(0), 0.0, 10, "")   # noqa: E731
+    side = bench_kits.bare(c, tmp_path, runner=runner)
+    assert side.tokens == 20 and len(answers) == 2 and "0 characters" not in str(side.checks)
+    side = bench_kits.bare(c, tmp_path, runner=runner)
+    assert side.tokens == 20 and answers == []

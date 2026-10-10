@@ -402,13 +402,18 @@ def bare(c: bench.Case, workdir: Path, tool: str = "main", tier: str = "", cance
     side, start = bench.Side("bare", where=str(workdir), model=tier), time.monotonic()
     try:
         cancel = cancel or threading.Event()
-        if runner is not None:
-            text, cost, tokens, _ = runner(tool, kit.prompt(c), workdir, cancel, model)
-        elif kit.web:                             # as the building's researchers do: the open web
-            text, cost, tokens = roads.run_agent(tool, kit.prompt(c), workdir, {}, cancel, model, web=True)
-        else:
-            text, cost, tokens, _ = jobs.run_read(tool, kit.prompt(c), workdir, cancel, model)
-        side.text, side.cost, side.tokens = (text or "")[:6000], float(cost or 0.0), int(tokens or 0)
+        text, spent, used = "", 0.0, 0
+        for _ in range(2):                        # an empty answer is the tool's failure (agy ends a turn empty on a
+            if runner is not None:                # denied command), not the bare tool's answer: once more
+                text, cost, tokens, _ = runner(tool, kit.prompt(c), workdir, cancel, model)
+            elif kit.web:                         # as the building's researchers do: the open web
+                text, cost, tokens = roads.run_agent(tool, kit.prompt(c), workdir, {}, cancel, model, web=True)
+            else:
+                text, cost, tokens, _ = jobs.run_read(tool, kit.prompt(c), workdir, cancel, model)
+            spent, used = spent + float(cost or 0.0), used + int(tokens or 0)
+            if (text or "").strip():
+                break
+        side.text, side.cost, side.tokens = (text or "")[:6000], spent, used
         judged(side, c, kit, kit.parse(text))
     except (RuntimeError, OSError) as e:
         side.error = str(e)[:500] or type(e).__name__
