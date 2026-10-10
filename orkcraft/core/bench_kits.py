@@ -20,7 +20,7 @@ from typing import Callable
 from orkcraft import scroll as ts
 from orkcraft.core import buildings
 from orkcraft.core.town import Town
-from orkcraft.realm import bench, bench_kits, builders, checkpoint, steward_models, watch
+from orkcraft.realm import bench, bench_kits, builders, checkpoint, steward_models, tiers, watch
 from orkcraft.sources import telemetry
 
 POLL_S = 0.5
@@ -82,6 +82,8 @@ def on_tool(w, tool: str, tier: str) -> None:
                                steward_models.purpose_of(use, kind), w.building_id)
 
     w.steward_runner = runner
+    if tier:                              # a building that calls its tools itself still asks its steward for the model
+        w.steward_pick = lambda use, setting="": steward_models.Pick(tiers.resolve(tool, tier), tier, "bench")
 
 
 def spent(project: Path, since: dt.datetime) -> tuple[float, int]:
@@ -282,5 +284,114 @@ def run_war_drum(ctx: Ctx) -> bench.Side:
     return _run(ctx, work)
 
 
+# -- Research ----------------------------------------------------------------------------------------------------
+
+def run_mine(ctx: Ctx) -> bench.Side:
+    from orkcraft.realm import research
+    question = str(ctx.case.inputs.get("question") or "")
+
+    def work(town: Town, side: bench.Side, since: dt.datetime, start: float) -> dict:
+        config = {**ctx.template, "wiki": "", "limit": ctx.max_spend,
+                  "month_limit": max(float(ctx.template.get("month_limit") or 0), ctx.max_spend),
+                  "rounds": int(ctx.case.inputs.get("rounds", ctx.template.get("rounds", 1)))}
+        if ctx.tool != "main":
+            config["tools"] = [ctx.tool]
+        w = raised(town, "mine", config)
+        on_tool(w, ctx.tool, ctx.tier)
+        side.model = ctx.tier or w.steward_pick("search").tier
+        with town.bench_lock:
+            rid = w.ask(question)
+        seen = ""
+
+        def done() -> bool:
+            nonlocal seen
+            r = w.get(rid) or {}
+            if r.get("status") != seen:
+                seen = r.get("status", "")
+                ctx.say(f"research: {seen}" + (f" (round {r.get('round')})" if r.get("round") else ""))
+            return r.get("status") in ("done", "failed", "waiting")
+
+        if why := wait(ctx, side, done, since, start):
+            w.halt()
+            return _stopped(side, why)
+        r = w.get(rid)
+        if r.get("status") == "failed" and not r.get("groups"):
+            side.error = r.get("error") or r.get("stopped") or "the research failed"
+        side.orks = len(r.get("tools") or [])
+        side.how = [f"plan: {len(r.get('plan') or [])} sub-questions · {len(r.get('findings') or [])} findings · "
+                    f"{r.get('round', 0)} rounds · {len(r.get('tools') or [])} tools ({', '.join(r.get('tools') or [])})"]
+        side.how += [f"{s['q']}" for s in r.get("plan") or []]
+        claims = []
+        for g in r.get("groups") or []:
+            if g.get("state") == "dropped":
+                continue
+            urls = [x["url"] for x in research.sources_of(r, g)]
+            claims.append({"claim": g["claim"], "sources": urls, "state": g.get("state", "")})
+            side.how.append(f"{g.get('state', '')}: {g['claim'][:160]} ({len(urls)} sources)")
+        try:
+            side.text = (w.state_dir / f"{rid}.md").read_text(encoding="utf-8")[:6000]
+        except OSError:
+            side.text = research.report(r)[:6000] if r.get("plan") else ""
+        return {"claims": claims}
+
+    return _run(ctx, work)
+
+
+# -- Review board ----------------------------------------------------------------------------------------------
+
+def run_council(ctx: Ctx) -> bench.Side:
+    from orkcraft.realm import team
+    inputs = ctx.case.inputs
+
+    def work(town: Town, side: bench.Side, since: dt.datetime, start: float) -> dict:
+        config = {**ctx.template, "max_cycles": max(int(ctx.template.get("max_cycles") or 3), 2)}
+        roles = inputs.get("roles")
+        on = "" if ctx.tool == "main" and not ctx.tier else f"{ctx.tool}{':' + ctx.tier if ctx.tier else ''}"
+        if roles:
+            config["members"] = [f"{r}:{on or 'main'}" for r in roles]
+        elif on:
+            config["members"] = [f"{str(m).split(':')[0]}:{on}" for m in config.get("members") or team.DEFAULT_MEMBERS]
+        if on:
+            config["moderator"] = on
+        if inputs.get("exits"):
+            config["exits"] = list(inputs["exits"])
+        w = raised(town, "council", config)
+        on_tool(w, ctx.tool, ctx.tier)
+        side.model = ctx.tier
+        with town.bench_lock:
+            started = w.review(str(inputs.get("document") or ""), str(inputs.get("title") or ctx.case.title))
+        if not started:
+            raise ValueError("the board did not take the document")
+        ctx.say(f"the board reviews “{inputs.get('title') or ctx.case.title}”")
+        heard = 0
+
+        def done() -> bool:
+            nonlocal heard
+            d = w.current
+            if d is None:
+                return False
+            for t in d.turns[heard:]:
+                ctx.say(f"{t.role}: {t.verdict or t.kind}"[:200])
+            heard = len(d.turns)
+            return not w.busy and (d.finished or d.outcome == "asked")
+
+        if why := wait(ctx, side, done, since, start):
+            w.halt()
+            return _stopped(side, why)
+        d = w.current
+        if d.outcome in ("error", "budget", "stopped"):
+            side.error = f"the board ended {d.outcome}: {d.error}"[:400]
+        side.orks = len(d.reviews())
+        side.how = [f"{t.role}: {t.verdict or '—'}" for t in d.reviews()] + \
+            [f"steward: {d.outcome}" + (f" → {d.route}" if d.route else "") + (f" — {d.decision[:200]}" if d.decision else "")]
+        side.text = "\n\n".join([f"## Steward\n\n{d.decision}"] + [f"## {t.role} ({t.verdict})\n\n{t.text}"
+                                                                     for t in d.reviews()])[:6000]
+        verdict = {"approved": "approve", "rework": "rework", "asked": "ask"}.get(d.outcome, d.outcome)
+        notes = "\n\n".join([d.decision] + [t.text for t in d.reviews()])      # what the board said, not the document
+        return {"verdict": verdict, "notes": notes, "route": d.route}
+
+    return _run(ctx, work)
+
+
 RUNS: dict[str, Callable[[Ctx], bench.Side]] = {"watchtower": run_watchtower, "fields": run_fields,
-                                                "war_drum": run_war_drum}
+                                                "war_drum": run_war_drum, "mine": run_mine, "council": run_council}

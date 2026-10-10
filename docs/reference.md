@@ -1137,7 +1137,7 @@ a hut, types into a terminal or changes a setting: anything else it sends is ref
 - `orkcraft feedback calibrate [--days N]` — how far each quiet feedback signal (an accepted cart, an
   edited file, a closed pull request…) agrees with the 👍 / 👎 pressed near it, and the weight it has
   earned; it changes nothing (docs/design/native-feedback.md §8).
-- `orkcraft bench [barracks|watchtower|fields|war_drum] [--case ID] [--tool T] [--tier novice|seasoned|veteran] [--max-spend $]
+- `orkcraft bench [barracks|watchtower|fields|war_drum|mine|council] [--case ID] [--tool T] [--tier novice|seasoned|veteran] [--max-spend $]
   [--only building|bare] [--orders FILE] [--list]` — the Test bench: a building on a test case beside the bare AI tool
   on the same model, each in a copy of the project with no remote; time, spend, tokens and the case's
   check side by side, kept in `.orkcraft/bench/runs/` (docs/design/test-bench.md). It runs AI tools and

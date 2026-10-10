@@ -1,6 +1,6 @@
 # Design — the Test bench: one building on its own, measured
 
-Status: stages 1–8 built 2026-10-10 (runs for the Agent pool, External listeners, the Task board and the Calendar); §9 says how it is built.
+Status: stages 1–9 built 2026-10-10 (runs for the Agent pool, External listeners, the Task board, the Calendar, Research and the Review board); §9 says how it is built.
 For the operator only: hidden behind a flag, maybe later for developers. GUI and CLI, no TUI
 ([calm-town.md](calm-town.md) §9).
 
@@ -14,7 +14,8 @@ For the operator only: hidden behind a flag, maybe later for developers. GUI and
 | 6 | Product: the building's AHA moment, its script and its measure | built |
 | 7 | **Make tasks**: the ticked findings sent to the Agent pool picked, by a button, never by themselves | built |
 | 8 | runs for External listeners, the Task board and the Calendar (§3.5) | built |
-| 9 | runs for the other buildings: Research and the Review board next | |
+| 9 | runs for Research and the Review board (§3.5) | built |
+| 10 | runs for the other buildings | |
 
 ## 1. Why
 
@@ -135,7 +136,16 @@ tier the building's own call ran on when no tier is picked, in a copy of the pro
 | Task board | long cards to name; to-dos to plan; wiki pages in the copy | `write` (its steward names the card), `add` to the person's to-dos, its context from the wiki, `plan` | 2–4 words and the key words for a title; 3–7 steps and the case's words for a plan (the wiki's facts: a policy number, who to call) |
 | Calendar | a week's meetings with attendees and invitations; how a brief is written | the calendar reads the copy's `.ics`; `meeting soon` goes along a road to an Agent pool raised with the operator's pool's settings; the brief comes back along `pool.done` | a brief per meeting, the sections asked for, the names and the invitation's points |
 
-Found and fixed on the way: the calendar dropped an invitation's attendees and description, so a brief
+| Research | a question whose answer is settled on the open web, the facts it should find, how many sites | `ask`; its plan, a web search by every tool at once, grouping and its code check, rounds; the case's `rounds`, the run's spend as its limit | each fact in a claim that has a source; sources on enough sites. The bare AI tool searches the web too, and its findings are read by the Mine's own parser |
+| Review board | a document with flaws planted in it and the roles to read it; or a request and the board's exits | `review`; each role in turn, then its steward; members and moderator on the run's AI tool and tier | the verdict; each planted flaw named in what the board said (never in the document); the exit it was sent down |
+
+Research needs the open web: it cannot read local files, so its cases ask about dates and numbers that do
+not move. With one web tool on, nothing can reach *confirmed* (two minds are needed), so its check asks
+for a sourced claim, not a confirmed one.
+
+Found and fixed on the way: Research ran its rounds of web searching even with fewer tools than a
+confirmation needs, spending its limit on what could never be confirmed; now it runs them only when it
+could. The calendar dropped an invitation's attendees and description, so a brief
 never knew who comes or what the agenda was (`sources/ics.py`, `daybook.invitation`).
 
 ## 4. UX (stage 5)
