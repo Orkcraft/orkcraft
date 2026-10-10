@@ -1,24 +1,10 @@
 // 🧪 The Test bench (gui/bench.py, docs/design/test-bench.md): one building on its own, in three tabs. Tech runs
 // a test case in the building and in the bare AI tool and puts them side by side; UX and Product are agents'
 // reviews of the building. Ticked findings become tasks of an Agent pool with Make tasks, never by themselves.
-// Shown only when the town was opened with ORKCRAFT_BENCH=1: five clicks on a hut open its bench.
-import { signal } from "@preact/signals";
-import { useEffect, useLayoutEffect, useState } from "preact/hooks";
+// It is drawn in the Test bench building's window (js/buildings/lab.js), for a building whose road comes into it.
+import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { command, say, toast, town } from "./link.js";
-
-export const benchOpen = signal(null);          // the building whose bench is open
-
-const CLICKS = 5, WITHIN_MS = 2000;
-let clicks = { id: null, at: [] };
-
-/** A click on a hut that did not move it (js/hut.js): the fifth within two seconds opens its bench. */
-export function benchClick(id) {
-  if (!town.value || !town.value.bench) return;
-  const now = Date.now();
-  clicks = { id, at: [...(clicks.id === id ? clicks.at : []), now].filter((t) => now - t < WITHIN_MS) };
-  if (clicks.at.length >= CLICKS) { clicks = { id: null, at: [] }; benchOpen.value = id; }
-}
+import { command, say, toast } from "./link.js";
 
 const LOG_LINES = 4;                              // the run's terminal shows its last lines; Copy takes them all
 
@@ -50,49 +36,39 @@ const money = (x) => `$${(x || 0).toFixed(2)}`;
 const clock = (s) => `${Math.floor((s || 0) / 60)}:${String(Math.round((s || 0) % 60)).padStart(2, "0")}`;
 const busy = (s) => !!s && ((s.job && !s.job.done) || Object.values(s.reviews).some((r) => r.roles.some((x) => x.running)));
 
-export function Bench() {
-  const id = benchOpen.value;
+/** The bench of building `id`, drawn in the Test bench `lab`'s window: its tabs, what is in them, Make tasks. */
+export function BenchView({ id, lab }) {
   const [s, setS] = useState(null);
   const [tab, setTab] = useState("tech");
   const [picks, setPicks] = useState(new Set());
-  const close = () => { benchOpen.value = null; setS(null); setPicks(new Set()); };
   useEffect(() => {
+    setS(null);
+    setPicks(new Set());
     if (!id) return undefined;
-    command("bench.open", { id }).then(setS, close);
+    command("bench.open", { id, lab }).then(setS, () => {});
     return undefined;
   }, [id]);
   useEffect(() => {                         // while something works, its lines and findings come in
     if (!id || !busy(s)) return undefined;
-    const timer = setTimeout(() => command("bench.state", { id }).then(setS, () => {}), 1500);
+    const timer = setTimeout(() => command("bench.state", { id, lab }).then(setS, () => {}), 1500);
     return () => clearTimeout(timer);
   }, [id, s]);
-  useLayoutEffect(() => {
-    if (!id) return undefined;
-    const key = (e) => { if (e.key === "Escape") close(); };
-    window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
-  }, [id]);
-  if (!id) return null;
-  const call = (name, args = {}) => command(name, { id, ...args }).then(setS, () => {});
+  if (!s) return html`<p class="ok-font-body ok-tone-muted">${say("Opening the bench…")}</p>`;
+  const call = (name, args = {}) => command(name, { id, lab, ...args }).then(setS, () => {});
   const flip = (fid) => { const next = new Set(picks); next.has(fid) ? next.delete(fid) : next.add(fid); setPicks(next); };
-  return html`<div class="gui-modal" onClick=${(e) => e.target === e.currentTarget && close()}>
-    <div class="ok-dialog gui-bench" role="dialog" aria-modal="true" aria-label="Test bench">
-      <div class="ok-dialog__head"><h3 class="ok-dialog__title">Test bench: ${s ? say(s.title) : "…"}</h3></div>
-      ${s && html`<p class="ok-dialog__hint gui-dialog__meta">${say(s.word)} · ${say(s.summary)}</p>`}
-      <div class="ok-tabs gui-bench__tabs" role="tablist">
-        ${TABS.map(([t, label]) => html`<button key=${t} role="tab" aria-selected=${tab === t}
-          class=${cls("ok-tab", { "is-active": tab === t })} onClick=${() => setTab(t)}>${label}
-          ${s && s.reviews[t].roles.some((r) => r.running) && html`<span class="gui-bench__spin" aria-label="Working"></span>`}</button>`)}
-      </div>
-      <div class="gui-dialog__body gui-bench__body">
-        ${!s ? html`<p class="ok-font-body ok-tone-muted">Opening the bench…</p>`
-          : tab === "tech" ? html`<${Tech} s=${s} call=${call} picks=${picks} flip=${flip} />`
-          : tab === "product" ? html`<${Product} s=${s} call=${call} picks=${picks} flip=${flip} />`
-          : html`<${Reviews} s=${s} tab="ux" call=${call} picks=${picks} flip=${flip} />`}
-      </div>
-      <div class="ok-dialog__actions">${s && html`<${MakeTasks} s=${s} picks=${picks} done=${() => setPicks(new Set())} />`}
-        <button class="ok-btn" onClick=${close}>Close</button></div>
+  return html`<div class="gui-bench">
+    <p class="ok-font-status ok-tone-muted gui-bench__about">${say(s.word)} · ${say(s.summary)}</p>
+    <div class="ok-tabs gui-bench__tabs" role="tablist">
+      ${TABS.map(([t, label]) => html`<button key=${t} role="tab" aria-selected=${tab === t}
+        class=${cls("ok-tab", { "is-active": tab === t })} onClick=${() => setTab(t)}>${label}
+        ${s.reviews[t].roles.some((r) => r.running) && html`<span class="gui-bench__spin" aria-label="Working"></span>`}</button>`)}
     </div>
+    <div class="gui-bench__body">
+      ${tab === "tech" ? html`<${Tech} s=${s} call=${call} picks=${picks} flip=${flip} />`
+        : tab === "product" ? html`<${Product} s=${s} call=${call} picks=${picks} flip=${flip} />`
+        : html`<${Reviews} s=${s} tab="ux" call=${call} picks=${picks} flip=${flip} />`}
+    </div>
+    <div class="gui-bench__make"><${MakeTasks} s=${s} lab=${lab} picks=${picks} done=${() => setPicks(new Set())} /></div>
   </div>`;
 }
 
@@ -340,15 +316,17 @@ function Product({ s, call, picks, flip }) {
 
 // -- Make tasks ----------------------------------------------------------------------------------------------
 
-function MakeTasks({ s, picks, done }) {
-  const [pool, setPool] = useState(s.pools[0] ? s.pools[0].id : "");
+function MakeTasks({ s, lab, picks, done }) {
+  const ROADS = "@roads";
+  const [pool, setPool] = useState(s.roads.length ? ROADS : s.pools[0] ? s.pools[0].id : "");
   const n = picks.size;
-  if (!s.pools.length) {
-    return html`<span class="gui-dialog__note">${say("Build an Agent pool to make tasks of the findings.")}</span>`;
+  if (!s.pools.length && !s.roads.length) {
+    return html`<span class="gui-dialog__note">${say("Pull a road out of the Test bench, or build an Agent pool, to make tasks of the findings.")}</span>`;
   }
-  const make = () => command("bench.tasks", { id: s.id, picks: [...picks], pool }).then(done, () => {});
+  const make = () => command("bench.tasks", { id: s.id, lab, picks: [...picks], pool }).then(done, () => {});
   return html`<span class="gui-dialog__note">${n ? `${n} finding${n === 1 ? "" : "s"} ticked` : "Tick findings to make tasks of them"}</span>
-    <select class="ok-input gui-bench__pick" value=${pool} onChange=${(e) => setPool(e.target.value)} aria-label=${say("The Agent pool the tasks go to")}>
+    <select class="ok-input gui-bench__pick" value=${pool} onChange=${(e) => setPool(e.target.value)} aria-label=${say("Where the tasks go")}>
+      ${s.roads.length > 0 && html`<option value=${ROADS}>${say(`Down its roads (${s.roads.map((r) => r.title).join(", ")})`)}</option>`}
       ${s.pools.map((p) => html`<option key=${p.id} value=${p.id}>${say(p.title)}</option>`)}</select>
     <button class="ok-btn primary" disabled=${!n || !pool} onClick=${make}>Make ${n || ""} task${n === 1 ? "" : "s"}</button>`;
 }

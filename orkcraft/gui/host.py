@@ -105,7 +105,7 @@ class Host:
         self.commands.update(self.console.commands())
         self.commands.update(town_settings.commands(self))   # the HUD's menu: autonomy and its waits
         self.commands.update(accounts.commands(self))        # Settings → Accounts: a Google sign-in (gui/accounts.py)
-        self.bench = bench.Bench(self)              # the Test bench, behind ORKCRAFT_BENCH=1 (gui/bench.py)
+        self.bench = bench.Bench(self)              # the Test bench's runs and reviews, for its building (gui/bench.py)
         self.commands.update(self.bench.commands())
         self.commands.update(mobile.commands(self))   # what a phone reads (gui/mobile.py, docs/design/mobile.md)
         self.growth = growth.Growth(self)           # levels, deeds, the mascot; the War Map's lands (gui/growth.py)
@@ -140,7 +140,6 @@ class Host:
         snap["portrait"] = self.you.snapshot()             # the look, Do not disturb, what gathered (gui/you.py)
         snap["usage_ask"] = self.usage.should_ask()        # the one question about usage stats (js/settings.js)
         snap["update"] = self.updates.snapshot()           # a newer Orkcraft, if one is out (js/update.js)
-        snap["bench"] = bench.enabled()                    # five clicks on a hut open its Test bench (js/bench.js)
         snap["onboarding"] = self.onboarding.snapshot()    # the first run's steps and the town going up (js/onboarding.js)
         return snap
 

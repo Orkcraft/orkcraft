@@ -13,7 +13,7 @@ const COUNTS = ["0", "1", "2-5", "6-10", "11+"];
 const MINUTES = ["<5", "5-30", "30-120", "120+"];
 const TOOLS = ["claude", "agy", "codex", "hermes", "pi", "cursor"];
 const TYPES = ["pit", "watchtower", "signpost", "mill", "horn", "fields", "barracks", "council", "war_drum",
-  "forest", "scrolls", "mine", "gramophone", "lake", "forge", "loot", "crag", "catapult", "town_hall", "workshop", "custom"];
+  "forest", "scrolls", "mine", "gramophone", "lab", "lake", "forge", "loot", "crag", "catapult", "town_hall", "workshop", "custom"];
 const DEEDS = ["town", "road", "reference", "week", "learned", "mature", "trusted", "night"];
 
 const oneOf = (list) => (v) => list.includes(v);

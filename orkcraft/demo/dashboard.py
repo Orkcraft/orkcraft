@@ -238,14 +238,16 @@ LIBRARY = {
               wiki="team_wiki", limit=3.0),
         typed("lib_gramophone", "gramophone", "The Gramophone", "📻", "Bard", "the reports, spoken for the road",
               minutes=6),
+        typed("lib_lab", "lab", "Test bench", "🧪", "Brewmaster", "tests the Barracks on its cases", max_spend=1.0),
     ],
     "huts": {"lib_camp": (0.0, 0.64)},                 # the Barracks clear of the board, Camp's sprite and all
     "layout": [(0.0, 0.0, 0.24, 0.46), (0.27, 0.0, 0.3, 0.46), (0.6, 0.0, 0.4, 0.46),
-               (0.0, 0.54, 0.18, 0.46), (0.205, 0.54, 0.18, 0.46), (0.41, 0.54, 0.18, 0.46), (0.615, 0.54, 0.18, 0.46),
-               (0.82, 0.54, 0.18, 0.46)],
+               (0.0, 0.54, 0.155, 0.46), (0.169, 0.54, 0.155, 0.46), (0.338, 0.54, 0.155, 0.46),
+               (0.507, 0.54, 0.155, 0.46), (0.676, 0.54, 0.155, 0.46), (0.845, 0.54, 0.155, 0.46)],
     "roads": [
         ("code_wiki", "lib_tasks", "tasks.created", "on_task", None, None),
         ("lib_camp", "code_wiki", "knowledge.chunks", "with_the_map", None, None),
+        ("lib_lab", "lib_camp", "pool.done", "under_test", None, None),
     ],
     "payloads": {
         ("lib_tasks", "tasks.created"): ("node", "add-yearly-billing", "Add yearly billing"),

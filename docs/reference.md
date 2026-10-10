@@ -210,6 +210,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 📦 Loot Vault | Quartermaster | the review checkpoint on a road: by its rules a cart passes or is held; under a waiting cart, the files its task committed on its branch (diff or content; a picture shows its type, size and dimensions, and in the GUI the picture itself). In the GUI a text cart is edited in its window (Edit: Save, or Accept this version) or in Lake, and one file of a held cart's branch is rejected on its own — put back on the branch as the base has it by a commit there, its content kept under `rejected/carts/`, Bring it back undoes it — while the rest of the cart goes on (a rework tells the ork which files were rejected). TUI keys `a` accept · `e` edit and accept · `r` reject / send back for rework with a reason (≤ 3 rounds, then 🔥 needs you) · `d` drop · `u` restore a rejected file · `o` open the highlighted file in the system viewer (a branch's file is copied out first); the chain's tokens and cost; every decision teaches the building that made the cart; a **reply** (a cart whose kind of work is Reply) is always held, whatever the rules, and goes on with this gate's mark so a Catapult sends it without asking again | `loot.passed/rework/needs_you`, `generator.accepted/rejected`, `loot.stored` |
 | ⛏️ The Mine | Prospector | deep research on the open web (docs/design/mine.md): a question (New research, `/research`, or a cart: its title, the rest what it must cover) is planned, then searched by every AI tool that can search the web (Claude Code, Codex, Hermes; `tools`), each alone in an empty folder; the findings are grouped and checked — **confirmed** takes two models (by family: Hermes on a Claude model is Claude) and two sites, a quote copied on two sites counts once; what is open is searched again on new sites, then debated; what stays **disputed** asks you in Answers (Search more · Accept · Keep it disputed), up to `wait_answers`. Stops at `limit` a research and `month_limit` a month, and says so. The report (✓ ⚠ ①, sources numbered, who searched what for how much) goes to the Wiki's inbox and on by a return road; `repeats` run on schedule and show on the Calendar, with what changed | `mine.reported`, `mine.asked`, `mine.failed` |
 | 📻 The Gramophone | Bard | a result you can listen to on the road (docs/design/audio-briefing.md): a text that comes (a report, a summary, a wiki page; a file as its content) or that you paste becomes a short spoken episode, one narrator, `minutes` long (default 8), in the text's language or `language`. Its steward writes the script for the ear (e-mails, phones, cards and tokens taken out first), rules strip what cannot be said (code, links, paths), and Gemini TTS speaks it (`voice`, `tts_model`; the key is named in `key`: `GEMINI_API_KEY` or a login kept on this machine, never the key itself). About $0.03 a minute to speak; an episode over `cap_usd` waits with its script for **Speak anyway**. The episodes play in the window (▶), download as .m4a (with ffmpeg) or .wav, and reach a paired phone (`audio.fetch`); it keeps the last `keep` | `gramophone.done` (the transcript), `gramophone.failed` |
+| 🧪 Test bench (Alchemist's Lab) | Brewmaster | the building whose road comes in, on its test cases (docs/design/test-bench.md): each case runs in a copy of that building with its own settings (no remote: nothing is pushed) beside the bare AI tool on the same model; time, spend, tokens, every check side by side, the building's decisions on the clock. Its reviewers (an architect, an AI engineer, an AI researcher; a product manager and designer; a product manager and an architect with the AHA moment) read the building's code and say what to change; Make tasks sends the ticked findings to an Agent pool or down its roads. Up to `max_spend` a case on the building's side, on `tool` | `lab.report` (a run as text), `lab.missed`, `lab.finding` |
 | 🪨 Tally Crag | Crag Carver | complex data made visual: spend, tokens, runs (`.orkcraft/ledger.jsonl`), quotas used, busy orks, tasks, CPU, numbers by road — vertical or horizontal Unicode bars | `charts.threshold` |
 | 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — shots queue one at a time — or through an MCP server (carried by the tool that has it, then a direct path the ork learns), or, in browser mode, its ork finds the intent's forms, fills them in turn and repairs a script the site broke; 🧪 dry run | `catapult.sent`, `catapult.failed`, `catapult.repaired` |
 
@@ -1141,8 +1142,8 @@ a hut, types into a terminal or changes a setting: anything else it sends is ref
   [--only building|bare] [--orders FILE] [--list]` — the Test bench: a building on a test case beside the bare AI tool
   on the same model, each in a copy of the project with no remote; time, spend, tokens and the case's
   check side by side, kept in `.orkcraft/bench/runs/` (docs/design/test-bench.md). It runs AI tools and
-  spends up to `--max-spend` ($2) on the building's side. With `ORKCRAFT_BENCH=1` the same is a window:
-  five clicks on a hut, with its reviews (Tech, UX, Product) and Make tasks.
+  spends up to `--max-spend` ($2) on the building's side. In the town the same is the Test bench building,
+  with its reviews (Tech, UX, Product) and Make tasks.
 - `orkcraft --demo` — the showcase sandbox (simulated data).
 
 ## Installation
@@ -1273,6 +1274,7 @@ onboarding (*Punk ork*).
 | Metrics | Tally Crag |
 | Research | The Mine |
 | Audio briefing | The Gramophone |
+| Test bench | Alchemist's Lab |
 | Publisher | The Catapult |
 | Script | Workshop |
 | Sorter | Scavenger |
@@ -1292,6 +1294,7 @@ onboarding (*Punk ork*).
 | Metrics ork | Crag Carver |
 | Researcher | Prospector |
 | Narrator | Bard |
+| Tester | Brewmaster |
 | Publisher | Loader |
 | Script runner | Tinker |
 | Worker | Peon |

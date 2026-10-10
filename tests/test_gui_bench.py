@@ -1,4 +1,5 @@
-"""The Test bench's window (gui/bench.py, docs/design/test-bench.md): behind ORKCRAFT_BENCH, reviews on a first open,
+"""The Test bench (gui/bench.py, core/workers/lab.py, docs/design/test-bench.md): a building whose roads in say what it
+tests, reviews on a first open,
 a run in a process of its own, written cases, Make tasks. AI tools are faked."""
 from __future__ import annotations
 
@@ -53,7 +54,6 @@ def asked(monkeypatch):
 
 @pytest.fixture
 def host(fake_repo, isolated_layout_file, monkeypatch, asked):
-    monkeypatch.setenv("ORKCRAFT_BENCH", "1")
     monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(
         lambda harness, prompt, workdir, cancel, model, env, resume: ("done", 0.0, 0, "")))
     monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
@@ -77,17 +77,6 @@ def _settled(h: Host, bid: str) -> dict:
 
 
 # -- the flag -------------------------------------------------------------------------------------------------
-
-def test_the_bench_is_off_without_its_flag(host, monkeypatch):
-    bid = _raised(host, "barracks", worktrees=False)
-    assert host.snapshot()["bench"] is True
-    monkeypatch.delenv("ORKCRAFT_BENCH")
-    assert host.snapshot()["bench"] is False
-    with pytest.raises(CommandError, match="ORKCRAFT_BENCH=1"):
-        host.command("bench.open", {"id": bid})
-
-
-# -- reviews --------------------------------------------------------------------------------------------------
 
 def test_a_first_open_reviews_the_three_tabs_once(host, asked):
     bid = _raised(host, "barracks", worktrees=False)
@@ -129,7 +118,7 @@ def test_ticked_findings_become_tasks_of_the_picked_agent_pool(host):
     other = _raised(host, "watchtower")
     host.command("bench.open", {"id": other})
     s = _settled(host, other)
-    assert s["pools"] == [{"id": pool, "title": host.town.scroll.building(pool).title}]
+    assert s["pools"] == [{"id": pool, "title": host.town.scroll.building(pool).title, "road": False}]
     with pytest.raises(CommandError, match="Tick"):
         host.command("bench.tasks", {"id": other, "picks": [], "pool": pool})
     with pytest.raises(CommandError, match="Agent pool"):
@@ -240,3 +229,73 @@ def test_a_series_runs_every_case_or_every_case_of_a_level(host, monkeypatch):
     s = host.command("bench.run", {"id": bid, "case": "all"})
     assert "--case" in seen[-1] and seen[-1][seen[-1].index("--case") + 1] == "all"
     assert s["job"]["label"] == "every case (15)"
+
+
+# -- the Test bench is a building -------------------------------------------------------------------------------
+
+def _road(h: Host, source: str, target: str, event: str) -> None:
+    from orkcraft import scroll as ts
+    ts.subscribe(h.town.scroll, target, source, event)
+
+
+def test_the_test_bench_tests_the_buildings_whose_road_comes_in(host):
+    from orkcraft.gui.views import lab as view
+    lab = _raised(host, "lab")
+    w = host.town.worker(lab)
+    assert w.subjects() == [] and view.card(w)["subject"] is None
+    assert "pull a road" in w.mini_status()[0].lower()
+    pool = _raised(host, "barracks", worktrees=False)
+    tower = _raised(host, "watchtower")
+    _road(host, pool, lab, "pool.done")
+    _road(host, tower, lab, "mail.received")
+    assert [s["id"] for s in w.subjects()] == [pool, tower] and w.subject()["id"] == pool
+    assert all(s["can_run"] for s in w.subjects()) and w.subjects()[1]["word"] == "External listeners"
+    host.command("act", {"id": lab, "act": "pick", "args": {"id": tower}})
+    assert host.detail(lab)["data"]["subject"] == tower
+    with pytest.raises(CommandError, match="does not come into"):
+        host.command("act", {"id": lab, "act": "pick", "args": {"id": "nope"}})
+
+
+def test_a_run_says_its_report_and_what_the_building_missed_down_the_test_benchs_roads(host, monkeypatch):
+    sent = []
+    monkeypatch.setattr(host.town, "emit_typed", lambda b, ev, value, title="", *a, **k: sent.append((b, ev, title, value)) or True)
+    lab, pool = _raised(host, "lab"), _raised(host, "barracks", worktrees=False)
+    _road(host, pool, lab, "pool.done")
+    side = bench.Side("building", seconds=5, passed=False, checks=[{"name": "#2 left out", "ok": False, "detail": "kept"}])
+    bench.Report("r5", "barracks", "slugify", at="2026-10-10T12:00:00", building=side,
+                 bare=bench.Side("bare", passed=True)).save(host.town.repo_root / bench.RUNS / "r5")
+    job = gui_bench.Job("run", "barracks", "Add a slugify helper", subject=pool)
+    host.bench._reported(job, "r5")
+    host.bench._reported(job, "r5")                                            # said once
+    events = [(b, ev) for b, ev, _t, _v in sent]
+    assert events == [(lab, "lab.report"), (lab, "lab.missed")]
+    assert "## Bare AI tool" in sent[0][3] and "#2 left out — kept" in sent[1][3]
+    assert host.town.worker(lab).last[pool]["case"] == "slugify"
+    assert "slugify" in host.town.worker(lab).mini_status()[1]
+
+
+def test_make_tasks_may_send_the_findings_down_the_test_benchs_roads(host, monkeypatch):
+    lab, pool, tower = _raised(host, "lab"), _raised(host, "barracks", worktrees=False, plan=False), _raised(host, "watchtower")
+    _road(host, tower, lab, "mail.received")
+    _road(host, lab, pool, "lab.finding")
+    s = host.command("bench.open", {"id": tower, "lab": lab})
+    _settled(host, tower)
+    s = host.command("bench.state", {"id": tower, "lab": lab})
+    assert s["roads"] == [{"id": pool, "title": host.town.title_of(pool)}] and s["pools"][0]["road"] is True
+    done = host.command("bench.tasks", {"id": tower, "lab": lab, "pool": gui_bench.ROADS,
+                                        "picks": ["ux:product_manager:0"]})
+    assert done["made"] == 1
+    assert _until(lambda: any(t.title.endswith("Say what a tier costs")
+                              for t in host.town.worker(pool).state.tasks + host.town.worker(pool).state.queue))
+
+
+def test_the_quick_action_runs_the_first_case_of_the_building_it_tests(host, monkeypatch):
+    lab, pool = _raised(host, "lab", tool="agy", max_spend=0.5), _raised(host, "barracks", worktrees=False)
+    with pytest.raises(CommandError, match="Pull a road"):
+        host.command("act", {"id": lab, "act": "lab.run"})
+    _road(host, pool, lab, "pool.done")
+    host.detail(lab)                                                            # its window drawn: the bench given
+    seen = {}
+    monkeypatch.setattr(host.bench, "run", lambda args: seen.update(args) or {})
+    assert host.command("act", {"id": lab, "act": "lab.run"}) == "slugify"
+    assert (seen["id"], seen["tool"], seen["max_spend"], seen["lab"]) == (pool, "agy", 0.5, lab)

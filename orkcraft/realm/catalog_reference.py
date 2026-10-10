@@ -20,6 +20,7 @@ INTENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Listen to the results on the road", ("gramophone",)),
     ("Ship the results: merge, keep, send", ("forge", "loot", "catapult")),
     ("Watch load, limits and spend", ("crag",)),
+    ("Test a building on its cases", ("lab",)),
     ("Hear what comes in", ("horn",)),
 )
 
@@ -62,6 +63,8 @@ TAKES: dict[str, str] = {
     "workshop": "anything (a file as its content): its script runs on the cart",
     "gramophone": "text, or a file (its content): its steward writes a script for the ear and Gemini TTS speaks it "
                   "→ gramophone.done (the transcript; the audio stays in the building) / gramophone.failed",
+    "lab": "anything from the building it tests: noted as what it last sent; the road says which building it "
+           "tests, and a run starts only from its window or its quick action → lab.report / lab.missed",
     "mine": "a question (its title, else its first line; the rest of the text is what it must cover): a research "
             "starts, or waits behind the one running → mine.reported (the report) / mine.asked / mine.failed",
 }
@@ -74,7 +77,7 @@ ACCEPTS: dict[str, frozenset[str]] = {
     "workshop": _ANY, "lake": _ANY,
     "mill": frozenset({TEXT, FILE}), "council": frozenset({TEXT, FILE}), "war_drum": frozenset({TEXT, FILE}),
     "scrolls": frozenset({TEXT}), "forge": frozenset({TEXT}), "crag": frozenset({TEXT}),
-    "mine": frozenset({TEXT, FILE}), "gramophone": frozenset({TEXT, FILE}),
+    "mine": frozenset({TEXT, FILE}), "gramophone": frozenset({TEXT, FILE}), "lab": _ANY,
 }
 
 # What a building does outside the camp on its own: the network, merges, money.
@@ -96,6 +99,8 @@ EFFECTS: dict[str, str] = {
     "workshop": "runs its script; its steward prompt runs a model",
     "gramophone": "runs a model for the script, then sends the script to Google (Gemini API) to be spoken: spends "
                   "money, up to `cap_usd` an episode",
+    "lab": "runs the building it tests in a copy of the project (no remote: nothing is pushed) and the bare AI tool "
+           "beside it: spends money, up to `max_spend` a case on the building's side; its reviewers run a model",
     "mine": "runs every AI tool that can search the web (spends money, up to `limit` a research and `month_limit` a "
             "month); they read the open web; writes its reports into the Wiki's inbox",
 }
@@ -309,6 +314,10 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "charts": "its dashboard, a chart per line: `Title = source [1h|24h|7d] [vertical|horizontal] [warn N] [crit N] "
                   "[all|command|full]` (where it shows: the hut too, the Command Card, the dashboard only); "
                   "without it one chart from the settings above",
+    },
+    "lab": {
+        "max_spend": "the most the building's side of one case may spend, in USD, 0.1–50 (default 2)",
+        "tool": "the AI tool both sides run on: main (the default), claude, agy, codex…",
     },
     "gramophone": {
         "language": "auto (the source's own), ru or en (default auto)",

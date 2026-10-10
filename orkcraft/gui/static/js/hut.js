@@ -14,7 +14,6 @@
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { benchClick, benchOpen } from "./bench.js";
 import { opened, openBuilding, selected, pickBuilding } from "./windows.js";
 import { laying, demolishing } from "./build.js";
 import { reasons, busy as busyOf, fold } from "./fold.js";
@@ -139,7 +138,6 @@ export function buildingMenu(e, b) {
       run: () => togglePin({ stopPropagation() {} }, b.id) },
     b.id !== CORNER && { label: b.folded ? "Unfold the card" : "Fold the card", hint: `/${b.folded ? "unfold" : "fold"} @${name}`,
       run: () => fold(b) },
-    t.bench && { label: "Test bench", hint: "5 clicks", run: () => { benchOpen.value = b.id; } },
     b.id !== CORNER && "-",
     b.id !== CORNER && { label: "Demolish…", hint: `/demolish @${name}`, danger: true, run: () => { demolishing.value = b.id; } },
   ]);
@@ -398,7 +396,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       if (gone) return;
       if (moved) { if (free) { onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y); } }
       else if (b.alert) openOrders(b.alert.id);   // a question: a press opens it at once
-      else { pickBuilding(b.id); benchClick(b.id); }   // selected; the selected one again: opened; five: its Test bench
+      else pickBuilding(b.id);                  // selected; the selected one again: opened
     };
     el.addEventListener("pointermove", move);
     el.addEventListener("pointerup", up);

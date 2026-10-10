@@ -1,0 +1,5 @@
+/* 🧪 The Test bench's window (js/buildings/lab.js): which building, then the bench (bench.css draws it). */
+.lab-window { display: flex; flex-direction: column; gap: var(--space-3); min-height: 0; }
+.lab-pick { max-width: 360px; }
+.lab-empty { display: flex; flex-direction: column; gap: var(--space-2); max-width: 560px; }
+.lab-empty p { margin: 0; }

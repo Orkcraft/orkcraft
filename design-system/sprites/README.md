@@ -26,7 +26,7 @@ Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite is shown
   the crown and an orange `!`; a snowflake; a page.
 - `intents/<intent>.png` (16×16, `@2x` 32×32): what a building is for, the Build row's icons — incoming, agents (in
   parallel), discuss, calendar, transform (process data), research, check (validate), drop, tasks, wiki, then code,
-  send, route, chart, sound, listen; drawn by `tools/intent_sprites.py` (`js/build.js` `INTENTS`, docs/design/warchief-line-and-cards.md §2).
+  send, route, chart, test (the Test bench's flask), sound, listen; drawn by `tools/intent_sprites.py` (`js/build.js` `INTENTS`, docs/design/warchief-line-and-cards.md §2).
 - `orks/steward-<role>.png` (24×20) and `orks/hat-<role>.png` (24×4): a steward's head under its building's hat
   (scribe, lookout, smith, clerk, captain, miner), on the Warchief's line when its building is selected, and the hat
   alone on the ork out of its building; drawn by `tools/hat_sprites.py` (`js/icons.js` `HATS`,

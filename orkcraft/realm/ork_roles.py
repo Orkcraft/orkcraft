@@ -19,6 +19,7 @@ WHY: dict[str, str] = {
     "workshop": "Writes the building's script from your words and fixes it when it fails.",
     "custom": "Lays out the panes from your words.",
     "gramophone": "Turns a report, a summary or a wiki page into a spoken briefing.",
+    "lab": "Runs the building it tests on its cases beside the bare AI tool, and reads its code, look and first session.",
 }
 
 YARD = "No ork lives here: the work is code. Its steward comes only when it breaks, to fix it, or when you ask in " \

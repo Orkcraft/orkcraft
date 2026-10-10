@@ -308,6 +308,21 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "key": (str, None, False), "cap_usd": (float, (0.05, 5), False), "keep": (int, (1, 200), False)},
         art="rookery", orc="Bard", agentic=True),
     BuildingType(
+        "lab", "Alchemist's Lab", "🧪", "M",
+        "the Test bench: puts the building whose road comes in on its test cases, in a copy of it with its own "
+        "settings, beside the bare AI tool on the same model; its reviewers say what to change in the building's "
+        "code, its look and its first session (docs/design/test-bench.md)",
+        "the building it tests and its last run: passed or not, against the bare AI tool",
+        "Tech: run a case or a level of them, the runs side by side with what each side missed, the building's "
+        "decisions on the clock, the cases; UX and Product: the reviewers' findings and the AHA moment; Make tasks",
+        events=(_e("lab.report", "test report", TEXT, "a run ended: the whole run as text, titled by the building "
+                   "and the case"),
+                _e("lab.missed", "a check missed", TEXT, "a run's building missed a check: what it missed and why"),
+                _e("lab.finding", "finding", TEXT, "a reviewer's finding sent with Make tasks: what to change and why")),
+        actions=(_a("lab.run", "Run the first case", "🧪", "the first case of the building it tests, on its main tool"),),
+        config={"max_spend": (float, (0.1, 50), False), "tool": (str, None, False)},
+        art="spire", orc="Brewmaster", agentic=True),
+    BuildingType(
         "lake", "Lake of Insight", "🌊", "L",
         "the inspector: a file, a git diff side by side, Markdown, diagrams, a local URL as text; "
         "a text file on disk is edited in place and saves by itself",
@@ -478,7 +493,7 @@ RETIRED_TYPES = frozenset({DEFAULT_TYPE, "forest", "lake"})   # an old scroll's 
 # Lake window, never a building (realm/lake.py: a road into an old one becomes "open in Lake" on its source)
 LANDSCAPE = frozenset(t.id for t in TYPES.values() if t.landscape)   # the land between the buildings: no ork
 SCRATCH_TYPES = frozenset({"workshop"})        # only the Builder's interview makes these
-GUI_ONLY = frozenset({"mine", "gramophone"})   # built after the TUI was deprecated: no terminal view (calm-town.md §9)
+GUI_ONLY = frozenset({"mine", "gramophone", "lab"})   # built after the TUI was deprecated: no terminal view (calm-town.md §9)
 MAX_QUICK_ACTIONS = 2
 
 
