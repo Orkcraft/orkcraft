@@ -576,8 +576,9 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
                  decisions, sent_back, ask, bk.OUTSIDE_RULE, bk.ANSWER_RULE,
                  bk.PART_RULE if task.parent and not plans.holds_all(self.children(self.state.task(task.parent) or task),
                                                                         task.sub) else "",
-                 "This is a local document for a meeting: write it as your report (a commit is optional); it gets "
-                 "no pull request." if self._meeting(task) else "",
+                 "This is a local document for a meeting: your answer IS the document. Write the whole of it in your "
+                 "answer, in the sections the rules above ask for, and nothing else — no file, no commit, no report "
+                 "of what you did; it gets no pull request." if self._meeting(task) else
                  "Finish with a short Markdown report: what you changed, what is left."]
         if related and orc.recent:       # a fresh session on related work: a handoff instead of the whole history
             parts.append("## Your recent work\n\n" + "\n".join(f"- {r}" for r in orc.recent))

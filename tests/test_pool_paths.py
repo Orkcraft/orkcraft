@@ -289,3 +289,14 @@ def test_its_card_has_a_lane_per_ork_with_its_topic_and_what_of_it_waits():
                              "topic": "tests", "queue": 2}
     assert (lanes["Snaga"]["state"], lanes["Snaga"]["tier"], lanes["Snaga"]["queue"]) == ("asks", "laborer", 1)
     assert (lanes["Mogka"]["state"], lanes["Mogka"]["topic"], lanes["Mogka"]["queue"]) == ("resting", "", 0)
+
+
+def test_a_meeting_s_ork_writes_the_document_itself_as_its_answer(pool):
+    # an ork that wrote the brief into a file and answered "what I changed" left the calendar a report, not a brief
+    make, runs, steward, sent, post = pool
+    w, bid = make()
+    w.receive(pipes.Payload(pipes.TEXT, "11:00 1:1 Alex [meet:abc123]\n\nWho: Alex Kim", "drum", "calendar.event_upcoming",
+                            "1:1 Alex", ref="drum:abc123"), "", "")
+    assert _until(lambda: runs.work)
+    prompt = runs.work[0]["prompt"]
+    assert "your answer IS the document" in prompt and "what you changed, what is left" not in prompt
