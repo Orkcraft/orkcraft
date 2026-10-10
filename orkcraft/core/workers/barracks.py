@@ -574,6 +574,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
                  f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", bk.body_of(task),
                  self.designs_md(task), self.overlap_md(task),
                  decisions, sent_back, ask, bk.OUTSIDE_RULE, bk.ANSWER_RULE,
+                 bk.PART_RULE if task.parent and not plans.holds_all(self.children(self.state.task(task.parent) or task),
+                                                                        task.sub) else "",
                  "This is a local document for a meeting: write it as your report (a commit is optional); it gets "
                  "no pull request." if self._meeting(task) else "",
                  "Finish with a short Markdown report: what you changed, what is left."]
