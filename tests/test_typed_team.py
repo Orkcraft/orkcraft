@@ -104,5 +104,10 @@ def test_briefs_are_files_claude_reads_and_agy_gets_inline():
     assert "short rule" in claude and "`steward.md`" in claude and "long knowledge" not in claude
     agy = tm.decide_prompt(d, st, set(), 3, inline=True)
     assert "short rule" in agy and "long knowledge" in agy
+    # inline, the call has nothing to read and agy ends its turn empty on a refused command: it is told so
+    assert tm.FROM_ABOVE in agy and tm.FROM_ABOVE not in claude
+    member = tm.review_prompt(d, TEAM[1], TEAM, inline=True)
+    assert tm.FROM_ABOVE in member and "read the repository" not in member
+    assert "read the repository" in tm.review_prompt(d, TEAM[0], TEAM)
     assert "WebSearch,WebFetch" in roads._harness_cmd("claude", "hi", Path("."), web=True)[6]
     assert "WebFetch" not in roads._harness_cmd("claude", "hi", Path("."))[6]
