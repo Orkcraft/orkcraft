@@ -169,7 +169,10 @@ def reset_charges() -> None:
 
 
 def calls(repo_root: Path, since: dt.datetime | None = None) -> list[dict]:
-    """The ledger's lines on disk (oldest first), from `since` on; malformed lines are skipped."""
+    """The ledger's lines on disk (oldest first), from `since` on (a time with no zone is local); malformed lines
+    are skipped."""
+    if since is not None and since.tzinfo is None:
+        since = since.astimezone()
     try:
         lines = (repo_root / CALLS).read_text(encoding="utf-8").splitlines()
     except OSError:
