@@ -259,3 +259,26 @@ Series 4 (20261010-1952…), after all three:
 Every case passes. What is left is how the Calendar works: each meeting is an ork of its own with its own
 review, three at a time, where the bare tool writes every brief in one call. Closing that gap is a change
 of design (briefs of one day in one task), not a fix; left as it is.
+
+## 2026-10-10 — the Review board (council) on agy
+
+Series 1: planted-flaws **failed 3/4** (106 s; verdict "ask" instead of rework), route-a-request **failed
+0/1** (42 s; routed nowhere); bare 3/4 and 1/1. On both the board said "the steward gave no decision. Its
+answer:" and nothing after it.
+
+**Cause (building):** off the repository (agy) the document and briefs are inline, yet each member was
+told "you may read the repository and search the web", and the steward, refused a command in its empty
+folder, ended its turn empty. **Fix:** inline, members and steward are told what is above is all they
+need and to run no commands (`team.FROM_ABOVE`); in the repository nothing changes.
+
+Series 2 (20261010-2013…):
+
+| case | building | bare |
+|---|---|---|
+| planted-flaws | passed 4/4, 165 s, 52k tokens | passed 4/4, 21 s, 4k |
+| route-a-request | passed 1/1, 71 s, 14k tokens | passed 1/1, 16 s, 4k |
+
+Both pass. The board is its members in turn and then its steward, three calls one after another on the
+default model, where the bare tool answers in one; planted-flaws' steward alone thought 114 s. Running
+the members at once, or the steward's decision on a lighter tier, are changes of design that two cases
+cannot settle; left as they are.
