@@ -34,6 +34,11 @@ class BenchError(Exception):
     """A step the bench refuses; its text is shown to the person."""
 
 
+def _runs_for() -> str:
+    words = [lexicon.term(t) for t in building_bench.TYPES]
+    return ", ".join(words[:-1]) + " and " + words[-1] if len(words) > 1 else words[0]
+
+
 def enabled() -> bool:
     return env.getenv("BENCH").strip().lower() in ("1", "true", "yes", "on")
 
@@ -109,18 +114,26 @@ class Bench:
                             "roles": roles}
         return {
             "id": bid, "type": type_id, "title": spec.get("title") or bid, "word": lexicon.term(type_id),
-            "summary": t.summary if t else "", "can_run": type_id in building_bench.TYPES,
+            "summary": t.summary if t else "", "can_run": type_id in building_bench.TYPES, "runs_for": _runs_for(),
+            "orders_of": building_bench.POOLED.get(type_id, type_id) if type_id in ("barracks", *building_bench.POOLED) else "",
             "cases": [{**asdict(c), "own": (self.root / bench.BENCH / type_id / f"{c.id}.json").is_file()}
                       for c in bench.cases(self.root, type_id)],
             "runs": [asdict(r) for r in bench.runs(self.root, type_id)[:12]],
             "job": job.public() if job else None,
             "reviews": reviews,
             "tools": self._tools(), "tiers": [{"id": i, "title": w} for i, w in TIERS],
-            "orders": str((spec.get("config") or {}).get("orders") or ""),
+            "orders": self._orders(bid, type_id),
             "max_spend": bench.DEFAULT_MAX_SPEND,
             "pools": [{"id": b.id, "title": b.title} for b in self.host.town.scroll.buildings
                       if not b.demolished and self.host.type_of(b.id) == "barracks"],
         }
+
+    def _orders(self, bid: str, type_id: str) -> str:
+        """The instructions a run may change: the Agent pool's own; for a building that hands its work to one,
+        its case's, else that pool's in the town."""
+        if type_id == "barracks":
+            return str(((self.host.town.spec_of(bid) or {}).get("config") or {}).get("orders") or "")
+        return ""                         # a building that hands its work to a pool: its case's, unless changed
 
     def open(self, args: dict) -> dict[str, Any]:
         """The window opens: a building never reviewed has its three tabs reviewed now, once."""
@@ -136,7 +149,7 @@ class Bench:
     def run(self, args: dict) -> dict[str, Any]:
         bid, type_id = self._type(args)
         if type_id not in building_bench.TYPES:
-            raise BenchError(f"Runs come to {lexicon.term(type_id)} later: the Test bench runs the Agent pool so far")
+            raise BenchError(f"Runs come to {lexicon.term(type_id)} later: the Test bench runs {_runs_for()} so far")
         if (job := self.jobs.get(type_id)) and not job.done:
             raise BenchError("A run is on: stop it first")
         case = bench.case(self.root, type_id, str(args.get("case") or ""))
@@ -159,7 +172,7 @@ class Bench:
         if args.get("only") in ("building", "bare"):
             argv += ["--only", str(args["only"])]
         orders = args.get("orders")
-        if isinstance(orders, str) and orders != str((self.host.town.spec_of(bid) or {}).get("config", {}).get("orders") or ""):
+        if isinstance(orders, str) and orders != self._orders(bid, type_id) and (orders.strip() or type_id == "barracks"):
             path = self.root / bench.BENCH / "orders" / f"{type_id}-{int(time.time())}.md"
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(orders[:20000], encoding="utf-8")

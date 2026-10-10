@@ -193,9 +193,10 @@ def test_a_run_is_orkcraft_bench_in_a_process_of_its_own(host, monkeypatch):
 
 
 def test_a_type_the_bench_cannot_run_yet_is_said(host):
-    bid = _raised(host, "watchtower")
+    bid = _raised(host, "mill")
     s = host.command("bench.open", {"id": bid})
     assert s["can_run"] is False
+    assert "External listeners" in s["runs_for"] and "Calendar" in s["runs_for"]
     with pytest.raises(CommandError, match="later"):
         host.command("bench.run", {"id": bid, "case": "slugify"})
 

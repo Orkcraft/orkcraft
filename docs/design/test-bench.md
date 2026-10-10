@@ -1,6 +1,6 @@
 # Design — the Test bench: one building on its own, measured
 
-Status: stages 1–7 built 2026-10-10 (runs for the Agent pool only); §9 says how it is built.
+Status: stages 1–8 built 2026-10-10 (runs for the Agent pool, External listeners, the Task board and the Calendar); §9 says how it is built.
 For the operator only: hidden behind a flag, maybe later for developers. GUI and CLI, no TUI
 ([calm-town.md](calm-town.md) §9).
 
@@ -13,7 +13,8 @@ For the operator only: hidden behind a flag, maybe later for developers. GUI and
 | 5 | UX: two reviewers read the building's code and flow and name where a person would stop | built (reading code; the browser walk with screenshots later) |
 | 6 | Product: the building's AHA moment, its script and its measure | built |
 | 7 | **Make tasks**: the ticked findings sent to the Agent pool picked, by a button, never by themselves | built |
-| 8 | runs for the other buildings: External listeners and Research first | |
+| 8 | runs for External listeners, the Task board and the Calendar (§3.5) | built |
+| 9 | runs for the other buildings: Research and the Review board next | |
 
 ## 1. Why
 
@@ -117,6 +118,25 @@ inner agents. The events come from the bus (`core/bus.py`) and the building's de
 In the bench every ork's tier (Novice, Seasoned, Veteran) and AI tool can be changed, and the
 steward's and the orks' instructions edited, for the next run only. Two runs differing in one of
 them are put side by side.
+
+### 3.5 Buildings whose work is not code (stage 8)
+
+A case of such a building carries its `inputs` and, item by item, what each should come to; its kit
+(`realm/bench_kits.py`) says what the bare AI tool is asked and how its JSON reads, and one check judges
+both results. The building's side (`core/bench_kits.py`) opens a town on the copy, raises the building
+as it is in the operator's town (its sources, accounts and paths left out: a copy never listens to the
+operator's mail), gives the input the way its sources would, and reads the result back. Spend and tokens
+come from the copy's own ledger of model calls, so every call counts. The bare AI tool runs on the
+tier the building's own call ran on when no tier is picked, in a copy of the project it may read.
+
+| building | given | the building's way | checked |
+|---|---|---|---|
+| External listeners | an intent and a morning's messages (sender, subject, body, list headers) | each message as it arrives (`add_signal`), judged by its Listener with triage | kept or left out per message, importance and who answers where the case says |
+| Task board | long cards to name; to-dos to plan; wiki pages in the copy | `write` (its steward names the card), `add` to the person's to-dos, its context from the wiki, `plan` | 2–4 words and the key words for a title; 3–7 steps and the case's words for a plan (the wiki's facts: a policy number, who to call) |
+| Calendar | a week's meetings with attendees and invitations; how a brief is written | the calendar reads the copy's `.ics`; `meeting soon` goes along a road to an Agent pool raised with the operator's pool's settings; the brief comes back along `pool.done` | a brief per meeting, the sections asked for, the names and the invitation's points |
+
+Found and fixed on the way: the calendar dropped an invitation's attendees and description, so a brief
+never knew who comes or what the agenda was (`sources/ics.py`, `daybook.invitation`).
 
 ## 4. UX (stage 5)
 

@@ -215,7 +215,20 @@ def findings(root: Path, type_id: str) -> list[dict]:
 
 def case_prompt(root: Path, type_id: str, brief: str) -> str:
     have = ", ".join(c.id for c in bench.cases(root, type_id)) or "none"
-    shipped = json.dumps(next(iter(bench.bench_cases_of(type_id)), {}), ensure_ascii=False)[:3000]
+    shipped = json.dumps(next(iter(bench.bench_cases_of(type_id)), {}), ensure_ascii=False)[:8000]
+    from orkcraft.realm import bench_kits
+    if type_id in bench_kits.KITS:
+        rules = ("`inputs` has the shape of the shipped case's: what the building is given, each item with what it "
+                 "should come to (`expect`, `expect_words`: a list of words or of groups of which any one will do), "
+                 "so a check in code can tell a good result. `files` holds only what the building may read (a wiki "
+                 "page, a note); `task` and `check` stay empty.")
+        shape = '{"id": "short-id", "title": "…", "expect": "…", "files": {}, "inputs": {…}}'
+    else:
+        rules = ("`files` is the whole small project (a few files, standard library only); `check` is a shell "
+                 "command run in the result's tree that exits 0 only when the task is done right, and fails when "
+                 "the tests the case came with were changed (`git diff --quiet $(git rev-list --max-parents=0 HEAD) "
+                 "-- tests && …`); `expect` says in words what a good result has.")
+        shape = '{"id": "short-id", "title": "…", "task": "…", "files": {"path": "content"}, "check": "…", "expect": "…"}'
     return f"""You write a test case for Orkcraft's Test bench. It gives the same task to the building and to the bare AI
 tool on the same model, then runs the case's check on each result.
 
@@ -225,11 +238,8 @@ The cases it has: {have}. A shipped one, for its shape: {shipped}
 
 {('What the operator wants the case to test: ' + brief) if brief.strip() else 'Write a case the current ones do not cover, where the building should do better than the bare AI tool.'}
 
-Rules: `files` is the whole small project (a few files, standard library only); `check` is a shell command run in the
-result's tree that exits 0 only when the task is done right, and fails when the tests the case came with were
-changed (`git diff --quiet $(git rev-list --max-parents=0 HEAD) -- tests && …`); `expect` says in words what a good
-result has. Answer with the case's JSON only:
-{{"id": "short-id", "title": "…", "task": "…", "files": {{"path": "content"}}, "check": "…", "expect": "…"}}"""
+Rules: {rules} Answer with the case's JSON only:
+{shape}"""
 
 
 def write_case(root: Path, type_id: str, brief: str = "", tool: str = "main", runner=None,
@@ -243,7 +253,7 @@ def write_case(root: Path, type_id: str, brief: str = "", tool: str = "main", ru
         data = json.loads(m.group(0)) if m else None
     except ValueError:
         data = None
-    if not isinstance(data, dict) or not data.get("task"):
+    if not isinstance(data, dict) or not (data.get("task") or data.get("inputs")):
         raise RuntimeError("the agent's answer was not a case: " + (text or "")[:300])
     case = bench.Case.of({**data, "reviewed": False}, type_id)
     taken = {c.id for c in bench.cases(root, type_id)}

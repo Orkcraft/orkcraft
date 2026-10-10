@@ -22,6 +22,8 @@
 .gui-bench__verdict.is-ok { color: var(--success); }
 .gui-bench__verdict.is-bad { color: var(--danger); }
 
+.gui-bench__missed { margin: 0; padding-left: var(--space-4); display: flex; flex-direction: column; gap: 2px; font-size: 12px; line-height: 17px; }
+
 /* Inside the run: a lane per ork. */
 .gui-bench__timeline { display: flex; flex-direction: column; gap: var(--space-1); }
 .gui-bench__lane { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: center; gap: var(--space-2); }

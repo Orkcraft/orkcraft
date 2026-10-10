@@ -294,8 +294,8 @@ class WarDrumWorker(Worker):
         """`meeting soon` for `e`: titled by it, its tag in the text, its ref `<building>:<meeting id>`; it asks
         for a brief, so its kind of work is a document (docs/design/barracks-flows.md §4)."""
         mid = daybook.meet_id(e)
-        return self.emit("calendar.event_upcoming", f"{daybook.line(e)} ({e.day:%a %d}) [meet:{mid}]", e.summary,
-                         ref=f"{self.building_id}:{mid}", want=pipes.DOC)
+        return self.emit("calendar.event_upcoming", f"{daybook.line(e)} ({e.day:%a %d}) [meet:{mid}]"
+                         + daybook.invitation(e), e.summary, ref=f"{self.building_id}:{mid}", want=pipes.DOC)
 
     def prepare(self, e=None) -> str:
         """📄 Prepare doc: `meeting soon` for `e` (else the meeting on now or next) at once. What went
