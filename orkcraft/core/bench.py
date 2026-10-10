@@ -62,11 +62,13 @@ def _settled(w, root_id: str) -> str:
 
 def run_building(case: bench.Case, project: Path, base: str, template: dict, tool: str = "main", tier: str = "",
                  max_spend: float = bench.DEFAULT_MAX_SPEND, timeout_s: float = TIMEOUT_S,
-                 cancel: threading.Event | None = None, check_dir: Path | None = None) -> bench.Side:
-    """The building on the case, in a town of its own on `project`; then its result's check in `check_dir`."""
+                 cancel: threading.Event | None = None, check_dir: Path | None = None,
+                 say: Callable[[str], None] = lambda _line: None) -> bench.Side:
+    """The building on the case, in a town of its own on `project`; then its result's check in `check_dir`.
+    `say` hears each of its decisions as it is taken."""
     checkpoint.ensure(project)
     town = Town(project, auto_commit=False, layout_file=project / ".orkcraft.json")
-    side, start = bench.Side("building"), time.monotonic()
+    side, start, started = bench.Side("building"), time.monotonic(), dt.datetime.now()
     try:
         spec = buildings.type_spec(town, case.type)
         if spec is None:
@@ -79,8 +81,14 @@ def run_building(case: bench.Case, project: Path, base: str, template: dict, too
         task = w.new_task(case.title, case.task)
         if task is None:
             raise ValueError("the case has no task")
-        root_id, how = task.id, ""
-        while not (how := _settled(w, root_id)):
+        root_id, how, heard = task.id, "", 0
+        while True:
+            decisions = w.state.decisions(500)
+            for d in decisions[heard:]:
+                say(f"+{_clock(time.monotonic() - start)} {_line(d)}")
+            heard = len(decisions)
+            if (how := _settled(w, root_id)):
+                break
             if cancel is not None and cancel.is_set():
                 how = "stopped"
             elif w.state.spent > max_spend:
@@ -92,7 +100,7 @@ def run_building(case: bench.Case, project: Path, base: str, template: dict, too
                 break
             time.sleep(POLL_S)
         side.seconds = round(time.monotonic() - start, 1)
-        _read(w, root_id, how, side)
+        _read(w, root_id, how, side, started)
         if side.error:
             return side
         task = w.state.task(root_id)
@@ -111,7 +119,28 @@ def run_building(case: bench.Case, project: Path, base: str, template: dict, too
     return side
 
 
-def _read(w, root_id: str, how: str, side: bench.Side) -> None:
+def _clock(seconds: float) -> str:
+    return f"{int(seconds // 60)}:{int(seconds % 60):02d}"
+
+
+def _line(d) -> str:
+    return f"{d.action}: {d.orc + ' — ' if d.orc else ''}{d.why}"[:200]
+
+
+def _steps(decisions, started: dt.datetime) -> list[dict]:
+    """The decisions on the run's clock: seconds from its start, who (an ork, else the steward), what and why."""
+    out = []
+    for d in decisions:
+        try:
+            at = dt.datetime.fromisoformat(d.at).replace(tzinfo=None)
+        except (TypeError, ValueError):
+            continue
+        out.append({"t": round(max(0.0, (at - started.replace(microsecond=0)).total_seconds()), 1),
+                    "who": d.orc or "steward", "action": d.action, "why": d.why[:300]})
+    return out
+
+
+def _read(w, root_id: str, how: str, side: bench.Side, started: dt.datetime) -> None:
     st = w.state
     task = st.task(root_id)
     parts = [t for t in st.tasks + st.queue if t.parent == root_id]
@@ -131,7 +160,9 @@ def _read(w, root_id: str, how: str, side: bench.Side) -> None:
             side.how.append(f"planned in {len(parts)} parts: " + ", ".join(p.sub or p.title for p in parts))
         if task.attempts > 1:
             side.how.append(f"{task.attempts - 1} rework(s)")
-    side.how += [f"{d.action}: {d.orc + ' — ' if d.orc else ''}{d.why}"[:200] for d in st.decisions(40)]
+    decisions = st.decisions(500)
+    side.how += [_line(d) for d in decisions[-40:]]
+    side.steps = _steps(decisions, started)
 
 
 def _worktree(project: Path, where: Path, branch: str) -> None:
@@ -143,18 +174,22 @@ def _worktree(project: Path, where: Path, branch: str) -> None:
 def run(root: Path, case: bench.Case, tool: str = "main", tier: str = "", building_id: str = "",
         max_spend: float = bench.DEFAULT_MAX_SPEND, sides: tuple[str, ...] = ("building", "bare"),
         say: Callable[[str], None] = lambda _line: None, cancel: threading.Event | None = None,
-        bare_runner=None) -> tuple[bench.Report, Path]:
-    """One run of a case, the building's side then the bare tool's, each in its own copy; kept in its run folder."""
+        bare_runner=None, orders: str | None = None) -> tuple[bench.Report, Path]:
+    """One run of a case, the building's side then the bare tool's, each in its own copy; kept in its run folder.
+    `orders`: the building's instructions for this run only (None: its own)."""
     now = dt.datetime.now()
     folder = bench.run_dir(root, case, now)
     report = bench.Report(id=folder.name, type=case.type, case=case.id, tool=tool, tier=tier,
-                          at=now.isoformat(timespec="seconds"))
+                          at=now.isoformat(timespec="seconds"), orders_changed=orders is not None)
+    template = template_of(root, case.type, building_id)
+    if orders is not None:
+        template["orders"] = orders
     if "building" in sides:
         say("the building works on the case…")
         project = folder / "building"
         base = bench.make_project(case, root, project)
-        report.building = run_building(case, project, base, template_of(root, case.type, building_id), tool, tier,
-                                       max_spend, cancel=cancel, check_dir=folder / "building-result")
+        report.building = run_building(case, project, base, template, tool, tier, max_spend, cancel=cancel,
+                                       check_dir=folder / "building-result", say=say)
         report.save(folder)
     if "bare" in sides and not (cancel is not None and cancel.is_set()):
         say("the bare AI tool works on the case…")

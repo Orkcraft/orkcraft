@@ -1,19 +1,19 @@
 # Design — the Test bench: one building on its own, measured
 
-Status: stage 1 built 2026-10-10 (`orkcraft bench`, the Agent pool only); the rest is the plan.
+Status: stages 1–7 built 2026-10-10 (runs for the Agent pool only); §9 says how it is built.
 For the operator only: hidden behind a flag, maybe later for developers. GUI and CLI, no TUI
 ([calm-town.md](calm-town.md) §9).
 
 | stage | what | state |
 |---|---|---|
 | 1 | Tech, the Agent pool: a test case runs in a copy of its project, in the building and in the bare AI tool; time, spend, tokens and its check side by side (`orkcraft bench`) | built |
-| 2 | the bench window: hidden behind the flag, opened by five clicks on a hut; the case, the tier and the AI tool picked there | |
-| 3 | inside the run: the timeline of the steward and its orks (who was started, what ran at once, where it waited) | |
-| 4 | test cases written by agents when a building has none, read by the operator before they count | |
-| 5 | UX: a browser walk through build → settings → Work / Info → quick actions, with screenshots and the friction it found | |
-| 6 | Product: the building's first-session moment (its AHA), its script and the time to it | |
-| 7 | **Make tasks**: the findings of 5 and 6 sent to the Agent pool, by a button, never by themselves | |
-| 8 | the other buildings: External listeners and Research first | |
+| 2 | the bench window: hidden behind the flag, opened by five clicks on a hut (or Test bench in its menu); the case, the AI tool, the tier, the spend limit and the instructions picked there | built |
+| 3 | inside the run: the steward's and each ork's decisions on the run's clock, a lane each | built (decisions; the runs' own spans later) |
+| 4 | test cases written by agents, read by the operator before they count | built (Write a case) |
+| 5 | UX: two reviewers read the building's code and flow and name where a person would stop | built (reading code; the browser walk with screenshots later) |
+| 6 | Product: the building's AHA moment, its script and its measure | built |
+| 7 | **Make tasks**: the ticked findings sent to the Agent pool picked, by a button, never by themselves | built |
+| 8 | runs for the other buildings: External listeners and Research first | |
 
 ## 1. Why
 
@@ -168,3 +168,24 @@ Agents are started through `jobs.run_work`, so Stop all stops them (`realm/halt.
 - Opening the bench for everyone: it is a tool to build buildings, not a part of the town.
 - Writing a case again on each open: runs would not compare.
 - Changing a building from the bench without Apply.
+
+## 9. As built: the window (gui/bench.py, js/bench.js)
+
+- `ORKCRAFT_BENCH=1` puts `bench` in the snapshot. Then the fifth click on a hut within two seconds
+  (`benchClick` in `js/hut.js`), or **Test bench** in its right-click menu, opens the bench of that
+  building. Without the flag the commands refuse.
+- **Tech.** *Run a case*: the case (only cases read count), the AI tool, the orks' tier, both sides or
+  one, the spend limit, and the steward's instructions for this run only. A run is `orkcraft bench` in a
+  process of its own (one process holds one town), registered in Stop all; its lines show as they come,
+  its last line names the kept run. *Runs*: the kept ones, newest first, side by side, the checks'
+  last lines, the reports, and *Inside the run*. *Cases*: each with its task, check and project;
+  a written one says *not read yet* until **I read it: it counts**. **Write a case** asks one agent.
+- **Reviews.** Tech: architect, AI engineer, AI researcher (the last run in their prompt). UX: product
+  manager, product designer. Product: product manager, architect, each with the AHA moment shown above
+  the findings. Every reviewer is one AI tool call that only reads Orkcraft's own source and answers in
+  JSON (`realm/bench_review.py`), kept in `.orkcraft/bench/reviews/<type>/<tab>.json` with the
+  Orkcraft version: a newer version marks it to review again.
+- **On open.** A building whose type has no review kept gets all seven reviewers at once, the first
+  time its bench opens (what the operator asked for); after that only **Review again** starts them.
+- **Make tasks.** The ticked findings of any tab go to the Agent pool picked, one task each, with the
+  reviewer, the tab, the finding, where, its severity and Orkcraft's version.

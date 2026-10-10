@@ -150,14 +150,16 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
     print(f"Test bench: {case.title}. It runs AI tools and spends up to ${max_spend:.2f} on the building's side; "
           "nothing leaves the copies it makes.", flush=True)
     try:
+        orders = args.orders.read_text(encoding="utf-8") if args.orders else None
         report, folder = building_bench.run(root, case, args.tool, tier, args.building, max_spend, sides,
-                                            say=lambda line: print(line, flush=True))
+                                            say=lambda line: print(line, flush=True), orders=orders)
     except (ValueError, RuntimeError, OSError) as e:
         sys.stderr.write(f"orkcraft error: {e}\n")
         return 1
     print()
     print(bench.render(report, lexicon.term(args.type)))
     print(f"\nKept in {folder}")
+    print(f"{bench.DONE}{report.id}", flush=True)
     return 0
 
 
@@ -217,6 +219,8 @@ def main(argv: list[str] | None = None) -> int:
     bench_p.add_argument("--building", default="", help="Which of your buildings of the type to copy the settings of")
     bench_p.add_argument("--max-spend", type=float, default=None, help="$ the building's side may spend (default: 2)")
     bench_p.add_argument("--only", choices=("building", "bare"), default=None, help="Run one side only")
+    bench_p.add_argument("--orders", type=Path, default=None,
+                         help="A file with the building's instructions for this run only (default: its own)")
     up_p = subparsers.add_parser("update", help="Install the latest version, see what is out, or say what installs by itself")
     up_p.add_argument("action", nargs="?", choices=("check", "auto", "critical", "ask"), default=None,
                       help="check: only say what is out · auto | critical | ask: which updates install by "

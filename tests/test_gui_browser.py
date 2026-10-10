@@ -1775,3 +1775,66 @@ def test_a_tool_that_failed_says_so_with_switch_retry_and_details(page, gui, mon
             break
         page.wait_for_timeout(100)
     assert ran == [1]
+
+
+def test_five_clicks_on_a_hut_open_its_test_bench_with_the_flag(page, gui, monkeypatch):
+    """docs/design/test-bench.md §2: without ORKCRAFT_BENCH the clicks only select and open; with it, the fifth opens
+    the Test bench: a kept run side by side with its timeline, reviewers' findings to tick, Make tasks."""
+    import json as _json
+    from orkcraft.realm import bench, bench_review
+    server, _ = gui
+    answer = {"aha": {"moment": "A test task comes back as a pull request", "script": ["Build it", "Give it a task"],
+                      "measure": "minutes to the first accepted task", "time_to_it": "5 minutes"},
+              "findings": [{"title": "Say what a tier costs", "detail": "The setup names tiers, not prices.",
+                            "severity": "high", "where": "Info"}]}
+    monkeypatch.setattr(bench_review.jobs, "run_read", lambda *a, **kw: (_json.dumps(answer), 0.02, 700, ""))
+    root = server.host.town.repo_root
+    side = bench.Side("building", seconds=95, cost=0.41, tokens=52000, passed=True, files=["src/text.py"], lines=14, orks=2,
+                      steps=[{"t": 2, "who": "steward", "action": "plan", "why": "two parts"},
+                             {"t": 5, "who": "Grub", "action": "hire", "why": "a Novice for part 1"},
+                             {"t": 6, "who": "Mogka", "action": "hire", "why": "a Novice for part 2"},
+                             {"t": 80, "who": "steward", "action": "accept", "why": "tests pass"}])
+    bare = bench.Side("bare", seconds=40, cost=0.12, tokens=18000, passed=False, check_tail="1 failed", files=["src/text.py"], lines=9)
+    bench.Report("20261010-120000-barracks-slugify", "barracks", "slugify", at="2026-10-10T12:00:00",
+                 building=side, bare=bare).save(root / bench.RUNS / "20261010-120000-barracks-slugify")
+    bid = pg_build = page.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'barracks' }))")
+    pg = page
+    title = _hut(pg, bid).locator(".gui-hut__title")
+    for _ in range(5):
+        title.click()
+    pg.wait_for_timeout(300)
+    assert not pg.locator(".gui-bench").is_visible()                      # no flag: no bench
+    pg.locator("body").press("Escape")
+    monkeypatch.setenv("ORKCRAFT_BENCH", "1")
+    server.host.on_change()
+    pg.wait_for_function("() => import('/static/js/link.js').then(m => m.town.value.bench)", timeout=WAIT_MS)
+    pg.wait_for_timeout(1200)                                             # past the two seconds of the first clicks
+    for _ in range(5):
+        title.click()
+    dialog = pg.locator(".gui-bench")
+    dialog.wait_for(state="visible", timeout=WAIT_MS)
+    assert "Test bench" in dialog.locator(".ok-dialog__title").inner_text()
+    pg.wait_for_selector(".gui-bench__table", timeout=WAIT_MS)
+    assert "passed" in dialog.locator(".gui-bench__table").inner_text() and "failed" in dialog.locator(".gui-bench__table").inner_text()
+    assert dialog.locator(".gui-bench__lane").count() == 3                # the steward and two orks
+    pg.wait_for_selector(".gui-bench__finding", timeout=WAIT_MS)
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        pg.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-tech.png"))
+    dialog.locator(".ok-tab", has_text="Product").click()
+    dialog.locator(".gui-bench__aha").first.wait_for(state="visible", timeout=WAIT_MS)
+    make = dialog.locator(".ok-dialog__actions .ok-btn.primary")
+    assert make.is_disabled()
+    dialog.locator(".gui-bench__finding .ok-check").first.click()
+    assert make.is_enabled() and "make 1 task" in make.inner_text().lower()
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        pg.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-product.png"))
+    make.click()
+    pg.wait_for_function("id => import('/static/js/link.js').then(m => m.command('bench.state', { id }))"
+                         ".then(s => true)", arg=bid, timeout=WAIT_MS)
+    dialog.locator(".ok-dialog__actions .ok-btn", has_text="Close").click()
+    dialog.wait_for(state="detached", timeout=WAIT_MS)
+    tasks = server.host.town.worker(bid).state
+    assert any(t.title.endswith("Say what a tier costs") for t in tasks.tasks + tasks.queue)
+    server.host.town.worker(bid).stop()
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+    del pg_build

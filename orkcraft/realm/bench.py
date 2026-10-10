@@ -28,6 +28,7 @@ RUNS = BENCH / "runs"
 CHECK_TIMEOUT_S = 600
 TAIL = 1500
 DEFAULT_MAX_SPEND = 2.0             # $ the building's side may spend in one run
+DONE = "Test bench run kept: "      # the last line `orkcraft bench` prints: the run's id after it (gui/bench.py)
 AUTHOR = ("-c", "user.name=Orkcraft bench", "-c", "user.email=bench@orkcraft.local")
 _SLUG = re.compile(r"[^a-z0-9-]+")
 
@@ -78,6 +79,30 @@ def cases(root: Path, type_id: str) -> list[Case]:
 
 def case(root: Path, type_id: str, case_id: str) -> Case | None:
     return next((c for c in cases(root, type_id) if c.id == case_id), None)
+
+
+def bench_cases_of(type_id: str) -> list[dict]:
+    """The shipped cases of a type, as data."""
+    return list(bench_cases.CASES.get(type_id, ()))
+
+
+def save_case(root: Path, c: Case) -> Path:
+    """A case in the town's own (`.orkcraft/bench/<type>/<id>.json`)."""
+    path = root / BENCH / c.type / f"{c.id}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = {k: v for k, v in asdict(c).items() if k != "id"}
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return path
+
+
+def mark_read(root: Path, type_id: str, case_id: str) -> bool:
+    """The operator read a written case: it counts from now on. False when there is no such case of the town's."""
+    c = case(root, type_id, case_id)
+    if c is None or not (root / BENCH / type_id / f"{case_id}.json").is_file():
+        return False
+    c.reviewed = True
+    save_case(root, c)
+    return True
 
 
 # -- the copy of a project ----------------------------------------------------------------------------------
@@ -162,6 +187,7 @@ class Side:
     how: list[str] = field(default_factory=list)   # how it went: decisions, orks, parts, reworks
     orks: int = 0
     where: str = ""                    # the tree its result is in
+    steps: list[dict] = field(default_factory=list)   # its decisions on the run's clock: {t, who, action, why}
 
 
 def bare(c: Case, workdir: Path, tool: str = "main", tier: str = "", cancel: threading.Event | None = None,
@@ -193,6 +219,7 @@ class Report:
     at: str = ""
     building: Side | None = None
     bare: Side | None = None
+    orders_changed: bool = False       # the building ran on instructions changed for this run
 
     def save(self, run_dir: Path) -> Path:
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -203,8 +230,10 @@ class Report:
     @classmethod
     def load(cls, path: Path) -> Report:
         data = json.loads(path.read_text(encoding="utf-8"))
-        sides = {k: Side(**data[k]) if data.get(k) else None for k in ("building", "bare")}
-        return cls(**{**data, **sides})
+        known = set(Side.__dataclass_fields__)
+        sides = {k: Side(**{f: v for f, v in data[k].items() if f in known}) if data.get(k) else None
+                 for k in ("building", "bare")}
+        return cls(**{**{k: v for k, v in data.items() if k in cls.__dataclass_fields__}, **sides})
 
 
 def run_dir(root: Path, c: Case, now: dt.datetime | None = None) -> Path:
@@ -243,7 +272,8 @@ def render(r: Report, building_word: str = "Building") -> str:
             ("Spend", *(f"${s.cost:.2f}" for s in sides)),
             ("Tokens", *(f"{s.tokens:,}" if s.tokens else "not reported" for s in sides)),
             ("Check", *(verdict(s) for s in sides)),
-            ("Change", *(f"{len(s.files)} files, {s.lines} lines" for s in sides))]
+            ("Change", *(f"{len(s.files)} file{'' if len(s.files) == 1 else 's'}, {s.lines} line{'' if s.lines == 1 else 's'}"
+                         for s in sides))]
     width = [max(len(row[i]) for row in rows) for i in range(len(rows[0]))]
     tier = f", {tiers.label(r.tier)}" if r.tier else ""
     out = [f"Test bench: {r.case} ({r.type}), AI tool {r.tool}{tier}", ""]

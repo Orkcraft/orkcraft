@@ -158,6 +158,8 @@ def test_the_building_runs_the_case_in_a_town_of_its_own(tmp_path, faked_pool):
     assert side.error == "" and side.passed is True, (side.check_tail, side.how)
     assert side.files == ["src/text.py"] and side.orks == 1 and side.tokens == 1200
     assert side.cost >= 0.05 and any(h.startswith("hire") for h in side.how)
+    assert any(st["action"] == "hire" and st["who"] != "steward" for st in side.steps)   # the run's clock, a lane each
+    assert all(st["t"] >= 0 for st in side.steps)
     assert _git(project, "remote") == ""                         # nothing could go out
     ledger = [json.loads(ln) for ln in (project / ".orkcraft" / "ledger.jsonl").read_text().splitlines()]
     assert ledger[-1]["tokens"] == 1200 and ledger[-1]["cost"] > 0.05   # the pool's run: its tokens, the steward's $
