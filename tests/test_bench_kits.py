@@ -23,8 +23,12 @@ def quick(monkeypatch, isolated_layout_file):
     monkeypatch.setattr(building_kits, "POLL_S", 0.05)
 
 
+FIRST = {"watchtower": "feedback-inbox", "fields": "titles-and-plans", "war_drum": "two-briefs"}
+
+
 def _case(type_id: str) -> bench.Case:
-    [c] = bench.cases(Path("/nonexistent"), type_id)
+    c = bench.case(Path("/nonexistent"), type_id, FIRST[type_id])
+    assert c is not None
     return c
 
 
@@ -227,3 +231,59 @@ def test_the_review_board_routes_a_bug_to_development(tmp_path, monkeypatch):
     report, _ = building_bench.run(tmp_path, c, bare_runner=bare_runner)
     assert report.building.passed is True, report.building.checks or report.building.how
     assert report.bare.passed is False and "`development`" in seen[0][0]
+
+
+# -- every shipped case of a kit is one its check can pass and fail ---------------------------------------------------
+
+def _ideal(c: bench.Case) -> dict:
+    """The answer a case asks for, built from its own expectations: every check should pass on it."""
+    def words(groups) -> str:
+        return " ".join(g if isinstance(g, str) else g[0] for g in groups or [])
+    if c.type == "watchtower":
+        return {"messages": [{"n": n, "kept": m["expect"].get("kept", True), "importance": m["expect"].get("importance", ""),
+                              "answer": m["expect"].get("answer", "")} for n, m in enumerate(c.inputs["messages"], 1)]}
+    if c.type == "fields":
+        return {"titles": [{"n": n, "title": f"{words(t.get('expect_words'))} card"[:60]}
+                           for n, t in enumerate(c.inputs.get("titles") or [], 1)],
+                "plans": [{"n": n, "steps": [words(p.get("expect_words")), "then the second step", "and the last one"]}
+                          for n, p in enumerate(c.inputs.get("plans") or [], 1)]}
+    heads = c.inputs.get("expect_headings") or []
+    return {"briefs": [{"n": n, "text": "\n".join(f"## {h}\n{words(e.get('expect_words'))}" for h in heads or ["Brief"])}
+                       for n, e in enumerate(c.inputs["events"], 1)]}
+
+
+@pytest.mark.parametrize("case", [c for t in ("watchtower", "fields", "war_drum") for c in bench.cases(Path("/x"), t)],
+                         ids=lambda c: f"{c.type}-{c.id}")
+def test_every_kit_case_can_be_passed_and_failed(case):
+    kit = bench_kits.KITS[case.type]
+    assert case.level in bench.LEVELS and case.title and case.expect
+    good = kit.check(case, _ideal(case))
+    assert good and all(x["ok"] for x in good), [x for x in good if not x["ok"]]
+    assert not any(x["ok"] for x in kit.check(case, kit.parse("{}")) if "words" not in x["name"])
+    assert kit.prompt(case)                                                     # the bare tool's ask builds
+
+
+def test_the_kits_have_a_case_of_every_level():
+    for t in ("watchtower", "fields", "war_drum"):
+        assert {c.level for c in bench.cases(Path("/x"), t)} == set(bench.LEVELS), t
+
+
+def test_a_board_with_plans_only_and_a_calendar_of_one_meeting_run_too(tmp_path, monkeypatch):
+    plans = []
+
+    def fast(prompt, model=None):
+        plans.append(prompt)
+        return "1. Подать заявление на Госуслугах\n2. Сделать фото 35×45\n3. Оплатить госпошлину 6000 ₽", 0.0
+    monkeypatch.setattr(runners, "FASTPATH_RUNNER", fast)
+    bare_runner, _ = _bare({"titles": [], "plans": [{"n": 1, "steps": ["Сходить в МФЦ"]}]})
+    c = bench.case(Path("/x"), "fields", "russian-passport")
+    report, _ = building_bench.run(tmp_path, c, bare_runner=bare_runner)
+    assert report.building.passed is True, report.building.checks
+    assert "Госуслуги" in plans[0] and report.bare.passed is False
+
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(
+        lambda h, p, w, c, m, e, r: ("## Agenda\n- Alex's promotion\n- Q4 goals\n\n## Questions to ask\n- ?", 0.0, 0, "")))
+    monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
+    report, _ = building_bench.run(tmp_path, bench.case(Path("/x"), "war_drum", "one-to-one"),
+                                   bare_runner=_bare({"briefs": []})[0])
+    assert report.building.passed is True, report.building.checks or report.building.how

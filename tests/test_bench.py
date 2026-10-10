@@ -269,3 +269,16 @@ def test_cli_runs_a_series_and_sums_it_up(fake_repo, capsys, monkeypatch):
     out = capsys.readouterr().out
     assert out.count(bench.DONE) == 5 and "Agent pool against the bare AI tool" in out
     assert cli.main(["--repo", str(fake_repo), "bench", "--level", "hard"]) == 2
+
+
+def test_a_run_as_text_for_an_analysis_carries_both_sides_in_full():
+    b = bench.Side("building", seconds=40, cost=0.2, tokens=900, passed=False, model="laborer",
+                   checks=[{"name": "#1 kept", "ok": True, "detail": ""}, {"name": "#2 left out", "ok": False, "detail": "kept"}],
+                   how=["#1: kept"], steps=[{"t": 3, "who": "Grub", "action": "hire", "why": "first"}],
+                   text="the report", check_tail="1 failed")
+    t = bench.Side("bare", seconds=20, cost=0.1, passed=True, error="")
+    text = bench.analysis(bench.Report("r1", "watchtower", "feedback-inbox", at="2026-10-10T12:00:00", building=b, bare=t),
+                          "External listeners")
+    for part in ("## External listeners", "## Bare AI tool", "✗ #2 left out — kept", "✓ #1 kept", "+3s Grub: hire — first",
+                 "the check's last lines:", "1 failed", "its report:", "the report", "model: laborer", "Run r1"):
+        assert part in text, part

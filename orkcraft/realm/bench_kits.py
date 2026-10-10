@@ -48,15 +48,16 @@ def _stems(text: str) -> set[str]:
 
 
 def has(text: str, words) -> bool:
-    """Any of `words` (a word or a list of them) is in `text`, by its stem; a number or a code by itself."""
+    """Any of `words` (a word or a list of them) is in `text`, by its stem (a word shorter than a stem begins one:
+    "фото" finds "фотографию"); a number, a code or a phrase as it is written."""
     found = _stems(text)
     low = _plain(text)
     for w in [words] if isinstance(words, str) else list(words):
-        w = str(w)
+        w = _plain(str(w))
         if any(c.isdigit() for c in w) or not w.isalpha():
-            if _plain(w) in low:
+            if w in low:
                 return True
-        elif _plain(w)[:STEM] in found:
+        elif w[:STEM] in found or (len(w) < STEM and any(f.startswith(w) for f in found)):
             return True
     return False
 

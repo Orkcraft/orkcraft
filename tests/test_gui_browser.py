@@ -1876,3 +1876,44 @@ def test_the_test_bench_of_external_listeners_shows_its_checks(page, gui, monkey
         page.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-watchtower.png"))
     dialog.locator(".ok-dialog__actions .ok-btn", has_text="Close").click()
     page.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
+def test_the_test_benchs_terminal_shows_four_lines_and_copies_them_all(page, gui, monkeypatch):
+    """The run's terminal keeps to its last four lines; Copy takes every line, and Copy for analysis the whole run."""
+    import json as _json
+    from orkcraft.gui import bench as gui_bench
+    from orkcraft.realm import bench, bench_review
+    server, _ = gui
+    monkeypatch.setenv("ORKCRAFT_BENCH", "1")
+    monkeypatch.setattr(bench_review.jobs, "run_read", lambda *a, **kw: (_json.dumps({"findings": []}), 0.0, 0, ""))
+    bid = page.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
+    job = gui_bench.Job("run", "fields", "Name four long cards", lines=[f"line {n}" for n in range(1, 11)], done=True)
+    server.host.bench.jobs["fields"] = job
+    root = server.host.town.repo_root
+    bench.Report("20261010-140000-fields-long-cards", "fields", "long-cards", at="2026-10-10T14:00:00",
+                 building=bench.Side("building", seconds=9, passed=True),
+                 bare=bench.Side("bare", seconds=4, passed=False)).save(root / bench.RUNS / "20261010-140000-fields-long-cards")
+    server.host.on_change()
+    page.wait_for_function("() => import('/static/js/link.js').then(m => m.town.value.bench)", timeout=WAIT_MS)
+    page.evaluate("id => import('/static/js/bench.js').then(m => { m.benchOpen.value = id; })", bid)
+    term = page.locator(".gui-bench__term")
+    term.wait_for(state="visible", timeout=WAIT_MS)
+    assert term.inner_text().splitlines() == ["line 7", "line 8", "line 9", "line 10"]
+    box = term.bounding_box()
+    assert box["height"] < 100                                                  # four lines high, not fourteen
+    copied = []
+    page.expose_function("benchCopied", lambda text: copied.append(text))
+    page.evaluate("""() => { const w = navigator.clipboard && navigator.clipboard.writeText;
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText: (t) => { window.benchCopied(t); return Promise.resolve(); } } }); }""")
+    page.locator(".gui-bench__section", has=term).locator(".ok-btn", has_text="Copy").first.click()
+    page.wait_for_function("() => true")
+    page.wait_for_timeout(200)
+    assert copied and copied[-1].splitlines()[1:] == [f"line {n}" for n in range(1, 11)]
+    page.locator(".gui-bench .ok-btn", has_text="Copy for analysis").last.click()
+    page.wait_for_timeout(200)
+    assert copied[-1].startswith("Test bench: long-cards") and "## Bare AI tool" in copied[-1]
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        page.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-terminal.png"))
+    page.locator(".gui-bench .ok-dialog__actions .ok-btn", has_text="Close").click()
+    server.host.bench.jobs.pop("fields", None)
+    page.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)

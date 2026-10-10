@@ -6,7 +6,7 @@ by its kit (realm/bench_kits.py). A town adds its own in `.orkcraft/bench/<type>
 """
 from __future__ import annotations
 
-from orkcraft.realm import bench_sets
+from orkcraft.realm import bench_kit_cases, bench_sets
 
 _TEXT_PY = '''"""Text helpers."""
 
@@ -304,6 +304,7 @@ CASES: dict[str, list[dict]] = {
     "watchtower": [
         {
             "id": "feedback-inbox",
+            "level": "medium",
             "title": "Keep the users' feedback out of a morning's mail",
             "expect": "The two bug reports, the feature requests and the double charge are kept; the newsletter, "
                       "the invoice, the lunch and the CI mail are left out. The double charge is high.",
@@ -341,11 +342,13 @@ CASES: dict[str, list[dict]] = {
                 ],
             },
         },
+        *bench_kit_cases.CASES["watchtower"],
     ],
     # Task board: long cards to name, and to-dos to plan with what the wiki knows.
     "fields": [
         {
             "id": "titles-and-plans",
+            "level": "medium",
             "title": "Name long cards and plan to-dos with the wiki",
             "expect": "Short titles that say what the card is; plans of 3–7 steps that use what the wiki says "
                       "(the policy number, who to call), not generic advice.",
@@ -377,11 +380,13 @@ CASES: dict[str, list[dict]] = {
                 ],
             },
         },
+        *bench_kit_cases.CASES["fields"],
     ],
     # Calendar: two meetings tomorrow, their invitations, and briefs written by the Agent pool.
     "war_drum": [
         {
             "id": "two-briefs",
+            "level": "parallel",
             "title": "Brief tomorrow's design review and client call",
             "expect": "A brief per meeting, with the sections asked for, that names who comes and carries the "
                       "invitation's agenda: the booking page and reminders; Northwind's renewal and SSO.",
@@ -402,6 +407,7 @@ CASES: dict[str, list[dict]] = {
                 ],
             },
         },
+        *bench_kit_cases.CASES["war_drum"],
     ],
     # Research: questions whose answers are settled facts on the open web, so a run today and one next month agree.
     "mine": [
