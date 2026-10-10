@@ -449,6 +449,8 @@ def biome_huts() -> None:
         if not header.is_file():
             continue
         img = Image.open(header).convert("RGBA")
+        if len(img.getcolors(maxcolors=4096) or range(4097)) > 64:
+            continue                           # painted (tools/painted.py): its biomes are that tool's, shading kept
         native = img.resize((img.width // 2, img.height // 2), Image.NEAREST)
         for biome in BIOME_VARIANTS:
             out = biome_sprite(native, biome)
