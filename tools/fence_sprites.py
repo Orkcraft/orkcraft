@@ -99,7 +99,7 @@ def tusk(level: int) -> list[str]:
     return [r[::-1] for r in rows]         # its tip curling left: in, over the card from its top-right corner
 
 
-POST = [                      # a bottom corner: a stout post with an iron head, lashed once (9 × 12)
+POST = [                      # a bottom corner: a stout post with an iron head, lashed once (9 × 12): renown I
     ".........",
     "....i....",
     "....i....",
@@ -113,6 +113,25 @@ POST = [                      # a bottom corner: a stout post with an iron head,
     "..olmdo..",
     "..olmdo..",
 ]
+
+
+# Renown shows along the whole fence, not in one corner (docs/design/yards.md §3): II caps every picket with iron and
+# gives the bottom posts a spiked collar; III binds the rail in iron too and the posts grow two bone horns. Iron stays
+# as quiet as the wood; the bone stays at a few points a card.
+def iron_tips(grid: list[str]) -> list[str]:
+    """A picket's point and its outline in iron."""
+    out = []
+    for y, r in enumerate(grid):
+        out.append(r.replace("o", "i").replace("p", "j") if y < 2 else r)
+    return out
+
+
+def iron_rail(grid: list[str]) -> list[str]:
+    return [r.replace("hhh", "jjj").replace("ddd", "iii") for r in grid]
+
+
+POST_2 = POST[:5] + ["iioiiioii"] + POST[6:]                     # a spiked iron collar
+POST_3 = [".........", "....i....", "b...i...b", "b..iji..b", "sbiijiibs", "isoiiiosi"] + POST[6:]   # and two bone horns
 
 
 AXES = [                      # III: two axes crossed, iron heads up, wooden hafts
@@ -144,13 +163,16 @@ def main() -> None:
     for level in (1, 2, 3):
         grid_image(tusk(level), colours, 3).save(out / f"tusk-{level}.png")
         grid_image(tusk(level), colours, 6).save(out / f"tusk-{level}@2x.png")
-    grid_image(POST, colours, 3).save(out / "corner-post.png")
-    grid_image(POST, colours, 6).save(out / "corner-post@2x.png")
+    for name, grid in (("corner-post", POST), ("corner-post-2", POST_2), ("corner-post-3", POST_3),
+                       ("row-2", iron_tips(GRIDS["row"])), ("row-3", iron_rail(iron_tips(GRIDS["row"]))),
+                       ("side-2", iron_tips(GRIDS["side"])), ("side-3", iron_tips(GRIDS["side"]))):
+        grid_image(grid, colours, 3).save(out / f"{name}.png")
+        grid_image(grid, colours, 6).save(out / f"{name}@2x.png")
     grid_image(AXES, colours, 3).save(out / "axes.png")
     grid_image(AXES, colours, 6).save(out / "axes@2x.png")
     grid_image(PLINTH, STONE, 2).save(out / "plinth.png")
     grid_image(PLINTH, STONE, 4).save(out / "plinth@2x.png")
-    print(f"wrote {', '.join(GRIDS)}, tusk-1..3, corner-post, axes, plinth to {out}")
+    print(f"wrote {', '.join(GRIDS)}, tusk-1..3, corner-post-1..3, row/side-2..3, axes, plinth to {out}")
 
 
 if __name__ == "__main__":

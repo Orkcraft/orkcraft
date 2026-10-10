@@ -117,8 +117,12 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
    iron head, neat and quiet. The building's renown adds iron, never more bone (tools/fence_sprites.py; docs/design/
    yards.md §3): II an iron band round the tusk's root, III crossed axes where the top fence meets the house. */
 [data-look="camp"] .gui-hut.is-fenced { --tusk: image-set(url("/ds/sprites/fence/tusk-1.png") 1x, url("/ds/sprites/fence/tusk-1@2x.png") 2x); --corner-post: image-set(url("/ds/sprites/fence/corner-post.png") 1x, url("/ds/sprites/fence/corner-post@2x.png") 2x); }
-[data-look="camp"] .gui-hut.is-fenced.is-renown-2 { --tusk: image-set(url("/ds/sprites/fence/tusk-2.png") 1x, url("/ds/sprites/fence/tusk-2@2x.png") 2x); }
-[data-look="camp"] .gui-hut.is-fenced.is-renown-3 { --tusk: image-set(url("/ds/sprites/fence/tusk-3.png") 1x, url("/ds/sprites/fence/tusk-3@2x.png") 2x); }
+/* Renown along the whole fence: II iron caps on every picket and a spiked collar on the posts; III an iron-bound rail
+   and two bone horns on the posts, and the axes by the house. */
+[data-look="camp"] .gui-hut.is-fenced.is-renown-2 { --tusk: image-set(url("/ds/sprites/fence/tusk-2.png") 1x, url("/ds/sprites/fence/tusk-2@2x.png") 2x); --corner-post: image-set(url("/ds/sprites/fence/corner-post-2.png") 1x, url("/ds/sprites/fence/corner-post-2@2x.png") 2x);
+  --fence-row: image-set(url("/ds/sprites/fence/row-2.png") 1x, url("/ds/sprites/fence/row-2@2x.png") 2x); --fence-side: image-set(url("/ds/sprites/fence/side-2.png") 1x, url("/ds/sprites/fence/side-2@2x.png") 2x); }
+[data-look="camp"] .gui-hut.is-fenced.is-renown-3 { --tusk: image-set(url("/ds/sprites/fence/tusk-3.png") 1x, url("/ds/sprites/fence/tusk-3@2x.png") 2x); --corner-post: image-set(url("/ds/sprites/fence/corner-post-3.png") 1x, url("/ds/sprites/fence/corner-post-3@2x.png") 2x);
+  --fence-row: image-set(url("/ds/sprites/fence/row-3.png") 1x, url("/ds/sprites/fence/row-3@2x.png") 2x); --fence-side: image-set(url("/ds/sprites/fence/side-3.png") 1x, url("/ds/sprites/fence/side-3@2x.png") 2x); --fence-m: #4e585e; --fence-h: #6e7a80; }
 [data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card::after { content: ""; position: absolute; left: -8px; right: -8px;
   top: calc(var(--titlebar) - 27px); bottom: 0; pointer-events: none; image-rendering: pixelated; animation: none; background:
     var(--tusk) right 11px top / 21px 27px no-repeat,
