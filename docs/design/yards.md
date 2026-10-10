@@ -113,8 +113,10 @@ Office draws a yard as any card: nothing of this stage is drawn there (`yards.cs
 - **The orks' fence, sparingly** (2026-10-10): each picket is lashed to its rail with rope, no nails. Its corners
   are its one ornament: at the top fence's end a **bone tusk curling in over the card** (`tusk-<n>.png`), at the bottom
   corners a **stout post with an iron head** (`corner-post.png`) — neat and quiet, where tusks out at every corner
-  crowded the card. The building's renown (growth.md §5) adds iron, never more bone: II an iron band with a spike out
-  at each side round the tusk's root, III a pair of crossed axes where the top fence meets the house (`axes.png`). The
+  crowded the card. The building's renown (growth.md §5) shows along the whole fence, so a level reads from across the
+  town (one corner's change did not): II caps every picket with iron, gives the posts a spiked collar and the tusk an
+  iron band; III binds the rail in iron too, grows two small bone horns on each post and sets crossed axes where the top
+  fence meets the house (`axes.png`; `row-<n>`, `side-<n>`, `corner-post-<n>`). The
   bone is old bone (`#b8ac90`, about 8:1 to the ground): a white one (14:1) measured as bright as the card's text; the
   iron is as quiet as the wood. A selected yard glows round its tusk and posts (where the corner brackets would be).
 - **It tiles**: a card that is stretched (`hut_size`, building-views.md §1a) repeats its pickets at any
