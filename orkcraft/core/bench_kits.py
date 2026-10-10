@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from orkcraft import scroll as ts
+from orkcraft import autonomy, scroll as ts
 from orkcraft.core import buildings
 from orkcraft.core.town import Town
 from orkcraft.realm import bench, bench_kits, builders, checkpoint, steward_models, tiers, watch
@@ -58,6 +58,11 @@ def open_town(project: Path) -> Town:
 
     town.call, town.bench_lock = call, lock
     return town
+
+
+def unchain(town: Town, building_id: str) -> None:
+    """Nobody watches the copy, so its building runs unchained (autonomy.FREE): its orks' tools ask nothing."""
+    town.scroll.building(building_id).autonomy = autonomy.WORDS[autonomy.FREE]
 
 
 def raised(town: Town, type_id: str, config: dict):
@@ -237,6 +242,7 @@ def run_war_drum(ctx: Ctx) -> bench.Side:
         pool_config = code_bench.bench_config(ctx.pool_template, bench.Case("brief", "barracks", "", ""), ctx.tool,
                                               ctx.tier, ctx.max_spend)
         pool = raised(town, "barracks", {**pool_config, **({"orders": orders} if orders else {})})
+        unchain(town, pool.building_id)
         ts.subscribe(town.scroll, pool.building_id, drum.building_id, "calendar.event_upcoming")
         ts.subscribe(town.scroll, drum.building_id, pool.building_id, "pool.done", filter={"returns": True})
         side.model = ctx.tier

@@ -38,6 +38,7 @@ card moved by them over a return road. In the sandbox no model runs: an ork's re
 """
 from __future__ import annotations
 
+import functools
 import threading
 import time
 import uuid
@@ -46,6 +47,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from orkcraft import autonomy
 from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.barracks_claims import ClaimsMixin
@@ -452,6 +454,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         """In the orc's thread: the branch, the orc's run, the steward's answers and its review."""
         out = RunOutcome()
         runner = type(self).work_runner or (self._sandbox_work() if self.simulated else jobs.run_work)
+        if runner is jobs.run_work and self.rules.level >= autonomy.FREE:
+            runner = functools.partial(jobs.run_work, free=True)   # unchained: its tool asks nothing
         env = {"ORKCRAFT_ORC": f"{self.building_id}/{orc.name.lower()}"}
         git = self.task_git if self.uses_git else None
 

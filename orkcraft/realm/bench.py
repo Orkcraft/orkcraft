@@ -12,6 +12,7 @@ A run never touches the town it was started from: its copies have no remote and 
 from __future__ import annotations
 
 import datetime as dt
+import functools
 import json
 import re
 import shutil
@@ -216,7 +217,7 @@ def bare(c: Case, workdir: Path, tool: str = "main", tier: str = "", cancel: thr
          runner=None) -> Side:
     """The AI tool alone in `workdir`, on the tier's model, with the task as its only prompt, then the check."""
     model = tiers.resolve(tool, tier) if tier else ""
-    run = runner or jobs.run_work
+    run = runner or functools.partial(jobs.run_work, free=True)     # as the building's orks: it asks nothing
     side, start = Side("bare", where=str(workdir)), time.monotonic()
     base = git(workdir, "rev-parse", "HEAD")
     try:
