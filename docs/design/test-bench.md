@@ -97,7 +97,7 @@ of each `level`, the path the pool should take on it:
 |---|---|---|
 | `simple` | short, no list of steps (`plans.clearly_simple`) | one ork of the goal's tier at once; with a `test_cmd`, no steward call at all: its tests are its review |
 | `medium` | one ork's job that needs thought | the steward's sort, one ork, then the steward's review |
-| `parallel` | three independent parts, then one that needs them all | the steward's sort and plan, parts at once, the last one after them |
+| `parallel` | three independent parts, then one that needs them all | the steward's sort: each part is short, so one ork does it whole (a plan is for parts that are each a long job: on agy a planned run of these took 1.7–3.7× the bare tool, sorted single it is within a few % of it); planned, the parts run at once and the last one after them |
 
 Each has a known solution in `tests/bench_solutions/<case>/`: `tests/test_bench_sets.py` checks that the
 case's check fails as given and passes on it, and that its level is the path the rules give.

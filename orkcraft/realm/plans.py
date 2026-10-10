@@ -106,8 +106,11 @@ def triage_prompt(keeper: str, orders: str, title: str, text: str) -> str:
         "a short note);\n"
         "- `single`: one agent's job in one go, but it needs thought — `tier` says how strong: `warrior` for "
         "ordinary code, `elder` for design or tricky code;\n"
-        "- `plan`: several stages, or parts that can run in parallel — it is planned before anyone starts.\n"
-        "In doubt between `single` and `plan`: `plan`.\n"
+        "- `plan`: several stages, or parts that can run in parallel, each a long job of its own — it is planned "
+        "before anyone starts.\n"
+        "Every agent that starts costs minutes before it writes a line, and a planned part waits for the plan, its "
+        "own review and the merge: a task one agent finishes in one sitting (a few files, however many functions) "
+        "is `single` even when it has parts. In doubt between `single` and `plan`: `single`.\n"
         "`want`: `reply` only when all it asks is an answer to someone (a mail, a message, a ticket comment) and "
         "no change to the project; else `change`.", FROM_ABOVE] if p)
 

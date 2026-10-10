@@ -286,6 +286,11 @@ portrait's menu), from `tailscale status`:
    as any phone) with the phone's kind as its name. The code rides in the fragment, which the browser never
    sends, and is wiped from the address when the page reads it.
 
+Without Tailscale or its certificate on the computer, the code never shows the `orkcraft://` link (no
+phone opens it until an app takes it): it says what is missing — Tailscale's download, or the tailnet's DNS
+settings, where MagicDNS and HTTPS Certificates are turned on — and Pair a phone again looks for the
+tailnet anew (`pwa.retry_tail`), with no restart of the town.
+
 **The socket from a browser.** A browser cannot set `Authorization` on a WebSocket, so it names the token as
 a subprotocol: `Sec-WebSocket-Protocol: orkcraft.v1, bearer.<token>`; the listener answers `orkcraft.v1`
 and never echoes the token. Everything after it is the phone's: `mobile.allowed`, the rate limit, Forget.
