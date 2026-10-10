@@ -69,11 +69,11 @@ export function headerSprite(type, biome = "") {
 // the header: the pole's foot at (x, y), the sprite `height` tall. The top of each sprite's middle third
 // (tools/painted.py's headers are measured on their 1x).
 const FLAG_AT = {
-  barracks: [13, 1, 22], catapult: [8, 5, 22], council: [19, 0, 22], crag: [11, 0, 25], custom: [17, 1, 26],
-  fields: [7, 3, 22], forest: [17, 0, 27], forge: [16, 0, 26], gramophone: [12, 0, 25], horn: [10, 10, 22],
-  lab: [15, 6, 28], lake: [17, 0, 33], loot: [10, 9, 24], mill: [7, 3, 25], mine: [11, 0, 22], pit: [8, 0, 18],
-  scrolls: [10, 0, 22], signpost: [7, 0, 26], town_hall: [16, 3, 25], war_drum: [9, 3, 26], watchtower: [7, 0, 29],
-  workshop: [8, 3, 22],
+  barracks: [19, 2, 34], catapult: [12, 8, 32], council: [28, 1, 33], crag: [17, 0, 38], custom: [17, 1, 26],
+  fields: [16, 0, 33], forest: [17, 0, 27], forge: [24, 0, 40], gramophone: [18, 0, 37], horn: [16, 13, 32],
+  lab: [23, 9, 43], lake: [17, 0, 33], loot: [17, 14, 37], mill: [11, 4, 38], mine: [17, 0, 32], pit: [12, 0, 27],
+  scrolls: [15, 0, 34], signpost: [9, 0, 38], town_hall: [23, 0, 38], war_drum: [9, 3, 40], watchtower: [10, 0, 44],
+  workshop: [25, 1, 32],
 };
 
 const FOOTING_ROWS = { 1: 2, 2: 4, 3: 6 };     // the footing's height in its pixels (2 screen px each), by level
