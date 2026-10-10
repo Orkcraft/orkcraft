@@ -88,6 +88,11 @@ class Triage:
     want: str = ""               # `reply` when all it asks is an answer to someone (a lower path); "" else
 
 
+# The steward's call may run in an empty folder (agy's does): it looked for the files, was denied the command and
+# ended its turn with no answer. What it decides from is in its prompt.
+FROM_ABOVE = "What is above is all you need: decide from it and do not run commands."
+
+
 def triage_prompt(keeper: str, orders: str, title: str, text: str) -> str:
     """The steward's first, light look: is it trivial, one ork's job, or worth a plan?"""
     rules = f"## Your rules\n\n{orders.strip()}" if orders.strip() else ""
@@ -104,7 +109,7 @@ def triage_prompt(keeper: str, orders: str, title: str, text: str) -> str:
         "- `plan`: several stages, or parts that can run in parallel — it is planned before anyone starts.\n"
         "In doubt between `single` and `plan`: `plan`.\n"
         "`want`: `reply` only when all it asks is an answer to someone (a mail, a message, a ticket comment) and "
-        "no change to the project; else `change`."] if p)
+        "no change to the project; else `change`.", FROM_ABOVE] if p)
 
 
 def parse_triage(text: str) -> Triage | None:
@@ -176,7 +181,8 @@ def plan_prompt(keeper: str, orders: str, title: str, text: str, aim: str, max_p
          'code: {"why": "…", "decisions": ["…"], "invariants": ["…"], "out_of_scope": ["…"]}'
          + (" — two lines in all, it is a thrifty barracks." if short else " — short and concrete.")) if brief else "",
         ("When the task goes against a decision of a design above, add `\"conflicts\": [{\"with\": \"<its path>\", "
-         '"why": "…"}]` next to `subtasks` (or after `SIMPLE`, on its own line as JSON).') if designs else ""] if p)
+         '"why": "…"}]` next to `subtasks` (or after `SIMPLE`, on its own line as JSON).') if designs else "",
+        FROM_ABOVE] if p)
 
 
 def parse(text: str) -> tuple[list[Sub] | None, list[str]]:
@@ -278,6 +284,19 @@ def overlap(a: list[str], b: list[str]) -> bool:
         return p.strip().lstrip("./").rstrip("/")
     return any(x == y or x.startswith(y + "/") or y.startswith(x + "/") or not x or not y
                for x in map(norm, a) for y in map(norm, b))
+
+
+def holds_all(children: list, sub: str) -> bool:
+    """The part `sub` starts from the merged work of every other part (each is in its `after`, or theirs): only
+    then can the project's own tests pass on its branch alone."""
+    after = {c.sub: list(c.after) for c in children}
+    seen, todo = set(), list(after.get(sub, []))
+    while todo:
+        a = todo.pop()
+        if a not in seen:
+            seen.add(a)
+            todo += after.get(a, [])
+    return set(after) - {sub} <= seen
 
 
 def ready(children: list, limit: int) -> list:
@@ -382,7 +401,7 @@ def final_prompt(keeper: str, orders: str, title: str, text: str, plan: list[dic
         f"## Tests\n\n{tests}" if tests else "",
         f"## The merged diff\n\n```diff\n{cut}\n```" if diff.strip() else "## The merged diff\n\n(empty)", extra,
         "Answer `ACCEPT` on the first line when the request is met. Otherwise `REWORK: <id>: what to fix` — the "
-        "part that has to change — or `REWORK: new: what is missing` for something no part covered."] if p)
+        "part that has to change — or `REWORK: new: what is missing` for something no part covered.", FROM_ABOVE] if p)
 
 
 def rework_of(notes: str, ids: list[str]) -> tuple[str, str]:
