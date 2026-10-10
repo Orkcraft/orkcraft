@@ -111,10 +111,15 @@ class ReviewMixin:
         cmd = str(self.config.get("test_cmd") or "") if git is not None and commits and rule != bk.LOCAL else ""
         if cmd:
             passed, tail = git.test(workdir, cmd, cancel)
-            if not passed:
+            alone = task.parent and not plans.holds_all(self.children(self.state.task(task.parent) or task), task.sub)
+            if not passed and alone:     # the other parts' code is not on its branch: the whole is tested merged
+                tests = (f"`{cmd}` fails on this part alone, without the other parts' work; the merged whole is "
+                         f"tested once every part is in:\n\n```\n{tail.strip()[-1500:]}\n```")
+            elif not passed:
                 out.accepted, out.notes = False, f"the tests fail (`{cmd}`):\n\n```\n{tail.strip()}\n```"
                 return
-            tests = f"`{cmd}` passes: the barracks ran it on the branch itself, after the ork"
+            else:
+                tests = f"`{cmd}` passes: the barracks ran it on the branch itself, after the ork"
         extra, out.clashes, met = self._review_context(task, files, git, task.branch)
         if task.parent:                                   # a part: no pull request of its own
             if self.goal.sub_review:

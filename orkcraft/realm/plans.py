@@ -286,6 +286,19 @@ def overlap(a: list[str], b: list[str]) -> bool:
                for x in map(norm, a) for y in map(norm, b))
 
 
+def holds_all(children: list, sub: str) -> bool:
+    """The part `sub` starts from the merged work of every other part (each is in its `after`, or theirs): only
+    then can the project's own tests pass on its branch alone."""
+    after = {c.sub: list(c.after) for c in children}
+    seen, todo = set(), list(after.get(sub, []))
+    while todo:
+        a = todo.pop()
+        if a not in seen:
+            seen.add(a)
+            todo += after.get(a, [])
+    return set(after) - {sub} <= seen
+
+
 def ready(children: list, limit: int) -> list:
     """The `blocked` children that may start now, in the plan's order: every `after` is done, nothing
     queued or running touches the same files, and no more than `limit` at once (0: no limit)."""
