@@ -1,0 +1,20 @@
+{
+  "name": "Orkcraft",
+  "short_name": "Orkcraft",
+  "description": "Your town in your pocket: the questions the orks wait on, spend, Stop all.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#161616",
+  "theme_color": "#161616",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ],
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "params": {"title": "share_title", "text": "share_text", "url": "share_url"}
+  }
+}

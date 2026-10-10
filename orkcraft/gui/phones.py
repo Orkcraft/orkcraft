@@ -10,6 +10,8 @@ is paired or a pairing code is shown: a machine with no phone opens no port on t
          ← {"id": "<device id>", "token": "<device token>", "name": "Vadim's phone"}
     POST /api/place     Authorization: Bearer <device token>; {"id", "place", "change", "at"} (gui/places.py)
          ← {"outcome": "asked"}      for a client with no socket: Shortcuts, Tasker (docs/design/phone-places.md)
+    GET  /app/          the town in a phone's browser, on the tailnet (gui/pwa.py; its socket names the token
+                        as a subprotocol, `bearer.<token>`, since a browser cannot set Authorization)
     GET  /ws            Authorization: Bearer <device token>; a WebSocket:
          ← {"t": "state", "state": {...}}     the compact snapshot (gui/mobile.py), at most every PUSH_S
          → {"t": "cmd", "id": 7, "name": "orders.answer", "args": {"id": "…", "key": "1"}}
@@ -43,7 +45,7 @@ from websockets.http11 import Request
 from websockets.server import ServerProtocol
 
 from orkcraft import env
-from orkcraft.gui import mobile, phone_tls, tailnet
+from orkcraft.gui import mobile, phone_tls, pwa, tailnet
 from orkcraft.gui import places as places_http
 from orkcraft.gui.host import CommandError
 from orkcraft.gui.pairing import Bucket, PairError, Pairing, clean_name
@@ -360,6 +362,8 @@ class Listener:
                 writer.write(await self._pair(method, headers, reader))
             elif path == "/api/place":
                 writer.write(await self._place(method, headers, reader))
+            elif pwa.wants(path):
+                writer.write(pwa.serve(method, target))
             else:
                 writer.write(_response(HTTPStatus.NOT_FOUND))
         except Exception:                          # one phone's broken request never stops the listener
@@ -426,11 +430,12 @@ class Listener:
 
     async def _websocket(self, head: bytes, headers: dict[str, str], reader: asyncio.StreamReader,
                          writer: asyncio.StreamWriter) -> None:
-        protocol = ServerProtocol(max_size=MAX_FRAME)
+        protocol = ServerProtocol(max_size=MAX_FRAME, select_subprotocol=pwa.select)
         protocol.receive_data(head)
         events = protocol.events_received()
         request = events[0] if events and isinstance(events[0], Request) else None
-        device = self.pairing.device(_bearer(headers.get("authorization", ""))) if request else None
+        token = _bearer(headers.get("authorization", "")) or pwa.ws_token(headers)
+        device = self.pairing.device(token) if request else None
         if request is None or device is None:
             protocol.send_response(protocol.reject(HTTPStatus.FORBIDDEN, "Forbidden"))
             for data in protocol.data_to_send():
@@ -530,7 +535,9 @@ class Listener:
             raise
         link = pair_link(self.address or self.tail_address, self.fingerprint, code,
                          self.tail_address if self.address else "")
-        return {**self.read(), "link": link, "qr": qr_data_uri(link), "code": code}
+        app = pwa.link(self.tail_address, code) if self.tail_trusted else ""   # a browser trusts only this one
+        return {**self.read(), "link": link, "qr": qr_data_uri(link), "code": code,
+                "app_link": app, "app_qr": qr_data_uri(app) if app else None}
 
     def pair_stop(self) -> dict[str, Any]:
         self.pairing.void()

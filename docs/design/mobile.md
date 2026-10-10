@@ -4,7 +4,9 @@ Status: a plan, written 2026-10-06; stage 0 of §9 is built (`orkcraft/gui/mobil
 `GET /api/version` in `orkcraft/gui/server.py`, `tests/test_mobile.py`); stage 1 and 2 are built on the
 host's side (the listener `gui/phones.py`, pairing `gui/pairing.py`, the certificate `gui/phone_tls.py`,
 Settings → Phones `gui/static/js/phones.js`, `mobile.chat`, the notifier `gui/notify.py`;
-`tests/test_phones.py`), with `tools/phone.py` as a phone in a terminal; the phone app is not (§8.1).
+`tests/test_phones.py`), with `tools/phone.py` as a phone in a terminal. A first app is a prototype web app
+the listener serves itself over Tailscale (`gui/pwa.py`, `gui/static/pwa/`, `tests/test_pwa.py`; §10); a
+native app is not built (§8.1).
 Builds on the GUI's host and socket ([gui-migration.md](gui-migration.md) §5) and the daemon it
 leads to (§1 there).
 
@@ -242,7 +244,8 @@ on iOS, FCM on Android).
 ## 8. Not decided
 
 1. Native apps (Swift and Kotlin) or one cross-platform app. The protocol does not care; the push
-   extension and the share sheet favour native.
+   extension and the share sheet favour native. Meanwhile a web app over Tailscale stands in (§10): it
+   tells what a phone is used for before an app is written for it.
 2. Who runs the relay: the project (a small service), or only the operator's own tunnel.
 3. Whether the daemon ([gui-migration.md](gui-migration.md) §1) must come first, so a phone can
    reach a town whose window is closed; until then the town is `orkcraft gui --browser` left
@@ -257,3 +260,45 @@ on iOS, FCM on Android).
 | 2 | the rest of v1: drop into The Pit (share sheet, offline queue, the drop's client id), Ask the Warchief with `mobile.chat`, the notifier (`gui/notify.py`) with local notifications while the app is open | done on the host (the client id, `mobile.chat`, the notifier's `news`); the share sheet and the offline queue are the app's |
 | 3 | away from home: the relay (end to end TLS, push through APNs / FCM), or the operator's tunnel; per-kind mute and quiet hours | — |
 | 4 | when the daemon comes: the phone reaches a town with no window open; a town picker for several projects | — |
+
+## 10. The prototype: the town in the phone's browser (PWA)
+
+No app store and no build: the phone listener serves a small web app itself (`gui/pwa.py`, its files in
+`gui/static/pwa/`, plain JavaScript), and the phone adds it to its Home Screen. It does what stage 1 and 2
+give a phone: the glance (spend, quotas, the buildings, what asks first), Answers with the Advisor's
+suggestion, Stop all (two taps), the Warchief and Drop file here (a text, a link or a file up to 5 MB; on
+Android also from the share sheet, through the manifest's `share_target`).
+
+**Only over Tailscale.** A browser cannot pin a certificate, and a service worker or a Home Screen app needs
+one it trusts. The tailnet's `*.ts.net` certificate (`tailscale cert`, phone-places.md §3) is that one, so
+the app is offered only on the tailnet with HTTPS certificates on. The LAN listener serves the same files,
+for a person who accepts the certificate warning on purpose; the desktop offers no link to them.
+
+**Setting up from one QR code.** No link can join a phone to a tailnet: Tailscale's phone apps take no key
+from outside (auth keys are for its command line; on iOS only a managed device logs in by one). So the
+desktop leads the person through it, on the same QR code (`phones.tailnet`, Settings → Phones and the
+portrait's menu), from `tailscale status`:
+
+1. While no phone of the person's is online in the tailnet, the code is Tailscale's download, with the
+   account to log in as (the one this machine is logged in with).
+2. Once one is, the code turns by itself into the app's link, `https://<name>.ts.net:<port>/app/#pair=<code>`.
+   The phone's camera opens it in the browser, and the page pairs at once (`/api/version`, `POST /api/pair`,
+   as any phone) with the phone's kind as its name. The code rides in the fragment, which the browser never
+   sends, and is wiped from the address when the page reads it.
+
+**The socket from a browser.** A browser cannot set `Authorization` on a WebSocket, so it names the token as
+a subprotocol: `Sec-WebSocket-Protocol: orkcraft.v1, bearer.<token>`; the listener answers `orkcraft.v1`
+and never echoes the token. Everything after it is the phone's: `mobile.allowed`, the rate limit, Forget.
+
+**iOS keeps a Home Screen app's storage apart from Safari's.** Paired in Safari, the page names the token
+in its manifest's `start_url` (`manifest.webmanifest?k=<token>`, a token's characters only) and in its own
+fragment, so the app the person adds opens with it once, keeps it and wipes it from its address. Until the
+app is added that address holds the phone's key, and the page says so.
+
+**What it cannot do yet.** No push while it is closed: news comes while it is open (`notify.py`), with a
+system notification when the page is in the background and the person allowed it. iOS has no share
+target for a web app. These two are what §8.1 weighs for a native app; the relay of stage 3 brings
+Web Push too.
+
+Not tried on a real phone yet: the iOS hand-over of the token, and the Android install prompt.
+
