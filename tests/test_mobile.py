@@ -228,7 +228,7 @@ def test_the_widget_is_task_fields_its_to_dos_notes_lanes_and_where_a_card_goes(
             "roads": [{"from": "f", "to": "b", "event": "tasks.created"}, {"from": "f", "to": "w", "event": "notes.created"},
                       {"from": "b", "to": "w", "event": "tasks.created"}]}
     w = mobile.compact(full)["widget"]
-    assert w["sends"]["task"] == [{"title": "🛖 Barracks", "title_plain": "Agent pool"}]
+    assert w["sends"]["task"] == [{"id": "b", "title": "🛖 Barracks", "title_plain": "Agent pool"}]
     assert [x["title"] for x in w["sends"]["note"]] == ["📜 Wiki"]
     assert mobile.compact({"buildings": [{"id": "p", "type": "pit", "title": "Pit"}]})["widget"] is None
 

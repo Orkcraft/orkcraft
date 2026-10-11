@@ -1,10 +1,15 @@
 // Task Fields kept open on the phone (docs/design/mobile.md §10), as a widget on a home screen: the person's
 // to-dos and the latest notes always in view, the orks' lanes a tap away, and a to-do, a note or a task
 // written from the phone. A task or a note goes down the board's roads like one written at the desk, so the
-// sheet says where it goes before it is added (the snapshot's `widget.sends`).
+// sheet says where it goes before it is added (the snapshot's `widget.sends`), and after it is added the widget
+// keeps its trail for a while: where it went and how the buildings down the road changed since.
 
-import { h, sheet } from "./util.js";
+import { h, sheet, clock } from "./util.js";
 import { mark } from "./icons.js";
+import { kind as stateOf } from "./town.js";
+
+const TRAIL_MS = 10 * 60 * 1000;        // a card's trail stays this long after its last step
+const STATE_WORDS = { asks: "asks you", trouble: "in trouble", work: "at work", quiet: "quiet" };
 
 const KINDS = {
   todo: { title: "New to-do", placeholder: "What you will do", lane: (w) => w.todo_lane },
@@ -43,8 +48,42 @@ export function makeFields(ctx) {
     if (!r.ok) { ctx.flash(r.error); return; }
     text.value = "";
     write.close();
-    ctx.flash(kind === "todo" ? "To-do added." : kind === "note" ? "Note added." : "Task added.");
+    const what = kind === "todo" ? "To-do" : kind === "note" ? "Note" : "Task";
+    ctx.flash(`${what} added.`);
+    if (kind !== "todo") start(what, value);
   });
+
+  // The trail of the last card written here: added, where it went, then each change of the buildings it went
+  // to (they may be busy with other work too: the trail says what they do, not that it is this card).
+  let trail = null;
+  let buildings = [];
+  function start(what, value) {
+    const to = (w.sends || {})[kind] || [];
+    const now = Date.now();
+    const short = value.length > 40 ? `${value.slice(0, 40)}…` : value;
+    trail = { until: now + TRAIL_MS, to: to.map((b) => b.id), last: new Map(), steps: [[now, `${what} added: ${short}`],
+      [now, to.length ? `It went down the road to ${to.map((b) => (camp ? b.title : (b.title_plain || b.title))).join(", ")}.`
+        : kind === "task" ? "It waits in To Do for an ork." : "It is kept on the board."]] };
+    for (const id of trail.to) {
+      const b = buildings.find((x) => x.id === id);
+      if (b) trail.last.set(id, stateOf(b, new Set()));
+    }
+  }
+  function follow() {
+    if (!trail) return;
+    const now = Date.now();
+    for (const id of trail.to) {
+      const b = buildings.find((x) => x.id === id);
+      if (!b) continue;
+      const k = stateOf(b, new Set());
+      if (trail.last.get(id) !== k) {
+        trail.last.set(id, k);
+        trail.steps.push([now, `${camp ? b.title : (b.title_plain || b.title)}: ${STATE_WORDS[k]}.`]);
+        trail.until = now + TRAIL_MS;
+      }
+    }
+    if (now > trail.until) trail = null;
+  }
 
   function open(k) {
     kind = k;
@@ -59,6 +98,8 @@ export function makeFields(ctx) {
   function render(s) {
     w = s.widget || null;
     camp = s.look !== "office";
+    buildings = s.buildings || [];
+    follow();
     el.hidden = !w;
     if (!w) return;
     const b = (s.buildings || []).find((x) => x.id === w.id) || { title: "Task Fields", type: "fields" };
@@ -86,7 +127,9 @@ export function makeFields(ctx) {
       h("div", { class: "w-add" },
         h("button", { class: "btn", type: "button", onclick: () => open("todo") }, "+ To-do"),
         h("button", { class: "btn", type: "button", onclick: () => open("note") }, "+ Note"),
-        h("button", { class: "btn", type: "button", onclick: () => open("task") }, "+ Task"))].filter(Boolean));
+        h("button", { class: "btn", type: "button", onclick: () => open("task") }, "+ Task")),
+      trail && h("ol", { class: "trail", "aria-label": "What the card started" },
+        ...trail.steps.map(([at, line]) => h("li", {}, h("time", {}, clock(at)), line)))].filter(Boolean));
   }
 
   return { el, sheet: write.el, render };
