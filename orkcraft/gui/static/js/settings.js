@@ -56,6 +56,19 @@ function UsageField({ s, onPick }) {
     <p class="ok-font-status ok-tone-muted">${say(s.usage_blocked ? `Off here: ${s.usage_blocked}.` : USAGE_WHAT)}</p>`;
 }
 
+/** Keep the computer awake while Orkcraft is open (gui/awake.py): the screen may turn off, the machine does not
+ *  sleep by itself. What holds it is the system's own (caffeinate, systemd-inhibit, Windows); where none is, it says so. */
+function AwakeField({ s, onPick }) {
+  const what = !s.keep_awake
+    ? "The computer sleeps as its power settings say. While it sleeps the orks stop, and a phone cannot reach the town."
+    : s.awake_how
+      ? "The screen may turn off; the computer does not sleep by itself, so the orks keep working and a phone reaches the town. Closing a laptop's lid still puts it to sleep."
+      : "This computer gives Orkcraft no way to keep it awake here: set its power settings so it does not sleep while the town works.";
+  return html`<${Steps} label=${say("Keep the computer awake while Orkcraft is open")} value=${s.keep_awake}
+      items=${[[true, say("On")], [false, say("Off")]]} onPick=${onPick} />
+    <p class="ok-font-status ok-tone-muted">${say(what)}</p>`;
+}
+
 /** Asked once, when the operator has not said yes or no: the town opens, then this. While the onboarding
  *  sets up the town, its one card asks it instead (js/onboarding.js). */
 export function UsageAsk() {
@@ -157,6 +170,7 @@ export function SettingsDialog() {
           items=${s.rebuilds.map((v) => [v, `${v} h`])} onPick=${(v) => set({ rebuild: v })} />`}
       <${RoundField} s=${s} set=${set} setS=${setS} />
       <${ToolsField} s=${s} set=${set} />
+      <${AwakeField} s=${s} onPick=${(v) => command("awake.set", { on: v }).then(setS, () => {})} />
       <${UsageField} s=${s} onPick=${(v) => command("usage.share", { share: v }).then(setS, () => {})} />
       ${!s.updates_blocked && html`<${UpdatesField} s=${s} />`}
       <${AccountsField} />

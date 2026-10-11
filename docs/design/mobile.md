@@ -305,6 +305,11 @@ in its manifest's `start_url` (`manifest.webmanifest?k=<token>`, a token's chara
 fragment, so the app the person adds opens with it once, keeps it and wipes it from its address. Until the
 app is added that address holds the phone's key, and the page says so.
 
+**The computer stays awake.** A town asleep answers no phone and its orks stop, so while Orkcraft is open
+the computer does not sleep by itself (`gui/awake.py`; Town settings → Keep the computer awake, on by
+default): `caffeinate -i` on macOS, `systemd-inhibit --what=sleep` on Linux, `SetThreadExecutionState` on
+Windows. The screen still turns off, and a laptop's closed lid still sleeps it; no phone wakes it.
+
 **What it cannot do yet.** No push while it is closed: news comes while it is open (`notify.py`), with a
 system notification when the page is in the background and the person allowed it. iOS has no share
 target for a web app. These two are what §8.1 weighs for a native app; the relay of stage 3 brings

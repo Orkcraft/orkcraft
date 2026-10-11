@@ -82,6 +82,7 @@ class MachineSettings:
     agy_warder_checked: bool = False
     usage: bool | None = None     # anonymous usage stats (core/usage.py): None until the operator answers
     install_id: str = ""          # a random id while they share them; forgotten when they stop
+    keep_awake: bool = True       # the computer does not sleep by itself while Orkcraft is open (gui/awake.py)
     fire: bool = True             # flames over a building whose ork has waited a minute or more (the GUI's huts)
     updates: str = "critical"     # which updates install by themselves when the town opens (core/updates.py)
     main_tool: str = ""           # the tool decisions run on (realm/harnesses.py); "" the first one on
@@ -109,6 +110,7 @@ class MachineSettings:
             "agy_warder_checked": self.agy_warder_checked,
             "usage": {"share": self.usage, "id": self.install_id},
             "fire": self.fire,
+            "keep_awake": self.keep_awake,
             "updates": self.updates,
             "main_tool": self.main_tool,
             "phones": [dict(p) for p in self.phones],
@@ -140,6 +142,7 @@ class MachineSettings:
         usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
         s.usage = usage.get("share") if isinstance(usage.get("share"), bool) else None
         s.fire = data.get("fire") is not False
+        s.keep_awake = data.get("keep_awake") is not False
         s.updates = data["updates"] if data.get("updates") in UPDATES else "critical"
         s.main_tool = data["main_tool"] if data.get("main_tool") in TOOLS else ""
         s.phones = clean_phones(data.get("phones"))
