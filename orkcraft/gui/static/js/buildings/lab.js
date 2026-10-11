@@ -174,6 +174,8 @@ function SetRow({ id, x, on }) {
         <button class="ok-btn primary" disabled=${on || !x.cases.length} onClick=${() => act(id, "set_run", { set: x.id })}>${say("Run")}</button>
         <button class="ok-btn" title=${say("Remove the case set and its cases")} onClick=${() => act(id, "set_remove", { set: x.id })}>×</button></span></div>
     <p class="ok-font-status ok-tone-muted">${mean}${cost}</p>
+    ${x.cassette && x.cassette.answers > 0 && html`<p class="ok-font-status ok-tone-muted">${say(`MCP: ${x.cassette.answers} answers recorded, played back on each run`)}${x.cassette.missed ? ` · ${say(`${x.cassette.missed} calls not in it`)}` : ""}
+      <button class="gui-link" disabled=${on} onClick=${() => act(id, "cassette_reset", { set: x.id })}>${say("Record again")}</button></p>`}
   </li>`;
 }
 

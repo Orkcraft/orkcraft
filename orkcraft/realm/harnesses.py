@@ -295,13 +295,20 @@ def _model(flag: str, model: str) -> list[str]:
     return [flag, model] if model else []
 
 
+def _claude_mcp() -> list[str]:
+    """A Test bench run's MCP servers only (realm/cassette.py): its configuration, and none of the person's own."""
+    from orkcraft.env import getenv
+    path = getenv("MCP_CONFIG")
+    return ["--mcp-config", path, "--strict-mcp-config"] if path else []
+
+
 def _claude_ask(h, prompt, folder, model):
-    return [h.bin, "-p", prompt, "--output-format", "json", *_model("--model", model)]
+    return [h.bin, "-p", prompt, "--output-format", "json", *_model("--model", model), *_claude_mcp()]
 
 
 def _claude_read(h, prompt, workdir, model, web):
     return [h.bin, "-p", prompt, "--output-format", "json", *(CLAUDE_READ_WEB if web else CLAUDE_READ_ONLY),
-            *_model("--model", model)]
+            *_model("--model", model), *_claude_mcp()]
 
 
 # Every built-in tool a carrier must not have; MCP tools not in --allowedTools are refused in -p.
@@ -310,7 +317,8 @@ CLAUDE_NO_TOOLS = "Bash,Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch,Rea
 
 def _claude_call(h, prompt, workdir, model, allow):
     return [h.bin, "-p", prompt, "--output-format", "stream-json", "--verbose",
-            "--allowedTools", ",".join(allow), "--disallowedTools", CLAUDE_NO_TOOLS, *_model("--model", model)]
+            "--allowedTools", ",".join(allow), "--disallowedTools", CLAUDE_NO_TOOLS, *_model("--model", model),
+            *_claude_mcp()]
 
 
 def _claude_read_dirs(dirs: list[str]) -> list[str]:
@@ -323,7 +331,7 @@ def _claude_read_dirs(dirs: list[str]) -> list[str]:
 
 def _claude_work(h, prompt, workdir, model, resume):
     return [h.bin, "-p", prompt, "--output-format", "json", "--permission-mode", "acceptEdits",
-            *_model("--model", model), *(["--resume", resume] if resume else [])]
+            *_model("--model", model), *(["--resume", resume] if resume else []), *_claude_mcp()]
 
 
 # agy (Antigravity) -------------------------------------------------------------------------------

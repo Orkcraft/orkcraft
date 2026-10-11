@@ -26,7 +26,7 @@ from pathlib import Path
 import orkcraft
 from orkcraft.core import keeper, runners
 from orkcraft.core.workers.lab import CODE
-from orkcraft.realm import (bench, bench_review, code_overlay, github_app, halt, harnesses, jobs, lab_cases, lab_envs,
+from orkcraft.realm import (bench, bench_review, cassette, code_overlay, github_app, halt, harnesses, jobs, lab_cases, lab_envs,
                             lab_pr, steward, tiers)
 
 TIER_FLAG = {"laborer": "novice", "warrior": "seasoned", "elder": "veteran"}
@@ -332,6 +332,7 @@ class LabRuns:
                   then=(lambda: self._propose_quietly(w, subject)) if then_propose else None)
         try:
             code = code_overlay.env(w.state_dir) if any(c["kind"] == CODE for c in w.changes_of(subject["id"])) else {}
+            code.update(self._cassette(w, subject, cases, folder, stamp))
             job.proc = subprocess.Popen(argv, cwd=self.engine.root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                         text=True, start_new_session=True,
                                         env={**os.environ, "PYTHONUNBUFFERED": "1", **code})
@@ -341,6 +342,20 @@ class LabRuns:
         self.engine.jobs[f"lab:{w.building_id}"] = job
         threading.Thread(target=self.engine._follow, args=(job,), daemon=True, name="lab-run").start()
         w.changed()
+
+    def _cassette(self, w, subject: dict, cases: list[dict], folder: Path, stamp: int) -> dict:
+        """The run's MCP servers as cassette proxies (realm/cassette.py): the set's cassette when every case is of one
+        set, else the scheme's own; {} when the person has no local server Claude Code knows."""
+        from orkcraft.realm import mcp
+        repo = self.engine.root
+        names = [x.id for x in mcp.found(Path.home(), repo) if "claude" in x.tools and mcp.launch(x.id, repo=repo)]
+        if not names:
+            return {}
+        sets = {c.get("set") for c in cases}
+        tape = lab_envs.cassette_path(w.state_dir, subject["id"], sets.pop() if len(sets) == 1 else "")
+        conf = folder / f"mcp-{stamp}.json"
+        conf.write_text(json.dumps(cassette.config(names, tape, repo)), encoding="utf-8")
+        return {"ORKCRAFT_MCP_CONFIG": str(conf)}
 
     def stop(self, w) -> None:
         job = self.job(w)

@@ -1,6 +1,6 @@
 # Design — Improve: the Mechanic and the Alchemist
 
-Status: stages 0–7 built 2026-10-11 (3b written up) (the Improve group, the UX bench standing with its settings and gallery, the
+Status: stages 0–7 and 3b built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
 road rule; a building's inputs; the Test bench's setup; environments, case sets and what is kept to spend less; the
 virtual building; GitHub and pull requests; the UX bench painting pictures and laying windows and cards out). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
 and keep it, **faster and cheaper than testing and rewriting it through Claude Code**.
@@ -11,7 +11,7 @@ and keep it, **faster and cheaper than testing and rewriting it through Claude C
 | 1 | Quick actions are inputs: each says the act a person's form ends in, and `core/inputs.press` ends in the same act, so a bench can press a button the way a person does (§3) | built |
 | 2 | The Mechanic's setup: pick one building or drag a frame round several; the frame drawn on the map with its environment's name, a wire from the Mechanic to the scheme's start and one back from its end; the Test bench's roads are laid only by it (`roads = "setup"`) | built |
 | 3 | Environments: a small code base and data written from a person's description, once, no network; case sets in them; the bare side kept, a series stopped early, a set's cost said before it runs (§5.2, §7) | built |
-| 3b | Cassettes: MCP and outside calls recorded on a set's first run and played back after (§5.2) | |
+| 3b | Cassettes: MCP calls recorded on a set's first run and played back after (§5.2) | built |
 | 4 | The virtual building: a change is tried on an overlay the Mechanic holds while it is connected; **Save changes** keeps the data part for good (§5.3) | built |
 | 5 | GitHub: Connect GitHub in the mascot's menu (device flow); a code change goes as a pull request with its evidence (§4) | built |
 | 6 | The Alchemist redraws: images through the image tool with the shipped prompts, a region marked and commented, Reset; the Work window's layout as a UI document (§6) | built |
@@ -128,14 +128,24 @@ so nothing but a person could give a building that input.
 - **What to change** stays at the bottom (today's proposals, `realm/lab_cases.py`). **Apply** puts a change on the
   virtual building, never on the building in the town (stage 4).
 
-**Cassettes (stage 3b, not built).** An AI tool's MCP servers and outside calls are its own, inside its process:
-the bench cannot catch them from Orkcraft. The way in: in a run's copy, each AI tool is started with an MCP
-configuration of the bench's only (`claude --strict-mcp-config --mcp-config <file>`, and each other tool's own way),
-in which every server the person has is replaced by `orkcraft mcp-cassette <server>`: a stdio proxy that, on a
-set's first run, passes each call to the real server and writes the call and its answer to the set's cassette, and
-on every run after answers from the cassette and never starts the server. A call not in the cassette is answered
-"not recorded" and noted in the run. Outside calls the building makes itself go through the same file by its URL.
-Until then a run's copy has none of the person's sources (`bench_kits.SOURCES_OUT`), as before.
+**Cassettes (stage 3b, built 2026-10-11).** An AI tool's MCP servers are its own, inside its process: the bench
+cannot catch them from Orkcraft, so it replaces them.
+
+- A run's AI tool is started with an MCP configuration of the bench's only (`realm/cassette.py` `config`, written
+  beside the run; `ORKCRAFT_MCP_CONFIG` makes Claude Code take it with `--mcp-config … --strict-mcp-config`,
+  `realm/harnesses.py`): each of the person's local servers Claude Code knows (realm/mcp.py `found`, `launch`) is
+  `orkcraft mcp-cassette --server <name>`, a stdio proxy.
+- **Recording** (a case set's first run, its cassette empty): the proxy starts the real server, passes each message
+  both ways and keeps every request with its answer — known by its method and arguments, never by what changes from
+  run to run (`_meta`, the client's name).
+- **Playing back** (every run after): the server is never started; `initialize` and the lists come from the
+  cassette, a call by its method and arguments; one not in it is answered *not recorded* and noted.
+- The set's row says how many answers it holds and how many calls it could not answer; **Record again** empties it.
+- One cassette a case set (the scheme's own for single cases), kept beside the building
+  (`cassettes/<scheme>-<set>.jsonl`): what the servers said may be the person's, it never leaves the machine.
+- Limits: only Claude Code takes a configuration of the bench's (the other tools run with their own servers, as
+  before); a remote server (HTTP) is not proxied, so a run has none of it. A run's copy still has none of the person's
+  sources (`bench_kits.SOURCES_OUT`).
 
 ### 5.3 The virtual building (stage 4, built 2026-10-11)
 
@@ -224,8 +234,8 @@ ledger (`.orkcraft/spend/calls.jsonl`, by `purpose`) so the saving is a number, 
    `realm/bench.py` `bare_key` (the case's task, input, files and check, the tool and the tier — never the goal or
    the judge, which the bare tool does not see), `.orkcraft/bench/bare/`; a run that failed or was cut is asked again;
    `orkcraft bench --fresh` asks anyway. The report says *kept from run …*.
-2. **Cassettes** (§5.2): MCP and outside calls recorded once, played back after; no tokens spent reading the same
-   page twice.
+2. **Cassettes** (§5.2, built): MCP calls recorded once, played back after; no tokens spent reading the same page
+   twice, and both sides see the same world.
 3. **Only what changed runs again.** A run keeps each step's input and output by the hash of its input
    (`realm/steward_metrics.py` `replay` already plays a chain on recorded inputs). After a prompt change only that
    step and the ones after it run; the steps before are read back.

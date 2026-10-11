@@ -122,6 +122,19 @@ Answer with JSON only:
 {{"cases": [{{"title": "…", "entry": "<an id from the list>", "text": "…", "expect": ["…"], "why": "…"}}]}}"""
 
 
+def cassette_path(state_dir: Path, subject_id: str, set_id: str = "") -> Path:
+    """Where a case set's MCP cassette is kept (realm/cassette.py); the scheme's own for single cases."""
+    safe = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in subject_id)
+    return state_dir / "cassettes" / f"{safe}-{set_id or 'single'}.jsonl"
+
+
+def cassette_of(state_dir: Path, subject_id: str, set_id: str = "") -> dict:
+    """What a set's cassette holds: how many answers, how many calls it could not answer."""
+    path = cassette_path(state_dir, subject_id, set_id)
+    count = lambda p: len(p.read_text(encoding="utf-8").splitlines()) if p.is_file() else 0
+    return {"answers": count(path), "missed": count(path.with_suffix(".missed"))}
+
+
 def summary_of(cases: list[dict], results: dict) -> dict:
     """The set's last run, as the mean of each metric over its cases that ran (a share against the bare tool)."""
     rows = [results[c["id"]] for c in cases if c["id"] in results and results[c["id"]].get("scheme")]

@@ -190,6 +190,22 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
     return 0
 
 
+def _mcp_cassette(args: argparse.Namespace) -> int:
+    """`orkcraft mcp-cassette`: one of the person's MCP servers for a Test bench run (realm/cassette.py) — recorded
+    from the real server on a case set's first run, played back from its cassette after."""
+    import os
+    from orkcraft.realm import cassette, mcp
+    tape = cassette.Tape(Path(args.cassette), args.server)
+    if args.mode == "replay":
+        cassette.replay(tape, sys.stdin, sys.stdout)
+        return 0
+    launch = mcp.launch(args.server, repo=args.repo)
+    if launch is None:
+        sys.stderr.write(f"orkcraft error: no local MCP server {args.server!r} to record\n")
+        return 2
+    return cassette.record(tape, [launch.command, *launch.args], {**os.environ, **dict(launch.env)}, sys.stdin, sys.stdout)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="orkcraft",
@@ -237,6 +253,10 @@ def main(argv: list[str] | None = None) -> int:
     fb_p = subparsers.add_parser("feedback", help="What the operator's quiet feedback weighs: calibrate the weights")
     fb_p.add_argument("action", choices=("calibrate",))
     fb_p.add_argument("--days", type=int, default=None, help="Only the last N days (default: all kept)")
+    cas_p = subparsers.add_parser("mcp-cassette", help="A Test bench run's MCP server, recorded once, played back after")
+    cas_p.add_argument("--server", required=True, help="The MCP server's name, as the AI tools know it")
+    cas_p.add_argument("--cassette", required=True, help="The case set's cassette file")
+    cas_p.add_argument("--mode", choices=("record", "replay"), default="replay")
     bench_p = subparsers.add_parser("bench", help="Test bench: run a building on a test case beside the bare AI tool")
     bench_p.add_argument("type", nargs="?", default="barracks", help="The building type (default: barracks)")
     bench_p.add_argument("--case", default="", help="The case's id, or all (default: the first); --list shows them")
@@ -335,6 +355,9 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(calibrate.render(calibrate.report(root, args.days)))
         return 0
+
+    if args.subcommand == "mcp-cassette":                  # a Test bench run's MCP server, recorded or played back
+        return _mcp_cassette(args)
 
     if args.subcommand == "bench":
         try:

@@ -72,6 +72,7 @@ def _sets(w, s: dict) -> list[dict]:
     for cs in w.sets_of(s["id"]):
         cases = w.cases_in(s["id"], cs["id"])
         out.append({**cs, "cases": [{"id": c["id"], "title": c["title"]} for c in cases],
+                    "cassette": lab_envs.cassette_of(w.state_dir, s["id"], cs["id"]),
                     "summary": lab_envs.summary_of(cases, results), "estimate": lab_envs.estimate(cases, results, len(cases))})
     return out
 
@@ -193,6 +194,15 @@ def _set_run(w, args: dict) -> bool:
     return _lab_call(w, lambda w_, s_: _engine(w_).lab.run(w_, s_, ids))
 
 
+def _cassette_reset(w, args: dict) -> bool:
+    """Record again: the set's next run asks the real servers and keeps their answers anew."""
+    path = lab_envs.cassette_path(w.state_dir, _subject(w)["id"], text(args, "set", 40))
+    path.unlink(missing_ok=True)
+    path.with_suffix(".missed").unlink(missing_ok=True)
+    w.changed()
+    return True
+
+
 def _set_remove(w, args: dict) -> bool:
     if not w.remove_set(_subject(w)["id"], text(args, "set", 40)):
         raise ActError("No such case set")
@@ -299,6 +309,6 @@ def _candidates(w, args: dict) -> list[dict]:
     return out
 
 
-ACTS = {"pr_preview": _pr_preview, "pr_send": _pr_send, "try": _try, "take_back": _take_back, "save_changes": _save_changes, "env_add": _env_add, "set_add": _set_add, "set_run": _set_run, "set_remove": _set_remove, "setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
+ACTS = {"cassette_reset": _cassette_reset, "pr_preview": _pr_preview, "pr_send": _pr_send, "try": _try, "take_back": _take_back, "save_changes": _save_changes, "env_add": _env_add, "set_add": _set_add, "set_run": _set_run, "set_remove": _set_remove, "setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
         "run": _run, "run_all": lambda w, a: _run(w, a, every=True), "stop": _stop, "propose": _propose,
         "tasks": _tasks, "lab.run": _run_first}
