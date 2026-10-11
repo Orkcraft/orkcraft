@@ -185,12 +185,16 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
     def code_root(self) -> Path:
         """The folder of code its orks work in (`repo`, chosen in its settings: a project the town does not live in),
         else the town's own. Its branches, worktrees, tests, briefs and pull requests are there; its state stays in
-        the town."""
+        the town. Without a folder of its own, its orkspace's project (docs/design/projects.md)."""
         repo = str(self.config.get("repo") or "").strip()
         if repo:
             path = Path(repo).expanduser()
             if path.is_dir():
                 return path
+        scroll = getattr(self.town, "scroll", None)
+        if scroll is not None:
+            from orkcraft.realm import projects
+            return projects.root_for_building(scroll, self.building_id, self.repo_root)
         return self.repo_root
 
     @property

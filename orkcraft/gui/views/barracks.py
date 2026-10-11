@@ -152,6 +152,7 @@ def detail(w) -> dict:
         "steward": str(w.config.get("steward") or "main"), "steward_cost": _money(st.steward_cost),
         "test_cmd": str(w.config.get("test_cmd") or ""), "worktrees": w.worktrees,
         "repo": str(w.code_root), "repo_own": bool(str(w.config.get("repo") or "").strip()),
+        "repo_project": _project_name(w),
         "recent": folders.recent(getattr(w.town, "machine", None)),
         "rules": [ln for ln in w.orders.splitlines() if ln.strip()],
         "orks": orks,
@@ -267,6 +268,17 @@ def _terminal(w, args: dict) -> str:
     except OSError as e:
         raise ActError(f"{orc.name}'s terminal did not open: {e}") from None
     return key
+
+
+def _project_name(w) -> str:
+    """The name of its orkspace's project: where its orks work without a folder of its own (docs/design/projects.md)."""
+    scroll = getattr(w.town, "scroll", None)
+    if scroll is None:
+        return ""
+    from orkcraft.realm import projects
+    ork = scroll.orkspace_of(w.building_id)
+    project = projects.project_of(scroll, ork.id if ork else None)
+    return project.name if project is not None and projects.folder_of(project).is_dir() else ""
 
 
 def _repo(w, args: dict) -> str:

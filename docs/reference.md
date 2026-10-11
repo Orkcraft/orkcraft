@@ -955,6 +955,12 @@ the CLI paths.
 
 ## Worktrees and the Council
 
+- **Projects** ([docs/design/projects.md](design/projects.md)): an orkspace works in a **Project**, a folder of
+  its own, or in the town's folder. A new orkspace picks it in the War Map's fog (**Works in**: the same folder ·
+  the town's folder · a project the town has · a new project in `~/Orkcraft/projects/<name>` with git · a folder…);
+  a land's menu **Project…** and `/project` change it. A folder with no git asks once before git starts there;
+  the disk, the home folder and a folder inside another repository are refused, and so is a first commit over
+  200 MB. War Tent sessions and the Agent pool (without a folder of its own) work in the orkspace's project.
 - **`G`** (Neutral) opens the ⎇ worktree of the active orkspace: create one on a branch (an existing
   branch is reused, a new one starts from `HEAD` or the base you give) in
   `.orkcraft/worktrees/<orkspace>`; later unlink it or remove it (refused while it has uncommitted

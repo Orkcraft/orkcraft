@@ -3,7 +3,7 @@
 // fog of war at the foot (Add orkspace +) and in a wedge at the right, each land a step shorter than the
 // one above. Its title and the lands' names are in the pixel face. Every land is a real button cut to
 // its shape by a clip path, so clicks follow the shape; ↑ / ↓ walk the lands, Enter opens, the right click
-// renames, changes the biome or removes. When an ork asks in another orkspace the map calls: rings from the
+// renames, changes the biome, picks its project (js/project.js) or removes. When an ork asks in another orkspace the map calls: rings from the
 // land's ■, the land flashes, an arrow at the frame's edge when it is out of sight (§2.5).
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -11,6 +11,7 @@ import { town, command, say } from "./link.js";
 import { openMenu } from "./menu.js";
 import { BIOMES, BIOME_ORDER } from "./icons.js";
 import { useScrollCue } from "./scrollcue.js";
+import { projectFor } from "./project.js";
 
 const N = 36, W = 52, T = 4;               // 36 rows × 52 columns of 4 px: 208 × 144, a minimap's landscape
 const FOG_ROWS = 12, CLOSED_MIN = 7, OPEN_MIN = 12;  // the fog (Add orkspace) 48 px, easy to hit; a closed land 28 px at least
@@ -84,22 +85,29 @@ function suggested(lands) {
   return others[taken.length % others.length];
 }
 
-/** A new land from the fog: its name, and its ground picked from a row of swatches (the biome it suggests
- *  lit). ← / → walk the swatches without leaving the name; Enter raises it, Esc lets it go. */
-function NewLand({ lands, bottom, onDone }) {
+/** A new land from the fog: its name, its ground picked from a row of swatches (the biome it suggests
+ *  lit) and the project it works in (docs/design/projects.md §4). ← / → walk the swatches without leaving
+ *  the name; Enter raises it, Esc lets it go. "A folder…" raises it, then opens its Project dialog. */
+function NewLand({ lands, projects, bottom, onDone }) {
   const [name, setName] = useState("");
   const [biome, setBiome] = useState(() => suggested(lands));
+  const [where, setWhere] = useState("");
   const ref = useRef(null);
   useEffect(() => { if (ref.current) ref.current.focus(); }, []);
   const make = () => {
-    if (name.trim()) command("orkspace.new", { name: name.trim(), biome }).catch(() => {});
+    if (name.trim()) {
+      const project = where === "folder" ? "" : where;
+      command("orkspace.new", { name: name.trim(), biome, project })
+        .then((id) => { if (where === "folder") projectFor.value = id; }, () => {});
+    }
     onDone();
   };
+  const leave = (e) => { if (!e.relatedTarget || !e.currentTarget.parentElement.contains(e.relatedTarget)) onDone(); };
   const step = (d) => setBiome(BIOME_ORDER[(BIOME_ORDER.indexOf(biome) + d + BIOME_ORDER.length) % BIOME_ORDER.length]);
   return html`<div class="gui-map__new" style=${`bottom:${bottom}px`}
-      onMouseDown=${(e) => { if (e.target !== ref.current) e.preventDefault(); }}>
+      onMouseDown=${(e) => { if (e.target !== ref.current && !e.target.closest("select")) e.preventDefault(); }}>
     <input ref=${ref} class="ok-input gui-map__field" value=${name} aria-label=${say("Orkspace name")}
-      placeholder=${say("Orkspace name")} onInput=${(e) => setName(e.target.value)} onBlur=${onDone}
+      placeholder=${say("Orkspace name")} onInput=${(e) => setName(e.target.value)} onBlur=${leave}
       onKeyDown=${(e) => {
         e.stopPropagation();
         if (e.key === "Enter") make();
@@ -113,6 +121,15 @@ function NewLand({ lands, bottom, onDone }) {
           tabindex="-1" onClick=${() => { setBiome(b); if (ref.current) ref.current.focus(); }}></button>`)}
       <span class="gui-map__biome-name">${say(biome)}</span>
     </div>
+    <select class="ok-input gui-map__where" value=${where} aria-label=${say("Works in")} title=${say("Works in")}
+        onBlur=${leave} onKeyDown=${(e) => { e.stopPropagation(); if (e.key === "Enter") make(); else if (e.key === "Escape") onDone(); }}
+        onChange=${(e) => { setWhere(e.target.value); if (ref.current) ref.current.focus(); }}>
+      <option value="">${say("Works in: the same folder")}</option>
+      <option value="town">${say("Works in: the town's folder")}</option>
+      ${projects.filter((p) => p.there).map((p) => html`<option key=${p.id} value=${p.id}>${say("Works in")}: ${p.name}</option>`)}
+      <option value="new">${say("Works in: a new project")}</option>
+      <option value="folder">${say("Works in: a folder…")}</option>
+    </select>
   </div>`;
 }
 
@@ -129,8 +146,11 @@ export function WarMap() {
   const n = lands.length;
 
   const select = (o) => { if (o.id !== open) command("orkspace.select", { id: o.id }).catch(() => {}); };
+  const projects = t.projects || [];
+  const projectName = (o) => (projects.find((p) => p.id === o.project) || {}).name || "";
   const menuOf = (e, o) => openMenu(e, [
     { label: "Rename…", run: () => setNaming(o.id) },
+    { label: "Project…", hint: projectName(o) || say("the town's folder"), run: () => { projectFor.value = o.id; } },
     "-",
     ...BIOME_ORDER.map((b) => ({ label: `${b === o.biome ? "✓ " : ""}Biome: ${b}`,
       run: () => command("orkspace.biome", { id: o.id, biome: b }).catch(() => {}) })),
@@ -209,13 +229,13 @@ export function WarMap() {
           const label = `${o.name}, ${plural(o.count, "building")}${o.questions ? `, ${plural(o.questions, "question")}` : ""}`;
           return html`<button key=${o.id} data-id=${o.id} class=${cls("gui-map__land", { "is-open": isOpen })}
               style=${`clip-path:path("${path}");--fill:${(BIOMES[o.biome] || BIOMES.dirt).land}`}
-              aria-current=${isOpen ? "true" : "false"} aria-label=${say(label)} title=${say(`${o.name} · ${o.biome}`)}
+              aria-current=${isOpen ? "true" : "false"} aria-label=${say(label)} title=${say(`${o.name} · ${o.biome}${projectName(o) ? ` · ${projectName(o)}` : ""}`)}
               onClick=${() => select(o)} onContextMenu=${(e) => menuOf(e, o)}>
             ${isOpen && html`<span class="gui-map__bar" style=${`top:${y0 + 5}px;height:${y1 - y0 - 10}px`}></span>`}
             <span class="gui-map__name" style=${`top:${isOpen ? y0 + 6 : (y0 + y1) / 2 - 7}px`}>${say(o.name)}${o.questions
               ? html`<span class="gui-map__ask" aria-hidden="true"></span>` : null}</span>
             ${isOpen && html`<span class=${cls("gui-map__state", { "ok-tone-wait": !!o.paused && !o.questions })}
-              style=${`top:${y0 + 21}px`}>${say(`${plural(o.count, "building")} · ${state(o)}`)}</span>`}
+              style=${`top:${y0 + 21}px`}>${projectName(o) ? `${projectName(o)} · ` : ""}${say(`${plural(o.count, "building")} · ${state(o)}`)}</span>`}
             ${isOpen && o.count > 0 && html`<span class="gui-map__dots" style=${`top:${y1 - 10}px`}
               title=${say(`${plural(o.count, "building")}${o.working ? ` · ${o.working} at work` : ""}`)}>
               ${Array.from({ length: Math.min(o.count, 16) }, (_, j) => html`<i key=${j} class=${j < o.working ? "is-busy" : ""}></i>`)}</span>`}
@@ -226,7 +246,7 @@ export function WarMap() {
             onClick=${() => setNaming("new")}>
           <span class="gui-map__name" style=${`top:${fogMid}px`}>${say("Add orkspace")} +</span>
         </button>
-        ${naming === "new" && html`<${NewLand} lands=${lands} bottom=${2} onDone=${() => setNaming(null)} />`}
+        ${naming === "new" && html`<${NewLand} lands=${lands} projects=${projects} bottom=${2} onDone=${() => setNaming(null)} />`}
         ${naming && naming !== "new" && (() => {
           const i = lands.findIndex((o) => o.id === naming);
           if (i < 0) return null;

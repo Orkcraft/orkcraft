@@ -27,6 +27,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { act, command, details, town, say, toast } from "./link.js";
 import { opened, openBuilding, selected } from "./windows.js";
+import { projectFor } from "./project.js";
 import { building as buildOpen, laying, demolishing, raised, settingUp, endSetup, BuildRow, buildEnter } from "./build.js";
 import { typeModule, runQuick } from "./types.js";
 import { openOrders } from "./orders.js";
@@ -203,6 +204,8 @@ const COMMANDS = [
       const o = town.value.orkspaces.find((x) => norm(x.name) === norm(rest));
       return o ? command("orkspace.select", { id: o.id }).catch(() => {}) : command("orkspace.new", { name: rest }).catch(() => {});
     } },
+  { word: "project", args: "", about: "the folder this orkspace works in",
+    run: () => { projectFor.value = town.value.active_orkspace; return null; } },
   { word: "sessions", args: "", about: "the War Tent: every session, its terminal",
     run: () => { hallTab.value = "sessions"; openBuilding(HALL, "work"); return null; } },
   { word: "audit", args: "", about: "the Warder, the Pathfinder and the Treasurer look over the town",

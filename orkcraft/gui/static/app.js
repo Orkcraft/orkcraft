@@ -13,6 +13,7 @@ import { Jobs } from "./js/acts.js";
 import { Orders } from "./js/orders.js";
 import { VisitDialogs } from "./js/visit.js";
 import { RoadDialog, RoadBar, DemolishAsked } from "./js/build.js";
+import { ProjectAsked } from "./js/project.js";
 import { HALL } from "./js/tent.js";
 import { SettingsDialog, UsageAsk } from "./js/settings.js";
 import { GoogleWizard } from "./js/accounts.js";
@@ -57,6 +58,7 @@ function App() {
     <${RoadDialog} />
     <${RoadBar} />
     <${DemolishAsked} />
+    <${ProjectAsked} />
     <${Menu} />
     <${Onboarding} />
   </div>`;

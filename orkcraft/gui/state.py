@@ -23,6 +23,7 @@ from orkcraft.core import runners
 from orkcraft.core import treasury as tr
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
+from orkcraft.gui import projects as gui_projects
 from orkcraft.gui import views
 from orkcraft.realm import catalog, halt, lexicon, modes, pipes, script_first, steward_models
 from orkcraft.realm.buildings import TOWN_HALL
@@ -221,6 +222,7 @@ def orkspaces(town: Town, muster: Muster) -> list[dict[str, Any]]:
         ids = set(o.buildings)
         standing = [b for b in town.scroll.buildings if b.id in ids and not b.demolished and b.id != "town_hall"]
         out.append({"id": o.id, "name": o.name, "icon": o.icon, "biome": o.biome, "hotkey": o.hotkey,
+                    "project": o.project or "",                   # the folder it works in (docs/design/projects.md)
                     "buildings": list(o.buildings), "questions": len(muster.questions_of(o.id)),
                     "count": len(standing),                       # what the War Map's land says and dots
                     "paused": sum(1 for b in standing if _paused(town.workers.get(b.id))),
@@ -294,6 +296,7 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "words": lexicon.table(),
         "active_orkspace": town.scroll.active_orkspace_id,
         "orkspaces": orkspaces(town, muster),
+        "projects": gui_projects.snapshot(town),
         "buildings": buildings(town, muster),
         "roads": roads(town),
         "carts": carts(town),

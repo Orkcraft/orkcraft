@@ -162,6 +162,12 @@ def _common_refs(data: dict[str, Any]) -> list[str]:
             elif bid in placed:
                 errors.append(f"building {bid!r} is in two orkspaces ({placed[bid]}, {o['id']})")
             placed[bid] = o["id"]
+    p_ids = [p["id"] for p in data.get("projects", [])]
+    if len(p_ids) != len(set(p_ids)):
+        errors.append("two projects share an id")
+    for o in data["orkspaces"]:
+        if o.get("project") and o["project"] not in p_ids:
+            errors.append(f"orkspace {o['id']}: unknown project {o['project']!r}")
     return errors
 
 
