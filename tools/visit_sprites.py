@@ -5,7 +5,9 @@
 Drawn from the grids below on the ork mark's way (tools/logo.py): one letter a pixel, its head the head of the
 ork's head alone (`logo.GRID`, the same green and tusks), a third of its building's height. At 2× and 4× (`@2x`);
 the ork's own sprites are Scale2x'd to those sizes instead of blown up, so their pixels are as fine as its
-building's (whose sprites are drawn at about a CSS pixel a pixel, twice as fine at @2x) and its edges round:
+building's (whose sprites are drawn at about a CSS pixel a pixel, twice as fine at @2x) and its edges round, and
+lit as its building is (`shade`: the light from the top left, a dark rim below and right, the jaw and the brows in
+shadow, a glint in each eye, each tusk's side shaded):
 
 - `orks/ork-stand.png` (12×9): the ork out of its door, facing you;
 - `orks/ork-walk-a.png`, `ork-walk-b.png` (12×9): two steps of its walk, its head bobbing, facing left as it walks
@@ -26,7 +28,9 @@ from logo import GRID, SPRITE_COLOURS, grid_image
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
-COLOURS = SPRITE_COLOURS
+# the ork lit as its building is (`shade`): its green's light, shade and rim, a tusk's shaded side, an eye's glint
+SHADE_COLOURS = {"f": "#93c94a", "s": "#4f8418", "k": "#2e4f12", "t": "#b3a88c", "e": "#e8e0c8"}
+COLOURS = {**SPRITE_COLOURS, **SHADE_COLOURS}
 
 # its head turned to the left: one eye, one tusk, the far ear behind
 SIDE_HEAD = [
@@ -98,6 +102,32 @@ def scale2x(grid: list[str]) -> list[str]:
     return out
 
 
+def shade(grid: list[str]) -> list[str]:
+    """The ork's head lit from the top left, at Scale2x's grain: its green's edge below and right a dark rim (k),
+    above and left its light (f); the jaw, the far side and the brows over its eyes in shade (s); a glint at each eye's
+    top left (e) and each tusk's right side shaded (t). Pixels of another colour (a hat) stay as they are."""
+    h, w = len(grid), len(grid[0])
+
+    def at(y: int, x: int) -> str:
+        return grid[y][x] if 0 <= y < h and 0 <= x < w else "."
+    out = [list(r) for r in grid]
+    for y in range(h):
+        for x in range(w):
+            p = grid[y][x]
+            if p == "F":
+                if at(y + 1, x) == "." or at(y, x + 1) == ".":
+                    out[y][x] = "k"
+                elif at(y - 1, x) == "." or at(y, x - 1) == ".":
+                    out[y][x] = "f"
+                elif at(y + 2, x) == "." or at(y, x + 2) == "." or at(y + 1, x) in "TD":
+                    out[y][x] = "s"
+            elif p == "D" and at(y - 1, x) != "D" and at(y, x - 1) != "D":
+                out[y][x] = "e"
+            elif p == "T" and at(y, x + 1) != "T":
+                out[y][x] = "t"
+    return ["".join(r) for r in out]
+
+
 def thumbs() -> dict[str, list[str]]:
     up = outlined(["." * 10] + ["." + r + "." for r in THUMB_UP] + ["." * 10])
     return {"thumb-up": up, "thumb-down": up[::-1]}
@@ -110,7 +140,7 @@ def main() -> None:
     sprites = ROOT / "design-system" / "sprites"
     for name, grid in ORKS.items():
         assert all(len(r) == 12 for r in grid) and len(grid) == 9, name
-        fine = scale2x(grid)
+        fine = shade(scale2x(grid))
         grid_image(fine, COLOURS, 1).save(sprites / "orks" / f"{name}.png")
         grid_image(scale2x(fine), COLOURS, 1).save(sprites / "orks" / f"{name}@2x.png")
     for name, grid in thumbs().items():
