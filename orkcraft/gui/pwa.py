@@ -26,6 +26,7 @@ same for everyone and say nothing of this town.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 import time
@@ -149,12 +150,69 @@ def retry_tail(listener) -> None:
     tail = listener.tail_find()
     if tail is None or (listener.tail_server is not None and not tail.name):
         return                                   # no tailnet, or no name a certificate could be for
-    if listener.tail_server is not None:         # on the tailnet without a certificate: ask for one again
+    _restart_tail(listener, tail, move=True)
+
+
+WATCH_S = 60.0           # how often a town with a phone looks whether Tailscale came (TailWatch)
+
+
+class TailWatch:
+    """Once a minute, while a phone is paired: Tailscale started after the town (the computer just woke up or
+    booted), or its HTTPS certificates came, and the listener takes the tailnet without a pairing or a
+    restart. On the port the phones were given, so the app's address stays as it was. `tailscale status` and
+    `tailscale cert` run on a thread: the town's loop never waits on them."""
+
+    def __init__(self, listener, every: float = WATCH_S) -> None:
+        self.listener, self.every = listener, every
+        self._at = time.monotonic()               # the start looked already
+        self._busy = False
+
+    def wanted(self) -> bool:
+        lis = self.listener
+        if lis.bind or not lis.wanted() or tailnet.off():
+            return False
+        return not lis.listening or lis.tail_server is None or not lis.tail_trusted
+
+    def tick(self, now: float | None = None) -> None:
+        now = time.monotonic() if now is None else now
+        if self._busy or now - self._at < self.every or not self.wanted():
+            return
+        self._at, self._busy = now, True
+        asyncio.ensure_future(self._look())
+
+    async def _look(self) -> None:
+        lis = self.listener
+        try:
+            tail = await asyncio.to_thread(lis.tail_find)
+            if tail is None or (lis.tail_server is not None and not tail.name):
+                return                           # no tailnet yet, or no name a certificate could be for
+            got = await asyncio.to_thread(lis.tail_cert, tail) if tail.name else None
+            if lis.tail_server is not None and got is None:
+                return                           # on the tailnet already; still no certificate
+            if not self.wanted():
+                return                           # changed while it looked
+            find, cert = lis.tail_find, lis.tail_cert
+            lis.tail_find, lis.tail_cert = (lambda: tail), (lambda t: got)   # what the thread found, not asked again
+            try:
+                if not lis.listening:
+                    lis.start()
+                else:
+                    _restart_tail(lis, tail, move=False)
+            finally:
+                lis.tail_find, lis.tail_cert = find, cert
+        except Exception:                        # the next minute looks again
+            pass
+        finally:
+            self._busy = False
+
+
+def _restart_tail(listener, tail, move: bool) -> None:
+    if listener.tail_server is not None:         # on the tailnet without a certificate: anew, with one
         old, listener.tail_server, listener.tail_address = listener.tail_server, None, ""
         old.close()
     from orkcraft.gui import phone_tls
     cert, key = phone_tls.ensure(listener.cert_folder)
-    listener._start_tail(tail, listener.pairing.port(), phone_tls.context(cert, key), True)
+    listener._start_tail(tail, listener.pairing.port(), phone_tls.context(cert, key), move)
 
 
 def commands(listener) -> dict[str, Callable[[dict], Any]]:

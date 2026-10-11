@@ -107,6 +107,7 @@ class Server:
         # The listener for phones (gui/phones.py): on the LAN, TLS, a device token; only while one is paired.
         self.phones = phones.Listener(host)
         host.commands.update(self.phones.commands())
+        self.tail_watch = pwa.TailWatch(self.phones)   # Tailscale that came after the town (gui/pwa.py)
         host.commands.update(pwa.commands(self.phones))   # the app in a phone's browser: Tailscale's state
         self.notifier = notify.Notifier(host, self.phones)   # what came, to the phones that are open
 
@@ -319,6 +320,7 @@ class Server:
             try:
                 self.host.tick()
                 self.phones.tick()
+                self.tail_watch.tick()
             except Exception as e:
                 self.host.town.toast(f"{type(e).__name__}: {e}", title="Town clock", severity="error")
 
