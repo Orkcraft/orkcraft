@@ -292,3 +292,69 @@ def test_a_run_as_text_for_an_analysis_carries_both_sides_in_full():
     for part in ("## External listeners", "## Bare AI tool", "✗ #2 left out — kept", "✓ #1 kept", "+3s Grub: hire — first",
                  "the check's last lines:", "1 failed", "its report:", "the report", "model: laborer", "Run r1"):
         assert part in text, part
+
+
+# -- what the building really spent, and repeats -----------------------------------------------------------------
+
+class _CountingSteward(Steward):
+    """A steward whose tool says its tokens, no price."""
+
+    def __call__(self, harness, prompt, workdir, cancel, model):
+        text, _cost = super().__call__(harness, prompt, workdir, cancel, model)
+        return text, 0.0, 300
+
+
+def test_the_stewards_tokens_count_on_the_buildings_side(tmp_path, faked_pool, monkeypatch):
+    steward = _CountingSteward()
+    monkeypatch.setattr(BarracksWorker, "steward_runner", steward)
+    c = _slugify_case(tmp_path)
+    c.check = ""                                     # no tests to judge it: the steward sorts and reviews it
+    project = tmp_path / "run" / "building"
+    base = bench.make_project(c, tmp_path, project)
+    side = building_bench.run_building(c, project, base, {}, timeout_s=60)
+    assert steward.prompts and side.tokens == 1200 + 300 * len(steward.prompts)
+    state = bk.Barracks(project / ".orkcraft" / "barracks" / "barracks")
+    assert state.steward_tokens == 300 * len(steward.prompts) and state.tokens == side.tokens
+
+
+def test_each_repeat_keeps_a_bare_answer_of_its_own(tmp_path):
+    side = bench.Side("bare", seconds=10, tokens=500, passed=True)
+    bench.keep_bare(tmp_path, "k", side, "run-1")
+    assert bench.kept_bare(tmp_path, "k", 1) is None                  # the second repeat is asked
+    bench.keep_bare(tmp_path, "k", bench.Side("bare", seconds=14, passed=True), "run-2", attempt=1)
+    assert bench.kept_bare(tmp_path, "k").seconds == 10 and bench.kept_bare(tmp_path, "k", 1).seconds == 14
+
+
+def test_repeats_are_read_by_their_medians_and_spread(tmp_path):
+    runs = [_report("ledger", (b, 0.1, True), (t, 0.1, True), f"2026101{n}-000000")
+            for n, (b, t) in enumerate(((13, 10), (9, 10), (10, 10)))]
+    for r in runs:
+        r.series = "s1"
+    runs[1].building.passed = False
+    g = bench.pooled_gaps(runs)
+    assert g["runs"] == 3 and g["time"] == 0 and g["quality"] == 1          # one of three failed: worse
+    assert [round(x, 2) for x in g["time_range"]] == [-0.1, 0.3]
+    text = bench.summary(runs + [_report("slugify", (11, 0.1, True), (10, 0.1, True))], "Agent pool")
+    assert "its medians" in text and "2/3 passed / 3/3 passed" in text and "-10% … +30%" in text
+    assert "Runs a case" in bench.summary([_report("a", (1, 1, True), (1, 1, True)),
+                                           _report("b", (1, 1, True), (1, 1, True))])
+    for r in runs + [_report("ledger", (99, 0.1, True), (10, 0.1, True), "20261001-000000")]:   # an older series
+        r.save(tmp_path / bench.RUNS / r.id)
+    [row] = bench.against(tmp_path, "barracks")
+    assert row["runs"] == 3 and row["building"] == "2/3 passed"
+
+
+def test_cli_repeats_each_case_in_one_series(fake_repo, capsys, monkeypatch):
+    calls = []
+
+    def run(root, case, *_a, attempt=0, series="", **_k):
+        calls.append((case.id, attempt, series))
+        r = _report(case.id, (11, 0.11, True), (10, 0.1, True), f"20261010-00000{len(calls)}")
+        r.series = series
+        return r, fake_repo / "x"
+
+    monkeypatch.setattr(building_bench, "run", run)
+    assert cli.main(["--repo", str(fake_repo), "bench", "--case", "slugify", "--repeat", "3"]) == 0
+    assert [c[:2] for c in calls] == [("slugify", 0), ("slugify", 1), ("slugify", 2)] and len({c[2] for c in calls}) == 1
+    assert "3 times" in capsys.readouterr().out
+    assert cli.main(["--repo", str(fake_repo), "bench", "--repeat", "0"]) == 2

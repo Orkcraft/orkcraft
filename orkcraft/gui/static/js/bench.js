@@ -31,6 +31,7 @@ const TABS = [["tech", "Tech"], ["ux", "UX"], ["product", "Product"]];
 const LEVELS = [["simple", "Every simple case"], ["medium", "Every medium case"], ["parallel", "Every parallel case"]];
 const pct = (v) => (v === null || v === undefined ? "—" : `${v > 0 ? "+" : ""}${Math.round(v * 100)}%`);
 const SIDES = [["", "Both"], ["building", "The building only"], ["bare", "The bare AI tool only"]];
+const REPEATS = [["1", "Once"], ["3", "3 times: medians"], ["5", "5 times: medians"]];
 const many = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const money = (x) => `$${(x || 0).toFixed(2)}`;
 const clock = (s) => `${Math.floor((s || 0) / 60)}:${String(Math.round((s || 0) % 60)).padStart(2, "0")}`;
@@ -88,7 +89,7 @@ function Tech({ s, call, picks, flip }) {
 function RunForm({ s, call }) {
   const ready = s.cases.filter((c) => c.reviewed);
   const [f, setF] = useState({ case: ready[0] ? ready[0].id : "", tool: "main", tier: "", max_spend: s.max_spend,
-                               only: "", orders: s.orders });
+                               only: "", orders: s.orders, repeat: "1" });
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const on = s.job && !s.job.done;
   const series = f.case === "all" || f.case.startsWith("level:");
@@ -112,6 +113,8 @@ function RunForm({ s, call }) {
         ${SIDES.map(([v, l]) => html`<option key=${v} value=${v}>${say(l)}</option>`)}</select>`)}
       ${field("Spend limit, $", html`<input class="ok-input" type="number" min="0.1" max="50" step="0.5" value=${f.max_spend}
         onInput=${set("max_spend")} />`)}
+      ${field("Runs a case", html`<select class="ok-input" value=${f.repeat} onChange=${set("repeat")}>
+        ${REPEATS.map(([v, l]) => html`<option key=${v} value=${v}>${l}</option>`)}</select>`)}
     </div>
     ${s.orders_of && html`<details class="gui-bench__more"><summary class="ok-font-label">${pooled ? "The Agent pool's instructions for this run" : "Instructions for this run"}${f.orders !== s.orders ? " (changed)" : ""}</summary>
       <p class="ok-font-status ok-tone-muted">${pooled
@@ -122,7 +125,7 @@ function RunForm({ s, call }) {
     </details>`}
     <div class="gui-bench__row">
       <button class="ok-btn primary" disabled=${on || !f.case} onClick=${() => call("bench.run", f)}>Run</button>
-      <span class="ok-font-status ok-tone-muted">${say(`It runs AI tools: the building's side stops at ${money(+f.max_spend)}${series ? " for each case" : ""}; the bare AI tool's run is one call${series ? " a case" : ""}.`)}</span>
+      <span class="ok-font-status ok-tone-muted">${say(`It runs AI tools: the building's side stops at ${money(+f.max_spend)}${series || +f.repeat > 1 ? " for each run" : ""}; the bare AI tool's run is one call${series || +f.repeat > 1 ? " a run" : ""}.${+f.repeat > 1 ? ` Each case runs ${f.repeat} times: the summary reads their medians.` : ""}`)}</span>
     </div>
   </section>`;
 }

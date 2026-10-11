@@ -536,12 +536,22 @@ class Barracks:
         self.tasks: list[PoolTask] = []       # working and finished, newest last
         self.paused = False
         self.steward_cost = 0.0
+        self.steward_tokens = 0               # its calls' tokens: what a tool that says no price spends
         self.stats: dict = {}
         self.load()
 
     @property
     def spent(self) -> float:
         return round(sum(o.cost_usd for o in self.orcs) + self.steward_cost, 4)
+
+    @property
+    def tokens(self) -> int:
+        """Every token the orks and the steward spent."""
+        return sum(o.tokens for o in self.orcs) + self.steward_tokens
+
+    def steward_spent(self, cost: float, tokens: int = 0) -> None:
+        self.steward_cost = round(self.steward_cost + cost, 4)
+        self.steward_tokens += tokens
 
     @property
     def asked(self) -> list[PoolTask]:
@@ -562,6 +572,7 @@ class Barracks:
             self.tasks = [PoolTask(**t) for t in data.get("tasks", [])]
             self.paused = bool(data.get("paused", False))
             self.steward_cost = float(data.get("steward_cost", 0.0))
+            self.steward_tokens = int(data.get("steward_tokens", 0))
         except (OSError, ValueError, TypeError):
             pass
         for t in [t for t in self.tasks if t.status == "planning"]:     # the plan is made again
@@ -588,7 +599,7 @@ class Barracks:
         self.dir.mkdir(parents=True, exist_ok=True)
         data = {"orcs": [asdict(o) for o in self.orcs], "queue": [asdict(t) for t in self.queue],
                 "tasks": [asdict(t) for t in self._kept()], "paused": self.paused,
-                "steward_cost": self.steward_cost}
+                "steward_cost": self.steward_cost, "steward_tokens": self.steward_tokens}
         (self.dir / "barracks.json").write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
         (self.dir / "stats.json").write_text(json.dumps(self.stats, indent=2), encoding="utf-8")
 

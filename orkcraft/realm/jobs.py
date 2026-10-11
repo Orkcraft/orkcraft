@@ -20,7 +20,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from orkcraft.realm import forge, halt, harnesses, road_agents, roads
+from orkcraft.realm import call_log, forge, halt, harnesses, road_agents, roads
 from orkcraft.sources import telemetry
 
 SCRIPT_TIMEOUT_S = 300
@@ -130,14 +130,17 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     run_env = {**os.environ, **tool_env, **(env or {})}
     resumed = roads.codex_thread_usage(resume, run_env) if harness == "codex" and resume else None
     before = resumed or 0
+    start = time.monotonic()
     code, out, err = road_agents.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
                                     lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True),
                                     harness)
     if code != 0:
+        call_log.record(env, "work", harness, model, prompt, out, err, code, time.monotonic() - start)
         raise roads.failure(harness, code, out, err)
     text, cost, tokens, session = roads.result_of(harness, out, before, model)
     if harness == "codex" and resume and resumed is None:
         cost = None                       # its running total holds earlier runs we cannot tell apart
+    call_log.record(env, "work", harness, model, prompt, out, err, code, time.monotonic() - start, cost, tokens)
     what = dict(tokens=tokens, building=telemetry.building_of(run_env), model=model)
     if not telemetry.charged(run_env):
         telemetry.charge(cost, f"{harness} worker", **what)
@@ -157,12 +160,15 @@ def run_read(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
         raise RuntimeError(f"harness {harness!r} cannot read")
     cmd = h.read(prompt, workdir, model, False)
     run_env = {**os.environ, **h.env("read", workdir), **(env or {})}
+    start = time.monotonic()
     code, out, err = road_agents.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
                                     lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True),
                                     harness)
     if code != 0:
+        call_log.record(env, "read", harness, model, prompt, out, err, code, time.monotonic() - start)
         raise roads.failure(harness, code, out, err)
     text, cost, tokens, _session = roads.result_of(harness, out, 0, model)
+    call_log.record(env, "read", harness, model, prompt, out, err, code, time.monotonic() - start, cost, tokens)
     what = dict(tokens=tokens, building=telemetry.building_of(run_env), model=model)
     if not telemetry.charged(run_env):
         telemetry.charge(cost, f"{harness} reader", **what)

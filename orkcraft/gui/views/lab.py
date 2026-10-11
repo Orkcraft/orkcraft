@@ -119,6 +119,11 @@ def _settings(w, args: dict) -> bool:
             raise ActError("The spend limit is a number of dollars") from None
     if "judge" in args:
         values["judge"] = bool(args["judge"])
+    if "repeat" in args:
+        try:
+            values["repeat"] = min(max(int(args["repeat"]), 1), bench.REPEAT_MAX)
+        except (TypeError, ValueError):
+            raise ActError("Runs a case is a number") from None
     w.set_settings(**values)
     return True
 

@@ -98,8 +98,13 @@ def context(root: Path, type_id: str) -> str:
 
 
 def _last_run(root: Path, type_id: str) -> str:
+    """The latest run of each case side by side (repeats pooled), then the last run with its model calls."""
     kept = bench.runs(root, type_id)
-    return bench.render(kept[0], lexicon.term(type_id)) if kept else "No Test bench run yet."
+    if not kept:
+        return "No Test bench run yet."
+    word, latest = lexicon.term(type_id), bench.latest(kept)
+    each = f"{bench.summary(latest, word)}\n\n" if len({r.case for r in latest}) > 1 else ""
+    return each + "\n".join([bench.render(kept[0], word), *bench.calls_text(bench.calls_of(root, kept[0]), word)])
 
 
 def prompt(root: Path, type_id: str, tab: str, role: str) -> str:
