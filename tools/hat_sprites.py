@@ -3,7 +3,8 @@
 
     python tools/hat_sprites.py [--preview FILE]
 
-Out come, in `design-system/sprites/orks/` (the GUI serves it at `/ds/sprites/orks/`), at 2× and 4× (`@2x`):
+Out come, in `design-system/sprites/orks/` (the GUI serves it at `/ds/sprites/orks/`), at 2× and 4× (`@2x`), Scale2x'd
+there as the ork out of its building is (tools/visit_sprites.py), so the hat is as fine as the head it sits on:
 
 - `hat-<role>.png` (12×2, 24×4 drawn): the hat alone, worn by the ork that comes out of its building (js/visit.js);
 - `steward-<role>.png` (12×10, 24×20 drawn): the head under its hat, the steward's face on the Warchief's line when
@@ -19,6 +20,7 @@ import pathlib
 from PIL import Image
 
 from logo import GRID, SPRITE_COLOURS, grid_image
+from visit_sprites import scale2x
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "design-system" / "sprites" / "orks"
@@ -50,8 +52,9 @@ def build(out: pathlib.Path = OUT) -> dict[str, list[str]]:
         face = hat + GRID
         faces[role] = face
         for name, grid in ((f"hat-{role}", hat), (f"steward-{role}", face)):
-            grid_image(grid, COLOURS, 2).save(out / f"{name}.png")
-            grid_image(grid, COLOURS, 4).save(out / f"{name}@2x.png")
+            fine = scale2x(grid)
+            grid_image(fine, COLOURS, 1).save(out / f"{name}.png")
+            grid_image(scale2x(fine), COLOURS, 1).save(out / f"{name}@2x.png")
     return faces
 
 
