@@ -23,6 +23,7 @@ HEARD = 20                       # carts from the buildings it tests it remember
 TEXT_KEPT = 8000                 # of each cart: what a chain sent is what its run checks
 CHAIN = "chain:"                 # a chain's id: `chain:<first>:<last>`
 CASE_EVENT = "lab.case"          # the road into a chain it tests
+CODE = "code"                    # a change to Orkcraft's code, kept in the bench's copy of the package
 IMPROVE = ("lab", "ux_lab")      # the Improve buildings: never tested by a Test bench
 
 
@@ -100,7 +101,7 @@ class LabWorker(Worker):
         bid, kind = subject["id"], subject["type"]
         events = [e.id for e in catalog.TYPES[kind].events] if kind in catalog.TYPES else []
         return {"id": bid, "buildings": [{"id": bid, "type": kind, "title": self.town.title_of(bid),
-                                          "config": dict((self.town.spec_of(bid) or {}).get("config") or {})}],
+                                          "config": dict(self.virtual_spec(subject["id"], bid).get("config") or {})}],
                 "roads": [], "first": bid, "last": bid, "back_events": events, "back_filter": {},
                 "about": f"{self.town.title_of(bid)} ({lexicon.term(kind)}: "
                          f"{catalog.TYPES[kind].summary.split(';')[0] if kind in catalog.TYPES else ''})"}
@@ -193,7 +194,7 @@ class LabWorker(Worker):
         road its last building sends back to the Test bench."""
         chain = subject["chain"]
         buildings = [{"id": b, "type": self._type(b), "title": self.town.title_of(b),
-                      "config": dict((self.town.spec_of(b) or {}).get("config") or {})} for b in chain]
+                      "config": dict(self.virtual_spec(subject["id"], b).get("config") or {})} for b in chain]
         roads = [{"target": b, "source": r.source, "event": r.event, "filter": dict(r.filter or {}), "handler": r.handler}
                  for b in chain for r in ts.incoming(self.town.scroll, b) if r.source in chain]
         back = next((r for r in ts.incoming(self.town.scroll, self.building_id) if r.source == subject["last"]), None)
@@ -323,6 +324,66 @@ class LabWorker(Worker):
         """The environment a case stands in: its set's, else the setup's (a copy of the town's project)."""
         cs = self.set_of(subject_id, str(case.get("set") or ""))
         return self.env_files(cs["env"]) if cs else {}
+
+    # -- the virtual building (docs/design/improve-buildings.md §5.3) ------------------------------------------------
+    # A change tried is the bench's only: its runs stand the buildings with it, the town's keep theirs. A settings or
+    # prompt change is the building keeper's proposal (core/keeper.py), kept until Save changes applies it for good;
+    # a code change is the bench's copy of the package (realm/code_overlay.py), which only a pull request takes on.
+
+    def changes_of(self, subject_id: str) -> list[dict]:
+        return list((self.state.get("virtual") or {}).get(subject_id) or [])
+
+    def add_change(self, subject_id: str, change: dict) -> None:
+        self.state.setdefault("virtual", {}).setdefault(subject_id, []).append(change)
+        self.keep()
+
+    def take_back(self, subject_id: str, change_id: str) -> bool:
+        """A data change taken back: the ones after it on the same building go too (each was asked on it)."""
+        have = self.changes_of(subject_id)
+        hit = next((c for c in have if c["id"] == change_id), None)
+        if hit is None or hit["kind"] == CODE:
+            return False
+        at = have.index(hit)
+        self.state["virtual"][subject_id] = [c for n, c in enumerate(have)
+                                             if n < at or c["building"] != hit["building"] or c["kind"] == CODE]
+        self.keep()
+        return True
+
+    def virtual_spec(self, subject_id: str, bid: str) -> dict:
+        """A building as the bench's runs stand it: its spec with every data change tried on it, the last one ruling."""
+        import copy
+        from orkcraft.core import keeper
+        spec = copy.deepcopy(self.town.spec_of(bid) or {})
+        for c in self.changes_of(subject_id):
+            if c["building"] == bid and c["kind"] != CODE and spec:
+                spec = keeper.subject_of(spec).write(spec, c["after"])
+        return spec
+
+    def save_changes(self, subject_id: str) -> tuple[int, list[str]]:
+        """Save changes: each building's data changes become its own, through its keeper (checked again, a
+        checkpoint); the code changes stay for a pull request. (buildings saved, problems)."""
+        from orkcraft.core import keeper
+        saved, problems = 0, []
+        data = [c for c in self.changes_of(subject_id) if c["kind"] != CODE]
+        for bid in dict.fromkeys(c["building"] for c in data):
+            mine = [c for c in data if c["building"] == bid]
+            spec = self.town.spec_of(bid)
+            if spec is None:
+                problems.append(f"{bid} is gone")
+                continue
+            subject = keeper.subject_of(spec)
+            why = "; ".join(dict.fromkeys(c["why"] for c in mine if c.get("why")))[:400] or "the Test bench's changes"
+            p = keeper.Proposal(bid, mine[-1]["kind"], before=subject.now(self.repo_root, bid, spec),
+                                after=mine[-1]["after"], why=f"Test bench: {why}")
+            wrong = keeper.apply(self.town, bid, p, why)
+            if wrong:
+                problems += [f"{self.town.title_of(bid)}: {w}" for w in wrong]
+                continue
+            saved += 1
+            self.state["virtual"][subject_id] = [c for c in self.changes_of(subject_id) if c["building"] != bid
+                                                 or c["kind"] == CODE]
+        self.keep()
+        return saved, problems
 
     def targets(self) -> list[str]:
         """The buildings its roads go to with its results (not the `lab.case` road into a chain it tests)."""

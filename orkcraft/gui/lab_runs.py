@@ -11,6 +11,7 @@ proposals are written again by themselves.
 """
 from __future__ import annotations
 
+import copy
 import json
 import os
 import subprocess
@@ -18,14 +19,18 @@ import tempfile
 import sys
 import threading
 import time
+import uuid
 from dataclasses import asdict
 from pathlib import Path
 
 import orkcraft
-from orkcraft.realm import bench, bench_review, halt, harnesses, jobs, lab_cases, lab_envs, tiers
+from orkcraft.core import keeper, runners
+from orkcraft.core.workers.lab import CODE
+from orkcraft.realm import bench, bench_review, code_overlay, halt, harnesses, jobs, lab_cases, lab_envs, steward, tiers
 
 TIER_FLAG = {"laborer": "novice", "warrior": "seasoned", "elder": "veteran"}
-BUSY = {"generate": "writing cases", "env": "writing an environment", "set": "writing a case set"}
+BUSY = {"generate": "writing cases", "env": "writing an environment", "set": "writing a case set",
+        "try": "trying a change"}
 STOP_BEHIND = 3                  # a series of this many cases or more stops when the building is behind on its first 3
 
 
@@ -47,7 +52,8 @@ class LabRuns:
 
     # -- the first cases ------------------------------------------------------------------------------------------
 
-    def _agent(self, w, subject: dict, what: str, prompt: str, done, tier: str = "", bare: bool = False) -> None:
+    def _agent(self, w, subject: dict, what: str, prompt: str, done, tier: str = "", bare: bool = False,
+               workdir: Path | None = None) -> None:
         """One call to the bench's AI tool on its own thread; `tier` a lighter model for a light ask, `bare` an empty
         folder to work in (the ask needs no file: nothing is read, no token spent looking round the source)."""
         key = self.key(w, subject)
@@ -61,7 +67,9 @@ class LabRuns:
         def work() -> None:
             text, error = "", ""
             try:
-                if bare:
+                if workdir is not None:                   # it changes files there: the bench's copy of the package
+                    text = jobs.run_work(tool, prompt, workdir, threading.Event(), model)[0]
+                elif bare:
                     with tempfile.TemporaryDirectory(prefix="orkcraft-lab-") as empty:
                         text = jobs.run_read(tool, prompt, Path(empty), threading.Event(), model)[0]
                 else:
@@ -138,6 +146,98 @@ class LabRuns:
 
         self._agent(w, subject, "set", prompt, done, tier="laborer", bare=True)
 
+    # -- the virtual building (docs/design/improve-buildings.md §5.3) ---------------------------------------------
+
+    def _target(self, w, subject: dict, p: dict, building: str) -> str:
+        """The building a proposal is tried on: the one asked for, else the one its `where` names, else the first."""
+        ids = subject.get("chain") or [subject["id"]]
+        if building in ids:
+            return building
+        where = (p.get("where") or "").lower()
+        return next((b for b in ids if self.host.town.title_of(b).lower() in where or b in where), ids[0])
+
+    def try_change(self, w, subject: dict, proposal_id: str, building: str = "") -> None:
+        """A proposal tried on the virtual building: settings and prompts through the building's keeper (a checked
+        change of its spec, kept by the bench), code in the bench's own copy of the package. The town's building
+        keeps what it has until Save changes."""
+        p = next((x for x in (w.state["proposals"].get(subject["id"]) or {}).get("items") or [] if x["id"] == proposal_id),
+                 None)
+        if p is None:
+            raise LabError("No such proposal")
+        if p["area"] == "roads":
+            raise LabError("Roads change on the map and in its setup, not on the virtual building")
+        if p["area"] == CODE:
+            self._try_code(w, subject, p)
+            return
+        bid = self._target(w, subject, p, building)
+        spec = w.virtual_spec(subject["id"], bid)
+        if not spec:
+            raise LabError("That building keeps no settings here")
+        town = self.host.town
+        request = f"{p['title']}. {p['detail']}" + (f" (where: {p['where']})" if p.get("where") else "") + \
+            (f" It should: {p['effect']}" if p.get("effect") else "")
+        key = self.key(w, subject)
+        if key in self.busy:
+            raise LabError(f"It is already {BUSY.get(self.busy[key], 'thinking')}")
+        self.busy[key] = "try"
+        snapshot, others = copy.deepcopy(town.scroll), set(town.custom_specs) - {bid}
+
+        def work() -> None:
+            got = keeper.ask(town.repo_root, spec, snapshot, bid, request, existing_ids=others,
+                             runner=steward.runner_for(snapshot.building(bid), "keeper", runners.KEEPER_RUNNER))
+            town.call(finish, got)
+
+        def finish(got: keeper.Proposal) -> None:
+            self.busy.pop(key, None)
+            if got.error:
+                town.toast(f"The keeper could not: {got.error}"[:300], title="Test bench", severity="error")
+            elif not got.changes:
+                town.toast(f"Nothing to change in {town.title_of(bid)}: {got.answer or got.why}"[:300], title="Test bench")
+            else:
+                w.add_change(subject["id"], {
+                    "id": f"v{uuid.uuid4().hex[:6]}", "proposal": p["id"], "title": p["title"], "building": bid,
+                    "kind": got.kind, "after": got.after, "why": got.why or p["title"],
+                    "diff": got.diff(keeper.subject_of(spec)), "cost": got.cost_usd,
+                    "at": time.strftime("%Y-%m-%dT%H:%M:%S")})
+                town.toast(f"Tried on the virtual {town.title_of(bid)}: {p['title']}"[:200], title="Test bench")
+            w.changed()
+
+        threading.Thread(target=work, daemon=True, name="lab-try").start()
+        w.changed()
+
+    def _try_code(self, w, subject: dict, p: dict) -> None:
+        """A code proposal: an agent changes the bench's copy of the package; the diff is kept as one change."""
+        spec = w.flow_spec(subject)
+        files = sorted({f for b in spec["buildings"] for f in bench_review._files(b["type"], code_overlay.package())})
+        prompt = code_overlay.code_prompt(p["title"], p["detail"], p.get("where", ""), p.get("effect", ""), files)
+        state_dir = w.state_dir
+
+        def done(text: str) -> None:
+            code_overlay.keep(state_dir, p["title"])
+            touched = code_overlay.changed(state_dir)
+            if not touched:
+                self.host.town.toast("The agent changed no code", title="Test bench", severity="warning")
+                return
+            w.state.setdefault("virtual", {}).setdefault(subject["id"], [])
+            w.state["virtual"][subject["id"]] = [c for c in w.changes_of(subject["id"]) if c["kind"] != CODE] + [{
+                "id": "code", "proposal": p["id"], "title": "Code", "building": "", "kind": CODE, "files": touched,
+                "why": "; ".join(dict.fromkeys([*(c["why"] for c in w.changes_of(subject["id"]) if c["kind"] == CODE),
+                                                p["title"]]))[:600],
+                "diff": code_overlay.diff(state_dir), "at": time.strftime("%Y-%m-%dT%H:%M:%S")}]
+            w.keep()
+            self.host.town.toast(f"Code changed for the bench's runs: {', '.join(touched[:3])}", title="Test bench")
+
+        try:
+            pkg = code_overlay.ensure(state_dir)
+        except (OSError, RuntimeError) as e:
+            raise LabError(f"The bench could not copy the package: {e}") from None
+        self._agent(w, subject, "try", prompt, done, workdir=pkg.parent)
+
+    def drop_code(self, w, subject: dict) -> None:
+        code_overlay.drop(w.state_dir)
+        w.state.setdefault("virtual", {})[subject["id"]] = [c for c in w.changes_of(subject["id"]) if c["kind"] != CODE]
+        w.keep()
+
     # -- running ------------------------------------------------------------------------------------------------
 
     def run(self, w, subject: dict, case_ids: list[str] | None = None, then_propose: bool = False) -> None:
@@ -175,8 +275,10 @@ class LabRuns:
         job = Job("run", "chain", label, subject=subject["id"],
                   then=(lambda: self._propose_quietly(w, subject)) if then_propose else None)
         try:
+            code = code_overlay.env(w.state_dir) if any(c["kind"] == CODE for c in w.changes_of(subject["id"])) else {}
             job.proc = subprocess.Popen(argv, cwd=self.engine.root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                        text=True, start_new_session=True, env={**os.environ, "PYTHONUNBUFFERED": "1"})
+                                        text=True, start_new_session=True,
+                                        env={**os.environ, "PYTHONUNBUFFERED": "1", **code})
         except OSError as e:
             raise LabError(f"The run did not start: {e}") from None
         halt.started(job.proc, f"{w.building_id}/bench", agent=True)

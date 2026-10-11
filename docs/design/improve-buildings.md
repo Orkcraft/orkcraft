@@ -1,7 +1,8 @@
 # Design — Improve: the Mechanic and the Alchemist
 
-Status: stages 0–3 built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
-road rule; a building's inputs; the Test bench's setup; environments, case sets and what is kept to spend less). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
+Status: stages 0–4 built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
+road rule; a building's inputs; the Test bench's setup; environments, case sets and what is kept to spend less; the
+virtual building). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
 and keep it, **faster and cheaper than testing and rewriting it through Claude Code**.
 
 | stage | what | state |
@@ -11,7 +12,7 @@ and keep it, **faster and cheaper than testing and rewriting it through Claude C
 | 2 | The Mechanic's setup: pick one building or drag a frame round several; the frame drawn on the map with its environment's name, a wire from the Mechanic to the scheme's start and one back from its end; the Test bench's roads are laid only by it (`roads = "setup"`) | built |
 | 3 | Environments: a small code base and data written from a person's description, once, no network; case sets in them; the bare side kept, a series stopped early, a set's cost said before it runs (§5.2, §7) | built |
 | 3b | Cassettes: MCP and outside calls recorded on a set's first run and played back after (§5.2) | |
-| 4 | The virtual building: a change is tried on an overlay the Mechanic holds while it is connected; **Save changes** keeps the data part for good (§5.3) | |
+| 4 | The virtual building: a change is tried on an overlay the Mechanic holds while it is connected; **Save changes** keeps the data part for good (§5.3) | built |
 | 5 | GitHub: Connect GitHub in the mascot's menu (device flow); Save changes opens a pull request with its evidence (§4) | |
 | 6 | The Alchemist redraws: images through the image tool with the shipped prompts, a region marked and commented, Reset; the Work window's layout as a UI document (§6) | |
 | 7 | Cards s/m/l as UI documents, so the Alchemist redraws them too | |
@@ -130,19 +131,30 @@ on every run after answers from the cassette and never starts the server. A call
 "not recorded" and noted in the run. Outside calls the building makes itself go through the same file by its URL.
 Until then a run's copy has none of the person's sources (`bench_kits.SOURCES_OUT`), as before.
 
-### 5.3 The virtual building (stage 4)
+### 5.3 The virtual building (stage 4, built 2026-10-11)
 
-A building's behaviour is data (its spec: `orders`, `chain`, `script`, `models`, prompt templates moved out of code)
-and code (its worker and prompt builders in Python).
+A building's behaviour is data (its spec: `orders`, `chain`, `script`, `models`, its settings) and code (its worker
+and prompt builders in Python).
 
-- **Data** changes live in an overlay the Mechanic holds (`.orkcraft/improve/<building>/overlay.json`); while it is
-  connected the building runs with it. **Save changes** writes them into the building's spec for good (a checkpoint,
-  undone as any), connected or not.
-- **Code** changes are never loaded into the installed app. They run only inside a bench run (a subprocess with the
-  changed modules first on its path, in the run's copy), and reach the person only through a pull request and the
-  release that carries it (§4).
-- The prompts the code builds today move to template files a step at a time, starting with the building tested most;
-  each that moves becomes data the Mechanic can change without code.
+- **Try it** on a proposal (*What to change*) puts it on the virtual building, never on the town's:
+  - a **settings** or **prompt** proposal goes to the building's own keeper (`core/keeper.py` `ask`, the same model
+    call and checks as *Ask the steward*), on the building as the bench has it now; its answer — the whole new
+    config, checked like any spec — is kept by the Test bench (`lab.json` `virtual`), with its diff. The building it
+    is tried on is the one the proposal's *where* names, else the scheme's first.
+  - a **code** proposal is an agent's change in the bench's own copy of the package (`realm/code_overlay.py`:
+    `<state>/code/orkcraft`, the package as installed, committed and tagged; the sprites linked). Its diff and files
+    are one change.
+  - a **roads** proposal is not tried: roads change on the map and in the setup.
+- **The bench's runs stand the virtual building**: `flow_spec` / `chain_spec` give a run each building's config with
+  every change tried on it (`LabWorker.virtual_spec`, the last ruling), and a run with a code change starts
+  `orkcraft bench` with the copy first on `PYTHONPATH` — the installed app is never changed.
+- **The virtual building** section lists the changes: what and why, *What changes* (the diff), **Take back** (a data
+  change takes the later ones on the same building with it; the code change drops the copy).
+- **Save changes** gives each building its data changes for good through its keeper (`keeper.apply`: checked again on
+  the spec as it stands, saved, a checkpoint that undo takes back). Code changes stay with the bench: they reach the
+  person only through a pull request (§4) and the release that carries it.
+- The prompts the code builds today move to template files a step at a time (§9); each that moves becomes data the
+  keeper can change without code.
 
 ## 6. The Alchemist
 

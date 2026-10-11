@@ -94,6 +94,7 @@ function LabView({ id, d }) {
     <${Cases} id=${id} d=${d} on=${on} />
     ${d.job && html`<${RunLog} id=${id} job=${d.job} />`}
     <${Proposals} id=${id} d=${d} on=${on} />
+    <${Virtual} id=${id} d=${d} on=${on} />
   </div>`;
 }
 
@@ -302,6 +303,9 @@ function Proposals({ id, d, on }) {
         <span class="lab-area">${say(AREA[p.area] || p.area)}</span> <b class="ok-font-body">${p.title}</b></label>
       <p class="ok-font-status">${p.detail}</p>
       ${(p.where || p.effect) && html`<p class="ok-font-status ok-tone-muted">${p.where ? `${say("Where")}: ${p.where}` : ""}${p.where && p.effect ? " · " : ""}${p.effect ? `${say("Should")}: ${p.effect}` : ""}</p>`}
+      ${p.area !== "roads" && html`<span><button class="ok-btn" disabled=${on || !!d.busy_what}
+        title=${say("Tried on the Test bench's copy of the building only: the town's keeps what it has until Save changes")}
+        onClick=${() => act(id, "try", { proposal: p.id })}>${d.busy_what === "try" ? say("Trying…") : say("Try it")}</button></span>`}
     </li>`)}</ul>
     <div class="gui-bench__row">
       ${pools.length ? html`<select class="ok-input" value=${to} onChange=${(e) => setPool(e.target.value)}>
@@ -311,6 +315,35 @@ function Proposals({ id, d, on }) {
         : html`<span class="ok-font-status ok-tone-muted">${say("Raise an Agent pool, or pull a road out of the Test bench, to make tasks of them.")}</span>`}
       <button class="ok-btn" onClick=${() => copyText(items.map((p) => `- [${p.area}] ${p.title}\n  ${p.detail}${p.where ? `\n  where: ${p.where}` : ""}${p.effect ? `\n  should: ${p.effect}` : ""}`).join("\n"), "Copied the proposals")}>${say("Copy")}</button>
     </div>`}
+  </section>`;
+}
+
+// -- the virtual building (docs/design/improve-buildings.md §5.3) ---------------------------------------------------
+
+/** The changes tried on the Test bench's copy of the buildings: its runs stand them, the town's do not. Save changes
+ *  makes the settings and prompts the buildings' own; code goes to Orkcraft as a pull request. */
+function Virtual({ id, d, on }) {
+  const changes = d.virtual || [];
+  if (!changes.length) return null;
+  const data = changes.filter((c) => c.kind !== "code");
+  const code = changes.find((c) => c.kind === "code");
+  return html`<section class="gui-bench__section lab-virtual">
+    <h4 class="ok-font-label gui-bench__h">${say(`The virtual building (${changes.length})`)}</h4>
+    <p class="ok-font-status ok-tone-muted">${say("Its runs stand the buildings with these changes; the town's keep what they have.")}</p>
+    <ul class="lab-proposal-list">${changes.map((c) => html`<li key=${c.id} class="lab-proposal">
+      <div class="lab-case__head"><span class="lab-area">${say(c.kind === "code" ? "Code" : c.kind)}</span>
+        <b class="ok-font-body">${c.kind === "code" ? say(`${(c.files || []).length} files`) : `${say(c.building)}: ${c.title}`}</b>
+        <span class="gui-bench__acts"><button class="ok-btn" disabled=${on} onClick=${() => act(id, "take_back", { change: c.id })}>${say("Take back")}</button></span></div>
+      ${c.why && html`<p class="ok-font-status ok-tone-muted">${c.why}</p>`}
+      <details><summary class="ok-font-status ok-tone-muted">${say("What changes")}</summary>
+        <pre class="lab-case__body">${typeof c.diff === "string" ? c.diff : (c.diff || []).map((x) => `${x[0]} ${x[1]}`).join("\n")}</pre></details>
+    </li>`)}</ul>
+    <div class="gui-bench__row">
+      ${data.length > 0 && html`<button class="ok-btn primary" disabled=${on}
+        onClick=${() => act(id, "save_changes").catch(() => {})}>${say("Save changes")}</button>`}
+      <span class="ok-font-status ok-tone-muted">${say(data.length ? "Settings and prompts become the buildings' own, a checkpoint each (undo takes them back)." : "")}
+        ${code ? say(" Code changes go to Orkcraft as a pull request once GitHub is connected.") : ""}</span>
+    </div>
   </section>`;
 }
 

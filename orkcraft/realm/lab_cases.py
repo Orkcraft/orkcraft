@@ -43,7 +43,8 @@ def blank() -> dict:
     return {"goal": "", "settings": {"tool": "main", "tier": "", "bare_tool": "main", "bare_tier": "",
                                      "max_spend": bench.DEFAULT_MAX_SPEND, "judge": True},
             "cases": {}, "results": {}, "proposals": {}, "runs": {},
-            "envs": [], "sets": {}}          # its environments and, per what it tests, its case sets (realm/lab_envs.py)
+            "envs": [], "sets": {},          # its environments and, per what it tests, its case sets (realm/lab_envs.py)
+            "virtual": {}}                   # per what it tests, the changes tried on it (core/workers/lab.py)
 
 
 def load(state_dir: Path) -> dict:

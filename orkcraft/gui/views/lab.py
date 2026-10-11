@@ -46,10 +46,22 @@ def detail(w) -> dict:
         "job": job.public() if job else None,
         "tools": engine.lab.tools() if engine is not None else [{"id": "main", "title": "Main tool"}],
         "tiers": engine.lab.tiers() if engine is not None else [{"id": "", "title": "Its own"}],
+        "virtual": [_change(w, c) for c in w.changes_of(s["id"])],
         "envs": w.envs(), "sets": _sets(w, s), "busy_what": engine.lab.busy.get(engine.lab.key(w, s), "") if engine else "",
         "pools": [{"id": b.id, "title": b.title} for b in w.town.scroll.buildings
                   if not b.demolished and catalog_type(w, b.id) == "barracks"],
     })
+    return out
+
+
+DIFF_SHOWN = 6000                  # characters of a code change's diff the window shows
+
+
+def _change(w, c: dict) -> dict:
+    """A change tried on the virtual building, as the window lists it."""
+    out = {k: c.get(k) for k in ("id", "kind", "title", "why", "at", "files")}
+    out["building"] = w.town.title_of(c["building"]) if c.get("building") else ""
+    out["diff"] = c["diff"][:DIFF_SHOWN] if isinstance(c.get("diff"), str) else [d for d in c.get("diff") or [] if d[0] != " "]
     return out
 
 
@@ -187,6 +199,27 @@ def _set_remove(w, args: dict) -> bool:
     return True
 
 
+def _try(w, args: dict) -> bool:
+    return _lab_call(w, _engine(w).lab.try_change, text(args, "proposal", 40), text(args, "building", 200))
+
+
+def _take_back(w, args: dict) -> bool:
+    s = _subject(w)
+    change = text(args, "change", 40)
+    if change == "code":
+        return _lab_call(w, _engine(w).lab.drop_code)
+    if not w.take_back(s["id"], change):
+        raise ActError("No such change")
+    return True
+
+
+def _save_changes(w, args: dict) -> dict:
+    saved, problems = w.save_changes(_subject(w)["id"])
+    if problems:
+        raise ActError("Not saved: " + "; ".join(problems[:3]))
+    return {"saved": saved}
+
+
 def _stop(w, args: dict) -> bool:
     _engine(w).lab.stop(w)
     return True
@@ -254,6 +287,6 @@ def _candidates(w, args: dict) -> list[dict]:
     return out
 
 
-ACTS = {"env_add": _env_add, "set_add": _set_add, "set_run": _set_run, "set_remove": _set_remove, "setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
+ACTS = {"try": _try, "take_back": _take_back, "save_changes": _save_changes, "env_add": _env_add, "set_add": _set_add, "set_run": _set_run, "set_remove": _set_remove, "setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
         "run": _run, "run_all": lambda w, a: _run(w, a, every=True), "stop": _stop, "propose": _propose,
         "tasks": _tasks, "lab.run": _run_first}
