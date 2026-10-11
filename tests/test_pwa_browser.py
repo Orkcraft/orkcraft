@@ -170,3 +170,24 @@ async def test_what_asks_stands_as_tiles_one_open_the_longest_waiting_first(fake
         assert "The Forge" in await forge.inner_text() and await forge.locator(".question").count() == 2
         assert await page.locator("#probe .rows .row-b.trouble", has_text="Inbox").count() == 1
         assert await page.locator("#probe .grid .cell", has_text="Notes").count() == 1
+
+
+@pytest.mark.asyncio
+async def test_task_fields_stands_open_and_takes_a_to_do_written_on_the_phone(fake_repo):
+    async with _phone(fake_repo) as (server, page):
+        server.host.command("town.build", {"type": "fields"})
+        widget = page.locator(".widget")
+        await widget.locator("h3", has_text="My to-dos 0/0").wait_for(timeout=WAIT_MS)
+        await widget.get_by_role("button", name="+ To-do").click()
+        write = page.locator("dialog.sheet[open]")
+        assert "A to-do is yours: it starts nothing." in await write.inner_text()
+        await write.locator("textarea").fill("Buy milk")
+        await write.get_by_role("button", name="Add").click()
+        await _flash(page, "To-do added.")
+        await widget.locator("li", has_text="Buy milk").wait_for(timeout=WAIT_MS)
+        await widget.get_by_role("button", name="+ Task").click()
+        assert "The task waits in To Do for an ork to take it." in await page.locator("dialog.sheet[open]").inner_text()
+        await page.locator("dialog.sheet[open]").get_by_role("button", name="Close").click()
+        assert await widget.locator(".w-lanes").count() == 0                     # the orks' lanes: a tap away
+        await widget.locator(".w-work").click()
+        assert await widget.locator(".w-work").get_attribute("aria-expanded") == "true"

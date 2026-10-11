@@ -290,6 +290,15 @@ apps on a phone's home screen. A tap on a row or a mark says what the building i
 computer. The marks are the desktop's: in Camp the type's header sprite (`design/system/sprites/buildings`,
 served as `/app/sprites/<type>.png`), in Office its line icon (`pwa/icons.js` keeps `js/icons.js`'s lines).
 
+**Task Fields kept open** (stage 3, `pwa/fields.js`). The first Task Fields with the person's to-dos stands
+under Answers as a widget (the compact snapshot's `widget`, `mobile._widget`): the open to-dos and the latest
+notes always in view (five each), the orks' lanes folded into one line ("To Do 3 · In Progress 1 · Done 2") a
+tap opens. + To-do, + Note and + Task write a card from the phone (`act` → `fields.add`, the one act of Task
+Fields a phone may send: it moves, edits and deletes nothing). A task or a note goes down the board's roads
+like one written at the desk, so the sheet says where before it is added: "The task goes down the road to
+Agent pool. The work it starts there is paid from Spend.", or that it waits in To Do; a to-do starts nothing.
+The widget's board is not repeated in the grid.
+
 **Both looks** (§4). The app follows the snapshot's `look`: Camp in its palette (`design/system/tokens.css`),
 square corners, the buildings' titles as they are and the ork's mark; Office calm and plain (`title_plain`),
 dark or light as the phone is. Its Look card switches Camp, Office or By the shift with `you.look`, the one

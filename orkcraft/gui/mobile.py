@@ -45,7 +45,8 @@ COMMANDS: dict[str, Any] = {
     "you.dnd": None,             # Do not disturb is the person's, wherever they set it (docs/design/portrait.md §5)
     "you.look": None,
     "audio.fetch": None,         # an Audio briefing's episode, in chunks: the one file a phone reads (audio-briefing.md §8)
-    "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",)},
+    # Task Fields: a to-do, a note or a task written on the phone (the widget, docs/design/mobile.md §10)
+    "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",), "fields": ("add",)},
 }
 
 _LEVELS = {"ok": 0, "warn": 1, "over": 2}
@@ -103,6 +104,34 @@ def _building(b: dict) -> dict[str, Any]:
             "alert": (b.get("alert") or {}).get("id") or None}
 
 
+WIDGET_TOP = 5            # of the widget's to-dos, notes and each lane's cards, the most a phone gets
+
+
+def _widget(full: dict) -> dict[str, Any] | None:
+    """The Task Fields the phone keeps open (the first one on a board with the person's to-dos): its to-dos and
+    notes, the orks' lanes, and where a new note or task goes down the roads (the buildings' titles, as they are
+    and plain), so the
+    phone says what writing one starts. None when the town has no such board."""
+    b = next((b for b in full.get("buildings") or [] if b.get("type") == "fields"
+              and ((b.get("card") or {}).get("todos") is not None or (b.get("card") or {}).get("error"))), None)
+    if b is None:
+        return None
+    c = b["card"]
+    titles = {x["id"]: x.get("title", "") for x in full.get("buildings") or []}
+
+    def goes(prefix: str) -> list[dict[str, str]]:
+        to = sorted({r["to"] for r in full.get("roads") or []
+                     if r.get("from") == b["id"] and str(r.get("event", "")).startswith(prefix) and r.get("to") in titles})
+        return [{"title": titles[t], "title_plain": modes.plain(titles[t])} for t in to]
+
+    top = lambda part: {**part, "top": list(part.get("top") or [])[:WIDGET_TOP]} if part else None  # noqa: E731
+    return {"id": b["id"], "error": c.get("error", ""), "todos": top(c.get("todos")), "notes": top(c.get("ideas")),
+            "lanes": [{"id": ln["id"], "label": ln["label"], "count": ln["count"], "top": ln["top"][:WIDGET_TOP]}
+                      for ln in c.get("lanes") or []],
+            "todo_lane": c.get("todo_lane", ""), "note_lane": c.get("note_lane", ""),
+            "sends": {"task": goes("tasks."), "note": goes("notes.")}}
+
+
 def _hud(h: dict) -> dict[str, Any]:
     keys = ("gold", "gold_level", "show_gold", "quota", "quota_level", "agents_working", "agents",
             "alerts", "quiet", "hour_plain")
@@ -137,6 +166,7 @@ def compact(full: dict[str, Any]) -> dict[str, Any]:
         "hud": _hud(full.get("hud") or {}),
         "alerts": [_alert(a) for a in full.get("alerts") or []],
         "buildings": [_building(b) for b in full.get("buildings") or []],
+        "widget": _widget(full),
         "sessions_running": sum(1 for s in full.get("sessions") or [] if s.get("running")),
         "episodes": _episodes(full.get("buildings") or []),
     }

@@ -154,4 +154,23 @@ textarea.input { resize: vertical; }
 .info-mark .mark-line { width: 3rem; height: 3rem; }
 :root[data-look="camp"] .tile, :root[data-look="camp"] .rows, :root[data-look="camp"] .cell, :root[data-look="camp"] .state { border-radius: 0; }
 
+/* Task Fields kept open (fields.js): a widget */
+.widget { display: flex; flex-direction: column; gap: 4px; }
+.w-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.w-head h2 { margin: 0; }
+.widget h3 { margin: 6px 0 2px; font-size: 0.875rem; font-weight: 600; }
+.widget .new { color: var(--warn); }
+.w-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.w-list li { display: flex; gap: 8px; overflow-wrap: anywhere; }
+.w-sign { flex: none; color: var(--muted); width: 1em; }
+.w-more { margin: 2px 0 0; }
+.w-work { font: inherit; color: inherit; background: none; border: 0; border-top: 1px solid var(--frame); margin-top: 8px;
+  min-height: 44px; padding: 6px 0; display: flex; gap: 8px; align-items: center; text-align: left; cursor: pointer; width: 100%; }
+.w-work > span:first-child { font-weight: 600; flex: none; }
+.w-work .muted { flex: 1 1 auto; min-width: 0; }
+.w-lanes { display: flex; flex-direction: column; gap: 4px; }
+.w-add { display: flex; gap: 8px; margin-top: 8px; }
+.w-add .btn { flex: 1 1 0; min-width: 0; padding: 8px 4px; }
+.hint { margin: 0; }
+
 [hidden] { display: none !important; }

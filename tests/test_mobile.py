@@ -201,3 +201,32 @@ def test_the_notifier_says_an_error_by_its_title_only_and_a_session_that_ended(f
     listener.phones = set()
     host.town.toast("again", title="Roads", severity="error")
     assert len(listener.sent) == 2                                      # no phone open: nothing to say it to
+
+
+def test_a_phone_may_write_on_task_fields_and_nothing_else_there(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    fields = buildings.raise_spec(host.town, buildings.type_spec(host.town, "fields")).id
+    may = lambda act: mobile.allowed(host, "act", {"id": fields, "act": act})      # noqa: E731
+    assert may("add")
+    for act in ("move", "edit", "delete", "send", "color", "flip"):
+        assert not may(act), act
+
+
+def test_the_widget_is_task_fields_its_to_dos_notes_lanes_and_where_a_card_goes(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    fields = buildings.raise_spec(host.town, buildings.type_spec(host.town, "fields")).id
+    host.command("act", {"id": fields, "act": "add", "args": {"title": "Buy milk", "lane": "mine"}})
+    w = mobile.compact(host.snapshot())["widget"]
+    assert w["id"] == fields and w["todo_lane"] == "mine" and w["note_lane"]
+    assert "Buy milk" in w["todos"]["top"] and w["todos"]["open"] == 1
+    assert {ln["id"] for ln in w["lanes"]} >= {"todo", "done"}
+    # Where a new task or note goes: the roads that leave the board for it, by the receiving building's title.
+    full = {"buildings": [{"id": "f", "type": "fields", "title": "🌾 Task Fields", "card": {"todos": {"open": 0, "count": 0,
+            "top": []}, "ideas": None, "lanes": [], "todo_lane": "mine", "note_lane": "ideas"}},
+            {"id": "b", "type": "barracks", "title": "🛖 Barracks"}, {"id": "w", "type": "scrolls", "title": "📜 Wiki"}],
+            "roads": [{"from": "f", "to": "b", "event": "tasks.created"}, {"from": "f", "to": "w", "event": "notes.created"},
+                      {"from": "b", "to": "w", "event": "tasks.created"}]}
+    w = mobile.compact(full)["widget"]
+    assert w["sends"]["task"] == [{"title": "🛖 Barracks", "title_plain": "Agent pool"}]
+    assert [x["title"] for x in w["sends"]["note"]] == ["📜 Wiki"]
+    assert mobile.compact({"buildings": [{"id": "p", "type": "pit", "title": "Pit"}]})["widget"] is None
