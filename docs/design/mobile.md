@@ -280,6 +280,16 @@ bar. Every target is at least 44 px, sizes are in rem (iOS's Dynamic Type throug
 is outlined, and the system's bar takes the page's ground (`theme-color`: Camp's green, Office light or dark as
 the phone is).
 
+**The town as a home screen** (stage 2, `pwa/town.js`). What asks stands as tiles in Answers, the longest
+waiting first: a building whose ork asks, with its mark, its name, who asks and how long; or an ork's question of
+no building the phone knows, under the ork's name. One tile is open at a time (the longest waiting, until the
+person opens another), and an open tile is the question's last lines and its answers. A question waiting over
+10 minutes says so in the warning's colour. Under them, the buildings in trouble (`ERROR`, `NO WIKI`) and at work
+(`WORKING`, `BUSY`, `PENDING`, `EDITING`) are rows; every other building is a mark with its name in a grid, as
+apps on a phone's home screen. A tap on a row or a mark says what the building is doing; its window opens on the
+computer. The marks are the desktop's: in Camp the type's header sprite (`design/system/sprites/buildings`,
+served as `/app/sprites/<type>.png`), in Office its line icon (`pwa/icons.js` keeps `js/icons.js`'s lines).
+
 **Both looks** (§4). The app follows the snapshot's `look`: Camp in its palette (`design/system/tokens.css`),
 square corners, the buildings' titles as they are and the ork's mark; Office calm and plain (`title_plain`),
 dark or light as the phone is. Its Look card switches Camp, Office or By the shift with `you.look`, the one

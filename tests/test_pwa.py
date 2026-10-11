@@ -211,3 +211,22 @@ async def test_tailscale_that_comes_after_the_town_is_taken_within_a_minute_on_t
     finally:
         listener.stop()
 
+
+
+def test_the_phone_draws_the_desktops_marks():
+    """A building's mark on the phone is the desktop's: its line icon in Office (pwa/icons.js keeps js/icons.js's
+    PATHS), its header sprite in Camp (served as sprites/<type>.png, for every type the app names)."""
+    import re
+    from pathlib import Path
+
+    static = Path(pwa.__file__).parent / "static"
+    paths = lambda t: dict(re.findall(r'^\s+(\w+): "([^"]+)"', t[t.index("PATHS = {"):t.index("};", t.index("PATHS = {"))], re.M))  # noqa: E731
+    desk, phone = (static / "js" / "icons.js").read_text(), (static / "pwa" / "icons.js").read_text()
+    assert paths(desk) and paths(phone) == paths(desk)
+    named = set(re.findall(r'"(\w+)"', phone[phone.index("new Set(["):phone.index("]);", phone.index("new Set(["))]))
+    assert named == {d.name for d in pwa.SPRITES.iterdir() if d.is_dir()}
+    for name in named:
+        for scale in ("", "@2x"):
+            head, body = _split(pwa.serve("GET", f"/app/sprites/{name}{scale}.png"))
+            assert head.startswith("HTTP/1.1 200") and "image/png" in head and body[:4] == b"\x89PNG", name
+    assert _split(pwa.serve("GET", "/app/sprites/../tokens.css"))[0].startswith("HTTP/1.1 404")

@@ -32,14 +32,15 @@ export function guessName() {
 }
 
 /** A sheet that rises from the screen's foot: a modal <dialog> (Esc and the backdrop close it), its title and
- *  Close at the top, `body` under them. `{el, open, close}`. */
+ *  Close at the top, `body` under them. `{el, open, close, title(text)}`. */
 export function sheet(title, ...body) {
   const shut = h("button", { class: "btn quiet", type: "button" }, "Close");
+  const head = h("h2", {}, title);
   const el = h("dialog", { class: "sheet", "aria-label": title }, h("div", { class: "sheet-in" },
-    h("div", { class: "sheet-head" }, h("h2", {}, title), shut), ...body));
+    h("div", { class: "sheet-head" }, head, shut), ...body));
   const open = () => { if (el.open) return; if (el.showModal) el.showModal(); else el.setAttribute("open", ""); };
   const close = () => { if (el.close) el.close(); else el.removeAttribute("open"); };
   shut.addEventListener("click", close);
   el.addEventListener("click", (e) => { if (e.target === el) close(); });   // the backdrop
-  return { el, open, close };
+  return { el, open, close, title(text) { head.textContent = text; el.setAttribute("aria-label", text); } };
 }
