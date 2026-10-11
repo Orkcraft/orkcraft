@@ -2053,7 +2053,7 @@ def test_the_test_benchs_window_leads_with_its_goal_its_cases_and_what_to_change
     assert "Not tested yet" in panel.locator(".lab-case", has_text="Hard topic").inner_text()
     assert "1 of 1 case ahead on tokens" in panel.locator(".lab-goal").inner_text()
     panel.locator(".lab-proposal", has_text="Shorter steward rules").wait_for(state="visible", timeout=WAIT_MS)
-    panel.get_by_role("button", name="Add a case").click()
+    panel.get_by_role("button", name="Add a case", exact=True).click()
     panel.locator(".lab-add textarea").fill("Research three vector databases")
     panel.locator(".lab-add").get_by_role("button", name="Add").click()
     panel.locator(".lab-case", has_text="Research three vector").wait_for(state="visible", timeout=WAIT_MS)
@@ -2073,8 +2073,11 @@ def test_a_test_bench_is_set_up_by_a_frame_dragged_round_its_buildings(page, gui
     build = lambda t: pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", t)
     board, pool = build("council"), build("barracks")
     ts.subscribe(server.host.town.scroll, pool, board, "team.approved")
-    for bid in (board, pool):
+    for bid, x in ((board, 0.35), (pool, 0.6)):                  # where nothing else stands: the frame takes only them
         _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
+        pg.evaluate("([id, x]) => import('/static/js/link.js').then(m => m.command('hut.move', { id, x, y: 0.55 }))",
+                    [bid, x])
+    pg.wait_for_timeout(600)
     pg.locator(".gui-warchief__build").click()
     pg.locator(".gui-warchief .gui-build__tile[data-intent='logic']").dblclick()
     setup = pg.locator(".gui-warchief__setup")
@@ -2084,10 +2087,12 @@ def test_a_test_bench_is_set_up_by_a_frame_dragged_round_its_buildings(page, gui
     boxes = [_hut(pg, bid).bounding_box() for bid in (board, pool)]
     x0, y0 = max(min(b["x"] for b in boxes) - 6, 90), min(b["y"] for b in boxes) - 6
     x1, y1 = max(b["x"] + b["width"] for b in boxes) + 6, max(b["y"] + b["height"] for b in boxes) + 6
-    pg.mouse.move(x1, y1)
+    pg.mouse.move(x0, y0)                                         # from open ground (the line floats over the foot)
     pg.mouse.down()
-    pg.mouse.move(x0, y0, steps=8)
+    pg.mouse.move(x1, y1, steps=8)
     pg.mouse.up()
+    picked = pg.evaluate("() => import('/static/js/frame.js').then(m => m.framing.value && m.framing.value.ids)")
+    assert set(picked) == {board, pool}, (picked, boxes)
     setup.get_by_role("button", name="Test them as one chain").click()
     pg.locator(".gui-test-frame").wait_for(timeout=WAIT_MS)
     assert "this project" in pg.locator(".gui-test-frame__label").inner_text()
