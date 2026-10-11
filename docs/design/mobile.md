@@ -294,7 +294,10 @@ portrait's menu), from `tailscale status`:
 Without Tailscale or its certificate on the computer, the code never shows the `orkcraft://` link (no
 phone opens it until an app takes it): it says what is missing — Tailscale's download, or the tailnet's DNS
 settings, where MagicDNS and HTTPS Certificates are turned on — and Pair a phone again looks for the
-tailnet anew (`pwa.retry_tail`), with no restart of the town.
+tailnet anew (`pwa.retry_tail`), with no restart of the town. While a phone is paired the town also looks
+by itself once a minute (`pwa.TailWatch`, `tailscale status` and `tailscale cert` on a thread): Tailscale
+that started after the town (a computer just booted or woke) is taken on the port the phones were given,
+so a paired app reconnects without anyone touching the desktop.
 
 **The socket from a browser.** A browser cannot set `Authorization` on a WebSocket, so it names the token as
 a subprotocol: `Sec-WebSocket-Protocol: orkcraft.v1, bearer.<token>`; the listener answers `orkcraft.v1`
