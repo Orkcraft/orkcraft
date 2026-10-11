@@ -79,7 +79,8 @@ def test_a_building_moved_to_another_map_since_stays_there(host, fake_repo):
 def test_the_history_reads_as_the_person_says_it_and_refuses_what_it_cannot(host):
     shop = host.command("orkspace.new", {"name": "Shop", "project": "town"})
     host.command("town.build", {"type": "pit"})
-    rows = host.command("history.list", {"orkspace": shop})
+    rows = host.command("history.list", {"orkspace": shop})["rows"]
+    assert {r["type"] for r in rows} == {"map"}                                  # no snapshots of its files yet
     assert rows[0]["kind"] == "create" and rows[0]["building"] and ":" in rows[0]["when"]
     assert rows[-1]["what"] == "new orkspace Shop" and rows[-1]["building"] == ""
     with pytest.raises(CommandError, match="did not exist"):

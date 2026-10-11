@@ -967,7 +967,13 @@ the CLI paths.
 - **History…** (a land's menu, `/history`): every change of that map, newest first (a building raised, changed,
   copied, a road, the map renamed or given another project). **Back to this** puts the map back as it was right
   after that change: buildings raised since come down, the others get back their orks and settings; other
-  orkspaces and the project's files stay as they are. Going back is in the history too.
+  orkspaces stay as they are. Going back is in the history too.
+- **Snapshots of the project's files**: before and after a War Tent session or an Agent pool ork works in the
+  project itself (not in a worktree), the files are kept in hidden refs (`refs/orkcraft/snapshots/<orkspace>/…`):
+  your branch, index, stash and `git log` never change; `.orkcraft/` and ignored files are never in one. They are
+  rows of the same History (*files*, with how many files changed); **Back to this** on a map row offers the map, the
+  files or both. Going back saves your current files first, and waits while an ork is at work. Snapshots older than
+  30 days, beyond the last 200 of an orkspace, are dropped.
 - **`G`** (Neutral) opens the ⎇ worktree of the active orkspace: create one on a branch (an existing
   branch is reused, a new one starts from `HEAD` or the base you give) in
   `.orkcraft/worktrees/<orkspace>`; later unlink it or remove it (refused while it has uncommitted

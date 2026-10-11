@@ -637,6 +637,7 @@ button { font: inherit; color: inherit; }
 .gui-history__when { flex: none; width: 92px; color: var(--ink-muted); }
 .gui-history__what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .gui-history__ask { display: flex; gap: var(--space-2); }
+.gui-history__tag { font-size: 11px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.04em; }
 /* the call (§2.5): rings from the land's ■, the land flashes; an arrow at the frame's edge out of sight */
 .gui-map__ping { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 5; }
 .gui-map__ping::before { content: ""; position: absolute; outline: 2px solid var(--alert); animation: gui-map-ping .9s steps(6) both;

@@ -20,6 +20,7 @@ a history of its own and goes back as a whole: `history(root, orkspace=…)`, `o
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import re
 import shutil
@@ -36,6 +37,7 @@ GITIGNORE = "\n".join([
 ])
 TRAILER = "Orkcraft-Building"
 ORKSPACE_TRAILER = "Orkcraft-Orkspace"
+AT_TRAILER = "Orkcraft-At"          # when, to the microsecond (git keeps seconds): sorts against project snapshots
 GIT_TIMEOUT_S = 30
 KINDS = ("create", "update", "road", "revert", "auto-improve", "weekly", "remove", "ui", "orkspace")
 
@@ -90,7 +92,9 @@ def commit(root: Path, kind: str, building: str, reason: str, scroll_path: Path 
         if not _git(root, "status", "--porcelain", check=False).stdout.strip():
             return None
         msg = f"{kind}({building or orkspace or 'camp'}): {reason}".strip()
-        trailers = f"{TRAILER}: {building or 'camp'}" + (f"\n{ORKSPACE_TRAILER}: {orkspace}" if orkspace else "")
+        at = dt.datetime.now(dt.timezone.utc).isoformat()
+        trailers = (f"{TRAILER}: {building or 'camp'}" + (f"\n{ORKSPACE_TRAILER}: {orkspace}" if orkspace else "")
+                    + f"\n{AT_TRAILER}: {at}")
         _git(root, "commit", "-q", "-m", msg, "-m", trailers)
         return _git(root, "rev-parse", "HEAD").stdout.strip()
     except (RuntimeError, OSError, subprocess.SubprocessError):
@@ -102,7 +106,8 @@ def history(root: Path, building: str | None = None, limit: int = 50, orkspace: 
     if not (root / DIR / ".git").exists():
         return []
     args = ["log", f"-{limit}", "--format=%H%x09%cI%x09%s%x09%(trailers:key=" + TRAILER + ",valueonly,separator=)"
-            "%x09%(trailers:key=" + ORKSPACE_TRAILER + ",valueonly,separator=)"]
+            "%x09%(trailers:key=" + ORKSPACE_TRAILER + ",valueonly,separator=)"
+            "%x09%(trailers:key=" + AT_TRAILER + ",valueonly,separator=)"]
     if building:
         args += ["--grep", f"^{TRAILER}: {re.escape(building)}$"]
     elif orkspace:
@@ -112,7 +117,8 @@ def history(root: Path, building: str | None = None, limit: int = 50, orkspace: 
     for line in out.splitlines():
         parts = line.split("\t")
         if len(parts) >= 3:
-            rows.append(Checkpoint(parts[0], parts[1], parts[2], parts[3].strip() if len(parts) > 3 else "",
+            precise = parts[5].strip() if len(parts) > 5 else ""
+            rows.append(Checkpoint(parts[0], precise or parts[1], parts[2], parts[3].strip() if len(parts) > 3 else "",
                                    parts[4].strip() if len(parts) > 4 else ""))
     return rows
 
