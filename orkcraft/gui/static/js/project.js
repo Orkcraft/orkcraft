@@ -50,7 +50,10 @@ function ProjectDialog({ o, projects, townFolder, onClose }) {
   const others = projects.filter((p) => p.id !== o.project && p.there);
   const where = now ? html`<b>${now.name}</b> <code>${now.path}</code>${!now.there
       ? html` <span class="ok-tone-wait">· ${say("the folder is gone: it works in the town's folder until it is back")}</span>`
-      : !now.git ? html` <span class="ok-tone-muted">· ${say("no git: no way back to an earlier state")}</span>` : ""}`
+      : !now.git ? html` <span class="ok-tone-muted">· ${say("no git: no way back to an earlier state")}</span>` : ""}${now.there
+      ? now.guarded ? html` <span class="ok-tone-muted">· ${say("the Security reviewer guards it")}</span>`
+        : html` <button class="gui-link" title=${say("Its AI tools get the Security reviewer's hooks, as orkcraft hooks install writes them")}
+            onClick=${() => command("project.guard", { orkspace: o.id }).catch(() => {})}>${say("Guard it with the Security reviewer")}</button>` : ""}`
     : html`${say("The town's folder")} <code>${townFolder}</code>`;
   return html`<${Dialog} title=${`${say("Project")}: ${say(o.name)}`} onCancel=${onClose}
       meta=${say("The folder this orkspace's orks work in. Other orkspaces may work in the same one.")}

@@ -280,6 +280,31 @@ def _ours(group: dict) -> bool:
     return any(any(m in str(h.get("command", "")) for m in MARKERS) for h in group.get("hooks", []))
 
 
+def installed(project: Path) -> bool:
+    """Whether the project's Claude Code settings carry our hooks: the Security reviewer guards it."""
+    try:
+        hooks = _read(Path(project) / FILES["claude"]).get("hooks", {})
+    except ValueError:
+        return False
+    return any(isinstance(g, dict) and _ours(g) for groups in hooks.values() if isinstance(groups, list) for g in groups)
+
+
+def project_folders(root: Path) -> list[Path]:
+    """The folders of the town's projects (docs/design/projects.md) that are there, besides the town's own."""
+    from orkcraft import scroll as ts
+    from orkcraft.config import default_layout_file
+    path = default_layout_file(Path(root))
+    if not path.exists():
+        return []
+    town, _problems = ts.load(path, {})
+    out = []
+    for p in town.projects:
+        folder = Path(p.path).expanduser()
+        if folder.is_dir() and folder.resolve() != Path(root).resolve() and folder not in out:
+            out.append(folder)
+    return out
+
+
 def install(project: Path, harness: str = "claude") -> Path:
     """Returns the settings file written. Raises ValueError if it is not valid JSON."""
     path = Path(project) / FILES[harness]
