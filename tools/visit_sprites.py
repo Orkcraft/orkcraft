@@ -3,7 +3,9 @@
     python tools/visit_sprites.py [--preview FILE]
 
 Drawn from the grids below on the ork mark's way (tools/logo.py): one letter a pixel, its head the head of the
-ork's head alone (`logo.GRID`, the same green and tusks), a third of its building's height. At 2× and 4× (`@2x`):
+ork's head alone (`logo.GRID`, the same green and tusks), a third of its building's height. At 2× and 4× (`@2x`);
+the ork's own sprites are Scale2x'd to those sizes instead of blown up, so their pixels are as fine as its
+building's (whose sprites are drawn at about a CSS pixel a pixel, twice as fine at @2x) and its edges round:
 
 - `orks/ork-stand.png` (12×9): the ork out of its door, facing you;
 - `orks/ork-walk-a.png`, `ork-walk-b.png` (12×9): two steps of its walk, its head bobbing, facing left as it walks
@@ -78,6 +80,24 @@ TAIL = [
 ]
 
 
+def scale2x(grid: list[str]) -> list[str]:
+    """The grid at twice its size by Scale2x (EPX): a pixel art's own way up, its diagonals stepped finer and no
+    colour added, where a plain enlargement only makes its pixels bigger."""
+    h, w = len(grid), len(grid[0])
+
+    def at(y: int, x: int) -> str:
+        return grid[y][x] if 0 <= y < h and 0 <= x < w else "."
+    out: list[str] = []
+    for y in range(h):
+        top, bottom = [], []
+        for x in range(w):
+            p, a, b, c, d = grid[y][x], at(y - 1, x), at(y, x + 1), at(y, x - 1), at(y + 1, x)
+            top += [a if c == a and c != d and a != b else p, b if a == b and a != c and b != d else p]
+            bottom += [c if d == c and d != b and c != a else p, d if b == d and b != a and d != c else p]
+        out += ["".join(top), "".join(bottom)]
+    return out
+
+
 def thumbs() -> dict[str, list[str]]:
     up = outlined(["." * 10] + ["." + r + "." for r in THUMB_UP] + ["." * 10])
     return {"thumb-up": up, "thumb-down": up[::-1]}
@@ -90,8 +110,9 @@ def main() -> None:
     sprites = ROOT / "design-system" / "sprites"
     for name, grid in ORKS.items():
         assert all(len(r) == 12 for r in grid) and len(grid) == 9, name
-        grid_image(grid, COLOURS, 2).save(sprites / "orks" / f"{name}.png")
-        grid_image(grid, COLOURS, 4).save(sprites / "orks" / f"{name}@2x.png")
+        fine = scale2x(grid)
+        grid_image(fine, COLOURS, 1).save(sprites / "orks" / f"{name}.png")
+        grid_image(scale2x(fine), COLOURS, 1).save(sprites / "orks" / f"{name}@2x.png")
     for name, grid in thumbs().items():
         grid_image(grid, ICON_COLOURS, 2).save(sprites / "icons" / f"{name}.png")
         grid_image(grid, ICON_COLOURS, 4).save(sprites / "icons" / f"{name}@2x.png")
