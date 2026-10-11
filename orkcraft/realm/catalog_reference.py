@@ -21,6 +21,7 @@ INTENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Ship the results: merge, keep, send", ("forge", "loot", "catapult")),
     ("Watch load, limits and spend", ("crag",)),
     ("Test a building on its cases", ("lab",)),
+    ("Work on a building's look", ("ux_lab",)),
     ("Hear what comes in", ("horn",)),
 )
 
@@ -315,6 +316,10 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                   "[all|command|full]` (where it shows: the hut too, the Command Card, the dashboard only); "
                   "without it one chart from the settings above",
     },
+    "ux_lab": {
+        "target": "the type of building whose look it works on, by its id: barracks, watchtower, fields…",
+        "image_tool": "the AI tool that paints its pictures: agy (the default), or another the machine has",
+    },
     "lab": {
         "max_spend": "the most the building's side of one case may spend, in USD, 0.1–50 (default 2)",
         "tool": "the AI tool both sides run on: main (the default), claude, agy, codex…",
@@ -412,6 +417,9 @@ def catalog_text(types: list[BuildingType] | None = None,
         lines.append(f"- {t.id} ({t.icon} {t.title}, size {t.size}): {t.summary}")
         lines.append(f"    hut shows: {t.preview}; open: {t.full}")
         lines.append(f"    takes from a road: {takes(t.id) or 'nothing — a road into it only shows a note'}")
+        if t.roads != "free":
+            lines.append("    roads: " + ("none — never lay one to or from it" if t.roads == "none"
+                                         else "only its own setup lays them — never lay one to or from it"))
         if t.events:
             lines.append("    events: " + "; ".join(f"{e.id} [{e.kind}] — {e.help}" for e in t.events))
         if t.actions:

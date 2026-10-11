@@ -25,7 +25,8 @@ const PATHS = {
   catapult: "M14.5 1.5 1.5 7l5 2.5 2.5 5zM14.5 1.5 6.5 9.5",                                        // send
   town_hall: "M2.5 4h7M12.5 4h1M2.5 12h1M6.5 12h7M9.5 2.5v3M5 10.5v3M2.5 8h4M9.5 8h4M6.5 6.5v3",      // sliders
   workshop: "M2 2.5h12v11H2zM4.5 6l2 2-2 2M8 10.5h3.5",                                              // terminal
-  lab: "M6 1.5h4M6.8 1.5v4.8L3 12.6a1.4 1.4 0 0 0 1.2 1.9h7.6a1.4 1.4 0 0 0 1.2-1.9L9.2 6.3V1.5M4.6 10h6.8",   // flask
+  lab: "M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM7 1.5h2l.4 1.8 1.3.6 1.6-1 1.4 1.4-1 1.6.6 1.3 1.8.4v2l-1.8.4-.6 1.3 1 1.6-1.4 1.4-1.6-1-1.3.6L9 14.5H7l-.4-1.8-1.3-.6-1.6 1-1.4-1.4 1-1.6-.6-1.3L1.5 9V7l1.8-.4.6-1.3-1-1.6 1.4-1.4 1.6 1 1.3-.6z",   // gear
+  ux_lab: "M6 1.5h4M6.8 1.5v4.8L3 12.6a1.4 1.4 0 0 0 1.2 1.9h7.6a1.4 1.4 0 0 0 1.2-1.9L9.2 6.3V1.5M4.6 10h6.8",   // flask
   custom: "M8 1.5 14 4.5v7L8 14.5 2 11.5v-7zM2 4.5 8 7.5l6-3M8 7.5v7",                                // box
 };
 PATHS.loot_vault = PATHS.loot;
@@ -52,7 +53,7 @@ export const BIOME_ORDER = Object.keys(BIOMES);
 const DRAWN_FOR = new Set(["ice", "dust", "void", "lava", "meadow"]);   // header-<biome>.png (tools/growth_sprites.py)
 // Headers kept as they were painted (tools/painted.py): drawn smoothly, not as pixels, their @2x on a retina screen.
 const PAINTED = new Set(["town_hall", "watchtower", "fields", "war_drum", "barracks", "council", "scrolls", "mine",
-  "gramophone", "forge", "loot", "catapult", "lab", "workshop", "pit", "signpost", "mill", "crag", "horn"]);
+  "gramophone", "forge", "loot", "catapult", "lab", "ux_lab", "workshop", "pit", "signpost", "mill", "crag", "horn"]);
 
 function spriteName(type) {
   return type === "loot_vault" ? "loot" : PATHS[type] ? type : "custom";
@@ -71,7 +72,7 @@ export function headerSprite(type, biome = "") {
 const FLAG_AT = {
   barracks: [19, 2, 34], catapult: [12, 8, 32], council: [28, 1, 33], crag: [17, 0, 38], custom: [17, 1, 26],
   fields: [16, 0, 33], forest: [17, 0, 27], forge: [24, 0, 40], gramophone: [18, 0, 37], horn: [16, 13, 32],
-  lab: [21, 8, 40], lake: [17, 0, 33], loot: [17, 14, 37], mill: [11, 4, 38], mine: [17, 0, 32], pit: [12, 0, 27],
+  lab: [21, 8, 40], ux_lab: [24, 2, 40], lake: [17, 0, 33], loot: [17, 14, 37], mill: [11, 4, 38], mine: [17, 0, 32], pit: [12, 0, 27],
   scrolls: [15, 0, 34], signpost: [9, 0, 38], town_hall: [23, 0, 38], war_drum: [9, 3, 40], watchtower: [10, 0, 44],
   workshop: [25, 1, 32],
 };

@@ -166,7 +166,21 @@ GRIDS = {
         ".....YGGY.....",
         "......YY......",
     ],
-    "test": [                 # a flask, a potion bubbling in it: the Test bench
+    "logic": [                # a cog: the Test bench, its logic tuned
+        "......SS......",
+        "..SS.SSSS.SS..",
+        "..SSSSSSSSSS..",
+        "...SSSSSSSS...",
+        ".SSSSsKKsSSSS.",
+        "SSSSSK..KSSSSS",
+        "SSSSSK..KSSSSS",
+        ".SSSSsKKsSSSS.",
+        "...SSSSSSSS...",
+        "..SSSSSSSSSS..",
+        "..SS.SSSS.SS..",
+        "......SS......",
+    ],
+    "uiux": [                 # a flask, a potion bubbling in it: the UX bench, a building's look brewed again
         ".....YYYY.....",
         "......SS......",
         "......WS......",

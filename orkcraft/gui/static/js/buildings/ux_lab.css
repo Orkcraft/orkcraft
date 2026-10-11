@@ -1,0 +1,16 @@
+/* ⚗️ The UX bench's window (js/buildings/ux_lab.js): its settings over the gallery of a building's pictures. */
+.ux-window { display: flex; flex-direction: column; gap: var(--space-4); min-height: 0; }
+.ux-settings { display: flex; flex-direction: column; gap: var(--space-2); }
+.ux-pick { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.ux-pick .gui-build__tile.is-picked { outline: 2px solid var(--frame-focus); outline-offset: 1px; border-radius: 6px; }
+.ux-tool { display: flex; align-items: center; gap: var(--space-2); max-width: 360px; }
+.ux-gallery { display: flex; flex-direction: column; gap: var(--space-3); }
+.ux-gallery__group h3 { margin: 0 0 var(--space-1); }
+.ux-gallery__row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ux-picture { margin: 0; display: flex; flex-direction: column; align-items: center; gap: var(--space-1); width: 112px; }
+.ux-picture__frame { width: 112px; height: 84px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--frame); border-radius: 6px; overflow: hidden; }
+.ux-picture__office .gui-type-icon { width: 32px; height: 32px; }
+.ux-picture figcaption { text-align: center; }
+.ux-tool > span { white-space: nowrap; }
+.ux-picture__ork img { width: 72px; height: auto; image-rendering: pixelated; }

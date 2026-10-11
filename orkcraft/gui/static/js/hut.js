@@ -84,6 +84,10 @@ function pull(e, b) {
   pullRoad(e, b.id);
 }
 
+/** Whether a person may lay its roads: not an Improve building's, whose setup lays them or which has none
+ *  (realm/catalog.py `roads`, docs/design/improve-buildings.md §2). */
+export const freeRoads = (b) => !b.roads || b.roads === "free";
+
 /** A road pulled out of building `from` (its handle, or a stub of a way out with no road: `event`, as
  *  `signpost.routed#urgent`). Let go over another hut: a stub's road is laid at once on its event (docs/design/
  *  review-board.md §2.1); any other asks what it carries. */
@@ -99,7 +103,8 @@ export function pullRoad(e, from, event = "") {
   };
   const under = (ev) => {
     const to = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".gui-hut")?.dataset.id;
-    return to && to !== b.id ? to : null;
+    const there = to && town.value.buildings.find((x) => x.id === to);
+    return to && to !== b.id && (!there || freeRoads(there)) ? to : null;
   };
   const move = (ev) => { pulling.value = { from: b.id, ...at(ev), over: under(ev) }; };
   const up = (ev) => {
@@ -132,7 +137,7 @@ export function buildingMenu(e, b) {
     { label: "Info", run: () => openBuilding(b.id, "info") },
     ...own.map((a) => ({ label: a.label, run: a.run })),
     "-",
-    { label: "Listen to…", hint: `/road @${name}`, run: () => { laying.value = { from: null, to: b.id, among }; } },
+    freeRoads(b) && { label: "Listen to…", hint: `/road @${name}`, run: () => { laying.value = { from: null, to: b.id, among }; } },
     { label: "Ask the Warchief about it", hint: `@${name}`, run: () => mention(b) },
     b.id !== CORNER && { label: b.pinned ? "Unpin to move it" : "Pin it in place",
       run: () => togglePin({ stopPropagation() {} }, b.id) },
@@ -436,9 +441,9 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} selected=${selected.value === b.id} /></span></div>
     <div class="ok-hut__card" style=${h ? `height:${h}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
       ${title}
-      <button ref=${road} class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
+      ${freeRoads(b) && html`<button ref=${road} class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}><img class="ok-sprite" src="/ds/sprites/icons/road-handle.png"
-        srcset="/ds/sprites/icons/road-handle@2x.png 2x" width="22" height="22" alt="" draggable="false" /></button>
+        srcset="/ds/sprites/icons/road-handle@2x.png 2x" width="22" height="22" alt="" draggable="false" /></button>`}
       ${bareOf(b) && document.documentElement.dataset.look !== "office"
         ? html`<div class="gui-hut__unseen" hidden><${Card} b=${b} /></div>`     // unseen, its card still wires the building (a drop zone)
         : !folded ? html`<${Card} b=${b} level=${level} />` : peek && html`<div class="gui-hut__peek"><${Card} b=${b} /></div>`}

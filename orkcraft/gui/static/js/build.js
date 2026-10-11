@@ -73,6 +73,7 @@ export const GROUPS = [
   { id: "know", word: "Know" },
   { id: "plan", word: "Plan" },
   { id: "tell", word: "Tell" },
+  { id: "improve", word: "Improve" },              // the buildings that improve the others (improve-buildings.md)
 ];
 export const INTENTS = [
   { id: "incoming", word: "Incoming", type: "watchtower", group: "in" },
@@ -85,13 +86,14 @@ export const INTENTS = [
   { id: "route", word: "Route", type: "signpost", group: "make" },
   { id: "check", word: "Validate", type: "loot", group: "check" },
   { id: "chart", word: "Chart", type: "crag", group: "check" },
-  { id: "test", word: "Improve", type: "lab", group: "check" },
   { id: "tasks", word: "Tasks", type: "fields", group: "plan" },
   { id: "calendar", word: "Calendar", type: "war_drum", group: "plan" },
   { id: "wiki", word: "Wiki", type: "scrolls", group: "know" },
   { id: "send", word: "Send", type: "catapult", group: "tell" },
   { id: "sound", word: "Sound", type: "horn", group: "tell" },
   { id: "listen", word: "Podcast", type: "gramophone", group: "tell" },
+  { id: "logic", word: "Logic", type: "lab", group: "improve" },
+  { id: "uiux", word: "UI/UX", type: "ux_lab", group: "improve" },
 ];
 const FOR_YOU = 3;
 const DOUBLE_MS = 240;                             // a second press within this builds at a free spot

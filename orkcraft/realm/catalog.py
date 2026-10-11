@@ -66,6 +66,8 @@ class BuildingType:
     agentic: bool = False           # its work is done by agents (the Agents group of the wizard)
     folded: bool = False            # built with its hut folded to the title bar (docs/design/folded-cards.md)
     landscape: bool = False         # part of the land, not a building: no ork of its own (docs/design/landscape.md)
+    roads: str = "free"             # who lays its roads: "free" anyone, "setup" only its setup, "none" no road at all
+    #                                 (the Improve buildings, docs/design/improve-buildings.md §2)
 
     def event(self, event_id: str) -> EventDef | None:
         return next((e for e in self.events if e.id == event_id), None)
@@ -325,6 +327,15 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         config={"max_spend": (float, (0.1, 50), False), "tool": (str, None, False)},
         art="spire", orc="Gearhead", agentic=True),
     BuildingType(
+        "ux_lab", "Alchemy Tower", "⚗️", "M",
+        "the UX bench: the look of one type of building — its Build icon, its house, its ork, its window and its "
+        "cards — each picture in a gallery, and (next) painted again or laid out again from your words "
+        "(docs/design/improve-buildings.md §6)",
+        "the building whose look it works on and how many pictures it has",
+        "Settings: which building (picked as in Build, not on the map) and the image tool; Work: the gallery",
+        config={"target": (str, None, False), "image_tool": (str, None, False)},
+        art="spire", orc="Alchemist", roads="none"),
+    BuildingType(
         "lake", "Lake of Insight", "🌊", "L",
         "the inspector: a file, a git diff side by side, Markdown, diagrams, a local URL as text; "
         "a text file on disk is edited in place and saves by itself",
@@ -495,8 +506,17 @@ RETIRED_TYPES = frozenset({DEFAULT_TYPE, "forest", "lake"})   # an old scroll's 
 # Lake window, never a building (realm/lake.py: a road into an old one becomes "open in Lake" on its source)
 LANDSCAPE = frozenset(t.id for t in TYPES.values() if t.landscape)   # the land between the buildings: no ork
 SCRATCH_TYPES = frozenset({"workshop"})        # only the Builder's interview makes these
-GUI_ONLY = frozenset({"mine", "gramophone", "lab"})   # built after the TUI was deprecated: no terminal view (calm-town.md §9)
+GUI_ONLY = frozenset({"mine", "gramophone", "lab", "ux_lab"})   # built after the TUI was deprecated: no terminal view (calm-town.md §9)
 MAX_QUICK_ACTIONS = 2
+
+
+ROAD_RULES = ("free", "setup", "none")
+
+
+def lays_roads(type_id: str, setup: bool = False) -> bool:
+    """Whether a road to or from a building of `type_id` may be laid: by anyone, or (`setup`) by its setup."""
+    rule = TYPES[type_id].roads if type_id in TYPES else "free"
+    return rule == "free" or (rule == "setup" and setup)
 
 
 def type_of(spec: dict | None) -> BuildingType:

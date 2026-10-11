@@ -84,6 +84,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "size": list(bs.hut_size) if bs.hut_size else None,   # its card stretched by the person (js/hut.js)
             "pinned": bool(bs.pinned),
             "folded": bool(bs.folded) and bs.id != TOWN_HALL,   # its title bar only (js/hut.js)
+            "roads": catalog.type_of(spec).roads if spec else "free",   # "setup"/"none": no road handle (catalog)
             "level": bs.level or 0, "goal": bs.aim,              # the flag on its roof (docs/design/growth.md §5)
             "status": (lines := _hut_lines(town, bs.id)),
             "status_plain": [modes.plain(x) for x in lines],
