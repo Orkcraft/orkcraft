@@ -18,6 +18,7 @@ import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
 import { RoleIcon } from "./roles.js";
 import { usePairing, PairQr, PairNote } from "./phones.js";
+import { GithubAccount } from "./github.js";
 
 export const portraitOpen = signal(false);
 
@@ -95,6 +96,7 @@ function Menu({ y, p }) {
     ${!office && html`<${Steps} label="Card background" value=${cardGround.value} onPick=${setCards}
       items=${[["yard", "Yard"], ["ground", "Ground"]]} />
     <p class="ok-font-status ok-tone-muted">${say("Yard: inside its fence each card is a step lighter than the town's ground. Ground: the cards are drawn on the ground itself. This browser only.")}</p>`}
+    <${GithubAccount} />
     <div class="gui-portrait__links">
       <button class="gui-link" onClick=${() => { portraitOpen.value = false; settingsOpen.value = true; }}>${say("Town settings…")}</button>
     </div>

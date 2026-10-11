@@ -9,6 +9,7 @@ import { act, say, town } from "../link.js";
 import { BenchView, copyText } from "../bench.js";
 import { settingUp } from "../build.js";
 import { framing } from "../frame.js";
+import { Dialog } from "../dialog.js";
 
 const sheet = new URL("./lab.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -323,6 +324,7 @@ function Proposals({ id, d, on }) {
 /** The changes tried on the Test bench's copy of the buildings: its runs stand them, the town's do not. Save changes
  *  makes the settings and prompts the buildings' own; code goes to Orkcraft as a pull request. */
 function Virtual({ id, d, on }) {
+  const [pr, setPr] = useState(false);
   const changes = d.virtual || [];
   if (!changes.length) return null;
   const data = changes.filter((c) => c.kind !== "code");
@@ -341,10 +343,32 @@ function Virtual({ id, d, on }) {
     <div class="gui-bench__row">
       ${data.length > 0 && html`<button class="ok-btn primary" disabled=${on}
         onClick=${() => act(id, "save_changes").catch(() => {})}>${say("Save changes")}</button>`}
-      <span class="ok-font-status ok-tone-muted">${say(data.length ? "Settings and prompts become the buildings' own, a checkpoint each (undo takes them back)." : "")}
-        ${code ? say(" Code changes go to Orkcraft as a pull request once GitHub is connected.") : ""}</span>
+      <span class="ok-font-status ok-tone-muted">${say(data.length ? "Settings and prompts become the buildings' own, a checkpoint each (undo takes them back)." : "")}</span>
     </div>
+    ${code && html`<div class="gui-bench__row">
+      ${d.pr ? html`<a class="gui-link ok-font-status" href=${d.pr} target="_blank" rel="noopener">${say("Its pull request")}</a>`
+        : html`<button class="ok-btn" disabled=${on || d.busy_what === "pr"} onClick=${() => setPr(true)}>${say(d.busy_what === "pr" ? "Sending…" : "Send to Orkcraft as a pull request…")}</button>`}
+      <span class="ok-font-status ok-tone-muted">${say("Code changes reach you only through a pull request and the update that carries it.")}</span></div>`}
+    ${pr && html`<${PullRequest} id=${id} onClose=${() => setPr(false)} />`}
   </section>`;
+}
+
+/** What would leave the machine, before it does: the pull request's title, body and diff; Send when it may go. */
+function PullRequest({ id, onClose }) {
+  const [x, setX] = useState(null);
+  useEffect(() => { act(id, "pr_preview").then(setX, onClose); }, [id]);
+  const send = () => act(id, "pr_send").then(onClose, () => {});
+  return html`<${Dialog} title=${say("A pull request to Orkcraft")} wide=${true} onCancel=${onClose}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
+        <button class="ok-btn primary" disabled=${!x || !x.ready || !x.login} onClick=${send}>${say("Send")}</button>`}>
+    ${!x ? html`<p class="ok-tone-muted">${say("Looking…")}</p>` : html`
+      <p class="ok-font-status">${say("This is all that leaves this machine: the title, the description and the diff below. The cases' inputs and your project stay here.")}</p>
+      ${!x.login && html`<p class="ok-font-status ok-tone-wait">${say("Connect GitHub first: the mascot's menu → GitHub.")}</p>`}
+      ${!x.ready && html`<p class="ok-font-status ok-tone-wait">${say(x.why)}</p>`}
+      <p class="ok-font-label">${x.title}</p>
+      <pre class="lab-case__body">${x.body}</pre>
+      <details><summary class="ok-font-status ok-tone-muted">${say("The diff")}</summary><pre class="lab-case__body">${x.diff}</pre></details>`}
+  </${Dialog}>`;
 }
 
 // -- set up in the Warchief's line (js/warchief.js; docs/design/improve-buildings.md §5.1) -------------------------

@@ -1,8 +1,8 @@
 # Design — Improve: the Mechanic and the Alchemist
 
-Status: stages 0–4 built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
+Status: stages 0–5 built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
 road rule; a building's inputs; the Test bench's setup; environments, case sets and what is kept to spend less; the
-virtual building). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
+virtual building; GitHub and pull requests). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
 and keep it, **faster and cheaper than testing and rewriting it through Claude Code**.
 
 | stage | what | state |
@@ -13,7 +13,7 @@ and keep it, **faster and cheaper than testing and rewriting it through Claude C
 | 3 | Environments: a small code base and data written from a person's description, once, no network; case sets in them; the bare side kept, a series stopped early, a set's cost said before it runs (§5.2, §7) | built |
 | 3b | Cassettes: MCP and outside calls recorded on a set's first run and played back after (§5.2) | |
 | 4 | The virtual building: a change is tried on an overlay the Mechanic holds while it is connected; **Save changes** keeps the data part for good (§5.3) | built |
-| 5 | GitHub: Connect GitHub in the mascot's menu (device flow); Save changes opens a pull request with its evidence (§4) | |
+| 5 | GitHub: Connect GitHub in the mascot's menu (device flow); a code change goes as a pull request with its evidence (§4) | built |
 | 6 | The Alchemist redraws: images through the image tool with the shipped prompts, a region marked and commented, Reset; the Work window's layout as a UI document (§6) | |
 | 7 | Cards s/m/l as UI documents, so the Alchemist redraws them too | |
 
@@ -70,22 +70,28 @@ so nothing but a person could give a building that input.
 - **Next (stage 2):** the Mechanic's wire into a scheme's first building names one of its inputs; a run presses it
   with the case's text.
 
-## 4. GitHub (stage 5)
+## 4. GitHub (stage 5, built 2026-10-11)
 
-- **Where:** *Accounts → GitHub* in the mascot's menu (`js/portrait.js`); not in the onboarding (nothing to send yet).
-  *Save changes* says how to connect when no account is.
-- **How:** a GitHub App with the OAuth **device flow** (a code shown, the browser opened; no client secret ships).
-  The token goes to the keychain as `github-<login>` (`realm/logins.py`, as Google's). Without it: the `gh` login,
-  else a token pasted (`realm/quickadd.py` already reads both).
-- **A pull request:** fork → branch `improve/<type>-<date>` → commit → PR into `main`, labelled `from-orkcraft`.
-  Its body is the evidence: the goal, the cases (their descriptions, not the person's data), the metrics before and
-  after against the bare AI tool, the changes in words. It can be sent only when the change is ahead on the goal's
-  metric on most of its cases.
-- **Before it goes:** a page shows exactly what leaves the machine (the diff, the case descriptions, the numbers);
-  nothing from the person's project or environment's data is in it unless they tick it.
-- **When the release brings it:** a kept change remembers the version it was made on. An update that carries the same
-  change drops the local one; an update that changes the same place marks it *in conflict* and turns it off until
-  the person looks.
+- **Where:** *GitHub* in the mascot's menu (`js/github.js`, `gui/github.py`); not in the onboarding (nothing to send
+  yet). The Test bench's pull request dialog says to connect when no account is.
+- **How:** the Orkcraft Improve GitHub App (`orkcraft-improve`) with the **device flow** (`realm/github_app.py`):
+  **Connect GitHub** shows the code GitHub gave and opens github.com/login/device; a thread asks GitHub every few
+  seconds until it is typed (`slow_down` respected, an expired or refused code said). No client secret ships. The
+  token is kept as the login `github-improve` (`realm/logins.py`: the keychain, else the logins file). **Disconnect**
+  forgets it here. When the app is not on the person's own account the menu says so, with **Install**.
+- **A pull request** (*Send to Orkcraft as a pull request…* on the virtual building's code change) is made with the
+  API only, no clone: the person's fork (made when missing), a branch `improve/<type>-<time>` from Orkcraft's `main`
+  with the changed files — each merged three ways (`git merge-file`) onto `main` as it is now when `main` changed it
+  since the installed version, refused when both change the same lines — and the pull request into `main`, labelled
+  `from-orkcraft` when the app may.
+- **Its body is the evidence** (`realm/lab_pr.py`): the goal, the scheme, each case set (what its cases do and in which
+  environment, never their inputs), the means against the bare AI tool on the runs made after the change, the files,
+  and the settings tried with it. It may go only when the building is ahead on the goal's metric in most of the cases
+  run with the change.
+- **Before it goes** the dialog shows exactly what leaves the machine: the title, the body and the diff.
+- **When the release brings it:** the bench's copy is of the version it was made on; a pull request is merged onto
+  `main` as it is when sent. (Dropping the copy when an update carries the change is next.)
+- Settings and prompts saved locally are not sent: they are the person's town's.
 
 ## 5. The Mechanic
 

@@ -26,11 +26,12 @@ from pathlib import Path
 import orkcraft
 from orkcraft.core import keeper, runners
 from orkcraft.core.workers.lab import CODE
-from orkcraft.realm import bench, bench_review, code_overlay, halt, harnesses, jobs, lab_cases, lab_envs, steward, tiers
+from orkcraft.realm import (bench, bench_review, code_overlay, github_app, halt, harnesses, jobs, lab_cases, lab_envs,
+                            lab_pr, steward, tiers)
 
 TIER_FLAG = {"laborer": "novice", "warrior": "seasoned", "elder": "veteran"}
 BUSY = {"generate": "writing cases", "env": "writing an environment", "set": "writing a case set",
-        "try": "trying a change"}
+        "try": "trying a change", "pr": "sending the pull request"}
 STOP_BEHIND = 3                  # a series of this many cases or more stops when the building is behind on its first 3
 
 
@@ -237,6 +238,61 @@ class LabRuns:
         code_overlay.drop(w.state_dir)
         w.state.setdefault("virtual", {})[subject["id"]] = [c for c in w.changes_of(subject["id"]) if c["kind"] != CODE]
         w.keep()
+
+    # -- a pull request (docs/design/improve-buildings.md §4) --------------------------------------------------------
+
+    def pr_preview(self, w, subject: dict) -> dict:
+        """Exactly what would leave the machine: the title, the body and the diff; whether it may go yet."""
+        code = next((c for c in w.changes_of(subject["id"]) if c["kind"] == CODE), None)
+        if code is None:
+            raise LabError("Only a code change goes to Orkcraft as a pull request")
+        metric = lab_cases.metric_of(w.state["goal"])
+        cases, results = w.cases_of(subject["id"]), w.results_of(subject["id"])
+        rows = lab_pr.with_change(cases, results, code["at"])
+        ok, why = lab_pr.ready(cases, results, code["at"], metric)
+        sets = [{**cs, "env_name": (w.env(cs["env"]) or {}).get("name", "")} for cs in w.sets_of(subject["id"])]
+        data = [f"{self.host.town.title_of(c['building'])}: {c['title']}" for c in w.changes_of(subject["id"])
+                if c["kind"] != CODE]
+        body = lab_pr.body(w.state["goal"], w.flow_spec(subject)["about"], code["why"], metric, sets, rows,
+                           code["files"], data)
+        acct = github_app.account()
+        return {"ready": ok, "why": why, "title": lab_pr.title(code["why"]), "body": body,
+                "diff": code_overlay.diff(w.state_dir), "login": acct["login"] if acct else "",
+                "sent": (w.state.get("prs") or {}).get(subject["id"], "")}
+
+    def send_pr(self, w, subject: dict) -> None:
+        got = self.pr_preview(w, subject)
+        if not got["ready"]:
+            raise LabError(got["why"])
+        if not got["login"]:
+            raise LabError("Connect GitHub first: the mascot's menu → GitHub")
+        key = self.key(w, subject)
+        if key in self.busy:
+            raise LabError(f"It is already {BUSY.get(self.busy[key], 'thinking')}")
+        self.busy[key] = "pr"
+        changes = lab_pr.files(w.state_dir)
+        branch = f"improve/{subject['type'].replace(':', '-')}-{time.strftime('%Y%m%d-%H%M%S')}"
+        town = self.host.town
+
+        def work() -> None:
+            try:
+                url, error = github_app.send(changes, got["title"], got["body"], branch), ""
+            except github_app.GithubError as e:
+                url, error = "", str(e)
+            town.call(finish, url, error)
+
+        def finish(url: str, error: str) -> None:
+            self.busy.pop(key, None)
+            if error:
+                town.toast(error, title="GitHub", severity="error")
+            else:
+                w.state.setdefault("prs", {})[subject["id"]] = url
+                w.keep()
+                town.toast(f"Pull request opened: {url}", title="GitHub")
+            w.changed()
+
+        threading.Thread(target=work, daemon=True, name="lab-pr").start()
+        w.changed()
 
     # -- running ------------------------------------------------------------------------------------------------
 

@@ -46,7 +46,7 @@ def detail(w) -> dict:
         "job": job.public() if job else None,
         "tools": engine.lab.tools() if engine is not None else [{"id": "main", "title": "Main tool"}],
         "tiers": engine.lab.tiers() if engine is not None else [{"id": "", "title": "Its own"}],
-        "virtual": [_change(w, c) for c in w.changes_of(s["id"])],
+        "virtual": [_change(w, c) for c in w.changes_of(s["id"])], "pr": (w.state.get("prs") or {}).get(s["id"], ""),
         "envs": w.envs(), "sets": _sets(w, s), "busy_what": engine.lab.busy.get(engine.lab.key(w, s), "") if engine else "",
         "pools": [{"id": b.id, "title": b.title} for b in w.town.scroll.buildings
                   if not b.demolished and catalog_type(w, b.id) == "barracks"],
@@ -220,6 +220,18 @@ def _save_changes(w, args: dict) -> dict:
     return {"saved": saved}
 
 
+def _pr_preview(w, args: dict) -> dict:
+    from orkcraft.gui.lab_runs import LabError
+    try:
+        return _engine(w).lab.pr_preview(w, _subject(w))
+    except LabError as e:
+        raise ActError(str(e)) from None
+
+
+def _pr_send(w, args: dict) -> bool:
+    return _lab_call(w, _engine(w).lab.send_pr)
+
+
 def _stop(w, args: dict) -> bool:
     _engine(w).lab.stop(w)
     return True
@@ -287,6 +299,6 @@ def _candidates(w, args: dict) -> list[dict]:
     return out
 
 
-ACTS = {"try": _try, "take_back": _take_back, "save_changes": _save_changes, "env_add": _env_add, "set_add": _set_add, "set_run": _set_run, "set_remove": _set_remove, "setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
+ACTS = {"pr_preview": _pr_preview, "pr_send": _pr_send, "try": _try, "take_back": _take_back, "save_changes": _save_changes, "env_add": _env_add, "set_add": _set_add, "set_run": _set_run, "set_remove": _set_remove, "setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
         "run": _run, "run_all": lambda w, a: _run(w, a, every=True), "stop": _stop, "propose": _propose,
         "tasks": _tasks, "lab.run": _run_first}

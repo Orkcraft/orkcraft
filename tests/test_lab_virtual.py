@@ -107,3 +107,50 @@ def test_a_code_proposal_is_an_agents_change_in_the_copy(host, proposals, monkey
     assert code["files"] == ["orkcraft/core/workers/barracks.py"] and "one-liners skip the plan" in code["diff"]
     _act(host, lab, "take_back", change="code")
     assert w.changes_of(pool) == [] and not code_overlay.root(w.state_dir).exists()
+
+
+def test_a_code_change_goes_as_a_pull_request_with_its_evidence(host, monkeypatch):
+    from orkcraft.realm import github_app
+    lab, pool = _raised(host, "lab"), _raised(host, "barracks", worktrees=False)
+    _road(host, pool, lab, "pool.done")
+    host.detail(lab)
+    w = host.town.worker(lab)
+    pkg = code_overlay.ensure(w.state_dir)
+    f = pkg / "core" / "workers" / "barracks.py"
+    f.write_text(f.read_text(encoding="utf-8") + "\n# one-liners skip the plan\n", encoding="utf-8")
+    code_overlay.keep(w.state_dir, "skip")
+    w.add_change(pool, {"id": "code", "kind": "code", "building": "", "title": "Code", "why": "Skip the plan",
+                        "files": code_overlay.changed(w.state_dir), "diff": code_overlay.diff(w.state_dir),
+                        "at": "2026-10-11T10:00:00"})
+    _act(host, lab, "goal", goal="Spend fewer tokens")
+    w.state["cases"][pool] = [{"id": "c1", "title": "Fix bug 1", "text": "secret input"}]
+    w.state["results"][pool] = {"c1": {"scheme": {"cost": 0.1}, "bare": {}, "at": "2026-10-11T11:00:00", "tokens": -0.4}}
+    got = _act(host, lab, "pr_preview")
+    assert got["ready"] and got["title"] == "Skip the plan" and "**1 of 1**" in got["body"]
+    assert "secret input" not in got["body"] and "+# one-liners skip the plan" in got["diff"] and got["login"] == ""
+    with pytest.raises(CommandError, match="Connect GitHub"):
+        _act(host, lab, "pr_send")
+    monkeypatch.setattr(github_app, "account", lambda: {"login": "orkfan", "token": "t"})
+    sent = {}
+    monkeypatch.setattr(github_app, "send", lambda changes, title, body, branch: sent.update(
+        changes=changes, branch=branch) or "https://github.com/orkcraft/orkcraft/pull/9")
+    _act(host, lab, "pr_send")
+    assert _until(lambda: host.detail(lab)["data"]["pr"].endswith("/pull/9"))
+    [(path, (base, now))] = sent["changes"].items()
+    assert path == "orkcraft/core/workers/barracks.py" and now == base + "\n# one-liners skip the plan\n"
+    assert sent["branch"].startswith("improve/barracks-")
+
+
+def test_github_connects_in_the_mascots_menu(host, monkeypatch):
+    from orkcraft.realm import github_app
+    polls = iter(["", "orkfan"])
+    monkeypatch.setattr(github_app, "start", lambda: github_app.Device("dc", "ABCD-1234", "https://github.com/login/device",
+                                                                       0.3, 9e12))
+    monkeypatch.setattr(github_app, "poll", lambda d: next(polls))
+    got = host.command("github.connect")
+    assert got["waiting"] == {"code": "ABCD-1234", "uri": "https://github.com/login/device"}
+    assert _until(lambda: host.github.device is None)
+    monkeypatch.setattr(github_app, "account", lambda: {"login": "orkfan", "token": "t"})
+    monkeypatch.setattr(github_app, "installed", lambda acct: False)
+    status = host.command("github.status", {"check": True})
+    assert status["login"] == "orkfan" and status["installed"] is False and status["install"].endswith("/installations/new")
