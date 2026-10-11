@@ -4,6 +4,7 @@ The shipped cases and the reviews stay below it (js/bench.js). The runs are the 
 gui/lab_runs.py), given to the worker when its window is first drawn."""
 from __future__ import annotations
 
+from orkcraft.gui import lab_export
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import bench, lab_cases, lab_envs, tiers
 
@@ -50,6 +51,8 @@ def detail(w) -> dict:
         "envs": w.envs(), "sets": _sets(w, s), "busy_what": engine.lab.busy.get(engine.lab.key(w, s), "") if engine else "",
         "pools": [{"id": b.id, "title": b.title} for b in w.town.scroll.buildings
                   if not b.demolished and catalog_type(w, b.id) == "barracks"],
+        "report": lab_export.summary(w.repo_root, w, s),
+        "recs": engine.lab.recommendations(w, s) if engine is not None else [],
     })
     return out
 
@@ -165,8 +168,22 @@ def _run(w, args: dict, every: bool = False) -> bool:
     s = _subject(w)
     ids = None if every else [text(args, "case", 40)]
     try:
-        _engine(w).lab.run(w, s, ids, then_propose=every)
+        _engine(w).lab.run(w, s, ids)
     except LabError as e:
+        raise ActError(str(e)) from None
+    return True
+
+
+def _export(w, args: dict) -> str:
+    """Everything the latest runs said and the recommendations, as one text to copy (gui/lab_export.py)."""
+    return lab_export.text(w.repo_root, w, _subject(w))
+
+
+def _recommend(w, args: dict) -> bool:
+    from orkcraft.gui.bench import BenchError
+    try:
+        _engine(w).lab.recommend(w, _subject(w))
+    except BenchError as e:
         raise ActError(str(e)) from None
     return True
 
@@ -314,6 +331,6 @@ def _candidates(w, args: dict) -> list[dict]:
     return out
 
 
-ACTS = {"cassette_reset": _cassette_reset, "pr_preview": _pr_preview, "pr_send": _pr_send, "try": _try, "take_back": _take_back, "save_changes": _save_changes, "env_add": _env_add, "set_add": _set_add, "set_run": _set_run, "set_remove": _set_remove, "setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
+ACTS = {"export": _export, "recommend": _recommend, "cassette_reset": _cassette_reset, "pr_preview": _pr_preview, "pr_send": _pr_send, "try": _try, "take_back": _take_back, "save_changes": _save_changes, "env_add": _env_add, "set_add": _set_add, "set_run": _set_run, "set_remove": _set_remove, "setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
         "run": _run, "run_all": lambda w, a: _run(w, a, every=True), "stop": _stop, "propose": _propose,
         "tasks": _tasks, "lab.run": _run_first}

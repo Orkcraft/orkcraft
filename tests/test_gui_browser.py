@@ -1899,6 +1899,7 @@ def _lab_on(pg, server, subject_type: str, event: str) -> tuple[str, str]:
     ts.subscribe(server.host.town.scroll, lab, bid, event)
     server.host.on_change()
     pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", lab)
+    pg.locator("details.lab-more > summary").click()                  # the shipped cases are folded under More
     pg.locator(".gui-bench").wait_for(state="visible", timeout=WAIT_MS)
     return bid, lab
 
@@ -1911,13 +1912,11 @@ def _lab_off(pg, server, *ids: str) -> None:
 
 def test_the_test_bench_building_tests_the_building_whose_road_comes_in(page, gui, monkeypatch):
     """docs/design/test-bench.md §2: a road from the Agent pool into the Test bench; its window is the bench of the
-    pool: a kept run side by side with its timeline, the reviewers' findings to tick, Make tasks."""
+    pool, under More: a kept run side by side with its timeline, the tech reviewers' findings to tick, Make tasks."""
     import json as _json
     from orkcraft.realm import bench, bench_review
     server, _ = gui
-    answer = {"aha": {"moment": "A test task comes back as a pull request", "script": ["Build it", "Give it a task"],
-                      "measure": "minutes to the first accepted task", "time_to_it": "5 minutes"},
-              "findings": [{"title": "Say what a tier costs", "detail": "The setup names tiers, not prices.",
+    answer = {"findings": [{"title": "Say what a tier costs", "detail": "The setup names tiers, not prices.",
                             "severity": "high", "where": "Info"}]}
     monkeypatch.setattr(bench_review.jobs, "run_read", lambda *a, **kw: (_json.dumps(answer), 0.02, 700, ""))
     root = server.host.town.repo_root
@@ -1944,14 +1943,13 @@ def test_the_test_bench_building_tests_the_building_whose_road_comes_in(page, gu
     pg.wait_for_selector(".gui-bench__finding", timeout=WAIT_MS)
     if os.environ.get("ORKCRAFT_SHOTS"):
         pg.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-tech.png"))
-    dialog.locator(".ok-tab", has_text="Product").click()
-    dialog.locator(".gui-bench__aha").first.wait_for(state="visible", timeout=WAIT_MS)
+    assert dialog.locator(".ok-tab").count() == 0                         # no UX or Product tab any more
     make = dialog.locator(".gui-bench__make .ok-btn.primary")
     assert make.is_disabled()
     dialog.locator(".gui-bench__finding .ok-check").first.click()
     assert make.is_enabled() and "make 1 task" in make.inner_text().lower()
     if os.environ.get("ORKCRAFT_SHOTS"):
-        pg.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-product.png"))
+        pg.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-findings.png"))
     make.click()
     pg.wait_for_function("id => import('/static/js/link.js').then(m => m.command('bench.state', { id }))"
                          ".then(s => true)", arg=bid, timeout=WAIT_MS)
@@ -2024,9 +2022,9 @@ def test_the_test_benchs_terminal_shows_four_lines_and_copies_them_all(page, gui
     _lab_off(page, server, lab, bid)
 
 
-def test_the_test_benchs_window_leads_with_its_goal_its_cases_and_what_to_change(page, gui):
-    """docs/design/test-bench.md §10: the goal on top with Run all cases, every case with its last test against the
-    bare AI tool, and the proposals under them; the shipped cases and reviews folded below."""
+def test_the_test_benchs_window_leads_with_its_cases_results_and_recommendations(page, gui):
+    """docs/design/test-bench.md §10, improve-buildings.md §11: environments and cases, Run all cases, the results with
+    Copy for analysis and the zip, the recommendations; the goal, the proposals and the shipped cases under More."""
     from orkcraft import scroll as ts
     from orkcraft.realm import bench as rbench
     from orkcraft.realm import lab_cases
@@ -2039,20 +2037,30 @@ def test_the_test_benchs_window_leads_with_its_goal_its_cases_and_what_to_change
     w.set_goal("Spend fewer tokens than the bare tool")
     one, two = lab_cases.new_case("CSV parser", "Write a CSV parser", pool), lab_cases.new_case("Hard topic", "Explain CRDTs", pool)
     w.add_cases(pool, [one, two])
-    w.reported(pool, rbench.Report(id="r1", type="chain", case=one["id"], tool="main", at="2026-10-10T10:00:00",
-                                   building=rbench.Side("building", seconds=50, tokens=600, passed=True),
-                                   bare=rbench.Side("bare", seconds=40, tokens=1000, passed=True)))
+    r = rbench.Report(id="r1", type="chain", case=one["id"], tool="main", at="2026-10-10T10:00:00", subject=pool,
+                      building=rbench.Side("building", seconds=50, tokens=600, passed=True),
+                      bare=rbench.Side("bare", seconds=40, tokens=1000, passed=True))
+    r.save(server.host.town.repo_root / rbench.RUNS / r.id)
+    w.reported(pool, r)
     w.set_proposals(pool, [{"id": "p0", "area": "prompt", "title": "Shorter steward rules", "detail": "Fewer words",
                             "where": "", "effect": ""}])
     _hut(pg, lab).wait_for(state="visible", timeout=WAIT_MS)
     _hut(pg, lab).locator(".gui-hut__title").dblclick()
     _panel(pg, "Work")
     panel = pg.locator(".gui-panel")
-    assert panel.locator(".lab-goal textarea").input_value() == "Spend fewer tokens than the bare tool"
     panel.get_by_role("button", name="Run all cases (2)").wait_for(state="visible", timeout=WAIT_MS)
+    assert "Each case runs 3 times" in panel.locator(".lab-run").inner_text()
     row = panel.locator(".lab-case", has_text="CSV parser")
     assert "Tokens -40%" in row.inner_text() and row.locator(".lab-delta.is-lead.is-ok").count() == 1
     assert "Not tested yet" in panel.locator(".lab-case", has_text="Hard topic").inner_text()
+    results = panel.locator(".lab-results")
+    assert "-40% tokens" in results.locator("pre").inner_text() and "CSV parser" in results.locator("pre").inner_text()
+    assert results.get_by_role("button", name="Copy for analysis").count() == 1
+    assert "/api/bench/" in results.get_by_role("link", name="Download (.zip)").get_attribute("href")
+    assert panel.locator(".lab-recs").get_by_role("button", name="Review").count() == 1
+    assert not panel.locator(".lab-goal").is_visible() and not panel.locator(".lab-proposal").first.is_visible()
+    panel.locator("details.lab-more > summary").click()                       # More: the goal, the proposals
+    assert panel.locator(".lab-goal textarea").input_value() == "Spend fewer tokens than the bare tool"
     assert "1 of 1 case ahead on tokens" in panel.locator(".lab-goal").inner_text()
     panel.locator(".lab-proposal", has_text="Shorter steward rules").wait_for(state="visible", timeout=WAIT_MS)
     panel.get_by_role("button", name="Add a case", exact=True).click()
@@ -2060,7 +2068,6 @@ def test_the_test_benchs_window_leads_with_its_goal_its_cases_and_what_to_change
     panel.locator(".lab-add").get_by_role("button", name="Add").click()
     panel.locator(".lab-case", has_text="Research three vector").wait_for(state="visible", timeout=WAIT_MS)
     assert len(w.cases_of(pool)) == 3
-    assert panel.locator("details.lab-shipped").count() == 1
     if os.environ.get("ORKCRAFT_SHOTS"):
         panel.screenshot(path=str(Path(os.environ["ORKCRAFT_SHOTS"]) / "lab.png"))
     for bid in (lab, pool):

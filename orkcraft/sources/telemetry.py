@@ -93,6 +93,11 @@ def purpose_now() -> str:
     return _TAG.get()[0] or "work"
 
 
+def building_now() -> str:
+    """The building set by the caller (`tagged`), else ""."""
+    return _TAG.get()[1]
+
+
 def building_of(env: dict | None) -> str:
     """The building of a call started with `ORKCRAFT_ORC` (`<building>/<ork>`), else ""."""
     orc = str((env or {}).get("ORKCRAFT_ORC") or "")

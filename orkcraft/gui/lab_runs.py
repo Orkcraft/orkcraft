@@ -26,8 +26,9 @@ from pathlib import Path
 import orkcraft
 from orkcraft.core import keeper, runners
 from orkcraft.core.workers.lab import CODE
+from orkcraft.gui import lab_export
 from orkcraft.realm import (bench, bench_review, cassette, code_overlay, github_app, halt, harnesses, jobs, lab_cases, lab_envs,
-                            lab_pr, steward, tiers)
+                            lab_pr, lexicon, steward, tiers)
 
 TIER_FLAG = {"laborer": "novice", "warrior": "seasoned", "elder": "veteran"}
 BUSY = {"generate": "writing cases", "env": "writing an environment", "set": "writing a case set",
@@ -329,8 +330,9 @@ class LabRuns:
             argv += ["--bare-tool", str(s["bare_tool"])]
         if s.get("bare_tier") in TIER_FLAG:
             argv += ["--bare-tier", TIER_FLAG[s["bare_tier"]]]
-        if int(s.get("repeat") or 1) > 1:
-            argv += ["--repeat", str(min(int(s["repeat"]), bench.REPEAT_MAX))]
+        repeat = int(s.get("repeat") or lab_cases.REPEAT)
+        if repeat > 1:
+            argv += ["--repeat", str(min(repeat, bench.REPEAT_MAX))]
         from orkcraft.gui.bench import Job
         label = cases[0]["title"] if len(cases) == 1 else f"every case ({len(cases)})"
         job = Job("run", "chain", label, subject=subject["id"],
@@ -413,6 +415,38 @@ class LabRuns:
                 made += int(pw.new_task(title, body) is not None)
         self.host.town.toast(f"{made} task{'s' if made != 1 else ''} sent", title="Test bench")
         return made
+
+    # -- what the runs said, to hand over (gui/lab_export.py) ----------------------------------------------------
+
+    def _lab_of(self, lab_id: str):
+        if self.host.type_of(lab_id) != "lab":
+            return None
+        return self.host.town.worker(lab_id)
+
+    def pack(self, lab_id: str) -> tuple[str, bytes] | None:
+        """The zip of what the Test bench `lab_id` tests now: its latest runs, every call, the recommendations."""
+        w = self._lab_of(lab_id)
+        s = w.subject() if w is not None else None
+        return lab_export.pack(self.engine.root, w, s) if s is not None else None
+
+    def recommend(self, w, subject: dict) -> None:
+        """The tech review of each building it tests, reading these runs (not the type's shipped cases)."""
+        runs = lab_export.runs_text(self.engine.root, w, subject, calls=True)[:60_000]
+        for _bid, kind in lab_export.types_of(w, subject):
+            if not self.engine.reviewing.get((kind, "tech")):
+                self.engine.start_review(kind, "tech", str(w.state["settings"].get("tool") or "main"), runs)
+
+    def recommendations(self, w, subject: dict) -> list[dict]:
+        """Each building type it tests: its tech review's findings and whether it is on now."""
+        out = []
+        for bid, kind in lab_export.types_of(w, subject):
+            kept = bench_review.load(self.engine.root, kind, "tech")
+            out.append({"type": kind, "word": lexicon.term(kind), "at": kept.get("at", ""),
+                        "running": bool(self.engine.reviewing.get((kind, "tech"))),
+                        "findings": [{**f, "who": e.get("title") or role} for role, e in (kept.get("roles") or {}).items()
+                                     for f in e.get("findings") or []],
+                        "errors": [e.get("error") for e in (kept.get("roles") or {}).values() if e.get("status") == "failed"]})
+        return out
 
     def tools(self) -> list[dict]:
         on = [t for t, c in self.host.town.machine.tools.items() if c.enabled and harnesses.get(t)]

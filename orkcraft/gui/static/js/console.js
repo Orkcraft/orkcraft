@@ -51,6 +51,10 @@ function Thumb({ up, count, title, onClick }) {
     <span aria-hidden="true">${up ? "👍" : "👎"}</span><span class="gui-thumb__n">${count}</span></button>`;
 }
 
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+/** The building's day log as a zip (gui/server.py `/api/logs`): today's. */
+const logOf = (id) => `/api/logs/${encodeURIComponent(id)}?t=${encodeURIComponent(TOKEN)}`;
+
 function Act({ label, title, onClick }) {
   return html`<button class="ok-act" title=${title || label} onClick=${onClick}>
     <span class="ok-act__label">${label}</span></button>`;
@@ -153,6 +157,9 @@ function BuildingInfo({ b, i, redo, open }) {
     <p class="ok-font-body gui-info__about">${i.about_plain}</p>
     <${Row} text=${say(runs)} title=${runs}>
       <${Act} label=${say("History")} title=${say("Its chronicles")} onClick=${() => open("history")} />
+      <a class="ok-act" href=${logOf(b.id)} download
+        title=${say("Every model call it made today (what went in, what came out, how it worked) and what it decided, as a zip. A day nobody downloads and no 👎 marks is cleared the next morning.")}>
+        <span class="ok-act__label">${say("Today's log")}</span></a>
     </${Row}>
   </section>`;
 }

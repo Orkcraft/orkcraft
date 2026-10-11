@@ -135,12 +135,13 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
                                     lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True),
                                     harness)
     if code != 0:
-        call_log.record(env, "work", harness, model, prompt, out, err, code, time.monotonic() - start)
+        call_log.record(env, "work", harness, model, prompt, out, err, code, time.monotonic() - start, workdir=workdir)
         raise roads.failure(harness, code, out, err)
     text, cost, tokens, session = roads.result_of(harness, out, before, model)
     if harness == "codex" and resume and resumed is None:
         cost = None                       # its running total holds earlier runs we cannot tell apart
-    call_log.record(env, "work", harness, model, prompt, out, err, code, time.monotonic() - start, cost, tokens)
+    call_log.record(env, "work", harness, model, prompt, out, err, code, time.monotonic() - start, cost, tokens,
+                    session, workdir)
     what = dict(tokens=tokens, building=telemetry.building_of(run_env), model=model)
     if not telemetry.charged(run_env):
         telemetry.charge(cost, f"{harness} worker", **what)
@@ -165,10 +166,11 @@ def run_read(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
                                     lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True),
                                     harness)
     if code != 0:
-        call_log.record(env, "read", harness, model, prompt, out, err, code, time.monotonic() - start)
+        call_log.record(env, "read", harness, model, prompt, out, err, code, time.monotonic() - start, workdir=workdir)
         raise roads.failure(harness, code, out, err)
     text, cost, tokens, _session = roads.result_of(harness, out, 0, model)
-    call_log.record(env, "read", harness, model, prompt, out, err, code, time.monotonic() - start, cost, tokens)
+    call_log.record(env, "read", harness, model, prompt, out, err, code, time.monotonic() - start, cost, tokens,
+                    workdir=workdir)
     what = dict(tokens=tokens, building=telemetry.building_of(run_env), model=model)
     if not telemetry.charged(run_env):
         telemetry.charge(cost, f"{harness} reader", **what)

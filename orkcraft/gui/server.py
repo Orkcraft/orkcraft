@@ -31,6 +31,10 @@ other than the page makes first (docs/design/mobile.md): what this server speaks
 `GET /api/audio/<building>/<episode>` (the same token) is an Audio briefing's episode, to play (`<audio>`) or,
 with `?dl=1`, to download (docs/design/audio-briefing.md §7): only a finished episode of that building,
 named by its id, never a path.
+
+`GET /api/logs/<building>?day=YYYY-MM-DD` (the same token) is a building's day log as a zip (gui/day_logs.py): every
+model call it made that day and what it decided; today's when no day is named. `GET /api/bench/<test bench>` is a
+Test bench's latest runs of what it tests, as a zip for an analysis (gui/lab_runs.py `pack`).
 """
 from __future__ import annotations
 
@@ -144,6 +148,15 @@ class Server:
             if not self._token_ok(request):
                 return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
             return _response(HTTPStatus.OK, json.dumps(self.version()).encode(), "application/json")
+        if parts.path.startswith("/api/logs/"):
+            if not self._token_ok(request):
+                return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
+            day = parse_qs(parts.query).get("day", [""])[0]
+            return self._zip(self.host.day_logs.pack(parts.path.removeprefix("/api/logs/"), day))
+        if parts.path.startswith("/api/bench/"):
+            if not self._token_ok(request):
+                return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
+            return self._zip(self.host.bench.lab.pack(parts.path.removeprefix("/api/bench/")))
         if parts.path.startswith("/api/audio/"):
             if not self._token_ok(request):
                 return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
@@ -161,6 +174,16 @@ class Server:
         if kind.startswith("text/") or kind.endswith(("javascript", "json")):
             kind += "; charset=utf-8"
         return _response(HTTPStatus.OK, target.read_bytes(), kind)
+
+    @staticmethod
+    def _zip(packed: tuple[str, bytes] | None) -> Response:
+        """A zip to download (a day log, a Test bench's runs); 404 when there is nothing of that name."""
+        if packed is None:
+            return _response(HTTPStatus.NOT_FOUND, b"Not found")
+        name, data = packed
+        resp = _response(HTTPStatus.OK, data, "application/zip")
+        resp.headers["Content-Disposition"] = f'attachment; filename="{quote(name)}"'
+        return resp
 
     def _audio(self, rest: str, download: bool) -> Response:
         bid, _, eid = rest.partition("/")

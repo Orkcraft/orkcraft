@@ -309,3 +309,29 @@ and the reviews (§9) stay folded under it, open while it has no case of its own
 - **Kept** in `lab.json` beside the building (goal, settings, cases, last results, proposals) until it is
   demolished. The card: what it tests, the goal, and "N of M cases ahead on <metric>".
 - It is always in the Build row (**Improve → Logic**), with no flag.
+
+Since 2026-10-11 the window is made plain (docs/design/improve-buildings.md §11): environments, cases, Run all
+cases, Results, Recommendations; the goal, What to change, the virtual building and the shipped cases folded under
+**More**. Run all no longer proposes by itself.
+
+### 10.1 Results, to hand over (gui/lab_export.py)
+
+- **Results** is the latest series of each case of what it tests (`Report.subject`, repeats pooled: `bench.latest`)
+  as the summary table: time, spend, check, within 10 %, runs, the range of the time gap.
+- **Copy for analysis** (`export`): the table, every run in full (`bench.analysis` with its model calls) and the
+  recommendations, as one text.
+- **Download (.zip)** (`GET /api/bench/<test bench>`): the same as `README.md`, each run's `report.json` and every
+  model call itself (`runs/<run>/calls/<side>-<n>-<who>.json`: the line, the prompt, the output, the trail).
+- **Recommendations** (`recommend`): the tech review (`bench_review`, three reviewers) of each building type it tests,
+  its prompt carrying these runs (`runs=`) in place of the type's own; the findings are shown, copied and zipped
+  with the runs.
+
+### 10.2 A building's day log (realm/day_log.py, gui/day_logs.py)
+
+While the town's window is open every model call is kept by day and building (realm/call_log.py `keep_days`):
+`.orkcraft/logs/<day>/<building>/calls.jsonl` and the call itself gzipped — what went in, what came out, its
+errors, and how it worked (`trail`: Claude Code's transcript of the session with its thinking and tool calls; agy's
+brain folder; codex's output holds its own). A building's Info has **Today's log**: the day as a zip (`GET
+/api/logs/<building>?day=`) with a README that adds the calls up, every call, and what its steward decided.
+Each morning the days before are cleared building by building, unless the log was downloaded (`.asked`) or the
+building got a 👎 that day; those stay 14 days (`day_log.KEEP_DAYS`).

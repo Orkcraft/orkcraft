@@ -29,7 +29,7 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import (accounts, awake, bench, builder, console, failures, github, growth, history, mobile, nightly, onboarding, projects,
+from orkcraft.gui import (accounts, awake, bench, builder, console, day_logs, failures, github, growth, history, mobile, nightly, onboarding, projects,
                           state, town_settings, updates, views, you)
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
@@ -55,6 +55,7 @@ class Host:
         self.night = Night(self.town)               # quiet hours: the Elders' advice on the orks' questions
         self.night.restore()
         self.nightly = nightly.Nightly(self)       # …the retros and the orks' own changes (gui/nightly.py)
+        self.day_logs = day_logs.DayLogs(self.town)    # every model call by day and building (gui/day_logs.py)
         self.town.budget_ok = lambda: not self.town.demo and not self.treasury.exhausted()
         # How long a cart is on a plain road before it arrives: 0 (at once) unless asked, e.g. to film a flow
         # slowly enough that a person sees each cart on its road before its building acts (tools/landing_flow.py).
@@ -246,6 +247,7 @@ class Host:
                 except Exception as e:                 # one building's look never stops the clock
                     self.town.toast(f"{type(e).__name__}: {e}", title=self.town.title_of(bid), severity="error")
         self.refresh_roster()
+        self.day_logs.tick()
         self._night()
         self._wakes(now)
         self.growth.tick(now)
@@ -336,6 +338,7 @@ class Host:
 
     def close(self) -> None:
         """The window closed: what an editor holds is written, what runs stops, the scroll is kept."""
+        self.day_logs.close()
         for bid, w in list(self.town.workers.items()):
             flush = getattr(views.of(self.type_of(bid)), "flush", None)
             if flush is not None:

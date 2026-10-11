@@ -1,8 +1,9 @@
 // 🧪 The Test bench (docs/design/test-bench.md §2, §10). Closed: what it tests, its goal and how its cases stand
-// against the bare AI tool. Open: the goal of the testing (its first cases are written from it, Run all cases runs
-// them), the settings of a run, every case with its last test (time, tokens, quality against the bare AI tool), and
-// below them what to change in the buildings, the roads or the prompts for the goal. The shipped cases and the
-// reviews (js/bench.js) stay folded under them. A road into it says what it tests; a road out, where results go.
+// against the bare AI tool. Open, in the order a person works: environments and their case sets, single cases,
+// Run all (its settings folded), the results of the latest runs with Copy for analysis and the zip of every call,
+// and the recommendations (the tech review of what it tests, reading those runs). The goal, what to change, the
+// virtual building and the shipped cases stay folded under More (docs/design/improve-buildings.md §11). A road
+// into it says what it tests; a road out, where results go.
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say, town } from "../link.js";
@@ -72,31 +73,90 @@ function Window({ id, data }) {
     ${subjects.length > 1 && html`<label class="gui-field lab-pick"><span class="ok-font-label">${say("Tests")}</span>
       <select class="ok-input" value=${pick} onChange=${(e) => act(id, "pick", { id: e.target.value })}>
         ${subjects.map((s) => html`<option key=${s.id} value=${s.id}>${say(s.title)} · ${say(s.word)}</option>`)}</select></label>`}
-    <${LabView} key=${pick} id=${id} d=${data} />
-    <details class="gui-bench__more lab-shipped" open=${!(data.cases || []).length}><summary class="ok-font-label">${say("Shipped cases and reviews")}</summary>
-      <${BenchView} key=${pick} id=${pick} lab=${id} /></details>
+    <${LabView} key=${pick} id=${id} d=${data} pick=${pick} />
   </div>`;
 }
 
 const field = (label, control) => html`<label class="gui-field"><span class="ok-font-label">${say(label)}</span>${control}</label>`;
 
 /** The Test bench's own work for what it tests: goal, settings, cases, the run, what to change. */
-function LabView({ id, d }) {
+function LabView({ id, d, pick }) {
   const on = !!(d.job && !d.job.done);
-  useEffect(() => {                         // while a run or an agent works, its lines and results come in
-    if (!on && !d.busy) return undefined;
+  const reviewing = (d.recs || []).some((r) => r.running);
+  const [more, setMore] = useState(false);     // its shipped cases open (and are first reviewed) only when unfolded
+  useEffect(() => {                         // while a run, an agent or a review works, its lines and results come in
+    if (!on && !d.busy && !reviewing) return undefined;
     const timer = setTimeout(() => act(id, "refresh").catch(() => {}), 1500);
     return () => clearTimeout(timer);
   }, [id, d]);
   return html`<div class="lab-own">
-    <${Goal} id=${id} d=${d} on=${on} />
-    <${Settings} id=${id} d=${d} />
     <${Envs} id=${id} d=${d} on=${on} />
     <${Cases} id=${id} d=${d} on=${on} />
+    <${RunAll} id=${id} d=${d} on=${on} />
     ${d.job && html`<${RunLog} id=${id} job=${d.job} />`}
-    <${Proposals} id=${id} d=${d} on=${on} />
-    <${Virtual} id=${id} d=${d} on=${on} />
+    <${Results} id=${id} d=${d} />
+    <${Recommendations} id=${id} d=${d} on=${on} />
+    <details class="gui-bench__more lab-more" onToggle=${(e) => setMore(e.currentTarget.open)}><summary class="ok-font-label">${say("More: the goal, what to change, the shipped cases")}</summary>
+      <${Goal} id=${id} d=${d} on=${on} />
+      <${Proposals} id=${id} d=${d} on=${on} />
+      <${Virtual} id=${id} d=${d} on=${on} />
+      ${more && html`<section class="gui-bench__section"><h4 class="ok-font-label gui-bench__h">${say("Shipped cases")}</h4>
+        <${BenchView} key=${pick} id=${pick} lab=${id} /></section>`}
+    </details>
   </div>`;
+}
+
+/** Run every case, each the times the settings say, against the bare AI tool. */
+function RunAll({ id, d, on }) {
+  const n = (d.cases || []).length;
+  const times = (d.settings || {}).repeat || 3;
+  return html`<section class="gui-bench__section lab-run">
+    <div class="gui-bench__row">
+      <button class="ok-btn primary lab-run-all" disabled=${on || !n} onClick=${() => act(id, "run_all")}>${say(`Run all cases${n ? ` (${n})` : ""}`)}</button>
+      ${on && html`<button class="ok-btn" onClick=${() => act(id, "stop")}>${say("Stop")}</button>`}
+      <span class="ok-font-status ok-tone-muted">${say(times > 1 ? `Each case runs ${times} times: the results read their medians.` : "Each case runs once.")}</span>
+    </div>
+    <${Settings} id=${id} d=${d} />
+  </section>`;
+}
+
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+
+/** The latest runs side by side, to copy for an analysis or to download with every call in full. */
+function Results({ id, d }) {
+  const r = d.report || {};
+  const copy = () => act(id, "export").then((text) => copyText(text, "Copied the runs and the recommendations"), () => {});
+  return html`<section class="gui-bench__section lab-results">
+    <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">${say("Results")}</h4>
+      ${r.text && html`<span class="gui-bench__acts">
+        <button class="ok-btn" onClick=${copy} title=${say("The table, every run in full with its model calls, and the recommendations, as text")}>${say("Copy for analysis")}</button>
+        <a class="ok-btn" href=${`/api/bench/${encodeURIComponent(id)}?t=${encodeURIComponent(TOKEN)}`} download
+          title=${say("The same, plus every model call itself (what went in, what came out, how it worked), as a zip")}>${say("Download (.zip)")}</a></span>`}</div>
+    ${r.text ? html`<p class="ok-font-status ok-tone-muted">${say(`${many(r.cases, "case")}, ${many(r.runs, "run")} · latest ${(r.at || "").replace("T", " ").slice(0, 16)}`)}</p>
+        <pre class="gui-bench__log lab-results__table">${r.text}</pre>`
+      : html`<p class="ok-font-status ok-tone-muted">${say("No run yet: add an environment and a case set, then Run all cases.")}</p>`}
+  </section>`;
+}
+
+/** The tech review of each building it tests, reading the latest runs: what to change, as advice. */
+function Recommendations({ id, d, on }) {
+  const recs = d.recs || [];
+  const busy = recs.some((r) => r.running);
+  return html`<section class="gui-bench__section lab-recs">
+    <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">${say("Recommendations")}</h4>
+      <button class="ok-btn" disabled=${on || busy || !(d.report || {}).text} onClick=${() => act(id, "recommend")}>
+        ${busy ? say("Reading the code and the runs…") : recs.some((r) => r.at) ? say("Review again") : say("Review")}</button></div>
+    <p class="ok-font-status ok-tone-muted">${say("Three reviewers read the code and the latest runs with their model calls, and say what to change. Each is one AI tool run; nothing changes by itself.")}</p>
+    ${recs.map((r) => html`<div key=${r.type} class="lab-rec">
+      ${recs.length > 1 && html`<b class="ok-font-body">${say(r.word)}</b>`}
+      ${r.at && html`<p class="ok-font-status ok-tone-muted">${say(`Reviewed ${r.at.replace("T", " ").slice(0, 16)}`)}</p>`}
+      ${r.errors.filter(Boolean).map((e, n) => html`<p key=${n} class="ok-font-status ok-tone-error">${e}</p>`)}
+      <ul class="gui-bench__findings">${r.findings.map((f, n) => html`<li key=${n} class="gui-bench__finding">
+        <span><span class=${`gui-bench__sev is-${f.severity}`}>${f.severity}</span> <b>${f.title}</b> <span class="ok-tone-muted">· ${f.who}</span></span>
+        ${f.detail && html`<p class="ok-font-status">${f.detail}</p>`}
+        ${f.where && html`<p class="ok-font-status ok-tone-muted">${f.where}</p>`}</li>`)}</ul>
+    </div>`)}
+  </section>`;
 }
 
 function Goal({ id, d, on }) {
@@ -114,9 +174,6 @@ function Goal({ id, d, on }) {
     <div class="gui-bench__row">
       <button class="ok-btn" disabled=${!goal.trim() || d.busy === "generate"}
         onClick=${() => save().then(() => act(id, "generate"))}>${d.busy === "generate" ? say("Writing cases…") : (d.cases || []).length ? say("Write more cases") : say("Write cases for the goal")}</button>
-      <button class="ok-btn primary lab-run-all" disabled=${on || !(d.cases || []).length}
-        onClick=${() => save().then(() => act(id, "run_all"))}>${say(`Run all cases${(d.cases || []).length ? ` (${d.cases.length})` : ""}`)}</button>
-      ${on && html`<button class="ok-btn" onClick=${() => act(id, "stop")}>${say("Stop")}</button>`}
     </div>
   </section>`;
 }
@@ -135,7 +192,7 @@ function Settings({ id, d }) {
       ${field("Bare: tier", pick("bare_tier", d.tiers || []))}
       ${field("Spend limit a case, $", html`<input class="ok-input" type="number" min="0.1" max="50" step="0.5" value=${s.max_spend}
         onChange=${(e) => set("max_spend", e.target.value)} />`)}
-      ${field("Runs a case", html`<select class="ok-input" value=${String(s.repeat || 1)} onChange=${(e) => set("repeat", +e.target.value)}>
+      ${field("Runs a case", html`<select class="ok-input" value=${String(s.repeat || 3)} onChange=${(e) => set("repeat", +e.target.value)}>
         ${[[1, "Once"], [3, "3 times: medians"], [5, "5 times: medians"]].map(([v, l]) => html`<option key=${v} value=${v}>${say(l)}</option>`)}</select>`)}
     </div>
     <label class="lab-check"><input type="checkbox" checked=${!!s.judge} onChange=${(e) => set("judge", e.target.checked)} />
@@ -302,7 +359,7 @@ function Proposals({ id, d, on }) {
     <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">${say("What to change for the goal")}</h4>
       <button class="ok-btn" disabled=${d.busy === "propose" || on}
         onClick=${() => act(id, "propose")}>${d.busy === "propose" ? say("Reading the code…") : items.length ? say("Propose again") : say("Propose changes")}</button></div>
-    <p class="ok-font-status ok-tone-muted">${say(tested ? "An agent reads the buildings' code, the roads and the last tests, and proposes changes to the code, the roads, the prompts or the settings. Run all cases proposes again by itself." : "Test the cases first: the proposals lean on what the tests said.")}${d.proposals && d.proposals.at ? ` ${say("Written")} ${d.proposals.at.replace("T", " ").slice(0, 16)}.` : ""}</p>
+    <p class="ok-font-status ok-tone-muted">${say(tested ? "An agent reads the buildings' code, the roads and the last tests, and proposes changes to the code, the roads, the prompts or the settings." : "Test the cases first: the proposals lean on what the tests said.")}${d.proposals && d.proposals.at ? ` ${say("Written")} ${d.proposals.at.replace("T", " ").slice(0, 16)}.` : ""}</p>
     ${items.length > 0 && html`<ul class="lab-proposal-list">${items.map((p) => html`<li key=${p.id} class="lab-proposal">
       <label class="lab-check"><input type="checkbox" checked=${picks.has(p.id)} onChange=${() => flip(p.id)} />
         <span class="lab-area">${say(AREA[p.area] || p.area)}</span> <b class="ok-font-body">${p.title}</b></label>

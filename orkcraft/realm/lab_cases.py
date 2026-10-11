@@ -22,6 +22,7 @@ from orkcraft.realm import bench, bench_kits
 
 FILE = "lab.json"
 MAX_CASES = 40
+REPEAT = 3                           # runs a case by default: one run of each says little (its medians do)
 AREAS = ("code", "roads", "prompt", "settings")
 GOALS = {                            # what a goal is about, by its words: the metric the window leads with
     "tokens": ("token", "spend", "cost", "cheap", "expens", "money", "$", "токен", "расход", "дешев", "стоим"),
@@ -43,7 +44,7 @@ def metric_of(goal: str) -> str:
 def blank() -> dict:
     return {"goal": "", "settings": {"tool": "main", "tier": "", "bare_tool": "main", "bare_tier": "",
                                      "max_spend": bench.DEFAULT_MAX_SPEND, "judge": True,
-                                     "repeat": 1},
+                                     "repeat": REPEAT},
             "cases": {}, "results": {}, "proposals": {}, "runs": {},
             "envs": [], "sets": {},          # its environments and, per what it tests, its case sets (realm/lab_envs.py)
             "virtual": {}}                   # per what it tests, the changes tried on it (core/workers/lab.py)

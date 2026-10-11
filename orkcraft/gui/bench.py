@@ -331,7 +331,14 @@ class Bench:
         self._review(type_id, tab, str(args.get("tool") or "main"))
         return self.state(args)
 
-    def _review(self, type_id: str, tab: str, tool: str) -> None:
+    def start_review(self, type_id: str, tab: str, tool: str, runs: str = "") -> None:
+        """A review of the type's, its reviewers reading `runs` (a Test bench's own) when given."""
+        with self._lock:
+            if self.reviewing.get((type_id, tab)):
+                raise BenchError("This review is on")
+        self._review(type_id, tab, tool, runs)
+
+    def _review(self, type_id: str, tab: str, tool: str, runs: str = "") -> None:
         roles = {rid: threading.Event() for rid, _t, _f in bench_review.ROLES[tab]}
         started = list(roles.items())              # a quick reviewer leaves `roles` before the last one starts
         with self._lock:
@@ -339,12 +346,12 @@ class Bench:
         for n, (rid, _cancel) in enumerate(started):
             bench_review.put(self.root, type_id, tab, rid, {"status": "running", "findings": []}, tool, fresh=n == 0)
         for rid, cancel in started:
-            threading.Thread(target=self._one, args=(type_id, tab, rid, tool, cancel), daemon=True,
+            threading.Thread(target=self._one, args=(type_id, tab, rid, tool, cancel, runs), daemon=True,
                              name=f"bench-{tab}-{rid}").start()
 
-    def _one(self, type_id: str, tab: str, role: str, tool: str, cancel: threading.Event) -> None:
+    def _one(self, type_id: str, tab: str, role: str, tool: str, cancel: threading.Event, runs: str = "") -> None:
         try:
-            bench_review.review(self.root, type_id, tab, role, tool, cancel=cancel)
+            bench_review.review(self.root, type_id, tab, role, tool, cancel=cancel, runs=runs)
         finally:
             with self._lock:
                 running = self.reviewing.get((type_id, tab), {})

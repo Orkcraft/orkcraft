@@ -231,11 +231,12 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
         start = time.monotonic()
         code, stdout, stderr = run_proc(cmd, workdir, run_env, harness_stdin(harness, prompt), wait, harness)
     if code != 0:
-        call_log.record(env, "agent", harness, model, prompt, stdout, stderr, code, time.monotonic() - start)
+        call_log.record(env, "agent", harness, model, prompt, stdout, stderr, code, time.monotonic() - start,
+                        workdir=workdir)
         raise failure(harness, code, stdout, stderr)
     result = result_of(harness, stdout, model=model)[:3]
     call_log.record(env, "agent", harness, model, prompt, stdout, stderr, code, time.monotonic() - start,
-                    result[1], result[2])
+                    result[1], result[2], workdir=workdir)
     what = dict(tokens=result[2], building=telemetry.building_of(env), model=model)
     if not telemetry.charged(run_env):                    # no ORKCRAFT_RUN: its transcript is not this run's
         telemetry.charge(result[1], f"{harness} agent", **what)

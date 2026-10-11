@@ -31,3 +31,6 @@
 .lab-set p { margin: 0; }
 .lab-count { max-width: 6em; }
 .lab-envs { display: flex; flex-direction: column; gap: var(--space-2); }
+.lab-results__table { white-space: pre; word-break: normal; max-height: 360px; }
+.lab-rec { display: flex; flex-direction: column; gap: var(--space-1); }
+.lab-more > .gui-bench__section { margin-top: var(--space-2); }

@@ -1,6 +1,6 @@
-// 🧪 The Test bench (gui/bench.py, docs/design/test-bench.md): one building on its own, in three tabs. Tech runs
-// a test case in the building and in the bare AI tool and puts them side by side; UX and Product are agents'
-// reviews of the building. Ticked findings become tasks of an Agent pool with Make tasks, never by themselves.
+// 🧪 The Test bench (gui/bench.py, docs/design/test-bench.md): one building on its own. A test case runs in the
+// building and in the bare AI tool, side by side; the tech review is agents reading its code and its runs. Ticked
+// findings become tasks of an Agent pool with Make tasks, never by themselves.
 // It is drawn in the Test bench building's window (js/buildings/lab.js), for a building whose road comes into it.
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -27,7 +27,6 @@ export function copyText(text, what = "Copied") {
   else fallback();
 }
 
-const TABS = [["tech", "Tech"], ["ux", "UX"], ["product", "Product"]];
 const LEVELS = [["simple", "Every simple case"], ["medium", "Every medium case"], ["parallel", "Every parallel case"]];
 const pct = (v) => (v === null || v === undefined ? "—" : `${v > 0 ? "+" : ""}${Math.round(v * 100)}%`);
 const SIDES = [["", "Both"], ["building", "The building only"], ["bare", "The bare AI tool only"]];
@@ -40,7 +39,6 @@ const busy = (s) => !!s && ((s.job && !s.job.done) || Object.values(s.reviews).s
 /** The bench of building `id`, drawn in the Test bench `lab`'s window: its tabs, what is in them, Make tasks. */
 export function BenchView({ id, lab }) {
   const [s, setS] = useState(null);
-  const [tab, setTab] = useState("tech");
   const [picks, setPicks] = useState(new Set());
   useEffect(() => {
     setS(null);
@@ -59,16 +57,7 @@ export function BenchView({ id, lab }) {
   const flip = (fid) => { const next = new Set(picks); next.has(fid) ? next.delete(fid) : next.add(fid); setPicks(next); };
   return html`<div class="gui-bench">
     <p class="ok-font-status ok-tone-muted gui-bench__about">${say(s.word)} · ${say(s.summary)}</p>
-    <div class="ok-tabs gui-bench__tabs" role="tablist">
-      ${TABS.map(([t, label]) => html`<button key=${t} role="tab" aria-selected=${tab === t}
-        class=${cls("ok-tab", { "is-active": tab === t })} onClick=${() => setTab(t)}>${label}
-        ${s.reviews[t].roles.some((r) => r.running) && html`<span class="gui-bench__spin" aria-label="Working"></span>`}</button>`)}
-    </div>
-    <div class="gui-bench__body">
-      ${tab === "tech" ? html`<${Tech} s=${s} call=${call} picks=${picks} flip=${flip} />`
-        : tab === "product" ? html`<${Product} s=${s} call=${call} picks=${picks} flip=${flip} />`
-        : html`<${Reviews} s=${s} tab="ux" call=${call} picks=${picks} flip=${flip} />`}
-    </div>
+    <div class="gui-bench__body"><${Tech} s=${s} call=${call} picks=${picks} flip=${flip} /></div>
     <div class="gui-bench__make"><${MakeTasks} s=${s} lab=${lab} picks=${picks} done=${() => setPicks(new Set())} /></div>
   </div>`;
 }
@@ -301,20 +290,6 @@ function Finding({ f, picked, flip }) {
     ${f.detail && html`<p class="ok-font-status">${f.detail}</p>`}
     ${f.where && html`<p class="ok-font-status ok-tone-muted">${f.where}</p>`}
   </li>`;
-}
-
-function Product({ s, call, picks, flip }) {
-  const ahas = s.reviews.product.roles.filter((r) => r.aha);
-  return html`
-    ${ahas.length > 0 ? ahas.map((r) => html`<section key=${r.id} class="gui-bench__section gui-bench__aha">
-      <h4 class="ok-font-label gui-bench__h">The AHA moment, as the ${r.title} sees it</h4>
-      <p class="ok-font-body"><b>${r.aha.moment}</b></p>
-      ${r.aha.script.length > 0 && html`<ol class="gui-bench__script">${r.aha.script.map((x, i) => html`<li key=${i}>${x}</li>`)}</ol>`}
-      ${(r.aha.measure || r.aha.time_to_it) && html`<p class="ok-font-status ok-tone-muted">
-        ${r.aha.measure && `Measured by: ${r.aha.measure}`}${r.aha.measure && r.aha.time_to_it ? " · " : ""}${r.aha.time_to_it && `Reached in: ${r.aha.time_to_it}`}</p>`}
-    </section>`)
-      : html`<p class="ok-font-status ok-tone-muted">The AHA moment shows here once the review has found it.</p>`}
-    <${Reviews} s=${s} tab="product" call=${call} picks=${picks} flip=${flip} />`;
 }
 
 // -- Make tasks ----------------------------------------------------------------------------------------------
