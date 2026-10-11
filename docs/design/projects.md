@@ -12,7 +12,7 @@ orkestration (CLAUDE.md).
 | 2 | **Copy to orkspace…** for a building (§5) | done |
 | 3 | a map goes back as a whole: the orkspace's checkpoints (§6) | done |
 | 4 | snapshots of a project's files before an ork works, and one **History** to go back (§7) | done |
-| 5 | every worker that touches files works in its orkspace's project, not the town's root (§8) | 5.1 Forge, 5.2 codebase wiki |
+| 5 | every worker that touches files works in its orkspace's project, not the town's root (§8) | 5.1 Forge, 5.2 codebase wiki, 5.3 Loot |
 
 ## 1. The problem
 
@@ -215,6 +215,9 @@ A worker asks `Worker.project_root` (its building's orkspace's project, else the
   the project (`ScrollsWorker.work_root`); its wiki MCP server is the project's. A team, design or general wiki
   stays the town's. A codebase wiki made before the orkspace had a project stays where it was; the next ingest
   starts one in the project.
+- **5.3 Loot** — done: the changed files it reviews (accept, reject, restore), the worktrees and branches of its
+  carts and their previews are the project's; the vault, drafts and 👍 / 👎 stay in the town. A War Tent session in a
+  project's worktree names that worktree relative to the project, so Loot finds it there.
 
 ## 9. What stays as it is
 
