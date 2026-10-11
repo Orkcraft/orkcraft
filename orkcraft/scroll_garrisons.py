@@ -3,11 +3,12 @@
 Part of orkcraft.scroll, which re-exports every name here: import it from there."""
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 from orkcraft.realm.looks import kind_icon
-from orkcraft.scroll import (BIOMES, DEFAULT_HARNESS, MAX_GARRISON, TRIGGER_TYPES, BuildingSpec, OrcSpec, Orkspace,
-                             Presets, TownScroll, building_from_preset)
+from orkcraft.scroll import (BIOMES, DEFAULT_HARNESS, HISTORY_DIR, MAX_GARRISON, TRIGGER_TYPES, BuildingSpec, OrcSpec,
+                             Orkspace, Presets, TownScroll, building_from_preset)
 from orkcraft.scroll_checks import orc_problems
 
 # -- orkspace operations (the UI calls these; they keep the cross-references valid) ---------------------------
@@ -95,6 +96,33 @@ def move_building(scroll: TownScroll, building_id: str, orkspace_id: str) -> Non
     if building_id not in target.buildings:
         target.buildings.append(building_id)
     b.demolished = False
+
+
+def copy_building(scroll: TownScroll, building_id: str, orkspace_id: str, new_id: str) -> tuple[BuildingSpec, list[str]]:
+    """A copy of the building standing in another orkspace (docs/design/projects.md §5): its orks with their
+    instructions, its settings and its look. Its incoming roads come along only from buildings on that map; the
+    sources of the others are returned. No level, no place on the map, never pinned: it starts as a new building.
+    Raises ValueError for an unknown building or orkspace, or a taken id."""
+    src, target = scroll.building(building_id), scroll.orkspace(orkspace_id)
+    if src is None or target is None:
+        raise ValueError(f"unknown building {building_id!r} or orkspace {orkspace_id!r}")
+    if scroll.building(new_id) is not None:
+        raise ValueError(f"a building {new_id!r} already exists")
+    b = copy.deepcopy(src)
+    b.id = new_id
+    if src.preset_ref.startswith("custom:"):
+        b.preset_ref = f"custom:{new_id}"
+    b.demolished = b.pinned = False
+    b.level, b.hut, b.bounds, b.frac = None, None, None, None
+    b.chronicles = {"enabled": bool(src.chronicles.get("enabled", True))}
+    if src.chronicles.get("log_file"):
+        b.chronicles["log_file"] = str(HISTORY_DIR / f"{new_id}.events.jsonl")
+    on_map = set(target.buildings)
+    b.roads = [r for r in b.roads if r.source in on_map]
+    left = list(dict.fromkeys(r.source for r in src.roads if r.source not in on_map))
+    scroll.buildings.append(b)
+    target.buildings.append(new_id)
+    return b, left
 
 
 def remove_orkspace(scroll: TownScroll, orkspace_id: str) -> None:

@@ -1,4 +1,5 @@
-/* The town in a phone's browser (gui/pwa.py): the Office look's colours (office.css), dark and light. */
+/* The town in a phone's browser (gui/pwa.py): the Office look's colours (office.css), dark and light, and the
+   Camp look's (design/system/tokens.css, camp), dark only as on the desktop. The look follows the town's. */
 :root {
   --canvas: #161616; --panel: #1f1f1f; --inset: #191919; --frame: #333333;
   --ink: #e6e6e6; --muted: #a3a3a3; --accent: #86c062; --warn: #e0b04c; --danger: #e5534b;
@@ -8,6 +9,19 @@
   :root { --canvas: #f4f4f4; --panel: #ffffff; --inset: #f0f0f0; --frame: #d6d6d6;
     --ink: #1f1f1f; --muted: #5c5c5c; --accent: #3f7a1f; --warn: #8a5a00; --danger: #b42318; color-scheme: light; }
 }
+:root[data-look="camp"] {
+  --canvas: #172a0a; --panel: #2a2419; --inset: #120f0a; --frame: #a07c38;
+  --ink: #e8e0c8; --muted: #a89f86; --accent: #5d9e3b; --warn: #ff8c1a; --danger: #f85149; --gold: #f2c66d;
+  color-scheme: dark;
+}
+:root[data-look="camp"] .card, :root[data-look="camp"] .btn, :root[data-look="camp"] .input,
+:root[data-look="camp"] .question pre, :root[data-look="camp"] .flash, :root[data-look="camp"] .status { border-radius: 0; }
+:root[data-look="camp"] .card { border-width: 2px; }
+:root[data-look="camp"] h2 { color: var(--gold); }
+:root[data-look="camp"] .pill { border-radius: 0; }
+.mark { width: 28px; height: 28px; vertical-align: -6px; margin-right: 8px; image-rendering: pixelated; }
+.looks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.looks .btn.is-on { border-color: var(--accent); color: var(--accent); }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--canvas); color: var(--ink); }
 body { font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-text-size-adjust: 100%; }

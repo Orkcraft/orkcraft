@@ -95,6 +95,7 @@ class Host:
             "town.catalog": lambda a: builder.catalog_types(self.town.machine.profile),
             "town.build": lambda a: self._building(builder.build, a),
             "town.demolish": lambda a: self._building(builder.demolish, a),
+            "building.copy": lambda a: self._building(builder.copy_to, a),
             "roads.choices": lambda a: self._building(builder.road_choices, a),
             "roads.lay": lambda a: self._building(builder.lay_road, a),
             "roads.remove": lambda a: self._building(builder.remove_road, a),

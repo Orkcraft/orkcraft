@@ -1,6 +1,6 @@
 # Design — 📁 Projects: the folder an orkspace works in, and a way back in time
 
-Status: design notes, written 2026-10-11; stages 0 and 1 are done. Builds on the orkspaces of the Town Scroll
+Status: design notes, written 2026-10-11; stages 0, 1 and 2 are done. Builds on the orkspaces of the Town Scroll
 (`scroll.py` `Orkspace`, `GitLink`), the orkspace worktrees (`realm/worktrees.py`), the camp's checkpoints
 (`realm/checkpoint.py`) and the first commit the Agent pool makes (`realm/jobs.py` `ensure_repo`). Wording: ork,
 orkestration (CLAUDE.md).
@@ -9,7 +9,7 @@ orkestration (CLAUDE.md).
 |---|---|---|
 | 0 | the word: **Project** for the folder, the Town Scroll becomes the **Town file** (§2) | done |
 | 1 | projects in the Town Scroll, an orkspace picks one; git started with the person's yes (§3, §4) | done |
-| 2 | **Copy to orkspace…** for a building (§5) | |
+| 2 | **Copy to orkspace…** for a building (§5) | done |
 | 3 | a map goes back as a whole: the orkspace's checkpoints (§6) | |
 | 4 | snapshots of a project's files before an ork works, and one **History** to go back (§7) | |
 | later | every worker that touches files works in its orkspace's project, not the town's root (§8) | |
@@ -113,8 +113,12 @@ A building's menu gets **Copy to orkspace…** (next to the move the map already
 - **Not copied:** its history, its renown and level, its spend, its sessions, its carts and what it keeps in
   `.orkcraft/` (a board's cards, a Loot queue). A copy starts at level 1, as a new building does.
 - It is one checkpoint: `create(<new id>): copied from <id> (<orkspace>)`.
-- Pure part in `scroll_garrisons.py` (`copy_building`), the files in `core/buildings.py`; the GUI only asks
-  where to and shows the toast.
+- Pure part in `scroll_garrisons.py` (`copy_building`), the files in `core/buildings.py` (`copy_to`); the GUI
+  (`building.copy`, `js/build.js` `CopyAsked`, the hut's menu) only asks where to and shows the toast.
+- As built: an ork's own script (`.orkcraft/scripts/<id>-<ork>.py`) is copied under the copy's name with the same
+  bytes, so its review stays true; a script it shares with others keeps its path. `.orkcraft/scripts/<id>/` and
+  `.orkcraft/blueprints/<id>/` are copied whole, and the spec's mentions of them follow. A copy of a copy is
+  numbered from the original (`pool_2` copied gives `pool_3`). Its chronicle starts with `building_copied`.
 
 ## 6. A map goes back as a whole
 
