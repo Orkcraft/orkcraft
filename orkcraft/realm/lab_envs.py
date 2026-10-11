@@ -20,6 +20,7 @@ import json
 import uuid
 from pathlib import Path, PurePosixPath
 
+from orkcraft.design import agents
 from orkcraft.realm import bench_kits
 
 PROJECT = "project"               # the setup's environment: a copy of the town's own project
@@ -70,7 +71,9 @@ def load_files(state_dir: Path, env_id: str) -> dict[str, str]:
 # -- writing one ---------------------------------------------------------------------------------------------------
 
 def env_prompt(about: str) -> str:
-    return f"""You write a small, self-contained project a Test bench runs AI agents in. It has no network: nothing in it may
+    return f"""{agents.brief("mechanic")}
+
+You write a small, self-contained project a Test bench runs AI agents in. It has no network: nothing in it may
 install packages, call an API or read a URL, so use only the language's standard library.
 
 What the person wants it to be:
@@ -104,7 +107,9 @@ def parse_env(text: str) -> tuple[str, dict[str, str]] | None:
 
 def set_prompt(goal: str, about: str, entries: list[dict], env: dict, what: str, count: int) -> str:
     where = "\n".join(f"- `{e['id']}`: {e['title']} ({e['word']}) — {e.get('takes', '')}" for e in entries)
-    return f"""You write the cases of one case set of a Test bench. It gives each case's input to a building or a chain of
+    return f"""{agents.brief("mechanic")}
+
+You write the cases of one case set of a Test bench. It gives each case's input to a building or a chain of
 buildings of an AI agents' town ({about}), and the same input to a bare AI tool, then compares time, tokens and how
 well each did. The mean over the set is what counts, so the cases are alike: the same kind of work, different each.
 

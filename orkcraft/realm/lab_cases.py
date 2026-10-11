@@ -17,6 +17,7 @@ import json
 import uuid
 from pathlib import Path
 
+from orkcraft.design import agents
 from orkcraft.realm import bench, bench_kits
 
 FILE = "lab.json"
@@ -78,7 +79,9 @@ def new_case(title: str, text: str, entry: str = "", expect: list | None = None,
 
 def case_prompt(goal: str, about: str, entries: list[dict], have: list[str] = ()) -> str:
     where = "\n".join(f"- `{e['id']}`: {e['title']} ({e['word']}) — {e.get('takes', '')}" for e in entries)
-    return f"""You plan the test cases of a Test bench. It gives each case's input to a building or a chain of buildings of an
+    return f"""{agents.brief("mechanic")}
+
+You plan the test cases of a Test bench. It gives each case's input to a building or a chain of buildings of an
 AI agents' town ({about}), and the same input to a bare AI tool, then compares time, tokens and how well each did.
 
 The goal of the testing, in the operator's words: {goal or 'see whether the buildings do better than the bare tool'}
@@ -202,7 +205,9 @@ def summary(results: dict, metric: str) -> dict:
 # -- what to change --------------------------------------------------------------------------------------------------
 
 def propose_prompt(goal: str, about: str, files: list[str], roads: list[str], results: list[str]) -> str:
-    return f"""You improve a scheme of an AI agents' town so it reaches its goal. The scheme: {about}.
+    return f"""{agents.persona("mechanic")}
+
+You improve a scheme of an AI agents' town so it reaches its goal. The scheme: {about}.
 Its roads: {'; '.join(roads) or 'none: one building'}.
 
 The goal, in the operator's words: {goal or 'do better than the bare AI tool'}

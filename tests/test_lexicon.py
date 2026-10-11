@@ -12,17 +12,19 @@ def test_a_concept_has_one_word():
     assert lexicon.term("chore", many=True) == "to-dos"
 
 
-def test_every_building_type_says_what_it_does_and_its_ork_who_it_is():
-    """A building has its plain word (Agent pool, Test bench); the ork in it its Camp name (Grunt, Mechanic)."""
+def test_a_building_is_named_by_what_it_does_and_its_ork_by_its_orkish_name():
+    """CLAUDE.md, Wording: a building's name says what it does (Office's way), its ork keeps its Camp name —
+    whatever the look."""
     keys = {t.key for t in lexicon.TERMS}
     for t in catalog.TYPES.values():
         if t.id in ("custom", "town_hall"):
             continue
+        assert (t.id in keys) or (t.id == "loot" and "loot_vault" in keys), t.id
         key = "loot_vault" if t.id == "loot" else t.id
-        assert key in keys, t.id
         assert lexicon.words(t.title) == lexicon.term(key), t.title
-        orc = "orc.loot" if t.id == "loot" else f"orc.{t.id}"
-        assert lexicon.words(t.orc) == t.orc in (lexicon.term(orc), lexicon.term(orc, many=True)), t.orc
+        assert lexicon.words(t.orc) == t.orc, t.orc                     # an ork's name is never rewritten
+        if f"orc.{t.id}" in keys:
+            assert t.orc.rstrip("s") in (lexicon.term(f"orc.{t.id}"), lexicon.term(f"orc.{t.id}", many=True).rstrip("s")), t.id
 
 
 def test_an_old_camp_spelling_reads_in_todays_word():
@@ -62,11 +64,10 @@ def test_a_path_is_not_a_concept():
     assert say("the loot.") == "the output."
 
 
-def test_the_heaviest_tier_stays_elder_and_the_night_s_elders_are_advisors():
+def test_the_heaviest_tier_is_a_veteran_and_the_nights_council_are_the_elders():
     say = lexicon.words
     assert say("★★★ Elder — opus") == "★★★ Veteran — opus" and say("Default — Quality: Elder") == "Default — Quality: Veteran"
-    assert say("The Elders advise") == "The Advisors advise" and say("the Elders' advice") == "the advisors' advice"
-    assert ("Elder", "Advisor") not in lexicon.table()
+    assert say("The Elders advise") == "The Elders advise" and lexicon.term("elders", many=True) == "Elders"
     from orkcraft.realm import modes, tiers
     assert modes.plain(tiers.label("elder")) == "Veteran" and say("warrior") == "warrior"   # a setting's value stays
 
@@ -77,14 +78,13 @@ def test_the_glossary_says_what_each_word_replaced():
     assert rows["ork"] == ("ork", "")
 
 
-def test_the_test_bench_reads_as_itself_under_every_name_it_had():
-    """The Mechanic, the Alchemist's Lab with a Brewmaster before: older towns keep those titles. The Mechanic is its
-    ork's name now, so a stored title says the Test bench through its type (`title`), never by the word alone."""
-    assert lexicon.title("lab", "Mechanic") == "Test bench" and lexicon.title("lab", "Bench of mine") == "Bench of mine"
-    assert lexicon.title("barracks", "Mechanic") == "Mechanic"
+def test_the_test_bench_and_its_mechanic_under_every_name_they_had():
+    """The Test bench was the Alchemist's Lab and its ork a Brewmaster, then a Gearhead: the Mechanic now."""
     assert lexicon.words("Alchemist's Lab") == "Test bench"
-    assert lexicon.words("Gearhead") == lexicon.words("Brewmaster") == lexicon.words("Mechanic") == "Mechanic"
-    assert lexicon.words("a mechanic, a reference") == "a mechanic, a reference"
+    assert lexicon.words("Gearhead") == lexicon.words("Brewmaster") == "Mechanic"
+    assert lexicon.words("🧪 Mechanic") == "🧪 Mechanic" and lexicon.words("Alchemist") == "Alchemist"
+    from orkcraft.realm import catalog
+    assert catalog.migrate({"id": "lab", "type": "lab", "title": "Mechanic"})["title"] == "Test bench"
 
 
 def test_the_town_scroll_is_the_town_file_and_a_project_is_its_folder():

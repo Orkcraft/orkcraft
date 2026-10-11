@@ -157,7 +157,7 @@ class LabRuns:
         where = (p.get("where") or "").lower()
         return next((b for b in ids if self.host.town.title_of(b).lower() in where or b in where), ids[0])
 
-    def try_change(self, w, subject: dict, proposal_id: str, building: str = "") -> None:
+    def try_change(self, w, subject: dict, proposal_id: str, building: str = "", after=None) -> None:
         """A proposal tried on the virtual building: settings and prompts through the building's keeper (a checked
         change of its spec, kept by the bench), code in the bench's own copy of the package. The town's building
         keeps what it has until Save changes."""
@@ -202,6 +202,8 @@ class LabRuns:
                     "at": time.strftime("%Y-%m-%dT%H:%M:%S")})
                 town.toast(f"Tried on the virtual {town.title_of(bid)}: {p['title']}"[:200], title="Test bench")
             w.changed()
+            if after is not None:
+                after(not got.error and got.changes)
 
         threading.Thread(target=work, daemon=True, name="lab-try").start()
         w.changed()
@@ -296,7 +298,8 @@ class LabRuns:
 
     # -- running ------------------------------------------------------------------------------------------------
 
-    def run(self, w, subject: dict, case_ids: list[str] | None = None, then_propose: bool = False) -> None:
+    def run(self, w, subject: dict, case_ids: list[str] | None = None, then_propose: bool = False,
+            then=None) -> None:
         if not subject.get("can_run", True):
             raise LabError("Runs come to this building later")
         if (job := self.job(w)) and not job.done:
@@ -329,7 +332,7 @@ class LabRuns:
         from orkcraft.gui.bench import Job
         label = cases[0]["title"] if len(cases) == 1 else f"every case ({len(cases)})"
         job = Job("run", "chain", label, subject=subject["id"],
-                  then=(lambda: self._propose_quietly(w, subject)) if then_propose else None)
+                  then=then or ((lambda: self._propose_quietly(w, subject)) if then_propose else None))
         try:
             code = code_overlay.env(w.state_dir) if any(c["kind"] == CODE for c in w.changes_of(subject["id"])) else {}
             code.update(self._cassette(w, subject, cases, folder, stamp))
@@ -374,7 +377,7 @@ class LabRuns:
         except LabError:
             pass
 
-    def propose(self, w, subject: dict) -> None:
+    def propose(self, w, subject: dict, after=None) -> None:
         spec = w.flow_spec(subject)
         base = bench_review.source_dir()
         files = sorted({f for b in spec["buildings"] for f in bench_review._files(b["type"], base)})
@@ -382,7 +385,12 @@ class LabRuns:
         results = w.results_of(subject["id"])
         lines = [lab_cases.result_line(c, results[c["id"]]) for c in w.cases_of(subject["id"]) if c["id"] in results]
         prompt = lab_cases.propose_prompt(w.state["goal"], spec["about"], files, roads, lines)
-        self._agent(w, subject, "propose", prompt, lambda text: w.set_proposals(subject["id"], lab_cases.parse_proposals(text)))
+        def done(text: str) -> None:
+            w.set_proposals(subject["id"], lab_cases.parse_proposals(text))
+            if after is not None:
+                after()
+
+        self._agent(w, subject, "propose", prompt, done)
 
     def tasks(self, w, subject: dict, picks: list[str], pool: str) -> int:
         items = [p for p in (w.state["proposals"].get(subject["id"]) or {}).get("items") or [] if p["id"] in picks]

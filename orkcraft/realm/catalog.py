@@ -479,6 +479,8 @@ def migrate(spec: dict) -> dict:
     if tid == "totem":                         # the Totem's look stays the Totem's: the post wears its own
         spec = {**spec, "icon": "🚏" if spec.get("icon") in (None, "", "🗿") else spec["icon"],
                 "title": "Signpost" if spec.get("title") == "Totem" else spec.get("title", "Signpost")}
+    if tid == "lab" and spec.get("title") == "Mechanic":   # the Test bench's old title: the Mechanic is its ork now
+        spec = {**spec, "title": "Test bench"}
     if tid in ALIASES:
         spec = {**spec, "type": ALIASES[tid]}
         if isinstance(spec.get("events"), list):

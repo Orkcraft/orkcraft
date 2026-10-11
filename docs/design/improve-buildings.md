@@ -1,6 +1,6 @@
 # Design — Improve: the Mechanic and the Alchemist
 
-Status: stages 0–7 and 3b built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
+Status: stages 0–8 and 3b built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
 road rule; a building's inputs; the Test bench's setup; environments, case sets and what is kept to spend less; the
 virtual building; GitHub and pull requests; the UX bench painting pictures and laying windows and cards out). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
 and keep it, **faster and cheaper than testing and rewriting it through Claude Code**.
@@ -16,6 +16,7 @@ and keep it, **faster and cheaper than testing and rewriting it through Claude C
 | 5 | GitHub: Connect GitHub in the mascot's menu (device flow); a code change goes as a pull request with its evidence (§4) | built |
 | 6 | The Alchemist redraws: images through the image tool with the shipped prompts, a region marked and commented, Reset; the Work window's layout as a UI document (§6) | built |
 | 7 | Cards s/m/l as documents, so the Alchemist lays them out too (§6.3) | built |
+| 8 | Orks by their orkish names, buildings by what they do; the Mechanic and the Alchemist as agents (design/agents/), on the Council of Elders, improving the town at night by the autonomy (§8) | built |
 
 ## 1. Why
 
@@ -30,9 +31,8 @@ pull request that carries its own evidence.
   look — the building's icon and sprite, its window's layout, its cards. Its sprite was painted with the others on
   sheet 5 and waited under `ux_lab/` ([building-sprites.md](building-sprites.md)).
 
-The interface says what a building does (Test bench, UX bench) and what its ork is (Tester, Designer); *Mechanic* and
-*Alchemist* are the Camp's spellings the lexicon turns into those (CLAUDE.md, *One vocabulary, two looks*). This
-document uses them as names for the two ideas.
+The interface names a building by what it does (Test bench, UX bench) and its ork by its orkish name (the
+Mechanic, the Alchemist), whatever the look (CLAUDE.md, *Orks by their orkish names*, stage 8).
 
 ## 2. Build and roads (stage 0)
 
@@ -223,6 +223,57 @@ what it says), `foot` (what it works on, where it sends), `when` (when it last d
   **Lay it out** is one call (the steward's tool) whose answer is checked and sent back once with its problems;
   **Reset** shows the card as its code draws it; **Apply** keeps the layout for every building of the type (after
   Reset, it takes this machine's away).
+
+## 8. The orks: their names, who they are, and the night (stage 8, built 2026-10-11)
+
+### 8.1 Orks by their orkish names, buildings by what they do
+
+Asked by the owner: an ork is called by its orkish name and a building by what it does, Office's way, whatever the
+look. The lexicon (`realm/lexicon.py`) turned the other way for the orks: each `orc.<type>` term's word is its
+orkish name (the Mechanic, the Alchemist, a Grunt, the Lookout, the Scavenger…), the Town Hall's own orks keep
+theirs (Mason, Warder, Pathfinder…), and the night's council are the Elders. No plain job title is rewritten into an
+ork's name (several are also a building's word: a Router is a building), so text that still says one stays as it is.
+The Test bench's ork, a Gearhead before (a Brewmaster before that), is the Mechanic; the building's old title
+*Mechanic* reads *Test bench* in an older town (`catalog.migrate`). CLAUDE.md says the rule.
+
+### 8.2 The Mechanic and the Alchemist as agents
+
+Each is a Markdown file, `design/agents/mechanic.md` and `alchemist.md` (`design/agents.py`):
+
+- **The Mechanic** — a senior AI engineer who makes a building do its work better for less: quality first and
+  measured, then tokens, dollars and time against the bare AI tool, proof on the cases before any change; the
+  cheapest change that moves the goal (a setting, then a prompt, then a road, code last); the usual waste to look
+  for; never trading away a check or a guard.
+- **The Alchemist** — a senior UI/UX designer: clarity at a glance, the design system's roles only, the same words
+  for the same things, the camp's character; remove before adding; a picture keeps its silhouette and palette.
+
+Its first paragraph (`brief`, a few dozen tokens) goes with every light ask — the cases, an environment, a case
+set, a card's layout, a picture, a window's layout; the whole file (`persona`) only with the asks that decide —
+what to change in a building, a code change.
+
+### 8.3 On the Council of Elders
+
+The Council that reviews every change the orks make (`realm/fastpath.py` `ROLES`) seats both: the **Alchemist**
+takes the old terminal-screen seat (its id `artisan` stays, older verdicts name it) and guards how a building reads;
+the **Mechanic** has a seat of its own and guards quality per token (a check removed, a heavier tier with no measured
+reason, context sent again, a change that cannot be shown better on its cases).
+
+### 8.4 At night (`gui/improve_night.py`)
+
+While it is quiet and within the night's budget (the Council's `improve_per_night_usd`, $1 by default; each run
+counted at its set's estimate, each model ask at $0.10):
+
+- **The Mechanic**, one Test bench at a time, one that ran its cases by day (so its cost is known) and has a goal:
+  its proposals written again; the first settings or prompt change not tried yet tried on the virtual building; the
+  cases run again (the bare side kept, the MCP cassettes played back: cheap); the goal's mean decides. Better and
+  the autonomy lets it: saved by the orks, on probation, back by itself on a 👎 (`realm/evolution.py`); better and it
+  does not: it waits on the virtual building for Save changes; not better: taken back.
+  Autonomy (the building's own, else the town's): ⛓️‍💥 unchained saves what is better, 🕰 on the clock only what is
+  cheaper or faster with no loss of quality, ⛓️ in chains nothing. Roads and code are never the night's.
+- **The Alchemist**, one UX bench at a time whose type's cards were never laid out: its cards laid out so each size
+  says what matters most; applied when unchained (Reset takes it back), else a draft in the bench.
+- **The morning**: one toast, *While you were away, the Elders*, a line each; kept in
+  `.orkcraft/council/improve.jsonl`.
 
 ## 7. Tokens: cheaper than Claude Code
 

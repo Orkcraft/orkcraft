@@ -15,6 +15,7 @@ import tempfile
 import threading
 from pathlib import Path
 
+from orkcraft.design import agents
 from orkcraft.realm import jobs
 
 PROMPTS = Path(__file__).resolve().parent.parent / "design" / "prompts"
@@ -43,7 +44,9 @@ def prompt(kind: str, what: str, words: str, region: dict | None = None) -> str:
         where = (f"\nChange ONLY the region from {region['x']:.0%} to {region['x'] + region['w']:.0%} of the width and "
                  f"from {region['y']:.0%} to {region['y'] + region['h']:.0%} of the height (from the top left) of "
                  "reference.png; keep every other pixel exactly as it is.")
-    return f"""{system}
+    return f"""{agents.brief("alchemist")}
+
+{system}
 
 The picture: {what}. `reference.png` in this folder is how it is now.
 What to change, in the person's words: {words.strip()}{where}

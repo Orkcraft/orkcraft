@@ -210,7 +210,7 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
 | 📦 Loot Vault | Quartermaster | the review checkpoint on a road: by its rules a cart passes or is held; under a waiting cart, the files its task committed on its branch (diff or content; a picture shows its type, size and dimensions, and in the GUI the picture itself). In the GUI a text cart is edited in its window (Edit: Save, or Accept this version) or in Lake, and one file of a held cart's branch is rejected on its own — put back on the branch as the base has it by a commit there, its content kept under `rejected/carts/`, Bring it back undoes it — while the rest of the cart goes on (a rework tells the ork which files were rejected). TUI keys `a` accept · `e` edit and accept · `r` reject / send back for rework with a reason (≤ 3 rounds, then 🔥 needs you) · `d` drop · `u` restore a rejected file · `o` open the highlighted file in the system viewer (a branch's file is copied out first); the chain's tokens and cost; every decision teaches the building that made the cart; a **reply** (a cart whose kind of work is Reply) is always held, whatever the rules, and goes on with this gate's mark so a Catapult sends it without asking again | `loot.passed/rework/needs_you`, `generator.accepted/rejected`, `loot.stored` |
 | ⛏️ The Mine | Prospector | deep research on the open web (docs/design/mine.md): a question (New research, `/research`, or a cart: its title, the rest what it must cover) is planned, then searched by every AI tool that can search the web (Claude Code, Codex, Hermes; `tools`), each alone in an empty folder; the findings are grouped and checked — **confirmed** takes two models (by family: Hermes on a Claude model is Claude) and two sites, a quote copied on two sites counts once; what is open is searched again on new sites, then debated; what stays **disputed** asks you in Answers (Search more · Accept · Keep it disputed), up to `wait_answers`. Stops at `limit` a research and `month_limit` a month, and says so. The report (✓ ⚠ ①, sources numbered, who searched what for how much) goes to the Wiki's inbox and on by a return road; `repeats` run on schedule and show on the Calendar, with what changed | `mine.reported`, `mine.asked`, `mine.failed` |
 | 📻 The Gramophone | Bard | a result you can listen to on the road (docs/design/audio-briefing.md): a text that comes (a report, a summary, a wiki page; a file as its content) or that you paste becomes a short spoken episode — two hosts in two voices, as a podcast (`format: dialogue`, the default; `voice`, `voice_b`), or one narrator (`monologue`) — `minutes` long (default 8), in the text's language or `language`. Its steward writes the script for the ear (e-mails, phones, cards and tokens taken out first), rules strip what cannot be said (code, links, paths), and Gemini TTS speaks it (`voice`, `tts_model`; the key is named in `key`: `GEMINI_API_KEY` or a login kept on this machine, never the key itself). About $0.03 a minute to speak; an episode over `cap_usd` waits with its script for **Speak anyway**. The episodes play in the window (▶), download as .m4a (with ffmpeg) or .wav, and reach a paired phone (`audio.fetch`); it keeps the last `keep` | `gramophone.done` (the transcript), `gramophone.failed` |
-| 🧪 Test bench | Mechanic | the building whose road comes in, or a chain (a `lab.case` road out to its first building, a road back from its last), on its test cases (docs/design/test-bench.md): each case runs in a copy of that building with its own settings (no remote: nothing is pushed) beside the bare AI tool on the same model; time, spend, tokens, every check side by side, the building's decisions on the clock. Its reviewers (an architect, an AI engineer, an AI researcher; a product manager and designer; a product manager and an architect with the AHA moment) read the building's code and say what to change; Make tasks sends the ticked findings to an Agent pool or down its roads. Its own window: a goal in words, the cases an agent writes from it or you add (each tested against a bare harness and tier you pick, time · tokens · quality by a blind judge), Run all cases, and proposals for code, roads, prompts or settings, kept until it is demolished (§10). Up to `max_spend` a case on the building's side, on `tool` | `lab.case` (only says where a chain begins: nothing goes down it in the town), `lab.report` (a run as text), `lab.missed`, `lab.finding` |
+| 🧪 Test bench (Mechanic) | Gearhead | the building whose road comes in, or a chain (a `lab.case` road out to its first building, a road back from its last), on its test cases (docs/design/test-bench.md): each case runs in a copy of that building with its own settings (no remote: nothing is pushed) beside the bare AI tool on the same model; time, spend, tokens, every check side by side, the building's decisions on the clock. Its reviewers (an architect, an AI engineer, an AI researcher; a product manager and designer; a product manager and an architect with the AHA moment) read the building's code and say what to change; Make tasks sends the ticked findings to an Agent pool or down its roads. Its own window: a goal in words, the cases an agent writes from it or you add (each tested against a bare harness and tier you pick, time · tokens · quality by a blind judge), Run all cases, and proposals for code, roads, prompts or settings, kept until it is demolished (§10). Up to `max_spend` a case on the building's side, on `tool` | `lab.case` (only says where a chain begins: nothing goes down it in the town), `lab.report` (a run as text), `lab.missed`, `lab.finding` |
 | 🪨 Tally Crag | Crag Carver | complex data made visual: spend, tokens, runs (`.orkcraft/ledger.jsonl`), quotas used, busy orks, tasks, CPU, numbers by road — vertical or horizontal Unicode bars | `charts.threshold` |
 | 🎯 The Catapult | Loader | waits for every road in `wait_for` (fan-in), checks a JSON Schema, sends over HTTP(S) with a token from the environment — shots queue one at a time — or through an MCP server (carried by the tool that has it, then a direct path the ork learns), or, in browser mode, its ork finds the intent's forms, fills them in turn and repairs a script the site broke; 🧪 dry run | `catapult.sent`, `catapult.failed`, `catapult.repaired` |
 
@@ -960,7 +960,9 @@ the CLI paths.
   the town's folder · a project the town has · a new project in `~/Orkcraft/projects/<name>` with git · a folder…);
   a land's menu **Project…** and `/project` change it. A folder with no git asks once before git starts there;
   the disk, the home folder and a folder inside another repository are refused, and so is a first commit over
-  200 MB. War Tent sessions and the Agent pool (without a folder of its own) work in the orkspace's project.
+  200 MB. War Tent sessions, the Agent pool (without a folder of its own), the Forge, a codebase wiki and Loot
+  work in the orkspace's project; their own state stays in the town. A guarded town guards its projects too
+  (`orkcraft hooks install` writes the hooks into each of them).
 - **Copy to orkspace…** (a hut's menu): a building lives on one map; a copy on another is a building of its own
   with its orks, their instructions, scripts and settings. Roads come along only from buildings on that map (the
   toast names the rest); its history, level and spend stay with the original.
@@ -1294,30 +1296,30 @@ onboarding (*Punk ork*).
 | Metrics | Tally Crag |
 | Research | The Mine |
 | Audio briefing | The Gramophone |
-| Test bench | Mechanic (now its ork's name) |
+| Test bench | Mechanic |
 | Publisher | The Catapult |
 | Script | Workshop |
-| Scavenger (an ork) | — |
-| Lookout (an ork) | — |
-| Grot Pointa (an ork) | — |
-| Miller (an ork) | — |
-| Hornblower (an ork) | — |
-| Taskmaster (an ork) | — |
-| Grunt (an ork) | — |
-| Chieftain (an ork) | — |
-| Drummer (an ork) | — |
-| Woodcutter (an ork) | — |
-| Scroll Scrapper (an ork) | — |
-| Seer (an ork) | — |
-| Smith (an ork) | — |
-| Quartermaster (an ork) | — |
-| Crag Carver (an ork) | — |
-| Prospector (an ork) | — |
-| Bard (an ork) | — |
-| Mechanic (an ork) | Gearhead, Brewmaster |
-| Loader (an ork) | — |
-| Tinker (an ork) | — |
-| Peon (an ork) | — |
+| Sorter | Scavenger |
+| Listener | Lookout |
+| Router | Grot Pointa |
+| Transformer | Miller |
+| Notifier | Hornblower |
+| Task manager | Taskmaster |
+| Worker | Grunt |
+| Reviewer | Chieftain |
+| Scheduler | Drummer |
+| File picker | Woodcutter |
+| Librarian | Scroll Scrapper |
+| Inspector | Seer |
+| Merger | Smith |
+| Gatekeeper | Quartermaster |
+| Metrics ork | Crag Carver |
+| Researcher | Prospector |
+| Narrator | Bard |
+| Tester | Gearhead |
+| Publisher | Loader |
+| Script runner | Tinker |
+| Worker | Peon |
 
 **Questions on another orkspace.** Its War Map row takes the question's colour (fire orange) and
 ends with 🔥. Switching to it (F1–F8 or a click on the row) opens

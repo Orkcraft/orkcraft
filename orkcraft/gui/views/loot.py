@@ -338,7 +338,7 @@ def _preview(w, args: dict) -> dict:
 
 def _repo_file(w, rel: str) -> bytes:
     """A file of the repository as it is now, when it is small enough to show (b"" otherwise)."""
-    root = w.repo_root.resolve()
+    root = w.project_root.resolve()
     p = (root / rel).resolve()
     if p.is_relative_to(root) and p.is_file() and p.stat().st_size <= THUMB_BYTES:
         return p.read_bytes()

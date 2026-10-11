@@ -16,6 +16,7 @@ import shutil
 from pathlib import Path
 
 import orkcraft
+from orkcraft.design import agents
 from orkcraft.realm import bench
 
 DIR = "code"
@@ -89,7 +90,9 @@ def drop(state_dir: Path) -> None:
 
 
 def code_prompt(title: str, detail: str, where: str, effect: str, files: list[str]) -> str:
-    return f"""You change Orkcraft's own code (a Python package, here in `orkcraft/`) for one proposed improvement. Make the
+    return f"""{agents.persona("mechanic")}
+
+You change Orkcraft's own code (a Python package, here in `orkcraft/`) for one proposed improvement. Make the
 smallest change that does what the proposal says, in the files that make it; keep every name other code uses, and
 the style of the code around it. Change only `orkcraft/`. Do not run anything that needs the network.
 

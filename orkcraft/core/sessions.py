@@ -33,7 +33,7 @@ import pyte
 
 from orkcraft.core import bus, timeline
 from orkcraft.core.town import Town
-from orkcraft.realm import chronicles, harnesses, pipes, worktrees
+from orkcraft.realm import chronicles, harnesses, pipes, projects, worktrees
 from orkcraft.realm.roster import WorkerInfo
 from orkcraft.sources import sessions as past
 
@@ -330,8 +330,9 @@ class Sessions:
         if b_spec is None or not town.roads.has_roads(b_id, pipes.ON_TASK):
             return
         title, md = pipes.task_report(name, b_spec.title, s.text_lines())
-        cwd, root = Path(s.cwd), town.repo_root
-        worktree = str(cwd.relative_to(root)) if cwd != root and root in cwd.parents else ""
+        cwd = Path(s.cwd)
+        root = projects.root_of(town.scroll, s.orkspace, town.repo_root) if s.orkspace else town.repo_root
+        worktree = str(cwd.relative_to(root)) if cwd != root and root in cwd.parents else ""   # Loot reads it there
         hop = pipes.hop(b_id, ork_id, "task", worktree=worktree, outcome="done",
                         since=max(0.0, time.monotonic() - s.started), run=s.key)
         town.roads.emit(pipes.Payload(kind=pipes.TEXT, value=md, source=b_id, mode=pipes.ON_TASK, title=title,

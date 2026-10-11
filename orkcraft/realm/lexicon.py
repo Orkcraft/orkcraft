@@ -120,15 +120,15 @@ TERMS: tuple[Term, ...] = (
     _t("freedom.clock", "Apply if unanswered", "", "On the clock"),
     _t("freedom.free", "Apply at once", "", "Unchained"),
     _t("chronicles", "History", "", "Chronicles"),
-    # the night's advisors were only ever "the Elders": a lone "Elder" was the heaviest model tier, a Veteran now
-    _t("elders", "Advisor", "Advisors", "", "Elders"),
+    # the night's council of orks (realm/elders.py, realm/fastpath.py ROLES): orks, so their Camp name, whatever the look
+    _t("elders", "Elders", "Elders"),                               # never "Elder" alone: that was the heaviest tier
     _t("builders", "Building designer", "", "Mason & Artisan"),
     # the Town Hall's own orks
-    _t("orc.mason", "Data planner", "", "Mason"),
-    _t("orc.artisan", "Layout designer", "", "Artisan"),
-    _t("orc.warder", "Security reviewer", "", "Warder"),
-    _t("orc.pathfinder", "Usability reviewer", "", "Pathfinder"),
-    _t("orc.treasurer", "Cost reviewer", "", "Treasurer"),
+    _t("orc.mason", "Mason"),
+    _t("orc.artisan", "Artisan"),
+    _t("orc.warder", "Warder"),
+    _t("orc.pathfinder", "Pathfinder"),
+    _t("orc.treasurer", "Treasurer"),
     _t("council_word", "Review board", "", "Council"),
     # the Task Fields' other two parts (one board: the orks' kanban, the person's checklist, the notes)
     _t("chore", "to-do", "to-dos", "chore", "chores"),             # a to-do of the person's own
@@ -200,7 +200,7 @@ TERMS: tuple[Term, ...] = (
     _t("scrolls", "Wiki", "", "Scroll Dump"),
     _t("mine", "Research", "", "The Mine"),                         # "Mine" alone stays: a Task board's lane says it
     _t("gramophone", "Audio briefing", "", "The Gramophone"),
-    _t("lab", "Test bench"),                 # a building on its test cases (docs/design/test-bench.md); its ork is the Mechanic
+    _t("lab", "Test bench"),                                        # a building on its test cases (docs/design/test-bench.md)
     _t("ux_lab", "UX bench", "", "Alchemy Tower"),            # a building's look (docs/design/improve-buildings.md)
     _t("lake", "Inspector", "", "Lake of Insight"),
     _t("forge", "Branches & PRs", "", "The Forge"),
@@ -208,7 +208,7 @@ TERMS: tuple[Term, ...] = (
     _t("crag", "Metrics", "", "Tally Crag"),
     _t("catapult", "Publisher", "", "The Catapult"),
     _t("workshop", "Script", "Scripts", "Workshop", "Workshops"),
-    # -- the orks who live in them: who they are, so the Camp's names (the buildings say what they do) ----------
+    # -- the orks who live in them: their orkish names, whatever the look (CLAUDE.md, Wording) ---------
     _t("orc.pit", "Scavenger"),
     _t("orc.watchtower", "Lookout"),
     _t("orc.signpost", "Grot Pointa"),
@@ -221,8 +221,8 @@ TERMS: tuple[Term, ...] = (
     _t("orc.forest", "Woodcutter"),
     _t("orc.scrolls", "Scroll Scrapper"),
     _t("orc.gramophone", "Bard"),
-    _t("orc.lab", "Mechanic", "Mechanics", "Gearhead", "Gearheads"),
-    _t("orc.ux_lab", "Alchemist", "Alchemists"),
+    _t("orc.lab", "Mechanic", "Mechanics", "Gearhead", "Gearheads"),  # the Test bench's: a senior AI engineer (design/agents/mechanic.md)
+    _t("orc.ux_lab", "Alchemist", "Alchemists"),        # the UX bench's: a senior UI/UX designer (design/agents/alchemist.md)
     _t("orc.mine", "Prospector", "Prospectors"),
     _t("orc.lake", "Seer"),
     _t("orc.forge", "Smith", "Smiths"),
@@ -236,20 +236,11 @@ TERMS: tuple[Term, ...] = (
 # Short names the interface uses for a building as well as its full title.
 _ALSO = {"lake": ("Lake",), "pit": ("Pit",), "mill": ("Mill",), "horn": ("Horn",), "forge": ("Forge",),
          "catapult": ("Catapult",), "gramophone": ("Gramophone",), "town_hall": ("Town hall",),
-         # the Test bench was the Alchemist's Lab with a Brewmaster before it was the Mechanic: older towns keep those
+         # the Test bench was the Alchemist's Lab with a Brewmaster before: older towns keep those
          "lab": ("Alchemist's Lab",), "orc.lab": ("Brewmaster",)}
 
-# A type's old titles that are an ork's word today: `words` cannot tell them apart, so a building's title says its
-# type's word through `title` (gui/state.py). The Test bench was titled the Mechanic, its ork's name now.
-_OLD_TITLES = {"lab": ("Mechanic",)}
-
-
-def title(type_id: str, text: str) -> str:
-    """A building's title as stored, in today's word when it is an old title of its type that `words` leaves be."""
-    return term(type_id) if text in _OLD_TITLES.get(type_id, ()) else text
-
 # Whole phrases first: where a word for word would read wrong.
-_PHRASES = {"Into the pit": "Dropped", "the Elders' advice": "the advisors' advice",
+_PHRASES = {"Into the pit": "Dropped",
             "Not enough food": "No ork slots left", "Treasury empty": "Budget spent",
             "Halt All Operations": "Stop all", "Halt All": "Stop all"}
 
@@ -266,7 +257,9 @@ def _pairs() -> list[tuple[str, str]]:
     """Every old spelling with today's word, longest first."""
     out: dict[str, str] = dict(_PHRASES)
     for t in TERMS:
-        if not t.was and not t.was_many and t.key not in _ALSO:
+        for short in _ALSO.get(t.key, ()):
+            out.setdefault(short, t.word)
+        if not t.was and not t.was_many:
             continue
         if t.was:
             out.setdefault(t.was, t.word)
@@ -274,8 +267,6 @@ def _pairs() -> list[tuple[str, str]]:
             out.setdefault(t.was_many, t.many or t.word)
         if t.was.startswith("The "):                        # "The Mill" is also "the Mill" mid-sentence
             out.setdefault("the " + t.was[4:], t.word)
-        for short in _ALSO.get(t.key, ()):
-            out.setdefault(short, t.word)
     return sorted(out.items(), key=lambda kv: len(kv[0]), reverse=True)
 
 

@@ -369,9 +369,12 @@ def ask(repo_root: Path, spec: dict, scroll, building_id: str, request: str, *, 
     return p
 
 
-def apply(town: Town, building_id: str, p: Proposal, request: str = "") -> list[str]:
+def apply(town: Town, building_id: str, p: Proposal, request: str = "", by: str = "you",
+          source: str = "steward") -> list[str]:
     """The person takes the keeper's proposal: checked again on the spec as it stands now, saved, a
-    checkpoint `keeper(<id>)` (Revert takes it back), a line in the chronicle and the ledger. [] or the problems."""
+    checkpoint `keeper(<id>)` (Revert takes it back), a line in the chronicle and the ledger. [] or the problems.
+    `by="orcs"`: the orks took it themselves (the Elders at night): it is on probation, and goes back by itself on a
+    👎 (realm/evolution.py)."""
     spec = town.custom_specs.get(building_id)
     if spec is None:
         return ["its keeper keeps no settings here"]
@@ -399,8 +402,8 @@ def apply(town: Town, building_id: str, p: Proposal, request: str = "") -> list[
     sha = town.checkpoint("keeper", building_id, f"{p.kind}: {why}"[:60])
     town.record(building_id, "proposal_applied", what=f"the keeper's new {p.kind}: {why}")
     try:
-        evolution.record(town.repo_root, evolution.Change(building_id, "set_config", "steward", f"new {p.kind}",
-                                                          why[:200], by="you", sha=sha or ""))
+        evolution.record(town.repo_root, evolution.Change(building_id, "set_config", source, f"new {p.kind}",
+                                                          why[:200], by=by, sha=sha or ""))
     except OSError:
         pass
     return []

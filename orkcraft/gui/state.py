@@ -79,7 +79,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
         since = muster.alert_first_seen.get(asking.alert.id) if asking else None
         worker = town.workers.get(bs.id)
         out.append({
-            "id": bs.id, "title": lexicon.title(catalog.type_of(spec).id if spec else "", bs.title), "icon": bs.icon,
+            "id": bs.id, "title": bs.title, "icon": bs.icon,
             "type": (type_id := catalog.type_of(spec).id if spec else bs.preset_ref or bs.id),
             "hut": list(bs.hut) if bs.hut else None,
             "size": list(bs.hut_size) if bs.hut_size else None,   # its card stretched by the person (js/hut.js)

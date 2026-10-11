@@ -1,6 +1,6 @@
 # Design — 📁 Projects: the folder an orkspace works in, and a way back in time
 
-Status: design notes, written 2026-10-11; stages 0–4 are done; §8 is later. Builds on the orkspaces of the Town Scroll
+Status: design notes, written 2026-10-11; stages 0–5 are done. Builds on the orkspaces of the Town Scroll
 (`scroll.py` `Orkspace`, `GitLink`), the orkspace worktrees (`realm/worktrees.py`), the camp's checkpoints
 (`realm/checkpoint.py`) and the first commit the Agent pool makes (`realm/jobs.py` `ensure_repo`). Wording: ork,
 orkestration (CLAUDE.md).
@@ -12,7 +12,7 @@ orkestration (CLAUDE.md).
 | 2 | **Copy to orkspace…** for a building (§5) | done |
 | 3 | a map goes back as a whole: the orkspace's checkpoints (§6) | done |
 | 4 | snapshots of a project's files before an ork works, and one **History** to go back (§7) | done |
-| 5 | every worker that touches files works in its orkspace's project, not the town's root (§8) | 5.1 Forge, 5.2 codebase wiki |
+| 5 | every worker that touches files works in its orkspace's project, not the town's root (§8) | done |
 
 ## 1. The problem
 
@@ -215,6 +215,13 @@ A worker asks `Worker.project_root` (its building's orkspace's project, else the
   the project (`ScrollsWorker.work_root`); its wiki MCP server is the project's. A team, design or general wiki
   stays the town's. A codebase wiki made before the orkspace had a project stays where it was; the next ingest
   starts one in the project.
+- **5.3 Loot** — done: the changed files it reviews (accept, reject, restore), the worktrees and branches of its
+  carts and their previews are the project's; the vault, drafts and 👍 / 👎 stay in the town. A War Tent session in a
+  project's worktree names that worktree relative to the project, so Loot finds it there.
+- **5.4 the Security reviewer (Warder)** — done: when the town is guarded (its `.claude/settings.json` carries our
+  hooks), a project it links or makes is guarded too (a new project's hooks are in its first commit); the Project
+  dialog says *the Security reviewer guards it*, or offers **Guard it with the Security reviewer**.
+  `orkcraft hooks install` / `uninstall` in the town also guard / unguard each of its projects.
 
 ## 9. What stays as it is
 

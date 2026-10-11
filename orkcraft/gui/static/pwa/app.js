@@ -1,12 +1,13 @@
 // The town in a phone's browser (gui/pwa.py; docs/design/mobile.md §8.1, §10, a prototype). No framework and
-// no build: the phone listener serves these files as they are (this one, util.js, dock.js). It speaks the
+// no build: the phone listener serves these files as they are (this one, util.js, dock.js, town.js). It speaks the
 // phone's protocol (gui/phones.py): the compact snapshot (`state`), a command and its `reply`, and `news` while
 // the app is open. It may do what a phone may (gui/mobile.py COMMANDS): answer a question, follow the Advisor,
 // Stop all, ask the Warchief and drop a text, a link or a file into Drop file here. Nothing else, whatever
 // this page sends: the listener refuses the rest.
 
-import { h, store, minutes, guessName } from "./util.js";
+import { h, store, guessName } from "./util.js";
 import { makeDock } from "./dock.js";
+import { makeTown } from "./town.js";
 
 const PROTOCOL = "orkcraft.v1";
 const API = 1;
@@ -203,24 +204,20 @@ document.addEventListener("visibilitychange", () => {
 
 // -- the town -----------------------------------------------------------------------------------------
 
-// The first screen is what asks (the summary, then the questions), then the buildings; what a phone does now
-// and then (the Warchief, Drop file here, the look, Stop all) is the bar at the foot (dock.js).
+// The first screen is what asks (the summary, then the questions in their buildings' tiles), then the
+// buildings in trouble or at work, then the quiet ones as a grid (town.js); what a phone does now and then
+// (the Warchief, Drop file here, the look, Stop all) is the bar at the foot (dock.js).
 function layout() {
   const parts = {
     status: h("p", { class: "status", role: "status" }),
     install: h("div"),
     head: h("header", { class: "head" }),
     news: h("div", { class: "news", "aria-live": "polite" }),
-    summary: h("p", { class: "summary" }),
-    alerts: h("div", { class: "list" }),
-    buildings: h("ul", { class: "buildings" }),
     foot: h("p", { class: "muted foot" }),
   };
+  parts.town = makeTown({ send, rerender: () => { if (town) parts.town.render(town); } });
   parts.dock = makeDock({ send, flash, building, device: () => device, unpair: unpairHere, shared });
-  show(parts.status, parts.install, parts.head, parts.news,
-    h("section", { class: "card asking", "aria-labelledby": "answers-h" },
-      h("h2", { id: "answers-h" }, "Answers"), parts.summary, parts.alerts),
-    h("section", { class: "card" }, h("h2", {}, "Buildings"), parts.buildings),
+  show(parts.status, parts.install, parts.head, parts.news, ...parts.town.parts,
     parts.foot, parts.dock.el, ...parts.dock.sheets);
   return parts;
 }
@@ -278,19 +275,7 @@ function render(s) {
       hud.quota && h("span", { class: `pill ${hud.quota_level || "ok"}` }, `${words.quota || "Quota"} ${hud.quota}`),
       h("span", { class: "pill" }, `${hud.agents_working ?? 0} of ${hud.agents ?? 0} orks working`)));
 
-  const alerts = s.alerts || [];
-  const n = alerts.length;
-  const longest = Math.max(0, ...alerts.map((a) => a.waited || 0));
-  ui.summary.textContent = n ? `${n === 1 ? "An ork waits" : `${n} orks wait`} on you, the longest ${minutes(longest)}.`
-    : "No ork is waiting on you.";
-  ui.summary.classList.toggle("asks", n > 0);
-  ui.alerts.replaceChildren(...alerts.map(question));
-
-  const asking = [...(s.buildings || [])].sort((x, y) => Boolean(y.alert) - Boolean(x.alert));   // what asks first
-  ui.buildings.replaceChildren(...asking.map((b) => h("li", { class: b.alert ? "asks" : "" },
-    h("span", { class: "name" }, camp ? b.title : (b.title_plain || b.title)), h("span", { class: "muted" }, b.state || ""),
-    b.alert && h("span", { class: "badge" }, "asks"))));
-
+  ui.town.render(s);
   ui.dock.render(s);
   if (first) {
     phoneLine();
@@ -299,32 +284,6 @@ function render(s) {
 }
 
 const building = (type) => (town?.buildings || []).find((b) => b.type === type);
-
-function question(a) {
-  const msg = h("p", { class: "warn", hidden: true });
-  const answer = async (name, args, buttons) => {
-    buttons.forEach((b) => { b.disabled = true; });
-    const r = await send(name, args);
-    if (!r.ok) {
-      msg.textContent = r.error;
-      msg.hidden = false;
-      buttons.forEach((b) => { b.disabled = false; });
-    }
-  };
-  const buttons = [];
-  for (const [key, label] of a.options || []) {
-    buttons.push(h("button", { class: "btn", onclick: () => answer("orders.answer", { id: a.id, key }, buttons) }, label || key));
-  }
-  if (a.advice) {
-    buttons.push(h("button", { class: "btn primary", onclick: () => answer("orders.follow", { id: a.id }, buttons) }, "Follow the Advisor"));
-  }
-  return h("article", { class: "question" },
-    h("p", { class: "muted" }, `${a.who || "An ork"} · waiting ${minutes(a.waited || 0)}`),
-    h("p", { class: "title" }, a.title),
-    (a.context || []).length > 0 && h("pre", {}, a.context.join("\n")),
-    a.advice && h("p", { class: "advice" }, `The Advisor suggests ${a.advice.key}: ${a.advice.why}`),
-    h("div", { class: "answers" }, buttons), msg);
-}
 
 // -- news ---------------------------------------------------------------------------------------------
 

@@ -324,12 +324,16 @@ def main(argv: list[str] | None = None) -> int:
         try:
             if args.action == "install":
                 paths = hooks_install.install_all(root)
+                for folder in hooks_install.project_folders(root):     # the town's projects are guarded too
+                    paths += hooks_install.install_all(folder)
                 if any(p.parent.name == ".agents" for p in paths) and _agy_global_yes(args.agy_global):
                     paths.append(hooks_install.install_agy_global())
                 if hooks_install.wants_hermes() and _agy_global_yes(args.hermes_global, hooks_install.HERMES_GLOBAL_ASK):
                     paths.append(hooks_install.install_hermes_global())
             else:
                 paths = hooks_install.uninstall_all(root, agy_global=args.agy_global is not False)
+                for folder in hooks_install.project_folders(root):
+                    paths += hooks_install.uninstall_all(folder, agy_global=False)
         except ValueError as e:
             sys.stderr.write(f"orkcraft error: {e}\n")
             return 1

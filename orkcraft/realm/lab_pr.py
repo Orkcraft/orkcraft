@@ -65,7 +65,7 @@ def body(goal: str, about: str, why: str, metric: str, sets: list[dict], rows: l
         return "—" if v is None else f"{v:+.0%}"
 
     ahead = sum(_ahead(r, metric) for _c, r in rows)
-    lines = [f"Sent from a Test bench in Orkcraft {orkcraft.__version__} (its ork, the Mechanic).", "",
+    lines = [f"Sent from a Test bench in Orkcraft {orkcraft.__version__} (the Mechanic).", "",
              "## What it changes", why or "—", "", "Files: " + ", ".join(f"`{f}`" for f in touched), "",
              "## The goal", goal or "do better than the bare AI tool", "", f"Scheme: {about}", "",
              "## Evidence",
