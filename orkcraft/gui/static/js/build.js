@@ -13,6 +13,7 @@ export const building = signal(false);            // the Build dialog is open: t
 export const laying = signal(null);                // {from, to}: a road waits for what it carries
 export const pickedRoad = signal(null);            // the road key the person clicked
 export const demolishing = signal(null);           // the building id a Demolish dialog asks about
+export const copying = signal(null);               // the building id a Copy to orkspace dialog asks about
 export const settingUp = signal(null);             // {id, type}: just raised, its setup asked in the Warchief's line
 export const placing = signal(null);               // {type, title, bare, yard}: picked in Build, its ghost under the mouse
 export const constructing = signal({});            // building id → until when its scaffolding stands (Infinity: its setup)
@@ -267,6 +268,23 @@ export function DemolishAsked() {
   const b = id && town.value.buildings.find((x) => x.id === id);
   if (!b) return null;
   return html`<${Demolish} b=${b} onClose=${() => { demolishing.value = null; }} />`;
+}
+
+/** Copy to orkspace, asked from the hut's menu (docs/design/projects.md §5): the copy is a building of its own on
+ *  the map picked, with its orks and settings; its history stays with the original. */
+export function CopyAsked() {
+  const id = copying.value;
+  const t = town.value;
+  const b = id && t.buildings.find((x) => x.id === id);
+  if (!b) return null;
+  const close = () => { copying.value = null; };
+  const others = t.orkspaces.filter((o) => o.id !== t.active_orkspace);
+  const copy = (o) => command("building.copy", { id: b.id, orkspace: o.id }).then(close, () => {});
+  return html`<${Dialog} title=${`${say("Copy")} ${say(b.title)}`} onCancel=${close}
+      text=${say("The copy is a building of its own on the map you pick: its orks, their instructions and its settings. Its history, level and spend stay with this one, and so do roads from buildings that are not on that map.")}
+      actions=${html`<button class="ok-btn" onClick=${close}>Cancel</button>`}>
+    <div class="ok-row">${others.map((o) => html`<button key=${o.id} class="ok-btn" onClick=${() => copy(o)}>${say("Copy to")} ${say(o.name)}</button>`)}</div>
+  </${Dialog}>`;
 }
 
 export function Demolish({ b, onClose }) {

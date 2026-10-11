@@ -101,6 +101,73 @@ def demolish(town: Town, building_id: str) -> bool:
     return True
 
 
+def _copy_id(town: Town, building_id: str) -> str:
+    """A free id for a copy: `<id>_2`, `<id>_3`… (`forge_2` copied again gives `forge_3`)."""
+    base = building_id
+    head, _, tail = building_id.rpartition("_")
+    if head and tail.isdigit():
+        base = head
+    taken = town.taken_ids() | masonry.ID_RESERVED
+    n = 2
+    while f"{base}_{n}" in taken:
+        n += 1
+    return f"{base}_{n}"[:64]
+
+
+def _script_prefix(building_id: str) -> str:
+    """How an ork's own script is named after its building (realm/recruiter.py, realm/steward.py)."""
+    return f".orkcraft/scripts/{building_id}-".replace("_", "-")
+
+
+def copy_to(town: Town, building_id: str, orkspace_id: str) -> tuple[str, list[str]]:
+    """A copy of a building in another orkspace (docs/design/projects.md §5): a building of its own with its own
+    id, spec, orks and their instructions, scripts and blueprints (a script copied as it is stays reviewed), roads
+    from the buildings on that map. Its history, renown, level, spend, sessions and what it keeps in `.orkcraft/`
+    stay with the original. Returns (the copy's id, the sources of the roads that stayed behind); one checkpoint.
+    Raises ValueError when it cannot be copied."""
+    import shutil
+    from orkcraft.realm.buildings import TOWN_HALL
+    bs, ork = town.scroll.building(building_id), town.scroll.orkspace(orkspace_id)
+    spec = town.custom_specs.get(building_id)
+    if bs is None or bs.demolished or building_id == TOWN_HALL or spec is None:
+        raise ValueError("That building cannot be copied")
+    if ork is None:
+        raise ValueError(f"No orkspace {orkspace_id!r}")
+    new_id = _copy_id(town, building_id)
+    root = town.repo_root
+    text = json.dumps(spec, ensure_ascii=False)
+    for base in (workshop.SCRIPTS, workshop.BLUEPRINTS):
+        text = text.replace(f"{base.as_posix()}/{building_id}/", f"{base.as_posix()}/{new_id}/")
+    new_spec = json.loads(text)
+    new_spec["id"] = new_id
+    problems = masonry.save_spec(root, new_spec, existing_ids=town.taken_ids())
+    if problems:
+        raise ValueError("\n".join(problems))
+    copied, left = scroll.copy_building(town.scroll, building_id, ork.id, new_id)
+    for base in (workshop.SCRIPTS, workshop.BLUEPRINTS):
+        src = root / base / building_id
+        if src.is_dir() and not (root / base / new_id).exists():
+            shutil.copytree(src, root / base / new_id)
+    old_prefix, new_prefix = _script_prefix(building_id), _script_prefix(new_id)
+    orcs = [o for o in [copied.garrison.steward, *copied.garrison.handlers] if o is not None]
+    for orc in orcs:
+        path = str((orc.script or {}).get("path") or "")
+        if not path.startswith(old_prefix) or not (root / path).is_file():
+            continue                                   # a script it shares, or none: the copy uses the same
+        new_path = new_prefix + path[len(old_prefix):]
+        (root / new_path).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(root / path, root / new_path)
+        orc.script = {**orc.script, "path": new_path}  # the same bytes: its sha and its review stay true
+    town.buildings.append(custom_building(new_spec))
+    town.custom_specs[new_id] = new_spec
+    pipes.set_typed(new_id, catalog.events_of(new_spec), catalog.accepts(new_spec))
+    town.record(new_id, "building_copied", source=bs.title, orkspace=ork.name)
+    town.publish(bus.ROADS)
+    town.save()
+    town.checkpoint("create", new_id, f"copied from {building_id} ({ork.name})")
+    return new_id, left
+
+
 def log_build_request(town: Town, prompt: str, result: Any) -> None:
     """Every build request (a builder's or the Town Builder's result), kept in `.orkcraft/build-requests.jsonl`."""
     record: dict[str, Any] = {

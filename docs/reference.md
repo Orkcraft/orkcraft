@@ -961,6 +961,9 @@ the CLI paths.
   a land's menu **Project…** and `/project` change it. A folder with no git asks once before git starts there;
   the disk, the home folder and a folder inside another repository are refused, and so is a first commit over
   200 MB. War Tent sessions and the Agent pool (without a folder of its own) work in the orkspace's project.
+- **Copy to orkspace…** (a hut's menu): a building lives on one map; a copy on another is a building of its own
+  with its orks, their instructions, scripts and settings. Roads come along only from buildings on that map (the
+  toast names the rest); its history, level and spend stay with the original.
 - **`G`** (Neutral) opens the ⎇ worktree of the active orkspace: create one on a branch (an existing
   branch is reused, a new one starts from `HEAD` or the base you give) in
   `.orkcraft/worktrees/<orkspace>`; later unlink it or remove it (refused while it has uncommitted

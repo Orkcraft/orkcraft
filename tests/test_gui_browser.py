@@ -344,6 +344,29 @@ def test_a_new_orkspace_picks_a_folder_and_is_asked_before_git_starts(page, tmp_
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('orkspace.remove', { id }))", made["id"])
 
 
+def test_a_building_is_copied_to_another_orkspace_from_its_menu(page):
+    """docs/design/projects.md §5: the hut's menu → Copy to orkspace… → the map picked; the copy stands there."""
+    pg = page
+    link = "import('/static/js/link.js')"
+    bid = pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'pit' }}))")
+    here = pg.evaluate(f"() => {link}.then(({{ town }}) => town.value.active_orkspace)")
+    shop = pg.evaluate(f"() => {link}.then(m => m.command('orkspace.new', {{ name: 'Copy target', project: 'town' }}))")
+    pg.evaluate(f"id => {link}.then(m => m.command('orkspace.select', {{ id }}))", here)
+    hut = _hut(pg, bid)
+    hut.wait_for(state="visible", timeout=WAIT_MS)
+    hut.click(button="right")
+    pg.get_by_role("menuitem", name="Copy to orkspace…").click()
+    dialog = pg.locator(".ok-dialog", has_text="Copy")
+    dialog.get_by_role("button", name="Copy to Copy target").click()
+    dialog.wait_for(state="hidden", timeout=WAIT_MS)
+    pg.wait_for_function(f"() => {link}.then(({{ town }}) => town.value.orkspaces.find(o => o.name === 'Copy target').buildings.length === 1)",
+                         timeout=WAIT_MS)
+    pg.locator(".ok-toast", has_text="copied to Copy target").first.wait_for(state="visible", timeout=WAIT_MS)
+    copy = pg.evaluate(f"() => {link}.then(({{ town }}) => town.value.orkspaces.find(o => o.name === 'Copy target').buildings[0])")
+    for x in (copy, bid):
+        pg.evaluate(f"id => {link}.then(m => m.command('town.demolish', {{ id }}))", x)
+
+
 def test_the_lake_window_shows_text_markdown_and_code(page):
     pg = page
     pg.evaluate("""async () => {

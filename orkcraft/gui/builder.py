@@ -98,6 +98,26 @@ def build(host, args: dict) -> str:
     return built.id
 
 
+def copy_to(host, args: dict) -> str:
+    """A copy of the building in another orkspace (docs/design/projects.md §5); a toast names the roads that
+    stayed behind."""
+    town = host.town
+    bid, target = _id(args, "id"), _id(args, "orkspace")
+    try:
+        new_id, left = buildings.copy_to(town, bid, target)
+    except ValueError as e:
+        raise BuildError(str(e)) from None
+    town.worker(new_id)
+    ork = town.scroll.orkspace(target)
+    title = lambda x: getattr(town.scroll.building(x), "title", x)      # noqa: E731
+    names = [title(x) for x in left]
+    behind = (f" {len(names)} road{'s' if len(names) != 1 else ''} stayed behind: from {', from '.join(names)}."
+              if names else "")
+    town.toast(f"{title(new_id)} copied to {ork.name if ork else target}.{behind}", title="Copy")
+    host.refresh_roster()
+    return new_id
+
+
 def demolish(host, args: dict) -> bool:
     bid = _id(args, "id")
     if not buildings.demolish(host.town, bid):
