@@ -170,10 +170,13 @@ ledger (`.orkcraft/spend/calls.jsonl`, by `purpose`) so the saving is a number, 
 - Data changes are kept locally; code changes only through a pull request (asked 2026-10-11).
 - The Alchemist paints with agy by default (asked 2026-10-11).
 - The Alchemist starts with pictures and the Work window; cards follow once they are UI documents (asked 2026-10-11).
-- GitHub through a GitHub App with the device flow, in the mascot's menu (asked 2026-10-11).
+- GitHub through a GitHub App with the device flow, in the mascot's menu (asked 2026-10-11). The app's client id is
+  `Iv23ligmdXetPjrWsh4J` (not a secret: the device flow needs no client secret, and none ships). It asks for
+  Contents, Pull requests and Administration (to fork) on the repositories it is installed on, has no webhook and no
+  callback URL; a person installs it on their own account (for their fork) after signing in, and Orkcraft finds the
+  installation through the API.
 
 ## 9. Open
 
-1. The GitHub App's client id: made once by the owner of `orkcraft/orkcraft`.
-2. Which building's prompts move to templates first (stage 4): the Agent pool's, the most tested.
-3. Does agy paint here, or does the image tool need its own key (stage 6)?
+1. Which building's prompts move to templates first (stage 4): the Agent pool's, the most tested.
+2. Does agy paint here, or does the image tool need its own key (stage 6)?
