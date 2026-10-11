@@ -82,12 +82,15 @@ def run(root: Path, args: argparse.Namespace, tier_words: dict[str, str]) -> int
         idle = idle_check.count(int(float(budget["idle_hours"]) * 60))
         (folder / "idle.json").write_text(json.dumps(idle, indent=2), encoding="utf-8")
     green, text = check.report(results, idle, budget, tool)
+    data = {"series": series, "green": green, "budget": budget, "idle": idle,
+            "scenarios": [{"id": r["scenario"].id, "type": r["scenario"].type,
+                           "cases": [{"case": c, **j} for c, j in r["cases"]]} for r in results]}
+    plain = check.words(check.told(root, series, json.loads(json.dumps(data, default=str))["scenarios"]))
+    if plain:
+        text = text.replace("\n\n**GREEN**", f"\n\n## In plain words\n\n{plain}\n\n**GREEN**") \
+            .replace("\n\n**RED**", f"\n\n## In plain words\n\n{plain}\n\n**RED**")
     (folder / "report.md").write_text(text, encoding="utf-8")
-    (folder / "results.json").write_text(json.dumps(
-        {"series": series, "green": green, "budget": budget, "idle": idle,
-         "scenarios": [{"id": r["scenario"].id, "type": r["scenario"].type,
-                        "cases": [{"case": c, **j} for c, j in r["cases"]]} for r in results]},
-        indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+    (folder / "results.json").write_text(json.dumps(data, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
     (folder / "README.md").write_text(readme(series, green, text), encoding="utf-8")
     pack(folder)
     (root / check.DIR / LATEST).write_text(series, encoding="utf-8")

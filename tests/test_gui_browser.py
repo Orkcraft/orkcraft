@@ -2053,13 +2053,17 @@ def test_the_test_benchs_window_leads_with_its_cases_results_and_recommendations
     panel.get_by_role("button", name="Run all cases (2)").wait_for(state="visible", timeout=WAIT_MS)
     assert "Each case runs 3 times" in panel.locator(".lab-run").inner_text()
     row = panel.locator(".lab-case", has_text="CSV parser")
-    assert "Tokens -40%" in row.inner_text() and row.locator(".lab-delta.is-lead.is-ok").count() == 1
+    assert "as well as the AI tool alone, 25% slower and 40% fewer tokens" in row.inner_text()   # words, not a table
     assert "Not tested yet" in panel.locator(".lab-case", has_text="Hard topic").inner_text()
     results = panel.locator(".lab-results")
-    assert "-40% tokens" in results.locator("pre").inner_text() and "CSV parser" in results.locator("pre").inner_text()
+    assert "✓" in results.locator(".lab-story").first.inner_text() and "CSV parser" in results.inner_text()
+    assert "what to change" in results.inner_text().lower() and not results.locator("pre").is_visible()   # the numbers folded
+    results.locator("summary", has_text="Numbers").click()
+    assert "-40% tokens" in results.locator("pre").inner_text()
     assert results.get_by_role("button", name="Copy for analysis").count() == 1
     assert "/api/bench/" in results.get_by_role("link", name="Download (.zip)").get_attribute("href")
-    assert panel.locator(".lab-recs").get_by_role("button", name="Review").count() == 1
+    assert results.get_by_role("button", name="Ask the reviewers too").count() == 1
+    assert panel.locator(".lab-check").get_by_role("button", name="Run the check").count() == 1
     assert not panel.locator(".lab-goal").is_visible() and not panel.locator(".lab-proposal").first.is_visible()
     panel.locator("details.lab-more > summary").click()                       # More: the goal, the proposals
     assert panel.locator(".lab-goal textarea").input_value() == "Spend fewer tokens than the bare tool"

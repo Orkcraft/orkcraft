@@ -19,7 +19,7 @@ import math
 from dataclasses import dataclass
 from pathlib import Path
 
-from orkcraft.realm import bench, check_pictures
+from orkcraft.realm import bench, check_pictures, explain
 
 DIR = bench.BENCH.parent / "check"          # .orkcraft/check/<stamp>/report.md
 PICTURE = "picture"                         # the pictures scenario's own kind: no bare tool to hold it against
@@ -169,3 +169,49 @@ def report(results: list[dict], idle: dict | None, budget: dict, tool: str = "ma
         out += [f"- {n} × {who}" for who, n in idle.get("by") or []]
     out += ["", f"**{'GREEN' if green else 'RED'}**" + ("" if green else ": what is ❌ above is what to fix first")]
     return green, "\n".join(out) + "\n"
+
+
+def told(root: Path, series: str, scenarios: list[dict]) -> dict:
+    """The check in words: each case's story (realm/explain.py), by scenario, and what to change.
+    `scenarios`: results.json's ([{"id", "type", "cases": [{"case", "ok", "why", …}]}])."""
+    titles = {s.id: s.title for s in SCENARIOS}
+    out, every = [], []
+    for sc in scenarios:
+        stories = []
+        for c in sc.get("cases") or []:
+            cid = c.get("case", "")
+            if sc.get("type") == PICTURE:
+                words = next((p["words"] for p in check_pictures.CASES if p["id"] == cid), cid)
+                score = c.get("score")
+                stories.append({"case": f"“{words}”", "status": "good" if c.get("ok") else "bad",
+                                "summary": (f"Redrawn and judged {score:g}/10." if c.get("ok") and score is not None
+                                            else c.get("why") or "It did not pass."), "details": [],
+                                "changes": [] if c.get("ok") else [{"what": "Make the Alchemist's pictures pass",
+                                                                    "why": c.get("why") or "", "case": cid,
+                                                                    "weight": 2}]})
+                continue
+            reports = [r for r in bench.runs(root, sc.get("type") or "") if r.series == series and r.case == cid]
+            case = bench.case(root, sc.get("type") or "", cid)
+            title = case.title if case is not None else cid
+            stories.append(explain.story(title, reports, {r.id: bench.calls_of(root, r) for r in reports})
+                           if reports else {"case": title, "status": "bad", "summary": c.get("why") or "It did not run.",
+                                            "details": [], "changes": []})
+        every += stories
+        out.append({"id": sc.get("id"), "title": titles.get(sc.get("id"), sc.get("id")), "stories": stories})
+    return {"scenarios": out, "changes": explain.changes(every)}
+
+
+def words(told_: dict) -> str:
+    """`told` as Markdown, for report.md and an agent's README."""
+    mark = {"good": "✓", "watch": "!", "bad": "✗"}
+    out = []
+    for sc in told_["scenarios"]:
+        if not sc["stories"]:
+            continue
+        out += [f"**{sc['title']}**"] + [f"- {mark[s['status']]} {s['case']}: {s['summary']}"
+                                          + "".join(f"\n  - {d}" for d in s["details"]) for s in sc["stories"]] + [""]
+    if told_["changes"]:
+        out += ["**What to change**"] + [f"{n}. {c['what']} — {c['why']}" + (f" ({', '.join(c['cases'])})"
+                                                                              if c["cases"] else "")
+                                         for n, c in enumerate(told_["changes"], 1)]
+    return "\n".join(out).strip()

@@ -17,7 +17,7 @@ import zipfile
 from dataclasses import asdict
 from pathlib import Path
 
-from orkcraft.realm import bench, bench_review, call_log, lexicon
+from orkcraft.realm import bench, bench_review, call_log, explain, lexicon
 
 CHAIN = "chain"
 
@@ -37,13 +37,49 @@ def names(w, subject: dict) -> dict[str, str]:
     return {c["id"]: c["title"] for c in w.cases_of(subject["id"])}
 
 
+def stories(root: Path, w, subject: dict, reports: list[bench.Report] | None = None) -> list[dict]:
+    """Each case of its latest runs in words (realm/explain.py), by its title."""
+    titles = names(w, subject)
+    reports = latest(root, subject["id"]) if reports is None else reports
+    return [explain.story(titles.get(g[0].case, g[0].case), g, {r.id: bench.calls_of(root, r) for r in g})
+            for g in bench.by_case(reports)]
+
+
+def advice(root: Path, w, subject: dict) -> list[dict]:
+    """The reviewers' findings as changes to make ({what, why, who}), the most severe first."""
+    order = {s: n for n, s in enumerate(bench_review.SEVERITIES)}
+    out = []
+    for _bid, kind in types_of(w, subject):
+        for role, e in (bench_review.load(root, kind, "tech").get("roles") or {}).items():
+            for f in e.get("findings") or []:
+                out.append({"what": f.get("title", ""), "why": f.get("detail", ""), "who": e.get("title") or role,
+                            "severity": f.get("severity", "medium"), "where": f.get("where", "")})
+    return sorted(out, key=lambda f: order.get(f["severity"], 1))
+
+
 def summary(root: Path, w, subject: dict) -> dict:
-    """The table of its latest runs, and how many there are ({} before the first)."""
+    """Its latest runs: each case in words, what to change and why, and the table ({} before the first run)."""
     reports = latest(root, subject["id"])
     if not reports:
         return {}
+    told = stories(root, w, subject, reports)
     return {"text": bench.summary(reports, _word(subject), names=names(w, subject)), "runs": len(reports),
-            "cases": len({r.case for r in reports}), "at": max(r.at for r in reports)}
+            "cases": len({r.case for r in reports}), "at": max(r.at for r in reports), "stories": told,
+            "changes": explain.changes(told, advice(root, w, subject))}
+
+
+def words(root: Path, w, subject: dict) -> str:
+    """What the runs mean and what to change, as text."""
+    told = stories(root, w, subject)
+    if not told:
+        return "No run yet."
+    mark = {"good": "✓", "watch": "!", "bad": "✗"}
+    out = [f"- {mark[s['status']]} {s['case']}: {s['summary']}" + "".join(f"\n  {d}" for d in s["details"])
+           for s in told]
+    out += ["", "What to change:"] + [f"- {c['what']} — {c['why']}"
+                                      + (f" ({', '.join(c['cases'])})" if c["cases"] else f" ({c['from']})")
+                                      for c in explain.changes(told, advice(root, w, subject))]
+    return "\n".join(out)
 
 
 def types_of(w, subject: dict) -> list[tuple[str, str]]:
@@ -87,7 +123,8 @@ def recommendations(root: Path, w, subject: dict) -> str:
 def text(root: Path, w, subject: dict) -> str:
     title = str(subject.get("title") or subject["id"])
     return "\n".join([f"# Test bench: {title}", "", f"Exported {dt.datetime.now().isoformat(timespec='seconds')}.",
-                      f"Goal of the testing: {w.state['goal'] or 'none written'}", "", "## Runs", "",
+                      f"Goal of the testing: {w.state['goal'] or 'none written'}", "", "## In plain words", "",
+                      words(root, w, subject), "", "## Runs", "",
                       runs_text(root, w, subject), "", "## Recommendations", "", recommendations(root, w, subject)])
 
 

@@ -86,7 +86,9 @@ class CheckRuns:
         except (OSError, ValueError):
             return {}
         return {"stamp": folder.name, "green": bool(data.get("green")), "report": report,
-                "zip": (folder / "check.zip").is_file()}
+                "zip": (folder / "check.zip").is_file(),
+                "told": check.told(self.root, folder.name, data.get("scenarios") or []),
+                "idle": data.get("idle")}
 
     def state(self) -> dict:
         job = self.job()

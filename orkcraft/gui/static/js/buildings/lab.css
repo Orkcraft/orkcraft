@@ -34,3 +34,16 @@
 .lab-results__table { white-space: pre; word-break: normal; max-height: 360px; }
 .lab-rec { display: flex; flex-direction: column; gap: var(--space-1); }
 .lab-more > .gui-bench__section { margin-top: var(--space-2); }
+.lab-stories, .lab-changes { margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.lab-stories { list-style: none; }
+.lab-changes { padding-left: 1.4em; gap: var(--space-2); }
+.lab-change p { margin: 0; }
+.lab-story summary { cursor: pointer; list-style: none; }
+.lab-story summary::-webkit-details-marker { display: none; }
+.lab-story__mark { display: inline-block; width: 1.2em; font-weight: bold; }
+.lab-story.is-good .lab-story__mark { color: var(--success); }
+.lab-story.is-watch .lab-story__mark { color: var(--warning); }
+.lab-story.is-bad .lab-story__mark { color: var(--danger); }
+.lab-story__why { margin: var(--space-1) 0 0 1.2em; padding-left: 1em; }
+.lab-check__last { display: flex; flex-direction: column; gap: var(--space-2); }
+.lab-check__last p, .lab-check__job h5, .lab-check__last h5 { margin: 0; }
