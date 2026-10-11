@@ -317,6 +317,33 @@ def test_a_new_orkspace_from_the_fog_takes_the_biome_picked(page):
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('orkspace.remove', { id }))", made["id"])
 
 
+def test_a_new_orkspace_picks_a_folder_and_is_asked_before_git_starts(page, tmp_path):
+    """docs/design/projects.md §4: "Works in: a folder…" raises the land, then its Project dialog; a folder with
+    no git asks once, and "Not now" links it as it is."""
+    pg = page
+    folder = tmp_path / "notes"
+    folder.mkdir()
+    pg.locator(".gui-map__fog").focus()
+    pg.keyboard.press("Enter")
+    pg.locator(".gui-map__new").wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.type("Notes")
+    pg.locator(".gui-map__where").select_option("folder")
+    pg.locator(".gui-map__where").press("Enter")
+    dialog = pg.locator(".ok-dialog", has_text="Project: Notes")
+    dialog.wait_for(state="visible", timeout=WAIT_MS)
+    dialog.locator('input[aria-label="Folder path"]').fill(str(folder))
+    dialog.locator('input[aria-label="Folder path"]').press("Enter")
+    dialog.get_by_text("This folder has no history").wait_for(state="visible", timeout=WAIT_MS)
+    dialog.get_by_role("button", name="Not now").click()
+    dialog.wait_for(state="hidden", timeout=WAIT_MS)
+    pg.locator(".gui-map__land.is-open", has_text="notes ·").wait_for(state="visible", timeout=WAIT_MS)
+    t = pg.evaluate("() => import('/static/js/link.js').then(({ town }) => town.value)")
+    made = next(o for o in t["orkspaces"] if o["name"] == "Notes")
+    project = next(p for p in t["projects"] if p["id"] == made["project"])
+    assert project["path"] == str(folder.resolve()) and project["git"] is False
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('orkspace.remove', { id }))", made["id"])
+
+
 def test_the_lake_window_shows_text_markdown_and_code(page):
     pg = page
     pg.evaluate("""async () => {

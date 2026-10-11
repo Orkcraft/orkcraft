@@ -113,7 +113,10 @@ def unlink(scroll: ts.TownScroll, orkspace_id: str) -> None:
 
 
 def cwd_for(scroll: ts.TownScroll, orkspace_id: str, repo_root: Path) -> Path:
-    """Where the orkspace's sessions run: its worktree when linked and present, else the repository."""
+    """Where the orkspace's sessions run: its worktree when linked and present, else its project's folder
+    (realm/projects.py), else the town's repository."""
+    from orkcraft.realm import projects
+    repo_root = projects.root_of(scroll, orkspace_id, repo_root)
     ork = scroll.orkspace(orkspace_id)
     if ork is None or not ork.git.enabled or ork.git.mode != "worktree":
         return repo_root

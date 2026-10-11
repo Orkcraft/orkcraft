@@ -416,13 +416,14 @@ function Folder({ id, data }) {
   };
   const others = (data.recent || []).filter((f) => f !== data.repo).slice(0, 4);
   return html`<section class="gui-section pool-folder"><h3 class="ok-font-heading">${say("Folder")}</h3>
-    <p class="ok-font-status"><code>${data.repo}</code>${!data.repo_own && html`<span class="ok-tone-muted"> · ${say("the town's own")}</span>`}</p>
+    <p class="ok-font-status"><code>${data.repo}</code>${!data.repo_own && html`<span class="ok-tone-muted"> · ${data.repo_project
+      ? `${say("the orkspace's project")}: ${data.repo_project}` : say("the town's own")}</span>`}</p>
     <p class="ok-font-status ok-tone-muted">${say("Where its orks work: their branches, worktrees, tests and pull requests. A folder with no git gets one when the first ork starts. The next ork it hires takes it.")}</p>
     <div class="gui-form__row">
       <button class="ok-btn" disabled=${waiting} onClick=${choose}>${say(waiting ? "Choosing…" : "Choose…")}</button>
       <input class="ok-input" value=${typed} placeholder=${say("or paste a folder's path")} aria-label=${say("Folder path")}
         onInput=${(e) => setTyped(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && typed.trim() && set(typed.trim())} />
-      ${data.repo_own && html`<button class="ok-btn" onClick=${() => set("")}>${say("The town's own")}</button>`}
+      ${data.repo_own && html`<button class="ok-btn" onClick=${() => set("")}>${say(data.repo_project ? "The orkspace's project" : "The town's own")}</button>`}
     </div>
     ${hint && html`<p class="ok-font-status ok-tone-wait">${hint}</p>`}
     ${others.length > 0 && html`<p class="ok-font-status">${say("Recent")}: ${others.map((f, i) => html`${i ? " · " : ""}<button key=${f}

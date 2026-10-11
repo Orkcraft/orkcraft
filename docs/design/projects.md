@@ -1,6 +1,6 @@
 # Design — 📁 Projects: the folder an orkspace works in, and a way back in time
 
-Status: design notes, written 2026-10-11; stage 0 is done. Builds on the orkspaces of the Town Scroll
+Status: design notes, written 2026-10-11; stages 0 and 1 are done. Builds on the orkspaces of the Town Scroll
 (`scroll.py` `Orkspace`, `GitLink`), the orkspace worktrees (`realm/worktrees.py`), the camp's checkpoints
 (`realm/checkpoint.py`) and the first commit the Agent pool makes (`realm/jobs.py` `ensure_repo`). Wording: ork,
 orkestration (CLAUDE.md).
@@ -8,7 +8,7 @@ orkestration (CLAUDE.md).
 | stage | what | state |
 |---|---|---|
 | 0 | the word: **Project** for the folder, the Town Scroll becomes the **Town file** (§2) | done |
-| 1 | projects in the Town Scroll, an orkspace picks one; git started with the person's yes (§3, §4) | |
+| 1 | projects in the Town Scroll, an orkspace picks one; git started with the person's yes (§3, §4) | done |
 | 2 | **Copy to orkspace…** for a building (§5) | |
 | 3 | a map goes back as a whole: the orkspace's checkpoints (§6) | |
 | 4 | snapshots of a project's files before an ork works, and one **History** to go back (§7) | |
@@ -74,7 +74,7 @@ The War Map's fog (war-map.md §2.4) takes a name and a biome; under them, one m
 
 **Works in:** *same as the open orkspace* (default) · *the town's folder* · *a folder…* · *a new project*
 
-- **A new project** creates `~/Orkcraft/<name>/` (or a folder the person picks that does not exist yet), starts
+- **A new project** creates `~/Orkcraft/projects/<name>/`, starts
   git there and makes a first commit (`jobs.ensure_repo`: a `.gitignore` that leaves out `.env`, keys,
   caches and `.orkcraft/`). No question: the folder is Orkcraft's own.
 - **A folder…** that is already a git repository is taken as it is.
@@ -84,8 +84,22 @@ The War Map's fog (war-map.md §2.4) takes a name and a biome; under them, one m
 - **Refused:** `/`, the home folder, a folder inside another repository (`git rev-parse --show-toplevel` is a
   parent), and a first commit over 200 MB (it names the largest folders, so the person can ignore them).
 
-The War Map shows the project's name under an orkspace's name when it differs from the town's, next to the
-`⎇ branch` it already shows. The Warchief's line gets `/project` (link, new, show).
+The War Map shows the project's name in the open land's line and in every land's tooltip. A land's menu has
+**Project…**, and the Warchief's line `/project`: both open the Project dialog of that orkspace (where it works now,
+**Choose a folder…**, a path pasted, the town's other projects, the town's folder).
+
+### As built (stage 1)
+
+- `realm/projects.py`: `root_of`, `add`, `link`, `refusal`, `new_folder`, `start_git`; `scroll.Project`,
+  `TownScroll.projects`, `Orkspace.project` (the schema's `projects` and `project`, checked in `scroll_checks.py`).
+- `gui/projects.py`: `project.link` (`{state: "ask_git"}` for a folder with no git until `git` is given),
+  `project.use`, `project.pick` / `project.picked`; `orkspace.new` takes `project`: `""` · `town` · `new` · an id.
+  `js/project.js` is the dialog, `js/warmap.js` the fog's **Works in** row.
+- A project inside Orkcraft's own `~/Orkcraft` repository is put in that repository's local exclude
+  (`.git/info/exclude`), so the town's git never takes it in.
+- Changing an orkspace's project drops its worktree link: a worktree belongs to the repository it was made of.
+- Already in their project: War Tent sessions (`worktrees.cwd_for`) and the Agent pool (`code_root`: its own folder,
+  else its orkspace's project, else the town's).
 
 ## 5. Copy a building to another orkspace
 
@@ -158,7 +172,7 @@ kept ("Your current files are saved first; you can come back to them").
 
 The town's root stays the home of the Town file, `.orkcraft/` (checkpoints, spend, telemetry) and the quota.
 What touches project files moves to `projects.root_of` one worker at a time, each with its tests: War Tent
-sessions and the Agent pool first (stage 1 already gives them their cwd), then the Forge, the codebase wiki,
+sessions and the Agent pool did in stage 1; then the Forge, the codebase wiki,
 Loot's file carts, and the Warder hook (`orkcraft hooks install` per project: `.claude/settings.json` lives in
 each project). `repo_root` stays the town's root everywhere else; there is no rename across the code.
 
