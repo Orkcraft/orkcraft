@@ -5,7 +5,8 @@
 // your words, and its window and cards, come next (stage 6). It lays no road (realm/catalog.py `roads`).
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { act, say } from "../link.js";
+import { act, say, town } from "../link.js";
+import { Card } from "../hut.js";
 import { GROUPS, INTENTS } from "../build.js";
 import { TypeIcon, HATS } from "../icons.js";
 import { Dialog } from "../dialog.js";
@@ -83,13 +84,19 @@ function Gallery({ id, data }) {
       <${Picture} key=${`o${v(data, ork)}`} label="Its ork" onOpen=${() => setOpen({ path: ork, label: "Its ork" })}>
         <span class="ux-picture__ork">${img(data, ork)}</span></${Picture}>
     </div></section>
+    ${data.cards && html`<section class="ux-gallery__group"><h3 class="ok-list__head">${say("Cards")}</h3><div class="ux-gallery__row">
+      ${SIZES.map((z) => html`<${Picture} key=${z} label=${`${SIZE_WORDS[z]} card`} onOpen=${data.cards.building ? () => setOpen({ card: z }) : null}>
+        <${CardPreview} data=${data} size=${z} small=${true} /></${Picture}>`)}
+      ${!data.cards.building && html`<p class="ok-font-status ok-tone-muted">${say("Build one of them: its cards are shown with its own data.")}</p>`}
+    </div></section>`}
     ${data.window && html`<section class="ux-gallery__group"><h3 class="ok-list__head">${say("Window")}</h3><div class="ux-gallery__row">
       <${Picture} label=${data.window.panes.length > 1 ? "Its Work window" : "Its Work window (one pane)"}
         onOpen=${data.window.panes.length > 1 ? () => setOpen({ window: true }) : null}>
         <${Wire} doc=${(data.window.draft && data.window.draft.doc) || data.window.doc} small=${true} /></${Picture}>
     </div></section>`}
-    ${open && !open.window && html`<${PaintDialog} id=${id} data=${data} path=${open.path} label=${open.label} onClose=${() => setOpen(null)} />`}
+    ${open && open.path && html`<${PaintDialog} id=${id} data=${data} path=${open.path} label=${open.label} onClose=${() => setOpen(null)} />`}
     ${open && open.window && html`<${LayoutDialog} id=${id} data=${data} onClose=${() => setOpen(null)} />`}
+    ${open && open.card && html`<${CardDialog} id=${id} data=${data} size=${open.card} onClose=${() => setOpen(null)} />`}
   </div>`;
 }
 
@@ -141,6 +148,55 @@ function PaintDialog({ id, data, path, label, onClose }) {
         <span><button class="ok-btn primary" disabled=${words.trim().length < 3 || d.painting} onClick=${paint}>${say(d.painting ? "Painting…" : "Paint it")}</button>
           ${region && region.w > 0.01 && html`<button class="gui-link" onClick=${() => setRegion(null)}>${say("Whole picture")}</button>`}</span>
         ${d.error && html`<p class="ok-font-status ok-tone-error" role="alert">✗ ${say(d.error)}</p>`}
+      </div>
+    </div>
+  </${Dialog}>`;
+}
+
+const SIZES = ["s", "m", "l"];
+const SIZE_WORDS = { s: "Small", m: "Medium", l: "Large" };
+const SIZE_PX = { s: [240, 120], m: [300, 170], l: [460, 320] };   // js/hut.js levelOf: medium from 300×170, large from 460×320
+
+/** The card of the first building of the type, at a size, with the card document (the draft, else this machine's). */
+function CardPreview({ data, size, small = false, part = "", onPart = null }) {
+  const b = town.value.buildings.find((x) => x.id === data.cards.building);
+  if (!b) return null;
+  const doc = (data.cards.draft && data.cards.draft.doc) || data.cards.doc;
+  const [w, h] = SIZE_PX[size];
+  const pick = onPart ? (e) => {
+    const hit = e.target.closest(".gui-hut__big, .gui-hut__text, .gui-hut__foot, .gui-hut__when");
+    if (hit) onPart(hit.className.match(/gui-hut__(big|text|foot|when)/)[1]);
+  } : null;
+  return html`<div class=${cls("ux-card", { "is-small": small, [`is-part-${part}`]: !!part })} style=${small ? `--ux-scale:${104 / w}` : ""}>
+    <div class="ok-hut m gui-hut is-sized ux-card__hut" style=${`width:${w}px;height:${h}px`} onClick=${pick}>
+      <div class="ok-hut__card" style=${`height:${h}px`}><${Card} b=${{ ...b, card_doc: doc }} level=${size} /></div></div></div>`;
+}
+
+/** A card at one size on the left (a press on a part picks it), what to change on the right; Reset brings the card
+ *  its code draws back; Apply keeps the layout on this machine for every building of the type. */
+function CardDialog({ id, data, size, onClose }) {
+  const [words, setWords] = useState("");
+  const [part, setPart] = useState("");
+  const draft = data.cards.draft || {};
+  return html`<${Dialog} title=${say(`Its ${SIZE_WORDS[size].toLowerCase()} card`)} wide=${true} onCancel=${onClose}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Close")}</button>
+        <button class="ok-btn primary" disabled=${!draft.doc || draft.busy} onClick=${() => act(id, "card_apply").then(onClose, () => {})}>${say("Apply")}</button>`}>
+    <div class="ux-edit">
+      <div class="ux-edit__left">
+        <div class="ux-edit__bar"><span class="ok-font-status ok-tone-muted">${say(draft.shipped ? "As its code draws it" : draft.doc ? "The new layout" : "As it is")}</span>
+          <button class="ok-btn" disabled=${draft.busy} onClick=${() => act(id, "card_reset")}>${say("Reset")}</button></div>
+        <${CardPreview} data=${data} size=${size} part=${part} onPart=${setPart} />
+        <p class="ok-font-status ok-tone-muted">${say("Press a part of the card to change only it.")}</p>
+      </div>
+      <div class="ux-edit__right">
+        <label class="gui-field"><span class="ok-font-label">${say(part ? `What to change in its ${part} part` : "What to change in the card")}</span>
+          <textarea class="ok-input gui-textarea" rows="5" maxlength="1000" value=${words} placeholder=${say("e.g. the small card says only the number, in the accent tone")}
+            onInput=${(e) => setWords(e.target.value)}></textarea></label>
+        <p class="ok-font-status ok-tone-muted">${say("Its parts shown, their order and their font and tone roles; never a colour of its own.")}</p>
+        <span><button class="ok-btn primary" disabled=${words.trim().length < 3 || draft.busy}
+          onClick=${() => act(id, "card", { words, size, part })}>${say(draft.busy ? "Laying it out…" : "Lay it out")}</button>
+          ${part && html`<button class="gui-link" onClick=${() => setPart("")}>${say("Whole card")}</button>`}</span>
+        ${draft.error && html`<p class="ok-font-status ok-tone-error" role="alert">✗ ${say(draft.error)}</p>`}
       </div>
     </div>
   </${Dialog}>`;

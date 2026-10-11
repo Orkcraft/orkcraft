@@ -1,8 +1,8 @@
 # Design — Improve: the Mechanic and the Alchemist
 
-Status: stages 0–6 built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
+Status: stages 0–7 built 2026-10-11 (3b written up) (the Improve group, the UX bench standing with its settings and gallery, the
 road rule; a building's inputs; the Test bench's setup; environments, case sets and what is kept to spend less; the
-virtual building; GitHub and pull requests; the UX bench painting pictures and laying windows out). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
+virtual building; GitHub and pull requests; the UX bench painting pictures and laying windows and cards out). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
 and keep it, **faster and cheaper than testing and rewriting it through Claude Code**.
 
 | stage | what | state |
@@ -15,7 +15,7 @@ and keep it, **faster and cheaper than testing and rewriting it through Claude C
 | 4 | The virtual building: a change is tried on an overlay the Mechanic holds while it is connected; **Save changes** keeps the data part for good (§5.3) | built |
 | 5 | GitHub: Connect GitHub in the mascot's menu (device flow); a code change goes as a pull request with its evidence (§4) | built |
 | 6 | The Alchemist redraws: images through the image tool with the shipped prompts, a region marked and commented, Reset; the Work window's layout as a UI document (§6) | built |
-| 7 | Cards s/m/l as UI documents, so the Alchemist redraws them too | |
+| 7 | Cards s/m/l as documents, so the Alchemist lays them out too (§6.3) | built |
 
 ## 1. Why
 
@@ -175,8 +175,8 @@ and prompt builders in Python).
 
 - **The gallery**: every picture of the type, small enough that the list stays short and big enough to read, each
   with a line saying what it is, grouped: *Icon* (its Build icon; its Office icon, a line drawing, shown only),
-  *Sprite* (its house on each ground it is drawn for, its ork) and *Window* (its Work window as boxes). Cards come
-  with stage 7.
+  *Sprite* (its house on each ground it is drawn for, its ork), *Cards* (small, medium, large: the card of a building
+  of the type, with its own data) and *Window* (its Work window as boxes).
 - **A press on a picture** opens a dialog: the picture large on the left, what to change on the right.
   - Say what to change; **Paint it** asks the image tool once (`realm/painter.py`) in an empty folder holding the
     picture as it is (`reference.png`), with the shipped prompt for its kind (`design/prompts/icon.md`, `sprite.md`,
@@ -195,6 +195,24 @@ and prompt builders in Python).
   when wrong) on a building of the type. **Reset** drops the draft; **Apply** gives the layout to every building of
   the type (`core/buildings.py` `set_ui`, a checkpoint each). A type whose window is one pane today says so: its
   window is laid out when its view is split into panes.
+
+### 6.3 Cards (stage 7, built 2026-10-11)
+
+Every card is drawn by its type's own code from the same parts — `big` (its one number or word), `text` (a line of
+what it says), `foot` (what it works on, where it sends), `when` (when it last did something) — and has three sizes
+(js/hut.js `levelOf`: small, medium from 300×170, large from 460×320).
+
+- **A card document** (`realm/card_docs.py`) says, for each size, which parts show, top to bottom, each with an
+  optional font and tone role: roles only (design/tokens.py `FONTS`, `TONES`), never a colour, a font or a size of
+  its own; a part left out hides at that size. Checked by code (`problems`) before it is kept or shown.
+- **This machine's look**, like its pictures: `cards/<type>.json` beside them (`assets_dir`). The snapshot gives each
+  hut its type's document (`card_doc`), and the hut lays its card out with it (`js/hut.js` `laidOut`: order,
+  hidden, role classes); a type with none draws its card as before. No building's card code changed.
+- **In the UX bench**: the *Cards* group shows the three sizes of a real building of the type, with its own data. A
+  press opens one: the card at that size on the left (a press on a part picks it), what to change on the right;
+  **Lay it out** is one call (the steward's tool) whose answer is checked and sent back once with its problems;
+  **Reset** shows the card as its code draws it; **Apply** keeps the layout for every building of the type (after
+  Reset, it takes this machine's away).
 
 ## 7. Tokens: cheaper than Claude Code
 

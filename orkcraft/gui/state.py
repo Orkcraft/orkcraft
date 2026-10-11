@@ -25,7 +25,7 @@ from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.gui import projects as gui_projects
 from orkcraft.gui import views
-from orkcraft.realm import catalog, halt, lexicon, modes, pipes, script_first, steward_models
+from orkcraft.realm import card_docs, catalog, halt, lexicon, modes, pipes, script_first, steward_models
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.scroll import road_key
 
@@ -86,6 +86,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "pinned": bool(bs.pinned),
             "folded": bool(bs.folded) and bs.id != TOWN_HALL,   # its title bar only (js/hut.js)
             "roads": catalog.type_of(spec).roads if spec else "free",   # "setup"/"none": no road handle (catalog)
+            "card_doc": card_docs.load(type_id) if spec else None,        # this machine's layout of its card (UX bench)
             "level": bs.level or 0, "goal": bs.aim,              # the flag on its roof (docs/design/growth.md §5)
             "status": (lines := _hut_lines(town, bs.id)),
             "status_plain": [modes.plain(x) for x in lines],

@@ -33,3 +33,10 @@ button.ux-picture:hover .ux-picture__frame, button.ux-picture:focus-visible .ux-
 .ux-wire__pane { border: 1px dashed var(--frame-strong, var(--frame)); border-radius: 4px; padding: 4px; min-width: 0; min-height: 24px;
   font-size: 0.8em; overflow: hidden; }
 .ux-wire__pane.is-hidden { opacity: 0.4; }
+.ux-card { position: relative; }
+.ux-card__hut { position: relative !important; left: 0 !important; top: 0 !important; max-width: none !important; pointer-events: auto; }
+.ux-card.is-small { width: 104px; height: 76px; overflow: hidden; }
+.ux-card.is-small .ux-card__hut { transform: scale(var(--ux-scale)); transform-origin: top left; pointer-events: none; }
+.ux-card:not(.is-small) .ux-card__hut { cursor: pointer; }
+.ux-card.is-part-big .gui-hut__big, .ux-card.is-part-text .gui-hut__text, .ux-card.is-part-foot .gui-hut__foot,
+.ux-card.is-part-when .gui-hut__when { outline: 2px dashed var(--frame-focus); outline-offset: 2px; }

@@ -224,9 +224,36 @@ export function QuickTray({ b }) {
 /** The inside of the card (closed): the type's own `card(b)` (js/types.js), else its status lines. */
 export function Card({ b, level = null }) {
   const mod = b.page ? typeModule(b.type) : null;
-  if (mod && mod.card) return html`<div class="gui-hut__body ok-font-status">${mod.card(b, level || levelOf(b))}</div>`;
+  const at = level || levelOf(b);
+  const body = useRef(null);
+  useLayoutEffect(() => { if (body.current) laidOut(body.current, b.card_doc, at); });
+  if (mod && mod.card) return html`<div ref=${body} class="gui-hut__body ok-font-status">${mod.card(b, at)}</div>`;
   return b.status_plain.length > 0 ? html`<ul class="ok-hut__lines">
     ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>` : null;
+}
+
+const CARD_PARTS = ["big", "text", "foot", "when"];
+
+/** A card laid out by this machine's card document (realm/card_docs.py, the UX bench): at its size, the parts it
+ *  names show in its order with its font and tone roles, the others hide. No document: the card as its code draws it. */
+export function laidOut(el, doc, level) {
+  const parts = doc && doc.sizes && doc.sizes[level] && doc.sizes[level].parts;
+  for (const name of CARD_PARTS) {
+    for (const node of el.querySelectorAll(`.gui-hut__${name}`)) {
+      for (const c of (node.dataset.roles || "").split(" ").filter(Boolean)) node.classList.remove(c);
+      node.dataset.roles = "";
+      node.style.order = "";
+      node.style.display = "";
+      if (!parts) continue;
+      const at = parts.findIndex((p) => p.id === name);
+      if (at < 0) { node.style.display = "none"; continue; }
+      const p = parts[at];
+      const roles = [p.font && `ok-font-${p.font}`, p.tone && `ok-tone-${String(p.tone).replace(/[._]/g, "-")}`].filter(Boolean);
+      roles.forEach((c) => node.classList.add(c));
+      node.dataset.roles = roles.join(" ");
+      node.style.order = String(at);
+    }
+  }
 }
 
 /** The corner a card is stretched by (its edges pull roads, js/hut.js edgeAt): a ghost of the new size follows the

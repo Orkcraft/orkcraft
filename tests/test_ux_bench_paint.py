@@ -106,3 +106,33 @@ def test_a_window_is_laid_out_again_for_every_building_of_the_type(fake_repo, is
     assert _until(lambda: (host.town.worker(bench).layout or {}).get("doc") == doc)
     act("layout_apply")
     assert all(host.town.scroll.building(x).ui == doc for x in (a, b))
+
+
+def test_a_card_document_shows_roles_only_and_is_kept_on_this_machine(fake_repo, isolated_layout_file, monkeypatch):
+    from orkcraft.realm import card_docs
+    doc = card_docs.default("barracks")
+    assert card_docs.problems(doc, "barracks") == []
+    bad = json.loads(json.dumps(doc))
+    bad["sizes"]["s"]["parts"] = [{"id": "big", "tone": "#ff0000"}, {"id": "big"}, {"id": "logo"}]
+    wrong = card_docs.problems(bad, "barracks")
+    assert any("tone is a role" in p for p in wrong) and any("twice" in p for p in wrong)
+    assert any("a part is one of" in p for p in wrong)
+    host = _host(fake_repo)
+    bench, pool = _raised(host, "ux_lab"), _raised(host, "barracks")
+    act = lambda name, **x: host.command("act", {"id": bench, "act": name, "args": x})
+    act("pick", type="barracks")
+    assert host.detail(bench)["data"]["cards"]["building"] == pool
+    small = {**doc, "sizes": {**doc["sizes"], "s": {"parts": [{"id": "big", "font": "number", "tone": "accent"}]}}}
+    answers = iter([json.dumps({**small, "sizes": {"s": {"parts": [{"id": "big", "color": "red"}]}}}), json.dumps(small)])
+    prompts = []
+    monkeypatch.setattr(runners, "STEWARD_RUNNER", lambda prompt: (prompts.append(prompt) or next(answers), 0.01))
+    act("card", words="the small card says only the number", size="s", part="big")
+    assert _until(lambda: (host.town.worker(bench).card or {}).get("doc") == small)
+    assert "its `big` part only" in prompts[0] and "REJECTED" in prompts[1]               # a wrong answer went back once
+    act("card_apply")
+    assert card_docs.load("barracks") == small
+    hut = next(x for x in host.snapshot()["buildings"] if x["id"] == pool)
+    assert hut["card_doc"] == small                                                        # every hut of the type wears it
+    act("card_reset")
+    act("card_apply")
+    assert card_docs.load("barracks") is None

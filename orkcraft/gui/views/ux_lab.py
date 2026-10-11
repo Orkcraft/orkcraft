@@ -7,7 +7,7 @@ import base64
 
 from orkcraft.design import tokens, ui
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import biomes, catalog, harnesses, painter
+from orkcraft.realm import biomes, card_docs, catalog, harnesses, painter
 
 SPRITES = {"loot_vault": "loot"}           # a type drawn under another's name (js/icons.js spriteName)
 FLAT = ("dirt", "forest")                  # the biomes that wear the plain header.png (js/icons.js DRAWN_FOR)
@@ -45,6 +45,7 @@ def detail(w) -> dict:
         out["window"] = {"panes": sorted(contract.panes) if hasattr(contract, "panes") else [],
                          "doc": ui.current(w.town.scroll.building(bid), tid) if bid else ui.default(tid),
                          "standing": bool(bid), "draft": w.layout}
+        out["cards"] = {"doc": w.card_now(), "draft": w.card, "own": card_docs.load(tid) is not None, "building": bid}
     return out
 
 
@@ -137,5 +138,34 @@ def _layout_reset(w, args: dict) -> bool:
     return True
 
 
-ACTS = {"pick": _pick, "tool": _tool, "paint": _paint, "draft": _draft, "reset": _reset, "drop": _drop, "apply": _apply,
+def _card(w, args: dict) -> bool:
+    words = text(args, "words", 1000).strip()
+    if len(words) < 3:
+        raise ActError("Say what should change in the card")
+    try:
+        w.card_ask(words, text(args, "size", 2), text(args, "part", 10))
+    except painter.PaintError as e:
+        raise ActError(str(e)) from None
+    return True
+
+
+def _card_apply(w, args: dict) -> bool:
+    wrong = w.card_apply()
+    if wrong:
+        raise ActError("; ".join(wrong[:3]))
+    return True
+
+
+def _card_reset(w, args: dict) -> bool:
+    w.card_reset()
+    return True
+
+
+def _card_drop(w, args: dict) -> bool:
+    w.card = None
+    w.changed()
+    return True
+
+
+ACTS = {"card": _card, "card_apply": _card_apply, "card_reset": _card_reset, "card_drop": _card_drop, "pick": _pick, "tool": _tool, "paint": _paint, "draft": _draft, "reset": _reset, "drop": _drop, "apply": _apply,
         "layout": _layout, "layout_apply": _layout_apply, "layout_reset": _layout_reset}

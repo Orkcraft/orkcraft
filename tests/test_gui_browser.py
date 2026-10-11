@@ -2100,3 +2100,25 @@ def test_a_test_bench_is_set_up_by_a_frame_dragged_round_its_buildings(page, gui
     assert server.host.town.worker(lab).scheme()["ids"] == [board, pool]
     for bid in (lab, board, pool):
         pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
+def test_the_ux_bench_shows_a_buildings_pictures_and_opens_one_to_change(page, gui):
+    """docs/design/improve-buildings.md §6: a UX bench picks the Agent pool from Build's own icons; its gallery shows
+    the Build icon, the houses, the ork, the cards and the window; a picture and a card each open their own dialog."""
+    pg, (server, _browser) = page, gui
+    build = lambda t: pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", t)
+    pool, bench = build("barracks"), build("ux_lab")
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", bench)
+    pg.locator(".ux-pick .gui-build__tile[title='In parallel']").click()
+    gallery = pg.locator(".ux-gallery")
+    gallery.wait_for(timeout=WAIT_MS)
+    assert gallery.locator("button.ux-picture", has_text="Dirt and forest").count() == 1
+    gallery.locator("button.ux-picture", has_text="Dirt and forest").click()
+    assert pg.locator(".ok-dialog").count() == 1 and pg.locator(".ux-edit__picture img").get_attribute("src").startswith("/ds/sprites/buildings/")
+    pg.keyboard.press("Escape")
+    gallery.locator("button.ux-picture", has_text="Medium card").click()
+    pg.locator(".ux-edit .ux-card__hut .gui-hut__big").first.wait_for(timeout=WAIT_MS)
+    assert pg.locator(".ok-dialog").count() == 1                   # the card's own dialog, never a picture's beside it
+    pg.keyboard.press("Escape")
+    for bid in (bench, pool):
+        pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)

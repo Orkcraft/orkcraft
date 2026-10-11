@@ -50,6 +50,7 @@ class UxLabWorker(Worker):
     def start(self) -> None:
         self.painting: dict[str, str] = {}           # a picture's path → "" while it is painted, else what went wrong
         self.layout: dict | None = None             # a window laid out again: {doc, why, error, busy}
+        self.card: dict | None = None               # its cards laid out again: {doc, error, busy, shipped}
 
     @staticmethod
     def _key(path: str) -> str:
@@ -200,3 +201,56 @@ class UxLabWorker(Worker):
             self.layout = None
             self.changed()
         return problems
+
+    # -- its cards laid out again (docs/design/improve-buildings.md §6.3) ------------------------------------------------
+
+    def card_now(self) -> dict:
+        from orkcraft.realm import card_docs
+        return card_docs.load(self.target) or card_docs.default(self.target)
+
+    def card_ask(self, words: str, size: str = "", part: str = "", runner=None) -> None:
+        """Its cards laid out again from the person's words (one checked call): a draft until Apply."""
+        from orkcraft.core import runners
+        from orkcraft.realm import card_docs, steward
+        if not self.target:
+            raise painter.PaintError("Pick a building first")
+        if (getattr(self, "card", None) or {}).get("busy"):
+            raise painter.PaintError("Its cards are being laid out already")
+        current = (getattr(self, "card", None) or {}).get("doc") or self.card_now()
+        bid, tid = self.first_of_type(), self.target
+        b = self.town.scroll.building(bid) if bid else None
+        run = runner or steward.runner_for(b, "redesign", runners.STEWARD_RUNNER)
+        self.card = {"busy": True, "doc": (getattr(self, "card", None) or {}).get("doc"), "error": ""}
+        self.changed()
+
+        def work() -> None:
+            doc, wrong, _cost = card_docs.ask(tid, catalog.TYPES[tid].title, current, words, size, part, runner=run)
+            self.town.call(done, doc, wrong)
+
+        def done(doc, wrong) -> None:
+            self.card = {"busy": False, "doc": doc or self.card.get("doc"),
+                         "error": "" if doc else "; ".join(wrong[:2]) or "no layout came back"}
+            self.changed()
+
+        threading.Thread(target=work, daemon=True, name="ux-card").start()
+
+    def card_reset(self) -> None:
+        from orkcraft.realm import card_docs
+        self.card = {"busy": False, "doc": card_docs.default(self.target), "error": "", "shipped": True}
+        self.changed()
+
+    def card_apply(self) -> list[str]:
+        """The draft becomes this machine's card for the type; after Reset, its own goes and the code's card shows."""
+        from orkcraft.realm import card_docs
+        draft = getattr(self, "card", None) or {}
+        if not draft.get("doc"):
+            return ["nothing to apply: lay it out first"]
+        if draft.get("shipped"):
+            card_docs.remove(self.target)
+            wrong = []
+        else:
+            wrong = card_docs.save(self.target, draft["doc"])
+        if not wrong:
+            self.card = None
+            self.changed()                                 # the snapshot after it: every hut of the type draws it again
+        return wrong
