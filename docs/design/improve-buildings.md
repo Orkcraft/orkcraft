@@ -323,3 +323,33 @@ ledger (`.orkcraft/spend/calls.jsonl`, by `purpose`) so the saving is a number, 
 
 1. Which building's prompts move to templates first (stage 4): the Agent pool's, the most tested.
 2. Does agy paint here, or does the image tool need its own key (stage 6)?
+3. How a person improves their own buildings without rebuilding Orkcraft (§11): the hidden loop below.
+
+## 11. The Test bench made plain; improving a building, folded (asked 2026-10-11)
+
+What a person does with the Test bench today is measure: **make an environment, make cases, run them, read the
+numbers, hand the runs over** (to Claude Code, to a colleague) for an opinion. The window is now that, in this order
+(js/buildings/lab.js): environments and their case sets, single cases, **Run all cases** (each case **3 times** by
+default, `lab_cases.REPEAT`: the results read medians), **Results** (the latest series of each case side by side,
+**Copy for analysis**, **Download (.zip)** with every model call; gui/lab_export.py) and **Recommendations** (the
+tech review of each building it tests, reading those runs and their calls, not only the type's shipped cases).
+
+Taken out: the **UX** and **Product** reviews (`bench_review.TABS` is `tech` only): they cost five AI runs on the
+first open of every building and were not read. Run all no longer writes proposals by itself (an AI run nobody
+asked for).
+
+**Folded under More, not removed:** the goal of the testing (and its Write cases for the goal), **What to change**
+(proposals → tasks of an Agent pool), the **virtual building** (§5.3: a change tried on the bench's copy, Save
+changes, the pull request) and the shipped cases. They are the loop that should one day let a person improve **their
+own** buildings — their prompts, settings and roads — **without rebuilding Orkcraft from its source**: a change
+tried on the copy, measured against the bare AI tool on their own cases, kept only when the medians say it is
+better. Not decided yet:
+
+- **What a person may change** without a pull request: data only (prompts, settings, roads; kept locally, §8) is
+  the safe start; code changes stay a pull request to Orkcraft.
+- **Who proposes**: the Recommendations as they are (advice to read), or proposals that can be tried in one press.
+- **What "better" is**: the goal's metric over the medians of 3 runs or more, and a check no worse, before Save
+  changes is offered.
+- **Where it shows**: back in the Test bench window, or in the building's own window ("try a better version").
+
+Until then the loop stays folded and works as before for whoever opens it.

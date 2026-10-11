@@ -57,7 +57,7 @@ def test_the_goal_writes_the_cases_and_they_stay_with_the_building(host, agent):
     assert kept["settings"]["bare_tier"] == "laborer" and kept["settings"]["max_spend"] == 0.5 and not kept["settings"]["judge"]
 
 
-def test_run_all_runs_its_cases_against_the_bare_tool_keeps_each_result_and_proposes(host, agent, monkeypatch):
+def test_run_all_runs_its_cases_against_the_bare_tool_and_keeps_each_result(host, agent, monkeypatch):
     lab, pool = _raised(host, "lab"), _raised(host, "barracks", worktrees=False)
     _road(host, pool, lab, "pool.done")
     host.detail(lab)
@@ -85,7 +85,11 @@ def test_run_all_runs_its_cases_against_the_bare_tool_keeps_each_result_and_prop
     assert spec["first"] == pool and "pool.done" in spec["back_events"]
     cases = json.loads(open(argv[argv.index("--cases-file") + 1]).read())
     assert [c["title"] for c in cases] == ["One", "Two"] and cases[0]["inputs"]["entry"] == pool
-    assert _until(lambda: w.results_of(pool).get(one) and w.state["proposals"].get(pool))
+    assert argv[argv.index("--repeat") + 1] == "3"                          # its medians, by default
+    assert _until(lambda: w.results_of(pool).get(one))
+    assert not w.state["proposals"].get(pool)                               # nothing proposed by itself
+    _act(host, lab, "propose")
+    assert _until(lambda: w.state["proposals"].get(pool))
     row = w.results_of(pool)[one]
     assert row["tokens"] == -0.4 and row["time"] == 0.25
     d = host.detail(lab)["data"]
@@ -104,3 +108,34 @@ def test_a_chains_cases_may_go_into_any_of_its_buildings_that_takes_one(host):
     assert ids[0] == board
     with pytest.raises(CommandError, match="way in"):
         _act(host, lab, "add", text="x", entry="nope")
+
+
+def test_the_latest_runs_are_one_table_a_text_to_copy_and_a_zip_with_every_call(host, asked):
+    import io
+    import zipfile
+    from orkcraft.realm import call_log
+    lab, pool = _raised(host, "lab"), _raised(host, "barracks", worktrees=False)
+    _road(host, pool, lab, "pool.done")
+    host.detail(lab)
+    for n, (b, t) in enumerate(((60, 50), (40, 50), (50, 50))):
+        r = bench.Report(id=f"2026101{n}-000000-chain-one", type="chain", case="one", at=f"2026-10-1{n}T10:00:00",
+                         subject=pool, series="s1", building=bench.Side("building", seconds=b, tokens=900, passed=True),
+                         bare=bench.Side("bare", seconds=t, tokens=1000, passed=True))
+        folder = host.town.repo_root / bench.RUNS / r.id
+        r.save(folder)
+        with call_log.kept(folder / "calls", "building"):
+            call_log.record({"ORKCRAFT_ORC": f"{pool}/Grub"}, "work", "claude", "", "the task", "{}", "", 0, 3.0)
+    d = host.detail(lab)["data"]
+    assert d["report"]["runs"] == 3 and d["report"]["cases"] == 1 and "Runs" in d["report"]["text"]
+    assert "3/3 passed / 3/3 passed" in d["report"]["text"] and d["recs"][0]["type"] == "barracks"
+    text = _act(host, lab, "export")
+    assert "# Test bench" in text and "Model calls" in text and "## Recommendations" in text
+    _act(host, lab, "recommend")                                     # the tech review reads these runs
+    assert _until(lambda: not host.detail(lab)["data"]["recs"][0]["running"])
+    assert "## The last Test bench runs" in asked[-1] and "3/3 passed" in asked[-1]
+    assert host.detail(lab)["data"]["recs"][0]["findings"]
+    name, data = host.bench.lab.pack(lab)
+    files = zipfile.ZipFile(io.BytesIO(data)).namelist()
+    assert name.endswith(".zip") and "README.md" in files
+    assert sum(f.startswith("runs/") and "/calls/building-001-Grub.json" in f for f in files) == 3
+    assert host.bench.lab.pack("nobody") is None

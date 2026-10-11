@@ -1,0 +1,117 @@
+"""🧪 What a Test bench's runs said, to hand over for an analysis (docs/design/test-bench.md §10.1): the latest runs of
+what it tests side by side (each case's repeats pooled), every run in full with its model calls, and the
+recommendations (the tech reviews of its buildings, the proposals) — as text to copy, or as a zip with every call
+itself (`/api/bench/<test bench>`, gui/server.py).
+
+    lab_export.latest(root, subject_id)        the latest series of each of its cases, newest first
+    lab_export.summary(root, w, subject)       the table, for the window (its cases by their titles)
+    lab_export.text(root, w, subject)          everything as one text
+    lab_export.pack(root, w, subject)          (file name, zip)
+"""
+from __future__ import annotations
+
+import datetime as dt
+import io
+import json
+import zipfile
+from dataclasses import asdict
+from pathlib import Path
+
+from orkcraft.realm import bench, bench_review, call_log, lexicon
+
+CHAIN = "chain"
+
+
+def latest(root: Path, subject_id: str) -> list[bench.Report]:
+    """Its runs (a Test bench runs what it tests as a chain, `Report.subject` its id), the latest series of each
+    case."""
+    return bench.latest([r for r in bench.runs(root, CHAIN) if r.subject == subject_id])
+
+
+def _word(subject: dict) -> str:
+    return "Scheme" if subject.get("type") == CHAIN else lexicon.term(str(subject.get("type") or ""))
+
+
+def names(w, subject: dict) -> dict[str, str]:
+    """Its cases' titles by their ids."""
+    return {c["id"]: c["title"] for c in w.cases_of(subject["id"])}
+
+
+def summary(root: Path, w, subject: dict) -> dict:
+    """The table of its latest runs, and how many there are ({} before the first)."""
+    reports = latest(root, subject["id"])
+    if not reports:
+        return {}
+    return {"text": bench.summary(reports, _word(subject), names=names(w, subject)), "runs": len(reports),
+            "cases": len({r.case for r in reports}), "at": max(r.at for r in reports)}
+
+
+def types_of(w, subject: dict) -> list[tuple[str, str]]:
+    """The buildings it tests, one of each type: (building id, type)."""
+    seen: dict[str, str] = {}
+    for b in w.flow_spec(subject)["buildings"]:
+        seen.setdefault(b["type"], b["id"])
+    return [(bid, kind) for kind, bid in seen.items()]
+
+
+def runs_text(root: Path, w, subject: dict, calls: bool = True) -> str:
+    """The table, then each run in full (with its model calls when `calls`)."""
+    reports = latest(root, subject["id"])
+    if not reports:
+        return "No run yet."
+    word = _word(subject)
+    parts = [bench.summary(reports, word, names=names(w, subject))]
+    for r in reports:
+        parts += ["", "---", "", bench.analysis(r, word, bench.calls_of(root, r) if calls else None)]
+    return "\n".join(parts)
+
+
+def recommendations(root: Path, w, subject: dict) -> str:
+    """The tech reviews of its buildings and the Test bench's proposals, as text."""
+    out = []
+    for bid, kind in types_of(w, subject):
+        kept = bench_review.load(root, kind, "tech")
+        found = [(e.get("title") or role, f) for role, e in (kept.get("roles") or {}).items()
+                 for f in e.get("findings") or []]
+        if found:
+            out += ["", f"## Tech review of the {lexicon.term(kind)} ({kept.get('at', '')}, Orkcraft {kept.get('version', '')})"]
+            out += [f"- [{f.get('severity', '')}] {who}: {f.get('title', '')}\n  {f.get('detail', '')}"
+                    + (f"\n  where: {f['where']}" if f.get("where") else "") for who, f in found]
+    items = (w.state["proposals"].get(subject["id"]) or {}).get("items") or []
+    if items:
+        out += ["", "## The Test bench's proposals"]
+        out += [f"- [{p.get('area', '')}] {p.get('title', '')}\n  {p.get('detail', '')}" for p in items]
+    return "\n".join(out).strip() or "No recommendation yet."
+
+
+def text(root: Path, w, subject: dict) -> str:
+    title = str(subject.get("title") or subject["id"])
+    return "\n".join([f"# Test bench: {title}", "", f"Exported {dt.datetime.now().isoformat(timespec='seconds')}.",
+                      f"Goal of the testing: {w.state['goal'] or 'none written'}", "", "## Runs", "",
+                      runs_text(root, w, subject), "", "## Recommendations", "", recommendations(root, w, subject)])
+
+
+def pack(root: Path, w, subject: dict) -> tuple[str, bytes]:
+    """The text as README.md, then each run's report and every model call of it, prompt and output in full."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("README.md", text(root, w, subject))
+        for r in latest(root, subject["id"]):
+            z.writestr(f"runs/{r.id}/report.json", json.dumps(asdict(r), indent=2, ensure_ascii=False))
+            for folder, lines in _calls(root, r):
+                for x in lines:
+                    name = str(x.get("raw") or "").removesuffix(".gz")
+                    z.writestr(f"runs/{r.id}/calls/{x.get('side') or 'call'}-{name}",
+                               json.dumps({"line": x, **call_log.raw(folder, x)}, ensure_ascii=False, indent=1))
+    safe = "".join(c if c.isalnum() or c in "-_" else "-" for c in subject["id"])[:60]
+    return f"orkcraft-test-bench-{safe}-{dt.date.today().isoformat()}.zip", buf.getvalue()
+
+
+def _calls(root: Path, r: bench.Report) -> list[tuple[Path, list[dict]]]:
+    """Each folder its calls are in: its own, and the run its bare side was kept from."""
+    own = root / bench.RUNS / r.id / "calls"
+    out = [(own, call_log.read(own))]
+    if r.bare is not None and r.bare.kept and r.bare.kept != r.id:
+        kept = root / bench.RUNS / r.bare.kept / "calls"
+        out.append((kept, [x for x in call_log.read(kept) if x.get("side") == "bare"]))
+    return out

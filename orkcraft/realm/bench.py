@@ -425,10 +425,11 @@ def _checks(reports: list[Report], side: str) -> str:
     return f"{sum(1 for s in sides if s.passed and not s.error)}/{len(sides)} passed"
 
 
-def summary(reports: list[Report], building_word: str = "Building", limit: float = GAP_LIMIT) -> str:
+def summary(reports: list[Report], building_word: str = "Building", limit: float = GAP_LIMIT,
+            names: dict[str, str] | None = None) -> str:
     """The runs of several cases side by side: each one's time, spend and check, the building against the bare
     tool, and whether it stays within `limit`. A case run more than once shows its medians, how many runs and the
-    range of its time gap."""
+    range of its time gap. `names`: a case's title by its id, when its id says nothing (a Test bench's own)."""
     def pct(v: float | None) -> str:
         return "—" if v is None else f"{v:+.0%}"
 
@@ -440,7 +441,7 @@ def summary(reports: list[Report], building_word: str = "Building", limit: float
         g = pooled_gaps(group)
         check = f"{_checks(pairs, 'building')} / {_checks(pairs, 'bare')}" if pairs else "—"
         spend = pct(g["spend"]) + (" tokens" if g["spend"] is not None and g["spend_by"] == "tokens" else "")
-        row = (group[0].case, pct(g["time"]), spend, check, "yes" if within(g, limit) else "no")
+        row = ((names or {}).get(group[0].case, group[0].case)[:40], pct(g["time"]), spend, check, "yes" if within(g, limit) else "no")
         if repeated:
             span = g["time_range"]
             row += (str(g["runs"]), f"{pct(span[0])} … {pct(span[1])}" if span else "—")

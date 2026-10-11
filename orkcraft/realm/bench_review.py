@@ -1,9 +1,10 @@
 """🧪 The Test bench's reviews and written cases (docs/design/test-bench.md §3–6): agents read a building's own code and
-say what they would change, each from its role, and one writes a test case when asked.
+its last runs and say what they would change, each from its role, and one writes a test case when asked. Only the
+tech review is left: the UX and product reviews were taken out (docs/design/improve-buildings.md §11).
 
-    bench_review.ROLES["ux"]                         who reviews a tab: (id, title, what they look at)
-    bench_review.review(root, "barracks", "ux", role, tool, runner)    one role's findings, kept in the tab's file
-    bench_review.load(root, "barracks", "ux")        the tab's last review: {at, version, tool, roles: {role: …}}
+    bench_review.ROLES["tech"]                       who reviews a tab: (id, title, what they look at)
+    bench_review.review(root, "barracks", "tech", role, tool, runner, runs=…)   one role's findings, kept in the tab's file
+    bench_review.load(root, "barracks", "tech")      the tab's last review: {at, version, tool, roles: {role: …}}
     bench_review.write_case(root, "barracks", brief, tool, runner)     a new case, not read yet (`reviewed: false`)
     bench_review.findings(root, "barracks")          every finding of every tab, with its id, for Make tasks
 
@@ -23,7 +24,7 @@ import orkcraft
 from orkcraft.realm import bench, catalog, jobs, lexicon
 
 REVIEWS = bench.BENCH / "reviews"
-TABS = ("tech", "ux", "product")
+TABS = ("tech",)
 SEVERITIES = ("high", "medium", "low")
 ROLES: dict[str, tuple[tuple[str, str, str], ...]] = {
     "tech": (
@@ -37,29 +38,8 @@ ROLES: dict[str, tuple[tuple[str, str, str], ...]] = {
          "how to show it does better than the bare AI tool: which test cases and checks would tell, what the "
          "current ones miss or reward by chance, how many runs a comparison needs, which numbers to watch"),
     ),
-    "ux": (
-        ("product_manager", "Product manager",
-         "whether a person understands why the building exists and what each step is for, along the whole way: "
-         "the build menu, its setup, its Work and Info, its quick actions; where a person stops and wonders"),
-        ("product_designer", "Product designer",
-         "labels, empty states, the number of decisions and fields before the first result, what each button "
-         "costs or risks and whether it says so, and consistency with the rest of the town"),
-    ),
-    "product": (
-        ("product_manager", "Product manager",
-         "the AHA moment: the first time a person sees why the building is worth having, in their first session "
-         "with it; how soon it comes, what stands in its way"),
-        ("architect", "Architect",
-         "what must be built or changed so that the AHA moment happens in the first session for everyone, what "
-         "it costs and what could go wrong"),
-    ),
 }
-TAB_GOALS = {
-    "tech": "Review the building as an engineer would before trusting it with real work.",
-    "ux": "Review the building's whole flow for a person who has never used it: there should be no strain "
-          "anywhere from building it to using it every day.",
-    "product": "Find the building's AHA moment and make sure it happens in the first session.",
-}
+TAB_GOALS = {"tech": "Review the building as an engineer would before trusting it with real work."}
 WORDING = ("The interface writes ork / orks / orkestration, never orc or orchestration. Labels, settings and "
            "anything about money or safety say plainly what happens; only the Warchief's lines, growth news and "
            "the onboarding may joke. A building's words are its today's word (realm/lexicon.py TERMS); old Camp "
@@ -107,12 +87,11 @@ def _last_run(root: Path, type_id: str) -> str:
     return each + "\n".join([bench.render(kept[0], word), *bench.calls_text(bench.calls_of(root, kept[0]), word)])
 
 
-def prompt(root: Path, type_id: str, tab: str, role: str) -> str:
+def prompt(root: Path, type_id: str, tab: str, role: str, runs: str = "") -> str:
+    """`runs`: what the Test bench's own runs of the building said (gui/lab_export.py), in place of the type's."""
     rid, title, focus = next(r for r in ROLES[tab] if r[0] == role)
     base = source_dir()
-    aha = ('\n  "aha": {"moment": "…", "script": ["step 1", "step 2", "…"], "measure": "…", "time_to_it": "…"},'
-           if tab == "product" else "")
-    run = f"\n\n## The last Test bench run\n\n{_last_run(root, type_id)}" if tab == "tech" else ""
+    run = f"\n\n## The last Test bench runs\n\n{runs or _last_run(root, type_id)}"
     return f"""You are the {title} of Orkcraft, a town of AI agents drawn as a strategy game. {TAB_GOALS[tab]}
 
 {context(root, type_id)}
@@ -124,7 +103,7 @@ Read the code and the design notes before you judge; the ones about this buildin
 Wording rules of the product: {WORDING}{run}
 
 Answer with JSON only, no other text:
-{{{aha}
+{{
   "findings": [
     {{"title": "a short imperative line: what to change", "detail": "why, and what exactly to do",
       "severity": "high | medium | low", "where": "the file, the screen or the step"}}
@@ -134,7 +113,7 @@ At most 8 findings, the most important first. A finding is something to change, 
 
 
 def parse(text: str) -> dict:
-    """The answer's JSON, cleaned: findings with a title, a known severity; the AHA when there is one."""
+    """The answer's JSON, cleaned: findings with a title, a known severity."""
     m = _JSON.search(text or "")
     try:
         data = json.loads(m.group(0)) if m else {}
@@ -147,12 +126,6 @@ def parse(text: str) -> dict:
             out["findings"].append({"title": str(f["title"]).strip()[:200], "detail": str(f.get("detail") or "")[:2000],
                                     "severity": sev if sev in SEVERITIES else "medium",
                                     "where": str(f.get("where") or "")[:200]})
-    aha = data.get("aha")
-    if isinstance(aha, dict) and aha.get("moment"):
-        script = aha.get("script") or []
-        out["aha"] = {"moment": str(aha["moment"])[:600],
-                      "script": [str(s)[:300] for s in script][:10] if isinstance(script, list) else [str(script)],
-                      "measure": str(aha.get("measure") or "")[:300], "time_to_it": str(aha.get("time_to_it") or "")[:100]}
     return out
 
 
@@ -188,16 +161,17 @@ def put(root: Path, type_id: str, tab: str, role: str, entry: dict, tool: str = 
 
 
 def review(root: Path, type_id: str, tab: str, role: str, tool: str = "main", runner=None,
-           cancel: threading.Event | None = None) -> dict:
-    """One role reads the building and answers; its entry is kept in the tab's file and returned."""
+           cancel: threading.Event | None = None, runs: str = "") -> dict:
+    """One role reads the building (and `runs`, see `prompt`) and answers; its entry is kept in the tab's file and
+    returned."""
     title = next(r[1] for r in ROLES[tab] if r[0] == role)
     start = time.monotonic()
     entry: dict = {"title": title, "status": "done", "error": "", "findings": [], "cost": 0.0, "tokens": 0}
     try:
-        text, cost, tokens, _ = (runner or jobs.run_read)(tool, prompt(root, type_id, tab, role), source_dir(),
+        text, cost, tokens, _ = (runner or jobs.run_read)(tool, prompt(root, type_id, tab, role, runs), source_dir(),
                                                            cancel or threading.Event(), "")
         entry.update(parse(text), cost=round(float(cost or 0.0), 4), tokens=int(tokens or 0))
-        if not entry["findings"] and not entry.get("aha"):
+        if not entry["findings"]:
             entry.update(status="failed", error="the answer had no findings: " + (text or "")[:300])
     except (RuntimeError, OSError) as e:
         entry.update(status="failed", error=str(e)[:500] or type(e).__name__)

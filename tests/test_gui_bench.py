@@ -17,8 +17,6 @@ from orkcraft.realm import bench, bench_review, checkpoint
 from tests.pool_fakes import Steward
 
 ANSWER = {
-    "aha": {"moment": "a test task comes back as a pull request", "script": ["build it", "give it a task"],
-            "measure": "minutes to the first accepted task", "time_to_it": "5 minutes"},
     "findings": [{"title": "Say what a tier costs", "detail": "The setup names tiers, not prices.",
                   "severity": "high", "where": "Info"},
                  {"title": "", "detail": "no title: dropped"},
@@ -78,36 +76,37 @@ def _settled(h: Host, bid: str) -> dict:
 
 # -- the flag -------------------------------------------------------------------------------------------------
 
-def test_a_first_open_reviews_the_three_tabs_once(host, asked):
+def test_a_first_open_reviews_the_tech_once(host, asked):
     bid = _raised(host, "barracks", worktrees=False)
     first = host.command("bench.open", {"id": bid})
     assert first["can_run"] and first["word"] == "Agent pool" and [c["id"] for c in first["cases"]][:1] == ["slugify"]
     s = _settled(host, bid)
-    assert len(asked) == 7                                       # 3 tech, 2 ux, 2 product
-    pm = next(r for r in s["reviews"]["product"]["roles"] if r["id"] == "product_manager")
-    assert pm["status"] == "done" and pm["aha"]["moment"].startswith("a test task")
-    assert [f["title"] for f in pm["findings"]] == ["Say what a tier costs", "Name the steward"]
-    assert [f["severity"] for f in pm["findings"]] == ["high", "medium"]
-    assert pm["findings"][0]["id"] == "product:product_manager:0" and pm["cost"] == 0.02
+    assert len(asked) == 3 and list(s["reviews"]) == ["tech"]    # the UX and product reviews were taken out
+    ai = next(r for r in s["reviews"]["tech"]["roles"] if r["id"] == "ai_engineer")
+    assert ai["status"] == "done" and [f["severity"] for f in ai["findings"]] == ["high", "medium"]
+    assert ai["findings"][0]["id"] == "tech:ai_engineer:0" and ai["cost"] == 0.02
     host.command("bench.open", {"id": bid})                      # kept: nothing starts again by itself
-    assert not host.bench.reviewing and len(asked) == 7
-    host.command("bench.review", {"id": bid, "tab": "ux"})      # …only Review again
+    assert not host.bench.reviewing and len(asked) == 3
+    host.command("bench.review", {"id": bid, "tab": "tech"})    # …only Review again
     _settled(host, bid)
-    assert len(asked) == 9
+    assert len(asked) == 6
+    with pytest.raises(CommandError):
+        host.command("bench.review", {"id": bid, "tab": "ux"})
 
 
 def test_a_reviewer_reads_the_buildings_own_code_and_the_tech_one_the_last_run(tmp_path):
     p = bench_review.prompt(tmp_path, "barracks", "tech", "ai_researcher")
     assert "Agent pool" in p and "core/workers/barracks.py" in p and "No Test bench run yet" in p
     assert "AI researcher" in p and '"aha"' not in p
-    assert '"aha"' in bench_review.prompt(tmp_path, "barracks", "product", "architect")
+    assert "a Test bench's own runs" in bench_review.prompt(tmp_path, "barracks", "tech", "architect",
+                                                            runs="a Test bench's own runs")
 
 
 def test_an_answer_that_is_not_json_fails_the_role_and_says_so(host, monkeypatch):
     monkeypatch.setattr(bench_review.jobs, "run_read", lambda *a, **kw: ("I could not read it", 0.0, 0, ""))
     bid = _raised(host, "barracks", worktrees=False)
-    host.command("bench.review", {"id": bid, "tab": "ux"})
-    role = _settled(host, bid)["reviews"]["ux"]["roles"][0]
+    host.command("bench.review", {"id": bid, "tab": "tech"})
+    role = _settled(host, bid)["reviews"]["tech"]["roles"][0]
     assert role["status"] == "failed" and "I could not read it" in role["error"]
 
 
@@ -122,14 +121,14 @@ def test_ticked_findings_become_tasks_of_the_picked_agent_pool(host):
     with pytest.raises(CommandError, match="Tick"):
         host.command("bench.tasks", {"id": other, "picks": [], "pool": pool})
     with pytest.raises(CommandError, match="Agent pool"):
-        host.command("bench.tasks", {"id": other, "picks": ["ux:product_manager:0"], "pool": other})
-    done = host.command("bench.tasks", {"id": other, "picks": ["ux:product_manager:0", "product:architect:1"], "pool": pool})
+        host.command("bench.tasks", {"id": other, "picks": ["tech:architect:0"], "pool": other})
+    done = host.command("bench.tasks", {"id": other, "picks": ["tech:architect:0", "tech:ai_engineer:1"], "pool": pool})
     assert done["made"] == 2
     st = host.town.worker(pool).state
     titles = [t.title for t in st.tasks + st.queue]
     assert "External listeners: Say what a tier costs" in titles and "External listeners: Name the steward" in titles
     task = next(t for t in st.tasks + st.queue if t.title.endswith("tier costs"))
-    assert "Product manager (ux review)" in task.text and "Where: Info" in task.text
+    assert "Architect (tech review)" in task.text and "Where: Info" in task.text
 
 
 # -- cases ----------------------------------------------------------------------------------------------------
@@ -283,7 +282,7 @@ def test_make_tasks_may_send_the_findings_down_the_test_benchs_roads(host, monke
     s = host.command("bench.state", {"id": tower, "lab": lab})
     assert s["roads"] == [{"id": pool, "title": host.town.title_of(pool)}] and s["pools"][0]["road"] is True
     done = host.command("bench.tasks", {"id": tower, "lab": lab, "pool": gui_bench.ROADS,
-                                        "picks": ["ux:product_manager:0"]})
+                                        "picks": ["tech:architect:0"]})
     assert done["made"] == 1
     assert _until(lambda: any(t.title.endswith("Say what a tier costs")
                               for t in host.town.worker(pool).state.tasks + host.town.worker(pool).state.queue))
