@@ -104,6 +104,14 @@ def _building(b: dict) -> dict[str, Any]:
             "alert": (b.get("alert") or {}).get("id") or None}
 
 
+def _roads(full: dict) -> list[list[str]]:
+    """The roads between the town's buildings as [from, to] pairs, each once: what the phone groups its grid by
+    and lights on a long press. Not what a road carries (that stays on the desktop)."""
+    ids = {b["id"] for b in full.get("buildings") or []}
+    return [list(pair) for pair in sorted({(r["from"], r["to"]) for r in full.get("roads") or []
+                                           if r.get("from") in ids and r.get("to") in ids and r["from"] != r["to"]})]
+
+
 WIDGET_TOP = 5            # of the widget's to-dos, notes and each lane's cards, the most a phone gets
 
 
@@ -167,6 +175,7 @@ def compact(full: dict[str, Any]) -> dict[str, Any]:
         "alerts": [_alert(a) for a in full.get("alerts") or []],
         "buildings": [_building(b) for b in full.get("buildings") or []],
         "widget": _widget(full),
+        "roads": _roads(full),
         "sessions_running": sum(1 for s in full.get("sessions") or [] if s.get("running")),
         "episodes": _episodes(full.get("buildings") or []),
     }
