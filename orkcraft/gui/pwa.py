@@ -41,6 +41,9 @@ from orkcraft.gui import tailnet
 ROOT = Path(__file__).resolve().parent / "static" / "pwa"
 FONTS = tokens.SYSTEM / "fonts"     # the desktop's faces (design/system/fonts), served as fonts/<file>
 SPRITES = tokens.SYSTEM / "sprites" / "buildings"   # each type's header sprite, served as sprites/<type>.png
+FENCE = tokens.SYSTEM / "sprites" / "fence"         # the fence a building's window stands in, served as fence/<file>
+ICONS = tokens.SYSTEM / "sprites" / "icons"         # the HUD's resources, served as icons/res-<name>.png
+STYLES = ("tokens.css", "components.css")           # the design system itself: its colours, buttons, inputs, HUD
 PREFIX = "/app/"
 SUBPROTOCOL = "orkcraft.v1"
 BEARER = "bearer."
@@ -55,13 +58,17 @@ CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' 
 
 
 def files() -> dict[str, Path]:
-    """The app's files by the name they are served at (under PREFIX), the desktop's fonts under fonts/ and its
-    buildings' header sprites under sprites/: the same faces and marks in both, from one place."""
+    """The app's files by the name they are served at (under PREFIX), the design system's styles beside them, the
+    desktop's fonts under fonts/, its buildings' header sprites under sprites/, its fence under fence/ and its
+    resources under icons/: the same faces, components and marks in both, from one place."""
     own = {p.name: p for p in sorted(ROOT.iterdir()) if p.is_file() and p.suffix in TYPES}
+    styles = {name: tokens.SYSTEM / name for name in STYLES}
     faces = {f"fonts/{p.name}": p for p in sorted(FONTS.iterdir()) if p.suffix in (".woff2", ".css")}
     marks = {f"sprites/{d.name}{scale}.png": d / f"header{scale}.png" for d in sorted(SPRITES.iterdir())
              for scale in ("", "@2x") if (d / f"header{scale}.png").is_file()}
-    return {**own, **faces, **marks}
+    fence = {f"fence/{p.name}": p for p in sorted(FENCE.iterdir()) if p.suffix == ".png"}
+    res = {f"icons/{p.name}": p for p in sorted(ICONS.iterdir()) if p.name.startswith("res-") and p.suffix == ".png"}
+    return {**own, **styles, **faces, **marks, **fence, **res}
 
 
 def wants(path: str) -> bool:

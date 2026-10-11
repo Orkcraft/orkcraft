@@ -25,10 +25,13 @@ export const kept = {
 
 export const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+// The orkspace this phone shows (town.js `chosenSpace`): the phone's own pick, so it never moves the desktop's.
+export const SPACE = "orkcraft.orkspace";
+
 export const store = {
   get() { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } },
   set(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* private mode: this run only */ } },
-  clear() { try { localStorage.removeItem(KEY); } catch { /* nothing kept */ } kept.clear(); },
+  clear() { try { localStorage.removeItem(KEY); localStorage.removeItem(SPACE); } catch { /* nothing kept */ } kept.clear(); },
 };
 
 export const minutes = (s) => (s < 60 ? `${Math.round(s)} s` : s < 5400 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`);
@@ -45,7 +48,7 @@ export function guessName() {
 /** A sheet that rises from the screen's foot: a modal <dialog> (Esc and the backdrop close it), its title and
  *  Close at the top, `body` under them. `{el, open, close, title(text)}`. */
 export function sheet(title, ...body) {
-  const shut = h("button", { class: "btn quiet", type: "button" }, "Close");
+  const shut = h("button", { class: "ok-btn", type: "button" }, "Close");
   const head = h("h2", {}, title);
   const el = h("dialog", { class: "sheet", "aria-label": title }, h("div", { class: "sheet-in" },
     h("div", { class: "sheet-head" }, head, shut), ...body));
@@ -54,4 +57,12 @@ export function sheet(title, ...body) {
   shut.addEventListener("click", close);
   el.addEventListener("click", (e) => { if (e.target === el) close(); });   // the backdrop
   return { el, open, close, title(text) { head.textContent = text; el.setAttribute("aria-label", text); } };
+}
+
+/** A window of the town as the desktop draws one (docs/design/yards.md §3): its name over it and, in Camp, the
+ *  fence round its yard (app.css `.fenced`); in Office a plain card. `{el, yard}`: the section and its inside. */
+export function fenced(attrs, head, ...kids) {
+  const yard = h("div", { class: "yard" }, ...kids);
+  const el = h("section", { ...attrs, class: `card fenced${attrs.class ? ` ${attrs.class}` : ""}` }, head, yard);
+  return { el, yard };
 }

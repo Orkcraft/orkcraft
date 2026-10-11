@@ -1,11 +1,12 @@
 // The town on the phone (docs/design/mobile.md §10), as a phone's home screen: what wants the person stands as
-// tiles at the top — a building whose ork asks opens to its question and its answers, one tile open at a time —
-// then the buildings in trouble and at work as rows, then every quiet building as a mark with its name, in a
-// grid, a block per chain of linked buildings in the order the work flows (links.js). A tap on a row or a mark
-// says what the building is doing and what it takes from and sends to; a long press lights its neighbours.
-// Its window opens on the computer.
+// tiles at the top — a building whose ork asks opens to its question and its answers, one tile open at a time;
+// no tile, no Answers — then the buildings of the orkspace the phone shows (its tabs, when the town has more
+// than one): those in trouble and at work as rows, every quiet one as a mark with its name, in a grid, a block
+// per chain of linked buildings in the order the work flows (links.js). A tap on a row or a mark says what the
+// building is doing and what it takes from and sends to, and offers its quick actions; a long press lights its
+// neighbours. Its window opens on the computer.
 
-import { h, minutes, sheet } from "./util.js";
+import { h, minutes, sheet, fenced, SPACE } from "./util.js";
 import { mark } from "./icons.js";
 import { chains, links } from "./links.js";
 
@@ -25,14 +26,31 @@ export function kind(b, asked) {
 // The questions answered from this phone (id → what was said), till the town's update takes them away.
 const answered = new Map();
 
+/** The orkspace the phone shows: the one picked on this phone, else the desktop's open one. The pick is the
+ *  phone's own: it never moves the desktop's town. */
+export function chosenSpace(s) {
+  const all = s.orkspaces || [];
+  let id = "";
+  try { id = localStorage.getItem(SPACE) || ""; } catch { /* the desktop's */ }
+  return all.find((o) => o.id === id) || all.find((o) => o.id === s.active_orkspace) || all[0] || null;
+}
+
+function pickSpace(id) {
+  try { localStorage.setItem(SPACE, id); } catch { /* this run only: the next town update forgets it */ }
+}
+
 /** `ctx`: {send, flash, rerender}. Returns the parts the app lays out and `render(town)`. */
 export function makeTown(ctx) {
   const summary = h("p", { class: "summary" });
   const tiles = h("div", { class: "tiles" });
+  const answers = fenced({ class: "asking", "aria-labelledby": "answers-h" }, h("h2", { id: "answers-h" }, "Answers"), summary, tiles);
+  const spaces = h("div", { class: "ok-tabs spaces", role: "tablist", "aria-label": "Orkspaces", hidden: true });
   const rows = h("div", { class: "rows" });
   const grid = h("div", { class: "blocks", "aria-label": "Quiet buildings" });
   const lit = h("p", { class: "lit muted", "aria-live": "polite", hidden: true });
-  const quietHead = h("h2", {}, "Buildings");
+  const quietHead = h("h3", { class: "quiet-head" }, "Quiet");
+  const town = fenced({ class: "quiet", "aria-labelledby": "buildings-h" }, h("h2", { id: "buildings-h" }, "Buildings"),
+    spaces, rows, quietHead, lit, grid);
   const info = sheet("");
   const infoBody = h("div", { class: "info" });
   info.el.querySelector(".sheet-in").append(infoBody);
@@ -48,8 +66,49 @@ export function makeTown(ctx) {
       h("div", { class: "info-mark" }, mark(b.type, camp)),
       h("p", {}, k === "quiet" ? "Quiet: nothing waits on it now." : `Now: ${(b.state || k).toLowerCase()}.`),
       ...near(b.id).map(([label, ids]) => h("p", {}, h("b", {}, label), ids.map((id) => name(byId.get(id))).join(", "))),
-      h("p", { class: "muted" }, "Its window opens on the computer: the phone shows the town and answers its questions."));
+      ...quick(b),
+      h("p", { class: "muted" }, "Its window opens on the computer."));
     info.open();
+  }
+
+  // Its quick actions, as its card on the desktop has them (mobile.py `quick`): one that takes a line of text
+  // asks for it here; one that reaches outside the camp asks once more; the rest do it on a tap.
+  function quick(b) {
+    const acts = b.quick || [];
+    if (!acts.length) return [];
+    const msg = h("p", { class: "warn", role: "status", hidden: true });
+    const form = h("div", { class: "q-form", hidden: true });
+    const buttons = acts.map((a) => h("button", { class: "ok-btn", type: "button", onclick: () => choose(a) }, a.label));
+    const say = (text, warn = false) => { msg.textContent = text; msg.className = warn ? "warn" : "done"; msg.hidden = false; };
+    async function press(a, value = "") {
+      buttons.forEach((x) => { x.disabled = true; });
+      const r = await ctx.send("building.input", { id: b.id, input: a.id, ...(value ? { value } : {}) });
+      buttons.forEach((x) => { x.disabled = false; });
+      if (!r.ok) { say(r.error || "It was not done.", true); return false; }
+      form.hidden = true;
+      say(typeof r.result === "string" && r.result ? r.result : `${a.label}: done.`);
+      ctx.flash?.(`${name(b)}: ${a.label}`);
+      return true;
+    }
+    function choose(a) {
+      msg.hidden = true;
+      if (a.takes === "text") {
+        const text = h("textarea", { class: "ok-input", rows: "3", maxlength: "4000", "aria-label": a.label, placeholder: a.label });
+        const go = h("button", { class: "ok-btn primary", type: "button" }, a.label);
+        go.addEventListener("click", async () => { if (text.value.trim() && await press(a, text.value.trim())) text.value = ""; });
+        form.replaceChildren(text, h("div", { class: "row" }, go));
+      } else if (a.ask) {
+        form.replaceChildren(h("p", {}, `${a.label}: it reaches outside the camp or takes work in at once.`),
+          h("div", { class: "row" }, h("button", { class: "ok-btn danger", type: "button", onclick: () => press(a) }, a.label),
+            h("button", { class: "ok-btn", type: "button", onclick: () => { form.hidden = true; } }, "Cancel")));
+      } else {
+        press(a);
+        return;
+      }
+      form.hidden = false;
+      form.querySelector("textarea")?.focus();
+    }
+    return [h("h3", {}, "Quick actions"), h("div", { class: "row q-acts" }, ...buttons), form, msg];
   }
 
   // What a building takes from and sends to, by its roads: [[label, ids]] for the ones it has.
@@ -157,18 +216,32 @@ export function makeTown(ctx) {
     summary.classList.toggle("asks", n > 0);
     summary.classList.toggle("long", longest > LONG_WAIT_S);
     tiles.replaceChildren(...entries.map(([key, b, qs]) => tile(key, b, qs)));
+    answers.el.hidden = !entries.length;    // nobody asks: no Answers at all
 
-    const shown = buildings.filter((b) => b.id !== s.widget?.id);   // the widget's board stands open (fields.js)
+    // The orkspace's buildings (every building, in a town of one or of none known); the questions stay the
+    // whole town's, whatever orkspace they come from.
+    const space = chosenSpace(s);
+    const all = s.orkspaces || [];
+    spaces.hidden = all.length < 2;
+    spaces.replaceChildren(...(all.length < 2 ? [] : all.map((o) => h("button", { class: `ok-tab${o === space ? " is-active" : ""}`,
+      type: "button", role: "tab", "aria-selected": String(o === space),
+      onclick: () => { pickSpace(o.id); ctx.rerender(); } },
+      o.icon && camp ? h("span", { "aria-hidden": "true" }, o.icon) : null, o.name,
+      o.questions ? h("span", { class: "q-dot", "aria-label": `${o.questions} asking` }, String(o.questions)) : null))));
+    const inSpace = space && all.length > 1 ? new Set(space.buildings) : null;
+    const here = buildings.filter((b) => !inSpace || inSpace.has(b.id));
+    const shown = here.filter((b) => b.id !== s.widget?.id);   // the widget's board stands open (fields.js)
     const trouble = shown.filter((b) => kind(b, asking) === "trouble");
     const work = shown.filter((b) => kind(b, asking) === "work");
     rows.replaceChildren(...trouble.map((b) => row(b, "trouble")), ...work.map((b) => row(b, "work")));
     rows.hidden = !trouble.length && !work.length;
     const quiet = shown.filter((b) => kind(b, asking) === "quiet");
     quietHead.textContent = `Quiet · ${quiet.length}`;
+    quietHead.hidden = !quiet.length;
     const quietIds = new Set(quiet.map((b) => b.id));
     // A chain with one quiet building left in the grid (the rest ask, are in trouble or at work) stands with the
     // ones no road touches: a block of one says nothing.
-    const groups = chains(buildings.map((b) => b.id), s.roads).map((g) => ({ ...g, ids: g.ids.filter((id) => quietIds.has(id)) }));
+    const groups = chains(here.map((b) => b.id), s.roads).map((g) => ({ ...g, ids: g.ids.filter((id) => quietIds.has(id)) }));
     const single = new Set(groups.filter((g) => g.linked && g.ids.length === 1).map((g) => g.ids[0]));
     const blocks = groups.filter((g) => g.linked && g.ids.length > 1);
     const rest = quiet.map((b) => b.id).filter((id) => single.has(id) || groups.some((g) => !g.linked && g.ids.includes(id)));
@@ -183,15 +256,7 @@ export function makeTown(ctx) {
       }))));
   }
 
-  return {
-    parts: [
-      h("section", { class: "card asking", "aria-labelledby": "answers-h" }, h("h2", { id: "answers-h" }, "Answers"), summary, tiles),
-      rows,
-      h("section", { class: "card quiet" }, quietHead, lit, grid),
-      info.el,
-    ],
-    render,
-  };
+  return { parts: [answers.el, town.el, info.el], render };
 }
 
 /** A question, its last lines and its answers; `who` says who asks and how long (a tile of one question of
@@ -213,11 +278,11 @@ export function question(a, ctx, who = true) {
   };
   const buttons = [];
   for (const [key, label] of a.options || []) {
-    buttons.push(h("button", { class: "btn", type: "button",
+    buttons.push(h("button", { class: "ok-btn", type: "button",
       onclick: () => answer("orders.answer", { id: a.id, key }, label || key, buttons) }, label || key));
   }
   if (a.advice) {
-    buttons.push(h("button", { class: "btn primary", type: "button",
+    buttons.push(h("button", { class: "ok-btn primary", type: "button",
       onclick: () => answer("orders.follow", { id: a.id }, "as the Advisor suggests", buttons) }, "Follow the Advisor"));
   }
   if (answered.has(a.id)) {
