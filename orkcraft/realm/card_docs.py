@@ -18,7 +18,7 @@ import copy
 import json
 from pathlib import Path
 
-from orkcraft.design import tokens
+from orkcraft.design import agents, tokens
 
 VERSION = 1
 SIZES = ("s", "m", "l")
@@ -108,7 +108,9 @@ def remove(type_id: str) -> None:
     path(type_id).unlink(missing_ok=True)
 
 
-PROMPT = """You lay out the card of a building of Orkcraft, a town of AI agents: the small card under its house on the map.
+PROMPT = """{who}
+
+You lay out the card of a building of Orkcraft, a town of AI agents: the small card under its house on the map.
 The building: {title} ({type}).
 A card has three sizes — small, medium, large — and is drawn from these parts:
 {parts}
@@ -135,7 +137,7 @@ def ask(type_id: str, title: str, current: dict, request: str, size: str = "", p
                 "; keep the other sizes as they are."
     feedback, cost, wrong = "", None, ["no answer"]
     for _ in range(MAX_ATTEMPTS):
-        prompt = PROMPT.format(title=title, type=type_id, parts="\n".join(f"- `{k}`: {v}" for k, v in PARTS.items()),
+        prompt = PROMPT.format(who=agents.brief("alchemist"), title=title, type=type_id, parts="\n".join(f"- `{k}`: {v}" for k, v in PARTS.items()),
                                fonts=", ".join(tokens.FONTS), tones=", ".join(tokens.TONES),
                                current=json.dumps(current, ensure_ascii=False, indent=1), request=request.strip()[:1000],
                                where=where, feedback=feedback)

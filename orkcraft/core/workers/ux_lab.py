@@ -15,7 +15,7 @@ import threading
 from pathlib import Path
 
 from orkcraft.core.workers import Worker
-from orkcraft.design import tokens
+from orkcraft.design import agents, tokens
 from orkcraft.realm import catalog, painter
 
 IMAGE_TOOL = "agy"            # paints unless its settings name another (asked 2026-10-11)
@@ -172,7 +172,7 @@ class UxLabWorker(Worker):
         self.changed()
 
         def work() -> None:
-            report = steward.redesign(repo, snapshot, bid, tid, request,
+            report = steward.redesign(repo, snapshot, bid, tid, f"{agents.brief('alchemist')}\n\n{request}",
                                       runner=steward.runner_for(snapshot.building(bid), "redesign", runners.STEWARD_RUNNER))
             self.town.call(done, report)
 
@@ -208,7 +208,7 @@ class UxLabWorker(Worker):
         from orkcraft.realm import card_docs
         return card_docs.load(self.target) or card_docs.default(self.target)
 
-    def card_ask(self, words: str, size: str = "", part: str = "", runner=None) -> None:
+    def card_ask(self, words: str, size: str = "", part: str = "", runner=None, after=None) -> None:
         """Its cards laid out again from the person's words (one checked call): a draft until Apply."""
         from orkcraft.core import runners
         from orkcraft.realm import card_docs, steward
@@ -231,6 +231,8 @@ class UxLabWorker(Worker):
             self.card = {"busy": False, "doc": doc or self.card.get("doc"),
                          "error": "" if doc else "; ".join(wrong[:2]) or "no layout came back"}
             self.changed()
+            if after is not None:
+                after(bool(doc))
 
         threading.Thread(target=work, daemon=True, name="ux-card").start()
 

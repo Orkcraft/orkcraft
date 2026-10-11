@@ -359,7 +359,7 @@ class LabWorker(Worker):
                 spec = keeper.subject_of(spec).write(spec, c["after"])
         return spec
 
-    def save_changes(self, subject_id: str) -> tuple[int, list[str]]:
+    def save_changes(self, subject_id: str, by: str = "you") -> tuple[int, list[str]]:
         """Save changes: each building's data changes become its own, through its keeper (checked again, a
         checkpoint); the code changes stay for a pull request. (buildings saved, problems)."""
         from orkcraft.core import keeper
@@ -375,7 +375,7 @@ class LabWorker(Worker):
             why = "; ".join(dict.fromkeys(c["why"] for c in mine if c.get("why")))[:400] or "the Test bench's changes"
             p = keeper.Proposal(bid, mine[-1]["kind"], before=subject.now(self.repo_root, bid, spec),
                                 after=mine[-1]["after"], why=f"Test bench: {why}")
-            wrong = keeper.apply(self.town, bid, p, why)
+            wrong = keeper.apply(self.town, bid, p, why, by=by, source="mechanic" if by == "orcs" else "steward")
             if wrong:
                 problems += [f"{self.town.title_of(bid)}: {w}" for w in wrong]
                 continue

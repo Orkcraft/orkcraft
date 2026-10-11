@@ -39,7 +39,8 @@ COUNCIL_DIR = Path(".orkcraft") / "council"
 SETTINGS = {"fast_llm": True, "fast_model": "haiku", "weekly_model": "opus", "weekly_at": "weekly sun 05:00",
             "optimize_at": "daily 06:20",       # the local proposal (stage 8): in the operator's morning window
             "round_at": "daily 04:40",          # the Night round (realm/nightround.py): "" is off
-            "elders_per_night": 40, "elders_context": 14}    # the Elders (realm/elders.py): questions, screen lines
+            "elders_per_night": 40, "elders_context": 14,    # the Elders (realm/elders.py): questions, screen lines
+            "improve_per_night_usd": 1.0}       # what the Mechanic and the Alchemist may spend a night (gui/improve_night.py)
 SUBJECT_LIMIT = 6000
 
 # (id, icon, name, duty, the councillor's fixed prompt)
@@ -51,9 +52,16 @@ ROLES = (
     ("mason", "🧱", "Mason", "schemas",
      "You guard the data contracts. Object when fields, events or filters do not fit together, when an "
      "output another building reads has no clear shape, or when a script's input or output is vague."),
-    ("artisan", "🎨", "Artisan", "TUI",
-     "You guard the terminal screen. Object to long titles and labels, more than four panes or actions, "
-     "unclear hut lines, and anything that will not read well in an 80-column terminal."),
+    # the Improve buildings' orks sit on the Council too (design/agents/; docs/design/improve-buildings.md §8): the
+    # Alchemist keeps the artisan's seat (its id stays: older verdicts name it), the Mechanic has one of its own
+    ("artisan", "⚗️", "Alchemist", "UI/UX",
+     "You are a senior UI/UX designer and you guard how a building reads. Object to long or vague titles and "
+     "labels, a card that says more than one headline, more than four actions, a window that needs a colour or "
+     "a font of its own instead of the design system's roles, and words that differ from the rest of the town."),
+    ("mechanic", "⚙️", "Mechanic", "quality and spend",
+     "You are a senior AI engineer and you guard quality per token. Object when a change removes a check, a "
+     "review or a test, raises a model tier with no measured reason, sends the same context again where it could "
+     "be reused or cached, or cannot be shown better on the building's cases."),
     ("warder", "🛡", "Warder", "bash security",
      "You guard the machine. Object to shell commands that delete, escalate (sudo), pipe the network into "
      "a shell, interpolate untrusted text into a command, write outside the project, or hold a secret."),
@@ -63,8 +71,8 @@ ROLES = (
 )
 ROLE_IDS = tuple(r[0] for r in ROLES)
 
-PROMPT = """You are the Council of orkcraft, a terminal harness where windows ("buildings") pass events
-along roads to scripts and agents. Review this new {kind} quickly. Each councillor answers only for its duty:
+PROMPT = """You are the Council of Elders of Orkcraft, a town of AI agents where buildings pass events along
+roads to scripts and agents. Review this new {kind} quickly. Each councillor answers only for its duty:
 
 {duties}
 
@@ -74,7 +82,7 @@ THE NEW {kind_upper}:
 Rules already passed: {rules}
 
 Answer with ONE JSON object and nothing else:
-{{"chief": {{"ok": true, "note": ""}}, "mason": {{...}}, "artisan": {{...}}, "warder": {{...}}, "peon": {{...}}}}
+{answer}
 "ok" is false only for a real problem; "note" is one short sentence (max 120 chars), empty when ok."""
 
 Runner = Callable[[str], tuple[str, float | None]]
@@ -364,8 +372,9 @@ def _prompt(subject: Subject, notes: list[Note]) -> str:
     if subject.script:
         body += "\n\nSCRIPT:\n" + subject.script
     found = "; ".join(f"{n.role}: {n.text}" for n in notes if n.severity == "warn") or "no warnings"
+    answer = "{" + ", ".join(f'"{rid}": {{"ok": true, "note": ""}}' for rid in ROLE_IDS) + "}"
     return PROMPT.format(kind=subject.kind, kind_upper=subject.kind.upper(), duties=duties,
-                         subject=body[:SUBJECT_LIMIT], rules=found)
+                         subject=body[:SUBJECT_LIMIT], rules=found, answer=answer)
 
 
 def _model_notes(text: str) -> list[Note]:
