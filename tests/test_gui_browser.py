@@ -17,6 +17,7 @@ import pytest
 
 playwright = pytest.importorskip("playwright.sync_api")
 
+import orkcraft  # noqa: E402
 from orkcraft.gui import builder  # noqa: E402
 from orkcraft.gui.host import Host  # noqa: E402
 from orkcraft.gui.server import Server  # noqa: E402
@@ -931,8 +932,8 @@ def test_the_stewards_road_rules_are_listed_under_it_and_an_agent_is_handed_over
 
 
 def test_the_huds_menu_sets_the_towns_autonomy_and_stop_all_stands_in_the_hud(page):
-    """The project's name opens the town's settings: its autonomy and, on the clock, its two waits;
-    Stop all stands where Ready was, and the steward's window keeps no waits of its own."""
+    """The project's name opens the town's settings: its autonomy and, on the clock, its two waits, and the
+    version beside Close; Stop all stands where Ready was, and the steward's window keeps no waits of its own."""
     pg = page
     hud = pg.locator(".gui-hud")
     assert hud.get_by_role("button", name="Stop all", exact=True).count() == 1 and hud.get_by_text("Ready").count() == 0
@@ -941,6 +942,7 @@ def test_the_huds_menu_sets_the_towns_autonomy_and_stop_all_stands_in_the_hud(pa
     hud.locator(".gui-hud__menu").click()
     modal = pg.locator(".gui-modal")
     modal.wait_for(state="visible", timeout=WAIT_MS)
+    assert modal.locator(".gui-settings__version").inner_text() == f"Orkcraft {orkcraft.__version__}"   # always, quiet
     lit = lambda: modal.locator(".gui-steps__one.is-on").all_inner_texts()        # noqa: E731
     assert any("On the clock" in t or "Apply if unanswered" in t for t in lit()) and "7 min" in lit()
     modal.get_by_role("button", name="15 min", exact=True).click()
