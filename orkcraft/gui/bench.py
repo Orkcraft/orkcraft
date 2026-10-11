@@ -68,7 +68,9 @@ class Bench:
         self.host = host
         self.jobs: dict[str, Job] = {}                       # type → its run or its case being written
         from orkcraft.gui.lab_runs import LabRuns
+        from orkcraft.gui.check_runs import CheckRuns
         self.lab = LabRuns(self)                             # a Test bench building's own cases (gui/lab_runs.py)
+        self.check = CheckRuns(self)                         # `orkcraft check` from its window (gui/check_runs.py)
         self.reviewing: dict[tuple[str, str], dict[str, threading.Event]] = {}   # (type, tab) → role → cancel
         self.asked: set[str] = set()                         # types reviewed by themselves on a first open
         self._lock = threading.Lock()

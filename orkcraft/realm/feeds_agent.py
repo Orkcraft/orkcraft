@@ -35,10 +35,11 @@ import datetime as dt
 import json
 import re
 import subprocess
+import time
 from dataclasses import dataclass
 from typing import Callable
 
-from orkcraft.realm import feeds, halt, harnesses
+from orkcraft.realm import call_log, feeds, halt, harnesses
 from orkcraft.realm.feeds import Failed, Feed, Item, Look, _iso, _short
 
 TIMEOUT_S = 90
@@ -177,7 +178,9 @@ def look(feed: Feed, since: str = "", seen: list[str] | None = None, run: Callab
     from orkcraft.sources import telemetry
     spent, priced = 0.0, False
     for attempt in (1, 2):
-        cmd = argv(feed, prompt(feed, since, list(seen or []), keep))
+        asked = prompt(feed, since, list(seen or []), keep)
+        cmd = argv(feed, asked)
+        start = time.monotonic()
         try:
             proc = run(cmd) if run is not None else halt.run(cmd, input="", timeout=TIMEOUT_S, who="feeds", agent=True)
         except FileNotFoundError:
@@ -189,6 +192,9 @@ def look(feed: Feed, since: str = "", seen: list[str] | None = None, run: Callab
             return Look(error="agent: stopped by Stop all — the next look starts from the same time", kind="network",
                         cost=spent if priced else None)
         cost = _cost(proc.stdout or "")
+        call_log.record(None, "look", "claude", MODEL, asked, proc.stdout or "", proc.stderr or "", proc.returncode,
+                        time.monotonic() - start, cost, who=f"look {feed.opts.get('server', '')}".strip(),
+                        purpose="look")
         telemetry.charge(cost, f"claude watch {feed.opts.get('server', '')}", purpose="look",
                          model=MODEL)      # every run, answered or not
         if cost is not None:

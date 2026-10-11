@@ -35,6 +35,7 @@ def detail(w) -> dict:
     out = {"subjects": w.subjects(), "subject": s["id"] if s else "", "targets": w.targets(), "heard": w.heard[:5],
            "last": w.last, "goal": w.state["goal"], "settings": w.state["settings"]}
     engine = getattr(w, "bench", None)
+    out["check"] = engine.check.state() if engine is not None else {}    # `orkcraft check`: the town's, not its subject's
     if s is None:
         return out
     metric = lab_cases.metric_of(w.state["goal"])
@@ -188,6 +189,21 @@ def _recommend(w, args: dict) -> bool:
     return True
 
 
+def _check_run(w, args: dict) -> bool:
+    from orkcraft.gui.check_runs import CheckError
+    picked = [str(x)[:20] for x in args.get("scenarios") or []][:10]
+    try:
+        _engine(w).check.start(picked)
+    except CheckError as e:
+        raise ActError(str(e)) from None
+    return True
+
+
+def _check_stop(w, args: dict) -> bool:
+    _engine(w).check.stop()
+    return True
+
+
 def _lab_call(w, fn, *a) -> bool:
     from orkcraft.gui.lab_runs import LabError
     try:
@@ -331,6 +347,6 @@ def _candidates(w, args: dict) -> list[dict]:
     return out
 
 
-ACTS = {"export": _export, "recommend": _recommend, "cassette_reset": _cassette_reset, "pr_preview": _pr_preview, "pr_send": _pr_send, "try": _try, "take_back": _take_back, "save_changes": _save_changes, "env_add": _env_add, "set_add": _set_add, "set_run": _set_run, "set_remove": _set_remove, "setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
+ACTS = {"check_run": _check_run, "check_stop": _check_stop, "export": _export, "recommend": _recommend, "cassette_reset": _cassette_reset, "pr_preview": _pr_preview, "pr_send": _pr_send, "try": _try, "take_back": _take_back, "save_changes": _save_changes, "env_add": _env_add, "set_add": _set_add, "set_run": _set_run, "set_remove": _set_remove, "setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
         "run": _run, "run_all": lambda w, a: _run(w, a, every=True), "stop": _stop, "propose": _propose,
         "tasks": _tasks, "lab.run": _run_first}
