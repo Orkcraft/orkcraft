@@ -77,6 +77,16 @@ class Worker:
         return self.town.repo_root
 
     @property
+    def project_root(self) -> Path:
+        """The folder its work touches: its orkspace's project (docs/design/projects.md), else the town's. Its
+        own state stays in the town (`state_dir`)."""
+        scroll = getattr(self.town, "scroll", None)
+        if scroll is None:
+            return self.repo_root
+        from orkcraft.realm import projects
+        return projects.root_for_building(scroll, self.building_id, self.repo_root)
+
+    @property
     def simulated(self) -> bool:
         """The showcase sandbox (`orkcraft --demo`): agents never run there."""
         return bool(self.town.demo)
