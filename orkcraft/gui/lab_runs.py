@@ -14,15 +14,19 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import tempfile
 import sys
 import threading
 import time
 from dataclasses import asdict
+from pathlib import Path
 
 import orkcraft
-from orkcraft.realm import bench, bench_review, halt, harnesses, jobs, lab_cases, tiers
+from orkcraft.realm import bench, bench_review, halt, harnesses, jobs, lab_cases, lab_envs, tiers
 
 TIER_FLAG = {"laborer": "novice", "warrior": "seasoned", "elder": "veteran"}
+BUSY = {"generate": "writing cases", "env": "writing an environment", "set": "writing a case set"}
+STOP_BEHIND = 3                  # a series of this many cases or more stops when the building is behind on its first 3
 
 
 class LabError(Exception):
@@ -43,17 +47,25 @@ class LabRuns:
 
     # -- the first cases ------------------------------------------------------------------------------------------
 
-    def _agent(self, w, subject: dict, what: str, prompt: str, done) -> None:
+    def _agent(self, w, subject: dict, what: str, prompt: str, done, tier: str = "", bare: bool = False) -> None:
+        """One call to the bench's AI tool on its own thread; `tier` a lighter model for a light ask, `bare` an empty
+        folder to work in (the ask needs no file: nothing is read, no token spent looking round the source)."""
         key = self.key(w, subject)
         if key in self.busy:
-            raise LabError(f"It is already {'writing cases' if self.busy[key] == 'generate' else 'thinking'}")
+            raise LabError(f"It is already {BUSY.get(self.busy[key], 'thinking')}")
         self.busy[key] = what
         tool = str(w.state["settings"].get("tool") or "main")
+        model = tiers.resolve(tool, tier) if tier else ""
+        model = "" if model in tiers.TIERS else model            # a tool with no model for the tier: its own
 
         def work() -> None:
             text, error = "", ""
             try:
-                text = jobs.run_read(tool, prompt, bench_review.source_dir(), threading.Event(), "")[0]
+                if bare:
+                    with tempfile.TemporaryDirectory(prefix="orkcraft-lab-") as empty:
+                        text = jobs.run_read(tool, prompt, Path(empty), threading.Event(), model)[0]
+                else:
+                    text = jobs.run_read(tool, prompt, bench_review.source_dir(), threading.Event(), model)[0]
             except (RuntimeError, OSError) as e:
                 error = str(e)[:300] or type(e).__name__
             self.host.town.call(finish, text, error)
@@ -84,7 +96,47 @@ class LabRuns:
             n = w.add_cases(subject["id"], cases)
             self.host.town.toast(f"{n} case{'s' if n != 1 else ''} written for the goal", title="Test bench")
 
-        self._agent(w, subject, "generate", lab_cases.case_prompt(w.state["goal"], about, entries, have), done)
+        self._agent(w, subject, "generate", lab_cases.case_prompt(w.state["goal"], about, entries, have), done,
+                    tier="laborer", bare=True)
+
+    # -- environments and case sets (docs/design/improve-buildings.md §5.2) -----------------------------------------
+
+    def make_env(self, w, subject: dict, about: str) -> None:
+        """An environment written from the person's words: one call, once; its files kept beside the building."""
+        if len(about.strip()) < 10:
+            raise LabError("Say in a sentence what the environment is")
+
+        def done(text: str) -> None:
+            got = lab_envs.parse_env(text)
+            if got is None:
+                self.host.town.toast("The agent's answer held no files", title="Test bench", severity="warning")
+                return
+            env = w.add_env(got[0], about, got[1])
+            self.host.town.toast(f"Environment {env['name']}: {env['files']} files", title="Test bench")
+
+        self._agent(w, subject, "env", lab_envs.env_prompt(about), done, tier="warrior", bare=True)
+
+    def make_set(self, w, subject: dict, env_id: str, what: str, count: int) -> None:
+        """A case set: what its cases do in one environment, and how many — written in one call to a light model."""
+        env = w.env(env_id)
+        if env is None:
+            raise LabError("No such environment")
+        if len(what.strip()) < 5:
+            raise LabError("Say what the cases of the set do")
+        case_set = lab_envs.new_set(env_id, what, count)
+        entries = w.entries(subject)
+        prompt = lab_envs.set_prompt(w.state["goal"], w.flow_spec(subject)["about"], entries, env, what,
+                                     case_set["count"])
+
+        def done(text: str) -> None:
+            cases = lab_cases.parse_cases(text, entries)[:case_set["count"]]
+            if not cases:
+                self.host.town.toast("The agent's answer held no case", title="Test bench", severity="warning")
+                return
+            n = w.add_set(subject["id"], case_set, cases)
+            self.host.town.toast(f"A case set of {n} in {env['name']}", title="Test bench")
+
+        self._agent(w, subject, "set", prompt, done, tier="laborer", bare=True)
 
     # -- running ------------------------------------------------------------------------------------------------
 
@@ -104,14 +156,16 @@ class LabRuns:
         chain_file, cases_file = folder / f"scheme-{stamp}.json", folder / f"cases-{stamp}.json"
         chain_file.write_text(json.dumps(spec, ensure_ascii=False), encoding="utf-8")
         cases_file.write_text(json.dumps([asdict(lab_cases.to_case(c, spec["about"], bool(s.get("judge")),
-                                                                  w.state["goal"])) for c in cases],
-                                         ensure_ascii=False), encoding="utf-8")
+                                                                  w.state["goal"], w.files_for(subject["id"], c)))
+                                          for c in cases], ensure_ascii=False), encoding="utf-8")
         argv = [sys.executable, "-m", "orkcraft", "--repo", str(self.engine.root), "bench", "chain",
                 "--chain-file", str(chain_file), "--cases-file", str(cases_file),
                 "--case", "all" if len(cases) > 1 else cases[0]["id"],
                 "--tool", str(s.get("tool") or "main"), "--max-spend", str(float(s.get("max_spend") or 2.0))]
         if s.get("tier") in TIER_FLAG:
             argv += ["--tier", TIER_FLAG[s["tier"]]]
+        if len(cases) >= 2 * STOP_BEHIND:
+            argv += ["--stop-behind", str(STOP_BEHIND)]
         if s.get("bare_tool") and s["bare_tool"] != s.get("tool"):
             argv += ["--bare-tool", str(s["bare_tool"])]
         if s.get("bare_tier") in TIER_FLAG:

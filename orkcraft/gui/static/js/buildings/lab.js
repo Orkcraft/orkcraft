@@ -90,6 +90,7 @@ function LabView({ id, d }) {
   return html`<div class="lab-own">
     <${Goal} id=${id} d=${d} on=${on} />
     <${Settings} id=${id} d=${d} />
+    <${Envs} id=${id} d=${d} on=${on} />
     <${Cases} id=${id} d=${d} on=${on} />
     ${d.job && html`<${RunLog} id=${id} job=${d.job} />`}
     <${Proposals} id=${id} d=${d} on=${on} />
@@ -139,11 +140,81 @@ function Settings({ id, d }) {
   </details>`;
 }
 
+// -- environments and their case sets (docs/design/improve-buildings.md §5.2) ----------------------------------------
+
+/** Each environment as a frame with its case sets in it; the setup's (this project) first. */
+function Envs({ id, d, on }) {
+  const envs = d.envs || [];
+  const sets = d.sets || [];
+  return html`<section class="gui-bench__section lab-envs">
+    <h4 class="ok-font-label gui-bench__h">${say("Environments")}</h4>
+    <p class="ok-font-status ok-tone-muted">${say("Where the runs stand. A case set is alike cases in one of them; the mean over the set is what counts.")}</p>
+    ${envs.map((e) => html`<div key=${e.id} class="lab-env">
+      <div class="lab-env__head"><b class="ok-font-body">${say(e.name)}</b>
+        <span class="ok-font-status ok-tone-muted">${say(e.about)}${e.files ? ` · ${e.files} ${say("files")}` : ""}</span></div>
+      <ul class="lab-set-list">${sets.filter((x) => x.env === e.id).map((x) => html`<${SetRow} key=${x.id} id=${id} x=${x} on=${on} />`)}</ul>
+      <${AddSet} id=${id} env=${e.id} busy=${d.busy_what === "set"} />
+    </div>`)}
+    <${AddEnv} id=${id} busy=${d.busy_what === "env"} />
+  </section>`;
+}
+
+function SetRow({ id, x, on }) {
+  const s = x.summary || {};
+  const est = x.estimate || {};
+  const mean = s.ran ? `${say("last run")}: ${say("time")} ${pct(s.time)} · ${say("tokens")} ${pct(s.tokens)} · ${say("quality")} ${pts(s.quality)} (${s.ran}/${x.cases.length})`
+    : say("not run yet");
+  const cost = est.cost !== undefined ? ` · ${say("about")} $${est.cost.toFixed(2)}${est.tokens ? `, ${est.tokens.toLocaleString()} ${say("tokens")}` : ""} ${say("on the building's side")}` : "";
+  return html`<li class="lab-set">
+    <div class="lab-case__head"><span class="ok-font-body">${x.about}</span>
+      <span class="ok-font-status ok-tone-muted">${say(many(x.cases.length, "case"))}</span>
+      <span class="gui-bench__acts">
+        <button class="ok-btn primary" disabled=${on || !x.cases.length} onClick=${() => act(id, "set_run", { set: x.id })}>${say("Run")}</button>
+        <button class="ok-btn" title=${say("Remove the case set and its cases")} onClick=${() => act(id, "set_remove", { set: x.id })}>×</button></span></div>
+    <p class="ok-font-status ok-tone-muted">${mean}${cost}</p>
+  </li>`;
+}
+
+function AddSet({ id, env, busy }) {
+  const [open, setOpen] = useState(false);
+  const [about, setAbout] = useState("");
+  const [count, setCount] = useState(6);
+  if (busy) return html`<p class="ok-font-status ok-tone-muted" role="status">${say("Writing a case set…")}</p>`;
+  if (!open) return html`<button class="ok-btn lab-add-open" onClick=${() => setOpen(true)}>${say("Add a case set")}</button>`;
+  return html`<div class="lab-add">
+    ${field("What its cases do here", html`<textarea class="ok-input gui-textarea" rows="2" maxlength="2000" value=${about}
+      placeholder=${say("e.g. Fix one failing test; each a different bug")} onInput=${(e) => setAbout(e.target.value)}></textarea>`)}
+    ${field("How many cases (alike, written in one go)", html`<input class="ok-input lab-count" type="number" min="1" max="20" value=${count}
+      onInput=${(e) => setCount(Number(e.target.value) || 1)} />`)}
+    <div class="gui-bench__row">
+      <button class="ok-btn primary" disabled=${about.trim().length < 5}
+        onClick=${() => act(id, "set_add", { env, about, count: Math.max(1, Math.min(20, count)) }).then(() => { setAbout(""); setOpen(false); }, () => {})}>${say("Write the cases")}</button>
+      <button class="ok-btn" onClick=${() => setOpen(false)}>${say("Cancel")}</button></div>
+  </div>`;
+}
+
+function AddEnv({ id, busy }) {
+  const [open, setOpen] = useState(false);
+  const [about, setAbout] = useState("");
+  if (busy) return html`<p class="ok-font-status ok-tone-muted" role="status">${say("Writing an environment…")}</p>`;
+  if (!open) return html`<button class="ok-btn lab-add-open" onClick=${() => setOpen(true)}>${say("Add an environment")}</button>`;
+  return html`<div class="lab-add">
+    ${field("What it is, in plain words", html`<textarea class="ok-input gui-textarea" rows="3" maxlength="2000" value=${about}
+      placeholder=${say("e.g. A small Python inventory service, standard library only, with its tests; two of them fail")}
+      onInput=${(e) => setAbout(e.target.value)}></textarea>`)}
+    <p class="ok-font-status ok-tone-muted">${say("Written once by the AI tool, with no network; every run starts from a copy of it.")}</p>
+    <div class="gui-bench__row">
+      <button class="ok-btn primary" disabled=${about.trim().length < 10}
+        onClick=${() => act(id, "env_add", { about }).then(() => { setAbout(""); setOpen(false); }, () => {})}>${say("Write it")}</button>
+      <button class="ok-btn" onClick=${() => setOpen(false)}>${say("Cancel")}</button></div>
+  </div>`;
+}
+
 function Cases({ id, d, on }) {
-  const cases = d.cases || [];
+  const cases = (d.cases || []).filter((c) => !c.set);     // a set's cases stand in its environment
   const results = d.results || {};
   return html`<section class="gui-bench__section lab-cases">
-    <h4 class="ok-font-label gui-bench__h">${say(`Cases (${cases.length})`)}</h4>
+    <h4 class="ok-font-label gui-bench__h">${say(`Single cases (${cases.length})`)}</h4>
     ${!cases.length && html`<p class="ok-font-status ok-tone-muted">${say("No case yet: write the goal and press Write cases for the goal, or add one below.")}</p>`}
     ${cases.length > 0 && html`<ul class="lab-case-list">${cases.map((c) => html`<${CaseRow} key=${c.id} id=${id} c=${c}
       r=${results[c.id]} d=${d} on=${on} />`)}</ul>`}

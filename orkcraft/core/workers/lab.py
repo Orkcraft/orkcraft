@@ -17,14 +17,13 @@ import datetime as dt
 
 from orkcraft import scroll as ts
 from orkcraft.core.workers import Worker
-from orkcraft.realm import bench, catalog, lab_cases, lexicon
+from orkcraft.realm import bench, catalog, lab_cases, lab_envs, lexicon
 
 HEARD = 20                       # carts from the buildings it tests it remembers
 TEXT_KEPT = 8000                 # of each cart: what a chain sent is what its run checks
 CHAIN = "chain:"                 # a chain's id: `chain:<first>:<last>`
 CASE_EVENT = "lab.case"          # the road into a chain it tests
 IMPROVE = ("lab", "ux_lab")      # the Improve buildings: never tested by a Test bench
-ENV = "this project"             # where its runs stand until it has environments of its own (stage 3)
 
 
 class LabWorker(Worker):
@@ -274,7 +273,56 @@ class LabWorker(Worker):
         s = self.subject()
         if s is None:
             return None
-        return {"ids": list(s.get("chain") or [s["id"]]), "env": self.state["settings"].get("env") or ENV}
+        sets = self.sets_of(s["id"])
+        env = self.env(sets[0]["env"]) if sets else None
+        return {"ids": list(s.get("chain") or [s["id"]]), "env": (env or lab_envs.project_env())["name"]}
+
+    # -- its environments and case sets (docs/design/improve-buildings.md §5.2) ---------------------------------------
+
+    def envs(self) -> list[dict]:
+        """Where its runs may stand: the setup's (a copy of the town's project) first, then those written for it."""
+        return [lab_envs.project_env()] + list(self.state.get("envs") or [])
+
+    def env(self, env_id: str) -> dict | None:
+        return next((e for e in self.envs() if e["id"] == env_id), None)
+
+    def env_files(self, env_id: str) -> dict[str, str]:
+        return lab_envs.load_files(self.state_dir, env_id)
+
+    def add_env(self, name: str, about: str, files: dict[str, str]) -> dict:
+        env = lab_envs.new_env(name, about, files)
+        lab_envs.save_files(self.state_dir, env["id"], files)
+        self.state.setdefault("envs", []).append(env)
+        self.keep()
+        return env
+
+    def sets_of(self, subject_id: str) -> list[dict]:
+        return list((self.state.get("sets") or {}).get(subject_id) or [])
+
+    def set_of(self, subject_id: str, set_id: str) -> dict | None:
+        return next((x for x in self.sets_of(subject_id) if x["id"] == set_id), None)
+
+    def add_set(self, subject_id: str, case_set: dict, cases: list[dict]) -> int:
+        """A case set and the cases written for it (each says its set); how many were kept."""
+        self.state.setdefault("sets", {}).setdefault(subject_id, []).append(case_set)
+        return self.add_cases(subject_id, [{**c, "set": case_set["id"]} for c in cases])
+
+    def cases_in(self, subject_id: str, set_id: str) -> list[dict]:
+        return [c for c in self.cases_of(subject_id) if c.get("set") == set_id]
+
+    def remove_set(self, subject_id: str, set_id: str) -> bool:
+        have = self.sets_of(subject_id)
+        if not any(x["id"] == set_id for x in have):
+            return False
+        self.state["sets"][subject_id] = [x for x in have if x["id"] != set_id]
+        self.state["cases"][subject_id] = [c for c in self.cases_of(subject_id) if c.get("set") != set_id]
+        self.keep()
+        return True
+
+    def files_for(self, subject_id: str, case: dict) -> dict[str, str]:
+        """The environment a case stands in: its set's, else the setup's (a copy of the town's project)."""
+        cs = self.set_of(subject_id, str(case.get("set") or ""))
+        return self.env_files(cs["env"]) if cs else {}
 
     def targets(self) -> list[str]:
         """The buildings its roads go to with its results (not the `lab.case` road into a chain it tests)."""

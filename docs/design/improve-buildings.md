@@ -1,7 +1,7 @@
 # Design — Improve: the Mechanic and the Alchemist
 
-Status: stages 0–2 built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
-road rule; a building's inputs; the Test bench's setup). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
+Status: stages 0–3 built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
+road rule; a building's inputs; the Test bench's setup; environments, case sets and what is kept to spend less). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
 and keep it, **faster and cheaper than testing and rewriting it through Claude Code**.
 
 | stage | what | state |
@@ -9,7 +9,8 @@ and keep it, **faster and cheaper than testing and rewriting it through Claude C
 | 0 | Build's **Improve** group: *Logic* (the Test bench, a gear) and *UI/UX* (the UX bench, the flask); a type may lay roads only in its setup or none at all (`catalog.BuildingType.roads`); the UX bench stands: its settings (which building, which image tool) and its gallery, read only | built |
 | 1 | Quick actions are inputs: each says the act a person's form ends in, and `core/inputs.press` ends in the same act, so a bench can press a button the way a person does (§3) | built |
 | 2 | The Mechanic's setup: pick one building or drag a frame round several; the frame drawn on the map with its environment's name, a wire from the Mechanic to the scheme's start and one back from its end; the Test bench's roads are laid only by it (`roads = "setup"`) | built |
-| 3 | Environments: a small code base and data written from a person's description, once, no network; cassettes for MCP and outside calls (§5.2) | |
+| 3 | Environments: a small code base and data written from a person's description, once, no network; case sets in them; the bare side kept, a series stopped early, a set's cost said before it runs (§5.2, §7) | built |
+| 3b | Cassettes: MCP and outside calls recorded on a set's first run and played back after (§5.2) | |
 | 4 | The virtual building: a change is tried on an overlay the Mechanic holds while it is connected; **Save changes** keeps the data part for good (§5.3) | |
 | 5 | GitHub: Connect GitHub in the mascot's menu (device flow); Save changes opens a pull request with its evidence (§4) | |
 | 6 | The Alchemist redraws: images through the image tool with the shipped prompts, a region marked and commented, Reset; the Work window's layout as a UI document (§6) | |
@@ -105,17 +106,29 @@ so nothing but a person could give a building that input.
    loop, `scroll_checks.closes_no_loop` now says it for both), and a building raised by a double press in Build hid
    its setup under the line's hints.
 
-### 5.2 Work
+### 5.2 Work (stage 3, built 2026-10-11)
 
-- **Environments** stand as frames in the window, each with its **case sets**; the setup's is the first.
-- **A case set** (a dialog like today's *Add a case*): what the cases do in this environment, how many (the Tester
-  writes that many alike, the more the steadier the comparison), **Run**; after a run, the mean of each metric over
-  its cases against the bare AI tool.
-- **Cassettes:** in a run every MCP call and outside call goes through a recorder. The first run records the answers
-  (as the Catapult's `route.json` does, [catapult-mcp.md](catapult-mcp.md) §4); later runs play them back, so the
-  two sides see the same world and nothing outside is touched or paid for twice.
+- **Environments** stand as frames in the window (`js/buildings/lab.js` `Envs`), each with its **case sets**; the
+  setup's, *this project* (a copy of the town's), first. **Add an environment** takes a sentence ("a tiny shop in
+  Python, standard library only, with tests"); one call writes it (`realm/lab_envs.py` `env_prompt`: at most 24 files
+  and 80k characters, no network, paths kept inside it), once. Its files are kept beside the building
+  (`envs/<id>.json`) and every run of its sets starts from a copy of them (`bench.Case.files`).
+- **A case set** (*Add a case set* in an environment): what its cases do there and how many (1–20). One call to a
+  light model writes all of them, alike, each saying its set; **Run** runs them; the set's row says the means of its
+  last run against the bare AI tool (time, tokens, quality, how many ran) and what running it again will cost on the
+  building's side (`lab_envs.estimate`). The cases without a set stay below as *Single cases*.
+- The frame on the map names the environment of the first set.
 - **What to change** stays at the bottom (today's proposals, `realm/lab_cases.py`). **Apply** puts a change on the
-  virtual building, never on the building in the town.
+  virtual building, never on the building in the town (stage 4).
+
+**Cassettes (stage 3b, not built).** An AI tool's MCP servers and outside calls are its own, inside its process:
+the bench cannot catch them from Orkcraft. The way in: in a run's copy, each AI tool is started with an MCP
+configuration of the bench's only (`claude --strict-mcp-config --mcp-config <file>`, and each other tool's own way),
+in which every server the person has is replaced by `orkcraft mcp-cassette <server>`: a stdio proxy that, on a
+set's first run, passes each call to the real server and writes the call and its answer to the set's cassette, and
+on every run after answers from the cassette and never starts the server. A call not in the cassette is answered
+"not recorded" and noted in the run. Outside calls the building makes itself go through the same file by its URL.
+Until then a run's copy has none of the person's sources (`bench_kits.SOURCES_OUT`), as before.
 
 ### 5.3 The virtual building (stage 4)
 
@@ -162,16 +175,20 @@ and code (its worker and prompt builders in Python).
 The rule: **code does the loop, a model only writes what code cannot.** Every item below is measured in the run's
 ledger (`.orkcraft/spend/calls.jsonl`, by `purpose`) so the saving is a number, not a claim.
 
-1. **The bare side once.** The bare AI tool's answer to a case does not change when the building does: it is kept by
+1. **The bare side once** (built). The bare AI tool's answer to a case does not change when the building does: it is kept by
    (case, tool, model, environment) and run again only when one of those changes. A second run of a set costs half.
+   `realm/bench.py` `bare_key` (the case's task, input, files and check, the tool and the tier — never the goal or
+   the judge, which the bare tool does not see), `.orkcraft/bench/bare/`; a run that failed or was cut is asked again;
+   `orkcraft bench --fresh` asks anyway. The report says *kept from run …*.
 2. **Cassettes** (§5.2): MCP and outside calls recorded once, played back after; no tokens spent reading the same
    page twice.
 3. **Only what changed runs again.** A run keeps each step's input and output by the hash of its input
    (`realm/steward_metrics.py` `replay` already plays a chain on recorded inputs). After a prompt change only that
    step and the ones after it run; the steps before are read back.
-4. **Cases in one call.** N alike cases are one call to a light model that writes N, kept and reused; never N calls.
-5. **Stop early.** Cases run in turn; when the building is clearly behind (or clearly ahead) after k of N, the rest
-   wait. Before a run the window says what it will cost (N × the last run's mean).
+4. **Cases in one call** (built). N alike cases are one call to a light model that writes N, kept and reused; never N calls.
+5. **Stop early** (built). Cases run in turn; when the building is clearly behind (or clearly ahead) after k of N, the rest
+   wait. Before a run the window says what it will cost (N × the last run's mean). A series of 6 cases or more runs
+   with `--stop-behind 3`: behind the bare tool on each of the first three, the rest wait.
 6. **Checks before the judge.** A case's own check decides first; the blind judge, on a light model, only when the
    checks tie or there are none.
 7. **Prompt caching on purpose.** The parts every call of a run shares (rules, the building's documents, the

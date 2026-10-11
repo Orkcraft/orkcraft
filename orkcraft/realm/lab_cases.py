@@ -42,7 +42,8 @@ def metric_of(goal: str) -> str:
 def blank() -> dict:
     return {"goal": "", "settings": {"tool": "main", "tier": "", "bare_tool": "main", "bare_tier": "",
                                      "max_spend": bench.DEFAULT_MAX_SPEND, "judge": True},
-            "cases": {}, "results": {}, "proposals": {}, "runs": {}}
+            "cases": {}, "results": {}, "proposals": {}, "runs": {},
+            "envs": [], "sets": {}}          # its environments and, per what it tests, its case sets (realm/lab_envs.py)
 
 
 def load(state_dir: Path) -> dict:
@@ -108,10 +109,10 @@ def parse_cases(text: str, entries: list[dict]) -> list[dict]:
     return out[:MAX_CASES]
 
 
-def to_case(c: dict, about: str, judge: bool, goal: str = "") -> bench.Case:
+def to_case(c: dict, about: str, judge: bool, goal: str = "", files: dict | None = None) -> bench.Case:
     """A case of the building's as one the bench runs: a cart into its entry, what comes out checked by its words,
-    and, when asked, by a blind judge."""
-    return bench.Case(id=c["id"], type="chain", title=c["title"], task="", level="",
+    and, when asked, by a blind judge; `files`, the environment it stands in (none: a copy of the town's project)."""
+    return bench.Case(id=c["id"], type="chain", title=c["title"], task="", level="", files=dict(files or {}),
                       inputs={"cart": {"title": c["title"], "text": c["text"]}, "entry": c.get("entry") or "",
                               "expect_words": c.get("expect") or [], "about": about, "judge": bool(judge),
                               "goal": goal},

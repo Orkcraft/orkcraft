@@ -170,7 +170,7 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
             bare_tier = TIER_WORDS.get(args.bare_tier.lower(), args.bare_tier.lower())
             report, folder = building_bench.run(root, case, args.tool, tier, args.building, max_spend, sides,
                                                 say=lambda line: print(line, flush=True), orders=orders, chain=chain,
-                                                bare_tool=args.bare_tool, bare_tier=bare_tier)
+                                                bare_tool=args.bare_tool, bare_tier=bare_tier, fresh=args.fresh)
         except (ValueError, RuntimeError, OSError) as e:          # a chain file that does not read is a ValueError
             sys.stderr.write(f"orkcraft error: {e}\n")
             return 1
@@ -179,6 +179,11 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
         print(bench.render(report, word))
         print(f"\nKept in {folder}")
         print(f"{bench.DONE}{report.id}", flush=True)
+        if args.stop_behind and len(reports) >= args.stop_behind and len(reports) < len(picked) and \
+                all(r.building and r.bare and not bench.within(bench.gaps(r)) for r in reports):
+            print(f"\nTest bench: stopped early — the building is behind the bare AI tool on every one of the first "
+                  f"{len(reports)} cases; the other {len(picked) - len(reports)} wait (nothing more spent).", flush=True)
+            break
     if len(reports) > 1:
         print()
         print(bench.summary(reports, word))
@@ -242,6 +247,10 @@ def main(argv: list[str] | None = None) -> int:
     bench_p.add_argument("--building", default="", help="Which of your buildings of the type to copy the settings of")
     bench_p.add_argument("--max-spend", type=float, default=None, help="$ the building's side may spend (default: 2)")
     bench_p.add_argument("--only", choices=("building", "bare"), default=None, help="Run one side only")
+    bench_p.add_argument("--fresh", action="store_true",
+                         help="Ask the bare AI tool again even when its answer to the same case is kept")
+    bench_p.add_argument("--stop-behind", type=int, default=0, metavar="N",
+                         help="Stop a series when the building is behind on each of its first N cases")
     bench_p.add_argument("--cases-file", type=Path, default=None,
                          help="A JSON list of cases to run instead of the shipped ones (a Test bench writes it)")
     bench_p.add_argument("--bare-tool", default="", help="The AI tool the bare side runs on (default: --tool)")

@@ -5,7 +5,7 @@ gui/lab_runs.py), given to the worker when its window is first drawn."""
 from __future__ import annotations
 
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import bench, lab_cases, tiers
+from orkcraft.realm import bench, lab_cases, lab_envs, tiers
 
 
 def attach(w, host) -> None:
@@ -46,9 +46,21 @@ def detail(w) -> dict:
         "job": job.public() if job else None,
         "tools": engine.lab.tools() if engine is not None else [{"id": "main", "title": "Main tool"}],
         "tiers": engine.lab.tiers() if engine is not None else [{"id": "", "title": "Its own"}],
+        "envs": w.envs(), "sets": _sets(w, s), "busy_what": engine.lab.busy.get(engine.lab.key(w, s), "") if engine else "",
         "pools": [{"id": b.id, "title": b.title} for b in w.town.scroll.buildings
                   if not b.demolished and catalog_type(w, b.id) == "barracks"],
     })
+    return out
+
+
+def _sets(w, s: dict) -> list[dict]:
+    """Each case set with its cases, its last run's means and what running it again will cost."""
+    results = w.results_of(s["id"])
+    out = []
+    for cs in w.sets_of(s["id"]):
+        cases = w.cases_in(s["id"], cs["id"])
+        out.append({**cs, "cases": [{"id": c["id"], "title": c["title"]} for c in cases],
+                    "summary": lab_envs.summary_of(cases, results), "estimate": lab_envs.estimate(cases, results, len(cases))})
     return out
 
 
@@ -141,6 +153,40 @@ def _run(w, args: dict, every: bool = False) -> bool:
     return True
 
 
+def _lab_call(w, fn, *a) -> bool:
+    from orkcraft.gui.lab_runs import LabError
+    try:
+        fn(w, _subject(w), *a)
+    except LabError as e:
+        raise ActError(str(e)) from None
+    return True
+
+
+def _env_add(w, args: dict) -> bool:
+    return _lab_call(w, _engine(w).lab.make_env, text(args, "about", 2000))
+
+
+def _set_add(w, args: dict) -> bool:
+    count = args.get("count")
+    if not isinstance(count, int) or not 1 <= count <= lab_envs.SET_MAX:
+        raise ActError(f"A set has 1 to {lab_envs.SET_MAX} cases")
+    return _lab_call(w, _engine(w).lab.make_set, text(args, "env", 40), text(args, "about", 2000), count)
+
+
+def _set_run(w, args: dict) -> bool:
+    s = _subject(w)
+    ids = [c["id"] for c in w.cases_in(s["id"], text(args, "set", 40))]
+    if not ids:
+        raise ActError("That set has no case")
+    return _lab_call(w, lambda w_, s_: _engine(w_).lab.run(w_, s_, ids))
+
+
+def _set_remove(w, args: dict) -> bool:
+    if not w.remove_set(_subject(w)["id"], text(args, "set", 40)):
+        raise ActError("No such case set")
+    return True
+
+
 def _stop(w, args: dict) -> bool:
     _engine(w).lab.stop(w)
     return True
@@ -208,6 +254,6 @@ def _candidates(w, args: dict) -> list[dict]:
     return out
 
 
-ACTS = {"setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
+ACTS = {"env_add": _env_add, "set_add": _set_add, "set_run": _set_run, "set_remove": _set_remove, "setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
         "run": _run, "run_all": lambda w, a: _run(w, a, every=True), "stop": _stop, "propose": _propose,
         "tasks": _tasks, "lab.run": _run_first}

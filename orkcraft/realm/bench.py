@@ -212,6 +212,7 @@ class Side:
     result: dict = field(default_factory=dict)        # what it made, as its kit reads it
     model: str = ""                                    # the tier or model it ran on, when the bench knows it
     score: float | None = None                         # a blind judge's 0–10 for what it made (realm/lab_cases.py)
+    kept: str = ""                                     # its answer kept from the run of this id: not run again
 
 
 def bare(c: Case, workdir: Path, tool: str = "main", tier: str = "", cancel: threading.Event | None = None,
@@ -296,7 +297,7 @@ def render(r: Report, building_word: str = "Building") -> str:
     sides = [s for s in (r.building, r.bare) if s is not None]
     names = {"building": building_word, "bare": "Bare AI tool"}
     rows = [("", *(names.get(s.name, s.name) for s in sides)),
-            ("Time", *(f"{s.seconds:.0f} s" + (" (cut)" if s.cut else "") for s in sides)),
+            ("Time", *(f"{s.seconds:.0f} s" + (" (cut)" if s.cut else "") + (" (kept)" if s.kept else "") for s in sides)),
             ("Spend", *(f"${s.cost:.2f}" for s in sides)),
             ("Tokens", *(f"{s.tokens:,}" if s.tokens else "not reported" for s in sides)),
             ("Check", *(verdict(s) for s in sides)),
@@ -307,6 +308,9 @@ def render(r: Report, building_word: str = "Building") -> str:
     out = [f"Test bench: {r.case} ({r.type}), AI tool {r.tool}{tier}", ""]
     out += ["  ".join(cell.ljust(width[i]) for i, cell in enumerate(row)).rstrip() for row in rows]
     for s in sides:
+        if s.kept:
+            out += ["", f"{names.get(s.name, s.name)}: its answer to this case was kept from run {s.kept}, not asked "
+                        "again (nothing it depends on changed)"]
         if s.error:
             out += ["", f"{names.get(s.name, s.name)} did not finish: {s.error}"]
         if s.passed is False and s.check_tail:
@@ -415,3 +419,37 @@ def within(g: dict, limit: float = GAP_LIMIT) -> bool:
     """The building is no worse on its check and at most `limit` over the bare tool on time and on spend."""
     return g["quality"] is not None and g["quality"] <= 0 and \
         all(v is not None and v <= limit for v in (g["time"], g["spend"]))
+
+
+# -- the bare side kept (docs/design/improve-buildings.md §7.1) -------------------------------------------------------
+# The bare AI tool's answer to a case does not change when the building does: it is kept by what it depends on (the
+# case's task, input and files, its check, the tool and the tier) and read back instead of asked again.
+
+BARE_KEPT = BENCH / "bare"
+_NOT_ASKED = ("goal", "judge")          # a case's inputs the bare tool never sees: changing them asks it nothing new
+
+
+def bare_key(c: Case, tool: str, tier: str) -> str:
+    import hashlib
+    seen = {"type": c.type, "task": c.task, "check": c.check, "files": c.files,
+            "inputs": {k: v for k, v in (c.inputs or {}).items() if k not in _NOT_ASKED}, "tool": tool, "tier": tier}
+    return hashlib.sha256(json.dumps(seen, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest()[:32]
+
+
+def kept_bare(root: Path, key: str) -> Side | None:
+    try:
+        data = json.loads((root / BARE_KEPT / f"{key}.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    known = set(Side.__dataclass_fields__)
+    return Side(**{k: v for k, v in data.items() if k in known})
+
+
+def keep_bare(root: Path, key: str, side: Side, run_id: str) -> None:
+    """Kept only when it finished: an error or a cut is asked again next time."""
+    if side.error or side.cut:
+        return
+    folder = root / BARE_KEPT
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / f"{key}.json").write_text(json.dumps({**asdict(side), "kept": run_id}, ensure_ascii=False),
+                                        encoding="utf-8")
