@@ -216,3 +216,31 @@ def test_the_agent_pool_works_in_its_orkspaces_project_unless_it_has_a_folder_of
         assert w.code_root == elsewhere.resolve()                                   # its own folder wins
     finally:
         host.close()
+
+
+def test_a_project_of_a_guarded_town_is_guarded_too(fake_repo, isolated_layout_file, tmp_path, home):
+    """docs/design/projects.md §8: the Security reviewer guards the town, so a project it links gets the hooks;
+    an unguarded town leaves the project as it is, and the Project dialog can guard it on a click."""
+    from orkcraft.hooks import install as hooks_install
+    host = Host(fake_repo, auto_commit=False)
+    try:
+        oid = host.town.scroll.active_orkspace_id
+        plain = _repo(tmp_path / "plain")
+        r = host.command("project.link", {"orkspace": oid, "path": str(plain)})
+        assert r["guarded"] is False and not hooks_install.installed(plain)
+        host.command("project.guard", {"orkspace": oid})
+        assert hooks_install.installed(plain)
+        assert next(p for p in host.snapshot()["projects"] if p["id"] == r["project"])["guarded"] is True
+        hooks_install.install_all(fake_repo, agy=False)                       # the town is guarded now
+        shop = _repo(tmp_path / "shop")
+        r = host.command("project.link", {"orkspace": oid, "path": str(shop)})
+        assert r["guarded"] is True and hooks_install.installed(shop)
+        made = host.command("orkspace.new", {"name": "Store", "project": "new"})
+        folder = Path(host.town.scroll.project(host.town.scroll.orkspace(made).project).path)
+        assert hooks_install.installed(folder)
+        assert ".claude/settings.json" in _git(folder, "ls-files")             # in the project's first commit
+        host.command("project.use", {"orkspace": oid, "project": ""})
+        with pytest.raises(CommandError, match="hooks install"):
+            host.command("project.guard", {"orkspace": oid})
+    finally:
+        host.close()

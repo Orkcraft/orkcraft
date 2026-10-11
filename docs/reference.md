@@ -960,7 +960,9 @@ the CLI paths.
   the town's folder · a project the town has · a new project in `~/Orkcraft/projects/<name>` with git · a folder…);
   a land's menu **Project…** and `/project` change it. A folder with no git asks once before git starts there;
   the disk, the home folder and a folder inside another repository are refused, and so is a first commit over
-  200 MB. War Tent sessions and the Agent pool (without a folder of its own) work in the orkspace's project.
+  200 MB. War Tent sessions, the Agent pool (without a folder of its own), the Forge, a codebase wiki and Loot
+  work in the orkspace's project; their own state stays in the town. A guarded town guards its projects too
+  (`orkcraft hooks install` writes the hooks into each of them).
 - **Copy to orkspace…** (a hut's menu): a building lives on one map; a copy on another is a building of its own
   with its orks, their instructions, scripts and settings. Roads come along only from buildings on that map (the
   toast names the rest); its history, level and spend stay with the original.

@@ -119,3 +119,54 @@ async def test_the_questions_come_first_and_every_target_is_a_thumbs_size(fake_r
         small = await page.evaluate("""() => [...document.querySelectorAll('button')]
             .filter((b) => b.offsetParent && b.getBoundingClientRect().height < 44).map((b) => b.textContent)""")
         assert small == []
+
+
+@pytest.mark.asyncio
+async def test_the_quiet_buildings_stand_as_a_grid_of_marks_and_a_tap_says_what_one_does(fake_repo):
+    async with _phone(fake_repo) as (server, page):
+        bid = server.host.command("town.build", {"type": "pit"})
+        title = server.host.command("mobile.snapshot")["buildings"]
+        title = next(b["title"] for b in title if b["id"] == bid)
+        cell = page.locator(".grid .cell", has_text=title)
+        await cell.wait_for(timeout=WAIT_MS)
+        assert await cell.locator("img.mark-sprite").get_attribute("src") == "sprites/pit.png"     # Camp: the sprite
+        await cell.click()
+        info = page.locator("dialog.sheet[open]")
+        await info.wait_for(timeout=WAIT_MS)
+        assert await info.locator("h2").text_content() == title and "Quiet" in await info.inner_text()
+        await info.get_by_role("button", name="Close").click()
+        server.host.command("you.look", {"look": "office"})
+        await page.locator(".grid .cell svg.mark-line").first.wait_for(timeout=WAIT_MS)       # Office: the line icon
+
+
+@pytest.mark.asyncio
+async def test_what_asks_stands_as_tiles_one_open_the_longest_waiting_first(fake_repo):
+    """The tiles (town.js) on a town of three questions: two of one building, one of no building the phone
+    knows; the longest waiting opens, a tap opens another and closes it, and a tile of one building's question
+    says who asks once."""
+    async with _phone(fake_repo) as (_, page):
+        await page.evaluate("""async () => {
+          const { makeTown } = await import('/app/town.js');
+          const q = (id, who, waited, building) => ({ id, who, waited, building, title: `Proceed ${id}?`,
+            options: [['y', 'Yes'], ['n', 'No']], context: ['line'] });
+          const s = { look: 'camp', buildings: [
+              { id: 'b1', title: 'The Forge', type: 'forge', state: 'ASKS', alert: 'q1' },
+              { id: 'b2', title: 'Inbox', type: 'watchtower', state: 'ERROR' },
+              { id: 'b3', title: 'Notes', type: 'fields', state: '' }],
+            alerts: [q('q1', 'Grunt', 30, 'b1'), q('q2', 'Peon', 900, ''), q('q3', 'Grunt', 20, 'b1')] };
+          const view = makeTown({ send: async () => ({ ok: true }), rerender: () => view.render(s) });
+          const box = document.createElement('div'); box.id = 'probe';
+          box.append(...view.parts); document.body.replaceChildren(box); view.render(s);
+        }""")
+        tiles = page.locator("#probe .tile")
+        assert await tiles.count() == 2
+        assert await page.locator("#probe .tile.is-open").count() == 1
+        first = tiles.nth(0)
+        assert "Peon" in await first.inner_text() and "15 min" in await first.inner_text()      # the longest wait
+        assert await page.locator("#probe .summary.long").count() == 1
+        await tiles.nth(1).locator(".tile-head").click()
+        assert await page.locator("#probe .tile.is-open").count() == 1
+        forge = page.locator("#probe .tile.is-open")
+        assert "The Forge" in await forge.inner_text() and await forge.locator(".question").count() == 2
+        assert await page.locator("#probe .rows .row-b.trouble", has_text="Inbox").count() == 1
+        assert await page.locator("#probe .grid .cell", has_text="Notes").count() == 1

@@ -43,6 +43,20 @@ class Projects:
                                   orkspace=orkspace_id)
         self.host.on_change()
 
+    def _guard(self, folder: Path) -> bool:
+        """A project of a town the Security reviewer guards is guarded too (its hooks in the project's own
+        settings, as `orkcraft hooks install` writes them): whether it is now. Never raises."""
+        from orkcraft.hooks import install as hooks_install
+        town = self.host.town
+        try:
+            if Path(folder).resolve() == town.repo_root.resolve() or not hooks_install.installed(town.repo_root):
+                return hooks_install.installed(folder)
+            checked = getattr(getattr(town, "machine", None), "agy_warder_checked", False)
+            hooks_install.install_all(folder, agy=None if checked else False)
+            return True
+        except (ValueError, OSError):
+            return False
+
     # -- a new orkspace -------------------------------------------------------------------------------
 
     def for_new(self, orkspace_id: str, choice: str, opened: str | None, name: str) -> str:
@@ -54,6 +68,7 @@ class Projects:
         if choice == "new":
             try:
                 folder = projects.new_folder(name)
+                self._guard(folder)                    # before the first commit, so its hooks are in it
                 projects.start_git(folder)
             except (projects.ProjectError, OSError) as e:
                 raise ProjectCommandError(str(e)) from None
@@ -89,10 +104,11 @@ class Projects:
                     raise ProjectCommandError(str(e)) from None
         project = projects.add(self.scroll, folder.name, folder, managed=bool(did))
         projects.link(self.scroll, ork.id, project.id)
+        guarded = self._guard(folder)
         if getattr(self.host.town, "machine", None) is not None:
             folders.remember(self.host.town.machine, str(folder))
         self._done(ork.id)
-        return {"state": "linked", "project": project.id, "git": projects.has_git(folder), "did": did}
+        return {"state": "linked", "project": project.id, "git": projects.has_git(folder), "did": did, "guarded": guarded}
 
     def _use(self, args: dict) -> None:
         ork = self._orkspace(args)
@@ -103,6 +119,22 @@ class Projects:
             raise ProjectCommandError(str(e)) from None
         self._done(ork.id)
 
+    def _guard_cmd(self, args: dict) -> bool:
+        """The Security reviewer guards the orkspace's project from now on (its hooks in the project)."""
+        from orkcraft.hooks import install as hooks_install
+        ork = self._orkspace(args)
+        project = self.scroll.project(ork.project)
+        if project is None or not projects.folder_of(project).is_dir():
+            raise ProjectCommandError("This orkspace works in the town's folder: `orkcraft hooks install` guards it")
+        town = self.host.town
+        checked = getattr(getattr(town, "machine", None), "agy_warder_checked", False)
+        try:
+            hooks_install.install_all(projects.folder_of(project), agy=None if checked else False)
+        except ValueError as e:
+            raise ProjectCommandError(str(e)) from None
+        self.host.on_change()
+        return True
+
     def _pick(self, args: dict) -> str:
         return folders.start(str(args.get("start") or "").strip()[:2000] or str(self.host.town.repo_root))
 
@@ -110,15 +142,18 @@ class Projects:
         return folders.result(str(args.get("token") or "")[:40])
 
     def commands(self) -> dict[str, Callable[[dict], Any]]:
-        return {"project.link": self._link, "project.use": self._use, "project.pick": self._pick,
+        return {"project.link": self._link, "project.use": self._use, "project.guard": self._guard_cmd,
+                "project.pick": self._pick,
                 "project.picked": self._picked}
 
 
 def snapshot(town) -> list[dict[str, Any]]:
     """The town's projects, for the War Map and the Project dialog."""
+    from orkcraft.hooks import install as hooks_install
     out = []
     for p in town.scroll.projects:
         folder = projects.folder_of(p)
         out.append({"id": p.id, "name": p.name, "path": str(folder), "there": folder.is_dir(),
-                    "git": projects.has_git(folder), "used": sum(1 for o in town.scroll.orkspaces if o.project == p.id)})
+                    "git": projects.has_git(folder), "guarded": folder.is_dir() and hooks_install.installed(folder),
+                    "used": sum(1 for o in town.scroll.orkspaces if o.project == p.id)})
     return out

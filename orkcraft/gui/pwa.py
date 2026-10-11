@@ -40,6 +40,7 @@ from orkcraft.gui import tailnet
 
 ROOT = Path(__file__).resolve().parent / "static" / "pwa"
 FONTS = tokens.SYSTEM / "fonts"     # the desktop's faces (design/system/fonts), served as fonts/<file>
+SPRITES = tokens.SYSTEM / "sprites" / "buildings"   # each type's header sprite, served as sprites/<type>.png
 PREFIX = "/app/"
 SUBPROTOCOL = "orkcraft.v1"
 BEARER = "bearer."
@@ -54,11 +55,13 @@ CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' 
 
 
 def files() -> dict[str, Path]:
-    """The app's files by the name they are served at (under PREFIX), and the desktop's fonts under fonts/:
-    the same faces in both, from one place."""
+    """The app's files by the name they are served at (under PREFIX), the desktop's fonts under fonts/ and its
+    buildings' header sprites under sprites/: the same faces and marks in both, from one place."""
     own = {p.name: p for p in sorted(ROOT.iterdir()) if p.is_file() and p.suffix in TYPES}
     faces = {f"fonts/{p.name}": p for p in sorted(FONTS.iterdir()) if p.suffix in (".woff2", ".css")}
-    return {**own, **faces}
+    marks = {f"sprites/{d.name}{scale}.png": d / f"header{scale}.png" for d in sorted(SPRITES.iterdir())
+             for scale in ("", "@2x") if (d / f"header{scale}.png").is_file()}
+    return {**own, **faces, **marks}
 
 
 def wants(path: str) -> bool:
