@@ -215,6 +215,9 @@ function layout() {
 
   parts.askSection = h("section", { class: "card" }, h("h2", {}, "Warchief"), h("div", { class: "row" }, ask, askBtn), parts.chat);
   parts.dropSection = h("section", { class: "card" }, h("h2", {}, "Drop file here"), drop, h("div", { class: "row" }, file, dropBtn));
+  // The look is the person's, one for the desktop and the phone (you.look; docs/design/portrait.md §3).
+  parts.looks = h("div", { class: "looks", role: "group", "aria-label": "Look" },
+    ...LOOKS.map(([look, label]) => h("button", { class: "btn quiet", "data-look": look, onclick: () => setLook(look) }, label)));
   const notifyBtn = h("button", { class: "btn quiet", onclick: () => askNotify(notifyBtn) }, "Notify me while it is open");
   if (!("Notification" in window) || Notification.permission !== "default") notifyBtn.hidden = true;
 
@@ -222,6 +225,8 @@ function layout() {
     h("section", { class: "card" }, h("h2", {}, "Answers"), parts.alerts),
     parts.askSection, parts.dropSection,
     h("section", { class: "card" }, h("h2", {}, "Buildings"), parts.buildings),
+    h("section", { class: "card" }, h("h2", {}, "Look"), parts.looks,
+      h("p", { class: "muted" }, "The same on the computer: it is one setting.")),
     h("footer", { class: "foot" },
       h("span", { class: "muted" }, `This phone: ${device?.name || ""}`), notifyBtn,
       h("button", { class: "btn quiet", onclick: unpairHere }, "Unpair here")));
@@ -241,12 +246,31 @@ function flash(text) {
   setTimeout(() => line.remove(), 6000);
 }
 
+const LOOKS = [["camp", "Camp"], ["office", "Office"], ["shift", "By the shift"]];
+
+// Camp draws the town as it is (its titles with their emoji, the ork's mark); Office calm and plain. Only
+// how things are drawn changes, never a word (CLAUDE.md: one vocabulary, two looks).
+function applyLook(look, chosen) {
+  const camp = look !== "office";
+  document.documentElement.dataset.look = camp ? "camp" : "office";
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", camp ? "#172a0a" : "#161616");
+  for (const b of ui?.looks?.children || []) b.classList.toggle("is-on", b.dataset.look === chosen);
+}
+
+async function setLook(look) {
+  const r = await send("you.look", { look });
+  if (!r.ok) flash(r.error);
+}
+
 function render(s) {
   town = s;
+  applyLook(s.look, s.portrait?.look || s.look);
+  const camp = s.look !== "office";
   const hud = s.hud || {};
   const words = s.resources || {};
   ui.head.replaceChildren(
-    h("h1", {}, s.project || "Orkcraft", s.demo ? h("small", {}, " demo") : null),
+    h("h1", {}, camp && h("img", { class: "mark", src: "icon-192.png", alt: "" }),
+      s.project || "Orkcraft", s.demo ? h("small", {}, " demo") : null),
     h("div", { class: "hud" },
       hud.show_gold !== false && h("span", { class: `pill ${hud.gold_level || "ok"}` }, `${words.gold || "Spend"} ${hud.gold ?? ""}`),
       hud.quota && h("span", { class: `pill ${hud.quota_level || "ok"}` }, `${words.quota || "Quota"} ${hud.quota}`),
@@ -257,7 +281,7 @@ function render(s) {
 
   const asking = [...(s.buildings || [])].sort((x, y) => Boolean(y.alert) - Boolean(x.alert));   // what asks first
   ui.buildings.replaceChildren(...asking.map((b) => h("li", { class: b.alert ? "asks" : "" },
-    h("span", { class: "name" }, b.title_plain || b.title), h("span", { class: "muted" }, b.state || ""),
+    h("span", { class: "name" }, camp ? b.title : (b.title_plain || b.title)), h("span", { class: "muted" }, b.state || ""),
     b.alert && h("span", { class: "badge" }, "asks"))));
 
   ui.askSection.hidden = !building("town_hall");

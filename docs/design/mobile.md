@@ -269,6 +269,11 @@ give a phone: the glance (spend, quotas, the buildings, what asks first), Answer
 suggestion, Stop all (two taps), the Warchief and Drop file here (a text, a link or a file up to 5 MB; on
 Android also from the share sheet, through the manifest's `share_target`).
 
+**Both looks** (§4). The app follows the snapshot's `look`: Camp in its palette (`design/system/tokens.css`),
+square corners, the buildings' titles as they are and the ork's mark; Office calm and plain (`title_plain`),
+dark or light as the phone is. Its Look card switches Camp, Office or By the shift with `you.look`, the one
+setting the desktop's toggle sets too. The Camp fonts stay on the desktop: the app loads only its own files.
+
 **Only over Tailscale.** A browser cannot pin a certificate, and a service worker or a Home Screen app needs
 one it trusts. The tailnet's `*.ts.net` certificate (`tailscale cert`, phone-places.md §3) is that one, so
 the app is offered only on the tailnet with HTTPS certificates on. The LAN listener serves the same files,
