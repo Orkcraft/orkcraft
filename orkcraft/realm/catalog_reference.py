@@ -81,6 +81,35 @@ ACCEPTS: dict[str, frozenset[str]] = {
     "mine": frozenset({TEXT, FILE}), "gramophone": frozenset({TEXT, FILE}), "lab": _ANY,
 }
 
+# Each quick action as an input (docs/design/improve-buildings.md §3): the act of its type's view a press ends in
+# (gui/views/<type>.py `ACTS`; "" its worker's `quick_action`), the argument the text a person gives goes to ("" when
+# it takes none) and what the press always sends. None: it only changes what the window shows (opens a file, flips a
+# chart, opens a form of the interface's own) — no input. tests/test_inputs.py keeps every act real.
+QUICK_INPUTS: dict[str, tuple[str, str, dict] | None] = {
+    "pit.paste": ("", "", {}),                      # its worker reads the clipboard
+    "mail.open_new": ("open_new", "", {}), "watch.read_all": ("read_all", "", {}), "mail.refresh": ("check_now", "", {}),
+    "mill.run": ("", "", {}),
+    "horn.test": ("test", "", {"event": "*"}), "horn.mute": ("mute", "", {}),
+    "tasks.new": ("add", "text", {"lane": "todo"}), "notes.new": ("add", "text", {"lane": "notes"}),
+    "todos.new": ("add", "text", {"lane": "mine"}),
+    "pool.answer": ("answer", "text", {}), "pool.pause": ("pause", "", {}), "pool.task": ("task", "brief", {}),
+    "team.add": None, "team.start": ("review", "text", {}),
+    "calendar.new": ("add", "title", {}), "calendar.prepare": ("prepare", "", {}), "calendar.import": None,
+    "files.open": None,
+    "wiki.note": ("note", "text", {}), "wiki.ingest": ("ingest", "", {}), "wiki.lint": ("lint", "", {}),
+    "knowledge.add": ("add_folder", "path", {}),
+    "mine.new": ("ask", "question", {}),
+    "gramophone.make": ("make", "text", {}),
+    "lab.run": ("lab.run", "", {}),
+    "lake.open": None, "lake.edit": None,
+    "forge.merge": ("merge", "branch", {}), "git.open_pr": None,
+    "loot.accept_all": ("accept_all", "", {}), "generator.accept_all": ("accept_files", "", {}),
+    "crag.flip": None, "crag.next": None,
+    "catapult.dry_run": ("dry_run", "", {}), "catapult.fire": ("fire", "", {}), "catapult.scout": ("scout", "", {}),
+    "hall.build": None, "hall.audit": ("audit", "", {}),
+    "workshop.run": ("workshop.run", "", {}), "workshop.test": ("workshop.test", "", {}),
+}
+
 # What a building does outside the camp on its own: the network, merges, money.
 EFFECTS: dict[str, str] = {
     "watchtower": "reads mail (IMAP), GitHub and the `feeds` (Slack, Jira, Confluence, Figma, GitHub, GitLab, Discord) "

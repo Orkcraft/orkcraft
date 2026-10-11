@@ -558,5 +558,5 @@ from orkcraft.realm.catalog_checks import (  # noqa: E402, F401
     validate,
 )
 from orkcraft.realm.catalog_reference import (  # noqa: E402, F401
-    INTENTS, TAKES, _ANY, ACCEPTS, EFFECTS, CONFIG_HELP, takes, accepts, _param_text, catalog_text,
+    INTENTS, TAKES, _ANY, ACCEPTS, EFFECTS, CONFIG_HELP, QUICK_INPUTS, takes, accepts, _param_text, catalog_text,
 )

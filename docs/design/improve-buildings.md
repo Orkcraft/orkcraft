@@ -1,13 +1,13 @@
 # Design — Improve: the Mechanic and the Alchemist
 
-Status: stage 0 built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
-road rule). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
+Status: stages 0–1 built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
+road rule; a building's inputs). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
 and keep it, **faster and cheaper than testing and rewriting it through Claude Code**.
 
 | stage | what | state |
 |---|---|---|
 | 0 | Build's **Improve** group: *Logic* (the Test bench, a gear) and *UI/UX* (the UX bench, the flask); a type may lay roads only in its setup or none at all (`catalog.BuildingType.roads`); the UX bench stands: its settings (which building, which image tool) and its gallery, read only | built |
-| 1 | Quick actions are inputs: a press is a cart with `kind: "quick.<id>"` through `core/delivery`, so a bench can press a button the way a person does (§3) | |
+| 1 | Quick actions are inputs: each says the act a person's form ends in, and `core/inputs.press` ends in the same act, so a bench can press a button the way a person does (§3) | built |
 | 2 | The Mechanic's setup: pick one building or drag a frame round several; the frame drawn on the map with its environment's name, a wire from the Mechanic to the scheme's start and one back from its end; the Test bench's roads are laid only by it (`roads = "setup"`) | |
 | 3 | Environments: a small code base and data written from a person's description, once, no network; cassettes for MCP and outside calls (§5.2) | |
 | 4 | The virtual building: a change is tried on an overlay the Mechanic holds while it is connected; **Save changes** keeps the data part for good (§5.3) | |
@@ -48,15 +48,25 @@ document uses them as names for the two ideas.
   [select-a-building.md](select-a-building.md) §7); *settings* is what its window changes later. A road an Improve
   building needs is setup's.
 
-## 3. Quick actions are inputs (stage 1)
+## 3. Quick actions are inputs (stage 1, built 2026-10-11)
 
-Today a quick action (`building.quick` → a view's `ACTS` or a worker's `quick_action`) and a cart down a road
-(`core/delivery.deliver` → `worker.receive`) are two paths. Stage 1 makes one:
+Before, a quick action (`building.quick` → a view's `ACTS` or a worker's `quick_action`) and a cart down a road
+(`core/delivery.deliver` → `worker.receive`) were two paths, and most quick actions only opened a form in the page,
+so nothing but a person could give a building that input.
 
-- A building's **inputs** are its roads' events (`ACCEPTS`), its quick actions and the text a person gives it.
-- A press of a quick action is delivered as a cart `{"kind": "quick.<action id>", ...}`; a worker's
-  `quick_action(id)` becomes its `receive` for that kind (the Mill's *Run on the last input* already is one).
-- So a bench gives a building a press the way a person does, and a run can be recorded and played again (§5.2).
+- A building's **inputs** (`core/inputs.py` `of`): a cart down a road when its type takes carts (`ACCEPTS`), then
+  each quick action that is one. `catalog.QUICK_INPUTS` says, per quick action, the act of its view a person's form
+  ends in, the argument the text they give goes to, and what the press always sends (*New task* → `add`, `text`,
+  lane `todo`); `None` for one that only changes what the window shows (open a file, flip a chart).
+- `inputs.press(town, building, input, value, by)` ends in that same act, so a bench gives a building an input the
+  way a person does. Each press is published (`bus.INPUT`: building, input, value, by) — the runs' recordings
+  (§5.2) hear it there.
+- The core holds no view: the face sets `town.presser` (gui/console.py); a town without one presses nothing.
+- The GUI: `building.inputs` lists them, `building.input` presses one; a quick action that takes nothing presses its
+  input from the Command Card as before.
+- `tests/test_inputs.py` keeps it honest: every quick action is in the table, every act named is real.
+- **Next (stage 2):** the Mechanic's wire into a scheme's first building names one of its inputs; a run presses it
+  with the case's text.
 
 ## 4. GitHub (stage 5)
 
