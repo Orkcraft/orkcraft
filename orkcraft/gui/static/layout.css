@@ -140,6 +140,17 @@ button { font: inherit; color: inherit; }
 .gui-town__room > .gui-hut.ok-hut[class].is-sized { min-width: 0; max-width: none; }
 .gui-hut.is-sized > .ok-hut__card { box-sizing: border-box; min-height: 0; display: flex; flex-direction: column; }
 .gui-hut.is-sized > .ok-hut__card > .gui-hut__body, .gui-hut.is-sized > .ok-hut__card > .ok-hut__lines { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+/* Its name keeps its height (in Camp the top fence): a tall body is cut at the bottom, never slid up under the name. */
+.gui-hut.is-sized > .ok-hut__card > .gui-hut__title { flex: none; }
+/* Nor is a part of it squeezed to a sliver (a button, a headline): what does not fit under the others is cut. */
+.gui-hut.is-sized > .ok-hut__card > .gui-hut__body > *, .gui-hut.is-sized > .ok-hut__card > .gui-hut__body > .gui-hut__body-in > * { flex-shrink: 0; }
+/* Small, a card keeps every line to one and cuts it with …, never past its edges: rows that wrap (the parts it shows,
+   a head with its counts) stay on one line. */
+.gui-hut.is-size-s > .ok-hut__card :is(p, li, dd, dt, h3, h4, small, .gui-hut__big > small, .ok-check > span) {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-hut.is-size-s > .ok-hut__card :is(.gui-parts, .gui-fhut__head) { flex-wrap: nowrap; overflow: hidden; }
+.gui-hut.is-size-s > .ok-hut__card .ok-check { min-width: 0; flex-shrink: 1; }
+.gui-hut.is-size-s > .ok-hut__card .ok-btn { max-width: 100%; height: 24px; margin-block: 2px; overflow: hidden; }
 /* Larger, a card's lines wrap instead of being cut at the edge. */
 .gui-hut.is-size-m .gui-hut__text, .gui-hut.is-size-l .gui-hut__text { white-space: normal; }
 /* Closed: the name hangs above the card; the card holds only the type's live status (js/hut.js). Every
@@ -280,6 +291,9 @@ button { font: inherit; color: inherit; }
 .gui-infopage__body { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .gui-infopage__acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
 .gui-thumb { gap: 3px; }
+/* Camp: the green pixel thumb (js/console.js Thumb); Office: the emoji (office.css). */
+.gui-thumb__icon { image-rendering: pixelated; margin: -2px 0; }   /* 20 px as in the bubble, a pixel a CSS pixel */
+.gui-thumb__emoji { display: none; }
 .gui-thumb__n { font-size: .9em; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 .gui-console__sep { padding: var(--space-1) 0 0; }
 .gui-console__row { cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -665,6 +679,7 @@ button { font: inherit; color: inherit; }
 .gui-sprite__walls > .ok-sprite { display: block; }
 .gui-sprite__footing { display: block; background-repeat: repeat-x; background-size: auto 100%; image-rendering: pixelated; }
 .gui-sprite__flag { position: absolute; }
+.gui-sprite__annex.ok-sprite { image-rendering: auto; }   /* shaded as the painted headers (tools/growth_sprites.py): smooth */
 .gui-sprite__flag.is-on-snow { filter: drop-shadow(1px 0 0 var(--bevel-lo)) drop-shadow(-1px 0 0 var(--bevel-lo)); }
 
 /* The building's Info head: its sprite large, its renown and what the next asks (js/console.js). */
@@ -868,6 +883,20 @@ button { font: inherit; color: inherit; }
 .gui-town__placing-hint { position: fixed; left: 50%; top: calc(var(--bar-hud) + 56px); transform: translateX(-50%); margin: 0;
   padding: var(--space-1) var(--space-3); background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame); pointer-events: none; }
 .gui-onb__ghost.is-bare .gui-onb__ghost-name { margin-top: 2px; }
+/* Build: the building going up (js/town.js `.gui-town__raising`) is the very hut its ghost drew, where the ghost
+   stood, under scaffolding: its house rises inside a dashed gold frame, a hammer at work beside it; nothing in it takes
+   the pointer until it stands. Office has no house to raise: the hut waits faded in a dashed frame. */
+.gui-town__raising { position: absolute; inset: 0; pointer-events: none; }
+.gui-town__raising * { pointer-events: none !important; }
+.gui-town__raising .gui-sprite__walls { position: relative; }
+.gui-town__raising .gui-sprite__walls > img:first-child { animation: gui-onb-rise 1.6s steps(12) both; }
+.gui-town__raising .gui-sprite__walls::after { content: ""; position: absolute; inset: -4px -6px 0; border: 2px dashed var(--frame-focus);
+  background: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--frame-focus) 14%, transparent) 8px 11px); }
+.gui-town__raising .gui-sprite__walls::before { content: "⚒"; position: absolute; right: -20px; top: 0; z-index: 1;
+  color: var(--frame-focus); font-size: 13px; line-height: 1; animation: gui-onb-hammer 0.5s steps(2) infinite; }
+[data-look="office"] .gui-town__raising .gui-hut { opacity: .6; outline: 2px dashed var(--frame-focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .gui-town__raising .gui-sprite__walls > img:first-child, .gui-town__raising .gui-sprite__walls::before { animation: none; } }
 
 /* A tier as a person reads it (js/icons.js TierMark): its chevrons, then its word. Office: the word alone. */
 .gui-tier { display: inline-flex; align-items: center; gap: 3px; }

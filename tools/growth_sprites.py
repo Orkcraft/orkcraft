@@ -11,7 +11,8 @@ docs/design/war-map.md):
   a pixel). `level-<n>.png`, the flag on its roof at I–III (ivory, taller at II, gold at III; the pole's
   foot at the bottom left, `js/icons.js` `FLAG_AT` says where on each roof it stands); `footing-<n>.png`,
   a tile of the stones under it, a course more at each level; `annex-thrift.png` (a lean-to over a stack
-  of logs) and `annex-quality.png` (a crystal on a whetstone), beside it by its goal. Balance has none.
+  of logs) and `annex-quality.png` (a crystal on a whetstone), beside it by its goal, drawn shaded at the
+  painted headers' grain (their @2x drawn, their 1x scaled down smoothly). Balance has none.
 - `design-system/sprites/buildings/<type>/header-<biome>.png` (and `@2x`): each flat header redrawn
   for ice (snow on the edges facing the sky), dust (sun-bleached sandstone, sand at the foot), void (ashen violet)
   lava (ash-grey basalt, embers at the foot) and meadow (spring green, daisies at the foot). Dirt and forest keep
@@ -23,7 +24,7 @@ from __future__ import annotations
 
 import pathlib
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SPRITES = ROOT / "design-system" / "sprites"
@@ -348,37 +349,80 @@ FOOTINGS = {1: ["SSSm", "mmmm"],
             2: ["cccc", "SSSm", "SmSS", "mmmm"],
             3: ["cccc", "SSSm", "SmSS", "SSSm", "SmSS", "mmmm"]}
 
-# The annex, standing on the ground at the hut's right: G green, W dark green, I ivory, D the dark.
-ANNEXES = {
-    "thrift": ["......WW........",          # a lean-to over a stack of logs: kept, counted, reused
-               "....WWGGGG......",
-               "..WWGGGGGGGG....",
-               "WWGGGGGGGGGGGGW.",
-               "GGGGGGGGGGGGGGGW",
-               ".W............W.",
-               ".W.II.II.II...W.",
-               ".W.ID.ID.ID...W.",
-               ".W..II.II.II..W.",
-               ".W..ID.ID.ID..W.",
-               ".W.II.II.II.II.W",
-               ".W.ID.ID.ID.ID.W",
-               "WWWWWWWWWWWWWWWW"],
-    "quality": [".....I......",               # a crystal on a whetstone: cut, polished, checked
-                "....III.....",
-                "...IIWII....",
-                "..IIIWIII...",
-                "..IIWIIII...",
-                ".IIIWIIIII..",
-                ".IIWIIIIWI..",
-                ".IIWIIIWII..",
-                "..IIIIWII...",
-                "..IIIWIII...",
-                "...IIWII....",
-                "....III.....",
-                "..WWWWWWW...",
-                ".WGGGGGGGW..",
-                "WWWWWWWWWWW."],
-}
+# The annex, standing on the ground at the hut's right, drawn as the painted headers are (tools/painted.py): at
+# their @2x grain, shaded, lit from the top left, a dark outline round it, and its 1x scaled down smoothly from that,
+# so it stands beside a painted house as one of its kind, not as a block of coarse pixels.
+OUTLINE = (26, 24, 19, 255)
+
+
+def outline(img: Image.Image, px: int = 2) -> Image.Image:
+    """The drawing with a dark outline `px` wide round it."""
+    a = img.getchannel("A").point(lambda v: 255 if v > 0 else 0)
+    grown = a.filter(ImageFilter.MaxFilter(2 * px + 1))
+    out = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    out.paste(OUTLINE, (0, 0), grown)
+    out.alpha_composite(img)
+    return out
+
+
+def hexc(h: str) -> tuple[int, int, int, int]:
+    return rgb(h)
+
+
+def thrift() -> Image.Image:
+    """A lean-to over a stack of logs: kept, counted, reused."""
+    W, H = 72, 56
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    # posts: wood, lit on the left
+    for x0, top in ((7, 10), (60, 20)):
+        d.rectangle([x0, top, x0 + 4, 51], fill=hexc("#6e5434")); d.line([x0, top, x0, 51], fill=hexc("#9a7a4c"))
+        d.line([x0 + 4, top, x0 + 4, 51], fill=hexc("#4a3820"))
+    # the logs, end on: bark, the face, its rings
+    def log(cx, cy, r=6):
+        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=hexc("#5a4228"))
+        d.ellipse([cx - r + 2, cy - r + 2, cx + r - 2, cy + r - 2], fill=hexc("#dcc48e"))
+        d.ellipse([cx - r + 4, cy - r + 4, cx + r - 4, cy + r - 4], outline=hexc("#b08a58"))
+        d.point([cx, cy], fill=hexc("#8a6a42")); d.point([cx - r + 3, cy - r + 3], fill=hexc("#f1e3bf"))
+    for row, (y, xs) in enumerate(((45, (19, 31, 43, 55)), (34, (25, 37, 49)), (23, (31, 43)))):
+        for x in xs: log(x, y)
+    # the lean-to roof: green planks falling to the right, a lit top edge and a dark eave
+    def roof_y(x): return 4 + x * 12 / W
+    for x in range(W):
+        t = roof_y(x); d.line([x, t, x, t + 7], fill=hexc("#86c062"))
+        d.point([x, t], fill=hexc("#b4dc8a")); d.point([x, t + 1], fill=hexc("#a2d07a"))
+        d.line([x, t + 6, x, t + 7], fill=hexc("#4f7a3a"))
+        if x % 9 == 0 and 0 < x < W - 2: d.line([x, t + 2, x, t + 5], fill=hexc("#628a4c"))
+    # ground under it
+    d.rectangle([4, 51, 67, 53], fill=hexc("#628a4c")); d.line([4, 51, 67, 51], fill=hexc("#86c062"))
+    return outline(im)
+
+
+def quality() -> Image.Image:
+    """A crystal on a whetstone: cut, polished, checked."""
+    W, H = 52, 64
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    # the whetstone on its block
+    d.rounded_rectangle([6, 47, 45, 57], radius=3, fill=hexc("#7a8670"))
+    d.line([9, 47, 42, 47], fill=hexc("#aab49a")); d.line([8, 48, 43, 48], fill=hexc("#959f86"))
+    d.line([8, 57, 43, 57], fill=hexc("#545e4c"))
+    d.rectangle([12, 57, 39, 60], fill=hexc("#628a4c")); d.line([12, 57, 39, 57], fill=hexc("#86c062"))
+    # the crystal: lit facet left, a bright middle, shade right; a glint and a gold spark
+    top, ul, ll, bot, lr, ur = (26, 3), (14, 17), (16, 39), (26, 46), (36, 39), (38, 17)
+    mid_t, mid_b = (26, 12), (26, 42)
+    d.polygon([top, ul, ll, bot, lr, ur], fill=hexc("#d8e8de"))
+    d.polygon([top, ul, ll, bot, mid_b, mid_t], fill=hexc("#f4f1e4"))
+    d.polygon([top, mid_t, mid_b, bot, lr, ur], fill=hexc("#a9c4b2"))
+    d.polygon([mid_t, (32, 15), (32, 41), mid_b], fill=hexc("#c6dccf"))
+    d.line([top, ul], fill=hexc("#ffffff")); d.line([ul, ll], fill=hexc("#ffffff"))
+    d.line([18, 20, 18, 30], fill=hexc("#ffffff"), width=2)
+    d.line([lr, ur], fill=hexc("#7f9c89")); d.line([ll, bot, lr], fill=hexc("#7f9c89"))
+    im = outline(im)
+    d = ImageDraw.Draw(im)
+    for dx, dy in ((0, -3), (0, -2), (0, 2), (0, 3), (-3, 0), (-2, 0), (2, 0), (3, 0), (0, -1), (0, 1), (-1, 0), (1, 0), (0, 0)):
+        d.point([44 + dx, 8 + dy], fill=hexc("#e8b94a") if (dx, dy) != (0, 0) else hexc("#fff4c8"))
+    return im
+
+ANNEXES = {"thrift": thrift, "quality": quality}
 
 
 def renown_and_goals() -> None:
@@ -391,9 +435,10 @@ def renown_and_goals() -> None:
         save_pair(grid_image(grid, {"|": DARK_GREEN, "X": CLOTH[level]}, 2), folder / f"level-{level}.png")
         save_pair(grid_image(FOOTINGS[level], {"S": STONE, "m": MORTAR, "c": IVORY}, 2),
                   folder / f"footing-{level}.png")
-    for goal, grid in ANNEXES.items():
-        save_pair(grid_image(grid, {"G": GREEN, "W": DARK_GREEN, "I": IVORY, "D": NIGHT}, 2),
-                  folder / f"annex-{goal}.png")
+    for goal, draw in ANNEXES.items():
+        fine = draw()
+        fine.resize((fine.width // 2, fine.height // 2), Image.LANCZOS).save(folder / f"annex-{goal}.png")
+        fine.save(folder / f"annex-{goal}@2x.png")
 
 
 # -- the huts of each biome -------------------------------------------------------------------------------

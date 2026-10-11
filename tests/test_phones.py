@@ -219,7 +219,7 @@ async def test_a_paired_phone_reads_the_compact_town_and_sends_only_what_a_phone
 
         async with connect(_ws_url(server), ssl=_pinned(), additional_headers=auth) as ws:
             first = json.loads(await asyncio.wait_for(ws.recv(), 5))
-            assert first["t"] == "state" and first["state"]["v"] == mobile.API and "orkspaces" not in first["state"]
+            assert first["t"] == "state" and first["state"]["v"] == mobile.API and "projects" not in first["state"]
 
             async def cmd(i, name, args=None):
                 await ws.send(json.dumps({"t": "cmd", "id": i, "name": name, "args": args or {}}))

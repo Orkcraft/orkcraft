@@ -2,7 +2,7 @@
 // settings, js/settings.js; Halt All; the treasury; the orks' questions are the Warchief's line's, js/warchief.js) and the toasts. The
 // orkspaces are the War Map (js/warmap.js). Markup and classes are the design system's (design-system/components.md: Hud, WarMap, Toast).
 import { useEffect, useRef, useState } from "preact/hooks";
-import { html, cls } from "./html.js";
+import { html, cls, linked } from "./html.js";
 import { town, online, toasts, command, dismiss, say } from "./link.js";
 import { settingsOpen } from "./settings.js";
 import { Portrait, Steps } from "./portrait.js";
@@ -96,7 +96,7 @@ export function Toasts() {
       : html`<div key=${x.id} class=${cls("ok-toast", { [SEVERITY[x.severity] || "is-ok"]: true })}
         onClick=${() => dismiss(x.id)}>
       <span class="ok-toast__mark">${MARK[x.severity] || "✓"}</span>
-      <span>${x.title ? html`<b>${x.title}</b> — ` : ""}${x.message}</span>
+      <span>${x.title ? html`<b>${x.title}</b> — ` : ""}${linked(x.message)}</span>
     </div>`)}
   </div>`;
 }

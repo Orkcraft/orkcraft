@@ -207,15 +207,14 @@ def _place(pg, before: set) -> str:
         if not pg.locator(".gui-town__ghost.is-blocked").count():
             break
     layer.click(position=at)
-    pg.wait_for_function("n => document.querySelectorAll('.gui-hut, .gui-onb__ghost.is-raising').length > n",
-                         arg=len(before), timeout=WAIT_MS)
+    pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length > n", arg=len(before), timeout=WAIT_MS)
     later = pg.locator(".gui-warchief__setup button", has_text="Later")
     try:
         later.wait_for(state="visible", timeout=1500)
         later.click()
     except playwright.TimeoutError:
         pass                                    # a type with no questions: it stands after a moment
-    pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length > n", arg=len(before), timeout=WAIT_MS)
+    pg.wait_for_selector(".gui-town__raising", state="detached", timeout=WAIT_MS)   # it stands: no scaffolding
     return next(i for i in pg.locator(".gui-hut").evaluate_all("els => els.map(e => e.dataset.id)") if i not in before)
 
 
@@ -481,7 +480,10 @@ def test_info_keeps_the_buildings_commands_and_work_takes_a_task_in_place(page):
     _info(pg)
     info = panel.locator(".gui-info-tab")
     info.get_by_role("button", name="Good", exact=True).wait_for(state="visible", timeout=WAIT_MS)
-    assert [t.replace("\n", "") for t in info.locator(".gui-thumb").all_inner_texts()] == ["👍0", "👎0"]
+    assert [t.replace("\n", "") for t in info.locator(".gui-thumb").all_inner_texts()] == ["0", "0"]
+    # Camp: the green pixel thumbs of the ork's bubble, not the emoji (Office keeps those)
+    assert [s.rsplit("/", 1)[-1] for s in info.locator(".gui-thumb__icon").evaluate_all("els => els.map(e => e.src)")] \
+        == ["thumb-up.png", "thumb-down.png"]
     assert pg.get_by_role("button", name="Pin", exact=True).count() == 0          # the pin is the hut's own
     assert pg.get_by_role("button", name="Recruit", exact=True).count() == 0
     assert pg.get_by_role("button", name="Add agent", exact=True).count() == 0

@@ -25,7 +25,7 @@ const PATHS = {
   catapult: "M14.5 1.5 1.5 7l5 2.5 2.5 5zM14.5 1.5 6.5 9.5",                                        // send
   town_hall: "M2.5 4h7M12.5 4h1M2.5 12h1M6.5 12h7M9.5 2.5v3M5 10.5v3M2.5 8h4M9.5 8h4M6.5 6.5v3",      // sliders
   workshop: "M2 2.5h12v11H2zM4.5 6l2 2-2 2M8 10.5h3.5",                                              // terminal
-  lab: "M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM7 1.5h2l.4 1.8 1.3.6 1.6-1 1.4 1.4-1 1.6.6 1.3 1.8.4v2l-1.8.4-.6 1.3 1 1.6-1.4 1.4-1.6-1-1.3.6L9 14.5H7l-.4-1.8-1.3-.6-1.6 1-1.4-1.4 1-1.6-.6-1.3L1.5 9V7l1.8-.4.6-1.3-1-1.6 1.4-1.4 1.6 1 1.3-.6z",   // gear
+  lab: "M9.8 4.2a.67.67 0 0 0 0 .93l1.07 1.07a.67.67 0 0 0 .93 0l2.51-2.51a4 4 0 0 1-5.29 5.29l-4.61 4.61a1.41 1.41 0 0 1-2-2l4.61-4.61a4 4 0 0 1 5.29-5.29l-2.51 2.51z",   // wrench: the Mechanic's (the gear is Settings')
   ux_lab: "M6 1.5h4M6.8 1.5v4.8L3 12.6a1.4 1.4 0 0 0 1.2 1.9h7.6a1.4 1.4 0 0 0 1.2-1.9L9.2 6.3V1.5M4.6 10h6.8",   // flask
   custom: "M8 1.5 14 4.5v7L8 14.5 2 11.5v-7zM2 4.5 8 7.5l6-3M8 7.5v7",                                // box
 };
@@ -102,7 +102,7 @@ export function HutSprite({ type, biome, goal, level, className = "", onError })
         style=${`height:${FOOTING_ROWS[n] * 2}px;background-image:url(/ds/sprites/flags/footing-${n}.png)`}></span>`}
     </span>
     ${annex && html`<img class="ok-sprite gui-sprite__annex" src=${`/ds/sprites/flags/annex-${annex}.png`}
-      alt="" draggable="false" />`}
+      srcset=${`/ds/sprites/flags/annex-${annex}@2x.png 2x`} alt="" draggable="false" />`}
   </span>`;
 }
 

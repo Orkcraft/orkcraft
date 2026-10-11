@@ -4,7 +4,7 @@
 // sheet says where it goes before it is added (the snapshot's `widget.sends`), and after it is added the widget
 // keeps its trail for a while: where it went and how the buildings down the road changed since.
 
-import { h, sheet, clock } from "./util.js";
+import { h, sheet, clock, fenced } from "./util.js";
 import { mark } from "./icons.js";
 import { kind as stateOf } from "./town.js";
 
@@ -29,15 +29,17 @@ export function goes(kind, w, camp = true) {
 
 /** `ctx`: {send, flash}. Returns {el, sheet, render(town)}. */
 export function makeFields(ctx) {
-  const el = h("section", { class: "card widget", "aria-labelledby": "widget-h" });
+  const name = h("h2", { id: "widget-h" });
+  const { el, yard } = fenced({ class: "widget", "aria-labelledby": "widget-h" },
+    h("div", { class: "w-head" }, h("span", { class: "tile-mark" }), name));
   let w = null;
   let camp = true;
   let lanesOpen = false;
   let kind = "todo";
 
-  const text = h("textarea", { id: "widget-text", class: "input", rows: "3", maxlength: "20000", "aria-label": "Text" });
+  const text = h("textarea", { id: "widget-text", class: "ok-input", rows: "3", maxlength: "20000", "aria-label": "Text" });
   const hint = h("p", { class: "muted hint" });
-  const add = h("button", { class: "btn primary", type: "button" }, "Add");
+  const add = h("button", { class: "ok-btn primary", type: "button" }, "Add");
   const write = sheet("New to-do", text, hint, add);
   add.addEventListener("click", async () => {
     const value = text.value.trim();
@@ -103,10 +105,10 @@ export function makeFields(ctx) {
     el.hidden = !w;
     if (!w) return;
     const b = (s.buildings || []).find((x) => x.id === w.id) || { title: "Task Fields", type: "fields" };
-    const head = h("div", { class: "w-head" }, h("span", { class: "tile-mark" }, mark("fields", camp)),
-      h("h2", { id: "widget-h" }, camp ? b.title : (b.title_plain || b.title)));
+    name.previousElementSibling.replaceChildren(mark("fields", camp));
+    name.textContent = camp ? b.title : (b.title_plain || b.title);
     if (w.error) {
-      el.replaceChildren(head, h("p", { class: "warn" }, `The board cannot be read: ${w.error}`));
+      yard.replaceChildren(h("p", { class: "warn" }, `The board cannot be read: ${w.error}`));
       return;
     }
     const todos = w.todos || { open: 0, count: 0, top: [] };
@@ -116,7 +118,7 @@ export function makeFields(ctx) {
     const toggle = h("button", { class: "w-work", type: "button", "aria-expanded": String(lanesOpen),
       onclick: () => { lanesOpen = !lanesOpen; render(s); } },
       h("span", {}, "Ork work"), h("span", { class: "muted" }, work), h("span", { class: "chev", "aria-hidden": "true" }, lanesOpen ? "▾" : "▸"));
-    el.replaceChildren(...[head,
+    yard.replaceChildren(...[
       h("h3", {}, `My to-dos ${todos.open}/${todos.count}`),
       todos.top.length ? list(todos.top, "☐") : h("p", { class: "muted" }, "Nothing open."), more(todos.open, todos.top.length),
       h("h3", {}, `Notes ${notes.count}`, notes.new ? h("span", { class: "new", title: "New" }, " *") : null),
@@ -125,9 +127,9 @@ export function makeFields(ctx) {
       lanesOpen && h("div", { class: "w-lanes" }, ...w.lanes.filter((ln) => ln.top.length).map((ln) =>
         h("div", {}, h("h3", {}, `${ln.label} ${ln.count}`), list(ln.top, "▪"), more(ln.count, ln.top.length)))),
       h("div", { class: "w-add" },
-        h("button", { class: "btn", type: "button", onclick: () => open("todo") }, "+ To-do"),
-        h("button", { class: "btn", type: "button", onclick: () => open("note") }, "+ Note"),
-        h("button", { class: "btn", type: "button", onclick: () => open("task") }, "+ Task")),
+        h("button", { class: "ok-btn", type: "button", onclick: () => open("todo") }, "+ To-do"),
+        h("button", { class: "ok-btn", type: "button", onclick: () => open("note") }, "+ Note"),
+        h("button", { class: "ok-btn", type: "button", onclick: () => open("task") }, "+ Task")),
       trail && h("ol", { class: "trail", "aria-label": "What the card started" },
         ...trail.steps.map(([at, line]) => h("li", {}, h("time", {}, clock(at)), line)))].filter(Boolean));
   }

@@ -48,7 +48,7 @@ export function levelOf(b, auto = null) {
   const [w, h] = (b && b.size) || (auto && [auto[0], auto[1] || 0]) || [0, 0];
   return w >= LEVEL_L.w && h >= LEVEL_L.h ? "l" : w >= LEVEL_M.w && h >= LEVEL_M.h ? "m" : "s";
 }
-export const pulling = signal(null);       // {from, x, y, over}: a road being pulled out of a hut, to the pointer; `over` the hut under it
+export const pulling = signal(null);       // {from, sx, sy, x, y, over}: a road being pulled out of a hut from (sx, sy), to the pointer; `over` the hut under it
 const WARN_MS = 4000;                      // a drag on a pinned hut says why once in this long
 const putAway = signal({});                // building id → the peek reasons the person put away (▸ on a peek)
 const dragOver = signal(null);             // the folded hut a drag is held over: it peeks
@@ -106,7 +106,8 @@ export function pullRoad(e, from, event = "") {
     const there = to && town.value.buildings.find((x) => x.id === to);
     return to && to !== b.id && (!there || freeRoads(there)) ? to : null;
   };
-  const move = (ev) => { pulling.value = { from: b.id, ...at(ev), over: under(ev) }; };
+  const start = at(e);                 // the dashed road leaves from where it was grabbed, not from a corner of the hut
+  const move = (ev) => { pulling.value = { from: b.id, sx: start.x, sy: start.y, ...at(ev), over: under(ev) }; };
   const up = (ev) => {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);

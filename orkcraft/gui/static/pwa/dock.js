@@ -1,6 +1,7 @@
-// The bar at the screen's foot, where the thumb is (docs/design/mobile.md §10): Ask, Drop and More open sheets
-// over the town, and Stop all stops on a hold, or a tap and a second tap elsewhere on the screen. The town's
-// first screen keeps the questions; what a phone does now and then waits one tap down here.
+// The bar at the screen's foot, where the thumb is (docs/design/mobile.md §10): Ask and Drop open sheets over the
+// town, and Stop all, while an ork works, stops on a hold, or a tap and a second tap elsewhere on the screen. The
+// town's first screen keeps the questions; what a phone does now and then waits one tap down here. The look, the
+// notices and this phone stand at the page's own foot, under the town (`foot`).
 
 import { h, randomId, sheet } from "./util.js";
 
@@ -8,13 +9,13 @@ const FILE_LIMIT = 5 * 1024 * 1024;     // as views/pit.py FILE_LIMIT
 const HOLD_MS = 1200;                    // Stop all held this long stops every ork
 export const LOOKS = [["camp", "Camp"], ["office", "Office"], ["shift", "By the shift"]];
 
-/** `ctx`: {send, flash, building(type), device(), unpair(), shared} — what the app gives the bar. */
+/** `ctx`: {send, flash, building(type), device(), unpair(), shared} — what the app gives the bar and the foot. */
 export function makeDock(ctx) {
   // -- the Warchief --
   const chat = h("div", { class: "chat", "aria-live": "polite" });
-  const ask = h("input", { id: "ask", class: "input", placeholder: "Ask the Warchief…", maxlength: "2000",
+  const ask = h("input", { id: "ask", class: "ok-input", placeholder: "Ask the Warchief…", maxlength: "2000",
     enterkeyhint: "send", autofocus: true, "aria-label": "Ask the Warchief" });
-  const askBtn = h("button", { class: "btn primary", type: "button" }, "Ask");
+  const askBtn = h("button", { class: "ok-btn primary", type: "button" }, "Ask");
   let chatTimer = 0;
   async function readChat() {
     clearTimeout(chatTimer);
@@ -43,11 +44,11 @@ export function makeDock(ctx) {
   const askSheet = sheet("Warchief", h("div", { class: "row" }, ask, askBtn), chat);
 
   // -- Drop file here --
-  const drop = h("textarea", { id: "drop", class: "input", rows: "4", placeholder: "A link or a text", maxlength: "20000",
+  const drop = h("textarea", { id: "drop", class: "ok-input", rows: "4", placeholder: "A link or a text", maxlength: "20000",
     "aria-label": "A link or a text" });
   drop.value = ctx.shared || "";
   const file = h("input", { id: "drop-file", type: "file", class: "file", "aria-label": "A file" });
-  const dropBtn = h("button", { class: "btn primary", type: "button" }, "Drop");
+  const dropBtn = h("button", { class: "ok-btn primary", type: "button" }, "Drop");
   dropBtn.addEventListener("click", async () => {
     const pit = ctx.building("pit");
     if (!pit) return;
@@ -68,24 +69,24 @@ export function makeDock(ctx) {
   });
   const dropSheet = sheet("Drop file here", drop, h("div", { class: "row" }, file, dropBtn));
 
-  // -- More: the look, notices, this phone --
+  // -- the page's foot: the look, notices, this phone --
   // The look is the person's, one for the desktop and the phone (you.look; docs/design/portrait.md §3).
-  const looks = h("div", { class: "looks", role: "group", "aria-label": "Look" },
-    ...LOOKS.map(([look, label]) => h("button", { class: "btn quiet", type: "button", "data-look": look,
+  const looks = h("div", { class: "ok-tabs looks", role: "group", "aria-label": "Look" },
+    ...LOOKS.map(([look, label]) => h("button", { class: "ok-tab", type: "button", "data-look": look,
       onclick: async () => { const r = await ctx.send("you.look", { look }); if (!r.ok) ctx.flash(r.error); } }, label)));
-  const notify = h("button", { class: "btn quiet", type: "button" }, "Notify me while it is open");
+  const notify = h("button", { class: "ok-btn", type: "button" }, "Notify me while it is open");
   notify.addEventListener("click", async () => { notify.hidden = (await Notification.requestPermission()) !== "default"; });
   if (!("Notification" in window) || Notification.permission !== "default") notify.hidden = true;
-  const phone = h("p", { class: "muted" });
-  const moreSheet = sheet("More",
-    h("h3", {}, "Look"), looks, h("p", { class: "muted" }, "The same on the computer: it is one setting."),
-    notify, phone,
-    h("button", { class: "btn quiet", type: "button", onclick: () => { moreSheet.close(); ctx.unpair(); } }, "Unpair here"));
+  const phone = h("p", { class: "muted foot" });
+  const foot = h("section", { class: "phone", "aria-label": "This phone" },
+    h("h2", {}, "Look"), looks, h("p", { class: "muted" }, "The same on the computer: it is one setting."),
+    h("div", { class: "row" }, notify, h("button", { class: "ok-btn", type: "button", onclick: () => ctx.unpair() }, "Unpair here")),
+    phone);
 
   // -- Stop all --
-  const stop = h("button", { class: "btn danger stop", type: "button",
+  const stop = h("button", { class: "ok-btn danger stop", type: "button",
     "aria-label": "Stop all: hold it, or tap it and confirm" }, h("span", {}, "Stop all"), h("small", {}, "hold"));
-  const really = h("button", { class: "btn danger", type: "button" }, "Stop every ork");
+  const really = h("button", { class: "ok-btn danger", type: "button" }, "Stop every ork");
   const stopSheet = sheet("Stop all",
     h("p", {}, "Every ork at work stops now: their sessions are interrupted and their processes ended."),
     really, h("p", { class: "muted" }, "Holding Stop all does the same without this step."));
@@ -111,20 +112,25 @@ export function makeDock(ctx) {
   // A tap (or a screen reader's activation) asks first, with its button up the screen, away from this one.
   stop.addEventListener("click", () => { if (held) { held = false; return; } stopSheet.open(); });
 
-  const askBtnDock = h("button", { class: "btn", type: "button", onclick: () => { askSheet.open(); readChat(); } }, "Ask");
-  const dropBtnDock = h("button", { class: "btn", type: "button", onclick: () => dropSheet.open() }, "Drop");
-  const el = h("nav", { class: "dock", "aria-label": "Actions" }, h("div", { class: "dock-in" },
-    askBtnDock, dropBtnDock,
-    h("button", { class: "btn", type: "button", onclick: () => moreSheet.open() }, "More"), stop));
+  const askBtnDock = h("button", { class: "ok-btn", type: "button", onclick: () => { askSheet.open(); readChat(); } }, "Ask");
+  const dropBtnDock = h("button", { class: "ok-btn", type: "button", onclick: () => dropSheet.open() }, "Drop");
+  const el = h("nav", { class: "dock", "aria-label": "Actions" }, h("div", { class: "dock-in" }, askBtnDock, dropBtnDock, stop));
 
   return {
     el,
-    sheets: [askSheet.el, dropSheet.el, moreSheet.el, stopSheet.el],
+    foot,
+    sheets: [askSheet.el, dropSheet.el, stopSheet.el],
     render(town) {
       askBtnDock.hidden = !ctx.building("town_hall");
       dropBtnDock.hidden = !ctx.building("pit");
+      // Nothing to stop while no ork works: the button leaves the bar, and its sheet with it.
+      const working = (town.hud?.agents_working || 0) > 0;
+      stop.hidden = !working;
+      if (!working) stopSheet.close();
+      el.hidden = askBtnDock.hidden && dropBtnDock.hidden && stop.hidden;
+      document.documentElement.classList.toggle("no-dock", el.hidden);
       const chosen = town.portrait?.look || town.look;
-      for (const b of looks.children) b.classList.toggle("is-on", b.dataset.look === chosen);
+      for (const b of looks.children) b.classList.toggle("is-active", b.dataset.look === chosen);
     },
     phone(version) {
       phone.textContent = `This phone: ${ctx.device()?.name || ""}${version ? ` · Orkcraft ${version}` : ""}`;

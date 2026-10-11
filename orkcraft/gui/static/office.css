@@ -51,6 +51,8 @@
 [data-look="office"] .gui-scheme__glyph { display: inline; }
 [data-look="office"] .gui-toolmark > img { display: none; }
 [data-look="office"] .gui-toolmark__svg { display: inline; }
+[data-look="office"] .gui-thumb__icon { display: none; }
+[data-look="office"] .gui-thumb__emoji { display: inline; }
 [data-look="office"] .gui-hut > .ok-head { padding-left: var(--space-2); }
 [data-look="office"] body, [data-look="office"] .gui { background-image: none; }
 /* The War Map: its lands without their biomes' colours, in the office type. */

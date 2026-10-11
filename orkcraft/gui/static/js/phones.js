@@ -8,7 +8,7 @@
 // person through it — Tailscale's download while no phone of theirs is in the tailnet, then the app's link,
 // which opens Orkcraft in the phone's browser and pairs it at once.
 import { useEffect, useRef, useState } from "preact/hooks";
-import { html } from "./html.js";
+import { html, linked } from "./html.js";
 import { command, say } from "./link.js";
 
 const WHAT = "A paired phone sees the town small: each building, the questions the orks wait on, spend and "
@@ -65,7 +65,7 @@ function Offer({ offer, left, onCancel }) {
       : step.link && html`<div><p class="ok-font-status ok-tone-wait">${say("No QR code: this install lacks segno. Run pip install segno and open the town again — or type this link on the phone:")}</p>
           <code class="gui-phones__link">${step.link}</code></div>`}
     <div class="gui-phones__how">
-      ${step.lines.map((line) => html`<span class="ok-font-status">${line}</span>`)}
+      ${step.lines.map((line) => html`<span class="ok-font-status">${linked(line)}</span>`)}
       <span class="ok-font-status ok-tone-muted">${say(`Address: ${offer.address}`)}</span>
       <span class="ok-font-status ok-tone-muted">${say("Certificate (the phone checks it):")}</span>
       <code class="gui-phones__fp">${offer.fingerprint}</code>
@@ -149,7 +149,7 @@ export function PairNote({ pairing: { offer, paired, pair, cancel, step } }) {
       ${paired && html`<span class="ok-font-status">${say(`Paired: ${paired}`)}</span>`}</span>`;
   }
   return html`<div class="gui-phones__how">
-    ${step.lines.map((line) => html`<span class="ok-font-status">${line}</span>`)}
+    ${step.lines.map((line) => html`<span class="ok-font-status">${linked(line)}</span>`)}
     <span class="ok-font-status ok-tone-muted">${say(`Address: ${offer.address}`)}</span>
     <span class="ok-font-status ok-tone-muted">${say("Certificate (the phone checks it):")}</span>
     <code class="gui-phones__fp">${offer.fingerprint}</code>

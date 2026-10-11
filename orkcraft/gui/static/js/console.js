@@ -44,11 +44,15 @@ function useInfo(id, ork) {
   return infos.value[keyOf(id, ork)];
 }
 
-/** 👍 or 👎 with how many it got: a like or a dislike, the same in Office and in Camp. */
+/** 👍 or 👎 with how many it got: a like or a dislike. Camp draws the green pixel thumb of the ork's bubble
+ *  (tools/visit_sprites.py), Office the emoji (office.css). */
 function Thumb({ up, count, title, onClick }) {
   const label = say(up ? "Good" : "Bad");
+  const icon = up ? "thumb-up" : "thumb-down";
   return html`<button class=${cls("ok-act gui-thumb", { "is-down": !up })} title=${title} aria-label=${label} onClick=${onClick}>
-    <span aria-hidden="true">${up ? "👍" : "👎"}</span><span class="gui-thumb__n">${count}</span></button>`;
+    <img class="ok-sprite gui-thumb__icon" src=${`/ds/sprites/icons/${icon}.png`}
+      srcset=${`/ds/sprites/icons/${icon}@2x.png 2x`} width="20" height="20" alt="" draggable="false" />
+    <span class="gui-thumb__emoji" aria-hidden="true">${up ? "👍" : "👎"}</span><span class="gui-thumb__n">${count}</span></button>`;
 }
 
 const TOKEN = new URLSearchParams(location.search).get("t") || "";
