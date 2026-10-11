@@ -308,6 +308,20 @@ the one before it sends to; the buildings no road touches come last, in one bloc
 mark or a row lights the building's neighbours, dims the rest and says at the foot "Takes from: … · Sends to:
 …"; letting go puts the town back, and opens nothing. A tap's sheet names them too, for a screen reader.
 
+**States** (stage 5).
+- *Away from the town* (§6): the app keeps the last town it saw on the phone (`localStorage`, wiped with the
+  pairing) and, while the town does not answer, shows it greyed with "As of 12:41." before why; the town's parts
+  are `inert`, so nothing in them is acted on. More, and Unpair here, stay usable. Opened cold with no town in
+  reach, it shows the kept one the same way.
+- *An answer*: the tile says "Answered: Yes. The ork goes on." at once, and the news line "Answered: Yes",
+  till the town's update takes the question away.
+- *How many wait*: on the app's icon where the phone shows a badge (the Badging API of an installed app), and in
+  the page's title, "(3) Orkcraft".
+- *A card's trail*: after a task or a note is written on the phone, the widget keeps for 10 minutes where it
+  went ("It went down the road to Daily Brief.", or that it waits in To Do) and each change of the buildings
+  down the road since ("Daily Brief: at work."). It says what those buildings do, not that it is this card.
+- *A long wait*: a question waiting over 10 minutes is said in the warning's colour (stage 2).
+
 **Both looks** (§4). The app follows the snapshot's `look`: Camp in its palette (`design/system/tokens.css`),
 square corners, the buildings' titles as they are and the ork's mark; Office calm and plain (`title_plain`),
 dark or light as the phone is. Its Look card switches Camp, Office or By the shift with `you.look`, the one

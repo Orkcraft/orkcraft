@@ -14,10 +14,21 @@ export function h(tag, attrs = {}, ...kids) {
 
 export const KEY = "orkcraft.device";   // {id, token, name}: this browser's pairing with the town
 
+// The last town the phone saw, kept on this phone only, to show greyed "as of" while the town cannot be reached
+// (docs/design/mobile.md §6); wiped with the pairing.
+const KEPT = "orkcraft.town";
+export const kept = {
+  get() { try { return JSON.parse(localStorage.getItem(KEPT)); } catch { return null; } },
+  set(state) { try { localStorage.setItem(KEPT, JSON.stringify({ at: Date.now(), state })); } catch { /* not kept */ } },
+  clear() { try { localStorage.removeItem(KEPT); } catch { /* nothing kept */ } },
+};
+
+export const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
 export const store = {
   get() { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } },
   set(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* private mode: this run only */ } },
-  clear() { try { localStorage.removeItem(KEY); } catch { /* nothing kept */ } },
+  clear() { try { localStorage.removeItem(KEY); } catch { /* nothing kept */ } kept.clear(); },
 };
 
 export const minutes = (s) => (s < 60 ? `${Math.round(s)} s` : s < 5400 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`);

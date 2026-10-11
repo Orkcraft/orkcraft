@@ -189,4 +189,13 @@ textarea.input { resize: vertical; }
 :root[data-look="camp"] .grid.linked, :root[data-look="camp"] .lit { border-radius: 0; }
 @media (prefers-reduced-motion: reduce) { .lighting [data-b] { transition: none; } .stop.holding::before { transition: none; } }
 
+/* stage 5: the states */
+.done { color: var(--accent); font-weight: 600; margin: 0; }
+.offline .asking, .offline .widget, .offline .rows, .offline .quiet { opacity: .5; filter: grayscale(.6); }
+.offline .status { color: var(--warn); }
+.trail { list-style: none; margin: 8px 0 0; padding: 8px 0 0; border-top: 1px dashed var(--frame); display: flex;
+  flex-direction: column; gap: 2px; font-size: 0.875rem; }
+.trail li { display: flex; gap: 8px; overflow-wrap: anywhere; }
+.trail time { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+
 [hidden] { display: none !important; }

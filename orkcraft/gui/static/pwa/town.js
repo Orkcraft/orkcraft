@@ -22,7 +22,10 @@ export function kind(b, asked) {
   return "quiet";
 }
 
-/** `ctx`: {send}. Returns the parts the app lays out and `render(town)`. */
+// The questions answered from this phone (id → what was said), till the town's update takes them away.
+const answered = new Map();
+
+/** `ctx`: {send, flash, rerender}. Returns the parts the app lays out and `render(town)`. */
 export function makeTown(ctx) {
   const summary = h("p", { class: "summary" });
   const tiles = h("div", { class: "tiles" });
@@ -131,6 +134,7 @@ export function makeTown(ctx) {
     camp = s.look !== "office";
     const alerts = s.alerts || [];
     const buildings = s.buildings || [];
+    for (const id of answered.keys()) if (!alerts.some((a) => a.id === id)) answered.delete(id);
     byId = new Map(buildings.map((b) => [b.id, b]));
     roads = links(s.roads);
     const asking = new Map();            // building id → its questions, the longest wait first (as `alerts` come)
@@ -194,21 +198,31 @@ export function makeTown(ctx) {
  *  a building says it in its head already). */
 export function question(a, ctx, who = true) {
   const msg = h("p", { class: "warn", hidden: true });
-  const answer = async (name, args, buttons) => {
+  const answer = async (name, args, said, buttons) => {
     buttons.forEach((b) => { b.disabled = true; });
     const r = await ctx.send(name, args);
     if (!r.ok) {
       msg.textContent = r.error;
       msg.hidden = false;
       buttons.forEach((b) => { b.disabled = false; });
+      return;
     }
+    answered.set(a.id, said);            // said at once; the question leaves with the town's next update
+    ctx.flash?.(`Answered: ${said}`);
+    ctx.rerender?.();
   };
   const buttons = [];
   for (const [key, label] of a.options || []) {
-    buttons.push(h("button", { class: "btn", type: "button", onclick: () => answer("orders.answer", { id: a.id, key }, buttons) }, label || key));
+    buttons.push(h("button", { class: "btn", type: "button",
+      onclick: () => answer("orders.answer", { id: a.id, key }, label || key, buttons) }, label || key));
   }
   if (a.advice) {
-    buttons.push(h("button", { class: "btn primary", type: "button", onclick: () => answer("orders.follow", { id: a.id }, buttons) }, "Follow the Advisor"));
+    buttons.push(h("button", { class: "btn primary", type: "button",
+      onclick: () => answer("orders.follow", { id: a.id }, "as the Advisor suggests", buttons) }, "Follow the Advisor"));
+  }
+  if (answered.has(a.id)) {
+    return h("div", { class: "question" }, h("h3", { class: "title" }, a.title),
+      h("p", { class: "done", role: "status" }, `Answered: ${answered.get(a.id)}. The ork goes on.`));
   }
   return h("div", { class: "question" },
     who && h("p", { class: (a.waited || 0) > LONG_WAIT_S ? "warn" : "muted" }, `${a.who || "An ork"} · waiting ${minutes(a.waited || 0)}`),

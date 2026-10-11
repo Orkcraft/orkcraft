@@ -6,7 +6,7 @@
 // task on Task Fields. Nothing else, whatever
 // this page sends: the listener refuses the rest.
 
-import { h, store, guessName } from "./util.js";
+import { h, store, kept, clock, guessName } from "./util.js";
 import { makeDock } from "./dock.js";
 import { makeTown } from "./town.js";
 import { makeFields } from "./fields.js";
@@ -165,13 +165,17 @@ function connect() {
   ui = ui || layout();
   banner();
   status("Connecting…");
+  if (!town) {                                   // the town as it was last seen, greyed, until it answers
+    const last = kept.get();
+    if (last?.state) { render(last.state, last.at); offline(last.at, "Connecting…"); }
+  }
   opened = false;
   ws = new WebSocket(`wss://${location.host}/ws`, [PROTOCOL, `bearer.${device.token}`]);
   ws.onopen = () => { opened = true; retry = 1; status(""); hello(); };
   ws.onmessage = (e) => {
     let msg;
     try { msg = JSON.parse(e.data); } catch { return; }
-    if (msg.t === "state") render(msg.state);
+    if (msg.t === "state") { render(msg.state); online(); }
     else if (msg.t === "reply") { const w = waiting.get(msg.id); waiting.delete(msg.id); w?.(msg); }
     else if (msg.t === "news") news(msg.news || []);
   };
@@ -185,10 +189,25 @@ function connect() {
       unpaired("The town forgot this phone. Pair it again to use it.");
       return;
     }
-    status(opened ? "The town went away: trying again…" : "Cannot reach the town: is it running, and Tailscale on?");
+    offline(seenAt, opened ? "The town went away: trying again…" : "Cannot reach the town: is it running, and Tailscale on?");
     retryTimer = setTimeout(connect, retry * 1000);
     retry = Math.min(retry * 2, 30);
   };
+}
+
+// Away from the town the phone shows what it last saw, greyed and said "as of", and acts on none of it: every
+// button waits for a reply the town sends (docs/design/mobile.md §6). More (and Unpair here) stays usable.
+let seenAt = 0;
+function offline(at, why) {
+  if (!ui) return;
+  document.documentElement.classList.toggle("offline", Boolean(town));
+  for (const el of ui.content()) el.inert = Boolean(town);
+  status(town && at ? `As of ${clock(at)}. ${why}` : why);
+}
+
+function online() {
+  document.documentElement.classList.remove("offline");
+  for (const el of ui?.content() || []) el.inert = false;
 }
 
 function send(name, args = {}) {
@@ -217,10 +236,11 @@ function layout() {
     news: h("div", { class: "news", "aria-live": "polite" }),
     foot: h("p", { class: "muted foot" }),
   };
-  parts.town = makeTown({ send, rerender: () => { if (town) parts.town.render(town); } });
+  parts.town = makeTown({ send, flash, rerender: () => { if (town) parts.town.render(town); } });
   parts.fields = makeFields({ send, flash });
   parts.dock = makeDock({ send, flash, building, device: () => device, unpair: unpairHere, shared });
   const [answers, ...rest] = parts.town.parts;
+  parts.content = () => [answers, parts.fields.el, ...rest.slice(0, -1)];   // the town's parts, not its sheet
   show(parts.status, parts.install, parts.head, parts.news, answers, parts.fields.el, ...rest,
     parts.foot, parts.dock.el, ...parts.dock.sheets, parts.fields.sheet);
   return parts;
@@ -264,9 +284,13 @@ function applyLook(look) {
 }
 LIGHT.addEventListener?.("change", () => { if (town) applyLook(town.look); });
 
-function render(s) {
+// `keptAt`: the town comes from this phone's storage (seen then), not from the socket.
+function render(s, keptAt = 0) {
   const first = !town;
   town = s;
+  seenAt = keptAt || Date.now();
+  if (!keptAt) kept.set(s);
+  badge((s.alerts || []).length);
   applyLook(s.look);
   const camp = s.look !== "office";
   const hud = s.hud || {};
@@ -286,6 +310,16 @@ function render(s) {
     phoneLine();
     if (shared) ui.dock.openDrop();             // shared from the phone's share sheet: Drop file here, filled
   }
+}
+
+// How many orks wait, on the app's icon where the phone shows one (the Badging API of an installed app) and in
+// the page's title.
+function badge(n) {
+  document.title = n ? `(${n}) Orkcraft` : "Orkcraft";
+  try {
+    if (n && navigator.setAppBadge) navigator.setAppBadge(n).catch(() => {});
+    else if (!n && navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});
+  } catch { /* no badge here */ }
 }
 
 const building = (type) => (town?.buildings || []).find((b) => b.type === type);

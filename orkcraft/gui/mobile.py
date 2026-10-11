@@ -130,7 +130,7 @@ def _widget(full: dict) -> dict[str, Any] | None:
     def goes(prefix: str) -> list[dict[str, str]]:
         to = sorted({r["to"] for r in full.get("roads") or []
                      if r.get("from") == b["id"] and str(r.get("event", "")).startswith(prefix) and r.get("to") in titles})
-        return [{"title": titles[t], "title_plain": modes.plain(titles[t])} for t in to]
+        return [{"id": t, "title": titles[t], "title_plain": modes.plain(titles[t])} for t in to]
 
     top = lambda part: {**part, "top": list(part.get("top") or [])[:WIDGET_TOP]} if part else None  # noqa: E731
     return {"id": b["id"], "error": c.get("error", ""), "todos": top(c.get("todos")), "notes": top(c.get("ideas")),

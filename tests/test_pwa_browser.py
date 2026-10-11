@@ -238,3 +238,60 @@ async def test_a_long_press_lights_a_buildings_neighbours_and_a_tap_names_them(f
         await info.wait_for(timeout=WAIT_MS)
         text = await info.inner_text()
         assert "Takes from: Inbox" in text and "Sends to: Replies" in text
+
+
+@pytest.mark.asyncio
+async def test_away_from_the_town_the_phone_shows_the_last_town_greyed_and_as_of(fake_repo):
+    """Opened where the town does not answer (here: a token it never gave), the app shows the town it kept,
+    greyed and dated, with how many orks wait in its title, and acts on none of it; More stays usable."""
+    import json
+    async with _phone(fake_repo) as (server, page):
+        state = {"look": "camp", "project": "kept town", "hud": {}, "roads": [], "widget": None,
+                 "buildings": [{"id": "p", "title": "The Pit", "type": "pit", "state": ""}],
+                 "alerts": [{"id": "q", "who": "Grunt", "title": "Proceed?", "options": [["y", "Yes"]], "waited": 5}]}
+        ctx = page.context
+        away = await ctx.new_page()
+        await away.add_init_script(f"""localStorage.setItem('orkcraft.device', JSON.stringify({{ token: '{"x" * 43}', name: 'Phone' }}));
+            localStorage.setItem('orkcraft.town', {json.dumps(json.dumps({"at": 0, "state": state}))});""")
+        await away.goto(f"{server.phones.address}/app/")
+        await away.wait_for_function("() => document.documentElement.classList.contains('offline')", timeout=WAIT_MS)
+        assert "As of " in await away.locator(".status").inner_text()
+        assert await away.title() == "(1) Orkcraft"
+        assert await away.locator(".head h1", has_text="kept town").count() == 1
+        assert await away.evaluate("document.querySelector('.asking').inert") is True
+        await away.locator(".dock").get_by_role("button", name="More").click()
+        await away.locator("dialog.sheet[open]").wait_for(timeout=WAIT_MS)
+
+
+@pytest.mark.asyncio
+async def test_an_answer_is_said_at_once_and_the_tile_says_the_ork_goes_on(fake_repo):
+    async with _phone(fake_repo) as (_, page):
+        await page.evaluate("""async () => {
+          const { makeTown } = await import('/app/town.js');
+          const s = { look: 'office', roads: [], buildings: [],
+            alerts: [{ id: 'q9', who: 'Grunt', title: 'Proceed?', options: [['y', 'Yes'], ['n', 'No']], waited: 3 }] };
+          window.flashed = [];
+          const view = makeTown({ send: async () => ({ ok: true, result: true }), flash: (t) => window.flashed.push(t),
+            rerender: () => view.render(s) });
+          const box = document.createElement('div'); box.id = 'probe';
+          box.append(...view.parts); document.body.replaceChildren(box); view.render(s);
+        }""")
+        await page.locator("#probe .question").get_by_role("button", name="Yes").click()
+        await page.locator("#probe .done", has_text="Answered: Yes. The ork goes on.").wait_for(timeout=WAIT_MS)
+        assert await page.evaluate("window.flashed") == ["Answered: Yes"]
+
+
+@pytest.mark.asyncio
+async def test_a_task_written_on_the_phone_leaves_its_trail_on_the_widget(fake_repo):
+    async with _phone(fake_repo) as (server, page):
+        server.host.command("town.build", {"type": "fields"})
+        widget = page.locator(".widget")
+        await widget.get_by_role("button", name="+ Task").wait_for(timeout=WAIT_MS)
+        await widget.get_by_role("button", name="+ Task").click()
+        write = page.locator("dialog.sheet[open]")
+        await write.locator("textarea").fill("Renew the domain")
+        await write.get_by_role("button", name="Add").click()
+        trail = widget.locator("ol.trail")
+        await trail.wait_for(timeout=WAIT_MS)
+        text = await trail.inner_text()
+        assert "Task added: Renew the domain" in text and "It waits in To Do for an ork." in text
