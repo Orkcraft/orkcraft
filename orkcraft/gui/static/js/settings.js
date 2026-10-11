@@ -45,8 +45,8 @@ function UpdatesField({ s }) {
   const pick = (v) => command("update.policy", { policy: v }).then((r) => setU(r || { policy: v }), () => {});
   return html`<${Steps} label=${say("Updates that install by themselves")} value=${policy}
       items=${[["auto", say("All")], ["critical", say("Critical")], ["ask", say("None")]]} onPick=${pick} />
-    <p class="ok-font-status ok-tone-muted">${say(UPDATE_WHAT[policy] || "")}
-      ${" "}${say(`This is Orkcraft ${s.version}.`)}${t && t.update ? say(` ${t.update.version} is out.`) : ""}</p>
+    <p class="ok-font-status ok-tone-muted">${say(UPDATE_WHAT[policy] || "")}${t && t.update
+      ? say(` Orkcraft ${t.update.version} is out.`) : ""}</p>
     <span><button class="ok-btn" onClick=${check}>Check for updates</button></span>`;
 }
 
@@ -156,7 +156,8 @@ export function SettingsDialog() {
   const level = s.levels.find((x) => x.id === s.autonomy) || s.levels[0];
   const t = town.value;
   return html`<${Dialog} title=${say("Town settings")} onCancel=${close}
-      actions=${html`<button class="ok-btn primary" onClick=${close}>${say("Close")}</button>`}>
+      actions=${html`<span class="ok-font-status ok-tone-muted gui-settings__version">Orkcraft ${s.version}</span>
+        <button class="ok-btn primary" onClick=${close}>${say("Close")}</button>`}>
     <div ref=${box} class="gui-form gui-settings gui-scrolls">
       <span class="gui-you__camp">${say(`Town: ${t.project}`)}</span>
       <${Steps} label=${say("Autonomy: how freely the orks decide")} value=${s.autonomy}
