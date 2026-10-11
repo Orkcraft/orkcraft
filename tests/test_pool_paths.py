@@ -166,6 +166,25 @@ def test_a_code_change_takes_today_s_way(pool):
     assert len(runs.work) == 1 and runs.read == []
 
 
+def test_an_ork_working_in_the_project_itself_is_snapshotted_before_and_after(pool, host, fake_repo, monkeypatch):
+    """docs/design/projects.md §7.1: no worktree, so the project's files are kept before and after its work."""
+    from orkcraft.realm import snapshots
+    make, runs, _steward, sent, post = pool
+    w, bid = make(plan=False)
+    work = runs.worker
+
+    def writes(harness, prompt, workdir, cancel, model, env, resume):
+        (Path(workdir) / "parser.py").write_text("fixed = True\n", encoding="utf-8")
+        return work(harness, prompt, workdir, cancel, model, env, resume)
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(writes))
+    w.receive(_cart("change", "Fix the parser", post, "Fix the parser"), "", "")
+    assert _ended(w)
+    oid = host.town.scroll.orkspace_of(bid).id
+    after, before = snapshots.listed(fake_repo, oid)[:2]
+    assert before.why.startswith("before ") and before.why.endswith("Fix the parser") and after.why.startswith("after ")
+    assert "parser.py" in snapshots.changed(fake_repo, after.sha, before.sha)
+
+
 def test_the_table_names_a_kind_when_the_cart_names_none(pool, host):
     make, runs, _steward, sent, post = pool
     w, bid = make(want_by_source={post: "reply"})

@@ -96,7 +96,8 @@ def read(host) -> dict[str, Any]:
                         "improves": lv.improves} for lv in autonomy.LEVELS],
             "usage": m.usage, "usage_blocked": usage.blocked(), "fire": m.fire,
             "updates": m.updates, "updates_blocked": updates.blocked() or ("the demo" if host.town.demo else ""),
-            "version": __version__, "round": _round(host), **_tools(m)}
+            "version": __version__, "round": _round(host),
+            "keep_awake": m.keep_awake, "awake_how": host.awake.how, **_tools(m)}
 
 
 def change(host, args: dict) -> dict[str, Any]:
@@ -171,6 +172,17 @@ def round_now(host, args: dict) -> dict[str, Any]:
     return {**read(host), "round_said": words}
 
 
+def keep_awake(host, args: dict) -> dict[str, Any]:
+    """Whether the computer stays awake while Orkcraft is open (`on`: true | false), at once (gui/awake.py)."""
+    m = host.town.machine
+    m.keep_awake = args.get("on") is True
+    settings.save(m)
+    if host.awake.running:                      # only while the town is open in its window or the browser
+        host.awake.apply(m.keep_awake)
+    return read(host)
+
+
 def commands(host) -> dict[str, Callable[[dict], Any]]:
     return {"town.settings": lambda a: read(host), "town.settings.set": lambda a: change(host, a),
-            "usage.share": lambda a: share_usage(host, a), "round.now": lambda a: round_now(host, a)}
+            "usage.share": lambda a: share_usage(host, a), "round.now": lambda a: round_now(host, a),
+            "awake.set": lambda a: keep_awake(host, a)}

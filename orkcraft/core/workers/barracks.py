@@ -48,7 +48,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from orkcraft import autonomy
-from orkcraft.core import delivery
+from orkcraft.core import delivery, timeline
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.barracks_claims import ClaimsMixin
 from orkcraft.core.workers.barracks_paths import PathsMixin
@@ -473,6 +473,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             return
         if task.publish:                         # the approved post: no branch, no review — the operator decided
             git = None
+        where, project = timeline.for_building(self.town, self.building_id, workdir)   # no worktree: snapshots
+        timeline.take(self.town, where, project, f"before {orc.name}: {task.title}")
         try:
             if git is not None:
                 git.prepare(workdir, task.branch, task.base)
@@ -501,6 +503,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             out.error = "stopped"
         except Exception as e:  # one orc's failure must not take the barracks down
             out.error = str(e)[:300]
+        timeline.take(self.town, where, project, f"after {orc.name}: {task.title}")
         self._call(self.finish, task.id, orc.name, out)
 
     def _sandbox_work(self):

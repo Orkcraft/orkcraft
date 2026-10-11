@@ -3,7 +3,7 @@
 // fog of war at the foot (Add orkspace +) and in a wedge at the right, each land a step shorter than the
 // one above. Its title and the lands' names are in the pixel face. Every land is a real button cut to
 // its shape by a clip path, so clicks follow the shape; ↑ / ↓ walk the lands, Enter opens, the right click
-// renames, changes the biome, picks its project (js/project.js) or removes. When an ork asks in another orkspace the map calls: rings from the
+// renames, changes the biome, picks its project (js/project.js), opens its History (js/history.js) or removes. When an ork asks in another orkspace the map calls: rings from the
 // land's ■, the land flashes, an arrow at the frame's edge when it is out of sight (§2.5).
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -12,6 +12,7 @@ import { openMenu } from "./menu.js";
 import { BIOMES, BIOME_ORDER } from "./icons.js";
 import { useScrollCue } from "./scrollcue.js";
 import { projectFor } from "./project.js";
+import { historyFor } from "./history.js";
 
 const N = 36, W = 52, T = 4;               // 36 rows × 52 columns of 4 px: 208 × 144, a minimap's landscape
 const FOG_ROWS = 12, CLOSED_MIN = 7, OPEN_MIN = 12;  // the fog (Add orkspace) 48 px, easy to hit; a closed land 28 px at least
@@ -151,6 +152,7 @@ export function WarMap() {
   const menuOf = (e, o) => openMenu(e, [
     { label: "Rename…", run: () => setNaming(o.id) },
     { label: "Project…", hint: projectName(o) || say("the town's folder"), run: () => { projectFor.value = o.id; } },
+    { label: "History…", run: () => { historyFor.value = o.id; } },
     "-",
     ...BIOME_ORDER.map((b) => ({ label: `${b === o.biome ? "✓ " : ""}Biome: ${b}`,
       run: () => command("orkspace.biome", { id: o.id, biome: b }).catch(() => {}) })),

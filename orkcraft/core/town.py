@@ -177,15 +177,19 @@ class Town:
             self.toast("\n".join(problems), title="Town Scroll Save Refused", severity="error")
         return not problems
 
-    def checkpoint(self, kind: str, building: str, reason: str) -> str | None:
-        """Save the scroll and commit the change in the camp's own git (never in the demo)."""
+    def checkpoint(self, kind: str, building: str, reason: str, orkspace: str | None = None) -> str | None:
+        """Save the scroll and commit the change in the camp's own git (never in the demo), naming the orkspace
+        it happened in: the building's, unless one is given."""
         if self.demo:
             return None
         try:
             self.save()
         except Exception:
             pass
-        return checkpoint.commit(self.repo_root, kind, building, reason, self.config.layout_file)
+        if orkspace is None:
+            ork = self.scroll.orkspace_of(building) if building and self.scroll is not None else None
+            orkspace = ork.id if ork is not None else ""
+        return checkpoint.commit(self.repo_root, kind, building, reason, self.config.layout_file, orkspace)
 
     def record(self, building_id: str, kind: str, /, **data: Any) -> None:
         """A line in the building's chronicle; a full disk never stops the work it records."""

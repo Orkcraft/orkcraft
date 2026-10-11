@@ -35,8 +35,12 @@ class Projects:
             raise ProjectCommandError(f"No orkspace {args.get('orkspace')!r}")
         return ork
 
-    def _done(self) -> None:
+    def _done(self, orkspace_id: str) -> None:
+        ork = self.scroll.orkspace(orkspace_id)
+        project = self.scroll.project(ork.project) if ork is not None else None
         self.host.town.save()
+        self.host.town.checkpoint("orkspace", "", f"works in {project.name if project else 'the town folder'}",
+                                  orkspace=orkspace_id)
         self.host.on_change()
 
     # -- a new orkspace -------------------------------------------------------------------------------
@@ -87,7 +91,7 @@ class Projects:
         projects.link(self.scroll, ork.id, project.id)
         if getattr(self.host.town, "machine", None) is not None:
             folders.remember(self.host.town.machine, str(folder))
-        self._done()
+        self._done(ork.id)
         return {"state": "linked", "project": project.id, "git": projects.has_git(folder), "did": did}
 
     def _use(self, args: dict) -> None:
@@ -97,7 +101,7 @@ class Projects:
             projects.link(self.scroll, ork.id, pid)
         except projects.ProjectError as e:
             raise ProjectCommandError(str(e)) from None
-        self._done()
+        self._done(ork.id)
 
     def _pick(self, args: dict) -> str:
         return folders.start(str(args.get("start") or "").strip()[:2000] or str(self.host.town.repo_root))

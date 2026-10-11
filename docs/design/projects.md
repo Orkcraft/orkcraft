@@ -1,6 +1,6 @@
 # Design — 📁 Projects: the folder an orkspace works in, and a way back in time
 
-Status: design notes, written 2026-10-11; stages 0, 1 and 2 are done. Builds on the orkspaces of the Town Scroll
+Status: design notes, written 2026-10-11; stages 0–4 are done; §8 is later. Builds on the orkspaces of the Town Scroll
 (`scroll.py` `Orkspace`, `GitLink`), the orkspace worktrees (`realm/worktrees.py`), the camp's checkpoints
 (`realm/checkpoint.py`) and the first commit the Agent pool makes (`realm/jobs.py` `ensure_repo`). Wording: ork,
 orkestration (CLAUDE.md).
@@ -10,8 +10,8 @@ orkestration (CLAUDE.md).
 | 0 | the word: **Project** for the folder, the Town Scroll becomes the **Town file** (§2) | done |
 | 1 | projects in the Town Scroll, an orkspace picks one; git started with the person's yes (§3, §4) | done |
 | 2 | **Copy to orkspace…** for a building (§5) | done |
-| 3 | a map goes back as a whole: the orkspace's checkpoints (§6) | |
-| 4 | snapshots of a project's files before an ork works, and one **History** to go back (§7) | |
+| 3 | a map goes back as a whole: the orkspace's checkpoints (§6) | done |
+| 4 | snapshots of a project's files before an ork works, and one **History** to go back (§7) | done |
 | later | every worker that touches files works in its orkspace's project, not the town's root (§8) | |
 
 ## 1. The problem
@@ -132,13 +132,26 @@ A checkpoint (`realm/checkpoint.py`) names its building in a trailer. It also na
   any removal); buildings removed since come back. Other orkspaces are untouched; §2.3 makes that safe.
 - A road from a building of another map into this one stays only if its source still exists.
 
+### As built (stage 3)
+
+- `realm/checkpoint.py`: the `Orkcraft-Orkspace` trailer (`Town.checkpoint` names the building's orkspace unless
+  one is given), `history(root, orkspace=…)`, `orkspace_at`, `at_of`; the kind `orkspace` for the map's own
+  changes: made, renamed, a biome, a project.
+- `core/maps.py` `revert`: the map's buildings get back their spec, scripts, blueprints and scroll entry (orks,
+  roads from buildings that still exist, settings, place); their level stays theirs. Raised since: demolished.
+  Moved to another map since: left there and said so. The Town Hall stands as it is. Going back is a checkpoint
+  too, so it is undone the same way.
+- `gui/history.py` (`history.list`, `history.revert`) and `js/history.js`: a land's menu **History…** and
+  `/history`. Each row is the map right after that change: **Back to this**, then **Go back**.
+
 ## 7. Snapshots of a project's files
 
 ### 7.1 When
 
 Before an ork works in a project's root (not in a worktree: a worktree is already its own branch) the town takes a
-snapshot: before a War Tent session starts, before an Agent pool task runs in `root` mode, before a Loot accept
-writes files. And after, so "what did this run change" is one diff.
+snapshot: before a War Tent session starts, before an Agent pool ork works in the project itself (its worktrees
+off). And after, so "what did this run change" is one diff. (Loot writes no project file on accept: committing is
+the Forge's job, so it takes none.)
 
 ### 7.2 How, without touching the person's history
 
@@ -168,9 +181,22 @@ A window of the Town Hall (and `/history`): one timeline per orkspace, newest fi
  13:50  ork Grom started "Login form"         files: snapshot
 ```
 
-Each map checkpoint records the project's latest snapshot in a trailer (`Orkcraft-Project-Snapshot: <sha>`), so
-**Back to this moment** offers: *the files* · *the map* · *both*. The words say plainly what happens and what is
+A map row knows the project's snapshot of its moment (the newest one not after it), so **Back to this** on it
+offers: *the map* · *the files* · *both*; a files row offers *Files back*. The words say plainly what happens and what is
 kept ("Your current files are saved first; you can come back to them").
+
+### As built (stage 4)
+
+- `realm/snapshots.py`: `take`, `listed`, `restore`, `changed`, `prune`. A snapshot's time is its ref's name, and a
+  checkpoint's its `Orkcraft-At` trailer, both to the microsecond (git keeps seconds), so a change and the snapshot
+  taken just before it sort right even within one second.
+- `.orkcraft/` is never in a snapshot and never touched by going back, whatever the project's `.gitignore` says:
+  when the project is the town's own folder, the camp's git and the worktrees live there.
+- `core/timeline.py`: where and when (`folder_for`, `take`, `later`); War Tent sessions (`core/sessions.py`: before
+  on open, after on exit, off the window's thread) and the Agent pool (`_work`, worktrees off). `bus.SNAPSHOT`.
+- `gui/history.py`: `history.list` gives `{rows, files}`; `history.revert` takes `what`: `map` · `files` · `both`.
+  The files go back only while no ork is at work (no agent running, no session open in that folder).
+- `js/history.js`: rows tagged *map* and *files*; a files row says how many files changed (their names on hover).
 
 ## 8. Later: workers in their project
 
@@ -193,5 +219,8 @@ each project). `repo_root` stays the town's root everywhere else; there is no re
 - `tests/test_projects.py`: `root_of`, the refusals of §4, `ensure_repo` on a new folder.
 - `tests/test_checkpoint*.py`: the orkspace trailer, `revert_orkspace` leaves other maps alone.
 - `tests/test_snapshots.py`: a snapshot does not move `HEAD`, the index or the branch; untracked files are in it;
-  going back restores, removes added files, keeps ignored ones, and can be undone.
+  going back restores, removes added files, keeps ignored ones and `.orkcraft/`, and can be undone; a session in
+  the project is snapshotted before and after; one History lists both and takes the files back.
+- `tests/test_maps.py`: the orkspace trailer, a map goes back and other maps stay, a building moved away stays.
+- `tests/test_copy_building.py`, `tests/test_projects.py`, and the War Map, copy and History in `tests/test_gui_browser.py`.
 - `copy_building`: new id, roads from the target map kept, the rest listed, no history copied.
