@@ -21,7 +21,7 @@ from typing import Callable
 from orkcraft.core import buildings
 from orkcraft.core.town import Town
 from orkcraft.core import bench_kits
-from orkcraft.realm import bench, bench_kits as kits, checkpoint, masonry
+from orkcraft.realm import bench, bench_kits as kits, call_log, checkpoint, masonry
 
 TYPES = ("barracks", "watchtower", "fields", "war_drum", "mine", "council", "chain")   # what the bench runs so far
 # A building that hands its work to an Agent pool: its instructions are the pool's (the Calendar's briefs).
@@ -29,6 +29,7 @@ POOLED = {"war_drum": "barracks"}
 KIT_PROJECT = {"README.md": "# Test bench\n\nA copy the Test bench made for one run.\n"}
 TIMEOUT_S = 45 * 60                      # the building's side gives up after this
 POLL_S = 1.0
+CALLS = "calls"                          # a run's model calls, both sides' (realm/call_log.py)
 # The bench's own say over a raised building: its work stays in the copy, the case's check is its tests,
 # and its spend stops at the run's limit.
 _KEEP_OUT = ("repo", "notes", "base")    # settings that point at the operator's own project or town
@@ -159,8 +160,9 @@ def _read(w, root_id: str, how: str, side: bench.Side, started: dt.datetime) -> 
     task = st.task(root_id)
     parts = [t for t in st.tasks + st.queue if t.parent == root_id]
     side.cost = round(st.spent, 4)
-    side.tokens = sum(o.tokens for o in st.orcs)
+    side.tokens = st.tokens                              # the steward's calls too, not the orks' only
     side.orks = len(st.orcs)
+    side.model = ", ".join(dict.fromkeys(o.model for o in st.orcs if o.model))
     side.text = ((task.result or task.error) if task is not None else "")[:4000]
     if how not in ("done", "failed"):
         side.error = {"asked": "it waits for an answer: " + "; ".join(t.question or t.title for t in st.asked)[:300]}\
@@ -189,47 +191,58 @@ def run(root: Path, case: bench.Case, tool: str = "main", tier: str = "", buildi
         max_spend: float = bench.DEFAULT_MAX_SPEND, sides: tuple[str, ...] = ("building", "bare"),
         say: Callable[[str], None] = lambda _line: None, cancel: threading.Event | None = None,
         bare_runner=None, orders: str | None = None, chain: dict | None = None, bare_tool: str = "",
-        bare_tier: str = "", judge_runner=None, fresh: bool = False) -> tuple[bench.Report, Path]:
+        bare_tier: str = "", judge_runner=None, fresh: bool = False, attempt: int = 0,
+        series: str = "") -> tuple[bench.Report, Path]:
     """One run of a case, the building's side then the bare tool's, each in its own copy; kept in its run folder.
     The bare tool's answer is read back from an earlier run of the same case on the same tool and tier unless `fresh`
-    (or a runner is given): it does not change when the building does.
+    (or a runner is given): it does not change when the building does. `attempt`: which repeat of the case this is
+    (each repeat reads back an answer of its own); `series`: the `orkcraft bench` the run is one of.
+    Every model call either side makes is kept in the run's `calls/` (realm/call_log.py).
     `orders`: the building's instructions for this run only (None: its own). `chain`: a chain's buildings and
     roads (core/workers/lab.py `chain_spec`) when the case is a chain's."""
     now = dt.datetime.now()
     folder = bench.run_dir(root, case, now)
+    if attempt:
+        folder = folder.with_name(f"{folder.name}-{attempt + 1}")
     report = bench.Report(id=folder.name, type=case.type, case=case.id, tool=tool, tier=tier,
-                          at=now.isoformat(timespec="seconds"), orders_changed=orders is not None)
+                          at=now.isoformat(timespec="seconds"), orders_changed=orders is not None, series=series)
     if case.type == "chain":
         if not chain:
             raise ValueError("a chain's case needs the chain: run it from the Test bench, or give --chain-file")
         report.subject = str(chain.get("id") or "")
         case = dataclasses.replace(case, inputs={**case.inputs, "about": chain.get("about", "")})
         return _run_kit(root, case, folder, report, {}, tool, tier, max_spend, sides, say, cancel, bare_runner,
-                        orders, chain, bare_tool, bare_tier, judge_runner, fresh)
+                        orders, chain, bare_tool, bare_tier, judge_runner, fresh, attempt)
     template = template_of(root, case.type, building_id)
     if case.type != "barracks":
         return _run_kit(root, case, folder, report, template, tool, tier, max_spend, sides, say, cancel, bare_runner,
-                        orders, fresh=fresh)
+                        orders, fresh=fresh, attempt=attempt)
     if orders is not None:
         template["orders"] = orders
     if "building" in sides:
         say("the building works on the case…")
         project = folder / "building"
         base = bench.make_project(case, root, project)
-        report.building = run_building(case, project, base, template, tool, tier, max_spend, cancel=cancel,
-                                       check_dir=folder / "building-result", say=say)
+        with call_log.kept(folder / CALLS, "building"):
+            report.building = run_building(case, project, base, template, tool, tier, max_spend, cancel=cancel,
+                                           check_dir=folder / "building-result", say=say)
         report.save(folder)
     if "bare" in sides and not (cancel is not None and cancel.is_set()):
-        report.bare = _bare(root, case, folder, tool, tier, bare_runner, fresh, report.id, say,
-                            lambda project: bench.bare(case, project, tool, tier, cancel, runner=bare_runner))
+        on = tier or _first_model(report.building)       # the model the building's ork ran on: tokens compare
+        report.bare = _bare(root, case, folder, tool, on, bare_runner, fresh, report.id, say,
+                            lambda project: bench.bare(case, project, tool, on, cancel, runner=bare_runner), attempt)
     report.save(folder)
     return report, folder
+
+
+def _first_model(side: bench.Side | None) -> str:
+    return side.model.split(", ")[0] if side is not None and side.model else ""
 
 
 def _run_kit(root: Path, case: bench.Case, folder: Path, report: bench.Report, template: dict, tool: str, tier: str,
              max_spend: float, sides: tuple[str, ...], say, cancel, bare_runner, orders,
              chain: dict | None = None, bare_tool: str = "", bare_tier: str = "",
-             judge_runner=None, fresh: bool = False) -> tuple[bench.Report, Path]:
+             judge_runner=None, fresh: bool = False, attempt: int = 0) -> tuple[bench.Report, Path]:
     """A building whose work is not code (realm/bench_kits.py): its input given, its result read and checked; the
     bare AI tool gets the same input and, when no tier is picked, the tier the building's own call ran on."""
     if not case.files:
@@ -241,32 +254,38 @@ def _run_kit(root: Path, case: bench.Case, folder: Path, report: bench.Report, t
         ctx = bench_kits.Ctx(case, project, template, tool, tier, max_spend, cancel=cancel, say=say, orders=orders,
                              pool_template=template_of(root, POOLED[case.type]) if case.type in POOLED else {},
                              chain=chain or {})
-        report.building = bench_kits.RUNS[case.type](ctx)
+        with call_log.kept(folder / CALLS, "building"):
+            report.building = bench_kits.RUNS[case.type](ctx)
         report.save(folder)
     if "bare" in sides and not (cancel is not None and cancel.is_set()):
         on = bare_tier or tier or (report.building.model if report.building else "")
         report.bare = _bare(root, case, folder, bare_tool or tool, on, bare_runner, fresh, report.id, say,
-                            lambda project: kits.bare(case, project, bare_tool or tool, on, cancel, runner=bare_runner))
+                            lambda project: kits.bare(case, project, bare_tool or tool, on, cancel, runner=bare_runner),
+                            attempt)
     if case.inputs.get("judge") and report.building is not None and report.bare is not None:
         say("a blind judge reads both results…")
-        _judge(case, report, judge_runner)
+        with call_log.kept(folder / CALLS, "judge"):
+            _judge(case, report, judge_runner)
     report.save(folder)
     return report, folder
 
 
 def _bare(root: Path, case: bench.Case, folder: Path, tool: str, tier: str, runner, fresh: bool, run_id: str, say,
-          ask: Callable[[Path], bench.Side]) -> bench.Side:
-    """The bare side: kept from an earlier run of the same case on the same tool and tier, else asked (and kept)."""
+          ask: Callable[[Path], bench.Side], attempt: int = 0) -> bench.Side:
+    """The bare side: kept from an earlier run of the same case on the same tool and tier (the same repeat of it),
+    else asked (and kept)."""
     key = bench.bare_key(case, tool, tier)
-    if runner is None and not fresh and (kept := bench.kept_bare(root, key)) is not None:
+    if runner is None and not fresh and (kept := bench.kept_bare(root, key, attempt)) is not None:
         say(f"the bare AI tool's answer to this case is kept from run {kept.kept}: not asked again")
         return kept
     say(f"the bare AI tool works on the case{f' ({tier})' if tier else ''}…")
     project = folder / "bare"
     bench.make_project(case, root, project)
-    side = ask(project)
+    with call_log.kept(folder / CALLS, "bare"):
+        side = ask(project)
+    side.model = side.model or tier
     if runner is None:
-        bench.keep_bare(root, key, side, run_id)
+        bench.keep_bare(root, key, side, run_id, attempt)
     return side
 
 

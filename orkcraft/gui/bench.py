@@ -150,7 +150,8 @@ class Bench:
             "orders_of": building_bench.POOLED.get(type_id, type_id) if type_id in ("barracks", *building_bench.POOLED) else "",
             "cases": [{**asdict(c), "own": (self.root / bench.BENCH / type_id / f"{c.id}.json").is_file()}
                       for c in cases],
-            "runs": [{**asdict(r), "copy": bench.analysis(r, self._word(type_id))} for r in done_runs[:12]],
+            "runs": [{**asdict(r), "copy": bench.analysis(r, self._word(type_id), bench.calls_of(self.root, r))}
+                     for r in done_runs[:12]],
             "against": [] if chain else bench.against(self.root, type_id),
             "against_copy": self._against_copy(type_id, done_runs),
             "levels": {lvl: sum(c.level == lvl and c.reviewed for c in cases) for lvl in bench.LEVELS},
@@ -183,11 +184,8 @@ class Bench:
 
     def _against_copy(self, type_id: str, kept: list) -> str:
         """The latest run of each case side by side, as text to paste into an analysis."""
-        latest: dict = {}
-        for r in kept:                                     # newest first
-            if r.building is not None and r.bare is not None and r.case not in latest:
-                latest[r.case] = r
-        return bench.summary(list(latest.values()), self._word(type_id)) if latest else ""
+        latest = bench.latest(kept)                        # its repeats too: the summary reads their medians
+        return bench.summary(latest, self._word(type_id)) if latest else ""
 
     def _orders(self, bid: str, type_id: str) -> str:
         """The instructions a run may change: the Agent pool's own; for a building that hands its work to one,
@@ -239,6 +237,12 @@ class Bench:
             argv += ["--tier", {"laborer": "novice", "warrior": "seasoned", "elder": "veteran"}[tier]]
         if args.get("only") in ("building", "bare"):
             argv += ["--only", str(args["only"])]
+        try:
+            repeat = min(max(int(args.get("repeat") or 1), 1), bench.REPEAT_MAX)
+        except (TypeError, ValueError):
+            raise BenchError("Runs a case is a number") from None
+        if repeat > 1:
+            argv += ["--repeat", str(repeat)]
         if type_id == "chain":                         # the chain as it stands now, for the copy to stand it the same
             found, lab = self._chain(bid, args)
             path = self.root / bench.BENCH / "chains" / f"{int(time.time())}.json"

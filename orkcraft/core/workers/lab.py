@@ -414,7 +414,7 @@ class LabWorker(Worker):
         word = "chain" if r.type == CHAIN.rstrip(":") else lexicon.term(r.type)
         name = next((s["title"] for s in self.subjects() if s["id"] == building_id), self.town.title_of(building_id))
         title = f"{name} · {r.case} · {self._line(r)['verdict']}"
-        self.emit("lab.report", bench.analysis(r, word), title, ref=f"{self.building_id}:{r.id}")
+        self.emit("lab.report", bench.analysis(r, word, bench.calls_of(self.repo_root, r)), title, ref=f"{self.building_id}:{r.id}")
         missed = [x for x in (r.building.checks if r.building else []) if not x.get("ok")]
         if r.building is not None and (missed or r.building.error or r.building.passed is False):
             lines = [f"- {x['name']}" + (f" — {x['detail']}" if x.get("detail") else "") for x in missed]

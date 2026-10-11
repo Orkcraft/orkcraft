@@ -132,7 +132,7 @@ class PlanMixin:
         st = self.state
         self._cancels.pop(f"plan:{task_id}", None)
         task = st.task(task_id)
-        st.steward_cost = round(st.steward_cost + out.steward_cost, 4)
+        st.steward_spent(out.steward_cost, out.steward_tokens)
         if task is None or task.status != "planning":
             return
         task.cost_usd = round((task.cost_usd or 0.0) + out.steward_cost, 4) or None
@@ -191,7 +191,7 @@ class PlanMixin:
         st = self.state
         self._cancels.pop(f"plan:{task_id}", None)
         task = st.task(task_id)
-        st.steward_cost = round(st.steward_cost + out.steward_cost, 4)
+        st.steward_spent(out.steward_cost, out.steward_tokens)
         if task is None or task.status != "planning":
             return
         task.cost_usd = round((task.cost_usd or 0.0) + out.steward_cost, 4) or None
@@ -427,7 +427,7 @@ class PlanMixin:
     def _decided(self, task_id: str, answer: str, why: str, out) -> None:
         st = self.state
         self._cancels.pop(f"decide:{task_id}", None)
-        st.steward_cost = round(st.steward_cost + out.steward_cost, 4)
+        st.steward_spent(out.steward_cost, out.steward_tokens)
         task = st.task(task_id)
         if task is None or task.status != "asked":          # the operator answered meanwhile
             return
@@ -537,7 +537,7 @@ class PlanMixin:
         st = self.state
         self._cancels.pop(f"final:{parent_id}", None)
         parent = st.task(parent_id)
-        st.steward_cost = round(st.steward_cost + out.steward_cost, 4)
+        st.steward_spent(out.steward_cost, out.steward_tokens)
         if parent is None or parent.status != "reviewing":
             return
         kids = self.children(parent)

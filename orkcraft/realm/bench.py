@@ -16,19 +16,21 @@ import functools
 import json
 import re
 import shutil
+import statistics
 import subprocess
 import threading
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from orkcraft.realm import bench_cases, halt, jobs, tiers
+from orkcraft.realm import bench_cases, call_log, halt, jobs, tiers
 
 BENCH = Path(".orkcraft") / "bench"
 RUNS = BENCH / "runs"
 CHECK_TIMEOUT_S = 600
 TAIL = 1500
 DEFAULT_MAX_SPEND = 2.0             # $ the building's side may spend in one run
+REPEAT_MAX = 10                     # how many times a case may run in one series (`--repeat`)
 DONE = "Test bench run kept: "      # the last line `orkcraft bench` prints: the run's id after it (gui/bench.py)
 AUTHOR = ("-c", "user.name=Orkcraft bench", "-c", "user.email=bench@orkcraft.local")
 _SLUG = re.compile(r"[^a-z0-9-]+")
@@ -246,6 +248,7 @@ class Report:
     bare: Side | None = None
     orders_changed: bool = False       # the building ran on instructions changed for this run
     subject: str = ""                  # what ran: a chain's id (`chain:<first>:<last>`); "" a building of the type
+    series: str = ""                   # the `orkcraft bench` it was one run of: its repeats share it (`pooled`)
 
     def save(self, run_dir: Path) -> Path:
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -327,11 +330,13 @@ def render(r: Report, building_word: str = "Building") -> str:
     return "\n".join(out)
 
 
-def analysis(r: Report, building_word: str = "Building") -> str:
-    """Everything one run says, as text to paste into an analysis: the table, then each side in full — the model it
-    ran on, every check, how it went, its decisions on the clock, its check's last lines and its report."""
+def analysis(r: Report, building_word: str = "Building", calls: list[dict] | None = None) -> str:
+    """Everything one run says, as text to paste into an analysis: the table, its model calls (`calls_of`), then each
+    side in full — the model it ran on, every check, how it went, its decisions on the clock, its check's last lines
+    and its report."""
     names = {"building": building_word, "bare": "Bare AI tool"}
-    out = [render(r, building_word), "", f"Run {r.id} · {r.at} · case {r.case}" + (f" ({r.type})" if r.type else "")
+    out = [render(r, building_word), *calls_text(calls or [], building_word), "",
+           f"Run {r.id} · {r.at} · case {r.case}" + (f" ({r.type})" if r.type else "")
            + (" · instructions changed for this run" if r.orders_changed else "")]
     for s in (r.building, r.bare):
         if s is None:
@@ -380,39 +385,123 @@ def gaps(r: Report) -> dict[str, float | None]:
             "spend_by": "$" if priced else "tokens"}
 
 
+def by_case(reports: list[Report]) -> list[list[Report]]:
+    """The runs grouped by case, in the order the cases first came: a case run more than once (`--repeat`) is one
+    group."""
+    groups: dict[str, list[Report]] = {}
+    for r in reports:
+        groups.setdefault(r.case, []).append(r)
+    return list(groups.values())
+
+
+def pooled_gaps(reports: list[Report]) -> dict:
+    """`gaps` over the repeats of one case: the building's median time and spend against the bare tool's, quality
+    by their mean check; `runs` how many runs had both sides, `time_range` the least and the most of each run's own
+    time gap (the noise the median is read against)."""
+    pairs = [r for r in reports if r.building is not None and r.bare is not None]
+    if len(pairs) <= 1:
+        g = gaps(pairs[0] if pairs else (reports[0] if reports else Report("", "", "")))
+        return {**g, "runs": len(pairs), "time_range": None}
+
+    def mid(side: str) -> Side:
+        sides = [getattr(r, side) for r in pairs]
+        return Side(side, seconds=statistics.median(s.seconds for s in sides),
+                    cost=statistics.median(s.cost for s in sides), tokens=int(statistics.median(s.tokens for s in sides)))
+
+    def score(side: str) -> float:
+        return statistics.mean(-2 if s.error else {True: 1, None: 0, False: -1}[s.passed]
+                               for s in (getattr(r, side) for r in pairs))
+
+    g = gaps(Report("", "", "", building=mid("building"), bare=mid("bare")))
+    g["quality"] = float((score("bare") > score("building")) - (score("building") > score("bare")))
+    times = [t for t in (gaps(r)["time"] for r in pairs) if t is not None]
+    return {**g, "runs": len(pairs), "time_range": (min(times), max(times)) if times else None}
+
+
+def _checks(reports: list[Report], side: str) -> str:
+    sides = [getattr(r, side) for r in reports]
+    if len(sides) == 1:
+        return verdict(sides[0])
+    return f"{sum(1 for s in sides if s.passed and not s.error)}/{len(sides)} passed"
+
+
 def summary(reports: list[Report], building_word: str = "Building", limit: float = GAP_LIMIT) -> str:
     """The runs of several cases side by side: each one's time, spend and check, the building against the bare
-    tool, and whether it stays within `limit`."""
+    tool, and whether it stays within `limit`. A case run more than once shows its medians, how many runs and the
+    range of its time gap."""
     def pct(v: float | None) -> str:
         return "—" if v is None else f"{v:+.0%}"
 
-    rows = [("Case", "Time", "Spend", "Check", f"Within {limit:.0%}")]
-    for r in reports:
-        g, b, t = gaps(r), r.building, r.bare
-        check = f"{verdict(b)} / {verdict(t)}" if b and t else "—"
+    groups = by_case(reports)
+    repeated = any(len(g) > 1 for g in groups)
+    rows = [("Case", "Time", "Spend", "Check", f"Within {limit:.0%}", *(("Runs", "Time range") if repeated else ()))]
+    for group in groups:
+        pairs = [r for r in group if r.building is not None and r.bare is not None]
+        g = pooled_gaps(group)
+        check = f"{_checks(pairs, 'building')} / {_checks(pairs, 'bare')}" if pairs else "—"
         spend = pct(g["spend"]) + (" tokens" if g["spend"] is not None and g["spend_by"] == "tokens" else "")
-        rows.append((r.case, pct(g["time"]), spend, check, "yes" if within(g, limit) else "no"))
+        row = (group[0].case, pct(g["time"]), spend, check, "yes" if within(g, limit) else "no")
+        if repeated:
+            span = g["time_range"]
+            row += (str(g["runs"]), f"{pct(span[0])} … {pct(span[1])}" if span else "—")
+        rows.append(row)
     width = [max(len(row[i]) for row in rows) for i in range(len(rows[0]))]
-    out = [f"{building_word} against the bare AI tool (time and spend: how much more, spend in tokens where the tool says no price; check: {building_word} / bare)", ""]
+    head = f"{building_word} against the bare AI tool (time and spend: how much more, spend in tokens where the tool says no price; check: {building_word} / bare"
+    head += "; a case run more than once: its medians)" if repeated else ")"
+    out = [head, ""]
     out += ["  ".join(cell.ljust(width[i]) for i, cell in enumerate(row)).rstrip() for row in rows]
+    if not repeated and len(groups) > 1:
+        out += ["", "One run a case: a gap of a few tens of percent can be chance. Run each case 3 times or more "
+                    "(Runs a case) before reading one."]
     return "\n".join(out)
 
 
+def latest(kept: list[Report]) -> list[Report]:
+    """Of each case, its latest run with both sides and the other repeats of the same `orkcraft bench` (its series),
+    newest case first. `kept`: runs newest first (`runs`)."""
+    last: dict[str, Report] = {}
+    for r in kept:
+        if r.building is not None and r.bare is not None and r.case not in last:
+            last[r.case] = r
+    return [r for r in kept if r.building is not None and r.bare is not None and r.case in last and
+            (r is last[r.case] or (r.series and r.series == last[r.case].series))]
+
+
 def against(root: Path, type_id: str) -> list[dict]:
-    """The latest run with both sides of each case, by the cases' order: how far the building is from the bare tool.
-    For the bench window's summary."""
+    """The latest run with both sides of each case (its repeats pooled), by the cases' order: how far the building
+    is from the bare tool. For the bench window's summary."""
     order = {c.id: (n, c.level) for n, c in enumerate(cases(root, type_id))}
-    latest: dict[str, Report] = {}
-    for r in runs(root, type_id):                      # newest first
-        if r.building is not None and r.bare is not None and r.case not in latest:
-            latest[r.case] = r
+    groups = sorted(by_case(latest(runs(root, type_id))), key=lambda g: order.get(g[0].case, (len(order), ""))[0])
     rows = []
-    for cid, r in sorted(latest.items(), key=lambda kv: order.get(kv[0], (len(order), ""))[0]):
-        g = gaps(r)
-        rows.append({"case": cid, "level": order.get(cid, (0, ""))[1], "run": r.id, "tool": r.tool, **g,
-                     "building": verdict(r.building), "bare": verdict(r.bare),
+    for group in groups:
+        r, g = group[0], pooled_gaps(group)
+        rows.append({"case": r.case, "level": order.get(r.case, (0, ""))[1], "run": r.id, "tool": r.tool, **g,
+                     "building": _checks(group, "building"), "bare": _checks(group, "bare"),
                      "within": within(g)})
     return rows
+
+
+def calls_of(root: Path, r: Report) -> list[dict]:
+    """Every model call of a run (realm/call_log.py); a bare side kept from an earlier run brings that run's."""
+    lines = call_log.read(root / RUNS / r.id / "calls")
+    if r.bare is not None and r.bare.kept and r.bare.kept != r.id:
+        lines += [x for x in call_log.read(root / RUNS / r.bare.kept / "calls") if x.get("side") == "bare"]
+    return lines
+
+
+def calls_text(lines: list[dict], building_word: str = "Building") -> list[str]:
+    """The calls by side, who and what for: how many, their seconds and tokens (input, output, cache as the tool
+    names them), their $."""
+    if not lines:
+        return []
+    names = {"building": building_word, "bare": "Bare AI tool", "judge": "Judge"}
+    out = ["", "Model calls (kept in the run's calls/, each one's prompt and output beside it):"]
+    for t in call_log.totals(lines):
+        usage = ", ".join(f"{k} {v:,}" for k, v in t["usage"].items())
+        out.append(f"  {names.get(t['side'], t['side'] or '?')} · {t['who'] or 'the tool'} · {t['purpose']}: "
+                   f"{t['calls']} call{'' if t['calls'] == 1 else 's'}, {t['seconds']:.0f} s, {t['tokens']:,} tokens"
+                   + (f" ({usage})" if usage else "") + (f", ${t['cost']:.4f}" if t["cost"] else ""))
+    return out
 
 
 def within(g: dict, limit: float = GAP_LIMIT) -> bool:
@@ -436,20 +525,24 @@ def bare_key(c: Case, tool: str, tier: str) -> str:
     return hashlib.sha256(json.dumps(seen, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest()[:32]
 
 
-def kept_bare(root: Path, key: str) -> Side | None:
+def _bare_file(root: Path, key: str, attempt: int = 0) -> Path:
+    """Its first answer is `<key>.json`; a repeat's (`--repeat`) is `<key>-<n>.json`: each repeat has its own."""
+    return root / BARE_KEPT / (f"{key}.json" if attempt <= 0 else f"{key}-{attempt}.json")
+
+
+def kept_bare(root: Path, key: str, attempt: int = 0) -> Side | None:
     try:
-        data = json.loads((root / BARE_KEPT / f"{key}.json").read_text(encoding="utf-8"))
+        data = json.loads(_bare_file(root, key, attempt).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     known = set(Side.__dataclass_fields__)
     return Side(**{k: v for k, v in data.items() if k in known})
 
 
-def keep_bare(root: Path, key: str, side: Side, run_id: str) -> None:
+def keep_bare(root: Path, key: str, side: Side, run_id: str, attempt: int = 0) -> None:
     """Kept only when it finished: an error or a cut is asked again next time."""
     if side.error or side.cut:
         return
-    folder = root / BARE_KEPT
-    folder.mkdir(parents=True, exist_ok=True)
-    (folder / f"{key}.json").write_text(json.dumps({**asdict(side), "kept": run_id}, ensure_ascii=False),
-                                        encoding="utf-8")
+    (root / BARE_KEPT).mkdir(parents=True, exist_ok=True)
+    _bare_file(root, key, attempt).write_text(json.dumps({**asdict(side), "kept": run_id}, ensure_ascii=False),
+                                              encoding="utf-8")
