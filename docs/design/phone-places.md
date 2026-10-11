@@ -39,7 +39,7 @@ Places are a **source of the External listeners**, not a building of their own:
 3. **The building decides how freely.** Each place has its Autonomy and a spend ceiling, set in the
    Watchtower; the town's budget holds above both.
 4. **Kept a short while, outside git.** The history of places is kept 7 days by default (configurable),
-   in the machine's settings, never in the Project file or the camp's git.
+   in the machine's settings, never in the Town file or the camp's git.
 
 ## 3. How the event travels
 

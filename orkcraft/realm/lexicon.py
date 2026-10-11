@@ -110,7 +110,8 @@ TERMS: tuple[Term, ...] = (
     _t("recruiter", "Ork setup", "", "Recruiter"),
     _t("raise", "Set up", "", "Raise"),
     _t("raising", "Setting up the town", "", "Raising the town"),
-    _t("town_scroll", "Project file", "Project files", "Town Scroll", "Town Scrolls"),
+    _t("town_scroll", "Town file", "Town files", "Town Scroll", "Town Scrolls"),
+    _t("project", "Project", "Projects"),                           # the folder an orkspace works in (docs/design/projects.md)
     _t("account", "Account", "Accounts"),                           # a sign-in of the person's own (docs/design/google-account.md)
     _t("town_builder", "Town planner", "", "Town Builder"),
     _t("town_retro", "Weekly retro", "", "Town retro"),

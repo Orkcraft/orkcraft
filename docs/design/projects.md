@@ -1,13 +1,13 @@
 # Design — 📁 Projects: the folder an orkspace works in, and a way back in time
 
-Status: design notes, written 2026-10-11; nothing is built yet. Builds on the orkspaces of the Town Scroll
+Status: design notes, written 2026-10-11; stage 0 is done. Builds on the orkspaces of the Town Scroll
 (`scroll.py` `Orkspace`, `GitLink`), the orkspace worktrees (`realm/worktrees.py`), the camp's checkpoints
 (`realm/checkpoint.py`) and the first commit the Agent pool makes (`realm/jobs.py` `ensure_repo`). Wording: ork,
 orkestration (CLAUDE.md).
 
 | stage | what | state |
 |---|---|---|
-| 0 | the word: **Project** for the folder, the Town Scroll becomes the **Town file** (§2) | |
+| 0 | the word: **Project** for the folder, the Town Scroll becomes the **Town file** (§2) | done |
 | 1 | projects in the Town Scroll, an orkspace picks one; git started with the person's yes (§3, §4) | |
 | 2 | **Copy to orkspace…** for a building (§5) | |
 | 3 | a map goes back as a whole: the orkspace's checkpoints (§6) | |
@@ -29,8 +29,8 @@ A town has one root today: the folder `orkcraft` opened in (`find_project_root`:
 
 1. **The word.** The folder an orkspace works in is a **Project** (`TERMS`: `_t("project", "Project",
    "Projects")`). The Town Scroll, called "Project file" until now, becomes the **Town file**
-   (`_t("town_scroll", "Town file", "Town files", "Town Scroll", "Town Scrolls")`); "Project file" goes into
-   the places that still say it (docs/reference.md, script-first.md, phone-places.md, portrait.md).
+   (`_t("town_scroll", "Town file", "Town files", "Town Scroll", "Town Scrolls")`); the places that said
+   "Project file" say "Town file" (docs/reference.md, script-first.md, phone-places.md, portrait.md).
    Code keeps its names: `town_scroll`, `.orkcraft.json`, `scroll.py`.
 2. **N:1.** An orkspace points to a project; many orkspaces may point to the same one (Feat-OAuth,
    QA-Regression and Design-Review on one repository). The project is optional: an orkspace without one works

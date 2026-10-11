@@ -1236,7 +1236,8 @@ onboarding (*Punk ork*).
 | Ork setup | Recruiter |
 | Set up | Raise |
 | Setting up the town | Raising the town |
-| Project file | Town Scroll |
+| Town file | Town Scroll |
+| Project | — |
 | Town planner | Town Builder |
 | Weekly retro | Town retro |
 | Autonomy | Freedom |
