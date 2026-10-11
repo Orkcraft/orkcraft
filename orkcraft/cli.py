@@ -3,6 +3,7 @@ The terminal UI is gone (docs/design/calm-town.md §9); `orkcraft tui` only says
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import sys
 from pathlib import Path
@@ -155,34 +156,45 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
         sys.stderr.write("orkcraft error: --tier is novice, seasoned or veteran\n")
         return 2
     max_spend = bench.DEFAULT_MAX_SPEND if args.max_spend is None else args.max_spend
+    if not 1 <= args.repeat <= bench.REPEAT_MAX:
+        sys.stderr.write(f"orkcraft error: --repeat is 1 to {bench.REPEAT_MAX}\n")
+        return 2
     sides = (args.only,) if args.only else ("building", "bare")
     word = "chain" if args.type == "chain" else lexicon.term(args.type)
-    if len(picked) > 1:
-        print(f"Test bench: {len(picked)} cases, one after another. Each spends up to ${max_spend:.2f} on the "
-              "building's side; nothing leaves the copies it makes.", flush=True)
+    times = f", each {args.repeat} times" if args.repeat > 1 else ""
+    if len(picked) > 1 or args.repeat > 1:
+        print(f"Test bench: {len(picked)} case{'' if len(picked) == 1 else 's'}{times}, one after another. Each run "
+              f"spends up to ${max_spend:.2f} on the building's side; nothing leaves the copies it makes.", flush=True)
+    series = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     reports = []
-    for case in picked:
-        print(f"Test bench: {case.title}. It runs AI tools and spends up to ${max_spend:.2f} on the building's side; "
-              "nothing leaves the copies it makes.", flush=True)
-        try:
-            orders = args.orders.read_text(encoding="utf-8") if args.orders else None
-            chain = json.loads(args.chain_file.read_text(encoding="utf-8")) if args.chain_file else None
-            bare_tier = TIER_WORDS.get(args.bare_tier.lower(), args.bare_tier.lower())
-            report, folder = building_bench.run(root, case, args.tool, tier, args.building, max_spend, sides,
-                                                say=lambda line: print(line, flush=True), orders=orders, chain=chain,
-                                                bare_tool=args.bare_tool, bare_tier=bare_tier, fresh=args.fresh)
-        except (ValueError, RuntimeError, OSError) as e:          # a chain file that does not read is a ValueError
-            sys.stderr.write(f"orkcraft error: {e}\n")
-            return 1
-        reports.append(report)
-        print()
-        print(bench.render(report, word))
-        print(f"\nKept in {folder}")
-        print(f"{bench.DONE}{report.id}", flush=True)
-        if args.stop_behind and len(reports) >= args.stop_behind and len(reports) < len(picked) and \
-                all(r.building and r.bare and not bench.within(bench.gaps(r)) for r in reports):
+    for n, case in enumerate(picked):
+        for attempt in range(args.repeat):
+            again = f" (run {attempt + 1} of {args.repeat})" if args.repeat > 1 else ""
+            print(f"Test bench: {case.title}{again}. It runs AI tools and spends up to ${max_spend:.2f} on the "
+                  "building's side; nothing leaves the copies it makes.", flush=True)
+            try:
+                orders = args.orders.read_text(encoding="utf-8") if args.orders else None
+                chain = json.loads(args.chain_file.read_text(encoding="utf-8")) if args.chain_file else None
+                bare_tier = TIER_WORDS.get(args.bare_tier.lower(), args.bare_tier.lower())
+                report, folder = building_bench.run(root, case, args.tool, tier, args.building, max_spend, sides,
+                                                    say=lambda line: print(line, flush=True), orders=orders,
+                                                    chain=chain, bare_tool=args.bare_tool, bare_tier=bare_tier,
+                                                    fresh=args.fresh, attempt=attempt, series=series)
+            except (ValueError, RuntimeError, OSError) as e:      # a chain file that does not read is a ValueError
+                sys.stderr.write(f"orkcraft error: {e}\n")
+                return 1
+            reports.append(report)
+            print()
+            print(bench.render(report, word))
+            if calls := bench.calls_text(bench.calls_of(root, report), word):
+                print("\n".join(calls))
+            print(f"\nKept in {folder}")
+            print(f"{bench.DONE}{report.id}", flush=True)
+        groups = bench.by_case(reports)
+        if args.stop_behind and len(groups) >= args.stop_behind and n + 1 < len(picked) and \
+                all(any(r.building and r.bare for r in g) and not bench.within(bench.pooled_gaps(g)) for g in groups):
             print(f"\nTest bench: stopped early — the building is behind the bare AI tool on every one of the first "
-                  f"{len(reports)} cases; the other {len(picked) - len(reports)} wait (nothing more spent).", flush=True)
+                  f"{len(groups)} cases; the other {len(picked) - n - 1} wait (nothing more spent).", flush=True)
             break
     if len(reports) > 1:
         print()
@@ -269,6 +281,8 @@ def main(argv: list[str] | None = None) -> int:
     bench_p.add_argument("--only", choices=("building", "bare"), default=None, help="Run one side only")
     bench_p.add_argument("--fresh", action="store_true",
                          help="Ask the bare AI tool again even when its answer to the same case is kept")
+    bench_p.add_argument("--repeat", type=int, default=1, metavar="N",
+                         help="Run each case N times (1–10): the summary reads their medians and the spread")
     bench_p.add_argument("--stop-behind", type=int, default=0, metavar="N",
                          help="Stop a series when the building is behind on each of its first N cases")
     bench_p.add_argument("--cases-file", type=Path, default=None,

@@ -1,6 +1,7 @@
 """The app in a phone's browser (gui/static/pwa/), in Chromium at a phone's size: paired from the desktop's
 link, over the phone listener, against a real host. What a person sees and taps: the questions first, the bar
-at the foot (Ask, Drop, More, Stop all on a hold), the look, the version."""
+at the foot (Ask, Drop, Stop all on a hold while orks work), a building's quick actions, the orkspaces, the look,
+the version."""
 from __future__ import annotations
 
 import asyncio
@@ -48,27 +49,42 @@ async def _flash(page, text: str) -> None:
     await page.locator(".flash", has_text=text).wait_for(timeout=WAIT_MS)
 
 
+def _working(server, n: int = 2) -> None:
+    """The town as if `n` orks were at work (the fake repo has none): its snapshot says so from now on."""
+    real = server.host.snapshot
+
+    def snapshot():
+        s = real()
+        s["hud"] = {**s["hud"], "agents_working": n, "agents": max(n, s["hud"].get("agents") or 0)}
+        return s
+    server.host.snapshot = snapshot
+
+
 @pytest.mark.asyncio
 async def test_the_app_pairs_from_its_link_and_says_the_towns_version(fake_repo):
     """Opened from the desktop's link the app pairs, connects and says, quietly by the phone's name, the version
-    of Orkcraft the town runs (`mobile.hello`): at the page's foot and in More."""
+    of Orkcraft the town runs (`mobile.hello`), at the page's foot, with the look and Unpair here: no More."""
     async with _phone(fake_repo) as (_, page):
         foot = page.locator("p.foot")
         await foot.get_by_text(f"Orkcraft {__version__}").wait_for(timeout=WAIT_MS)
         assert "This phone: " in await foot.inner_text()
-        await page.locator(".dock").get_by_role("button", name="More").click()
-        more = page.locator("dialog.sheet[open]")
-        assert f"Orkcraft {__version__}" in await more.inner_text()
-        assert await more.get_by_role("button", name="Camp").count() == 1
+        phone = page.locator("section.phone")
+        assert await phone.get_by_role("button", name="Camp").count() == 1
+        assert await phone.get_by_role("button", name="Unpair here").count() == 1
+        assert await page.locator(".dock").get_by_role("button", name="More").count() == 0
 
 
 @pytest.mark.asyncio
 async def test_stop_all_stops_on_a_hold_or_a_tap_and_a_confirm_never_on_a_tap(fake_repo):
     async with _phone(fake_repo) as (server, page):
+        stop = page.locator(".dock .stop")
+        await page.locator(".head .ok-res").first.wait_for(timeout=WAIT_MS)
+        assert not await stop.is_visible()                  # no ork works: nothing to stop
+        _working(server)
+        await stop.wait_for(timeout=WAIT_MS)
         halts = []
         real = server.host.commands["halt"]
         server.host.commands["halt"] = lambda a: (halts.append(1), real(a))[1]
-        stop = page.locator(".dock .stop")
         await stop.click()                                  # a tap asks first
         sheet = page.locator("dialog.sheet[open]", has_text="Stop every ork")
         await sheet.wait_for(timeout=WAIT_MS)
@@ -98,27 +114,28 @@ async def test_stop_all_stops_on_a_hold_or_a_tap_and_a_confirm_never_on_a_tap(fa
 
 
 @pytest.mark.asyncio
-async def test_office_in_light_paints_the_systems_bar_light_and_camp_stays_dark(fake_repo):
+async def test_office_in_light_paints_the_systems_bar_light_and_camp_its_orkspaces_ground(fake_repo):
     async with _phone(fake_repo, scheme="light") as (server, page):
         color = "() => document.querySelector('meta[name=theme-color]').content"
         server.host.command("you.look", {"look": "office"})
-        await page.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
+        await page.wait_for_function("() => document.documentElement.dataset.theme === 'office'", timeout=WAIT_MS)
         assert await page.evaluate(color) == "#f4f4f4"
+        server.host.command("orkspace.new", {"name": "Lab", "biome": "ice"})    # the town goes to it
         server.host.command("you.look", {"look": "camp"})
-        await page.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
-        assert await page.evaluate(color) == "#172a0a"
+        await page.wait_for_function("() => document.documentElement.dataset.theme === 'camp'", timeout=WAIT_MS)
+        await page.wait_for_function(f"() => ({color})() === '#070d14'", timeout=WAIT_MS)      # ice's ground
+        assert await page.evaluate("getComputedStyle(document.body).backgroundColor") == "rgb(7, 13, 20)"
 
 
 @pytest.mark.asyncio
-async def test_the_questions_come_first_and_every_target_is_a_thumbs_size(fake_repo):
+async def test_no_answers_while_nobody_asks_and_every_target_is_a_thumbs_size(fake_repo):
     async with _phone(fake_repo) as (_, page):
-        summary = page.locator(".asking .summary")
-        await summary.wait_for(timeout=WAIT_MS)
-        assert (await summary.inner_text()) == "No ork is waiting on you."
-        await page.locator(".dock").get_by_role("button", name="More").click()
-        small = await page.evaluate("""() => [...document.querySelectorAll('button')]
-            .filter((b) => b.offsetParent && b.getBoundingClientRect().height < 44).map((b) => b.textContent)""")
-        assert small == []
+        await page.locator(".head .ok-res").first.wait_for(timeout=WAIT_MS)
+        assert not await page.locator(".asking").is_visible()       # nobody asks: no Answers at all
+        buttons = await page.evaluate("""() => [...document.querySelectorAll('button')].filter((b) => b.offsetParent)
+            .map((b) => [b.textContent, b.getBoundingClientRect().height, b.className])""")
+        assert buttons and [b[0] for b in buttons if b[1] < 44] == []
+        assert [b[0] for b in buttons if "ok-" not in b[2] and b[2] not in ("cell", "w-work", "tile-head")] == []   # the design system's
 
 
 @pytest.mark.asyncio
@@ -259,8 +276,7 @@ async def test_away_from_the_town_the_phone_shows_the_last_town_greyed_and_as_of
         assert await away.title() == "(1) Orkcraft"
         assert await away.locator(".head h1", has_text="kept town").count() == 1
         assert await away.evaluate("document.querySelector('.asking').inert") is True
-        await away.locator(".dock").get_by_role("button", name="More").click()
-        await away.locator("dialog.sheet[open]").wait_for(timeout=WAIT_MS)
+        assert await away.evaluate("document.querySelector('section.phone').inert") is False   # Unpair here stays
 
 
 @pytest.mark.asyncio
@@ -295,3 +311,54 @@ async def test_a_task_written_on_the_phone_leaves_its_trail_on_the_widget(fake_r
         await trail.wait_for(timeout=WAIT_MS)
         text = await trail.inner_text()
         assert "Task added: Renew the domain" in text and "It waits in To Do for an ork." in text
+
+
+@pytest.mark.asyncio
+async def test_a_buildings_sheet_presses_its_quick_actions(fake_repo):
+    """A tap on a building opens its sheet with the quick actions its card has: one that does a thing at once is
+    pressed on a tap, one that reaches out asks once more, and one that takes text asks for it."""
+    async with _phone(fake_repo) as (server, page):
+        pressed = []
+        server.host.commands["building.input"] = lambda a: (pressed.append((a["input"], a.get("value", ""))), True)[1]
+        cat = server.host.command("town.build", {"type": "catapult"})
+        title = next(b["title"] for b in server.host.command("mobile.snapshot")["buildings"] if b["id"] == cat)
+        await page.locator(".grid .cell", has_text=title).click()
+        sheet = page.locator("dialog.sheet[open]")
+        await sheet.get_by_role("button", name="Fire").click()
+        assert pressed == []                                                    # it reaches out: asked first
+        await sheet.locator(".q-form").get_by_role("button", name="Fire").wait_for(timeout=WAIT_MS)
+        await sheet.get_by_role("button", name="Cancel").click()
+        await sheet.get_by_role("button", name="Close").click()
+        wiki = server.host.command("town.build", {"type": "scrolls"})
+        title = next(b["title"] for b in server.host.command("mobile.snapshot")["buildings"] if b["id"] == wiki)
+        await page.locator(".row-b, .cell", has_text=title).click()           # a row while it has no wiki yet
+        await sheet.get_by_role("button", name="Quick note").click()
+        await sheet.locator(".q-form textarea").fill("Fix the login page")
+        await sheet.locator(".q-form").get_by_role("button", name="Quick note").click()
+        for _ in range(50):
+            if pressed:
+                break
+            await page.wait_for_timeout(100)
+        assert pressed == [("wiki.note", "Fix the login page")]
+        await sheet.locator(".done", has_text="Quick note: done.").wait_for(timeout=WAIT_MS)
+
+
+@pytest.mark.asyncio
+async def test_the_phone_shows_one_orkspace_at_a_time_without_moving_the_desktops(fake_repo):
+    """A town of two orkspaces: the phone shows the desktop's open one, its tabs pick another for the phone only,
+    and the questions stay the whole town's."""
+    async with _phone(fake_repo) as (server, page):
+        pit = server.host.command("town.build", {"type": "pit"})
+        first = server.host.command("mobile.snapshot")["active_orkspace"]
+        server.host.command("orkspace.new", {"name": "Lab", "biome": "ice"})
+        lab = server.host.command("mobile.snapshot")["active_orkspace"]
+        server.host.command("orkspace.select", {"id": first})
+        title = next(b["title"] for b in server.host.command("mobile.snapshot")["buildings"] if b["id"] == pit)
+        tabs = page.locator(".spaces .ok-tab")
+        await tabs.nth(1).wait_for(timeout=WAIT_MS)
+        assert await page.locator(".spaces .ok-tab.is-active").inner_text() != "Lab"
+        await page.locator(".grid .cell", has_text=title).wait_for(timeout=WAIT_MS)
+        await page.locator(".spaces .ok-tab", has_text="Lab").click()
+        await page.locator(".grid .cell", has_text=title).wait_for(state="detached", timeout=WAIT_MS)
+        assert await page.evaluate("document.querySelector('meta[name=theme-color]').content") == "#070d14"
+        assert server.host.command("mobile.snapshot")["active_orkspace"] == first != lab     # the desktop's stays

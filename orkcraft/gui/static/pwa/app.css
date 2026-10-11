@@ -1,145 +1,155 @@
-/* The town in a phone's browser (gui/pwa.py): the Office look's colours (office.css), dark and light, and the
-   Camp look's (design/system/tokens.css, camp), dark only as on the desktop. The look follows the town's. */
+/* The town in a phone's browser (gui/pwa.py), on the desktop's design system: its colours (tokens.css, the camp
+   and office themes, set on the root as data-theme) and its components (components.css: ok-btn, ok-input,
+   ok-tabs, ok-hud, ok-res). What is here is only what a phone needs on top of them: thumb-sized targets, the
+   page's layout, the fence round a window in Camp, the bar at the foot and the sheets. The look follows the
+   town's; Office follows the phone's light or dark. */
 :root {
-  --canvas: #161616; --panel: #1f1f1f; --inset: #191919; --frame: #333333;
-  --ink: #e6e6e6; --muted: #a3a3a3; --accent: #86c062; --warn: #e0b04c; --danger: #e5534b;
+  --inset: var(--panel-inset); --muted: var(--ink-muted); --accent: var(--success); --warn: var(--warning); --gold: var(--ink-gold);
   --dock: 4.25rem;   /* the bar at the foot, without the safe area under it */
+  --font-name: var(--ok-font);
   color-scheme: dark;
 }
+:root[data-theme="camp"] { --font-name: "Pixelify Sans", var(--font-camp); }  /* the map's names */
+/* Office in a light phone: the office theme's roles, light (the desktop's Office is dark only). */
 @media (prefers-color-scheme: light) {
-  :root { --canvas: #f4f4f4; --panel: #ffffff; --inset: #f0f0f0; --frame: #d6d6d6;
-    --ink: #1f1f1f; --muted: #5c5c5c; --accent: #3f7a1f; --warn: #8a5a00; --danger: #b42318; color-scheme: light; }
+  :root[data-theme="office"] {
+    --canvas: #f4f4f4; --terrain: #f4f4f4; --panel: #ffffff; --panel-inset: #f0f0f0; --panel-raised: #f7f7f7;
+    --bevel-hi: #e6e6e6; --bevel-lo: #d6d6d6; --selection: #e6eefb; --frame: #d6d6d6; --frame-strong: #bdbdbd;
+    --ink: #1f1f1f; --ink-muted: #5c5c5c; --ink-comment: #8a8a8a; --ink-gold: #8a5a00;
+    --action: #3f7a1f; --on-action: #ffffff; --success: #3f7a1f; --warning: #8a5a00; --alert: #b45309; --danger: #b42318;
+    --bevel-sunken: inset 0 0 0 1px #d6d6d6; --shadow-window: 0 6px 20px rgba(0, 0, 0, 0.15);
+    color-scheme: light;
+  }
 }
-:root[data-look="camp"] {
-  --canvas: #172a0a; --panel: #2a2419; --inset: #120f0a; --frame: #a07c38;
-  --ink: #e8e0c8; --muted: #a89f86; --accent: #5d9e3b; --warn: #ff8c1a; --danger: #f85149; --gold: #f2c66d;
-  color-scheme: dark;
-}
-:root[data-look="camp"] .card, :root[data-look="camp"] .btn, :root[data-look="camp"] .input,
-:root[data-look="camp"] .question pre, :root[data-look="camp"] .flash, :root[data-look="camp"] .status { border-radius: 0; }
-:root[data-look="camp"] .card { border-width: 2px; }
-:root[data-look="camp"] h2 { color: var(--gold); }
-:root[data-look="camp"] .pill { border-radius: 0; }
-.mark { width: 28px; height: 28px; vertical-align: -6px; margin-right: 8px; image-rendering: pixelated; }
-.looks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-.looks .btn.is-on { border-color: var(--accent); color: var(--accent); }
+
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--canvas); color: var(--ink); }
-/* The desktop's faces and roles (design/system/tokens.css, components.css), served from fonts/ (gui/pwa.py). */
-:root {
-  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Ubuntu, "Helvetica Neue", sans-serif;   /* --font-office */
-  --font-head: var(--font-body);
-  --font-name: var(--font-body);
-  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
-}
-:root[data-look="camp"] {
-  --font-body: "Titillium Web", "Segoe UI", sans-serif;                 /* --font-camp */
-  --font-head: "Almendra SC", Georgia, serif;                            /* --font-display */
-  --font-name: "Pixelify Sans", "Titillium Web", sans-serif;             /* the map's names */
-}
+/* The page stands on the ground of the orkspace it shows (ground.js): its colour and, in Camp, its glyphs. */
+html, body { margin: 0; color: var(--ink); background: var(--canvas); }
+body { background: var(--canvas) var(--terrain-image, none) repeat; background-size: 480px 432px; }
 /* The phone's own text size: iOS's Dynamic Type through -apple-system-body (elsewhere the browser's 16px and
    its own text scaling); every size below is in rem, so it follows. */
 html { font: -apple-system-body; }
-body { font-family: var(--font-body); font-size: 1rem; line-height: 1.4; -webkit-text-size-adjust: 100%; }
-h1, h2 { font-family: var(--font-head); }
+body { font-family: var(--ok-font); font-size: 1rem; line-height: 1.4; -webkit-text-size-adjust: 100%; }
+h1, h2 { font-family: var(--ok-head); font-weight: 400; }
+:root[data-theme="office"] h1, :root[data-theme="office"] h2 { font-weight: 600; }
 .tile-name, .cell-name { font-family: var(--font-name); }
 .app { max-width: 640px; margin: 0 auto;
   padding: max(12px, env(safe-area-inset-top)) 16px calc(var(--dock) + 16px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 12px; }
+.no-dock .app { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
 h1 { font-size: 1.25rem; margin: 0; overflow-wrap: anywhere; }
-h1 small { font-size: 0.8125rem; color: var(--muted); font-weight: 500; }
-h2 { font-size: 0.875rem; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+h1 small { font-size: 0.8125rem; color: var(--muted); font-family: var(--ok-font); }
+h2 { font-size: 1rem; margin: 0 0 8px; color: var(--gold); letter-spacing: .03em; }
+:root[data-theme="office"] h2 { font-size: 0.875rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+h3 { font-size: 0.875rem; margin: 8px 0 4px; color: var(--muted); font-weight: 600; }
 p { margin: 0 0 8px; }
 .muted { color: var(--muted); font-size: 0.875rem; }
 .warn { color: var(--warn); font-size: 0.875rem; }
-.card { background: var(--panel); border: 1px solid var(--frame); border-radius: 12px; padding: 12px; }
-.head { display: flex; flex-direction: column; gap: 8px; }
-.hud { display: flex; flex-wrap: wrap; gap: 6px; }
-.pill { border: 1px solid var(--frame); border-radius: 999px; padding: 2px 10px; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
-.pill.warn { border-color: var(--warn); color: var(--warn); }
-.pill.over { border-color: var(--danger); color: var(--danger); }
-.status { margin: 0; padding: 6px 10px; border-radius: 8px; background: var(--inset); color: var(--warn); font-size: 0.875rem; }
-.status[hidden] { display: none; }
-.news { position: fixed; left: 0; right: 0; bottom: calc(var(--dock) + env(safe-area-inset-bottom)); z-index: 2;
-  display: flex; flex-direction: column; gap: 6px; padding: 0 16px 8px; max-width: 640px; margin: 0 auto; pointer-events: none; }
-.flash { box-shadow: 0 2px 10px rgb(0 0 0 / .35); }
-.flash { margin: 0; padding: 8px 10px; border-left: 3px solid var(--accent); background: var(--inset); border-radius: 6px; font-size: 0.875rem; }
-.btn { font: inherit; font-size: 0.9375rem; min-height: 44px; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--frame);
-  background: var(--inset); color: var(--ink); cursor: pointer; }
-.btn:disabled { opacity: .5; }
-.btn.primary { border-color: var(--accent); color: var(--accent); }
-.btn.danger { border-color: var(--danger); color: var(--danger); font-weight: 600; }
-.btn.quiet { min-height: 44px; font-size: 0.875rem; color: var(--muted); }
-.input { font: inherit; width: 100%; min-height: 44px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--frame);
-  background: var(--inset); color: var(--ink); }
-textarea.input { resize: vertical; }
-.row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-.row .input { flex: 1 1 auto; }
-.file { flex: 1 1 auto; min-width: 0; font-size: 0.875rem; color: var(--muted); }
-.list { display: flex; flex-direction: column; gap: 10px; }
-.question { border-top: 1px solid var(--frame); padding-top: 10px; }
-.question:first-child { border-top: 0; padding-top: 0; }
-.question .title { font-size: 1rem; font-weight: 600; margin: 0 0 8px; overflow-wrap: anywhere; font-family: var(--font-body); }
-.question pre { font-family: var(--font-mono); margin: 0 0 8px; padding: 8px; background: var(--inset); border-radius: 8px; font-size: 0.75rem; overflow-x: auto; white-space: pre-wrap; }
-.advice { font-size: 0.875rem; color: var(--muted); }
-.answers { display: flex; flex-wrap: wrap; gap: 8px; }
-.chat { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-.msg p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.msg .who { font-size: 0.75rem; color: var(--muted); }
-.foot { margin: 0; text-align: center; }
-.version { font-variant-numeric: tabular-nums; }
-.install { border-color: var(--accent); }
-.install p { margin-bottom: 8px; }
+.done { color: var(--accent); font-weight: 600; margin: 0; }
+.mark { width: 28px; height: 28px; vertical-align: -6px; margin-right: 8px; image-rendering: pixelated; }
+:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 2px; }
+[hidden] { display: none !important; }
 
-/* what asks, said once over the questions */
+/* -- the design system at a thumb's size: every target at least 44 px, text in rem, inputs at 16 px (iOS zooms in
+   on a smaller one) ----------------------------------------------------------------------------------------- */
+:root .ok-btn { min-height: 44px; height: auto; padding: 8px 14px; font-size: 0.8125rem; line-height: 1.15;
+  justify-content: center; text-align: center; white-space: normal; }
+:root .ok-btn:active { padding: 10px 14px 6px; }
+:root[data-theme="office"] .ok-btn:active { padding: 8px 14px; }
+:root .ok-input { min-height: 44px; height: auto; padding: 8px 10px; font-size: 1rem; line-height: 1.3; }
+:root textarea.ok-input { resize: vertical; }
+:root .ok-tab { min-height: 44px; height: auto; font-size: 0.8125rem; flex: 0 0 auto; border: 0; appearance: none; }
+.ok-tabs { overflow-x: auto; scrollbar-width: none; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+.row .ok-input { flex: 1 1 auto; width: auto; }
+.file { flex: 1 1 auto; min-width: 0; font-size: 0.875rem; color: var(--muted); }
+
+/* -- the head: the resources before the town's name, as the desktop's HUD (components.css Hud) ---------------- */
+.head.ok-hud { height: auto; min-height: 44px; padding: 8px 12px; gap: 8px 14px; flex-wrap: wrap; white-space: normal; overflow: visible; }
+.head .hud { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.head .ok-res { font-size: 0.875rem; }
+.head .ok-res img { width: 20px; height: 20px; }
+.head h1 { flex: 1 1 auto; min-width: 0; font-size: 1.25rem; line-height: 1.2; }
+:root[data-theme="office"] .head h1 { font-size: 1.0625rem; }
+
+/* -- cards ---------------------------------------------------------------------------------------------------- */
+.card { background: var(--panel); border: 1px solid var(--frame); border-radius: var(--ok-radius-lg); padding: 12px; box-shadow: var(--card-edge); }
+:root[data-theme="camp"] .card { border-width: 2px; }
+.install { border-color: var(--action); }
+.install p { margin-bottom: 8px; }
+.status { margin: 0; padding: 6px 10px; border-radius: var(--ok-radius-md); background: var(--inset); color: var(--warn); font-size: 0.875rem; }
+
+/* A window of the town (util.js `fenced`), as the desktop's (yards.css §3): in Camp its name over it and the fence
+   round its yard — pickets along the top and the bottom, a side of stakes on a rail each side, a bone tusk where
+   the top fence ends and a stout post at each foot (design-system/sprites/fence); the plain panel inside, so text
+   never sits on wood. In Office a plain card. */
+:root[data-theme="camp"] .fenced {
+  --fence-o: #1a1813; --fence-m: #5a4730; --fence-h: #7a6240;
+  --yard: color-mix(in srgb, var(--panel) 92%, transparent);
+  --fence-row: image-set(url("fence/row.png") 1x, url("fence/row@2x.png") 2x);
+  --fence-side: image-set(url("fence/side.png") 1x, url("fence/side@2x.png") 2x);
+  --tusk: image-set(url("fence/tusk-1.png") 1x, url("fence/tusk-1@2x.png") 2x);
+  --corner-post: image-set(url("fence/corner-post.png") 1x, url("fence/corner-post@2x.png") 2x);
+  --fence-rail: linear-gradient(90deg, var(--fence-o) 0 1px, var(--fence-h) 1px 3px, var(--fence-m) 3px 6px, var(--fence-o) 6px 7px);
+  background: none; border: 0; border-radius: 0; box-shadow: none; padding: 0; }
+:root[data-theme="camp"] .fenced > h2, :root[data-theme="camp"] .fenced > .w-head { margin: 0 0 -2px 6px; position: relative; z-index: 2;
+  text-shadow: 0 1px 0 #000, 0 0 6px #000; }
+:root[data-theme="camp"] .fenced > .yard { position: relative; padding: 31px 23px 33px; image-rendering: pixelated;
+  background: linear-gradient(var(--yard), var(--yard)) 7px 24px / calc(100% - 14px) calc(100% - 38px) no-repeat; }
+:root[data-theme="camp"] .fenced > .yard > * { position: relative; z-index: 1; }
+:root[data-theme="camp"] .fenced > .yard::before { content: ""; position: absolute; left: 0; right: 0; top: 27px; bottom: 14px;
+  pointer-events: none; image-rendering: pixelated; background:
+    var(--fence-side) left top / 15px 27px no-repeat space,
+    var(--fence-side) right top / 15px 27px no-repeat space,
+    var(--fence-rail) 4px 0 / 7px 100% no-repeat,
+    var(--fence-rail) right 4px top 0 / 7px 100% no-repeat; }
+:root[data-theme="camp"] .fenced > .yard::after { content: ""; position: absolute; left: -6px; right: -6px; top: 0; bottom: 0; padding: 0 6px;
+  pointer-events: none; image-rendering: pixelated; background:
+    var(--tusk) right 9px top / 21px 27px no-repeat border-box,
+    var(--corner-post) left bottom / 27px 36px no-repeat border-box,
+    var(--corner-post) right bottom / 27px 36px no-repeat border-box,
+    var(--fence-row) left top 6px / 21px 21px round no-repeat content-box,
+    var(--fence-row) left bottom / 21px 21px round no-repeat content-box; }
+/* A window whose ork asks: the fence glows as on the desktop, the yard takes the warning's ground. */
+:root[data-theme="camp"] .fenced.asking > .yard { --yard: color-mix(in srgb, var(--warning) 10%, var(--panel)); }
+:root[data-theme="camp"] .fenced.asking > .yard::before, :root[data-theme="camp"] .fenced.asking > .yard::after {
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--warning) 70%, transparent)); }
+:root[data-theme="office"] .fenced > h2 { margin-bottom: 8px; }
+
+/* -- what asks, said once over the questions ------------------------------------------------------------------ */
 .summary { margin: 0 0 10px; color: var(--muted); }
 .summary.asks { color: var(--ink); font-weight: 600; }
-
-/* the bar at the foot (dock.js): where the thumb is */
-.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 3; background: var(--panel); border-top: 1px solid var(--frame);
-  padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); }
-.dock-in { max-width: 640px; margin: 0 auto; display: flex; gap: 8px; }
-.dock .btn { flex: 1 1 0; min-width: 0; padding: 8px 6px; }
-.dock .stop { flex: 1.4 1 0; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center;
-  justify-content: center; line-height: 1.1; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-.stop small { font-size: 0.6875rem; font-weight: 400; color: var(--muted); }
-.stop > * { position: relative; }
-/* Holding fills the button from the left: the hold is seen, and letting go before it is full stops nothing. */
-.stop::before { content: ""; position: absolute; inset: 0; width: 0; background: var(--danger); opacity: .28; }
-.stop.holding::before { width: 100%; transition: width 1.2s linear; }
-
-/* a sheet over the town, from the foot (util.js `sheet`) */
-.sheet { margin: auto 0 0; width: 100%; max-width: 100%; max-height: 85dvh; padding: 0; border: 0; border-top: 1px solid var(--frame);
-  border-radius: 16px 16px 0 0; background: var(--panel); color: var(--ink); }
-.sheet::backdrop { background: rgb(0 0 0 / .5); }
-.sheet-in { max-width: 640px; margin: 0 auto; padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; gap: 10px; }
-.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.sheet-head h2 { margin: 0; }
-.sheet h3 { margin: 4px 0 0; font-size: 0.875rem; color: var(--muted); font-weight: 600; }
-.sheet .btn.danger { width: 100%; }
-:root[data-look="camp"] .sheet { border-radius: 0; border-top-width: 2px; }
-
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-/* the town (town.js): tiles of what asks, rows of what is in trouble or at work, a grid of the quiet */
 .summary.long { color: var(--warn); }
 .tiles { display: flex; flex-direction: column; gap: 8px; }
-.tile { border: 1px solid var(--frame); border-radius: 10px; background: var(--inset); }
-.tile.is-open { border-color: var(--warn); }
+.tile { border: 1px solid var(--frame); border-radius: var(--ok-radius-md); background: var(--inset); }
+.tile.is-open { border-color: var(--warning); }
 .tile-head, .row-b { font: inherit; color: inherit; background: none; border: 0; width: 100%; min-height: 52px; padding: 6px 10px;
   display: flex; align-items: center; gap: 10px; text-align: left; cursor: pointer; }
 .tile-mark { flex: none; width: 40px; height: 40px; display: grid; place-items: center; }
 .tile-name { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; font-weight: 600; }
-.tile-name small { font-family: var(--font-body); font-weight: 400; font-size: 0.8125rem; }
+.tile-name small { font-family: var(--ok-font); font-weight: 400; font-size: 0.8125rem; }
 .chev { flex: none; color: var(--muted); }
 .tile-body { padding: 0 10px 10px; }
-.rows { display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--frame); border-radius: 12px; }
+.question { border-top: 1px solid var(--frame); padding-top: 10px; }
+.question:first-child { border-top: 0; padding-top: 0; }
+.question .title { font-size: 1rem; font-weight: 600; margin: 0 0 8px; overflow-wrap: anywhere; font-family: var(--ok-font); color: var(--ink); }
+.question pre { font-family: var(--font-mono); margin: 0 0 8px; padding: 8px; background: var(--canvas); border-radius: var(--ok-radius-md);
+  font-size: 0.75rem; overflow-x: auto; white-space: pre-wrap; }
+.advice { font-size: 0.875rem; color: var(--muted); }
+.answers { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* -- the buildings (town.js): the orkspace's tabs, rows of what is in trouble or at work, a grid of the quiet --- */
+.spaces { margin-bottom: 8px; }
+.q-dot { min-width: 1.25rem; padding: 0 5px; border-radius: 999px; background: var(--alert); color: var(--on-action);
+  font-size: 0.6875rem; line-height: 1.25rem; text-align: center; letter-spacing: 0; }
+.rows { display: flex; flex-direction: column; margin-bottom: 8px; border: 1px solid var(--frame); border-radius: var(--ok-radius-md); background: var(--inset); }
 .row-b + .row-b { border-top: 1px solid var(--frame); }
 .state { flex: none; font-size: 0.75rem; border: 1px solid currentColor; border-radius: 999px; padding: 1px 8px; }
 .state.trouble { color: var(--danger); }
 .state.work { color: var(--accent); }
+.quiet-head { margin-top: 4px; }
 .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr)); gap: 4px; }
-.cell { font: inherit; color: inherit; background: none; border: 1px solid transparent; border-radius: 10px; width: 100%;
+.cell { font: inherit; color: inherit; background: none; border: 1px solid transparent; border-radius: var(--ok-radius-md); width: 100%;
   min-height: 5.25rem; padding: 6px 2px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
 .cell:active { background: var(--inset); }
 .cell-mark { height: 2.5rem; display: grid; place-items: center; }
@@ -152,13 +162,30 @@ textarea.input { resize: vertical; }
 .info-mark { display: grid; place-items: center; padding: 8px; }
 .info-mark .mark-sprite { width: 7rem; max-height: none; }
 .info-mark .mark-line { width: 3rem; height: 3rem; }
-:root[data-look="camp"] .tile, :root[data-look="camp"] .rows, :root[data-look="camp"] .cell, :root[data-look="camp"] .state { border-radius: 0; }
+.info b { font-weight: 600; }
+.info h3 { margin-bottom: 0; }
+.q-acts { margin-top: 0; }
+.q-form { display: flex; flex-direction: column; gap: 8px; }
+.q-form .row { margin-top: 0; }
 
-/* Task Fields kept open (fields.js): a widget */
-.widget { display: flex; flex-direction: column; gap: 4px; }
+/* the roads (links.js): a block per chain, a › where the one before sends to it; a long press lights neighbours */
+.blocks { display: flex; flex-direction: column; gap: 10px; }
+.grid.linked { border: 1px dashed var(--frame); border-radius: var(--ok-radius-md); padding: 4px; }
+.grid li { position: relative; }
+.grid li.fed::before { content: "›"; position: absolute; left: -6px; top: 1.1rem; color: var(--muted); font-size: 1rem; line-height: 1; }
+.lighting [data-b] { opacity: .3; transition: opacity .15s; }
+.lighting [data-b].is-near, .lighting [data-b].is-focus { opacity: 1; }
+.lighting [data-b].is-focus { outline: 2px solid var(--frame-focus); outline-offset: -2px; }
+.lighting [data-b].is-near { outline: 1px solid var(--warning); outline-offset: -1px; }
+.lit { position: fixed; left: 16px; right: 16px; bottom: calc(var(--dock) + 8px + env(safe-area-inset-bottom)); z-index: 2;
+  margin: 0 auto; max-width: 608px; padding: 8px 10px; background: var(--inset); border: 1px solid var(--frame); border-radius: var(--ok-radius-md); }
+[data-b] { touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+
+/* -- Task Fields kept open (fields.js): a widget ---------------------------------------------------------------- */
+.widget .yard { display: flex; flex-direction: column; gap: 4px; }
 .w-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
 .w-head h2 { margin: 0; }
-.widget h3 { margin: 6px 0 2px; font-size: 0.875rem; font-weight: 600; }
+.widget h3 { margin: 6px 0 2px; color: var(--ink); }
 .widget .new { color: var(--warn); }
 .w-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
 .w-list li { display: flex; gap: 8px; overflow-wrap: anywhere; }
@@ -170,32 +197,55 @@ textarea.input { resize: vertical; }
 .w-work .muted { flex: 1 1 auto; min-width: 0; }
 .w-lanes { display: flex; flex-direction: column; gap: 4px; }
 .w-add { display: flex; gap: 8px; margin-top: 8px; }
-.w-add .btn { flex: 1 1 0; min-width: 0; padding: 8px 4px; }
+.w-add .ok-btn { flex: 1 1 0; min-width: 0; padding-left: 4px; padding-right: 4px; }
 .hint { margin: 0; }
-
-/* the roads (links.js): a block per chain, a › where the one before sends to it; a long press lights neighbours */
-.blocks { display: flex; flex-direction: column; gap: 10px; }
-.grid.linked { border: 1px dashed var(--frame); border-radius: 10px; padding: 4px; }
-.grid li { position: relative; }
-.grid li.fed::before { content: "›"; position: absolute; left: -6px; top: 1.1rem; color: var(--muted); font-size: 1rem; line-height: 1; }
-.lighting [data-b] { opacity: .3; transition: opacity .15s; }
-.lighting [data-b].is-near, .lighting [data-b].is-focus { opacity: 1; }
-.lighting [data-b].is-focus { outline: 2px solid var(--accent); outline-offset: -2px; }
-.lighting [data-b].is-near { outline: 1px solid var(--warn); outline-offset: -1px; }
-.lit { position: fixed; left: 16px; right: 16px; bottom: calc(var(--dock) + 8px + env(safe-area-inset-bottom)); z-index: 2;
-  margin: 0 auto; max-width: 608px; padding: 8px 10px; background: var(--inset); border: 1px solid var(--frame); border-radius: 8px; }
-[data-b] { touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-.info b { font-weight: 600; }
-:root[data-look="camp"] .grid.linked, :root[data-look="camp"] .lit { border-radius: 0; }
-@media (prefers-reduced-motion: reduce) { .lighting [data-b] { transition: none; } .stop.holding::before { transition: none; } }
-
-/* stage 5: the states */
-.done { color: var(--accent); font-weight: 600; margin: 0; }
-.offline .asking, .offline .widget, .offline .rows, .offline .quiet { opacity: .5; filter: grayscale(.6); }
-.offline .status { color: var(--warn); }
 .trail { list-style: none; margin: 8px 0 0; padding: 8px 0 0; border-top: 1px dashed var(--frame); display: flex;
   flex-direction: column; gap: 2px; font-size: 0.875rem; }
 .trail li { display: flex; gap: 8px; overflow-wrap: anywhere; }
 .trail time { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
 
-[hidden] { display: none !important; }
+/* -- this phone, at the page's foot: the look, notices, Unpair, the version ----------------------------------- */
+.phone { margin-top: 12px; padding: 12px; border-top: 1px solid var(--frame); background: color-mix(in srgb, var(--canvas) 70%, transparent); }
+.phone h2 { margin-bottom: 6px; }
+.looks { margin-bottom: 6px; }
+.foot { margin: 8px 0 0; text-align: center; }
+
+/* -- news over the bar ------------------------------------------------------------------------------------------ */
+.news { position: fixed; left: 0; right: 0; bottom: calc(var(--dock) + env(safe-area-inset-bottom)); z-index: 2;
+  display: flex; flex-direction: column; gap: 6px; padding: 0 16px 8px; max-width: 640px; margin: 0 auto; pointer-events: none; }
+.no-dock .news { bottom: env(safe-area-inset-bottom); }
+.flash { margin: 0; padding: 8px 10px; border-left: 3px solid var(--action); background: var(--panel); border-radius: var(--ok-radius-md);
+  font-size: 0.875rem; box-shadow: var(--shadow-window); }
+
+/* -- the bar at the foot (dock.js): where the thumb is ---------------------------------------------------------- */
+.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 3; background: var(--panel); border-top: 2px solid var(--frame);
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); }
+:root[data-theme="office"] .dock { border-top-width: 1px; }
+.dock-in { max-width: 640px; margin: 0 auto; display: flex; gap: 8px; }
+.dock .ok-btn { flex: 1 1 0; min-width: 0; padding-left: 6px; padding-right: 6px; }
+.dock .stop { flex: 1.4 1 0; position: relative; overflow: hidden; flex-direction: column; line-height: 1.1;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.stop small { font-size: 0.6875rem; font-weight: 400; color: var(--muted); text-transform: none; }
+.stop > * { position: relative; }
+/* Holding fills the button from the left: the hold is seen, and letting go before it is full stops nothing. */
+.stop::before { content: ""; position: absolute; inset: 0; width: 0; background: var(--danger); opacity: .28; }
+.stop.holding::before { width: 100%; transition: width 1.2s linear; }
+
+/* -- a sheet over the town, from the foot (util.js `sheet`) ----------------------------------------------------- */
+.sheet { margin: auto 0 0; width: 100%; max-width: 100%; max-height: 85dvh; padding: 0; border: 0; border-top: 2px solid var(--frame);
+  border-radius: 0; background: var(--panel); color: var(--ink); box-shadow: var(--shadow-window); }
+:root[data-theme="office"] .sheet { border-top-width: 1px; border-radius: 12px 12px 0 0; }
+.sheet::backdrop { background: rgb(0 0 0 / .5); }
+.sheet-in { max-width: 640px; margin: 0 auto; padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 10px; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sheet-head h2 { margin: 0; }
+.sheet .ok-btn.danger { width: 100%; }
+.chat { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.msg p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg .who { font-size: 0.75rem; color: var(--muted); }
+
+/* -- away from the town (stage 5) ------------------------------------------------------------------------------- */
+.offline .asking, .offline .widget, .offline .quiet { opacity: .5; filter: grayscale(.6); }
+
+@media (prefers-reduced-motion: reduce) { .lighting [data-b] { transition: none; } .stop.holding::before { transition: none; } }

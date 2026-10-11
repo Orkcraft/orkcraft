@@ -329,6 +329,8 @@ class LabRuns:
             argv += ["--bare-tool", str(s["bare_tool"])]
         if s.get("bare_tier") in TIER_FLAG:
             argv += ["--bare-tier", TIER_FLAG[s["bare_tier"]]]
+        if int(s.get("repeat") or 1) > 1:
+            argv += ["--repeat", str(min(int(s["repeat"]), bench.REPEAT_MAX))]
         from orkcraft.gui.bench import Job
         label = cases[0]["title"] if len(cases) == 1 else f"every case ({len(cases)})"
         job = Job("run", "chain", label, subject=subject["id"],

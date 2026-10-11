@@ -127,6 +127,7 @@ are not on it.
 | `act` | `id`, `act`, `args` | as the act; only `pit`: `drop`, `drop_file` and `town_hall`: `ask` | yes |
 | `mobile.chat` | `limit` (at most 20) | the hall's last messages: `who`, `text` (plain), `ts`, `error`, `offer` | new (stage 2) |
 | `place.report` | `id`, `place`, `change`, `at` | `{"outcome"}`: the phone came to a place or left it ([phone-places.md](phone-places.md)); also `POST /api/place` | new (places, stage 1) |
+| `building.input` | `id`, `input`, `value` | as the act: one of the building's quick actions its compact snapshot names (`quick`), pressed by the person (`mobile.guard`) | yes |
 
 The Warchief's answer arrives in the Town Hall's `detail` (`chat`), which the phone listener does
 not send; stage 2 adds `mobile.chat` (the last messages of the hall's chat, Markdown as plain text)
@@ -271,16 +272,42 @@ give a phone: the glance (spend, quotas, the buildings, what asks first), Answer
 suggestion, Stop all (two taps), the Warchief and Drop file here (a text, a link or a file up to 5 MB; on
 Android also from the share sheet, through the manifest's `share_target`).
 
-**The screen** (since 2026-10-11, stage 1 of the phone's redesign). A glance reads top down: the town's name,
-Spend, Quota and the orks at work, then Answers with one line over the questions ("3 orks wait on you, the
-longest 7 min." or "No ork is waiting on you."), then the buildings. What a phone does now and then is a bar at
-the foot, where the thumb is (`pwa/dock.js`): Ask (the Warchief), Drop (Drop file here), More (the look,
-notices, this phone and the version, Unpair here) each open a sheet from the foot; Stop all stops on a hold of
-1.2 s (the button fills while it is held; let go early and nothing happens), or a tap opens a sheet whose Stop
-every ork stands up the screen, away from the bar, so two taps in a pocket stop nothing. News shows over the
-bar. Every target is at least 44 px, sizes are in rem (iOS's Dynamic Type through `-apple-system-body`), focus
-is outlined, and the system's bar takes the page's ground (`theme-color`: Camp's green, Office light or dark as
-the phone is).
+**The screen** (since 2026-10-11, stage 1 of the phone's redesign). A glance reads top down: the resources as
+the desktop's HUD draws them (Quota, Spend while it is shown, and the orks at work as the meat, `2/5`; their
+sprites in Camp, their words in Office), the town's name after them, then Answers with one line over the
+questions ("3 orks wait on you, the longest 7 min."), only while an ork asks, then the buildings. What a phone
+does now and then is a bar at the foot, where the thumb is (`pwa/dock.js`): Ask (the Warchief) and Drop (Drop
+file here) open a sheet from the foot; Stop all, there only while an ork works, stops on a hold of 1.2 s (the
+button fills while it is held; let go early and nothing happens), or a tap opens a sheet whose Stop every ork
+stands up the screen, away from the bar, so two taps in a pocket stop nothing. The look, notices, this phone
+and the version, and Unpair here stand at the page's own foot, under the town. News shows over the bar. Every
+target is at least 44 px, sizes are in rem (iOS's Dynamic Type through `-apple-system-body`), focus is
+outlined, and the system's bar takes the page's ground (`theme-color`).
+
+**The design system** (since 2026-10-11). The page loads the desktop's own `tokens.css` and `components.css`
+(served beside the app, `pwa.STYLES`) and sets `data-theme` as the desktop does: every button is an `ok-btn`
+(`primary`, `danger`), every field an `ok-input`, the look's and the orkspaces' pickers `ok-tabs`, the head an
+`ok-hud` of `ok-res`. `pwa/app.css` only makes them a thumb's size and lays the page out. A window of the town
+(Answers, Task Fields, the buildings: `util.fenced`) stands in Camp as the desktop's does
+([yards.md](yards.md) §3): its name over it, the fence round its yard (pickets, stakes on a rail, the bone tusk,
+the corner posts: `design-system/sprites/fence`, served as `fence/`), glowing while an ork in it asks; in Office
+a plain card. Office in a light phone takes the office theme's roles, light.
+
+**Orkspaces and their ground.** The compact snapshot names the orkspaces (`orkspaces`: name, mark, biome, its
+buildings, how many ask and work; `active_orkspace`). In a town of more than one the buildings' window has
+their tabs: the phone shows the desktop's open one until the person picks another, and the pick is the
+phone's own (`localStorage`, wiped with the pairing): it never moves the desktop's town nor writes the Town
+Scroll. The questions stay the whole town's. In Camp the page stands on the shown orkspace's biome, its colour
+and its glyphs as the desktop's town has them (`pwa/ground.js` keeps `js/icons.js` BIOMES and `js/terrain.js`'s
+glyphs; tests/test_pwa.py checks), and the system's bar takes that colour; Office has no ground.
+
+**Quick actions.** A tap on a building's row or mark opens its sheet, and the sheet has the quick actions its
+card has on the desktop (`mobile.quick`, in the compact snapshot's `quick`), each pressed as an input
+(`building.input` → `core/inputs.py`, as the Test bench presses them): one that takes a line of text (New
+research, Quick note) asks for it there; one that reaches outside the camp or takes work in at once (Fire,
+Merge, Accept all: `mobile.QUICK_ASK`) asks once more; the rest do it on a tap. Never one that reads the
+computer (Paste, Add a folder: `mobile.QUICK_NEVER`) or only opens a window of the desktop's (Build, Open in
+OS: no input). `mobile.allowed` takes only an action the building's card names.
 
 **The town as a home screen** (stage 2, `pwa/town.js`). What asks stands as tiles in Answers, the longest
 waiting first: a building whose ork asks, with its mark, its name, who asks and how long; or an ork's question of
@@ -311,7 +338,7 @@ mark or a row lights the building's neighbours, dims the rest and says at the fo
 **States** (stage 5).
 - *Away from the town* (§6): the app keeps the last town it saw on the phone (`localStorage`, wiped with the
   pairing) and, while the town does not answer, shows it greyed with "As of 12:41." before why; the town's parts
-  are `inert`, so nothing in them is acted on. More, and Unpair here, stay usable. Opened cold with no town in
+  are `inert`, so nothing in them is acted on. The page's foot, and Unpair here, stay usable. Opened cold with no town in
   reach, it shows the kept one the same way.
 - *An answer*: the tile says "Answered: Yes. The ork goes on." at once, and the news line "Answered: Yes",
   till the town's update takes the question away.

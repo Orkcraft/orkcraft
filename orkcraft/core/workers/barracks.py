@@ -114,6 +114,7 @@ class RunOutcome:
     tokens: int = 0
     session: str = ""
     steward_cost: float = 0.0
+    steward_tokens: int = 0
     qa: list[list[str]] = field(default_factory=list)   # questions the steward answered in this run
     asked: str = ""                                      # a question for the operator
     accepted: bool | None = None                         # None: never reviewed (an error, a question)
@@ -144,7 +145,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
     APPROVAL = gate.APPROVAL      # the hop's outcome on a draft that waits for the operator (a Loot always holds it)
     work_runner = None            # tests swap the agent call (jobs.run_work) here
     worktree_maker = None         # and the worktree maker (jobs.add_worktree)
-    steward_runner = None         # and the steward's model call: (harness, prompt, workdir, cancel, model) → (text, cost)
+    steward_runner = None         # and the steward's model call: (harness, prompt, workdir, cancel, model) → (text, cost[, tokens])
     git = None                    # and the task's git (jobs.TaskGit)
     pr_reader = None              # and `gh` (gitinfo.pull_requests: head branch → PR)
 
@@ -538,12 +539,14 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             runner = _simulated_steward
         else:
             env = {"ORKCRAFT_ORC": f"{self.building_id}/steward"}
-            runner = lambda h, p, w, c, m: roads.run_agent(h, p, w, env, c, m)[:2]      # noqa: E731
+            runner = lambda h, p, w, c, m: roads.run_agent(h, p, w, env, c, m)[:3]      # noqa: E731
         text = ""
         for _ in range(2):        # an empty answer is no verdict (agy ends a turn empty on a denied command): once more
             with telemetry.tagged(steward.purpose_of(use, self.TYPE), self.building_id):
-                text, cost = runner(harness, prompt, workdir, cancel, model)
+                got = runner(harness, prompt, workdir, cancel, model)     # (text, cost[, tokens])
+            text, cost = got[0], got[1]
             out.steward_cost += cost or 0.0
+            out.steward_tokens += int((got[2] if len(got) > 2 else 0) or 0)
             if (text or "").strip():
                 break
         return text or ""
@@ -616,7 +619,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         orc.status, orc.task, orc.last = "idle", "", bk.now_iso()
         orc.cost_usd = round(orc.cost_usd + out.cost, 4)
         orc.tokens += out.tokens
-        st.steward_cost = round(st.steward_cost + out.steward_cost, 4)
+        st.steward_spent(out.steward_cost, out.steward_tokens)
         if out.session:
             orc.session_tasks = orc.session_tasks + 1 if task.warm else 1
             orc.session = out.session

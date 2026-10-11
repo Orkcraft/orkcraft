@@ -135,6 +135,8 @@ function Settings({ id, d }) {
       ${field("Bare: tier", pick("bare_tier", d.tiers || []))}
       ${field("Spend limit a case, $", html`<input class="ok-input" type="number" min="0.1" max="50" step="0.5" value=${s.max_spend}
         onChange=${(e) => set("max_spend", e.target.value)} />`)}
+      ${field("Runs a case", html`<select class="ok-input" value=${String(s.repeat || 1)} onChange=${(e) => set("repeat", +e.target.value)}>
+        ${[[1, "Once"], [3, "3 times: medians"], [5, "5 times: medians"]].map(([v, l]) => html`<option key=${v} value=${v}>${say(l)}</option>`)}</select>`)}
     </div>
     <label class="lab-check"><input type="checkbox" checked=${!!s.judge} onChange=${(e) => set("judge", e.target.checked)} />
       <span class="ok-font-body">${say("A blind judge scores both results 0–10 (one more AI call a case)")}</span></label>

@@ -113,8 +113,12 @@ One run is one case, two sides, the same model:
 | **bare** | the AI tool with only the task as its prompt (`jobs.run_work`), on the same tier's model | a second copy of the project |
 
 The bare side gets the same model as the building's orks, so the comparison is of the building,
-not of the model. A decision wants three runs or more, because one run says little when models
-vary (a `--times` that repeats a run is still to come).
+not of the model: with no tier picked, the bare tool runs on the model the building's first ork ran on
+(`Side.model` names it on both sides). A decision wants three runs or more, because one run says little
+when models vary: `--repeat N` (the window's **Runs a case**) runs each case N times in one series
+(`Report.series`), each repeat with a bare answer of its own (`<key>-<n>.json`), and the summary reads the
+medians, how many runs, and the range of the time gap run by run (`bench.pooled_gaps`). A summary of single
+runs says that a gap of a few tens of percent can be chance.
 
 Measured on each side: **time** (wall clock), **spend** ($, the steward's included), **tokens**,
 **the check** (pass or fail, its last lines), **the change** (files and lines). The building's side
@@ -122,7 +126,12 @@ also says **how it went**: its decisions (`decisions.jsonl`), how many orks it s
 of its plan, its reworks.
 
 The run is kept in `.orkcraft/bench/runs/<run>/report.json`, next to both copies, so the bench window
-shows the last runs and any two can be compared.
+shows the last runs and any two can be compared. Every model call either side makes (the orks', the
+steward's, the bare tool's, the judge's) is kept in `calls/` beside it (`realm/call_log.py`): a line each in
+`calls.jsonl` (side, who, what for, model, seconds, exit code, cost, tokens, and the usage the tool printed:
+input, output, cache) and the call itself gzipped (its prompt and the tool's whole output; never the
+environment). The run's text for an analysis, the Mechanic's tech review and `orkcraft bench` sum the calls
+by side, who and what for (`bench.calls_text`), so a gap shows where it came from.
 
 **A series**: `orkcraft bench --case all`, or `--level simple|medium|parallel`, runs the cases one after
 another (each with its own spend limit) and ends with a summary: per case, how much more time and spend the
@@ -143,7 +152,7 @@ As built (stage 1):
   denies every command it would ask about and ends its turn with no answer (`realm/harnesses.py` `free_args`).
 - It is done when its task is done or failed, or when the steward asks the operator (the bench says
   so and stops: nobody is there to answer), or at its spend limit or 45 minutes (*cut*).
-- Tokens are the orks' only: the pool does not count the steward's yet. Spend counts both.
+- Tokens count the orks' and the steward's (`Barracks.steward_tokens`); spend counts both.
 - The building's result is checked in a worktree of its task's branch (`building-result/`), the
   bare tool's in its own copy, what it left uncommitted included.
 
