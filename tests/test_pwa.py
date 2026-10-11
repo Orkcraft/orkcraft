@@ -175,3 +175,34 @@ def test_the_desktop_reads_tailscale_at_most_every_few_seconds():
     t.read(now=pwa.TAIL_S + 0.1)
     assert len(asked) == 2
     assert not pwa.Tailnet(L(), lambda: None).read(now=0.0)["running"]
+
+
+@pytest.mark.asyncio
+async def test_tailscale_that_comes_after_the_town_is_taken_within_a_minute_on_the_same_port(
+        fake_repo, tmp_path, monkeypatch):
+    checkpoint.ensure(fake_repo)
+    listener = phones.Listener(Host(fake_repo, auto_commit=False), cert_folder=tmp_path)
+    monkeypatch.setattr(phones, "lan_ip", lambda: "127.0.0.1")
+    listener.bind, listener.tail_find = None, lambda: None
+    watch = pwa.TailWatch(listener, every=60.0)
+    assert not watch.wanted()                                               # no phone paired: nothing to look for
+    listener.pairing.add("Phone")
+    try:
+        listener.start()                                                    # the town opens; Tailscale is not up yet
+        port = listener.pairing.port()
+        assert watch.wanted() and listener.tail_server is None
+        asked = []
+        listener.tail_find = lambda: asked.append(1) or tailnet.Tail("127.0.0.2", "town.tail12.ts.net")
+        listener.tail_cert = lambda tail: phone_tls.ensure(tmp_path)
+        watch.tick(now=watch._at + 30.0)
+        assert not asked                                                    # not before a minute
+        watch.tick(now=watch._at + 61.0)
+        for _ in range(100):
+            if not watch._busy:
+                break
+            await asyncio.sleep(0.02)
+        assert asked and listener.tail_trusted and listener.tail_address == f"https://town.tail12.ts.net:{port}"
+        assert not watch.wanted()                                           # done: it looks no more
+        assert listener.server is not None                                  # the LAN's listener stayed
+    finally:
+        listener.stop()
