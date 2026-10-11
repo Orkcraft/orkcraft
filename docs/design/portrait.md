@@ -188,7 +188,7 @@ For the person, not the orks: nothing stops working, nothing is lost, it all wai
 - **Code, renamed once:** today's look is `data-look="office"` (`gui/static/office.css`,
   `look: "office"` in `gui/state.py` and `gui/mobile.py`). It becomes `camp` (`camp.css`), and
   `office` is the new look. An exception to "code keeps its names", taken because the old value is
-  written in code only, never in a person's settings or a Project file, and the two would collide.
+  written in code only, never in a person's settings or a Town file, and the two would collide.
 - **`realm/lexicon.py` `TERMS`:** `look` "Look", `look.camp` "Camp", `look.office` "Office", `dnd`
   "Do not disturb", `portrait` "portrait".
 - **growth.md §7.3** points here: the portrait's menu, not Settings, is where the mascot lives.

@@ -306,7 +306,8 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 _e("gramophone.failed", "episode failed", TEXT, "an episode failed: why")),
         actions=(_a("gramophone.make", "Make an episode", "📻", "an episode of the last text that came, or of text you paste"),),
         config={"language": (str, ("auto", "ru", "en"), False), "minutes": (int, (2, 20), False),
-                "voice": (str, None, False), "tts_model": (str, None, False), "model": (str, None, False),
+                "format": (str, ("dialogue", "monologue"), False), "voice": (str, None, False),
+                "voice_b": (str, None, False), "tts_model": (str, None, False), "model": (str, None, False),
                 "key": (str, None, False), "cap_usd": (float, (0.05, 5), False), "keep": (int, (1, 200), False)},
         art="rookery", orc="Bard", agentic=True),
     BuildingType(

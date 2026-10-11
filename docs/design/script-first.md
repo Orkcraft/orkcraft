@@ -154,7 +154,7 @@ cost should be.
 - **Nothing to set.** Script-first is a property of the type and of the parts, not a setting. A building
   becomes script-first when its last thinking part goes: a demotion, a Transformer whose `agent:` step
   is replaced. It stops being script-first when one is added.
-- **Existing towns load as they are.** No field is added to the Project file or to a building's spec.
+- **Existing towns load as they are.** No field is added to the Town file or to a building's spec.
   The wake log and its cursor live in `.orkcraft/script_first/`, git-ignored like the rest of `.orkcraft/`.
 - **A building whose handler is an agent today keeps working.** It is simply not script-first. The
   steward proposes the demotion as it does today (its Watch: `repeats` → `demote`, replayed before it can

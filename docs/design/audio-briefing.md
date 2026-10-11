@@ -21,7 +21,7 @@ on the road.
   its own. Hidden inside a Mill, nobody finds it and nobody sees what it spends.
 - **Not the Catapult.** The Publisher only sends out. Sending an episode on stays possible: the
   building's event carries the episode, and a road takes it to a Catapult.
-- **One listener.** v1 is for the operator alone: one voice per language, nothing shared.
+- **One listener.** v1 is for the operator alone: nothing shared.
 
 ## 2. What it does
 
@@ -37,8 +37,16 @@ a cart (a report, a summary, a wiki page) ──▶ 📻 Audio briefing ──�
   came, or on text pasted in. One input makes one episode.
 - **Out:** `gramophone.done`, the episode's title and its transcript as the value; `gramophone.failed`,
   the error. The events go down roads as any building's do.
-- **The episode is a monologue,** 2–20 minutes (`minutes`, 8 by default). One narrator,
-  no dialogue in v1.
+- **The episode is a dialogue of two hosts** (`format`, the default; stage 4), as NotebookLM's audio
+  overviews are: easier to follow by ear than one voice. `format: monologue` keeps one narrator.
+  2–20 minutes (`minutes`, 8 by default). NotebookLM itself has no API for one person (only NotebookLM
+  Enterprise, behind a Gemini Enterprise licence and an allow-list), so the dialogue is our own script
+  spoken by Gemini TTS.
+- **The dialogue's script** is turns, `Alex: …` / `Sam: …`, one a paragraph (`realm/gramophone.py`
+  `turns`): Alex leads and explains, Sam asks what a listener would ask and sums up. The labels only pick
+  the voice; the hosts never say their names. A request is cut at turns, a long turn at sentences with
+  its label kept (`dialogue_pieces`), and Gemini speaks both voices in one request
+  (`multiSpeakerVoiceConfig`, two speakers at most).
 - **Language:** the source's own, unless the building's `language` says `ru` or `en`. The script is
   written in the language the episode is spoken in.
 
@@ -74,11 +82,14 @@ closed reads as stopped; its source is not kept on disk. The building keeps the 
 - **Model:** `tts_model`, by default the family `gemini-flash-tts`: the newest Gemini Flash TTS the
   API lists for the key, else the one in `realm/model_families.py` `FALLBACK` (a setting, because
   preview names change; a model with its version runs as written).
-- **Voice:** `voice`, `Charon` by default: one voice for both languages (Gemini picks the
-  language from the text).
+- **Voices:** `voice`, `Charon` by default (the narrator, or the dialogue's first host) and `voice_b`,
+  `Kore` by default (the second host): the same voices for both languages (Gemini picks the language
+  from the text).
 - **The key:** `key` names it the way a Watchtower names a token: an environment variable
   (`GEMINI_API_KEY`, the default) or a login kept on this machine (`keychain:gemini`,
-  `realm/logins.py`). A spec never holds the key itself. With no key, the window says so in one
+  `realm/logins.py`). A spec never holds the key itself. A key pasted in the window goes to the OS
+  keychain, else to `~/.config/orkcraft/logins.json` (mode 0600): both outside the project, so it never
+  reaches git, a Project file or a commit. With no key, the window says so in one
   line with a field to save one, and nothing runs.
 - **No cloning, no actor's voice,** as in [road-sound.md](road-sound.md) §4: prebuilt voices only.
 - **Not in v1:** other engines (OpenAI, Yandex SpeechKit, local Piper). `realm/gramophone.py` keeps
@@ -117,7 +128,7 @@ closed reads as stopped; its source is not kept on disk. The building keeps the 
 - **Work:** the episodes, newest first: title, length, language, cost, when; ▶ plays it in the page
   (`<audio>`), ⬇ downloads it, 📄 opens the transcript. **Make an episode** (from the last input or
   pasted text). The running one with its step. The queue.
-- **Info:** settings (language, minutes, voice, key, the limit per episode, how many to keep),
+- **Info:** settings (language, format, minutes, the voices, key, the limit per episode, how many to keep),
   the line on where the text goes, the price per minute.
 - **The file on the desktop:** `GET /api/audio/<building>/<episode>` on the page's own server (the
   run's token, as `/api/version` takes it) answers with the file, `Content-Disposition: attachment`
@@ -152,4 +163,5 @@ the app has it from the start.
 | 1 | this page and the sprite | done |
 | 2 | the building: catalog, `realm/gramophone.py` (script prompt, `speakable`, Gemini TTS, encoding, estimate), the worker, the GUI window with ▶ and ⬇, the file route, wording, tests | done |
 | 3 | the phone's side on the host: `episodes` in the compact snapshot, `audio.fetch`, the news line | done |
-| later | dialogue of two voices (Gemini's multi-speaker); a daily episode on a rhythm; other engines; the phone app's *Listen* tab | |
+| 4 | the dialogue of two hosts (Gemini's multi-speaker), the default; `format`, `voice_b` | done |
+| later | a daily episode on a rhythm; other engines; the phone app's *Listen* tab | |

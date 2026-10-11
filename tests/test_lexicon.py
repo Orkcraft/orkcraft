@@ -80,3 +80,10 @@ def test_the_test_bench_reads_as_itself_under_every_name_it_had():
     assert lexicon.words("Alchemist's Lab") == "Test bench"
     assert lexicon.words("Gearhead") == lexicon.words("Brewmaster") == "Tester"
     assert lexicon.words("a mechanic, a reference") == "a mechanic, a reference"
+
+
+def test_the_town_scroll_is_the_town_file_and_a_project_is_its_folder():
+    """docs/design/projects.md §2: "Project" is the folder an orkspace works in, so the scroll is the Town file."""
+    assert lexicon.term("town_scroll") == "Town file" and lexicon.term("town_scroll", many=True) == "Town files"
+    assert lexicon.words("Saved to the Town Scroll") == "Saved to the Town file"
+    assert lexicon.term("project") == "Project" and lexicon.term("project", many=True) == "Projects"

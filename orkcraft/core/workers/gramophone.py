@@ -2,6 +2,8 @@
 
     a text ─▶ the script (its steward's model) ─▶ text for the ear ─▶ the price ─▶ speech (Gemini TTS) ─▶ the file
 
+An episode is a dialogue of two hosts in two voices (`format`, the default) or a monologue in one.
+
 An episode is a dict kept in `.orkcraft/gramophone/<id>/episodes/<episode id>.json`, its transcript beside it
 as `.md` and its audio as `.m4a` (or `.wav` without ffmpeg). What arrives while one is made waits in the queue.
 An episode whose speech would cost more than `cap_usd` waits as `held` with its script, until **Speak anyway**.
@@ -81,6 +83,15 @@ class GramophoneWorker(Worker):
     @property
     def voice(self) -> str:
         return str(self.config.get("voice") or gm.VOICE)
+
+    @property
+    def form(self) -> str:
+        form = str(self.config.get("format") or gm.FORMATS[0])
+        return form if form in gm.FORMATS else gm.FORMATS[0]
+
+    @property
+    def voice_b(self) -> str:
+        return str(self.config.get("voice_b") or gm.VOICE_B)
 
     @property
     def tts_model(self) -> str:
@@ -216,7 +227,7 @@ class GramophoneWorker(Worker):
         e = {"id": uuid.uuid4().hex[:8], "title": title[:160], "lang": lang, "status": "queued", "step": "",
              "trigger": trigger, "created": _now(), "ended": "", "seconds": 0, "bytes": 0, "kind": "",
              "cost": 0.0, "cost_script": 0.0, "cost_speech": 0.0, "estimate": 0.0, "error": "",
-             "trail": list(trail), "ref": ref, "minutes": self.minutes}
+             "trail": list(trail), "ref": ref, "minutes": self.minutes, "format": self.form}
         self.last_input = (text[:INPUT_LIMIT], title)
         with self.lock:
             self.sources[e["id"]] = text[:INPUT_LIMIT]
@@ -287,7 +298,7 @@ class GramophoneWorker(Worker):
         if not self.town.budget_ok():
             raise RuntimeError("🪙 The budget is spent: no script is written")
         clean = privacy.scrub(source).text
-        prompt = gm.script_prompt(clean, e["title"], e["lang"], int(e.get("minutes") or self.minutes))
+        prompt = gm.script_prompt(clean, e["title"], e["lang"], int(e.get("minutes") or self.minutes), self._form(e))
         runner = self.steward_runner("script", str(self.config.get("model") or ""))
         text, cost = runner(prompt)
         e["cost_script"] = round(float(cost or 0.0), 4)
@@ -295,13 +306,19 @@ class GramophoneWorker(Worker):
             raise InterruptedError("stopped")
         return str(text or "")
 
+    @staticmethod
+    def _form(e: dict) -> str:
+        """An episode's format: as it was made (an episode from before formats is a monologue)."""
+        return e.get("format") if e.get("format") in gm.FORMATS else "monologue"
+
     def _work(self, e: dict, cancel: threading.Event) -> None:
         try:
             if not self.has_key():
                 raise RuntimeError(f"No Gemini API key: set {gm.KEY} or save a key in the window")
             if not e.get("force") or not self._path(e["id"], "md").is_file():
                 self._step(e, "script", "writing the script")
-                spoken = gm.speakable(self._script(e, cancel))
+                script = self._script(e, cancel)
+                spoken = gm.dialogue(script) if self._form(e) == "dialogue" else gm.speakable(script)
                 if not spoken:
                     raise RuntimeError("The script came back empty")
                 self._path(e["id"], "md").write_text(f"# {e['title']}\n\n{spoken}\n", encoding="utf-8")
@@ -319,7 +336,8 @@ class GramophoneWorker(Worker):
                 pcm = gm.tone(2.0)
             else:
                 pcm = gm.speak(spoken, self.key(), self.tts_model, self.voice, cancel,
-                               progress=lambda n, of: self._step(e, "speaking", f"speaking {n}/{of}"))
+                               progress=lambda n, of: self._step(e, "speaking", f"speaking {n}/{of}"),
+                               voice_b=self.voice_b if self._form(e) == "dialogue" else "")
             if cancel.is_set():
                 raise InterruptedError("stopped")
             e["seconds"] = round(gm.seconds_of_pcm(pcm))
