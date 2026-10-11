@@ -34,7 +34,8 @@ named by its id, never a path.
 
 `GET /api/logs/<building>?day=YYYY-MM-DD` (the same token) is a building's day log as a zip (gui/day_logs.py): every
 model call it made that day and what it decided; today's when no day is named. `GET /api/bench/<test bench>` is a
-Test bench's latest runs of what it tests, as a zip for an analysis (gui/lab_runs.py `pack`).
+Test bench's latest runs of what it tests, as a zip for an analysis (gui/lab_runs.py `pack`); `GET /api/check/latest`
+the last `orkcraft check`, all of it (gui/check_runs.py).
 """
 from __future__ import annotations
 
@@ -153,6 +154,10 @@ class Server:
                 return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
             day = parse_qs(parts.query).get("day", [""])[0]
             return self._zip(self.host.day_logs.pack(parts.path.removeprefix("/api/logs/"), day))
+        if parts.path == "/api/check/latest":
+            if not self._token_ok(request):
+                return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
+            return self._zip(self.host.bench.check.pack())
         if parts.path.startswith("/api/bench/"):
             if not self._token_ok(request):
                 return _response(HTTPStatus.FORBIDDEN, b"Forbidden")

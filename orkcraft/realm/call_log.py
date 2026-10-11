@@ -15,6 +15,10 @@ brain folder). The environment is never written.
 
 A bench run's calls go to its `calls/` (`kept`). Outside one, once the town said where (`keep_days`), a call goes to
 `.orkcraft/logs/<day>/<building>/` (realm/day_log.py keeps and clears those days); else it is not kept.
+
+The calls come from every seam that starts an AI tool: an ork's work and a reader (realm/jobs.py), a road's agent
+(realm/road_agents.py), a one-off answer (realm/builders.py `ask`: a steward's, the retros', the Council's) and a
+connector's look (realm/feeds_agent.py).
 """
 from __future__ import annotations
 
@@ -111,8 +115,9 @@ def trail(harness: str, session: str, workdir: Path | None) -> str:
 
 def record(env: dict | None, mode: str, harness: str, model: str, prompt: str, stdout: str, stderr: str,
            code: int, seconds: float, cost: float | None = None, tokens: int | None = None,
-           session: str = "", workdir: Path | None = None) -> None:
-    """One call, where calls are kept now. Never raises: a call is not lost for its log."""
+           session: str = "", workdir: Path | None = None, who: str = "", purpose: str = "") -> None:
+    """One call, where calls are kept now. Never raises: a call is not lost for its log. `who` and `purpose` name
+    a call that carries no ork (`ORKCRAFT_ORC`) or was not tagged (a one-off `-p`, a connector's look)."""
     orc = str((env or {}).get("ORKCRAFT_ORC") or "")
     building, _, ork = orc.partition("/")
     with _LOCK:
@@ -126,11 +131,11 @@ def record(env: dict | None, mode: str, harness: str, model: str, prompt: str, s
             _COUNT[folder] = len(read(folder))
         _COUNT[folder] += 1
         n = _COUNT[folder]
-    who = ork or ("" if side == "bare" else "agent")
+    who = ork or who or ("" if side == "bare" else "agent")
     raw = f"{n:03d}-{_SAFE.sub('-', who or side or 'call')[:40]}.json.gz"
     session = session or session_of(stdout)
     line = {"n": n, "at": dt.datetime.now().isoformat(timespec="seconds"), "side": side, "who": who,
-            "purpose": telemetry.purpose_now(), "mode": mode, "tool": harness, "model": model,
+            "purpose": purpose or telemetry.purpose_now(), "mode": mode, "tool": harness, "model": model,
             "seconds": round(seconds, 1), "code": code, "cost": cost, "tokens": tokens, "usage": usage_of(stdout),
             "session": session, "prompt_chars": len(prompt or ""), "output_chars": len(stdout or ""), "raw": raw}
     try:

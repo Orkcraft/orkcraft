@@ -184,3 +184,16 @@ def test_the_town_serves_a_buildings_day_and_clears_by_its_dislikes(fake_repo, i
         assert not call_log.day_folder(fake_repo, yesterday, "liked_one").exists()
     finally:
         host.close()
+
+
+def test_a_one_off_answer_is_kept_with_what_it_was_for(tmp_path, monkeypatch):
+    import subprocess as sp
+    from orkcraft.realm import builders
+    from orkcraft.sources import telemetry
+    monkeypatch.setattr(builders, "_call", lambda h, prompt, model: sp.CompletedProcess([], 0, ENVELOPE, ""))
+    with call_log.kept(tmp_path / "calls", "building"), telemetry.tagged("sort", "tower"):
+        assert builders.ask("claude", "sort these letters", "haiku")[0] == "done"
+    [line] = call_log.read(tmp_path / "calls")
+    assert (line["who"], line["purpose"], line["mode"], line["model"], line["tokens"]) == \
+        ("claude -p", "sort", "ask", "haiku", 5000)
+    assert call_log.raw(tmp_path / "calls", line)["prompt"] == "sort these letters"

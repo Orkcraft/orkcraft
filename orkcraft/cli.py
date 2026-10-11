@@ -294,6 +294,8 @@ def main(argv: list[str] | None = None) -> int:
                               "writes it)")
     bench_p.add_argument("--orders", type=Path, default=None,
                          help="A file with the building's instructions for this run only (default: its own)")
+    from orkcraft import check_cli
+    check_cli.add_parser(subparsers)
     up_p = subparsers.add_parser("update", help="Install the latest version, see what is out, or say what installs by itself")
     up_p.add_argument("action", nargs="?", choices=("check", "auto", "critical", "ask"), default=None,
                       help="check: only say what is out · auto | critical | ask: which updates install by "
@@ -384,6 +386,15 @@ def main(argv: list[str] | None = None) -> int:
             sys.stderr.write(f"orkcraft error: {e}\n{NOT_A_PROJECT_HINT}\n")
             return 1
         return _bench(root, args)
+
+    if args.subcommand == "check":                         # the gate before people use it (check_cli.py)
+        try:
+            root = find_project_root(args.repo)
+        except FileNotFoundError as e:
+            sys.stderr.write(f"orkcraft error: {e}\n{NOT_A_PROJECT_HINT}\n")
+            return 1
+        from orkcraft import check_cli
+        return check_cli.run(root, args, TIER_WORDS)
 
     # No subcommand: the window.
     if args.subcommand is None:

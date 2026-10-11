@@ -18,11 +18,12 @@ import json
 import os
 import subprocess
 import tempfile
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from orkcraft.realm import halt, harnesses, huts, masonry, naming, tool_errors
+from orkcraft.realm import call_log, halt, harnesses, huts, masonry, naming, tool_errors
 from orkcraft.sources import telemetry
 
 MAX_ATTEMPTS = 3
@@ -128,11 +129,16 @@ def ask(harness_id: str, prompt: str, model: str | None = None) -> tuple[str, fl
     """One answer of a tool in an empty folder (`model`: its own, a tier word, or another tool's model
     — harnesses.model_on; None keeps its default). Raises RuntimeError on failure."""
     h = harnesses.need(harness_id)
+    start = time.monotonic()
     proc = _call(h, prompt, model)
     if proc.returncode != 0:
+        call_log.record(None, "ask", h.id, model or "", prompt, proc.stdout, proc.stderr, proc.returncode,
+                        time.monotonic() - start, who=f"{h.id} -p")
         why = h.error(proc.stdout) or (proc.stderr or proc.stdout).strip()
         raise tool_errors.ToolError(h.id, why, proc.returncode)
     text, cost, tokens, _ = h.outcome(proc.stdout, 0, model or "")
+    call_log.record(None, "ask", h.id, model or "", prompt, proc.stdout, proc.stderr, proc.returncode,
+                    time.monotonic() - start, cost, tokens, who=f"{h.id} -p")
     if not text.strip() and (why := h.error(proc.stdout)):
         raise tool_errors.ToolError(h.id, f"{h.id} gave no answer: {why}")
     telemetry.charge(cost, f"{h.id} -p {model or 'default'}", tokens=tokens, model=model or "")   # no transcript: 🪙 here

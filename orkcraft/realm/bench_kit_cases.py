@@ -124,6 +124,24 @@ WATCHTOWER = [
 
 FIELDS = [
     {
+        "id": "mail-to-todos", "level": "simple",
+        "title": "Name the to-dos three letters ask for",
+        "expect": "Titles of 2–4 words that say what each letter asks the person to do, not who wrote it.",
+        "inputs": {
+            "titles": [
+                {"text": "From: Lena (accountant)\nSubject: Q3 VAT\n\nHi! I still need the invoices from the "
+                         "hosting provider for July–September to file the VAT return. Could you send them by "
+                         "Thursday? Thanks", "expect_words": [["invoice", "VAT"]]},
+                {"text": "From: Steam Partner\nSubject: Your store page needs an update\n\nYour game's store "
+                         "page is missing the mature content survey. Complete it within 14 days or the page will "
+                         "be hidden from search.", "expect_words": [["survey", "content", "store"]]},
+                {"text": "From: Marco\nSubject: crash on level 3\n\nHey, playtest build 0.8.2 crashes every "
+                         "time I open the map on level 3 (Windows 11, GTX 1660). Log attached. Can you take a "
+                         "look before Friday's stream?", "expect_words": [["crash", "map", "level"]]},
+            ],
+        },
+    },
+    {
         "id": "long-cards", "level": "simple",
         "title": "Name four long cards, one in Russian",
         "expect": "Titles of 2–4 words that say what each card is, the Russian one in Russian.",

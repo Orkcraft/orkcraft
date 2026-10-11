@@ -61,14 +61,15 @@ export function card(b) {
 function Window({ id, data }) {
   const subjects = data.subjects || [];
   if (!subjects.length) {
-    return html`<div class="lab-empty">
+    return html`<div class="lab-window"><${Check} id=${id} c=${data.check || {}} /><div class="lab-empty">
       <p class="ok-font-body">${say("The Test bench tests one building, or several in a row as one chain.")}</p>
       <p class="ok-font-status ok-tone-muted">${say("Its setup lays its roads: pick a building, or frame several on the map.")}</p>
       <span><button class="ok-btn primary" onClick=${() => setUp(id)}>${say("Set it up")}</button></span>
-    </div>`;
+    </div></div>`;
   }
   const pick = data.subject || subjects[0].id;
   return html`<div class="lab-window">
+    <${Check} id=${id} c=${data.check || {}} />
     <span><button class="gui-link ok-font-status" onClick=${() => setUp(id)}>${say("Change what it tests")}</button></span>
     ${subjects.length > 1 && html`<label class="gui-field lab-pick"><span class="ok-font-label">${say("Tests")}</span>
       <select class="ok-input" value=${pick} onChange=${(e) => act(id, "pick", { id: e.target.value })}>
@@ -104,6 +105,33 @@ function LabView({ id, d, pick }) {
         <${BenchView} key=${pick} id=${pick} lab=${id} /></section>`}
     </details>
   </div>`;
+}
+
+/** `orkcraft check`: the main jobs on the cheap AI tool and a quiet town, green or red, and all it saw as a zip. */
+function Check({ id, c }) {
+  const job = c.job;
+  const on = !!(job && !job.done);
+  const last = c.last || {};
+  useEffect(() => {                         // while it runs, its lines come in
+    if (!on) return undefined;
+    const timer = setTimeout(() => act(id, "refresh").catch(() => {}), 2000);
+    return () => clearTimeout(timer);
+  }, [id, c]);
+  return html`<section class="gui-bench__section lab-check">
+    <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">
+      ${on && html`<span class="gui-bench__spin" aria-hidden="true"></span>`}${say("Check the main jobs")}</h4>
+      <span class="gui-bench__acts">
+        ${on ? html`<button class="ok-btn" onClick=${() => act(id, "check_stop")}>${say("Stop")}</button>`
+          : html`<button class="ok-btn primary" onClick=${() => act(id, "check_run")}>${say("Run the check")}</button>`}
+        ${last.zip && html`<a class="ok-btn" href=${`/api/check/latest?t=${encodeURIComponent(TOKEN)}`} download
+          title=${say("Every run and every model call it made, with a README for the agent that reads it")}>${say("Download (.zip)")}</a>`}</span></div>
+    <p class="ok-font-status ok-tone-muted">${say("Mail sorted, tasks from mail, the Review board and pictures redrawn, each case 3 times against the bare AI tool on agy's lightest model; then a quiet town that must call no model. It spends: each run stops at $2.")}</p>
+    ${job && html`<pre class="gui-bench__log gui-bench__term">${(job.lines || []).slice(-LOG_LINES).join("\n")}</pre>`}
+    ${job && job.error && html`<p class="ok-font-status ok-tone-error">${job.error}</p>`}
+    ${last.stamp && html`<details class="lab-check__last" open=${!on}><summary class=${cls("ok-font-body", last.green ? "ok-tone-ok" : "ok-tone-error")}>
+        ${say(`${last.green ? "Green" : "Red"} · ${last.stamp.replace(/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2}).*/, "$1-$2-$3 $4:$5")}`)}</summary>
+      <pre class="gui-bench__log lab-results__table">${last.report}</pre></details>`}
+  </section>`;
 }
 
 /** Run every case, each the times the settings say, against the bare AI tool. */
