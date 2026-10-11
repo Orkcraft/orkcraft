@@ -1,10 +1,10 @@
 // The app's worker (gui/pwa.py): the shell opens without the network, the town never does. Every file is
 // asked of the town first, so a new version arrives the next time it is reachable; the cache is only for
 // when it is not. The socket is never cached: what the town is comes live or not at all.
-const CACHE = "orkcraft-app-v2";
-const SHELL = ["./", "app.js", "app.css", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png",
-  "fonts/fonts.css", "fonts/titillium-web-latin-400-normal.woff2", "fonts/titillium-web-latin-600-normal.woff2",
-  "fonts/almendra-sc-latin-400-normal.woff2"];
+const CACHE = "orkcraft-app-v3";
+const SHELL = ["./", "app.js", "util.js", "dock.js", "app.css", "manifest.webmanifest", "icon-192.png", "icon-512.png",
+  "apple-touch-icon.png", "fonts/fonts.css", "fonts/titillium-web-latin-400-normal.woff2",
+  "fonts/titillium-web-latin-600-normal.woff2", "fonts/almendra-sc-latin-400-normal.woff2"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
