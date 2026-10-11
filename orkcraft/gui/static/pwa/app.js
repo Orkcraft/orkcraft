@@ -192,7 +192,7 @@ function connect() {
   status("Connecting…");
   opened = false;
   ws = new WebSocket(`wss://${location.host}/ws`, [PROTOCOL, `bearer.${device.token}`]);
-  ws.onopen = () => { opened = true; retry = 1; status(""); };
+  ws.onopen = () => { opened = true; retry = 1; status(""); hello(); };
   ws.onmessage = (e) => {
     let msg;
     try { msg = JSON.parse(e.data); } catch { return; }
@@ -241,6 +241,7 @@ function layout() {
     buildings: h("ul", { class: "buildings" }),
     chat: h("div", { class: "chat" }),
     stop: h("button", { class: "btn danger stop" }, "Stop all"),
+    version: h("span", { class: "muted version" }),
   };
   let armed = 0;
   parts.stop.addEventListener("click", async () => {
@@ -282,9 +283,15 @@ function layout() {
     h("section", { class: "card" }, h("h2", {}, "Look"), parts.looks,
       h("p", { class: "muted" }, "The same on the computer: it is one setting.")),
     h("footer", { class: "foot" },
-      h("span", { class: "muted" }, `This phone: ${device?.name || ""}`), notifyBtn,
+      h("span", { class: "muted" }, `This phone: ${device?.name || ""}`, parts.version), notifyBtn,
       h("button", { class: "btn quiet", onclick: unpairHere }, "Unpair here")));
   return parts;
+}
+
+// The town's version, quiet in the footer (mobile.hello): the one the computer runs, which this app is.
+async function hello() {
+  const r = await send("mobile.hello");
+  if (r.ok && ui && r.result?.version) ui.version.textContent = ` · Orkcraft ${r.result.version}`;
 }
 
 function status(text) {
