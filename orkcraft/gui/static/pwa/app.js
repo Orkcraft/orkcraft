@@ -110,14 +110,66 @@ async function pair(pairCode, name, msg, button) {
 
 // iOS keeps a Home Screen app's storage apart from Safari's: the app the person adds opens with the token
 // in its start_url once (gui/pwa.py `manifest`), and keeps it from then on.
-function homeScreen() {
+function handOff() {
+  if (!IOS || STANDALONE || !device?.token) return;
   document.getElementById("manifest").href = `manifest.webmanifest?k=${encodeURIComponent(device.token)}`;
   history.replaceState(null, "", `${location.pathname}#k=${encodeURIComponent(device.token)}`);
+}
+
+function homeScreen() {
+  handOff();
   show(h("section", { class: "card" },
     h("h1", {}, `Paired: ${device.name}`),
     h("p", {}, "Now add it to the Home Screen: Share → Add to Home Screen, then open Orkcraft from there."),
     h("p", { class: "muted" }, "Until then this page’s address holds the phone’s key: do not share it."),
     h("button", { class: "btn", onclick: () => connect() }, "Use it in Safari for now")));
+}
+
+// -- add to the Home Screen ----------------------------------------------------------------------------
+// Android's browsers offer their own install prompt (`beforeinstallprompt`): the banner's Add opens it. iOS has
+// none: the banner says where Safari keeps it, and the page hands the token over (`handOff`) whenever it shows.
+
+const HIDE = "orkcraft.install.hidden";      // when Not now was said: the banner waits HIDE_DAYS
+const HIDE_DAYS = 14;
+let installEvent = null;
+
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvent = e; banner(); });
+window.addEventListener("appinstalled", () => { installEvent = null; notNow(); });
+
+function hiddenNow() {
+  try { return Date.now() - Number(localStorage.getItem(HIDE) || 0) < HIDE_DAYS * 86400e3; } catch { return false; }
+}
+
+function notNow() {
+  try { localStorage.setItem(HIDE, String(Date.now())); } catch { /* shown again next time */ }
+  banner();
+}
+
+function banner() {
+  if (!ui) return;
+  const later = h("button", { class: "btn quiet", onclick: notNow }, "Not now");
+  let card = null;
+  if (STANDALONE || hiddenNow()) card = null;
+  else if (installEvent) {
+    const add = h("button", { class: "btn primary", onclick: async () => {
+      const e = installEvent;
+      installEvent = null;
+      await e.prompt();
+      await e.userChoice.catch(() => null);
+      banner();                                  // the browser offers it again itself, when it may
+    } }, "Add");
+    card = h("section", { class: "card install" },
+      h("p", {}, "Add Orkcraft to the Home screen: it opens like an app, without the browser’s bar."),
+      h("div", { class: "row" }, add, later));
+  } else if (IOS) {
+    handOff();
+    card = h("section", { class: "card install" },
+      h("p", {}, "Add Orkcraft to the Home Screen: tap Share (the square with an arrow up; under ⋯ on newer iOS), "
+        + "then Add to Home Screen."),
+      h("p", { class: "muted" }, "Until it is added, this page’s address holds the phone’s key: do not share it."),
+      h("div", { class: "row" }, later));
+  }
+  ui.install.replaceChildren(...(card ? [card] : []));
 }
 
 // -- the socket ---------------------------------------------------------------------------------------
@@ -136,6 +188,7 @@ function connect() {
   if (!device?.token) { unpaired(); return; }
   if (ws && ws.readyState <= 1) return;
   ui = ui || layout();
+  banner();
   status("Connecting…");
   opened = false;
   ws = new WebSocket(`wss://${location.host}/ws`, [PROTOCOL, `bearer.${device.token}`]);
@@ -181,6 +234,7 @@ document.addEventListener("visibilitychange", () => {
 function layout() {
   const parts = {
     status: h("p", { class: "status", role: "status" }),
+    install: h("div"),
     head: h("header", { class: "head" }),
     news: h("div", { class: "news", "aria-live": "polite" }),
     alerts: h("div", { class: "list" }),
@@ -221,7 +275,7 @@ function layout() {
   const notifyBtn = h("button", { class: "btn quiet", onclick: () => askNotify(notifyBtn) }, "Notify me while it is open");
   if (!("Notification" in window) || Notification.permission !== "default") notifyBtn.hidden = true;
 
-  show(parts.status, parts.head, parts.news, parts.stop,
+  show(parts.status, parts.install, parts.head, parts.news, parts.stop,
     h("section", { class: "card" }, h("h2", {}, "Answers"), parts.alerts),
     parts.askSection, parts.dropSection,
     h("section", { class: "card" }, h("h2", {}, "Buildings"), parts.buildings),
