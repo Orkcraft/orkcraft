@@ -37,6 +37,7 @@ The bench answers three questions per building, one tab each:
 - **A building of its own**, the **Test bench** (`lab`; the *Mechanic* in the Camp's words, the *Alchemist's Lab* before; its ork
   the *Tester*, a Gearhead, a Brewmaster before). It is built from Build like any other (Improve → Logic, [improve-buildings.md](improve-buildings.md)). It
   tunes the work: tokens, time, the result. The look of a building gets a bench of its own, the UX bench.
+  - Its roads are laid by its setup, never by hand ([improve-buildings.md](improve-buildings.md) §5.1).
   - **A road in** from a building says *test this one*: its cases run in a copy of it with its own
     settings. What that building sends along the road is only noted (the window lists it); a run
     starts from the window or the quick action **Run the first case**, never by itself.

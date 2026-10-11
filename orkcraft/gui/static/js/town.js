@@ -21,6 +21,7 @@ import { tidySpots } from "./tidy.js";
 import { foldQuiet, unfoldAll, quiet } from "./fold.js";
 import { Ghost, planned as onboardingPlan, risen } from "./onboarding.js";
 import { activeBiome } from "./icons.js";
+import { FrameSelect, Schemes } from "./frame.js";
 
 const room = signal({ w: 1, h: 1, strip: 0 });
 let numbered = [];                         // the huts' ids in the order of the numbers on their names
@@ -649,6 +650,7 @@ export function Town({ buildings, roads }) {
     : grown ? stretched(grown, stretch.w, stretch.h) : null;
   return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare} onContextMenu=${(e) => bareMenu(e, buildings, here)}>
     <div class="gui-town__room" style=${`width:${wide + panelW}px;height:${tall}px`}>
+      <${Schemes} buildings=${buildings} rects=${rects} />
       <${Roads} roads=${here} rects=${rects} ports=${ports}
         tints=${Object.assign({}, ...buildings.map((b) => (b.card && b.card.tints) || {}))} />
       ${onboardingPlan().filter((g) => !shown.has(g.id)).map((g) => html`<${Ghost} key=${`plan-${g.id}`} g=${g}
@@ -662,6 +664,7 @@ export function Town({ buildings, roads }) {
       <${LooseEnds} buildings=${buildings} rects=${rects} />
       <${Carts} paths=${paths} carts=${(snap && snap.carts) || []} travel=${(snap && snap.travel) || 0} />
       ${placing.value && html`<${Placing} p=${placing.value} rects=${rects} />`}
+      <${FrameSelect} rects=${rects} />
     </div>
     ${!buildings.length && html`<p class="gui-empty ok-font-body ok-tone-muted">${say("No buildings in this orkspace yet.")}</p>`}
   </main>`;

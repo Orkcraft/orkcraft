@@ -66,6 +66,14 @@ def orc_problems(orc: dict, where: str = "") -> list[str]:
     return errors
 
 
+CASE_EVENT = "lab.case"     # a Test bench's road into a chain it tests: no cart goes down it in the town
+
+
+def closes_no_loop(event: str, flt: dict | None) -> bool:
+    """A road that brings results back (`returns`) or carries a test case: it closes no loop of roads."""
+    return bool((flt or {}).get("returns")) or event == CASE_EVENT
+
+
 def filter_problems(flt: dict) -> list[str]:
     errors = _schema_errors(flt, SCHEMA_PATH, "filter")
     if not errors and flt.get("match") and (p := _regex_problem(flt["match"])):
@@ -133,7 +141,7 @@ def validate(data: dict[str, Any]) -> list[str]:
             if key in seen:
                 errors.append(f"{where}: the same road twice")
             seen.add(key)
-            if not (r.get("filter") or {}).get("returns"):     # a return road brings results back: no loop
+            if not closes_no_loop(r["event"], r.get("filter")):    # a return road, a test case's road: no loop
                 edges.setdefault(r["from"], set()).add(b["id"])
     if (hit := _cycle(edges)) is not None:
         errors.append(f"roads form a loop through {hit!r}")

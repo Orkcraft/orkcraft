@@ -326,7 +326,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 _e("lab.finding", "finding", TEXT, "a reviewer's finding sent with Make tasks: what to change and why")),
         actions=(_a("lab.run", "Run the first case", "🧪", "the first case of the building it tests, on its main tool"),),
         config={"max_spend": (float, (0.1, 50), False), "tool": (str, None, False)},
-        art="spire", orc="Gearhead", agentic=True),
+        art="spire", orc="Gearhead", agentic=True, roads="setup"),
     BuildingType(
         "ux_lab", "Alchemy Tower", "⚗️", "M",
         "the UX bench: the look of one type of building — its Build icon, its house, its ork, its window and its "

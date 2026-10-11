@@ -29,6 +29,7 @@ import { act, command, details, town, say, toast } from "./link.js";
 import { opened, openBuilding, selected } from "./windows.js";
 import { projectFor } from "./project.js";
 import { building as buildOpen, laying, demolishing, raised, settingUp, endSetup, BuildRow, buildEnter } from "./build.js";
+import { framing } from "./frame.js";
 import { typeModule, runQuick } from "./types.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
@@ -497,6 +498,7 @@ export function WarchiefLine() {
   useEffect(() => {
     if (!over) return undefined;
     const away = (e) => {
+      if (framing.value) return;                    // a setup's frame is being drawn on the map: the line waits for it
       if (root.current && !root.current.contains(e.target)) { setShown(0); setSaid(""); endSetup(); buildOpen.value = false; }
     };
     document.addEventListener("pointerdown", away, true);

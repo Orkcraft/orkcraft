@@ -64,8 +64,9 @@ TAKES: dict[str, str] = {
     "workshop": "anything (a file as its content): its script runs on the cart",
     "gramophone": "text, or a file (its content): its steward writes a script for the ear and Gemini TTS speaks it "
                   "→ gramophone.done (the transcript; the audio stays in the building) / gramophone.failed",
-    "lab": "anything from the building it tests: noted as what it last sent; the road says which building it "
-           "tests, and a run starts only from its window or its quick action → lab.report / lab.missed",
+    "lab": "anything from the building it tests: noted as what it last sent; its setup lays the roads that say "
+           "which building or chain it tests, and a run starts only from its window or its quick action → "
+           "lab.report / lab.missed",
     "mine": "a question (its title, else its first line; the rest of the text is what it must cover): a research "
             "starts, or waits behind the one running → mine.reported (the report) / mine.asked / mine.failed",
 }

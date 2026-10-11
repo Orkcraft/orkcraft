@@ -7,7 +7,7 @@ import re
 
 from orkcraft.scroll import (HISTORY_DIR, MAX_ROADS, ROAD_EVENTS, BuildingSpec, Garrison, OrcSpec, Road,
                              TownScroll, _typed_events)
-from orkcraft.scroll_checks import _cycle, filter_problems
+from orkcraft.scroll_checks import CASE_EVENT, _cycle, closes_no_loop, filter_problems
 from orkcraft.scroll_garrisons import _building, _orc_id
 
 # -- roads ------------------------------------------------------------------------------------------------
@@ -51,11 +51,9 @@ def has_outgoing(scroll: TownScroll, building_id: str, event: str) -> bool:
 # A Test bench's road into a chain it tests (docs/design/test-bench.md §2): it only says where the chain begins, and
 # no cart ever goes down it in the town (a run gives the case to a copy), so the road back from the chain's end
 # closes no loop.
-CASE_EVENT = "lab.case"
 
 
-def _closes_no_loop(event: str, flt: dict | None) -> bool:
-    return bool((flt or {}).get("returns")) or event == CASE_EVENT
+_closes_no_loop = closes_no_loop
 
 
 def _road_edges(scroll: TownScroll) -> dict[str, set[str]]:

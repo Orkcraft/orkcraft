@@ -55,7 +55,11 @@ export function raised(id, type) {
     constructing.value = { ...constructing.value, [id]: Date.now() + RAISE_MS };
     setTimeout(() => stands(id), RAISE_MS);
   };
-  import(`./buildings/${type}.js`).then((m) => { if (m.Setup) settingUp.value = { id, type }; else plain(); }, plain);
+  const setUp = () => {          // the line let go: its own hints would stand over the question the Warchief asks
+    if (document.activeElement) document.activeElement.blur();
+    settingUp.value = { id, type };
+  };
+  import(`./buildings/${type}.js`).then((m) => { if (m.Setup) setUp(); else plain(); }, plain);
 }
 
 // Build is a row of small icons the Warchief's line grows upward (docs/design/warchief-line-and-cards.md §2): each says

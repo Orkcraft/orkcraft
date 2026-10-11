@@ -83,3 +83,37 @@ def test_the_ux_bench_picks_a_building_and_its_image_tool(fake_repo, isolated_la
 def test_the_improve_buildings_are_named_by_what_they_do():
     assert lexicon.words("Alchemy Tower") == "UX bench" and lexicon.words("Alchemist") == "Designer"
     assert lexicon.words("Mechanic") == "Test bench" and lexicon.words("Alchemist's Lab") == "Test bench"
+
+
+def test_the_test_bench_is_set_up_on_one_building(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    pit, pool, lab = _raised(host, "pit"), _raised(host, "barracks"), _raised(host, "lab")
+    assert host.command("roads.choices", {"from": pool, "to": lab}) == []          # a person lays none
+    offered = {x["id"] for x in _act(host, lab, "candidates")}
+    assert {pit, pool} <= offered and lab not in offered
+    assert _act(host, lab, "setup", ids=[pool]) == [pool]
+    w = host.town.worker(lab)
+    assert [s["id"] for s in w.subjects()] == [pool]
+    card = next(b for b in host.snapshot()["buildings"] if b["id"] == lab)["card"]
+    assert card["scheme"] == {"ids": [pool], "env": "this project"}
+    _act(host, lab, "setup", ids=[pit])                                            # set up again: the old road goes
+    assert [r.source for r in host.town.scroll.building(lab).roads] == [pit]
+
+
+def test_the_test_bench_is_set_up_on_a_frame_of_buildings_in_their_roads_order(fake_repo, isolated_layout_file):
+    from orkcraft import scroll as ts
+    host = _host(fake_repo)
+    board, pool, lab = _raised(host, "council"), _raised(host, "barracks"), _raised(host, "lab")
+    ts.subscribe(host.town.scroll, pool, board, "team.approved")
+    assert _act(host, lab, "setup", ids=[pool, board]) == [board, pool]
+    w = host.town.worker(lab)
+    [chain] = w.subjects()
+    assert chain["chain"] == [board, pool] and w.scheme()["ids"] == [board, pool]
+    assert any(r.event == "lab.case" for _b, r in ts.outgoing(host.town.scroll, lab))
+    from orkcraft import scroll_checks
+    assert not [e for e in scroll_checks.validate(host.town.scroll.to_dict()) if "loop" in e]   # the town file saves
+    loose = _raised(host, "fields")
+    with pytest.raises(CommandError, match="not one chain"):
+        _act(host, lab, "setup", ids=[board, loose])
+    with pytest.raises(CommandError, match="cannot be tested"):
+        _act(host, lab, "setup", ids=[_raised(host, "ux_lab")])

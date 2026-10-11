@@ -2009,3 +2009,35 @@ def test_the_test_benchs_window_leads_with_its_goal_its_cases_and_what_to_change
         panel.screenshot(path=str(Path(os.environ["ORKCRAFT_SHOTS"]) / "lab.png"))
     for bid in (lab, pool):
         call("town.demolish", {"id": bid})
+
+
+def test_a_test_bench_is_set_up_by_a_frame_dragged_round_its_buildings(page, gui):
+    """docs/design/improve-buildings.md §5.1: Build → Logic raises a Test bench; the Warchief asks what it tests; a
+    frame dragged round two buildings picks them, and they are tested as one chain, framed on the map."""
+    from orkcraft import scroll as ts
+    pg, (server, _browser) = page, gui
+    build = lambda t: pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", t)
+    board, pool = build("council"), build("barracks")
+    ts.subscribe(server.host.town.scroll, pool, board, "team.approved")
+    for bid in (board, pool):
+        _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".gui-warchief__build").click()
+    pg.locator(".gui-warchief .gui-build__tile[data-intent='logic']").dblclick()
+    setup = pg.locator(".gui-warchief__setup")
+    setup.get_by_text("What should it test?").wait_for(timeout=WAIT_MS)
+    setup.get_by_role("button", name="Frame several on the map").click()
+    pg.locator(".gui-frame-select").wait_for(timeout=WAIT_MS)
+    boxes = [_hut(pg, bid).bounding_box() for bid in (board, pool)]
+    x0, y0 = max(min(b["x"] for b in boxes) - 6, 90), min(b["y"] for b in boxes) - 6
+    x1, y1 = max(b["x"] + b["width"] for b in boxes) + 6, max(b["y"] + b["height"] for b in boxes) + 6
+    pg.mouse.move(x1, y1)
+    pg.mouse.down()
+    pg.mouse.move(x0, y0, steps=8)
+    pg.mouse.up()
+    setup.get_by_role("button", name="Test them as one chain").click()
+    pg.locator(".gui-test-frame").wait_for(timeout=WAIT_MS)
+    assert "this project" in pg.locator(".gui-test-frame__label").inner_text()
+    lab = next(b["id"] for b in server.host.snapshot()["buildings"] if b["type"] == "lab")
+    assert server.host.town.worker(lab).scheme()["ids"] == [board, pool]
+    for bid in (lab, board, pool):
+        pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)

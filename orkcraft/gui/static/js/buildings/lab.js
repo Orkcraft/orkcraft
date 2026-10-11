@@ -5,8 +5,10 @@
 // reviews (js/bench.js) stay folded under them. A road into it says what it tests; a road out, where results go.
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { act, say } from "../link.js";
+import { act, say, town } from "../link.js";
 import { BenchView, copyText } from "../bench.js";
+import { settingUp } from "../build.js";
+import { framing } from "../frame.js";
 
 const sheet = new URL("./lab.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -39,7 +41,7 @@ export function card(b) {
   if (!c.subject) {
     return html`<div class="gui-hut__body-in">
       <div class="gui-hut__big">${say("Nothing to test")}</div>
-      <div class="gui-hut__text ok-tone-muted">${say("Pull a road from a building into it")}</div>
+      <div class="gui-hut__text ok-tone-muted">${say("Open it and set it up: pick what it tests")}</div>
     </div>`;
   }
   const line = summaryLine(c.summary);
@@ -58,14 +60,14 @@ function Window({ id, data }) {
   const subjects = data.subjects || [];
   if (!subjects.length) {
     return html`<div class="lab-empty">
-      <p class="ok-font-body">${say("The Test bench tests the building whose road comes into it, or a whole chain.")}</p>
-      <p class="ok-font-status ok-tone-muted">${say("One building: pull a road from it (the Agent pool, External listeners, the Task board…) into the Test bench.")}</p>
-      <p class="ok-font-status ok-tone-muted">${say("A chain: pull a road with “test case” from the Test bench into the chain's first building, and a road from its last building back into the Test bench.")}</p>
-      <p class="ok-font-status ok-tone-muted">${say("Any other road out of it takes its reports and findings where they should go.")}</p>
+      <p class="ok-font-body">${say("The Test bench tests one building, or several in a row as one chain.")}</p>
+      <p class="ok-font-status ok-tone-muted">${say("Its setup lays its roads: pick a building, or frame several on the map.")}</p>
+      <span><button class="ok-btn primary" onClick=${() => setUp(id)}>${say("Set it up")}</button></span>
     </div>`;
   }
   const pick = data.subject || subjects[0].id;
   return html`<div class="lab-window">
+    <span><button class="gui-link ok-font-status" onClick=${() => setUp(id)}>${say("Change what it tests")}</button></span>
     ${subjects.length > 1 && html`<label class="gui-field lab-pick"><span class="ok-font-label">${say("Tests")}</span>
       <select class="ok-input" value=${pick} onChange=${(e) => act(id, "pick", { id: e.target.value })}>
         ${subjects.map((s) => html`<option key=${s.id} value=${s.id}>${say(s.title)} · ${say(s.word)}</option>`)}</select></label>`}
@@ -239,6 +241,44 @@ function Proposals({ id, d, on }) {
       <button class="ok-btn" onClick=${() => copyText(items.map((p) => `- [${p.area}] ${p.title}\n  ${p.detail}${p.where ? `\n  where: ${p.where}` : ""}${p.effect ? `\n  should: ${p.effect}` : ""}`).join("\n"), "Copied the proposals")}>${say("Copy")}</button>
     </div>`}
   </section>`;
+}
+
+// -- set up in the Warchief's line (js/warchief.js; docs/design/improve-buildings.md §5.1) -------------------------
+
+/** Its setup asked again: from its window, when what it tests changes (its roads are laid only here). */
+function setUp(id) {
+  framing.value = null;
+  settingUp.value = { id, type: "lab" };
+}
+
+/** What the Warchief asks of a Test bench just raised. */
+export function setupAsk(b) {
+  return `${b.title} is going up. What should it test?`;
+}
+
+const titleOf = (bid) => (town.value.buildings.find((x) => x.id === bid) || {}).title || bid;
+
+/** One press on a building tests it; a frame on the map tests several as one chain, in the order their roads go. */
+export function Setup({ id, done }) {
+  const [list, setList] = useState(null);
+  const [error, setError] = useState("");
+  useEffect(() => { act(id, "candidates").then(setList, () => setList([])); }, [id]);
+  const f = framing.value && framing.value.by === id ? framing.value : null;
+  const go = (ids) => act(id, "setup", { ids }).then(() => { framing.value = null; done(); },
+    (e) => setError(String((e && e.message) || e)));
+  const frameOn = () => { setError(""); framing.value = { by: id, rect: null, ids: [] }; };
+  const err = error && html`<p class="ok-font-status ok-tone-error" role="alert">✗ ${say(error)}</p>`;
+  if (f && f.ids.length) {
+    return html`${err}<p class="ok-font-status">${say(`Framed: ${f.ids.map(titleOf).join(", ")}`)}</p>
+      <div class="gui-setup__ways"><button class="ok-btn primary" onClick=${() => go(f.ids)}>${say(f.ids.length > 1 ? "Test them as one chain" : "Test it")}</button>
+        <button class="ok-btn" onClick=${frameOn}>${say("Frame again")}</button></div>`;
+  }
+  if (f) return html`${err}<p class="ok-font-status ok-tone-muted" role="status">${say("Drag a frame round the buildings on the map. Esc lets it go.")}</p>`;
+  if (!list) return html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>`;
+  return html`${err}${list.length ? html`<div class="gui-setup__ways">
+      ${list.map((x) => html`<button key=${x.id} class="ok-btn" onClick=${() => go([x.id])}>${say(x.title)}</button>`)}</div>`
+    : html`<p class="ok-font-status ok-tone-muted">${say("No building to test yet: build one first.")}</p>`}
+    ${list.length > 1 && html`<span><button class="ok-btn" onClick=${frameOn}>${say("Frame several on the map")}</button></span>`}`;
 }
 
 /** The window: one pane, the bench of the building it tests. */

@@ -1,14 +1,14 @@
 # Design — Improve: the Mechanic and the Alchemist
 
-Status: stages 0–1 built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
-road rule; a building's inputs). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
+Status: stages 0–2 built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
+road rule; a building's inputs; the Test bench's setup). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
 and keep it, **faster and cheaper than testing and rewriting it through Claude Code**.
 
 | stage | what | state |
 |---|---|---|
 | 0 | Build's **Improve** group: *Logic* (the Test bench, a gear) and *UI/UX* (the UX bench, the flask); a type may lay roads only in its setup or none at all (`catalog.BuildingType.roads`); the UX bench stands: its settings (which building, which image tool) and its gallery, read only | built |
 | 1 | Quick actions are inputs: each says the act a person's form ends in, and `core/inputs.press` ends in the same act, so a bench can press a button the way a person does (§3) | built |
-| 2 | The Mechanic's setup: pick one building or drag a frame round several; the frame drawn on the map with its environment's name, a wire from the Mechanic to the scheme's start and one back from its end; the Test bench's roads are laid only by it (`roads = "setup"`) | |
+| 2 | The Mechanic's setup: pick one building or drag a frame round several; the frame drawn on the map with its environment's name, a wire from the Mechanic to the scheme's start and one back from its end; the Test bench's roads are laid only by it (`roads = "setup"`) | built |
 | 3 | Environments: a small code base and data written from a person's description, once, no network; cassettes for MCP and outside calls (§5.2) | |
 | 4 | The virtual building: a change is tried on an overlay the Mechanic holds while it is connected; **Save changes** keeps the data part for good (§5.3) | |
 | 5 | GitHub: Connect GitHub in the mascot's menu (device flow); Save changes opens a pull request with its evidence (§4) | |
@@ -87,14 +87,23 @@ so nothing but a person could give a building that input.
 
 ## 5. The Mechanic
 
-### 5.1 Setup (stage 2)
+### 5.1 Setup (stage 2, built 2026-10-11)
 
-1. Pick one building, or drag a frame round several (a strategy game's selection of units): the selected ones are
-   the scheme, its first building is where the input goes, its last where the result is read.
-2. Describe the environment in plain words ("a small Python service, no network, three failing tests"). It is
-   written once (§7.4) and named; the scheme is drawn framed on the map — like the scaffolding — with the
-   environment's short name on the frame, a wire from the Mechanic into the scheme's first building and one from its
-   last back to the Mechanic. These two are the only roads it has.
+1. Build → **Logic** raises a Test bench, and the Warchief asks *What should it test?* (`js/buildings/lab.js`
+   `Setup`): one press on a standing building tests it; **Frame several on the map** lets the person drag a frame
+   (`js/frame.js` `FrameSelect`, a strategy game's selection) and the buildings it touches are picked; **Test them as
+   one chain**. *Change what it tests* in its window asks again.
+2. The picked buildings are put in the order their own roads take a cart (`LabWorker.scheme_order`): one first,
+   one last, every one on the way, else it says they are not one chain. `set_scheme` takes its old roads up and lays
+   the new ones as its setup (`roads.lay(..., setup=True)`): a `lab.case` road into the first (a chain) and a road
+   back from the last. These are its only roads: the Test bench is `roads = "setup"`, so no handle, no *Listen to…*,
+   no road planner reaches it.
+3. What it tests is framed on the map (`js/frame.js` `Schemes`): a dashed frame round the buildings, as scaffolding
+   is drawn, the environment's name on it (*this project* until stage 3 gives it environments) with the bench's name;
+   the two roads are its wires in and out.
+4. Fixed on the way: the town file refused to save a chain (its loop check did not know a `lab.case` road closes no
+   loop, `scroll_checks.closes_no_loop` now says it for both), and a building raised by a double press in Build hid
+   its setup under the line's hints.
 
 ### 5.2 Work
 

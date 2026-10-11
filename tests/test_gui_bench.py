@@ -243,7 +243,7 @@ def test_the_test_bench_tests_the_buildings_whose_road_comes_in(host):
     lab = _raised(host, "lab")
     w = host.town.worker(lab)
     assert w.subjects() == [] and view.card(w)["subject"] is None
-    assert "pull a road" in w.mini_status()[0].lower()
+    assert "set it up" in w.mini_status()[0].lower()
     pool = _raised(host, "barracks", worktrees=False)
     tower = _raised(host, "watchtower")
     _road(host, pool, lab, "pool.done")
@@ -291,7 +291,7 @@ def test_make_tasks_may_send_the_findings_down_the_test_benchs_roads(host, monke
 
 def test_the_quick_action_runs_the_first_case_of_the_building_it_tests(host, monkeypatch):
     lab, pool = _raised(host, "lab", tool="agy", max_spend=0.5), _raised(host, "barracks", worktrees=False)
-    with pytest.raises(CommandError, match="Pull a road"):
+    with pytest.raises(CommandError, match="Set the Test bench up"):
         host.command("act", {"id": lab, "act": "lab.run"})
     _road(host, pool, lab, "pool.done")
     host.detail(lab)                                                            # its window drawn: the bench given

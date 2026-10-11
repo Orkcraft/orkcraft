@@ -22,11 +22,11 @@ def _engine(w):
 def card(w) -> dict:
     s = w.subject()
     if s is None:
-        return {"subject": None, "count": 0, "goal": w.state["goal"]}
+        return {"subject": None, "count": 0, "goal": w.state["goal"], "scheme": None}
     metric = lab_cases.metric_of(w.state["goal"])
     return {"subject": s, "count": len(w.subjects()), "last": w.last_of(s), "targets": len(w.targets()),
             "goal": w.state["goal"], "metric": metric, "cases": len(w.cases_of(s["id"])),
-            "summary": lab_cases.summary(w.results_of(s["id"]), metric)}
+            "summary": lab_cases.summary(w.results_of(s["id"]), metric), "scheme": w.scheme()}
 
 
 def detail(w) -> dict:
@@ -61,7 +61,7 @@ def catalog_type(w, bid: str) -> str:
 def _subject(w) -> dict:
     s = w.subject()
     if s is None:
-        raise ActError("Pull a road from a building into the Test bench first")
+        raise ActError("Set the Test bench up first: pick what it tests")
     return s
 
 
@@ -186,6 +186,28 @@ def _refresh(w, args: dict) -> bool:
     return True
 
 
-ACTS = {"refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
+def _setup(w, args: dict) -> list[str]:
+    """Its setup (docs/design/improve-buildings.md §5.1): the building picked, or the buildings framed on the map."""
+    ids = args.get("ids")
+    if not isinstance(ids, list) or not ids or not all(isinstance(i, str) for i in ids):
+        raise ActError("Pick a building, or frame several on the map")
+    try:
+        return w.set_scheme([i[:200] for i in ids[:24]])
+    except ValueError as e:
+        raise ActError(str(e)) from None
+
+
+def _candidates(w, args: dict) -> list[dict]:
+    """What its setup offers to test: every standing building but the Improve ones and the Town Hall."""
+    from orkcraft.core.workers.lab import IMPROVE
+    out = []
+    for b in w.town.scroll.buildings:
+        kind = catalog_type(w, b.id)
+        if not b.demolished and kind and kind not in IMPROVE and kind != "town_hall":
+            out.append({"id": b.id, "title": b.title, "type": kind})
+    return out
+
+
+ACTS = {"setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
         "run": _run, "run_all": lambda w, a: _run(w, a, every=True), "stop": _stop, "propose": _propose,
         "tasks": _tasks, "lab.run": _run_first}

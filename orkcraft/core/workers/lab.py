@@ -23,6 +23,8 @@ HEARD = 20                       # carts from the buildings it tests it remember
 TEXT_KEPT = 8000                 # of each cart: what a chain sent is what its run checks
 CHAIN = "chain:"                 # a chain's id: `chain:<first>:<last>`
 CASE_EVENT = "lab.case"          # the road into a chain it tests
+IMPROVE = ("lab", "ux_lab")      # the Improve buildings: never tested by a Test bench
+ENV = "this project"             # where its runs stand until it has environments of its own (stage 3)
 
 
 class LabWorker(Worker):
@@ -214,6 +216,66 @@ class LabWorker(Worker):
         self.changed()
         return True
 
+    # -- its setup: what it tests is laid by it, never by hand (docs/design/improve-buildings.md §5.1) ---------------
+
+    def scheme_order(self, ids: list[str]) -> list[str]:
+        """The buildings picked (one, or several framed on the map) in the order a cart goes through them along their
+        own roads: one first (no road into it from the others), one last; ValueError when they are not one scheme."""
+        picked = list(dict.fromkeys(i for i in ids if i))
+        if not picked:
+            raise ValueError("Pick a building to test")
+        for bid in picked:
+            if bid == self.building_id or not self._standing(bid):
+                raise ValueError(f"{bid} cannot be tested here")
+            if not catalog.lays_roads(self._type(bid), setup=True) or self._type(bid) in IMPROVE:
+                raise ValueError(f"{self.town.title_of(bid)} cannot be tested by a Test bench")
+        if len(picked) == 1:
+            return picked
+        on = set(picked)
+        edges = {b: {t.id for t, _r in ts.outgoing(self.town.scroll, b) if t.id in on and t.id != b} for b in picked}
+        firsts = [b for b in picked if not any(b in edges[o] for o in picked)]
+        lasts = [b for b in picked if not edges[b]]
+        if len(firsts) != 1 or len(lasts) != 1:
+            raise ValueError("These buildings are not one chain: roads should lead from one of them through the others "
+                             "to one last")
+        order = self._between(firsts[0], lasts[0], self._ahead(firsts[0]) & on)
+        if set(order) != on:
+            raise ValueError("Not every building framed is on the way from the first to the last")
+        return order
+
+    def set_scheme(self, ids: list[str]) -> list[str]:
+        """What its setup picked becomes what it tests: its old roads go, a road comes in from the building (or, for
+        a chain, a `lab.case` road goes into its first and a road comes back from its last). The order, or ValueError."""
+        from orkcraft.core import bus, roads
+        order = self.scheme_order(ids)
+        last = order[-1]
+        back = next((ev for ev, h, _l in roads.choices(self.town, last, self.building_id, setup=True) if h is None), "")
+        if not back:
+            raise ValueError(f"{self.town.title_of(last)} sends nothing a Test bench can hear")
+        scroll = self.town.scroll
+        for road in list(ts.incoming(scroll, self.building_id)):
+            ts.unsubscribe(scroll, self.building_id, road.id)
+        for b, road in list(ts.outgoing(scroll, self.building_id)):
+            if road.event == CASE_EVENT:
+                ts.unsubscribe(scroll, b.id, road.id)
+        if len(order) > 1 and roads.lay(self.town, order[0], self.building_id, CASE_EVENT, None, quiet=True,
+                                         setup=True) is None:
+            raise ValueError(f"No road can go into {self.town.title_of(order[0])}")
+        if roads.lay(self.town, self.building_id, last, back, None, quiet=True, setup=True) is None:
+            raise ValueError(f"No road can come back from {self.town.title_of(last)}")
+        self.town.publish(bus.ROADS)
+        self.town.checkpoint("road", self.building_id, "Test bench set up: " + " → ".join(order))
+        self.chosen = f"{CHAIN}{order[0]}:{last}" if len(order) > 1 else last
+        self.changed()
+        return order
+
+    def scheme(self) -> dict | None:
+        """What it tests, to frame on the map: the buildings in order and the environment they run in."""
+        s = self.subject()
+        if s is None:
+            return None
+        return {"ids": list(s.get("chain") or [s["id"]]), "env": self.state["settings"].get("env") or ENV}
+
     def targets(self) -> list[str]:
         """The buildings its roads go to with its results (not the `lab.case` road into a chain it tests)."""
         return [b.id for b, road in ts.outgoing(self.town.scroll, self.building_id) if road.event != CASE_EVENT]
@@ -259,7 +321,7 @@ class LabWorker(Worker):
     def mini_status(self) -> list[str]:
         s = self.subject()
         if s is None:
-            return ["No building to test: pull a road from one into it"]
+            return ["No building to test: set it up"]
         last = self.last_of(s)
         return [f"Tests {s['title']}"] + ([f"{last['case']}: {last['verdict']}"] if last else ["No run yet"])
 
