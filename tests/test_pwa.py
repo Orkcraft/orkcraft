@@ -230,3 +230,37 @@ def test_the_phone_draws_the_desktops_marks():
             head, body = _split(pwa.serve("GET", f"/app/sprites/{name}{scale}.png"))
             assert head.startswith("HTTP/1.1 200") and "image/png" in head and body[:4] == b"\x89PNG", name
     assert _split(pwa.serve("GET", "/app/sprites/../tokens.css"))[0].startswith("HTTP/1.1 404")
+
+
+def test_the_phone_wears_the_design_system_its_fence_and_its_resources():
+    """The app's page loads the desktop's design system (tokens.css, components.css, the same files) and the
+    sprites its windows and HUD draw: the fence round a window, the resources before the town's name."""
+    import re
+
+    from orkcraft.design import tokens
+
+    head, body = _split(pwa.serve("GET", "/app/"))
+    assert b'href="tokens.css"' in body and b'href="components.css"' in body
+    for name in pwa.STYLES:
+        head, body = _split(pwa.serve("GET", f"/app/{name}"))
+        assert "text/css" in head and body == (tokens.SYSTEM / name).read_bytes(), name
+    css = (pwa.ROOT / "app.css").read_text()
+    for url in sorted(set(re.findall(r'url\("([^"]+)"\)', css))):
+        assert _split(pwa.serve("GET", f"/app/{url}"))[0].startswith("HTTP/1.1 200"), url
+    for res in ("quota", "gold", "meat"):
+        for scale in ("", "@2x"):
+            assert _split(pwa.serve("GET", f"/app/icons/res-{res}{scale}.png"))[0].startswith("HTTP/1.1 200"), res
+    assert _split(pwa.serve("GET", "/app/icons/settings.png"))[0].startswith("HTTP/1.1 404")   # its resources only
+
+
+def test_the_phone_stands_on_the_desktops_ground():
+    """A biome's ground on the phone is the desktop's: the colour (js/icons.js BIOMES) and the glyphs (js/terrain.js)."""
+    import re
+    from pathlib import Path
+
+    static = Path(pwa.__file__).parent / "static"
+    desk_biomes = dict(re.findall(r'^\s+(\w+): \{ ground: "(#\w+)"', (static / "js" / "icons.js").read_text(), re.M))
+    phone = (static / "pwa" / "ground.js").read_text()
+    assert desk_biomes and dict(re.findall(r'(\w+): "(#\w+)"', phone[:phone.index("};")])) == desk_biomes
+    glyphs = lambda t: re.findall(r'^\s+(\w+): \{ glyphs: (\[[^\]]*\]), ink: "([^"]*)" \}', t, re.M)  # noqa: E731
+    assert glyphs(phone) and glyphs(phone) == glyphs((static / "js" / "terrain.js").read_text())

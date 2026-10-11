@@ -53,9 +53,12 @@ def test_the_compact_snapshot_is_small_and_names_its_content(fake_repo, isolated
     assert snap["v"] == mobile.API and snap["project"] == full["project"]
     assert len(json.dumps(snap)) < len(json.dumps(full))
     hall = next(b for b in snap["buildings"] if b["id"] == "town_hall")
-    assert set(hall) == {"id", "title", "title_plain", "type", "state", "alert"} and hall["type"] == "town_hall"
+    assert set(hall) == {"id", "title", "title_plain", "type", "state", "alert", "quick"} and hall["type"] == "town_hall"
+    assert [q["id"] for q in hall["quick"]] == ["hall.audit"]           # Build opens a window of the desktop's: not here
     assert {"gold", "gold_level", "quota", "quota_level", "alerts"} <= set(snap["hud"])
-    assert "words" not in snap and "orkspaces" not in snap
+    assert "words" not in snap and "projects" not in snap
+    space = next(o for o in snap["orkspaces"] if o["id"] == snap["active_orkspace"])   # the phone picks one by its own
+    assert set(space) == {"id", "name", "icon", "biome", "buildings", "questions", "working"} and board in space["buildings"]
     assert all(isinstance(r, list) and len(r) == 2 for r in snap["roads"])   # which feeds which, not what a road carries
     assert host.command("mobile.snapshot", {"since": snap["rev"]}) == {"v": mobile.API, "rev": snap["rev"],
                                                                        "same": True}
@@ -238,3 +241,24 @@ def test_the_roads_come_to_a_phone_as_pairs_of_its_buildings_each_once():
             "roads": [{"from": "a", "to": "b", "event": "pit.file"}, {"from": "a", "to": "b", "event": "pit.text"},
                       {"from": "clock", "to": "b", "event": "tick"}, {"from": "b", "to": "b", "event": "x"}]}
     assert mobile.compact(full)["roads"] == [["a", "b"]]
+
+
+def test_a_phone_presses_a_buildings_quick_actions_but_never_one_that_reads_the_computer(fake_repo, isolated_layout_file):
+    """A building's quick actions come to the phone as its card has them, each an input the phone may press
+    (`building.input`): one that takes text says so, one that reaches out is asked first, and one that reads the
+    computer (its clipboard, a path) or only opens a window of the desktop's never comes."""
+    host = _host(fake_repo)
+    pit = buildings.raise_spec(host.town, buildings.type_spec(host.town, "pit")).id
+    cat = buildings.raise_spec(host.town, buildings.type_spec(host.town, "catapult")).id
+    host.tick()
+    snap = {b["id"]: b for b in host.command("mobile.snapshot")["buildings"]}
+    assert snap[pit]["quick"] == []                                              # Paste reads the computer's clipboard
+    fire = next(q for q in snap[cat]["quick"] if q["id"] == "catapult.fire")
+    assert fire == {"id": "catapult.fire", "label": "Fire", "takes": "", "ask": True}
+    may = lambda bid, inp: mobile.allowed(host, "building.input", {"id": bid, "input": inp})      # noqa: E731
+    assert may(cat, "catapult.dry_run") and may("town_hall", "hall.audit")
+    assert not may(pit, "pit.paste") and not may("town_hall", "hall.build") and not may("nowhere", "hall.audit")
+    assert not may(cat, "hall.audit")                                           # another building's action
+    assert mobile.guard("building.input", {"id": cat, "input": "catapult.dry_run", "by": "bench"})["by"] == "person"
+    assert mobile.quick([{"id": "pool.task", "label": "New task"}]) == [
+        {"id": "pool.task", "label": "New task", "takes": "text", "ask": False}]

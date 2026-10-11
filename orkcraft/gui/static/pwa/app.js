@@ -8,7 +8,8 @@
 
 import { h, store, kept, clock, guessName } from "./util.js";
 import { makeDock } from "./dock.js";
-import { makeTown } from "./town.js";
+import { makeTown, chosenSpace } from "./town.js";
+import { wearGround } from "./ground.js";
 import { makeFields } from "./fields.js";
 
 const PROTOCOL = "orkcraft.v1";
@@ -50,7 +51,7 @@ function unpaired(note = "") {
 // Opened from the desktop's QR code: it pairs at once, by the phone's kind as its name (renamed nowhere yet).
 function pairing(pairCode) {
   const msg = h("p", { class: "muted" }, "Pairing…");
-  const again = h("button", { class: "btn", hidden: true, onclick: () => pair(pairCode, guessName(), msg, again) }, "Try again");
+  const again = h("button", { class: "ok-btn", hidden: true, onclick: () => pair(pairCode, guessName(), msg, again) }, "Try again");
   show(h("section", { class: "card" },
     h("h1", {}, "Pairing this phone"),
     h("p", {}, "It will see the town small: each building, the questions the orks wait on, spend and quotas. "
@@ -97,7 +98,7 @@ function homeScreen() {
     h("h1", {}, `Paired: ${device.name}`),
     h("p", {}, "Now add it to the Home Screen: Share → Add to Home Screen, then open Orkcraft from there."),
     h("p", { class: "muted" }, "Until then this page’s address holds the phone’s key: do not share it."),
-    h("button", { class: "btn", onclick: () => connect() }, "Use it in Safari for now")));
+    h("button", { class: "ok-btn", onclick: () => connect() }, "Use it in Safari for now")));
 }
 
 // -- add to the Home Screen ----------------------------------------------------------------------------
@@ -122,11 +123,11 @@ function notNow() {
 
 function banner() {
   if (!ui) return;
-  const later = h("button", { class: "btn quiet", onclick: notNow }, "Not now");
+  const later = h("button", { class: "ok-btn", onclick: notNow }, "Not now");
   let card = null;
   if (STANDALONE || hiddenNow()) card = null;
   else if (installEvent) {
-    const add = h("button", { class: "btn primary", onclick: async () => {
+    const add = h("button", { class: "ok-btn primary", onclick: async () => {
       const e = installEvent;
       installEvent = null;
       await e.prompt();
@@ -225,24 +226,24 @@ document.addEventListener("visibilitychange", () => {
 
 // -- the town -----------------------------------------------------------------------------------------
 
-// The first screen is what asks (the summary, then the questions in their buildings' tiles), then the
-// buildings in trouble or at work, then the quiet ones as a grid (town.js); what a phone does now and then
-// (the Warchief, Drop file here, the look, Stop all) is the bar at the foot (dock.js).
+// The first screen is what asks (the questions in their buildings' tiles, when any ork asks), Task Fields, then
+// the orkspace's buildings: in trouble or at work, then the quiet ones as a grid (town.js); what a phone does now
+// and then (the Warchief, Drop file here, Stop all) is the bar at the foot (dock.js), the look and this phone the
+// page's own foot.
 function layout() {
   const parts = {
     status: h("p", { class: "status", role: "status" }),
     install: h("div"),
-    head: h("header", { class: "head" }),
+    head: h("header", { class: "ok-hud head" }),
     news: h("div", { class: "news", "aria-live": "polite" }),
-    foot: h("p", { class: "muted foot" }),
   };
-  parts.town = makeTown({ send, flash, rerender: () => { if (town) parts.town.render(town); } });
+  parts.town = makeTown({ send, flash, rerender: () => { if (town) { parts.town.render(town); ground(town); } } });
   parts.fields = makeFields({ send, flash });
   parts.dock = makeDock({ send, flash, building, device: () => device, unpair: unpairHere, shared });
-  const [answers, ...rest] = parts.town.parts;
-  parts.content = () => [answers, parts.fields.el, ...rest.slice(0, -1)];   // the town's parts, not its sheet
-  show(parts.status, parts.install, parts.head, parts.news, answers, parts.fields.el, ...rest,
-    parts.foot, parts.dock.el, ...parts.dock.sheets, parts.fields.sheet);
+  const [answers, buildings, info] = parts.town.parts;
+  parts.content = () => [answers, parts.fields.el, buildings];   // the town's parts, not its sheet
+  show(parts.status, parts.install, parts.head, parts.news, answers, parts.fields.el, buildings, info,
+    parts.dock.foot, parts.dock.el, ...parts.dock.sheets, parts.fields.sheet);
   return parts;
 }
 
@@ -256,7 +257,6 @@ async function hello() {
 
 let version = "";
 function phoneLine() {
-  ui.foot.textContent = `This phone: ${device?.name || ""}${version ? ` · Orkcraft ${version}` : ""}`;
   ui.dock.phone(version);
 }
 
@@ -273,16 +273,33 @@ function flash(text) {
   setTimeout(() => line.remove(), 6000);
 }
 
-// Camp draws the town as it is (its titles with their emoji, the ork's mark); Office calm and plain, dark or
-// light as the phone is. Only how things are drawn changes, never a word (CLAUDE.md: one vocabulary, two looks).
+// Camp draws the town as it is (its titles with their emoji, the ork's mark) on the design system's camp theme;
+// Office calm and plain on its office theme, dark or light as the phone is. Only how things are drawn changes,
+// never a word (CLAUDE.md: one vocabulary, two looks).
 function applyLook(look) {
   const camp = look !== "office";
   document.documentElement.dataset.look = camp ? "camp" : "office";
-  // The bar the system draws over the app takes the page's ground, so Office in light is light there too.
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content",
-    camp ? "#172a0a" : LIGHT.matches ? "#f4f4f4" : "#161616");
+  document.documentElement.dataset.theme = camp ? "camp" : "office";
 }
-LIGHT.addEventListener?.("change", () => { if (town) applyLook(town.look); });
+LIGHT.addEventListener?.("change", () => { if (town) ground(town); });
+
+// The page stands on the ground of the orkspace it shows, as the desktop's town does (ground.js), and the bar the
+// system draws over the app takes that ground, so Office in light is light there too.
+function ground(s) {
+  const camp = s.look !== "office";
+  const tint = wearGround(chosenSpace(s)?.biome || "dirt", camp);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content",
+    camp ? tint : LIGHT.matches ? "#f4f4f4" : "#1a1813");
+}
+
+const LEVEL = { warn: "is-warn", over: "is-over" };
+// A resource as the desktop's HUD draws it (js/chrome.js Resource; design system: Hud): its sprite in Camp, its
+// word in Office, then its value.
+function resource(icon, word, value, level) {
+  return h("span", { class: `ok-res${LEVEL[level] ? ` ${LEVEL[level]}` : ""}` },
+    h("img", { src: `icons/res-${icon}.png`, srcset: `icons/res-${icon}.png 1x, icons/res-${icon}@2x.png 2x`, alt: "" }),
+    h("span", { class: "ok-word" }, word), value);
+}
 
 // `keptAt`: the town comes from this phone's storage (seen then), not from the socket.
 function render(s, keptAt = 0) {
@@ -292,16 +309,20 @@ function render(s, keptAt = 0) {
   if (!keptAt) kept.set(s);
   badge((s.alerts || []).length);
   applyLook(s.look);
+  ground(s);
   const camp = s.look !== "office";
   const hud = s.hud || {};
   const words = s.resources || {};
+  // The resources stand before the town's name, as the desktop's HUD has them: Quota, Spend while it is shown,
+  // and the orks at work of all of them (the meat).
   ui.head.replaceChildren(
-    h("h1", {}, camp && h("img", { class: "mark", src: "icon-192.png", alt: "" }),
-      s.project || "Orkcraft", s.demo ? h("small", {}, " demo") : null),
     h("div", { class: "hud" },
-      hud.show_gold !== false && h("span", { class: `pill ${hud.gold_level || "ok"}` }, `${words.gold || "Spend"} ${hud.gold ?? ""}`),
-      hud.quota && h("span", { class: `pill ${hud.quota_level || "ok"}` }, `${words.quota || "Quota"} ${hud.quota}`),
-      h("span", { class: "pill" }, `${hud.agents_working ?? 0} of ${hud.agents ?? 0} orks working`)));
+      hud.quota && resource("quota", words.quota || "Quota", hud.quota, hud.quota_level),
+      hud.show_gold && hud.gold && resource("gold", words.gold || "Spend", hud.gold, hud.gold_level),
+      Object.assign(resource("meat", words.supply || "Orks", `${hud.agents_working ?? 0}/${hud.agents ?? 0}`, ""),
+        { title: `${hud.agents_working ?? 0} of ${hud.agents ?? 0} orks working` })),
+    h("h1", { class: "ok-hud__brand" }, camp && h("img", { class: "mark", src: "icon-192.png", alt: "" }),
+      s.project || "Orkcraft", s.demo ? h("small", {}, " demo") : null));
 
   ui.town.render(s);
   ui.fields.render(s);
