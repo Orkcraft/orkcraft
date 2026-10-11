@@ -137,10 +137,9 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 [data-look="camp"] .gui-hut.is-fenced.is-renown-3:not(.is-folded) .gui-hut__title::after { content: ""; position: absolute;
   left: calc(var(--house-w, 15px) + 2px); bottom: 2px; width: 27px; height: 21px; pointer-events: none; image-rendering: pixelated;
   background: image-set(url("/ds/sprites/fence/axes.png") 1x, url("/ds/sprites/fence/axes@2x.png") 2x) 0 0 / 27px 21px no-repeat; }
-/* Selected: a gold glow round the fence, its tusk and its posts (they stand where the brackets would); on the Ground
-   cards the inside becomes its yard. Asking: the inside takes the fire's ground and the fence its glow. The glow is
-   the fence's alone (--fence-glow on its pieces): the card's content is never lit. */
-[data-look="camp"] .gui-hut.is-fenced.is-selected { --fence-glow: drop-shadow(0 0 2px var(--frame-focus)); }
+/* Selected: no glow, the fence stays as it is; on the Ground cards the inside becomes its yard, and its name over the
+   building turns gold. Asking: the inside takes the fire's ground and the fence its glow. A glow is the fence's alone
+   (--fence-glow on its pieces): the card's content is never lit. */
 [data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card::before,
 [data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card::after,
 [data-look="camp"] .gui-hut.is-fenced .gui-hut__title { filter: var(--fence-glow, none); }
