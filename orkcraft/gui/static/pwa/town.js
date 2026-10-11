@@ -95,11 +95,12 @@ export function makeTown(ctx) {
     summary.classList.toggle("long", longest > LONG_WAIT_S);
     tiles.replaceChildren(...entries.map(([key, b, qs]) => tile(key, b, qs)));
 
-    const trouble = buildings.filter((b) => kind(b, asking) === "trouble");
-    const work = buildings.filter((b) => kind(b, asking) === "work");
+    const shown = buildings.filter((b) => b.id !== s.widget?.id);   // the widget's board stands open (fields.js)
+    const trouble = shown.filter((b) => kind(b, asking) === "trouble");
+    const work = shown.filter((b) => kind(b, asking) === "work");
     rows.replaceChildren(...trouble.map((b) => row(b, "trouble")), ...work.map((b) => row(b, "work")));
     rows.hidden = !trouble.length && !work.length;
-    const quiet = buildings.filter((b) => kind(b, asking) === "quiet");
+    const quiet = shown.filter((b) => kind(b, asking) === "quiet");
     quietHead.textContent = `Quiet · ${quiet.length}`;
     grid.replaceChildren(...quiet.map((b) => h("li", {}, h("button", { class: "cell", type: "button",
       "aria-label": `${name(b)}, quiet`, onclick: () => about(b) },

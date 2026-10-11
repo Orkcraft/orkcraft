@@ -1,13 +1,15 @@
 // The town in a phone's browser (gui/pwa.py; docs/design/mobile.md §8.1, §10, a prototype). No framework and
-// no build: the phone listener serves these files as they are (this one, util.js, dock.js, town.js). It speaks the
+// no build: the phone listener serves these files as they are (this one, util.js, dock.js, town.js, fields.js, icons.js). It speaks the
 // phone's protocol (gui/phones.py): the compact snapshot (`state`), a command and its `reply`, and `news` while
 // the app is open. It may do what a phone may (gui/mobile.py COMMANDS): answer a question, follow the Advisor,
-// Stop all, ask the Warchief and drop a text, a link or a file into Drop file here. Nothing else, whatever
+// Stop all, ask the Warchief, drop a text, a link or a file into Drop file here and write a to-do, a note or a
+// task on Task Fields. Nothing else, whatever
 // this page sends: the listener refuses the rest.
 
 import { h, store, guessName } from "./util.js";
 import { makeDock } from "./dock.js";
 import { makeTown } from "./town.js";
+import { makeFields } from "./fields.js";
 
 const PROTOCOL = "orkcraft.v1";
 const API = 1;
@@ -216,9 +218,11 @@ function layout() {
     foot: h("p", { class: "muted foot" }),
   };
   parts.town = makeTown({ send, rerender: () => { if (town) parts.town.render(town); } });
+  parts.fields = makeFields({ send, flash });
   parts.dock = makeDock({ send, flash, building, device: () => device, unpair: unpairHere, shared });
-  show(parts.status, parts.install, parts.head, parts.news, ...parts.town.parts,
-    parts.foot, parts.dock.el, ...parts.dock.sheets);
+  const [answers, ...rest] = parts.town.parts;
+  show(parts.status, parts.install, parts.head, parts.news, answers, parts.fields.el, ...rest,
+    parts.foot, parts.dock.el, ...parts.dock.sheets, parts.fields.sheet);
   return parts;
 }
 
@@ -276,6 +280,7 @@ function render(s) {
       h("span", { class: "pill" }, `${hud.agents_working ?? 0} of ${hud.agents ?? 0} orks working`)));
 
   ui.town.render(s);
+  ui.fields.render(s);
   ui.dock.render(s);
   if (first) {
     phoneLine();

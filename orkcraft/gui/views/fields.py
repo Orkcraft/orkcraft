@@ -45,7 +45,7 @@ def card(w) -> dict:
         ideas = {"count": len(latest), "new": any(c.id not in seen for c in latest),
                  "top": [_short(c.title) for c in latest[:MORE]]}
     return {"error": "", "mode": w.mode, "lanes": lanes, "notes": notes, "todos": todos, "ideas": ideas,
-            "waiting": len(w.waiting())}
+            "waiting": len(w.waiting()), "todo_lane": w.todo_lane().id, "note_lane": w.note_lanes()[0]}
 
 
 def _named(w, card_id: str) -> dict | None:
