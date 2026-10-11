@@ -191,11 +191,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             path = Path(repo).expanduser()
             if path.is_dir():
                 return path
-        scroll = getattr(self.town, "scroll", None)
-        if scroll is not None:
-            from orkcraft.realm import projects
-            return projects.root_for_building(scroll, self.building_id, self.repo_root)
-        return self.repo_root
+        return self.project_root
 
     @property
     def uses_git(self) -> bool:

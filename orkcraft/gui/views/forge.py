@@ -76,6 +76,15 @@ def _chosen(w) -> dict | None:
     }
 
 
+def _project(w) -> str:
+    """The name of its orkspace's project, when it works there (docs/design/projects.md §8); "" for the town's."""
+    from orkcraft.realm import projects
+    scroll = getattr(w.town, "scroll", None)
+    ork = scroll.orkspace_of(w.building_id) if scroll is not None else None
+    p = projects.project_of(scroll, ork.id if ork else None) if scroll is not None else None
+    return p.name if p is not None and w.project_root != w.repo_root else ""
+
+
 def detail(w) -> dict:
     snap = w.snap
     cfg = w.config
@@ -84,7 +93,7 @@ def detail(w) -> dict:
            "testing": sorted(w.testing), "picked": w.picked,
            "settings": {"base": str(cfg.get("base") or ""), "test_cmd": str(cfg.get("test_cmd") or ""),
                         "confirm": bool(cfg.get("confirm")), "remote": str(cfg.get("remote") or "")},
-           "last": _last(w),
+           "last": _last(w), "folder": str(w.project_root), "project": _project(w),
            "branches": [], "chosen": _chosen(w)}
     if snap is not None and not snap.error:
         rows = sorted(snap.branches, key=lambda b: b.name != snap.base)       # the base first

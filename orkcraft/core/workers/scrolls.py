@@ -87,9 +87,9 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
     @property
     def library(self) -> lore.Library:
         """The sources, made again only when the config changes (a remote one keeps its fetch state)."""
-        key = (tuple(self.config.get("sources") or ()), tuple(self.config.get("paths") or ()))
+        key = (tuple(self.config.get("sources") or ()), tuple(self.config.get("paths") or ()), str(self.work_root))
         if self._library is None or key != self._library_key:
-            self._library = lore.Library(lore.from_config(self.config, self.repo_root))
+            self._library = lore.Library(lore.from_config(self.config, self.work_root))
             self._library_key = key
         return self._library
 
@@ -98,8 +98,14 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
         return wiki.topic_of(self.config)
 
     @property
+    def work_root(self) -> Path:
+        """Where its wiki and its sources live: a codebase wiki in its orkspace's project (docs/design/projects.md
+        §8), every other topic in the town's folder. Its own state stays in the town (`state_dir`)."""
+        return self.project_root if self.topic == "codebase" else self.repo_root
+
+    @property
     def wiki_root(self) -> Path:
-        return wiki.root_of(self.repo_root, self.config.get("wiki"), self.topic)
+        return wiki.root_of(self.work_root, self.config.get("wiki"), self.topic)
 
     @property
     def log(self) -> jobs.Log:
@@ -112,7 +118,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
     def source_notes(self) -> list[shelves.Note]:
         """Every document of the sources but the wikis themselves (this one and any other)."""
         notes = [n for b in self.bases for n in b.notes]
-        own = shelves.rel_to(self.repo_root, self.wiki_root).rstrip("/")
+        own = shelves.rel_to(self.work_root, self.wiki_root).rstrip("/")
         skip = tuple(f"{r}/" for r in {own, *wiki.wiki_roots(notes)} if r)
         return [n for n in notes if not n.path.startswith(skip)]
 
@@ -144,7 +150,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
 
     def refresh(self) -> None:
         """Look at the sources and the wiki again: what changed is sent, and a settled backlog is taken in."""
-        repo = self.repo_root
+        repo = self.work_root
         if self._prints is None:
             self._prints = wiki.Fingerprints(repo)
         self.bases = self.library.scan()
@@ -228,7 +234,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
         """A page of the wiki or a document of the sources, as Markdown (code fenced)."""
         try:
             if page:
-                text = shelves.inside(self.repo_root, rel).read_text(encoding="utf-8", errors="replace")
+                text = shelves.inside(self.work_root, rel).read_text(encoding="utf-8", errors="replace")
             else:
                 text = self.library.read(rel)
         except (OSError, ValueError) as e:
@@ -240,12 +246,12 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
     def add_folder(self, path: str) -> str:
         """Connect a folder of the project as a source. What is wrong with it, or ""."""
         try:
-            folder = shelves.inside(self.repo_root, path)
+            folder = shelves.inside(self.work_root, path)
         except ValueError as e:
             return str(e)
         if not folder.is_dir():
             return f"{path}: no such folder"
-        rel = shelves.rel_to(self.repo_root, folder)
+        rel = shelves.rel_to(self.work_root, folder)
         if self.config.get("sources"):
             self.save_config({"sources": list(dict.fromkeys([*self.config["sources"], rel]))})
         else:
@@ -262,7 +268,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
 
     def suggest(self, text: str) -> quicknote.Suggestion:
         """The section, tags and links a note should get here, and the meeting it is for (rules, no model)."""
-        return quicknote.suggest(text, self.repo_root, self.pages, wiki.sections(self.wiki_root, self.topic),
+        return quicknote.suggest(text, self.work_root, self.pages, wiki.sections(self.wiki_root, self.topic),
                                  self.meetings(), self.clock())
 
     model_hint: dict = {}                       # the light model's word on the note typed last: {text, section, tags, people}
@@ -279,11 +285,11 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
             if self.simulated or self.town.demo or not self.town.budget_ok():
                 return False
             from orkcraft.realm import fastpath
-            runner = fastpath.light_runner(self.repo_root)
+            runner = fastpath.light_runner(self.work_root)
         if runner is None:
             return False
         sections = wiki.sections(self.wiki_root, self.topic)
-        people = list(agenda.people_of(self.repo_root, self.pages))
+        people = list(agenda.people_of(self.work_root, self.pages))
         prompt = wikifind.model_prompt(text, self.topic, sections, people)
         self._asking = True
 
@@ -307,7 +313,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
 
     def find(self, query: str) -> list[dict]:
         """The pages and source notes that match what a person types (no model)."""
-        return wikifind.find(self.repo_root, [*self.pages, *self.source_notes()], query)
+        return wikifind.find(self.work_root, [*self.pages, *self.source_notes()], query)
 
     def note(self, text: str, section: str = "", tags: list[str] = (), links: list[str] = (),
              source: str = "quick note", take_in: bool = True, meeting: dict | None = None,
@@ -315,7 +321,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
         """Keep a note in the inbox, the inbox a source, and take it in now when asked. Its path;
         ValueError when it cannot be written. A note for a meeting is on its page at once."""
         try:
-            path = quicknote.write(self.repo_root, self.inbox, text, section, tags, links, source,
+            path = quicknote.write(self.work_root, self.inbox, text, section, tags, links, source,
                                    self.clock(), meeting, people)
         except OSError as e:
             raise ValueError(str(e)) from None
@@ -334,7 +340,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
     def keep_file(self, name: str, markdown: str, source: str = "research") -> str:
         """Keep a whole Markdown file another building wrote (a Research report: docs/design/mine.md §7) in the
         inbox, as a note is kept, and take it in. Its path; ValueError when it cannot be written."""
-        folder = shelves.inside(self.repo_root, self.inbox)
+        folder = shelves.inside(self.work_root, self.inbox)
         folder.mkdir(parents=True, exist_ok=True)
         path = folder / quicknote.file_name(name, self.clock().date())
         n = 2
@@ -342,7 +348,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
             path = folder / f"{path.stem.rsplit('~', 1)[0]}~{n}.md"
             n += 1
         path.write_text(markdown, encoding="utf-8")
-        rel = shelves.rel_to(self.repo_root, path)
+        rel = shelves.rel_to(self.work_root, path)
         if not any(s.owns(rel) for s in self.library.sources):
             problem = self.add_folder(self.inbox)
             if problem:
@@ -360,7 +366,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
     def items(self) -> tuple[list[wiki.Item], list[str]]:
         """The next batch as the librarian reads it (project files in place, the rest snapshotted),
         and the sources that could not be read now (they wait for the next ingest)."""
-        root, repo = self.wiki_root, self.repo_root
+        root, repo = self.wiki_root, self.work_root
         by_path = {n.path: n for n in self.source_notes()}
         out, unreadable = [], []
         for status, path in wiki.take_batch(self.pending):
@@ -431,12 +437,12 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
 
     def _protected(self) -> set[str]:
         """The pages people own, and the ones with edits not yet committed (someone is at work)."""
-        return set(wiki.manual_pages(self.wiki_root)) | wiki.uncommitted(self.repo_root, self.wiki_root)
+        return set(wiki.manual_pages(self.wiki_root)) | wiki.uncommitted(self.work_root, self.wiki_root)
 
     def _run(self, what: str, prompt: str, summary: str, trigger: str, on_success, message: str) -> bool:
         harness = str(self.config.get("harness") or "main")
         model = str(self.config.get("model") or "")
-        root, repo = self.wiki_root, self.repo_root
+        root, repo = self.wiki_root, self.work_root
         job = jobs.Job(uuid.uuid4().hex[:8], f"{what}: {self.spec.get('title', self.building_id)}", harness,
                        summary, model, "librarian", started=jobs.now_iso(), outcome="running", trigger=trigger)
         protected = {rel: text for rel in self._protected()
@@ -473,7 +479,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
     def finish(self, what: str, job: jobs.Job, cost: float | None, started: float, on_success,
                protected: dict[str, str] | None = None, before: dict | None = None, message: str = "") -> None:
         try:
-            root, repo = self.wiki_root, self.repo_root
+            root, repo = self.wiki_root, self.work_root
             notes = []
             put_back = wiki.restore(root, protected or {})
             if put_back:
@@ -524,7 +530,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
         """A sample of the pages an ingest wrote, spot-checked: by the Council named in `council`
         (its members, a short discussion, the verdict into reviews.md), else sent out as `wiki.review`."""
         n = int(self.config.get("review_sample", REVIEW_SAMPLE))
-        touched = [p for p in wiki.touched_pages(self.repo_root, self.wiki_root, sha) if p not in self.manual]
+        touched = [p for p in wiki.touched_pages(self.work_root, self.wiki_root, sha) if p not in self.manual]
         if n <= 0 or not touched:
             return False
         sample = sorted(random.sample(touched, min(n, len(touched))))
@@ -546,7 +552,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
         cfg = dict(spec.get("config") or {})
         team, veto = tm.members_of(cfg), tm.veto_of(cfg)
         budget = min(float(tm.DEFAULT_BUDGET if cfg.get("budget_usd") is None else cfg["budget_usd"]), REVIEW_BUDGET)
-        repo = self.repo_root
+        repo = self.work_root
         self._review_cancel = cancel = threading.Event()
         state = repo / ".orkcraft" / "council" / council_id
         harness, _, model = str(cfg.get("moderator") or "main").partition(":")
@@ -605,7 +611,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
         except (OSError, ValueError):
             return
         if self.config.get("commit", True) is not False and not self.simulated:
-            wiki.commit(self.repo_root, self.wiki_root, f"wiki({self.topic}): the Council's review")
+            wiki.commit(self.work_root, self.wiki_root, f"wiki({self.topic}): the Council's review")
         if approved:
             self.approved()
         self.refresh()
@@ -627,7 +633,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
         first, links = self.meeting_context(daybook.meet_tag(task))
         found = self.look_up(task, by, payload.title, first=links)
         body = str(payload.value or "").strip()          # the task goes on whole, once (`task` is the search)
-        context = "\n\n".join(x for x in (first, body, wiki.context(self.wiki_root, self.repo_root)) if x)
+        context = "\n\n".join(x for x in (first, body, wiki.context(self.wiki_root, self.work_root)) if x)
         if found:
             context += "\n\n**Notes for this task — read these first:**\n" + \
                 "\n".join(f"- `{n.path}` — {n.title}" for n in found)
@@ -642,7 +648,7 @@ class ScrollsWorker(MeetingsMixin, QualityMixin, RulesMixin, Worker):
         task = task.strip()[:500]
         by_path = {n.path: n for n in self.pages}
         found = [by_path[x] for x in first if x in by_path]
-        found += [n for n in wiki.relevant(self.repo_root, self.pages, task, limit) if n not in found]
+        found += [n for n in wiki.relevant(self.work_root, self.pages, task, limit) if n not in found]
         found = found[:max(limit, len(first))]
         self.lent = {"task": (title or task)[:80], "pages": [n.title for n in found], "by": by, "at": time.time()}
         self.changed()

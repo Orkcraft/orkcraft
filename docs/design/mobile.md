@@ -269,10 +269,22 @@ give a phone: the glance (spend, quotas, the buildings, what asks first), Answer
 suggestion, Stop all (two taps), the Warchief and Drop file here (a text, a link or a file up to 5 MB; on
 Android also from the share sheet, through the manifest's `share_target`).
 
+**The screen** (since 2026-10-11, stage 1 of the phone's redesign). A glance reads top down: the town's name,
+Spend, Quota and the orks at work, then Answers with one line over the questions ("3 orks wait on you, the
+longest 7 min." or "No ork is waiting on you."), then the buildings. What a phone does now and then is a bar at
+the foot, where the thumb is (`pwa/dock.js`): Ask (the Warchief), Drop (Drop file here), More (the look,
+notices, this phone and the version, Unpair here) each open a sheet from the foot; Stop all stops on a hold of
+1.2 s (the button fills while it is held; let go early and nothing happens), or a tap opens a sheet whose Stop
+every ork stands up the screen, away from the bar, so two taps in a pocket stop nothing. News shows over the
+bar. Every target is at least 44 px, sizes are in rem (iOS's Dynamic Type through `-apple-system-body`), focus
+is outlined, and the system's bar takes the page's ground (`theme-color`: Camp's green, Office light or dark as
+the phone is).
+
 **Both looks** (§4). The app follows the snapshot's `look`: Camp in its palette (`design/system/tokens.css`),
 square corners, the buildings' titles as they are and the ork's mark; Office calm and plain (`title_plain`),
 dark or light as the phone is. Its Look card switches Camp, Office or By the shift with `you.look`, the one
-setting the desktop's toggle sets too. The Camp fonts stay on the desktop: the app loads only its own files.
+setting the desktop's toggle sets too. The faces are the desktop's own (`design/system/fonts`, served under `/app/fonts/`), in the same roles:
+Titillium Web and Almendra SC in Camp, Pixelify Sans for the buildings' names, the system's face in Office.
 
 **Only over Tailscale.** A browser cannot pin a certificate, and a service worker or a Home Screen app needs
 one it trusts. The tailnet's `*.ts.net` certificate (`tailscale cert`, phone-places.md §3) is that one, so

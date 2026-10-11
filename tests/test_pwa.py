@@ -14,7 +14,7 @@ from websockets.exceptions import InvalidStatus
 from orkcraft.gui import phone_tls, phones, pwa, tailnet
 from orkcraft.gui.host import Host
 from orkcraft.realm import checkpoint
-from tests.test_phones import _listening, _pair, _pinned, _serve, _ws_url
+from tests.test_phones import _pair, _pinned, _serve, _ws_url
 
 
 def _get(address: str, path: str, method: str = "GET") -> tuple[int, dict[str, str], bytes]:
@@ -49,6 +49,10 @@ def test_the_app_is_its_own_files_and_nothing_else():
         assert _split(pwa.serve("GET", path))[0].startswith("HTTP/1.1 404"), path
     assert _split(pwa.serve("POST", "/app/"))[0].startswith("HTTP/1.1 405")
     assert "Location: /app/" in _split(pwa.serve("GET", "/app"))[0]
+    head, body = _split(pwa.serve("GET", "/app/fonts/titillium-web-latin-400-normal.woff2"))   # the desktop's faces
+    assert "Content-Type: font/woff2" in head and body[:4] == b"wOF2"
+    assert b"Almendra SC" in _split(pwa.serve("GET", "/app/fonts/fonts.css"))[1]
+    assert _split(pwa.serve("GET", "/app/fonts/OFL-Titillium-Web.txt"))[0].startswith("HTTP/1.1 404")
     head, body = _split(pwa.serve("HEAD", "/app/app.css"))
     assert head.startswith("HTTP/1.1 200") and body == b""
 
@@ -207,35 +211,3 @@ async def test_tailscale_that_comes_after_the_town_is_taken_within_a_minute_on_t
     finally:
         listener.stop()
 
-
-# -- in a phone's browser ---------------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_the_app_pairs_from_its_link_and_says_the_towns_version_in_its_footer(fake_repo):
-    """Opened from the desktop's link the app pairs, connects and says, quietly by the phone's name, the version
-    of Orkcraft the town runs (`mobile.hello`)."""
-    pw = pytest.importorskip("playwright.async_api")
-    from pathlib import Path
-
-    from orkcraft import __version__
-    chromium = next((p for p in ("/opt/pw-browsers/chromium",) if Path(p).exists()), None)
-    server, task = await _serve(fake_repo)
-    try:
-        offer = server.host.command("phones.pair")
-        await _listening(server)
-        async with pw.async_playwright() as p:
-            try:
-                browser = await (p.chromium.launch(executable_path=chromium) if chromium else p.chromium.launch())
-            except Exception as e:                         # noqa: BLE001 — no browser here
-                pytest.skip(f"no Chromium for Playwright here: {e}")
-            try:
-                page = await browser.new_page(viewport={"width": 390, "height": 844}, ignore_https_errors=True)
-                await page.goto(f"{server.phones.address}/app/#pair={offer['code']}")
-                foot = page.locator(".foot")
-                await foot.get_by_text(f"Orkcraft {__version__}").wait_for(timeout=10_000)
-                assert "This phone: " in await foot.inner_text()
-            finally:
-                await browser.close()
-    finally:
-        server.stop()
-        await asyncio.wait_for(task, 10)

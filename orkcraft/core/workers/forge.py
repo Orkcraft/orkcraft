@@ -1,4 +1,5 @@
-"""⚒️ The Forge's work: the branches, their pull requests, their tests and the merge.
+"""⚒️ The Forge's work: the branches, their pull requests, their tests and the merge — in its orkspace's project
+(docs/design/projects.md §8), else the town's repository; its own state stays in the town.
 
 `refresh()` looks at the repository in a thread (realm/gitinfo.py); between two looks it sends
 `git.commit`, `git.pr_opened`, `git.pr_merged`. `merge(branch)` tests the branch with `test_cmd`
@@ -141,7 +142,7 @@ class ForgeWorker(Worker):
         if self._looking:
             return
         self._looking = True
-        repo, base, gh = self.repo_root, str(self.config.get("base", "")), self.gh
+        repo, base, gh = self.project_root, str(self.config.get("base", "")), self.gh
 
         def work() -> None:
             try:
@@ -184,7 +185,7 @@ class ForgeWorker(Worker):
             self.fetch_comments(name, b.pr.number)
 
     def _read_picked(self) -> None:
-        repo, base, name = self.repo_root, self.base, self.picked
+        repo, base, name = self.project_root, self.base, self.picked
         against = name != base and base != "HEAD"
         try:
             rows = _git(repo, "log", "--format=%h%x09%s%x09%cr", f"-{COMMITS}",
@@ -200,7 +201,7 @@ class ForgeWorker(Worker):
             self.commits, self.files = [], []
 
     def fetch_comments(self, name: str, number: int) -> None:
-        repo, runner = self.repo_root, self.gh
+        repo, runner = self.project_root, self.gh
 
         def work() -> None:
             got = pr_comments(repo, number, *([runner] if runner else []))
@@ -218,7 +219,7 @@ class ForgeWorker(Worker):
             raise ValueError(f"no branch {name!r}")
         if name == self.base:
             return ""
-        text = _git(self.repo_root, "diff", f"{self.base}...{name}")
+        text = _git(self.project_root, "diff", f"{self.base}...{name}")
         return text if len(text) <= DIFF_LIMIT else text[:DIFF_LIMIT] + "\n… (cut)\n"
 
     def pr_url(self, name: str) -> str:
@@ -240,7 +241,7 @@ class ForgeWorker(Worker):
             return False
         self.testing.add(name)
         self.changed()
-        repo, tester = self.repo_root, type(self).tester
+        repo, tester = self.project_root, type(self).tester
 
         def work() -> None:
             try:
@@ -270,7 +271,7 @@ class ForgeWorker(Worker):
             self.asking = ""
         self.merging = branch
         self.changed()
-        repo, base, tests = self.repo_root, self.base, str(self.config.get("test_cmd") or "")
+        repo, base, tests = self.project_root, self.base, str(self.config.get("test_cmd") or "")
         merger = type(self).merger
 
         def work() -> None:

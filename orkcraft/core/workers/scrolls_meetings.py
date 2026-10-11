@@ -82,7 +82,7 @@ class MeetingsMixin:
                 if not n.path.startswith(prefix):
                     continue
                 try:
-                    text = (self.repo_root / n.path).read_text(encoding="utf-8")
+                    text = (self.work_root / n.path).read_text(encoding="utf-8")
                 except OSError:
                     continue
                 out.append((n.path, quicknote.front_matter(text), quicknote.body_of(text)))
@@ -119,7 +119,7 @@ class MeetingsMixin:
         state = self.load_agenda()
         bound, done, known = state["bound"], state["done"], state["meetings"]
         cal = {m.id: m for m in self.meetings()}
-        people = agenda.people_of(self.repo_root, self.pages)
+        people = agenda.people_of(self.work_root, self.pages)
         notes = self.inbox_notes()
         for mid, m in cal.items():
             if mid in known:
@@ -150,7 +150,7 @@ class MeetingsMixin:
             end = _when(info.get("end")) or (start + dt.timedelta(minutes=FALLBACK_MINUTES) if start else None)
             meeting = agenda.Meeting(mid, str(info.get("title") or mid), start or now, end)
             items = target[mid]
-            page = self.repo_root / info["page"] if info.get("page") else agenda.page_path(self.wiki_root, meeting)
+            page = self.work_root / info["page"] if info.get("page") else agenda.page_path(self.wiki_root, meeting)
             try:
                 before = page.read_text(encoding="utf-8") if page.is_file() else ""
             except OSError:
@@ -168,10 +168,10 @@ class MeetingsMixin:
                 after_line = self._after_line(mid, len(items), len(left))
             with_ = sorted({p for path, fm, _ in notes if bound.get(path, fm.get("meeting")) == mid
                             for p in _as_list(fm.get("with"))})
-            text = agenda.with_items(self.repo_root, page, before, items) if before \
-                else agenda.page_text(self.repo_root, page, meeting, with_, items)
+            text = agenda.with_items(self.work_root, page, before, items) if before \
+                else agenda.page_text(self.work_root, page, meeting, with_, items)
             text = agenda.with_after(text, after_line)
-            info["page"] = shelves.rel_to(self.repo_root, page)
+            info["page"] = shelves.rel_to(self.work_root, page)
             if text != before:
                 try:
                     page.parent.mkdir(parents=True, exist_ok=True)
@@ -186,8 +186,8 @@ class MeetingsMixin:
         except OSError:
             pass
         if written and self.config.get("commit", True) is not False and not self.simulated:
-            index = shelves.rel_to(self.repo_root, self.wiki_root / wiki.PAGES / agenda.SECTION / wiki.INDEX)
-            wiki.commit_files(self.repo_root, written + [index], f"wiki({self.topic}): what the meetings should cover")
+            index = shelves.rel_to(self.work_root, self.wiki_root / wiki.PAGES / agenda.SECTION / wiki.INDEX)
+            wiki.commit_files(self.work_root, written + [index], f"wiki({self.topic}): what the meetings should cover")
         if released:                                       # what moved on finds its next meeting now
             return written + self.keep_agenda(now)
         self._show_agenda(now)
@@ -240,7 +240,7 @@ class MeetingsMixin:
             page = info.get("page") or ""
             ticks = {}
             try:
-                ticks = agenda.ticked((self.repo_root / page).read_text(encoding="utf-8")) if page else {}
+                ticks = agenda.ticked((self.work_root / page).read_text(encoding="utf-8")) if page else {}
             except OSError:
                 pass
             for i in items:

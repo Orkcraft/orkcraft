@@ -12,7 +12,7 @@ orkestration (CLAUDE.md).
 | 2 | **Copy to orkspace…** for a building (§5) | done |
 | 3 | a map goes back as a whole: the orkspace's checkpoints (§6) | done |
 | 4 | snapshots of a project's files before an ork works, and one **History** to go back (§7) | done |
-| later | every worker that touches files works in its orkspace's project, not the town's root (§8) | |
+| 5 | every worker that touches files works in its orkspace's project, not the town's root (§8) | 5.1 Forge, 5.2 codebase wiki, 5.3 Loot |
 
 ## 1. The problem
 
@@ -198,13 +198,26 @@ kept ("Your current files are saved first; you can come back to them").
   The files go back only while no ork is at work (no agent running, no session open in that folder).
 - `js/history.js`: rows tagged *map* and *files*; a files row says how many files changed (their names on hover).
 
-## 8. Later: workers in their project
+## 8. Stage 5: workers in their project
 
 The town's root stays the home of the Town file, `.orkcraft/` (checkpoints, spend, telemetry) and the quota.
 What touches project files moves to `projects.root_of` one worker at a time, each with its tests: War Tent
 sessions and the Agent pool did in stage 1; then the Forge, the codebase wiki,
 Loot's file carts, and the Warder hook (`orkcraft hooks install` per project: `.claude/settings.json` lives in
 each project). `repo_root` stays the town's root everywhere else; there is no rename across the code.
+
+A worker asks `Worker.project_root` (its building's orkspace's project, else the town's root); `repo_root` and
+`state_dir` stay the town's.
+
+- **5.1 the Forge** — done: its branches, diffs, PR comments, tests and merges are the project's; its window says
+  *in <project>* after the base.
+- **5.2 the codebase wiki** — done: a Scroll Dump whose topic is `codebase` keeps its wiki and reads its sources in
+  the project (`ScrollsWorker.work_root`); its wiki MCP server is the project's. A team, design or general wiki
+  stays the town's. A codebase wiki made before the orkspace had a project stays where it was; the next ingest
+  starts one in the project.
+- **5.3 Loot** — done: the changed files it reviews (accept, reject, restore), the worktrees and branches of its
+  carts and their previews are the project's; the vault, drafts and 👍 / 👎 stay in the town. A War Tent session in a
+  project's worktree names that worktree relative to the project, so Loot finds it there.
 
 ## 9. What stays as it is
 

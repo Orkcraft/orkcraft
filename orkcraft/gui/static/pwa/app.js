@@ -1,49 +1,21 @@
-// The town in a phone's browser (gui/pwa.py; docs/design/mobile.md §8.1, a prototype). No framework and no
-// build: the phone listener serves this file as it is. It speaks the phone's protocol (gui/phones.py): the
-// compact snapshot (`state`), a command and its `reply`, and `news` while the app is open. It may do what a
-// phone may (gui/mobile.py COMMANDS): answer a question, follow the Advisor, Stop all, ask the Warchief and
-// drop a text, a link or a file into Drop file here. Nothing else, whatever this page sends: the listener
-// refuses the rest.
+// The town in a phone's browser (gui/pwa.py; docs/design/mobile.md §8.1, §10, a prototype). No framework and
+// no build: the phone listener serves these files as they are (this one, util.js, dock.js). It speaks the
+// phone's protocol (gui/phones.py): the compact snapshot (`state`), a command and its `reply`, and `news` while
+// the app is open. It may do what a phone may (gui/mobile.py COMMANDS): answer a question, follow the Advisor,
+// Stop all, ask the Warchief and drop a text, a link or a file into Drop file here. Nothing else, whatever
+// this page sends: the listener refuses the rest.
 
-const KEY = "orkcraft.device";          // {id, token, name}: this browser's pairing with the town
+import { h, store, minutes, guessName } from "./util.js";
+import { makeDock } from "./dock.js";
+
 const PROTOCOL = "orkcraft.v1";
 const API = 1;
-const FILE_LIMIT = 5 * 1024 * 1024;     // as views/pit.py FILE_LIMIT
 const IOS = "standalone" in navigator;  // only iOS Safari has navigator.standalone
 const STANDALONE = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-
-// -- small things -----------------------------------------------------------------------------------
-
-function h(tag, attrs = {}, ...kids) {
-  const el = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs)) {
-    if (v === null || v === undefined || v === false) continue;
-    if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
-    else if (k === "class") el.className = v;
-    else el.setAttribute(k, v === true ? "" : v);
-  }
-  for (const kid of kids.flat()) if (kid !== null && kid !== undefined && kid !== false) el.append(kid);
-  return el;
-}
-
-const store = {
-  get() { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } },
-  set(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* private mode: this run only */ } },
-  clear() { try { localStorage.removeItem(KEY); } catch { /* nothing kept */ } },
-};
+const LIGHT = matchMedia("(prefers-color-scheme: light)");
 
 const app = document.getElementById("app");
 const show = (...kids) => app.replaceChildren(...kids);
-const minutes = (s) => (s < 60 ? `${Math.round(s)} s` : `${Math.round(s / 60)} min`);
-const randomId = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => b.toString(16).padStart(2, "0")).join("");
-
-function guessName() {
-  const ua = navigator.userAgent;
-  if (/iPhone/.test(ua)) return "iPhone";
-  if (/iPad/.test(ua)) return "iPad";
-  if (/Android/.test(ua)) return "Android phone";
-  return "Browser";
-}
 
 // -- what the address brings: a pairing code, a token for an iOS Home Screen app, a share ---------------
 
@@ -231,67 +203,40 @@ document.addEventListener("visibilitychange", () => {
 
 // -- the town -----------------------------------------------------------------------------------------
 
+// The first screen is what asks (the summary, then the questions), then the buildings; what a phone does now
+// and then (the Warchief, Drop file here, the look, Stop all) is the bar at the foot (dock.js).
 function layout() {
   const parts = {
     status: h("p", { class: "status", role: "status" }),
     install: h("div"),
     head: h("header", { class: "head" }),
     news: h("div", { class: "news", "aria-live": "polite" }),
+    summary: h("p", { class: "summary" }),
     alerts: h("div", { class: "list" }),
     buildings: h("ul", { class: "buildings" }),
-    chat: h("div", { class: "chat" }),
-    stop: h("button", { class: "btn danger stop" }, "Stop all"),
-    version: h("span", { class: "muted version" }),
+    foot: h("p", { class: "muted foot" }),
   };
-  let armed = 0;
-  parts.stop.addEventListener("click", async () => {
-    if (!armed) {                                // twice: a pocket must not stop the town
-      parts.stop.textContent = "Tap again to stop every ork";
-      armed = setTimeout(() => { armed = 0; parts.stop.textContent = "Stop all"; }, 4000);
-      return;
-    }
-    clearTimeout(armed);
-    armed = 0;
-    parts.stop.disabled = true;
-    const r = await send("halt");
-    parts.stop.disabled = false;
-    parts.stop.textContent = "Stop all";
-    flash(r.ok ? `Stopped: ${r.result} session(s)` : r.error);
-  });
-
-  const ask = h("input", { class: "input", placeholder: "Ask the Warchief…", maxlength: "2000", enterkeyhint: "send" });
-  const askBtn = h("button", { class: "btn", onclick: () => askWarchief(ask, askBtn) }, "Ask");
-  ask.addEventListener("keydown", (e) => { if (e.key === "Enter") askWarchief(ask, askBtn); });
-
-  const drop = h("textarea", { class: "input", rows: "3", placeholder: "A link or a text", maxlength: "20000" });
-  drop.value = shared;
-  const file = h("input", { type: "file", class: "file", "aria-label": "A file" });
-  const dropBtn = h("button", { class: "btn", onclick: () => dropIt(drop, file, dropBtn) }, "Drop");
-
-  parts.askSection = h("section", { class: "card" }, h("h2", {}, "Warchief"), h("div", { class: "row" }, ask, askBtn), parts.chat);
-  parts.dropSection = h("section", { class: "card" }, h("h2", {}, "Drop file here"), drop, h("div", { class: "row" }, file, dropBtn));
-  // The look is the person's, one for the desktop and the phone (you.look; docs/design/portrait.md §3).
-  parts.looks = h("div", { class: "looks", role: "group", "aria-label": "Look" },
-    ...LOOKS.map(([look, label]) => h("button", { class: "btn quiet", "data-look": look, onclick: () => setLook(look) }, label)));
-  const notifyBtn = h("button", { class: "btn quiet", onclick: () => askNotify(notifyBtn) }, "Notify me while it is open");
-  if (!("Notification" in window) || Notification.permission !== "default") notifyBtn.hidden = true;
-
-  show(parts.status, parts.install, parts.head, parts.news, parts.stop,
-    h("section", { class: "card" }, h("h2", {}, "Answers"), parts.alerts),
-    parts.askSection, parts.dropSection,
+  parts.dock = makeDock({ send, flash, building, device: () => device, unpair: unpairHere, shared });
+  show(parts.status, parts.install, parts.head, parts.news,
+    h("section", { class: "card asking", "aria-labelledby": "answers-h" },
+      h("h2", { id: "answers-h" }, "Answers"), parts.summary, parts.alerts),
     h("section", { class: "card" }, h("h2", {}, "Buildings"), parts.buildings),
-    h("section", { class: "card" }, h("h2", {}, "Look"), parts.looks,
-      h("p", { class: "muted" }, "The same on the computer: it is one setting.")),
-    h("footer", { class: "foot" },
-      h("span", { class: "muted" }, `This phone: ${device?.name || ""}`, parts.version), notifyBtn,
-      h("button", { class: "btn quiet", onclick: unpairHere }, "Unpair here")));
+    parts.foot, parts.dock.el, ...parts.dock.sheets);
   return parts;
 }
 
 // The town's version, quiet in the footer (mobile.hello): the one the computer runs, which this app is.
 async function hello() {
   const r = await send("mobile.hello");
-  if (r.ok && ui && r.result?.version) ui.version.textContent = ` · Orkcraft ${r.result.version}`;
+  if (!r.ok || !ui) return;
+  version = r.result?.version || "";
+  phoneLine();
+}
+
+let version = "";
+function phoneLine() {
+  ui.foot.textContent = `This phone: ${device?.name || ""}${version ? ` · Orkcraft ${version}` : ""}`;
+  ui.dock.phone(version);
 }
 
 function status(text) {
@@ -307,25 +252,21 @@ function flash(text) {
   setTimeout(() => line.remove(), 6000);
 }
 
-const LOOKS = [["camp", "Camp"], ["office", "Office"], ["shift", "By the shift"]];
-
-// Camp draws the town as it is (its titles with their emoji, the ork's mark); Office calm and plain. Only
-// how things are drawn changes, never a word (CLAUDE.md: one vocabulary, two looks).
-function applyLook(look, chosen) {
+// Camp draws the town as it is (its titles with their emoji, the ork's mark); Office calm and plain, dark or
+// light as the phone is. Only how things are drawn changes, never a word (CLAUDE.md: one vocabulary, two looks).
+function applyLook(look) {
   const camp = look !== "office";
   document.documentElement.dataset.look = camp ? "camp" : "office";
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", camp ? "#172a0a" : "#161616");
-  for (const b of ui?.looks?.children || []) b.classList.toggle("is-on", b.dataset.look === chosen);
+  // The bar the system draws over the app takes the page's ground, so Office in light is light there too.
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content",
+    camp ? "#172a0a" : LIGHT.matches ? "#f4f4f4" : "#161616");
 }
-
-async function setLook(look) {
-  const r = await send("you.look", { look });
-  if (!r.ok) flash(r.error);
-}
+LIGHT.addEventListener?.("change", () => { if (town) applyLook(town.look); });
 
 function render(s) {
+  const first = !town;
   town = s;
-  applyLook(s.look, s.portrait?.look || s.look);
+  applyLook(s.look);
   const camp = s.look !== "office";
   const hud = s.hud || {};
   const words = s.resources || {};
@@ -338,15 +279,23 @@ function render(s) {
       h("span", { class: "pill" }, `${hud.agents_working ?? 0} of ${hud.agents ?? 0} orks working`)));
 
   const alerts = s.alerts || [];
-  ui.alerts.replaceChildren(...(alerts.length ? alerts.map(question) : [h("p", { class: "muted" }, "No ork is waiting on you.")]));
+  const n = alerts.length;
+  const longest = Math.max(0, ...alerts.map((a) => a.waited || 0));
+  ui.summary.textContent = n ? `${n === 1 ? "An ork waits" : `${n} orks wait`} on you, the longest ${minutes(longest)}.`
+    : "No ork is waiting on you.";
+  ui.summary.classList.toggle("asks", n > 0);
+  ui.alerts.replaceChildren(...alerts.map(question));
 
   const asking = [...(s.buildings || [])].sort((x, y) => Boolean(y.alert) - Boolean(x.alert));   // what asks first
   ui.buildings.replaceChildren(...asking.map((b) => h("li", { class: b.alert ? "asks" : "" },
     h("span", { class: "name" }, camp ? b.title : (b.title_plain || b.title)), h("span", { class: "muted" }, b.state || ""),
     b.alert && h("span", { class: "badge" }, "asks"))));
 
-  ui.askSection.hidden = !building("town_hall");
-  ui.dropSection.hidden = !building("pit");
+  ui.dock.render(s);
+  if (first) {
+    phoneLine();
+    if (shared) ui.dock.openDrop();             // shared from the phone's share sheet: Drop file here, filled
+  }
 }
 
 const building = (type) => (town?.buildings || []).find((b) => b.type === type);
@@ -377,61 +326,6 @@ function question(a) {
     h("div", { class: "answers" }, buttons), msg);
 }
 
-// -- the Warchief and Drop file here ------------------------------------------------------------------
-
-let chatTimer = 0;
-
-async function askWarchief(input, button) {
-  const text = input.value.trim();
-  const hall = building("town_hall");
-  if (!text || !hall) return;
-  button.disabled = true;
-  const r = await send("act", { id: hall.id, act: "ask", args: { text } });
-  button.disabled = false;
-  if (!r.ok) { flash(r.error); return; }
-  input.value = "";
-  readChat();
-}
-
-async function readChat() {
-  clearTimeout(chatTimer);
-  const r = await send("mobile.chat", { limit: 6 });
-  if (!r.ok || !ui) return;
-  const c = r.result;
-  ui.chat.replaceChildren(...c.chat.map((m) => h("div", { class: `msg${m.error ? " warn" : ""}` },
-    h("span", { class: "who" }, m.who === "user" ? "You" : (c.warchief || "Warchief")),
-    h("p", {}, m.text || ""), m.offer && h("p", { class: "muted" }, "It offers a card: answer it at the computer."))),
-    c.thinking ? h("p", { class: "muted" }, "Thinking…") : "");
-  if (c.thinking) chatTimer = setTimeout(readChat, 3000);
-}
-
-async function dropIt(text, fileInput, button) {
-  const pit = building("pit");
-  if (!pit) return;
-  const f = fileInput.files?.[0];
-  if (!f && !text.value.trim()) return;
-  if (f && f.size > FILE_LIMIT) { flash("The file is over 5 MB: drop it at the computer."); return; }
-  button.disabled = true;
-  // The client id makes a retry drop once (views/pit.py `once`).
-  const r = f
-    ? await send("act", { id: pit.id, act: "drop_file", args: { name: f.name, data: await base64(f), client_id: randomId() } })
-    : await send("act", { id: pit.id, act: "drop", args: { text: text.value.trim(), client_id: randomId() } });
-  button.disabled = false;
-  if (!r.ok) { flash(r.error); return; }
-  flash("Dropped.");
-  text.value = "";
-  fileInput.value = "";
-}
-
-function base64(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result).split(",", 2)[1] || "");
-    r.onerror = () => reject(r.error);
-    r.readAsDataURL(file);
-  });
-}
-
 // -- news ---------------------------------------------------------------------------------------------
 
 function news(items) {
@@ -442,11 +336,6 @@ function news(items) {
     }
   }
   if (items.length && navigator.vibrate) navigator.vibrate(80);
-}
-
-async function askNotify(button) {
-  const got = await Notification.requestPermission();
-  button.hidden = got !== "default";
 }
 
 function unpairHere() {
