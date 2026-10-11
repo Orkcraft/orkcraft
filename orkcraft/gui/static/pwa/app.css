@@ -24,7 +24,21 @@
 .looks .btn.is-on { border-color: var(--accent); color: var(--accent); }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--canvas); color: var(--ink); }
-body { font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-text-size-adjust: 100%; }
+/* The desktop's faces and roles (design/system/tokens.css, components.css), served from fonts/ (gui/pwa.py). */
+:root {
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Ubuntu, "Helvetica Neue", sans-serif;   /* --font-office */
+  --font-head: var(--font-body);
+  --font-name: var(--font-body);
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+}
+:root[data-look="camp"] {
+  --font-body: "Titillium Web", "Segoe UI", sans-serif;                 /* --font-camp */
+  --font-head: "Almendra SC", Georgia, serif;                            /* --font-display */
+  --font-name: "Pixelify Sans", "Titillium Web", sans-serif;             /* the map's names */
+}
+body { font: 16px/1.4 var(--font-body); -webkit-text-size-adjust: 100%; }
+h1, h2 { font-family: var(--font-head); }
+.buildings .name { font-family: var(--font-name); }
 .app { max-width: 640px; margin: 0 auto; padding: max(12px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 12px; }
 h1 { font-size: 20px; margin: 0; overflow-wrap: anywhere; }
@@ -60,7 +74,7 @@ textarea.input { resize: vertical; }
 .question { border-top: 1px solid var(--frame); padding-top: 10px; }
 .question:first-child { border-top: 0; padding-top: 0; }
 .question .title { font-weight: 600; overflow-wrap: anywhere; }
-.question pre { margin: 0 0 8px; padding: 8px; background: var(--inset); border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; }
+.question pre { font-family: var(--font-mono); margin: 0 0 8px; padding: 8px; background: var(--inset); border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; }
 .advice { font-size: 14px; color: var(--muted); }
 .answers { display: flex; flex-wrap: wrap; gap: 8px; }
 .buildings { list-style: none; margin: 0; padding: 0; }
