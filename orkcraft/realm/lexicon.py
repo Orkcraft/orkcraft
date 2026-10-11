@@ -120,15 +120,15 @@ TERMS: tuple[Term, ...] = (
     _t("freedom.clock", "Apply if unanswered", "", "On the clock"),
     _t("freedom.free", "Apply at once", "", "Unchained"),
     _t("chronicles", "History", "", "Chronicles"),
-    # the night's advisors were only ever "the Elders": a lone "Elder" was the heaviest model tier, a Veteran now
-    _t("elders", "Advisor", "Advisors", "", "Elders"),
+    # the night's council of orks (realm/elders.py, realm/fastpath.py ROLES): orks, so their Camp name, whatever the look
+    _t("elders", "Elders", "Elders"),                               # never "Elder" alone: that was the heaviest tier
     _t("builders", "Building designer", "", "Mason & Artisan"),
     # the Town Hall's own orks
-    _t("orc.mason", "Data planner", "", "Mason"),
-    _t("orc.artisan", "Layout designer", "", "Artisan"),
-    _t("orc.warder", "Security reviewer", "", "Warder"),
-    _t("orc.pathfinder", "Usability reviewer", "", "Pathfinder"),
-    _t("orc.treasurer", "Cost reviewer", "", "Treasurer"),
+    _t("orc.mason", "Mason"),
+    _t("orc.artisan", "Artisan"),
+    _t("orc.warder", "Warder"),
+    _t("orc.pathfinder", "Pathfinder"),
+    _t("orc.treasurer", "Treasurer"),
     _t("council_word", "Review board", "", "Council"),
     # the Task Fields' other two parts (one board: the orks' kanban, the person's checklist, the notes)
     _t("chore", "to-do", "to-dos", "chore", "chores"),             # a to-do of the person's own
@@ -200,7 +200,7 @@ TERMS: tuple[Term, ...] = (
     _t("scrolls", "Wiki", "", "Scroll Dump"),
     _t("mine", "Research", "", "The Mine"),                         # "Mine" alone stays: a Task board's lane says it
     _t("gramophone", "Audio briefing", "", "The Gramophone"),
-    _t("lab", "Test bench", "", "Mechanic"),                 # a building on its test cases (docs/design/test-bench.md)       # a result spoken (docs/design/audio-briefing.md)
+    _t("lab", "Test bench"),                                        # a building on its test cases (docs/design/test-bench.md)
     _t("ux_lab", "UX bench", "", "Alchemy Tower"),            # a building's look (docs/design/improve-buildings.md)
     _t("lake", "Inspector", "", "Lake of Insight"),
     _t("forge", "Branches & PRs", "", "The Forge"),
@@ -208,39 +208,39 @@ TERMS: tuple[Term, ...] = (
     _t("crag", "Metrics", "", "Tally Crag"),
     _t("catapult", "Publisher", "", "The Catapult"),
     _t("workshop", "Script", "Scripts", "Workshop", "Workshops"),
-    # -- the orks who live in them: named by their role ---------------------------------------------
-    _t("orc.pit", "Sorter", "", "Scavenger"),
-    _t("orc.watchtower", "Listener", "", "Lookout"),
-    _t("orc.signpost", "Router", "", "Grot Pointa"),
-    _t("orc.mill", "Transformer", "", "Miller"),
-    _t("orc.horn", "Notifier", "", "Hornblower"),
-    _t("orc.fields", "Task manager", "", "Taskmaster"),
-    _t("orc.barracks", "Worker", "Workers", "Grunt", "Grunts"),
-    _t("orc.council", "Reviewer", "Reviewers", "Chieftain", "Chieftains"),
-    _t("orc.war_drum", "Scheduler", "", "Drummer"),
-    _t("orc.forest", "File picker", "", "Woodcutter"),
-    _t("orc.scrolls", "Librarian", "", "Scroll Scrapper"),
-    _t("orc.gramophone", "Narrator", "", "Bard"),
-    _t("orc.lab", "Tester", "Testers", "Gearhead", "Gearheads"),
-    _t("orc.ux_lab", "Designer", "Designers", "Alchemist", "Alchemists"),
-    _t("orc.mine", "Researcher", "Researchers", "Prospector", "Prospectors"),
-    _t("orc.lake", "Inspector", "", "Seer"),
-    _t("orc.forge", "Merger", "Mergers", "Smith", "Smiths"),
-    _t("orc.loot", "Gatekeeper", "", "Quartermaster"),
-    _t("orc.crag", "Metrics ork", "", "Crag Carver"),
-    _t("orc.catapult", "Publisher", "", "Loader"),
-    _t("orc.workshop", "Script runner", "", "Tinker"),
-    _t("orc.custom", "Worker", "Workers", "Peon", "Peons"),
+    # -- the orks who live in them: their orkish names, whatever the look (CLAUDE.md, Wording) ---------
+    _t("orc.pit", "Scavenger"),
+    _t("orc.watchtower", "Lookout"),
+    _t("orc.signpost", "Grot Pointa"),
+    _t("orc.mill", "Miller"),
+    _t("orc.horn", "Hornblower"),
+    _t("orc.fields", "Taskmaster"),
+    _t("orc.barracks", "Grunt", "Grunts"),
+    _t("orc.council", "Chieftain", "Chieftains"),
+    _t("orc.war_drum", "Drummer"),
+    _t("orc.forest", "Woodcutter"),
+    _t("orc.scrolls", "Scroll Scrapper"),
+    _t("orc.gramophone", "Bard"),
+    _t("orc.lab", "Mechanic", "Mechanics", "Gearhead", "Gearheads"),  # the Test bench's: a senior AI engineer (design/agents/mechanic.md)
+    _t("orc.ux_lab", "Alchemist", "Alchemists"),        # the UX bench's: a senior UI/UX designer (design/agents/alchemist.md)
+    _t("orc.mine", "Prospector", "Prospectors"),
+    _t("orc.lake", "Seer"),
+    _t("orc.forge", "Smith", "Smiths"),
+    _t("orc.loot", "Quartermaster"),
+    _t("orc.crag", "Crag Carver"),
+    _t("orc.catapult", "Loader"),
+    _t("orc.workshop", "Tinker"),
+    _t("orc.custom", "Peon", "Peons"),
 )
 
 # Short names the interface uses for a building as well as its full title.
 _ALSO = {"lake": ("Lake",), "pit": ("Pit",), "mill": ("Mill",), "horn": ("Horn",), "forge": ("Forge",),
          "catapult": ("Catapult",), "gramophone": ("Gramophone",), "town_hall": ("Town hall",),
-         # the Test bench was the Alchemist's Lab with a Brewmaster before it was the Mechanic: older towns keep those
+         # the Test bench was the Alchemist's Lab with a Brewmaster before: older towns keep those
          "lab": ("Alchemist's Lab",), "orc.lab": ("Brewmaster",)}
 
 # Whole phrases first: where a word for word would read wrong.
-_PHRASES = {"Into the pit": "Dropped", "the Elders' advice": "the advisors' advice",
+_PHRASES = {"Into the pit": "Dropped",
             "Not enough food": "No ork slots left", "Treasury empty": "Budget spent",
             "Halt All Operations": "Stop all", "Halt All": "Stop all"}
 
@@ -257,6 +257,8 @@ def _pairs() -> list[tuple[str, str]]:
     """Every old spelling with today's word, longest first."""
     out: dict[str, str] = dict(_PHRASES)
     for t in TERMS:
+        for short in _ALSO.get(t.key, ()):
+            out.setdefault(short, t.word)
         if not t.was and not t.was_many:
             continue
         if t.was:
@@ -265,8 +267,6 @@ def _pairs() -> list[tuple[str, str]]:
             out.setdefault(t.was_many, t.many or t.word)
         if t.was.startswith("The "):                        # "The Mill" is also "the Mill" mid-sentence
             out.setdefault("the " + t.was[4:], t.word)
-        for short in _ALSO.get(t.key, ()):
-            out.setdefault(short, t.word)
     return sorted(out.items(), key=lambda kv: len(kv[0]), reverse=True)
 
 

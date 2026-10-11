@@ -22,6 +22,7 @@ from typing import Any, Callable
 
 from orkcraft import schedule
 from orkcraft.core import retros, runners
+from orkcraft.gui.improve_night import ImproveNight
 from orkcraft.realm import fastpath, nightround
 
 RETRO_CHECK_S = 60.0          # how often the retros' schedules are looked at
@@ -33,6 +34,7 @@ class Nightly:
         self.host = host
         self.town = host.town
         self.busy: set[str] = set()              # the retros running now: daily | weekly
+        self.improve = ImproveNight(host)        # the Mechanic and the Alchemist at night (gui/improve_night.py)
         self.checked_at = -RETRO_CHECK_S
 
     def tick(self, quiet: bool, morning: bool = False, now: float | None = None) -> None:
@@ -41,6 +43,9 @@ class Nightly:
             words = retros.morning_words(self.town)
             if words:
                 self.town.toast(words, title="While you were away, the orks changed", timeout=20)
+            improved = self.improve.morning()
+            if improved:
+                self.town.toast(".\n".join(improved) + ".", title="While you were away, the Elders", timeout=20)
         exhausted = self.host.treasury.exhausted(quiet=True)
         if now - self.checked_at >= RETRO_CHECK_S and not exhausted:
             self.checked_at = now
@@ -54,6 +59,7 @@ class Nightly:
                         self._thread(name, work, done)
                     if name == "round":
                         self.host.growth.soon()          # its morning line, when it had one
+        self.improve.tick(quiet, exhausted, now)
         taken = self.host.night.next_change(quiet, self.town.machine.autonomy, exhausted)
         if taken is not None:
             self._consider(*taken)
