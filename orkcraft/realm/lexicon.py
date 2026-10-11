@@ -200,7 +200,7 @@ TERMS: tuple[Term, ...] = (
     _t("scrolls", "Wiki", "", "Scroll Dump"),
     _t("mine", "Research", "", "The Mine"),                         # "Mine" alone stays: a Task board's lane says it
     _t("gramophone", "Audio briefing", "", "The Gramophone"),
-    _t("lab", "Test bench", "", "Mechanic"),                 # a building on its test cases (docs/design/test-bench.md)       # a result spoken (docs/design/audio-briefing.md)
+    _t("lab", "Test bench"),                 # a building on its test cases (docs/design/test-bench.md); its ork is the Mechanic
     _t("ux_lab", "UX bench", "", "Alchemy Tower"),            # a building's look (docs/design/improve-buildings.md)
     _t("lake", "Inspector", "", "Lake of Insight"),
     _t("forge", "Branches & PRs", "", "The Forge"),
@@ -208,29 +208,29 @@ TERMS: tuple[Term, ...] = (
     _t("crag", "Metrics", "", "Tally Crag"),
     _t("catapult", "Publisher", "", "The Catapult"),
     _t("workshop", "Script", "Scripts", "Workshop", "Workshops"),
-    # -- the orks who live in them: named by their role ---------------------------------------------
-    _t("orc.pit", "Sorter", "", "Scavenger"),
-    _t("orc.watchtower", "Listener", "", "Lookout"),
-    _t("orc.signpost", "Router", "", "Grot Pointa"),
-    _t("orc.mill", "Transformer", "", "Miller"),
-    _t("orc.horn", "Notifier", "", "Hornblower"),
-    _t("orc.fields", "Task manager", "", "Taskmaster"),
-    _t("orc.barracks", "Worker", "Workers", "Grunt", "Grunts"),
-    _t("orc.council", "Reviewer", "Reviewers", "Chieftain", "Chieftains"),
-    _t("orc.war_drum", "Scheduler", "", "Drummer"),
-    _t("orc.forest", "File picker", "", "Woodcutter"),
-    _t("orc.scrolls", "Librarian", "", "Scroll Scrapper"),
-    _t("orc.gramophone", "Narrator", "", "Bard"),
-    _t("orc.lab", "Tester", "Testers", "Gearhead", "Gearheads"),
-    _t("orc.ux_lab", "Designer", "Designers", "Alchemist", "Alchemists"),
-    _t("orc.mine", "Researcher", "Researchers", "Prospector", "Prospectors"),
-    _t("orc.lake", "Inspector", "", "Seer"),
-    _t("orc.forge", "Merger", "Mergers", "Smith", "Smiths"),
-    _t("orc.loot", "Gatekeeper", "", "Quartermaster"),
-    _t("orc.crag", "Metrics ork", "", "Crag Carver"),
-    _t("orc.catapult", "Publisher", "", "Loader"),
-    _t("orc.workshop", "Script runner", "", "Tinker"),
-    _t("orc.custom", "Worker", "Workers", "Peon", "Peons"),
+    # -- the orks who live in them: who they are, so the Camp's names (the buildings say what they do) ----------
+    _t("orc.pit", "Scavenger"),
+    _t("orc.watchtower", "Lookout"),
+    _t("orc.signpost", "Grot Pointa"),
+    _t("orc.mill", "Miller"),
+    _t("orc.horn", "Hornblower"),
+    _t("orc.fields", "Taskmaster"),
+    _t("orc.barracks", "Grunt", "Grunts"),
+    _t("orc.council", "Chieftain", "Chieftains"),
+    _t("orc.war_drum", "Drummer"),
+    _t("orc.forest", "Woodcutter"),
+    _t("orc.scrolls", "Scroll Scrapper"),
+    _t("orc.gramophone", "Bard"),
+    _t("orc.lab", "Mechanic", "Mechanics", "Gearhead", "Gearheads"),
+    _t("orc.ux_lab", "Alchemist", "Alchemists"),
+    _t("orc.mine", "Prospector", "Prospectors"),
+    _t("orc.lake", "Seer"),
+    _t("orc.forge", "Smith", "Smiths"),
+    _t("orc.loot", "Quartermaster"),
+    _t("orc.crag", "Crag Carver"),
+    _t("orc.catapult", "Loader"),
+    _t("orc.workshop", "Tinker"),
+    _t("orc.custom", "Peon", "Peons"),
 )
 
 # Short names the interface uses for a building as well as its full title.
@@ -238,6 +238,15 @@ _ALSO = {"lake": ("Lake",), "pit": ("Pit",), "mill": ("Mill",), "horn": ("Horn",
          "catapult": ("Catapult",), "gramophone": ("Gramophone",), "town_hall": ("Town hall",),
          # the Test bench was the Alchemist's Lab with a Brewmaster before it was the Mechanic: older towns keep those
          "lab": ("Alchemist's Lab",), "orc.lab": ("Brewmaster",)}
+
+# A type's old titles that are an ork's word today: `words` cannot tell them apart, so a building's title says its
+# type's word through `title` (gui/state.py). The Test bench was titled the Mechanic, its ork's name now.
+_OLD_TITLES = {"lab": ("Mechanic",)}
+
+
+def title(type_id: str, text: str) -> str:
+    """A building's title as stored, in today's word when it is an old title of its type that `words` leaves be."""
+    return term(type_id) if text in _OLD_TITLES.get(type_id, ()) else text
 
 # Whole phrases first: where a word for word would read wrong.
 _PHRASES = {"Into the pit": "Dropped", "the Elders' advice": "the advisors' advice",
@@ -257,7 +266,7 @@ def _pairs() -> list[tuple[str, str]]:
     """Every old spelling with today's word, longest first."""
     out: dict[str, str] = dict(_PHRASES)
     for t in TERMS:
-        if not t.was and not t.was_many:
+        if not t.was and not t.was_many and t.key not in _ALSO:
             continue
         if t.was:
             out.setdefault(t.was, t.word)

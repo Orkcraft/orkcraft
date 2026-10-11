@@ -13,7 +13,8 @@
   monochrome, no sprites). A look changes only how things are drawn, never a word. A concept keeps its Camp word
   when it says *who* (ork, Warchief, town, building, road, Town Hall, Renown) and has a plain word
   when it says *what a thing does, costs or risks* (External listeners, Spend, Stop all, Autonomy,
-  Town file, Project). `orkcraft/realm/lexicon.py` `TERMS` is the glossary: a new concept or building type
+  Town file, Project). So the ork in a building has its Camp name (Grunt, Chieftain, Mechanic) and the building
+  its plain word (Agent pool, Review board, Test bench). `orkcraft/realm/lexicon.py` `TERMS` is the glossary: a new concept or building type
   gets its one word there, and new code writes that word. A renamed concept keeps its old Camp
   spelling in `was`, and the interface says an old spelling in today's word: the GUI through `say()`
   for attributes and data. A GUI `html` template's own text is written in today's word at the source

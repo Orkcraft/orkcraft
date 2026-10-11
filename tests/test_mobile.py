@@ -178,7 +178,7 @@ def test_the_notifier_says_each_new_question_once_in_one_line(fake_repo):
     assert listener.sent == []                                          # the first look wakes nobody
     n.after(snap(["a", "b"], gold="warn"))
     (msg,) = listener.sent
-    assert [x["line"] for x in msg["news"]] == ["Worker asks: Proceed?", "Spend is near its limit: $4.10 / $5.00"]
+    assert [x["line"] for x in msg["news"]] == ["Grunt asks: Proceed?", "Spend is near its limit: $4.10 / $5.00"]
     n.after(snap(["a", "b"], gold="warn"))
     assert len(listener.sent) == 1
     n.after(None)                                                       # no phone open: the next look is a first look

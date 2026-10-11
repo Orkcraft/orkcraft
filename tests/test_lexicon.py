@@ -12,14 +12,17 @@ def test_a_concept_has_one_word():
     assert lexicon.term("chore", many=True) == "to-dos"
 
 
-def test_every_building_type_and_its_ork_are_named_by_what_they_do():
+def test_every_building_type_says_what_it_does_and_its_ork_who_it_is():
+    """A building has its plain word (Agent pool, Test bench); the ork in it its Camp name (Grunt, Mechanic)."""
     keys = {t.key for t in lexicon.TERMS}
     for t in catalog.TYPES.values():
         if t.id in ("custom", "town_hall"):
             continue
-        assert (t.id in keys) or (t.id == "loot" and "loot_vault" in keys), t.id
-        assert lexicon.words(t.title) != t.title, t.title
-        assert lexicon.words(t.orc) != t.orc, t.orc
+        key = "loot_vault" if t.id == "loot" else t.id
+        assert key in keys, t.id
+        assert lexicon.words(t.title) == lexicon.term(key), t.title
+        orc = "orc.loot" if t.id == "loot" else f"orc.{t.id}"
+        assert lexicon.words(t.orc) == t.orc in (lexicon.term(orc), lexicon.term(orc, many=True)), t.orc
 
 
 def test_an_old_camp_spelling_reads_in_todays_word():
@@ -75,10 +78,12 @@ def test_the_glossary_says_what_each_word_replaced():
 
 
 def test_the_test_bench_reads_as_itself_under_every_name_it_had():
-    """The Mechanic today, the Alchemist's Lab with a Brewmaster before: older towns keep those titles."""
-    assert lexicon.words("🧪 Mechanic") == "🧪 Test bench"
+    """The Mechanic, the Alchemist's Lab with a Brewmaster before: older towns keep those titles. The Mechanic is its
+    ork's name now, so a stored title says the Test bench through its type (`title`), never by the word alone."""
+    assert lexicon.title("lab", "Mechanic") == "Test bench" and lexicon.title("lab", "Bench of mine") == "Bench of mine"
+    assert lexicon.title("barracks", "Mechanic") == "Mechanic"
     assert lexicon.words("Alchemist's Lab") == "Test bench"
-    assert lexicon.words("Gearhead") == lexicon.words("Brewmaster") == "Tester"
+    assert lexicon.words("Gearhead") == lexicon.words("Brewmaster") == lexicon.words("Mechanic") == "Mechanic"
     assert lexicon.words("a mechanic, a reference") == "a mechanic, a reference"
 
 

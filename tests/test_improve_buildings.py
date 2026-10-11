@@ -81,8 +81,8 @@ def test_the_ux_bench_picks_a_building_and_its_image_tool(fake_repo, isolated_la
 
 
 def test_the_improve_buildings_are_named_by_what_they_do():
-    assert lexicon.words("Alchemy Tower") == "UX bench" and lexicon.words("Alchemist") == "Designer"
-    assert lexicon.words("Mechanic") == "Test bench" and lexicon.words("Alchemist's Lab") == "Test bench"
+    assert lexicon.words("Alchemy Tower") == "UX bench" and lexicon.words("Alchemist") == "Alchemist"   # its ork: who
+    assert lexicon.title("lab", "Mechanic") == "Test bench" and lexicon.words("Alchemist's Lab") == "Test bench"
 
 
 def test_the_test_bench_is_set_up_on_one_building(fake_repo, isolated_layout_file):

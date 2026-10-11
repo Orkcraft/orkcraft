@@ -311,7 +311,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "key": (str, None, False), "cap_usd": (float, (0.05, 5), False), "keep": (int, (1, 200), False)},
         art="rookery", orc="Bard", agentic=True),
     BuildingType(
-        "lab", "Mechanic", "🧪", "M",
+        "lab", "Test bench", "🧪", "M",
         "the Test bench: puts the building whose road comes in on its test cases, in a copy of it with its own "
         "settings, beside the bare AI tool on the same model; its reviewers say what to change in the building's "
         "code, its look and its first session (docs/design/test-bench.md)",
@@ -326,7 +326,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 _e("lab.finding", "finding", TEXT, "a reviewer's finding sent with Make tasks: what to change and why")),
         actions=(_a("lab.run", "Run the first case", "🧪", "the first case of the building it tests, on its main tool"),),
         config={"max_spend": (float, (0.1, 50), False), "tool": (str, None, False)},
-        art="spire", orc="Gearhead", agentic=True, roads="setup"),
+        art="spire", orc="Mechanic", agentic=True, roads="setup"),
     BuildingType(
         "ux_lab", "Alchemy Tower", "⚗️", "M",
         "the UX bench: the look of one type of building — its Build icon, its house, its ork, its window and its "
