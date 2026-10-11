@@ -326,7 +326,7 @@ def test_a_new_orkspace_picks_a_folder_and_is_asked_before_git_starts(page, tmp_
     pg.locator(".gui-map__fog").focus()
     pg.keyboard.press("Enter")
     pg.locator(".gui-map__new").wait_for(state="visible", timeout=WAIT_MS)
-    pg.keyboard.type("Notes")
+    pg.locator('.gui-map__new input[aria-label="Orkspace name"]').fill("Notes")
     pg.locator(".gui-map__where").select_option("folder")
     pg.locator(".gui-map__where").press("Enter")
     dialog = pg.locator(".ok-dialog", has_text="Project: Notes")
@@ -365,6 +365,27 @@ def test_a_building_is_copied_to_another_orkspace_from_its_menu(page):
     copy = pg.evaluate(f"() => {link}.then(({{ town }}) => town.value.orkspaces.find(o => o.name === 'Copy target').buildings[0])")
     for x in (copy, bid):
         pg.evaluate(f"id => {link}.then(m => m.command('town.demolish', {{ id }}))", x)
+
+
+def test_a_maps_history_takes_it_back_from_the_war_map(page):
+    """docs/design/projects.md §6: a land's menu → History… lists the map's changes; Back to this, then Go back,
+    and the building raised since comes down."""
+    pg = page
+    link = "import('/static/js/link.js')"
+    shop = pg.evaluate(f"() => {link}.then(m => m.command('orkspace.new', {{ name: 'History map', project: 'town' }}))")
+    bid = pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'pit' }}))")
+    pg.keyboard.press("Escape")
+    pg.locator(f'.gui-map__land[data-id="{shop}"]').click(button="right")
+    pg.get_by_role("menuitem", name="History…").click()
+    dialog = pg.locator(".ok-dialog", has_text="History: History map")
+    dialog.locator(".gui-history__row").nth(1).wait_for(state="visible", timeout=WAIT_MS)
+    assert "now" in dialog.locator(".gui-history__row").first.inner_text()
+    dialog.locator(".gui-history__row").nth(1).get_by_role("button", name="Back to this").click()
+    dialog.get_by_role("button", name="Go back").click()
+    pg.locator(".ok-toast", has_text="is back to").first.wait_for(state="visible", timeout=WAIT_MS)
+    pg.wait_for_function(f"() => {link}.then(({{ town }}) => !town.value.buildings.some(b => b.id === '{bid}'))",
+                         timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
 
 
 def test_the_lake_window_shows_text_markdown_and_code(page):

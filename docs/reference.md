@@ -964,6 +964,10 @@ the CLI paths.
 - **Copy to orkspace…** (a hut's menu): a building lives on one map; a copy on another is a building of its own
   with its orks, their instructions, scripts and settings. Roads come along only from buildings on that map (the
   toast names the rest); its history, level and spend stay with the original.
+- **History…** (a land's menu, `/history`): every change of that map, newest first (a building raised, changed,
+  copied, a road, the map renamed or given another project). **Back to this** puts the map back as it was right
+  after that change: buildings raised since come down, the others get back their orks and settings; other
+  orkspaces and the project's files stay as they are. Going back is in the history too.
 - **`G`** (Neutral) opens the ⎇ worktree of the active orkspace: create one on a branch (an existing
   branch is reused, a new one starts from `HEAD` or the base you give) in
   `.orkcraft/worktrees/<orkspace>`; later unlink it or remove it (refused while it has uncommitted

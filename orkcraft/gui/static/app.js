@@ -14,6 +14,7 @@ import { Orders } from "./js/orders.js";
 import { VisitDialogs } from "./js/visit.js";
 import { RoadDialog, RoadBar, DemolishAsked, CopyAsked } from "./js/build.js";
 import { ProjectAsked } from "./js/project.js";
+import { HistoryAsked } from "./js/history.js";
 import { HALL } from "./js/tent.js";
 import { SettingsDialog, UsageAsk } from "./js/settings.js";
 import { GoogleWizard } from "./js/accounts.js";
@@ -60,6 +61,7 @@ function App() {
     <${DemolishAsked} />
     <${CopyAsked} />
     <${ProjectAsked} />
+    <${HistoryAsked} />
     <${Menu} />
     <${Onboarding} />
   </div>`;

@@ -1,6 +1,6 @@
 # Design — 📁 Projects: the folder an orkspace works in, and a way back in time
 
-Status: design notes, written 2026-10-11; stages 0, 1 and 2 are done. Builds on the orkspaces of the Town Scroll
+Status: design notes, written 2026-10-11; stages 0–3 are done. Builds on the orkspaces of the Town Scroll
 (`scroll.py` `Orkspace`, `GitLink`), the orkspace worktrees (`realm/worktrees.py`), the camp's checkpoints
 (`realm/checkpoint.py`) and the first commit the Agent pool makes (`realm/jobs.py` `ensure_repo`). Wording: ork,
 orkestration (CLAUDE.md).
@@ -10,7 +10,7 @@ orkestration (CLAUDE.md).
 | 0 | the word: **Project** for the folder, the Town Scroll becomes the **Town file** (§2) | done |
 | 1 | projects in the Town Scroll, an orkspace picks one; git started with the person's yes (§3, §4) | done |
 | 2 | **Copy to orkspace…** for a building (§5) | done |
-| 3 | a map goes back as a whole: the orkspace's checkpoints (§6) | |
+| 3 | a map goes back as a whole: the orkspace's checkpoints (§6) | done |
 | 4 | snapshots of a project's files before an ork works, and one **History** to go back (§7) | |
 | later | every worker that touches files works in its orkspace's project, not the town's root (§8) | |
 
@@ -131,6 +131,18 @@ A checkpoint (`realm/checkpoint.py`) names its building in a trailer. It also na
   (`revert(<orkspace>): back to <time>`). Buildings that did not exist then are demolished (kept in history, as
   any removal); buildings removed since come back. Other orkspaces are untouched; §2.3 makes that safe.
 - A road from a building of another map into this one stays only if its source still exists.
+
+### As built (stage 3)
+
+- `realm/checkpoint.py`: the `Orkcraft-Orkspace` trailer (`Town.checkpoint` names the building's orkspace unless
+  one is given), `history(root, orkspace=…)`, `orkspace_at`, `at_of`; the kind `orkspace` for the map's own
+  changes: made, renamed, a biome, a project.
+- `core/maps.py` `revert`: the map's buildings get back their spec, scripts, blueprints and scroll entry (orks,
+  roads from buildings that still exist, settings, place); their level stays theirs. Raised since: demolished.
+  Moved to another map since: left there and said so. The Town Hall stands as it is. Going back is a checkpoint
+  too, so it is undone the same way.
+- `gui/history.py` (`history.list`, `history.revert`) and `js/history.js`: a land's menu **History…** and
+  `/history`. Each row is the map right after that change: **Back to this**, then **Go back**.
 
 ## 7. Snapshots of a project's files
 

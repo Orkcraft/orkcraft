@@ -29,8 +29,8 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import (accounts, bench, builder, console, failures, growth, mobile, nightly, onboarding, projects, state,
-                          town_settings, updates, views, you)
+from orkcraft.gui import (accounts, bench, builder, console, failures, growth, history, mobile, nightly, onboarding, projects,
+                          state, town_settings, updates, views, you)
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
 from orkcraft.realm import biomes, catalog, elders, fastpath, halt, modes
@@ -114,6 +114,8 @@ class Host:
         self.commands.update(self.growth.commands())
         self.projects = projects.Projects(self)     # the folder each orkspace works in (gui/projects.py)
         self.commands.update(self.projects.commands())
+        self.history = history.History(self)       # an orkspace's checkpoints, and going back (gui/history.py)
+        self.commands.update(self.history.commands())
         self.you = you.You(self)                    # the portrait's menu: the look, Do not disturb (gui/you.py)
         self.commands.update(self.you.commands())
         # Anonymous usage stats, only when the operator said yes (core/usage.py, docs/usage-stats.md)
@@ -355,7 +357,8 @@ class Host:
         try:
             result = fn(args)
         except (console.ConsoleError, growth.GrowthError, updates.UpdateError, onboarding.OnboardingError,
-                you.YouError, accounts.AccountsError, bench.BenchError, projects.ProjectCommandError) as e:
+                you.YouError, accounts.AccountsError, bench.BenchError, projects.ProjectCommandError,
+                history.HistoryError) as e:
             raise CommandError(str(e)) from None
         self._used(name, args, result)
         return result
@@ -415,6 +418,7 @@ class Host:
             self.on_toast({"message": did, "severity": "information"})
         self.town.scroll.active_orkspace_id = ork.id
         self.town.save()
+        self.town.checkpoint("orkspace", "", f"new orkspace {ork.name}", orkspace=ork.id)
         self.on_change()
         return ork.id
 

@@ -113,6 +113,7 @@ class Growth:
             raise GrowthError(f"No biome {biome!r}")
         ork.biome = biome
         self.host.town.save()
+        self.host.town.checkpoint("orkspace", "", f"biome {biome}", orkspace=ork.id)
         self.host.on_change()
 
     def _rename(self, args: dict) -> None:
@@ -122,6 +123,7 @@ class Growth:
             raise GrowthError("An orkspace needs a name")
         ork.name = name
         self.host.town.save()
+        self.host.town.checkpoint("orkspace", "", f"renamed {name}", orkspace=ork.id)
         self.host.on_change()
 
     def _remove(self, args: dict) -> None:
