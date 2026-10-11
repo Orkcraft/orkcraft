@@ -141,9 +141,11 @@ AGENT_YARD = {
             "Spend today = spend 24h warn 2 crit 5 all", "Runs = runs 24h all", "Busy orks = orcs 24h all",
             "Tokens = tokens 24h horizontal command", "Quotas = limits 24h horizontal warn 80 crit 95 command",
             "CPU = cpu 1h full"]),
+        typed("yard_ux", "ux_lab", "Alchemy Tower", "⚗️", "Alchemist", "the Barracks' look, picture by picture",
+              target="barracks"),
     ],
-    "layout": [(0.0, 0.0, 0.44, 0.46), (0.56, 0.0, 0.44, 0.46), (0.0, 0.54, 0.3, 0.46), (0.35, 0.54, 0.3, 0.46),
-               (0.7, 0.54, 0.3, 0.46)],
+    "layout": [(0.0, 0.0, 0.38, 0.46), (0.42, 0.0, 0.38, 0.46), (0.0, 0.54, 0.3, 0.46), (0.35, 0.54, 0.3, 0.46),
+               (0.7, 0.54, 0.3, 0.46), (0.84, 0.0, 0.16, 0.46)],
     "roads": [
         ("camp", "branches", "git.pr_opened", "on_pr_opened", None, None),
         ("council", "camp", "pool.done", "on_task_done", None, None),
