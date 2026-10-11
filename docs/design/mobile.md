@@ -135,8 +135,9 @@ so the phone reads its answer.
 ### The compact snapshot
 
 `mobile.compact(host.snapshot())`: derived from the page's snapshot, never from the town, so the
-two never disagree. A town of one building is 0.5 KB against the page's 9 KB: no roads, huts, orkspaces, garrisons, cards, the
-Lake's tabs, jobs or the glossary.
+two never disagree. A town of one building is 0.5 KB against the page's 9 KB: no huts, orkspaces, garrisons, cards, the
+Lake's tabs, jobs or the glossary, and of the roads only which building feeds which (`roads`, [from, to] pairs,
+each once: never what a road carries, its rules or its signs).
 
 ```json
 {
@@ -151,6 +152,7 @@ Lake's tabs, jobs or the glossary.
               "advice": null, "waited": 42.0}],
   "buildings": [{"id": "town_hall", "title": "Town Hall", "title_plain": "Control panel",
                  "type": "town_hall", "state": "", "alert": null}],
+  "widget": null, "roads": [["pit", "signpost"], ["signpost", "horn"]],
   "sessions_running": 1
 }
 ```
@@ -298,6 +300,13 @@ Fields a phone may send: it moves, edits and deletes nothing). A task or a note 
 like one written at the desk, so the sheet says where before it is added: "The task goes down the road to
 Agent pool. The work it starts there is paid from Spend.", or that it waits in To Do; a to-do starts nothing.
 The widget's board is not repeated in the grid.
+
+**The roads, without lines** (stage 4, `pwa/links.js`). A phone's grid has no map, so the roads are not
+drawn: they order it. The quiet buildings stand in a block per chain of linked buildings (either way along a
+road), in the order the work flows (sources first; a loop keeps the town's order), with a › before a building
+the one before it sends to; the buildings no road touches come last, in one block. A long press (0.45 s) on a
+mark or a row lights the building's neighbours, dims the rest and says at the foot "Takes from: … · Sends to:
+…"; letting go puts the town back, and opens nothing. A tap's sheet names them too, for a screen reader.
 
 **Both looks** (§4). The app follows the snapshot's `look`: Camp in its palette (`design/system/tokens.css`),
 square corners, the buildings' titles as they are and the ork's mark; Office calm and plain (`title_plain`),
