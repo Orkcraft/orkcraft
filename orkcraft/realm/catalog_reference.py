@@ -322,7 +322,9 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
     "gramophone": {
         "language": "auto (the source's own), ru or en (default auto)",
         "minutes": "how long an episode is, 2–20 minutes (default 8)",
-        "voice": "a Gemini prebuilt voice, e.g. Charon, Kore, Puck (default Charon)",
+        "format": "dialogue (two hosts in two voices, as a podcast) or monologue (one narrator) (default dialogue)",
+        "voice": "a Gemini prebuilt voice: the narrator, or the dialogue's first host, e.g. Charon, Puck (default Charon)",
+        "voice_b": "the dialogue's second host, another Gemini prebuilt voice, e.g. Kore, Aoede (default Kore)",
         "tts_model": "the Gemini TTS model (default the newest Gemini Flash TTS: gemini-flash-tts)",
         "model": "the model that writes the script (default its steward's, by its goal)",
         "key": "where the Gemini API key is: an environment variable, e.g. GEMINI_API_KEY (the default), or a login, "

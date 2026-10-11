@@ -92,7 +92,7 @@ def test_an_episode_is_scripted_spoken_kept_and_sent_on(fake_repo, monkeypatch, 
     monkeypatch.setattr(gm, "_post", gemini)
     monkeypatch.setattr(gm.shutil, "which", lambda name: None)           # no ffmpeg: a .wav
     host = _host(fake_repo)
-    bid = _raised(host)
+    bid = _raised(host, format="monologue")
     w = host.town.worker(bid)
     sent = []
     host.town.emit_typed = lambda b, ev, value, title="", *a, **k: sent.append((ev, value, title)) or True
@@ -195,3 +195,40 @@ def test_the_file_is_served_to_the_page_and_to_a_phone_in_chunks(fake_repo, monk
                 urllib.request.urlopen(bad, timeout=5)
     finally:
         server.stop()
+
+
+DIALOGUE = ("**Alex:** Сегодня закрыли три задачи в `realm/orcs.py`.\nИ ещё одну.\n\nSam: А что завтра?\n\n"
+            "alex: Выпуск. " + "Длинное предложение про выпуск. " * 20)
+
+
+def test_a_dialogue_is_two_hosts_in_two_voices_never_named_aloud(fake_repo, monkeypatch):
+    said = gm.dialogue(DIALOGUE)
+    assert [h for h, _ in gm.turns(said)] == ["Alex", "Sam", "Alex"] and "И ещё одну." in said and "`" not in said
+    parts = gm.dialogue_pieces(said, 300)
+    assert len(parts) > 1 and all(len(p) <= 300 and p.split(":", 1)[0] in gm.HOSTS for p in parts)
+    p = gm.script_prompt("x", "T", "en", 5, "dialogue")
+    assert "Alex and Sam" in p and "never say their names" in p
+
+    monkeypatch.setenv("GEMINI_API_KEY", "k")
+    gemini = Gemini()
+    monkeypatch.setattr(gm, "_post", gemini)
+    monkeypatch.setattr(gm.shutil, "which", lambda name: None)
+    monkeypatch.setattr(GramophoneWorker, "steward_runner",
+                        lambda self, use, setting="": (lambda prompt, m=None: (DIALOGUE, 0.01)))
+    host = _host(fake_repo)
+    bid = _raised(host, voice_b="Aoede")                                   # a dialogue: the default
+    w = host.town.worker(bid)
+    eid = w.make("Отчёт за день", "День")
+    assert _wait(lambda: w.get(eid)["status"] == "done"), w.get(eid)
+    assert w.get(eid)["format"] == "dialogue"
+    speech = gemini.calls[0][1]["generationConfig"]["speechConfig"]["multiSpeakerVoiceConfig"]["speakerVoiceConfigs"]
+    assert [(v["speaker"], v["voiceConfig"]["prebuiltVoiceConfig"]["voiceName"]) for v in speech] == \
+        [("Alex", "Charon"), ("Sam", "Aoede")]
+    asked = gemini.calls[0][1]["contents"][0]["parts"][0]["text"]
+    assert asked.startswith("TTS the following conversation between Alex and Sam:") and "\n\nSam: А что завтра?" in asked
+    assert "Alex: Сегодня" in w.transcript(eid)
+
+    from orkcraft.gui.views import gramophone as view
+    assert view.detail(w)["settings"]["format"] == "dialogue"
+    view.ACTS["settings"](w, {"format": "monologue"})
+    assert w.config["format"] == "monologue" and w.form == "monologue"
