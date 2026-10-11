@@ -169,3 +169,25 @@ def test_the_ai_tool_may_read_the_folders_outside_never_write_them(fake_repo: Pa
     while w.running and time.monotonic() < end:
         time.sleep(0.02)
     assert got["dirs"] == (str(outside.resolve()),)
+
+
+def test_a_codebase_wiki_lives_in_its_orkspaces_project_and_a_team_wiki_in_the_town(fake_repo: Path, tmp_path: Path):
+    """docs/design/projects.md §8: the codebase wiki describes the project's code, so it lives (and reads its
+    sources) in the orkspace's project; a team wiki stays the town's; both keep their state in the town."""
+    from orkcraft.realm import projects
+    shop = tmp_path / "shop"
+    (shop / "src").mkdir(parents=True)
+    (shop / "src" / "app.py").write_text("print('shop')\n")
+    checkpoint.ensure(fake_repo)
+    host = Host(fake_repo, auto_commit=False)
+    made = {}
+    for topic in ("codebase", "team"):
+        spec = buildings.type_spec(host.town, "scrolls")
+        spec["config"] = {**(spec.get("config") or {}), "auto_ingest": False, "commit": False, "topic": topic}
+        made[topic] = host.town.worker(buildings.raise_spec(host.town, spec).id)
+    oid = host.town.scroll.active_orkspace_id
+    projects.link(host.town.scroll, oid, projects.add(host.town.scroll, "Shop", shop).id)
+    code, team = made["codebase"], made["team"]
+    assert code.work_root == shop.resolve() and code.wiki_root.is_relative_to(shop.resolve())
+    assert team.work_root == fake_repo and team.wiki_root.is_relative_to(fake_repo)
+    assert code.state_dir.is_relative_to(fake_repo)

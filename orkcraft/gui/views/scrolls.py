@@ -60,7 +60,7 @@ def _recent(w) -> list[dict]:
 
 
 def detail(w) -> dict:
-    rel = shelves.rel_to(w.repo_root, w.wiki_root)
+    rel = shelves.rel_to(w.work_root, w.wiki_root)
     pages = []
     for n in w.pages[:ITEMS]:
         inner = n.path[len(rel) + 1:] if n.path.startswith(rel + "/") else n.path
@@ -144,25 +144,25 @@ def _add_folder(w, args: dict) -> None:
     machine = getattr(w.town, "machine", None)
     if machine is not None:
         p = Path(path).expanduser()
-        folders.remember(machine, str(p if p.is_absolute() else w.repo_root / p))
+        folders.remember(machine, str(p if p.is_absolute() else w.work_root / p))
 
 
 def _about(w, args: dict) -> dict:
     """What the dialog says of a folder as it is chosen: whether it is there, and outside the project."""
     p = Path(text(args, "path", 2000).strip() or ".").expanduser()
-    folder = (p if p.is_absolute() else w.repo_root / p).resolve()
-    repo = w.repo_root.resolve()
+    folder = (p if p.is_absolute() else w.work_root / p).resolve()
+    repo = w.work_root.resolve()
     return {"path": str(folder), "exists": folder.is_dir(), "outside": not (folder == repo or repo in folder.parents)}
 
 
 def _folders(w, args: dict) -> dict:
     """The folder dialog's start: the recent folders of this machine."""
-    return {"recent": folders.recent(getattr(w.town, "machine", None)), "project": str(w.repo_root)}
+    return {"recent": folders.recent(getattr(w.town, "machine", None)), "project": str(w.work_root)}
 
 
 def _pick(w, args: dict) -> str:
     """Open the system's folder dialog (on a thread): a token to ask `picked` with."""
-    return folders.start(text(args, "start", 2000).strip() or str(w.repo_root))
+    return folders.start(text(args, "start", 2000).strip() or str(w.work_root))
 
 
 def _picked(w, args: dict) -> dict:
