@@ -24,6 +24,8 @@ def run(repo_root: Path | None = None, auto_commit: bool | None = None, layout_f
     host = Host(repo_root, auto_commit, layout_file, demo=demo)
     server = Server(host, port)
     thread = server.start_thread()
+    host.awake.running = True                    # the screen may turn off; the computer does not sleep (gui/awake.py)
+    host.awake.apply(host.town.machine.keep_awake)
     done = lambda: updates.RESTART if host.updates.restart_wanted else 0   # noqa: E731
     if not browser:
         try:
@@ -42,6 +44,7 @@ def run(repo_root: Path | None = None, auto_commit: bool | None = None, layout_f
         finally:
             server.stop()
             thread.join(10)
+            host.awake.stop()
         return done()
     window = webview.create_window(TITLE, server.url, width=SIZE[0], height=SIZE[1], min_size=(960, 600),
                           background_color="#141210")
@@ -52,4 +55,5 @@ def run(repo_root: Path | None = None, auto_commit: bool | None = None, layout_f
     finally:
         server.stop()
         thread.join(10)
+        host.awake.stop()
     return done()
