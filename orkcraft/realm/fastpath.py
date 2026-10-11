@@ -58,7 +58,7 @@ ROLES = (
      "You are a senior UI/UX designer and you guard how a building reads. Object to long or vague titles and "
      "labels, a card that says more than one headline, more than four actions, a window that needs a colour or "
      "a font of its own instead of the design system's roles, and words that differ from the rest of the town."),
-    ("mechanic", "⚙️", "Mechanic", "quality and spend",
+    ("mechanic", "🔧", "Mechanic", "quality and spend",
      "You are a senior AI engineer and you guard quality per token. Object when a change removes a check, a "
      "review or a test, raises a model tier with no measured reason, sends the same context again where it could "
      "be reused or cached, or cannot be shown better on the building's cases."),

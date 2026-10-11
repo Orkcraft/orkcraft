@@ -15,7 +15,7 @@ import { plan } from "./roads.js";
 import { pickedRoad, building as buildOpen, placing, constructing, built, raised } from "./build.js";
 import { openMenu } from "./menu.js";
 import { settingsOpen } from "./settings.js";
-import { Hut, sizes, dragging, resizing, pulling, pullRoad, CORNER, fenced, bareOf, YARD_STEP } from "./hut.js";
+import { Hut, sizes, dragging, resizing, pulling, pullRoad, CORNER, fenced, YARD_STEP } from "./hut.js";
 import { lost } from "./parts.js";
 import { tidySpots } from "./tidy.js";
 import { foldQuiet, unfoldAll, quiet } from "./fold.js";
@@ -404,8 +404,7 @@ function Roads({ roads, rects, ports, tints = {} }) {
         ${label && html`<text x=${spot.x} y=${spot.y} text-anchor=${spot.anchor} class="gui-road__label ok-font-status">${label}</text>`}
       </g>`;
     })}
-    ${pulling.value && rects[pulling.value.from] && html`<line class="gui-road__pull"
-      x1=${rects[pulling.value.from].x + rects[pulling.value.from].w} y1=${rects[pulling.value.from].y + rects[pulling.value.from].h / 2}
+    ${pulling.value && html`<line class="gui-road__pull" x1=${pulling.value.sx} y1=${pulling.value.sy}
       x2=${pulling.value.x} y2=${pulling.value.y} />`}
     ${pulling.value && html`<rect class="gui-road__pull-end" x=${Math.round(pulling.value.x) - 3} y=${Math.round(pulling.value.y) - 3}
       width="6" height="6" />`}
@@ -478,6 +477,14 @@ const GHOST = "__ghost";                    // the id of the building a ghost dr
 const kept = new Set();                     // placed in Build or stretched here: never pushed aside by the others
 const raisedSize = {};                      // building id → the size its ghost was drawn in: its scaffolding's size
 
+/** A building as its ghost and its scaffolding draw it: its house, its name, its fence or plinth and nothing in its
+ *  card — the same hut both times, so the building goes up exactly where its ghost stood (docs/design/select-a-building.md §8). */
+function blank(id, type, title, yard) {
+  return { id, type, title, icon: "", garrison: [], rules: [], quick: [], card: null,
+           status: [], status_plain: [], state: "", yard: !!yard, visit: "", alert: null, pinned: true, folded: false,
+           level: 0, goal: "balance", has_worker: false, page: true, loose: [], keeper: false, hut: null, size: null };
+}
+
 /** A building picked in Build, placed with the mouse (js/build.js place): its ghost follows the pointer, drawn as the
  *  building itself will be — its house, its fence and card, its size, 1:1 — and a press builds it there, where the
  *  ghost stood; Escape or a right click lets it go. */
@@ -512,9 +519,7 @@ function Placing({ p, rects }) {
       raised(id, type);
     }, () => {});
   };
-  const b = { id: GHOST, type: p.type, title: p.title, icon: "", garrison: [], rules: [], quick: [], card: null,
-              status: [], status_plain: [], state: "", yard: !!p.yard, visit: "", alert: null, pinned: true, folded: false,
-              level: 0, goal: "balance", has_worker: false, page: true, loose: [], keeper: false, hut: null, size: null };
+  const b = blank(GHOST, p.type, p.title, p.yard);
   return html`<div class="gui-town__placing" role="application" aria-label=${say(`Place ${p.title}: press where it should stand, Escape to cancel`)}
       onPointerMove=${(e) => setAt({ x: e.offsetX, y: e.offsetY })}
       onClick=${put} onContextMenu=${(e) => { e.preventDefault(); e.stopPropagation(); placing.value = null; }}>
@@ -655,8 +660,8 @@ export function Town({ buildings, roads }) {
         tints=${Object.assign({}, ...buildings.map((b) => (b.card && b.card.tints) || {}))} />
       ${onboardingPlan().filter((g) => !shown.has(g.id)).map((g) => html`<${Ghost} key=${`plan-${g.id}`} g=${g}
           spot=${place({ id: g.id, hut: g.hut }, 0, DEFAULT_SIZE)} biome=${activeBiome()} />`)}
-      ${buildings.map((b, i) => going[b.id] !== undefined ? html`<${Ghost} key=${`up-${b.id}`}
-          g=${{ id: b.id, type: b.type, title: b.title, state: "raising" }} spot=${spots[b.id]} size=${raisedSize[b.id]} biome=${activeBiome()} bare=${bareOf(b)} built=${true} />`
+      ${buildings.map((b, i) => going[b.id] !== undefined ? html`<div key=${`up-${b.id}`} class="gui-town__raising"
+          aria-label=${say(`${b.title}: being built`)}><${Hut} b=${blank(b.id, b.type, b.title, b.yard)} spot=${spots[b.id]} number=${i + 1} /></div>`
         : html`<${Hut} key=${b.id} b=${b} number=${i + 1} spot=${spots[b.id]} dim=${dim(b.id)} auto=${auto[b.id] || null}
           fresh=${fresh.has(b.id)} onMoved=${moved} onSized=${sized} />`)}
       ${ghost && html`<${Footprint} g=${ghost} />`}

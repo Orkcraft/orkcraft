@@ -12,7 +12,11 @@ shadow, a glint in each eye, each tusk's side shaded):
 - `orks/ork-stand.png` (12×9): the ork out of its door, facing you;
 - `orks/ork-walk-a.png`, `ork-walk-b.png` (12×9): two steps of its walk, its head bobbing, facing left as it walks
   out; the page mirrors them as it walks back in (yards.css);
-- `icons/thumb-up.png`, `thumb-down.png` (8×8 and its outline, 20 CSS px): a green pixel 👍 and 👎 in its bubble;
+- `icons/thumb-up.png`, `thumb-down.png` (20×20 with its outline, 20 CSS px, a pixel a CSS pixel): a green pixel 👍
+  and 👎 in its bubble and in a building's Info (js/console.js `Thumb`): a fist over a leather cuff, its fingers
+  parted by a shade, lit from the top left;
+- `icons/settings.png` (20×20 the same way): an iron gear in its bubble (js/visit.js), its settings: its tier and AI
+  tool. The gear means settings everywhere; the Mechanic's is a wrench (js/icons.js);
 - `icons/bubble.png` (10×10, drawn at 2×): the bubble's frame as a nine-slice (`border-image`, 4 pixels a corner),
   its corners rounded in pixel steps; `icons/bubble-tail.png` (5×4): its tail, down to the ork's head.
 """
@@ -48,17 +52,51 @@ BLANK = ["." * 12]
 # only its head, a third of its building's height: facing you, and two steps of its walk (a bob)
 ORKS = {"ork-stand": BLANK + GRID, "ork-walk-a": BLANK + SIDE_HEAD, "ork-walk-b": SIDE_HEAD + BLANK}
 
-# the thumb in the bubble: green as the ork, a lit edge; 👎 is 👍 upside down
-ICON_COLOURS = {"G": "#6ca420", "g": "#3f6b14", "L": "#a8d65a", "K": "#1a1813"}
+# the bubble's icons, drawn at 20×20 (their outline included), a pixel a CSS pixel at 1×, so they stay sharp at the
+# bubble's 20 px: the thumb green as the ork, a lit edge, its fingers parted by a shade, a leather cuff; 👎 is 👍
+# upside down. The gear iron, lit from the top left, its hole's wall in shade on that side.
+ICON_COLOURS = {"G": "#6ca420", "g": "#3f6b14", "m": "#548a1a", "L": "#a8d65a", "K": "#1a1813",
+                "H": "#8a6a42", "h": "#5e4528", "j": "#b08a58",
+                "T": "#eef1f5", "l": "#b9c2cf", "D": "#7d8695", "d": "#4a525e"}
 THUMB_UP = [
-    "...L....",
-    "..LG....",
-    "..GG....",
-    "LLGGGGG.",
-    "GGGGGGg.",
-    "GGGGGGg.",
-    "GGGGGg..",
-    "gg......",
+    "........LL........",
+    ".......LGGg.......",
+    ".......LGGg.......",
+    "......LGGGg.......",
+    "......LGGg........",
+    ".....LGGGg........",
+    "....LGGGGLLLLLLL..",
+    "jjKLGGGGGGGGGGGGm.",
+    "HHKLGGGGGGmmmmmmmg",
+    "HHKLGGGGGGLLLLLLLg",
+    "HHKLGGGGGGGGGGGGGg",
+    "HHKLGGGGGGmmmmmmmg",
+    "HHKLGGGGGGLLLLLLg.",
+    "HHKLGGGGGGGGGGGGg.",
+    "HHKLGGGGGGmmmmmmg.",
+    "hhKmGGGGGGLLLLLg..",
+    "hhKgggggggggggg...",
+    "..................",
+]
+GEAR = [
+    ".......TTTT.......",
+    ".......Tlld.......",
+    "...TT..Tlld..TT...",
+    "..TllTTllllTTlDT..",
+    "..TllllllllllDDd..",
+    "...TllllddllDDd...",
+    "...Tllld..TDDDd...",
+    "TTTllld....TDDDTTT",
+    "Tlllld......TDDDDd",
+    "Tlllld......TDDDDd",
+    "TddlllT....TDDDddd",
+    "...TllDT..TDDDd...",
+    "...TlDDDTTDDDDd...",
+    "..TlDDDDDDDDDDDT..",
+    "..TDDddDDDDddDDd..",
+    "...Td..TDDd..Td...",
+    ".......TDDd.......",
+    ".......Tddd.......",
 ]
 
 # the bubble: parchment inside, the camp's dark ink round it, each corner rounded in pixel steps over four pixels,
@@ -128,9 +166,14 @@ def shade(grid: list[str]) -> list[str]:
     return ["".join(r) for r in out]
 
 
-def thumbs() -> dict[str, list[str]]:
-    up = outlined(["." * 10] + ["." + r + "." for r in THUMB_UP] + ["." * 10])
-    return {"thumb-up": up, "thumb-down": up[::-1]}
+def framed(grid: list[str]) -> list[str]:
+    """An 18×18 drawing in a pixel of room each side, and its outline there: 20×20."""
+    return outlined(["." * 20] + ["." + r + "." for r in grid] + ["." * 20])
+
+
+def bubble_icons() -> dict[str, list[str]]:
+    up = framed(THUMB_UP)
+    return {"thumb-up": up, "thumb-down": up[::-1], "settings": framed(GEAR)}
 
 
 def main() -> None:
@@ -143,20 +186,21 @@ def main() -> None:
         fine = shade(scale2x(grid))
         grid_image(fine, COLOURS, 1).save(sprites / "orks" / f"{name}.png")
         grid_image(scale2x(fine), COLOURS, 1).save(sprites / "orks" / f"{name}@2x.png")
-    for name, grid in thumbs().items():
-        grid_image(grid, ICON_COLOURS, 2).save(sprites / "icons" / f"{name}.png")
-        grid_image(grid, ICON_COLOURS, 4).save(sprites / "icons" / f"{name}@2x.png")
+    for name, grid in bubble_icons().items():
+        assert len(grid) == 20 and all(len(r) == 20 for r in grid), name
+        grid_image(grid, ICON_COLOURS, 1).save(sprites / "icons" / f"{name}.png")
+        grid_image(grid, ICON_COLOURS, 2).save(sprites / "icons" / f"{name}@2x.png")
     for name, grid in {"bubble": BUBBLE, "bubble-tail": TAIL}.items():
         grid_image(grid, BUBBLE_COLOURS, 2).save(sprites / "icons" / f"{name}.png")
         grid_image(grid, BUBBLE_COLOURS, 4).save(sprites / "icons" / f"{name}@2x.png")
     if args.preview:
-        every = [(g, COLOURS) for g in ORKS.values()] + [(g, ICON_COLOURS) for g in thumbs().values()] \
+        every = [(g, COLOURS) for g in ORKS.values()] + [(g, ICON_COLOURS) for g in bubble_icons().values()] \
             + [(BUBBLE, BUBBLE_COLOURS), (TAIL, BUBBLE_COLOURS)]
         sheet = Image.new("RGBA", (len(every) * 112, 144), (42, 36, 25, 255))
         for i, (g, c) in enumerate(every):
             sheet.alpha_composite(grid_image(g, c, 8), (i * 112 + 4, 8))
         sheet.save(args.preview)
-    print(f"wrote {', '.join(ORKS)}, thumbs, bubble to {sprites}")
+    print(f"wrote {', '.join(ORKS)}, thumbs, gear, bubble to {sprites}")
 
 
 if __name__ == "__main__":

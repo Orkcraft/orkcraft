@@ -67,5 +67,14 @@ function App() {
   </div>`;
 }
 
+// A link to another site opens in the browser, never in the town's own window: a page's Markdown or an ork's text may
+// carry one without target=_blank, and the app's window would leave the town for it.
+document.addEventListener("click", (e) => {
+  const a = e.target instanceof Element && e.target.closest("a[href]");
+  if (!a || e.defaultPrevented || !/^https?:/i.test(a.href) || new URL(a.href).origin === location.origin) return;
+  e.preventDefault();
+  window.open(a.href, "_blank", "noopener");
+});
+
 connect();
 render(html`<${App} />`, document.getElementById("app"));
