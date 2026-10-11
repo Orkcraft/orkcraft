@@ -3,9 +3,11 @@ is its settings (which building, which image tool) over the gallery of that buil
 gallery out (js/buildings/ux_lab.js): it knows the Build icons and the sprites; this says which of them are drawn."""
 from __future__ import annotations
 
-from orkcraft.design import tokens
+import base64
+
+from orkcraft.design import tokens, ui
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import biomes, catalog, harnesses
+from orkcraft.realm import biomes, catalog, harnesses, painter
 
 SPRITES = {"loot_vault": "loot"}           # a type drawn under another's name (js/icons.js spriteName)
 FLAT = ("dirt", "forest")                  # the biomes that wear the plain header.png (js/icons.js DRAWN_FOR)
@@ -34,8 +36,16 @@ def card(w) -> dict:
 
 def detail(w) -> dict:
     tid = w.target
-    return {"target": tid, "title": catalog.TYPES[tid].title if tid else "", "biomes": drawn_biomes(tid) if tid else [],
-            "image_tool": w.image_tool, "tools": tools(w)}
+    out = {"target": tid, "title": catalog.TYPES[tid].title if tid else "", "biomes": drawn_biomes(tid) if tid else [],
+           "image_tool": w.image_tool, "tools": tools(w), "painting": dict(w.painting),
+           "own": {p: int(w.own(p).stat().st_mtime) for p in w.owned()}, "sprite": SPRITES.get(tid, tid)}
+    if tid:
+        bid = w.first_of_type()
+        contract = ui.contract(tid)
+        out["window"] = {"panes": sorted(contract.panes) if hasattr(contract, "panes") else [],
+                         "doc": ui.current(w.town.scroll.building(bid), tid) if bid else ui.default(tid),
+                         "standing": bool(bid), "draft": w.layout}
+    return out
 
 
 def _pick(w, args: dict) -> bool:
@@ -51,4 +61,81 @@ def _tool(w, args: dict) -> bool:
     return w.set_tool(tool)
 
 
-ACTS = {"pick": _pick, "tool": _tool}
+def _path(args: dict) -> str:
+    path = text(args, "path", 200)
+    if not painter.kind_of(path) or not (tokens.SYSTEM / path).is_file():
+        raise ActError("No such picture")
+    return path
+
+
+def _region(args: dict) -> dict | None:
+    r = args.get("region")
+    if not isinstance(r, dict):
+        return None
+    try:
+        box = {k: min(max(float(r[k]), 0.0), 1.0) for k in ("x", "y", "w", "h")}
+    except (KeyError, TypeError, ValueError):
+        raise ActError("A region is x, y, w, h as shares of the picture") from None
+    return box if box["w"] > 0.01 and box["h"] > 0.01 else None
+
+
+def _paint(w, args: dict) -> bool:
+    try:
+        w.paint(_path(args), text(args, "words", 2000), _region(args))
+    except painter.PaintError as e:
+        raise ActError(str(e)) from None
+    return True
+
+
+def _draft(w, args: dict) -> dict:
+    """What the dialog shows on the left: the draft (a data URL), the shipped one after Reset, or none yet."""
+    path = _path(args)
+    got = w.draft(path)
+    shown = got if isinstance(got, bytes) else (tokens.SYSTEM / path).read_bytes() if got == "shipped" else b""
+    src = "data:image/png;base64," + base64.b64encode(shown).decode() if shown else ""
+    return {"src": src, "shipped": got == "shipped", "painting": path in w.painting and w.painting[path] == "",
+            "error": w.painting.get(path) or ""}
+
+
+def _reset(w, args: dict) -> bool:
+    w.reset(_path(args))
+    return True
+
+
+def _drop(w, args: dict) -> bool:
+    w.drop(_path(args))
+    return True
+
+
+def _apply(w, args: dict) -> bool:
+    if not w.apply(_path(args)):
+        raise ActError("Nothing to apply: paint it first")
+    return True
+
+
+def _layout(w, args: dict) -> bool:
+    request = text(args, "words", 1000).strip()
+    if len(request) < 3:
+        raise ActError("Say what should change in the window")
+    try:
+        w.lay_out(request)
+    except painter.PaintError as e:
+        raise ActError(str(e)) from None
+    return True
+
+
+def _layout_apply(w, args: dict) -> bool:
+    problems = w.apply_layout()
+    if problems:
+        raise ActError("; ".join(problems[:3]))
+    return True
+
+
+def _layout_reset(w, args: dict) -> bool:
+    w.layout = None
+    w.changed()
+    return True
+
+
+ACTS = {"pick": _pick, "tool": _tool, "paint": _paint, "draft": _draft, "reset": _reset, "drop": _drop, "apply": _apply,
+        "layout": _layout, "layout_apply": _layout_apply, "layout_reset": _layout_reset}

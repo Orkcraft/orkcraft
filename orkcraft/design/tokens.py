@@ -22,6 +22,18 @@ SYSTEM = Path(__file__).with_name("system")       # → design-system/: the GUI'
 THEMES = ("camp", "office")
 
 
+def assets_dir() -> Path:
+    """This machine's own pictures, served before the design system's at the same path (`/ds/…`): what a UX bench
+    applied (docs/design/improve-buildings.md §6). $ORKCRAFT_ASSETS_DIR, else ~/.config/orkcraft/assets."""
+    import os
+    from orkcraft.env import getenv
+    env = getenv("ASSETS_DIR")
+    if env:
+        return Path(env).expanduser()
+    base = os.environ.get("XDG_CONFIG_HOME", "").strip() or str(Path.home() / ".config")
+    return Path(base) / "orkcraft" / "assets"
+
+
 @functools.lru_cache(maxsize=1)
 def load() -> dict:
     return json.loads(PATH.read_text(encoding="utf-8"))

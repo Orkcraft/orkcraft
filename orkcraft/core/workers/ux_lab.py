@@ -2,15 +2,24 @@
 
 Its settings say which type (`target`, picked from a list laid out as Build is, never from the map: a look is a
 type's, not one building's) and which AI tool paints (`image_tool`, agy by default). It lays no road and takes none
-(catalog `roads = "none"`). The gallery of the type's pictures is the view's (gui/views/ux_lab.py); painting them
-again and laying the window out again come next (stage 6).
+(catalog `roads = "none"`). The gallery of the type's pictures is the view's (gui/views/ux_lab.py).
+
+A picture painted again (realm/painter.py) is a **draft** beside the building until **Apply** puts it in this
+machine's own pictures (design/tokens.py `assets_dir`), served before the design system's; **Reset** brings the shipped
+one back (Apply then takes this machine's away). A window laid out again is its steward's redesign of the type's
+UI document, a draft too until Apply gives it to every building of the type (core/buildings.py `set_ui`).
 """
 from __future__ import annotations
 
+import threading
+from pathlib import Path
+
 from orkcraft.core.workers import Worker
-from orkcraft.realm import catalog
+from orkcraft.design import tokens
+from orkcraft.realm import catalog, painter
 
 IMAGE_TOOL = "agy"            # paints unless its settings name another (asked 2026-10-11)
+SHIPPED = "shipped"           # a draft that is the design system's own picture again (Reset)
 
 
 class UxLabWorker(Worker):
@@ -35,3 +44,159 @@ class UxLabWorker(Worker):
 
     def set_tool(self, tool: str) -> bool:
         return self.save_config({"image_tool": tool or None})
+
+    # -- pictures painted again (docs/design/improve-buildings.md §6.2) ------------------------------------------------
+
+    def start(self) -> None:
+        self.painting: dict[str, str] = {}           # a picture's path → "" while it is painted, else what went wrong
+        self.layout: dict | None = None             # a window laid out again: {doc, why, error, busy}
+
+    @staticmethod
+    def _key(path: str) -> str:
+        return path.replace("/", "__")
+
+    def _draft(self, path: str) -> Path:
+        return self.state_dir / "drafts" / f"{self._key(path)}"
+
+    @staticmethod
+    def own(path: str) -> Path:
+        return tokens.assets_dir() / path
+
+    def picture(self, path: str) -> bytes:
+        """The picture as it stands on this machine: its own, else the design system's."""
+        for p in (self.own(path), tokens.SYSTEM / path):
+            if p.is_file():
+                return p.read_bytes()
+        raise painter.PaintError("No such picture")
+
+    def draft(self, path: str) -> bytes | str | None:
+        """Its draft: the new picture, SHIPPED when Reset asked for the design system's again, None when none."""
+        f = self._draft(path)
+        if f.with_suffix(".shipped").exists():
+            return SHIPPED
+        return f.read_bytes() if f.is_file() else None
+
+    def paint(self, path: str, words: str, region: dict | None = None, runner=None) -> None:
+        """Painted again on its own thread from the picture as it stands (or its draft): the draft comes back."""
+        if not painter.kind_of(path):
+            raise painter.PaintError("The UX bench paints the Build icons, the houses and the orks")
+        if self.painting.get(path) == "":
+            raise painter.PaintError("It is being painted already")
+        have = self.draft(path)
+        reference = have if isinstance(have, bytes) else self.picture(path) if have is None else \
+            (tokens.SYSTEM / path).read_bytes()
+        self.painting[path] = ""
+        self.changed()
+
+        def work() -> None:
+            try:
+                data, error = painter.paint(self.image_tool, "", path, reference, words, region, runner=runner), ""
+            except painter.PaintError as e:
+                data, error = b"", str(e)
+            self.town.call(done, data, error)
+
+        def done(data: bytes, error: str) -> None:
+            if data:
+                f = self._draft(path)
+                f.parent.mkdir(parents=True, exist_ok=True)
+                f.write_bytes(data)
+                f.with_suffix(".shipped").unlink(missing_ok=True)
+            self.painting[path] = error
+            if not error:
+                self.painting.pop(path, None)
+            self.changed()
+
+        threading.Thread(target=work, daemon=True, name="ux-paint").start()
+
+    def reset(self, path: str) -> None:
+        """The draft is the design system's own picture again."""
+        f = self._draft(path)
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.unlink(missing_ok=True)
+        f.with_suffix(".shipped").write_text("", encoding="utf-8")
+        self.changed()
+
+    def drop(self, path: str) -> None:
+        f = self._draft(path)
+        f.unlink(missing_ok=True)
+        f.with_suffix(".shipped").unlink(missing_ok=True)
+        self.painting.pop(path, None)
+        self.changed()
+
+    def apply(self, path: str) -> bool:
+        """The draft becomes this machine's picture (its @2x too, so a retina screen shows it); after Reset, this
+        machine's goes and the design system's shows again. False when there is no draft."""
+        have = self.draft(path)
+        if have is None:
+            return False
+        targets = [path] + ([path[:-4] + "@2x.png"] if not path.endswith("@2x.png") else [])
+        for t in targets:
+            own = self.own(t)
+            if have == SHIPPED:
+                own.unlink(missing_ok=True)
+            else:
+                own.parent.mkdir(parents=True, exist_ok=True)
+                own.write_bytes(have)
+        self.drop(path)
+        return True
+
+    @staticmethod
+    def owned() -> list[str]:
+        """Every picture this machine has its own of (its @2x left out)."""
+        root = tokens.assets_dir() / "sprites"
+        if not root.is_dir():
+            return []
+        return sorted(p.relative_to(tokens.assets_dir()).as_posix() for p in root.rglob("*.png") if "@2x" not in p.name)
+
+    # -- its window laid out again (docs/design/improve-buildings.md §6.2) -----------------------------------------------
+
+    def first_of_type(self) -> str:
+        tid = self.target
+        return next((b.id for b in self.town.scroll.buildings
+                     if not b.demolished and catalog.type_of(self.town.spec_of(b.id)).id == tid), "") if tid else ""
+
+    def lay_out(self, request: str) -> None:
+        """Its steward lays the type's window out again from the person's words (one call, checked against the type's
+        contract): a draft until Apply."""
+        import copy
+        from orkcraft.core import runners
+        from orkcraft.realm import steward
+        bid = self.first_of_type()
+        if not bid:
+            raise painter.PaintError("Build one of them first: its window is laid out on it")
+        if self.layout and self.layout.get("busy"):
+            raise painter.PaintError("It is being laid out already")
+        repo, snapshot, tid = self.repo_root, copy.deepcopy(self.town.scroll), self.target
+        self.layout = {"busy": True, "doc": (self.layout or {}).get("doc"), "why": "", "error": ""}
+        self.changed()
+
+        def work() -> None:
+            report = steward.redesign(repo, snapshot, bid, tid, request,
+                                      runner=steward.runner_for(snapshot.building(bid), "redesign", runners.STEWARD_RUNNER))
+            self.town.call(done, report)
+
+        def done(report) -> None:
+            if report.proposals:
+                p = report.proposals[0]
+                self.layout = {"busy": False, "doc": p.data.get("ui"), "why": p.why, "error": ""}
+            else:
+                self.layout = {**self.layout, "busy": False,
+                               "error": report.error or "; ".join(report.errors[:2]) or "no layout came back"}
+            self.changed()
+
+        threading.Thread(target=work, daemon=True, name="ux-layout").start()
+
+    def apply_layout(self) -> list[str]:
+        """The draft layout for every building of the type (each a checkpoint: undo takes it back); the problems."""
+        from orkcraft.core import buildings
+        doc = (self.layout or {}).get("doc")
+        if not doc:
+            return ["no layout to apply"]
+        tid, problems = self.target, []
+        for b in self.town.scroll.buildings:
+            if not b.demolished and catalog.type_of(self.town.spec_of(b.id)).id == tid:
+                problems += buildings.set_ui(self.town, b.id, doc, by="you", why="the UX bench's layout")
+        if not problems:
+            self.layout = None
+            self.changed()
+        return problems

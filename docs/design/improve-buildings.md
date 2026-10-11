@@ -1,8 +1,8 @@
 # Design — Improve: the Mechanic and the Alchemist
 
-Status: stages 0–5 built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
+Status: stages 0–6 built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
 road rule; a building's inputs; the Test bench's setup; environments, case sets and what is kept to spend less; the
-virtual building; GitHub and pull requests). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
+virtual building; GitHub and pull requests; the UX bench painting pictures and laying windows out). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
 and keep it, **faster and cheaper than testing and rewriting it through Claude Code**.
 
 | stage | what | state |
@@ -14,7 +14,7 @@ and keep it, **faster and cheaper than testing and rewriting it through Claude C
 | 3b | Cassettes: MCP and outside calls recorded on a set's first run and played back after (§5.2) | |
 | 4 | The virtual building: a change is tried on an overlay the Mechanic holds while it is connected; **Save changes** keeps the data part for good (§5.3) | built |
 | 5 | GitHub: Connect GitHub in the mascot's menu (device flow); a code change goes as a pull request with its evidence (§4) | built |
-| 6 | The Alchemist redraws: images through the image tool with the shipped prompts, a region marked and commented, Reset; the Work window's layout as a UI document (§6) | |
+| 6 | The Alchemist redraws: images through the image tool with the shipped prompts, a region marked and commented, Reset; the Work window's layout as a UI document (§6) | built |
 | 7 | Cards s/m/l as UI documents, so the Alchemist redraws them too | |
 
 ## 1. Why
@@ -171,22 +171,30 @@ and prompt builders in Python).
 - **Image tool:** the AI tool and model that paints (default agy, with Gemini's images); any other tool the machine
   has is offered.
 
-### 6.2 Work
+### 6.2 Work (stage 6, built 2026-10-11)
 
-- **The gallery** (stage 0, read only): every picture of the type, small enough that the list stays short and big
-  enough to read — its Build icon, its house (each biome it has), its ork, then (stage 6) its window in each state
-  and its cards s/m/l — each with a line saying what it is, grouped: *Icon*, *Sprite*, *Cards*, *Window*.
-- **A press on one** (stage 6) opens a dialog: the picture large on the left, its changes on the right.
-  - *A picture:* say what to change; it goes with the shipped prompt for its kind (`design/prompts/icon.md`,
-    `sprite.md`, `ork.md`, moved out of [building-sprites.md](building-sprites.md) and [sprites.md](sprites.md)) and
-    the current picture as the style to keep. Mark a region and comment it: only that region is painted again.
-    **Reset** at the top brings back the first.
-  - *A window or a card:* say what to change; the Alchemist rewrites its UI document
-    ([design-system.md](../design-system.md), the roles and components only) and the left side draws it with the
-    sample data of the state. A region marked and commented changes only that part. **Reset** too.
-  - **Apply** at the bottom closes the dialog; the gallery shows the new one.
-- **Kept locally:** pictures in `~/.orkcraft/assets/<type>/` served before the shipped ones (`/ds/`), layouts as the
-  building's UI document (`BuildingSpec.ui`, already in the scroll). Sent upstream the same way as the Mechanic's (§4).
+- **The gallery**: every picture of the type, small enough that the list stays short and big enough to read, each
+  with a line saying what it is, grouped: *Icon* (its Build icon; its Office icon, a line drawing, shown only),
+  *Sprite* (its house on each ground it is drawn for, its ork) and *Window* (its Work window as boxes). Cards come
+  with stage 7.
+- **A press on a picture** opens a dialog: the picture large on the left, what to change on the right.
+  - Say what to change; **Paint it** asks the image tool once (`realm/painter.py`) in an empty folder holding the
+    picture as it is (`reference.png`), with the shipped prompt for its kind (`design/prompts/icon.md`, `sprite.md`,
+    `ork.md`: the style, the palette, the canvas, a transparent background) and the person's words; the tool writes
+    `out.png`, checked to be a PNG of a sane size. The new picture shows on the left (a draft beside the building).
+  - **Drag on the picture** to mark a region: the words then say what changes there, and the prompt asks for that
+    region only, every other pixel kept.
+  - **Reset** at the top: the left shows the shipped picture again.
+  - **Apply** at the bottom: the draft becomes this machine's own picture (`design/tokens.py` `assets_dir`,
+    `~/.config/orkcraft/assets/<path>`, its `@2x` too), which `/ds/` serves before the design system's — every town
+    on this machine shows it; after Reset, Apply takes this machine's away.
+  - A tool that makes no picture says so (*does agy make pictures here? Pick another in its settings*).
+- **A press on the window** (a type whose window has more than one pane): its UI document as boxes on the left, what
+  to change on the right; **Lay it out** is its steward's redesign (`realm/steward.py` `redesign`: one call, the
+  contract, the components, the font and tone roles, `design/ui.py` `RULES`; checked, sent back once with its problems
+  when wrong) on a building of the type. **Reset** drops the draft; **Apply** gives the layout to every building of
+  the type (`core/buildings.py` `set_ui`, a checkpoint each). A type whose window is one pane today says so: its
+  window is laid out when its view is split into panes.
 
 ## 7. Tokens: cheaper than Claude Code
 
@@ -213,10 +221,11 @@ ledger (`.orkcraft/spend/calls.jsonl`, by `purpose`) so the saving is a number, 
    environment) go first and are marked for the cache; today caching is only priced.
 8. **Patches, not rewrites; context gathered, not searched.** A proposal is a patch to one building's files, written
    from those files only — the step where Claude Code spends most, reading the repository to find them, is skipped.
-9. **The Alchemist's layouts are checked by code.** A UI document is validated against its schema before it is drawn
+9. **The Alchemist's layouts are checked by code** (built). A UI document is validated against its schema before it is drawn
    (`design/ui.py`), and drawn by the page without a model; a wrong one goes back once with its problems.
-10. **Pictures: draft, then final.** A low-resolution draft first; the full picture only on Apply. A region comment
-    sends the region and its mask, not the whole sheet.
+10. **Pictures: one picture, in an empty folder.** Each Paint is one call with the picture and its kind's prompt only —
+    never the sheet, never the source to read; a region is said in words (its shares of the picture). A draft at a
+    lower resolution first, the full one on Apply, comes when the image tool takes a size.
 
 ## 8. Decided
 

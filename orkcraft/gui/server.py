@@ -69,7 +69,13 @@ def _response(status: HTTPStatus, body: bytes, content_type: str = "text/plain; 
 
 
 def resolve(path: str) -> Path | None:
-    """The file a static path names, never one outside its folder."""
+    """The file a static path names, never one outside its folder; a design-system picture this machine has its own
+    of (a UX bench applied it, design/tokens.py `assets_dir`) is that one."""
+    if path.startswith("/ds/sprites/"):
+        own = tokens.assets_dir().resolve()
+        mine = (own / path[len("/ds/"):]).resolve()
+        if mine.is_file() and mine.is_relative_to(own):
+            return mine
     for prefix, root in ROUTES.items():
         if path.startswith(prefix):
             root = root.resolve()
