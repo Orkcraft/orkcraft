@@ -21,14 +21,15 @@ if (!document.querySelector(`link[href="${sheet}"]`)) {
 }
 
 const LOG_LINES = 4;
+const MARK = { good: "✓", watch: "!", bad: "✗" };
+/** A case's story in the latest runs (realm/explain.py), by its title; null when it was not in them. */
+const told = (d, title) => ((d.report || {}).stories || []).find((st) => st.case === title) || null;
 const METRIC = { tokens: "tokens", time: "time", quality: "quality" };
 const AREA = { code: "Code", roads: "Roads", prompt: "Prompt", settings: "Settings" };
 const pct = (v) => (v === null || v === undefined ? "—" : `${v > 0 ? "+" : ""}${Math.round(v * 100)}%`);
 const pts = (v) => (v === null || v === undefined ? "—" : `${v > 0 ? "+" : ""}${v}`);
 const clock = (s) => `${Math.floor((s || 0) / 60)}:${String(Math.round((s || 0) % 60)).padStart(2, "0")}`;
 const many = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
-/** How a change reads for the metric: less time and fewer tokens are better, a higher quality is. */
-const good = (key, v) => (v === null || v === undefined || v === 0 ? "" : (key === "quality" ? v > 0 : v < 0) ? "is-ok" : "is-bad");
 
 /** "3 of 5 cases ahead on tokens, −18 % on average" — over the last test of every case. */
 function summaryLine(sum) {
@@ -95,8 +96,7 @@ function LabView({ id, d, pick }) {
     <${Cases} id=${id} d=${d} on=${on} />
     <${RunAll} id=${id} d=${d} on=${on} />
     ${d.job && html`<${RunLog} id=${id} job=${d.job} />`}
-    <${Results} id=${id} d=${d} />
-    <${Recommendations} id=${id} d=${d} on=${on} />
+    <${Results} id=${id} d=${d} on=${on} />
     <details class="gui-bench__more lab-more" onToggle=${(e) => setMore(e.currentTarget.open)}><summary class="ok-font-label">${say("More: the goal, what to change, the shipped cases")}</summary>
       <${Goal} id=${id} d=${d} on=${on} />
       <${Proposals} id=${id} d=${d} on=${on} />
@@ -125,13 +125,33 @@ function Check({ id, c }) {
           : html`<button class="ok-btn primary" onClick=${() => act(id, "check_run")}>${say("Run the check")}</button>`}
         ${last.zip && html`<a class="ok-btn" href=${`/api/check/latest?t=${encodeURIComponent(TOKEN)}`} download
           title=${say("Every run and every model call it made, with a README for the agent that reads it")}>${say("Download (.zip)")}</a>`}</span></div>
-    <p class="ok-font-status ok-tone-muted">${say("Mail sorted, tasks from mail, the Review board and pictures redrawn, each case 3 times against the bare AI tool on agy's lightest model; then a quiet town that must call no model. It spends: each run stops at $2.")}</p>
+    <p class="ok-font-status ok-tone-muted">${say("Mail sorted, tasks from mail, the Review board and pictures redrawn, each 3 times against the AI tool alone (agy, its cheapest model), then a quiet town. It spends: each run stops at $2.")}</p>
     ${job && html`<pre class="gui-bench__log gui-bench__term">${(job.lines || []).slice(-LOG_LINES).join("\n")}</pre>`}
     ${job && job.error && html`<p class="ok-font-status ok-tone-error">${job.error}</p>`}
-    ${last.stamp && html`<details class="lab-check__last" open=${!on}><summary class=${cls("ok-font-body", last.green ? "ok-tone-ok" : "ok-tone-error")}>
-        ${say(`${last.green ? "Green" : "Red"} · ${last.stamp.replace(/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2}).*/, "$1-$2-$3 $4:$5")}`)}</summary>
-      <pre class="gui-bench__log lab-results__table">${last.report}</pre></details>`}
+    ${last.stamp && html`<${CheckVerdict} last=${last} />`}
   </section>`;
+}
+
+/** The last check in words: green or red, each job's cases, what to change, the quiet town; the numbers folded. */
+function CheckVerdict({ last }) {
+  const told = last.told || { scenarios: [], changes: [] };
+  const bad = told.scenarios.reduce((n, sc) => n + sc.stories.filter((st) => st.status === "bad").length, 0);
+  const idle = last.idle;
+  const when = last.stamp.replace(/^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2}).*/, "$1-$2-$3 $4:$5");
+  return html`<div class="lab-check__last">
+    <p class=${cls("ok-font-body", last.green ? "ok-tone-ok" : "ok-tone-error")}><b>${say(last.green
+      ? "Green: the main jobs pass." : `Red: ${bad ? many(bad, "case") + " to fix" : "over its budget"}.`)}</b>
+      <span class="ok-font-status ok-tone-muted"> ${say(`Checked ${when}`)}</span></p>
+    ${told.scenarios.filter((sc) => sc.stories.length).map((sc) => html`<div key=${sc.id} class="lab-check__job">
+      <h5 class="ok-font-label">${say(sc.title)}</h5><${Stories} stories=${sc.stories} /></div>`)}
+    ${idle && html`<p class=${cls("ok-font-status", idle.calls ? "ok-tone-error" : "ok-tone-muted")}>${say(idle.calls
+      ? `A quiet town called the AI tool ${many(idle.calls, "time")} in ${idle.hours} hours on its own: it should not.`
+      : `A quiet town called no AI tool in ${idle.hours} hours.`)}</p>`}
+    <h5 class="ok-font-label">${say("What to change")}</h5>
+    <${Changes} changes=${told.changes} />
+    <details class="gui-bench__more"><summary class="ok-font-label">${say("Numbers")}</summary>
+      <pre class="gui-bench__log lab-results__table">${last.report}</pre></details>
+  </div>`;
 }
 
 /** Run every case, each the times the settings say, against the bare AI tool. */
@@ -150,40 +170,50 @@ function RunAll({ id, d, on }) {
 
 const TOKEN = new URLSearchParams(location.search).get("t") || "";
 
-/** The latest runs side by side, to copy for an analysis or to download with every call in full. */
-function Results({ id, d }) {
-  const r = d.report || {};
-  const copy = () => act(id, "export").then((text) => copyText(text, "Copied the runs and the recommendations"), () => {});
-  return html`<section class="gui-bench__section lab-results">
-    <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">${say("Results")}</h4>
-      ${r.text && html`<span class="gui-bench__acts">
-        <button class="ok-btn" onClick=${copy} title=${say("The table, every run in full with its model calls, and the recommendations, as text")}>${say("Copy for analysis")}</button>
-        <a class="ok-btn" href=${`/api/bench/${encodeURIComponent(id)}?t=${encodeURIComponent(TOKEN)}`} download
-          title=${say("The same, plus every model call itself (what went in, what came out, how it worked), as a zip")}>${say("Download (.zip)")}</a></span>`}</div>
-    ${r.text ? html`<p class="ok-font-status ok-tone-muted">${say(`${many(r.cases, "case")}, ${many(r.runs, "run")} · latest ${(r.at || "").replace("T", " ").slice(0, 16)}`)}</p>
-        <pre class="gui-bench__log lab-results__table">${r.text}</pre>`
-      : html`<p class="ok-font-status ok-tone-muted">${say("No run yet: add an environment and a case set, then Run all cases.")}</p>`}
-  </section>`;
+/** Each case in one sentence: ✓ as good as the AI tool alone, ! fine but costly or unsteady, ✗ worse. */
+function Stories({ stories }) {
+  return html`<ul class="lab-stories">${stories.map((st, n) => html`<li key=${n} class=${cls("lab-story", `is-${st.status}`)}>
+    <details><summary><span class="lab-story__mark" aria-hidden="true">${MARK[st.status]}</span>
+      <b class="ok-font-body">${say(st.case)}</b><span class="ok-font-body"> — ${say(st.summary)}</span></summary>
+      ${st.details.length > 0 && html`<ul class="lab-story__why">${st.details.map((x, k) => html`<li key=${k} class="ok-font-status">${say(x)}</li>`)}</ul>`}
+    </details></li>`)}</ul>`;
 }
 
-/** The tech review of each building it tests, reading the latest runs: what to change, as advice. */
-function Recommendations({ id, d, on }) {
+/** What to change and why: what the runs measured first, then the reviewers' advice. */
+function Changes({ changes }) {
+  if (!changes.length) return html`<p class="ok-font-status ok-tone-muted">${say("Nothing the runs point at. Ask the reviewers for what they would change.")}</p>`;
+  return html`<ol class="lab-changes">${changes.map((c, n) => html`<li key=${n} class="lab-change">
+    <b class="ok-font-body">${say(c.what)}</b>
+    <p class="ok-font-status">${say(c.why)}</p>
+    <p class="ok-font-status ok-tone-muted">${c.cases.length ? say(`Seen in: ${c.cases.join(", ")}`) : say(`Advice of the ${c.from}`)}</p>
+  </li>`)}</ol>`;
+}
+
+/** The latest runs in words — what was found and what to change — with the numbers folded, to copy or download. */
+function Results({ id, d, on }) {
+  const r = d.report || {};
   const recs = d.recs || [];
-  const busy = recs.some((r) => r.running);
-  return html`<section class="gui-bench__section lab-recs">
-    <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">${say("Recommendations")}</h4>
-      <button class="ok-btn" disabled=${on || busy || !(d.report || {}).text} onClick=${() => act(id, "recommend")}>
-        ${busy ? say("Reading the code and the runs…") : recs.some((r) => r.at) ? say("Review again") : say("Review")}</button></div>
-    <p class="ok-font-status ok-tone-muted">${say("Three reviewers read the code and the latest runs with their model calls, and say what to change. Each is one AI tool run; nothing changes by itself.")}</p>
-    ${recs.map((r) => html`<div key=${r.type} class="lab-rec">
-      ${recs.length > 1 && html`<b class="ok-font-body">${say(r.word)}</b>`}
-      ${r.at && html`<p class="ok-font-status ok-tone-muted">${say(`Reviewed ${r.at.replace("T", " ").slice(0, 16)}`)}</p>`}
-      ${r.errors.filter(Boolean).map((e, n) => html`<p key=${n} class="ok-font-status ok-tone-error">${e}</p>`)}
-      <ul class="gui-bench__findings">${r.findings.map((f, n) => html`<li key=${n} class="gui-bench__finding">
-        <span><span class=${`gui-bench__sev is-${f.severity}`}>${f.severity}</span> <b>${f.title}</b> <span class="ok-tone-muted">· ${f.who}</span></span>
-        ${f.detail && html`<p class="ok-font-status">${f.detail}</p>`}
-        ${f.where && html`<p class="ok-font-status ok-tone-muted">${f.where}</p>`}</li>`)}</ul>
-    </div>`)}
+  const asking = recs.some((x) => x.running);
+  const copy = () => act(id, "export").then((text) => copyText(text, "Copied the findings, the changes and every run"), () => {});
+  if (!r.text) {
+    return html`<section class="gui-bench__section lab-results"><h4 class="ok-font-label gui-bench__h">${say("What we found")}</h4>
+      <p class="ok-font-status ok-tone-muted">${say("Nothing yet: add an environment and a case set, then Run all cases.")}</p></section>`;
+  }
+  return html`<section class="gui-bench__section lab-results">
+    <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">${say("What we found")}</h4>
+      <span class="ok-font-status ok-tone-muted">${say(`${many(r.cases, "case")}, ${many(r.runs, "run")} · ${(r.at || "").replace("T", " ").slice(0, 16)}`)}</span></div>
+    <${Stories} stories=${r.stories || []} />
+    <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">${say("What to change")}</h4>
+      <button class="ok-btn" disabled=${on || asking} onClick=${() => act(id, "recommend")}
+        title=${say("Three reviewers read the code and these runs and add their advice: one AI tool run each")}>
+        ${asking ? say("The reviewers are reading…") : say("Ask the reviewers too")}</button></div>
+    <${Changes} changes=${r.changes || []} />
+    <details class="gui-bench__more"><summary class="ok-font-label">${say("Numbers")}</summary>
+      <pre class="gui-bench__log lab-results__table">${r.text}</pre></details>
+    <div class="gui-bench__row">
+      <button class="ok-btn" onClick=${copy} title=${say("All of it as text: the findings, the changes, every run in full with its model calls")}>${say("Copy for analysis")}</button>
+      <a class="ok-btn" href=${`/api/bench/${encodeURIComponent(id)}?t=${encodeURIComponent(TOKEN)}`} download
+        title=${say("The same, plus every model call itself (what went in, what came out, how it worked), as a zip")}>${say("Download (.zip)")}</a></div>
   </section>`;
 }
 
@@ -241,19 +271,20 @@ function Envs({ id, d, on }) {
     ${envs.map((e) => html`<div key=${e.id} class="lab-env">
       <div class="lab-env__head"><b class="ok-font-body">${say(e.name)}</b>
         <span class="ok-font-status ok-tone-muted">${say(e.about)}${e.files ? ` · ${e.files} ${say("files")}` : ""}</span></div>
-      <ul class="lab-set-list">${sets.filter((x) => x.env === e.id).map((x) => html`<${SetRow} key=${x.id} id=${id} x=${x} on=${on} />`)}</ul>
+      <ul class="lab-set-list">${sets.filter((x) => x.env === e.id).map((x) => html`<${SetRow} key=${x.id} id=${id} x=${x} on=${on} d=${d} />`)}</ul>
       <${AddSet} id=${id} env=${e.id} busy=${d.busy_what === "set"} />
     </div>`)}
     <${AddEnv} id=${id} busy=${d.busy_what === "env"} />
   </section>`;
 }
 
-function SetRow({ id, x, on }) {
-  const s = x.summary || {};
+function SetRow({ id, x, on, d }) {
   const est = x.estimate || {};
-  const mean = s.ran ? `${say("last run")}: ${say("time")} ${pct(s.time)} · ${say("tokens")} ${pct(s.tokens)} · ${say("quality")} ${pts(s.quality)} (${s.ran}/${x.cases.length})`
+  const stories = x.cases.map((c) => told(d, c.title)).filter(Boolean);
+  const counts = ["good", "watch", "bad"].map((k) => [k, stories.filter((st) => st.status === k).length]).filter(([, n]) => n);
+  const mean = stories.length ? `${counts.map(([k, n]) => `${MARK[k]} ${n}`).join("  ")} · ${say(`${stories.length} of ${x.cases.length} in the latest runs`)}`
     : say("not run yet");
-  const cost = est.cost !== undefined ? ` · ${say("about")} $${est.cost.toFixed(2)}${est.tokens ? `, ${est.tokens.toLocaleString()} ${say("tokens")}` : ""} ${say("on the building's side")}` : "";
+  const cost = est.cost !== undefined ? ` · ${say("about")} $${est.cost.toFixed(2)} ${say("a run")}` : "";
   return html`<li class="lab-set">
     <div class="lab-case__head"><span class="ok-font-body">${x.about}</span>
       <span class="ok-font-status ok-tone-muted">${say(many(x.cases.length, "case"))}</span>
@@ -315,9 +346,6 @@ function Cases({ id, d, on }) {
 
 function CaseRow({ id, c, r, d, on }) {
   const entry = (d.entries || []).find((e) => e.id === c.entry);
-  const key = METRIC[d.metric] || "quality";
-  const cell = (label, k, fmt) => html`<span class=${cls(`lab-delta ${good(k, r[k])}`, { "is-lead": k === key })}
-    title=${say(k === "quality" ? "The scheme's score minus the bare AI tool's" : "The scheme against the bare AI tool")}>${say(label)} ${fmt(r[k])}</span>`;
   return html`<li class="lab-case">
     <div class="lab-case__head">
       <b class="ok-font-body">${c.title}</b>
@@ -331,11 +359,10 @@ function CaseRow({ id, c, r, d, on }) {
       <pre class="lab-case__body">${c.text}</pre>
       ${c.expect && c.expect.length > 0 && html`<p class="ok-font-status">${say("A good result says")}: ${c.expect.map((x) => (Array.isArray(x) ? x.join(" / ") : x)).join(", ")}</p>`}
       ${c.why && html`<p class="ok-font-status ok-tone-muted">${c.why}</p>`}</details>
-    ${r && r.scheme && r.bare ? html`<div class="lab-case__result">
-        ${cell("Time", "time", pct)} ${cell("Tokens", "tokens", pct)} ${cell("Quality", "quality", pts)}
-        <span class="ok-font-status ok-tone-muted">${say("scheme")} ${clock(r.scheme.seconds)} · ${(r.scheme.tokens || 0).toLocaleString()} ${say("tokens")}${r.scheme.score !== null && r.scheme.score !== undefined ? ` · ${r.scheme.score}/10` : r.scheme.checks ? ` · ${r.scheme.checks}` : ""}${r.scheme.error ? ` · ${say("did not finish")}` : ""}
-           — ${say("bare")} ${clock(r.bare.seconds)} · ${(r.bare.tokens || 0).toLocaleString()} ${say("tokens")}${r.bare.score !== null && r.bare.score !== undefined ? ` · ${r.bare.score}/10` : r.bare.checks ? ` · ${r.bare.checks}` : ""}${r.bare.error ? ` · ${say("did not finish")}` : ""}
-          · ${(r.at || "").replace("T", " ").slice(0, 16)}</span></div>`
+    ${told(d, c.title) ? html`<div class=${cls("lab-case__result", "lab-story", `is-${told(d, c.title).status}`)}>
+        <span class="lab-story__mark" aria-hidden="true">${MARK[told(d, c.title).status]}</span>
+        <span class="ok-font-status">${say(told(d, c.title).summary)}</span></div>`
+      : r && r.scheme && r.bare ? html`<div class="ok-font-status ok-tone-muted">${say("Tested before its latest run: run it again to read it in words")}</div>`
       : html`<div class="ok-font-status ok-tone-muted">${say("Not tested yet")}</div>`}
   </li>`;
 }

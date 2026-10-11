@@ -180,6 +180,7 @@ def test_the_test_bench_runs_the_check_and_serves_its_folder(fake_repo, isolated
             time.sleep(0.05)
         assert c["job"]["lines"] == ["Mail sorted · run 1"] and not c["job"]["error"]
         assert c["last"]["stamp"] == "20261011-120000" and c["last"]["green"] is False and "**RED**" in c["last"]["report"]
+        assert c["last"]["told"] == {"scenarios": [], "changes": []}
         server = Server(host)
         server.start_thread()
         try:

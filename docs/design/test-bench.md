@@ -326,6 +326,20 @@ cases, Results, Recommendations; the goal, What to change, the virtual building 
   its prompt carrying these runs (`runs=`) in place of the type's own; the findings are shown, copied and zipped
   with the runs.
 
+### 10.3 In words, not numbers (realm/explain.py, asked 2026-10-11)
+
+A person reads what the runs mean, not a table: the numbers are folded under **Numbers** (and kept in Copy and the
+zip). **What we found** is each case in one sentence with ✓ (as good as the AI tool alone), ! (fine, but costly or
+unsteady) or ✗ (worse, or it did not run) — "It does as well as the AI tool alone, 44% slower and about the same money"
+— and, unfolded, what lies under it, read from its model calls: how many times it asks the AI tool where the tool alone
+answers once and for what (sorting, planning, reviewing), how long the AI tool works for it against alone, how much of
+its time goes outside the AI tool, how much longer what it sends is than the task. **What to change** turns that into
+changes with their why, the weightiest and the most common first — get it right first; make it steady; skip a step
+that adds time and no quality; shorten what it sends; cut the waiting around the AI tool — then the reviewers' advice
+(**Ask the reviewers too**). A case's row and a case set's say the same in a word (✓ 3 ! 1). The check's verdict in
+the Test bench reads the same way, by job, with the quiet town in a sentence; `report.md` carries it as **In plain
+words**. The words are made from the numbers only: they say what the runs show, never a guess.
+
 ### 10.2 A building's day log (realm/day_log.py, gui/day_logs.py)
 
 While the town's window is open every model call is kept by day and building (realm/call_log.py `keep_days`):
