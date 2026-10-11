@@ -2,6 +2,12 @@
   "about": "The releases of Orkcraft, newest first: what an installed copy reads to update itself (docs/updates.md). A release marked critical installs by itself when the town opens.",
   "releases": [
     {
+      "version": "0.2.7",
+      "date": "2026-10-11",
+      "critical": false,
+      "notes": "Projects: each orkspace works in a folder of its own (a project), picked when you make it on the War Map — the same folder as now, the town's, a new project with git, or a folder you choose; a folder with no git asks before git starts there. A land's menu has Project… and History…: every change of that map, newest first, and Back to this puts the map back as it was. Before and after an ork works in a project, Orkcraft keeps a snapshot of its files without touching your branch, index or git log, so the History can also take the files back (your current files are saved first). A building's menu has Copy to orkspace…. Build is a tray of small icons by what each building is for, with a new Improve group: the Test bench runs a building's cases beside the bare AI tool and says what to change, and proposals are tried on its copy before they are saved; the UX bench looks at a building's window. A click selects a building, a second click opens it. Cards stand in fenced yards that grow with renown. The Gramophone makes a podcast of two hosts in two voices by default. A phone can be paired from the portrait's menu (a prototype web app over Tailscale). Orkcraft keeps the computer awake while it is open; the screen may still turn off. The Agent pool sorts, plans and judges from its steward's prompt, can work in a folder of code of its own and shows its orks in lanes; External listeners judge mail on the light tier and see who wrote it."
+    },
+    {
       "version": "0.2.6",
       "date": "2026-10-09",
       "critical": false,
