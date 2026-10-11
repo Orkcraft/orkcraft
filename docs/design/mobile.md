@@ -300,9 +300,14 @@ tailnet anew (`pwa.retry_tail`), with no restart of the town.
 a subprotocol: `Sec-WebSocket-Protocol: orkcraft.v1, bearer.<token>`; the listener answers `orkcraft.v1`
 and never echoes the token. Everything after it is the phone's: `mobile.allowed`, the rate limit, Forget.
 
+**Add to the Home Screen.** Until the app runs on its own (`display-mode: standalone`) a banner at the top
+offers it: on Android its Add opens the browser's own install prompt (`beforeinstallprompt`); on iOS, which
+has no such prompt, it says where Safari keeps Add to Home Screen. Not now hides it for 14 days.
+
 **iOS keeps a Home Screen app's storage apart from Safari's.** Paired in Safari, the page names the token
 in its manifest's `start_url` (`manifest.webmanifest?k=<token>`, a token's characters only) and in its own
-fragment, so the app the person adds opens with it once, keeps it and wipes it from its address. Until the
+fragment, so the app the person adds opens with it once, keeps it and wipes it from its address. The banner does the
+same each time it shows, so the app can be added later too. Until the
 app is added that address holds the phone's key, and the page says so.
 
 **The computer stays awake.** A town asleep answers no phone and its orks stop, so while Orkcraft is open
