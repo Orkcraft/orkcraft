@@ -283,7 +283,8 @@ the phone is).
 **Both looks** (§4). The app follows the snapshot's `look`: Camp in its palette (`design/system/tokens.css`),
 square corners, the buildings' titles as they are and the ork's mark; Office calm and plain (`title_plain`),
 dark or light as the phone is. Its Look card switches Camp, Office or By the shift with `you.look`, the one
-setting the desktop's toggle sets too. The Camp fonts stay on the desktop: the app loads only its own files.
+setting the desktop's toggle sets too. The faces are the desktop's own (`design/system/fonts`, served under `/app/fonts/`), in the same roles:
+Titillium Web and Almendra SC in Camp, Pixelify Sans for the buildings' names, the system's face in Office.
 
 **Only over Tailscale.** A browser cannot pin a certificate, and a service worker or a Home Screen app needs
 one it trusts. The tailnet's `*.ts.net` certificate (`tailscale cert`, phone-places.md §3) is that one, so

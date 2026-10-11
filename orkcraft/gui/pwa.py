@@ -35,16 +35,18 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import parse_qs, quote, urlsplit
 
+from orkcraft.design import tokens
 from orkcraft.gui import tailnet
 
 ROOT = Path(__file__).resolve().parent / "static" / "pwa"
+FONTS = tokens.SYSTEM / "fonts"     # the desktop's faces (design/system/fonts), served as fonts/<file>
 PREFIX = "/app/"
 SUBPROTOCOL = "orkcraft.v1"
 BEARER = "bearer."
 TOKEN = re.compile(r"[A-Za-z0-9_-]{20,128}")   # a device token as pairing makes it (token_urlsafe)
 TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
          ".css": "text/css; charset=utf-8", ".webmanifest": "application/manifest+json",
-         ".png": "image/png", ".svg": "image/svg+xml"}
+         ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2"}
 # The app's page loads only its own files and talks only to its own listener.
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' wss:; "
        "manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; "
@@ -52,8 +54,11 @@ CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' 
 
 
 def files() -> dict[str, Path]:
-    """The app's files by the name they are served at (under PREFIX)."""
-    return {p.name: p for p in sorted(ROOT.iterdir()) if p.is_file() and p.suffix in TYPES}
+    """The app's files by the name they are served at (under PREFIX), and the desktop's fonts under fonts/:
+    the same faces in both, from one place."""
+    own = {p.name: p for p in sorted(ROOT.iterdir()) if p.is_file() and p.suffix in TYPES}
+    faces = {f"fonts/{p.name}": p for p in sorted(FONTS.iterdir()) if p.suffix in (".woff2", ".css")}
+    return {**own, **faces}
 
 
 def wants(path: str) -> bool:

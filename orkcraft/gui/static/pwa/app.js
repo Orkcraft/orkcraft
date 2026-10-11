@@ -218,7 +218,7 @@ function layout() {
   };
   parts.dock = makeDock({ send, flash, building, device: () => device, unpair: unpairHere, shared });
   show(parts.status, parts.install, parts.head, parts.news,
-    h("section", { class: "card answers", "aria-labelledby": "answers-h" },
+    h("section", { class: "card asking", "aria-labelledby": "answers-h" },
       h("h2", { id: "answers-h" }, "Answers"), parts.summary, parts.alerts),
     h("section", { class: "card" }, h("h2", {}, "Buildings"), parts.buildings),
     parts.foot, parts.dock.el, ...parts.dock.sheets);

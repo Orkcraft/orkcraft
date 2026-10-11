@@ -112,7 +112,7 @@ async def test_office_in_light_paints_the_systems_bar_light_and_camp_stays_dark(
 @pytest.mark.asyncio
 async def test_the_questions_come_first_and_every_target_is_a_thumbs_size(fake_repo):
     async with _phone(fake_repo) as (_, page):
-        summary = page.locator(".answers .summary")
+        summary = page.locator(".asking .summary")
         await summary.wait_for(timeout=WAIT_MS)
         assert (await summary.inner_text()) == "No ork is waiting on you."
         await page.locator(".dock").get_by_role("button", name="More").click()
