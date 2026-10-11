@@ -55,7 +55,8 @@ def test_the_compact_snapshot_is_small_and_names_its_content(fake_repo, isolated
     hall = next(b for b in snap["buildings"] if b["id"] == "town_hall")
     assert set(hall) == {"id", "title", "title_plain", "type", "state", "alert"} and hall["type"] == "town_hall"
     assert {"gold", "gold_level", "quota", "quota_level", "alerts"} <= set(snap["hud"])
-    assert "roads" not in snap and "words" not in snap and "orkspaces" not in snap
+    assert "words" not in snap and "orkspaces" not in snap
+    assert all(isinstance(r, list) and len(r) == 2 for r in snap["roads"])   # which feeds which, not what a road carries
     assert host.command("mobile.snapshot", {"since": snap["rev"]}) == {"v": mobile.API, "rev": snap["rev"],
                                                                        "same": True}
     host.command("hut.move", {"id": board, "x": 0.1, "y": 0.1})           # where a hut stands: not a phone's
@@ -230,3 +231,10 @@ def test_the_widget_is_task_fields_its_to_dos_notes_lanes_and_where_a_card_goes(
     assert w["sends"]["task"] == [{"title": "🛖 Barracks", "title_plain": "Agent pool"}]
     assert [x["title"] for x in w["sends"]["note"]] == ["📜 Wiki"]
     assert mobile.compact({"buildings": [{"id": "p", "type": "pit", "title": "Pit"}]})["widget"] is None
+
+
+def test_the_roads_come_to_a_phone_as_pairs_of_its_buildings_each_once():
+    full = {"buildings": [{"id": "a", "type": "pit", "title": "A"}, {"id": "b", "type": "forge", "title": "B"}],
+            "roads": [{"from": "a", "to": "b", "event": "pit.file"}, {"from": "a", "to": "b", "event": "pit.text"},
+                      {"from": "clock", "to": "b", "event": "tick"}, {"from": "b", "to": "b", "event": "x"}]}
+    assert mobile.compact(full)["roads"] == [["a", "b"]]

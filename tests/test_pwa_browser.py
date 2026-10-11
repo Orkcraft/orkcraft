@@ -191,3 +191,50 @@ async def test_task_fields_stands_open_and_takes_a_to_do_written_on_the_phone(fa
         assert await widget.locator(".w-lanes").count() == 0                     # the orks' lanes: a tap away
         await widget.locator(".w-work").click()
         assert await widget.locator(".w-work").get_attribute("aria-expanded") == "true"
+
+
+@pytest.mark.asyncio
+async def test_the_grid_stands_in_chains_as_the_work_flows(fake_repo):
+    async with _phone(fake_repo) as (_, page):
+        groups = await page.evaluate("""async () => {
+          const { chains } = await import('/app/links.js');
+          return chains(['x', 'c', 'b', 'a', 'd', 'e', 'f'],
+            [['a', 'b'], ['b', 'c'], ['a', 'c'], ['d', 'e'], ['e', 'd']]);
+        }""")
+        assert groups == [{"linked": True, "ids": ["a", "b", "c"]},          # sources first, then as the work flows
+                          {"linked": True, "ids": ["d", "e"]},               # a loop keeps the town's order
+                          {"linked": False, "ids": ["x", "f"]}]
+
+
+@pytest.mark.asyncio
+async def test_a_long_press_lights_a_buildings_neighbours_and_a_tap_names_them(fake_repo):
+    async with _phone(fake_repo) as (_, page):
+        await page.evaluate("""async () => {
+          const { makeTown } = await import('/app/town.js');
+          const b = (id, title) => ({ id, title, type: 'pit', state: '' });
+          const s = { look: 'office', alerts: [], roads: [['in', 'mid'], ['mid', 'out']],
+            buildings: [b('in', 'Inbox'), b('mid', 'Triage'), b('out', 'Replies'), b('far', 'Notes')] };
+          const view = makeTown({ send: async () => ({ ok: true }), rerender: () => view.render(s) });
+          const box = document.createElement('div'); box.id = 'probe';
+          box.append(...view.parts); document.body.replaceChildren(box); view.render(s);
+        }""")
+        names = await page.locator("#probe .grid.linked .cell-name").all_inner_texts()
+        assert names == ["Inbox", "Triage", "Replies"]
+        assert await page.locator("#probe .grid.linked li.fed").count() == 2
+        cell = page.locator("#probe .cell", has_text="Triage")
+        box = await cell.bounding_box()
+        await page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+        await page.mouse.down()
+        await page.wait_for_timeout(700)
+        assert await page.evaluate("document.documentElement.classList.contains('lighting')")
+        near = await page.evaluate("[...document.querySelectorAll('.is-near')].map((e) => e.textContent)")
+        assert sorted(near) == ["Inbox", "Replies"]
+        assert "Takes from: Inbox · Sends to: Replies" in await page.locator("#probe .lit").inner_text()
+        await page.mouse.up()
+        assert not await page.evaluate("document.documentElement.classList.contains('lighting')")
+        assert await page.locator("dialog.sheet[open]").count() == 0                  # a press opens no sheet
+        await cell.click()
+        info = page.locator("dialog.sheet[open]")
+        await info.wait_for(timeout=WAIT_MS)
+        text = await info.inner_text()
+        assert "Takes from: Inbox" in text and "Sends to: Replies" in text

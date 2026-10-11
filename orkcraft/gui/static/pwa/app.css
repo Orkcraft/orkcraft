@@ -173,4 +173,20 @@ textarea.input { resize: vertical; }
 .w-add .btn { flex: 1 1 0; min-width: 0; padding: 8px 4px; }
 .hint { margin: 0; }
 
+/* the roads (links.js): a block per chain, a › where the one before sends to it; a long press lights neighbours */
+.blocks { display: flex; flex-direction: column; gap: 10px; }
+.grid.linked { border: 1px dashed var(--frame); border-radius: 10px; padding: 4px; }
+.grid li { position: relative; }
+.grid li.fed::before { content: "›"; position: absolute; left: -6px; top: 1.1rem; color: var(--muted); font-size: 1rem; line-height: 1; }
+.lighting [data-b] { opacity: .3; transition: opacity .15s; }
+.lighting [data-b].is-near, .lighting [data-b].is-focus { opacity: 1; }
+.lighting [data-b].is-focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+.lighting [data-b].is-near { outline: 1px solid var(--warn); outline-offset: -1px; }
+.lit { position: fixed; left: 16px; right: 16px; bottom: calc(var(--dock) + 8px + env(safe-area-inset-bottom)); z-index: 2;
+  margin: 0 auto; max-width: 608px; padding: 8px 10px; background: var(--inset); border: 1px solid var(--frame); border-radius: 8px; }
+[data-b] { touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.info b { font-weight: 600; }
+:root[data-look="camp"] .grid.linked, :root[data-look="camp"] .lit { border-radius: 0; }
+@media (prefers-reduced-motion: reduce) { .lighting [data-b] { transition: none; } .stop.holding::before { transition: none; } }
+
 [hidden] { display: none !important; }
