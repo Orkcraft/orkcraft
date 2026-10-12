@@ -34,7 +34,7 @@ is how we see the share of runs of each version that ended well.
 To Orkcraft's own proxy, the same Cloudflare Worker as the usage stats
 ([tools/usage-worker/](../tools/usage-worker/), `POST /v1/crash`). It checks every field again,
 keeps only the ones above, drops your IP address and passes the report to
-[Sentry](https://sentry.io/) (US data centre).
+[Sentry](https://sentry.io/), in its EU data centre (Frankfurt).
 
 ## On your machine
 

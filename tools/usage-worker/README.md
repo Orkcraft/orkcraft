@@ -71,7 +71,8 @@ sends them to Sentry as one envelope. Without the `SENTRY_DSN` secret it answers
 
 1. **Sentry.** An account (the free Developer plan is enough; open-source projects can ask for the
    sponsored plan). Create a project, platform **Python**. Project settings → Client Keys (DSN): copy
-   the DSN, `https://<key>@o….ingest.us.sentry.io/<project>`.
+   the DSN, `https://<key>@o….ingest.<region>.sentry.io/<project>`. The Worker sends to the host the DSN
+   names, so the region is the project's: Orkcraft's is in the EU (`ingest.de.sentry.io`).
 2. In the project's **Security & Privacy**: turn on *Prevent Storing of IP Addresses* and keep
    *Data Scrubber* on. Sentry sees only the Worker's address anyway.
 3. Put the DSN in the Worker and deploy:
