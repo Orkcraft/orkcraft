@@ -14,7 +14,8 @@ from typing import Any
 from orkcraft import autonomy, scroll
 from orkcraft.core import bus
 from orkcraft.core.town import Town
-from orkcraft.realm import catalog, checkpoint, evolution, feedback, masonry, optimize, pipes, steward, tiers, workshop
+from orkcraft.realm import (catalog, checkpoint, evolution, feedback, masonry, optimize, pipes, regressions, steward,
+                            tiers, workshop)
 from orkcraft.design import ui as design_ui
 from orkcraft.realm.buildings import Building, custom_building
 
@@ -296,7 +297,9 @@ def dislike(town: Town, building_id: str, kind: str, note: str) -> None:
     """👎: broken inputs penalise its suppliers upstream, its logic only it."""
     incident = feedback.dislike(town.repo_root, town.scroll, building_id, kind, note)
     who = ", ".join(f"{town.title_of(b)} −{p:g}" for b, p in incident.blamed.items()) or "nobody"
-    town.toast(f"incident saved · {who}", title=f"👎 {town.title_of(building_id)}")
+    case = regressions.from_dislike(town.repo_root, building_id, note, kind, incident.output)
+    town.toast(f"incident saved · {who}" + (" · kept as a test case for the Test bench" if case else ""),
+               title=f"👎 {town.title_of(building_id)}")
     town.publish(bus.HALL)
 
 

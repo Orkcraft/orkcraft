@@ -54,6 +54,13 @@ class LabWorker(Worker):
     def cases_of(self, subject_id: str) -> list[dict]:
         return list(self.state["cases"].get(subject_id) or [])
 
+    def take_regressions(self, subject: dict) -> int:
+        """The 👎 cases of the buildings a case may go into (realm/regressions.py), taken in once each."""
+        from orkcraft.realm import regressions
+        have = {c["id"] for c in self.cases_of(subject["id"])}
+        new = [c for e in self.entries(subject) for c in regressions.cases(self.repo_root, e["id"]) if c["id"] not in have]
+        return self.add_cases(subject["id"], new) if new else 0
+
     def add_cases(self, subject_id: str, cases: list[dict]) -> int:
         have = self.state["cases"].setdefault(subject_id, [])
         room = lab_cases.MAX_CASES - len(have)

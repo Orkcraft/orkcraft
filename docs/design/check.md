@@ -95,6 +95,16 @@ red, and what got worse (else better) than the last time.
 than a fifth; **better** the other way round; what moved less is the noise of a few runs and is not said. `report.md`
 has **Since the last check**; the Test bench's Check lists it (▼ worse, ▲ better).
 
+## 9. A 👎 is a case (built 2026-10-12)
+
+Every cart that comes into a building is remembered, the last one (realm/regressions.py `record_input`, from
+core/delivery.py). A 👎 for the building's own logic keeps that cart as a test case of the building
+(`.orkcraft/feedback/cases/<building>.jsonl`): its input what came in, its `why` what the person said and what it made
+then, its title `👎 <day>: <what they said>`. A 👎 for broken inputs makes none (that is the suppliers' fault), and
+nothing does when nothing came in. A Test bench that tests the building takes it in among its own cases, once
+(core/workers/lab.py `take_regressions`; its row says *from a 👎*), so Run all and the night run it against the AI
+tool alone like any other. The input stays on this machine, as the feedback does.
+
 ## 7. Next
 
 The plan (2026-10-11), in layers — evals, not tests: repeats and medians, a baseline (the AI tool alone, and last
@@ -111,7 +121,7 @@ night), checks in code wherever code can tell, a judge only where it cannot:
 In order:
 
 1. ~~**The night check in the Mechanic**~~ — built (§8).
-2. **A 👎 becomes a case** of its building, kept with the town's own cases: the evals grow from real failures.
+2. ~~**A 👎 becomes a case**~~ — built (§9).
 3. **Recorded answers** for the models too: the free layer on every commit.
 4. **The Alchemist's visual regression:** building windows, screenshot against last night.
 5. **The night improvement (gui/improve_night.py) works on what the check found**, not on proposals at random.

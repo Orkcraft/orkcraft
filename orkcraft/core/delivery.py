@@ -11,7 +11,7 @@ from pathlib import Path
 
 from orkcraft import scroll
 from orkcraft.core import bus
-from orkcraft.realm import catalog, feedback, metrics, pipes, roads
+from orkcraft.realm import catalog, feedback, metrics, pipes, regressions, roads
 
 
 def engine(town) -> roads.Engine:
@@ -55,6 +55,8 @@ def deliver(town, target_id: str, payload: pipes.Payload, title: str = "", markd
     """A cart arrives in `target_id`: the faces show it (`DELIVERED`), the building's worker takes
     it, a text cart into Loot is kept as a report, and the receiver's chronicle says so."""
     feedback.record_delivery(town.repo_root, target_id, payload.source)            # the session's graph
+    regressions.record_input(town.repo_root, target_id, payload.kind, payload.value, payload.source,
+                             title)                                                 # what a 👎 makes a case of
     t, md = (title, markdown) if markdown else markdown_of(town, payload)
     worker = town.worker(target_id)
     town.publish(bus.DELIVERED, building=target_id, payload=payload, title=t, markdown=md,
