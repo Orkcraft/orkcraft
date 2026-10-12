@@ -22,6 +22,7 @@ from orkcraft.realm import bench, bench_kits
 
 FILE = "lab.json"
 MAX_CASES = 40
+DEFAULT_GOAL = "Do as well as the AI tool alone, for less time and fewer tokens"   # when none is written
 REPEAT = 3                           # runs a case by default: one run of each says little (its medians do)
 AREAS = ("code", "roads", "prompt", "settings")
 GOALS = {                            # what a goal is about, by its words: the metric the window leads with
@@ -206,7 +207,12 @@ def summary(results: dict, metric: str) -> dict:
 
 # -- what to change --------------------------------------------------------------------------------------------------
 
-def propose_prompt(goal: str, about: str, files: list[str], roads: list[str], results: list[str]) -> str:
+def propose_prompt(goal: str, about: str, files: list[str], roads: list[str], results: list[str],
+                   found: list[str] | None = None) -> str:
+    """`found`: what the runs, the night check and the person's 👎 say is wrong (gui/lab_export.py `findings`): the
+    proposals start from it."""
+    seen = ("\n\nWhat the runs and the person found, read from the buildings' model calls (start from these: each "
+            "proposal should fix one of them, and say which):\n" + "\n".join(f"- {x}" for x in found)) if found else ""
     return f"""{agents.persona("mechanic")}
 
 You improve a scheme of an AI agents' town so it reaches its goal. The scheme: {about}.
@@ -216,7 +222,7 @@ The goal, in the operator's words: {goal or 'do better than the bare AI tool'}
 
 The last tests, each case against the bare AI tool on the same input (time, tokens, quality; quality is the scheme's
 score minus the bare tool's):
-{chr(10).join(results) or 'no test yet'}
+{chr(10).join(results) or 'no test yet'}{seen}
 
 Read the buildings' code before you propose; the files that make them:
 {chr(10).join('- ' + f for f in files)}

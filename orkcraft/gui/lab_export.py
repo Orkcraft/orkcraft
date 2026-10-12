@@ -152,3 +152,40 @@ def _calls(root: Path, r: bench.Report) -> list[tuple[Path, list[dict]]]:
         kept = root / bench.RUNS / r.bare.kept / "calls"
         out.append((kept, [x for x in call_log.read(kept) if x.get("side") == "bare"]))
     return out
+
+
+def findings(root: Path, w, subject: dict, limit: int = 40) -> list[str]:
+    """What is wrong with what it tests, in words, for the Mechanic's proposals: its own runs' stories and changes
+    (realm/explain.py), the last night check's on the same building types, and the person's 👎 cases."""
+    out = []
+    reports = latest(root, subject["id"])
+    if reports:
+        told = stories(root, w, subject, reports)
+        out += [f"{st['case']}: {st['summary']} " + " ".join(st["details"]) for st in told if st["status"] != "good"]
+        out += [f"To change: {c['what']} — {c['why']}" for c in explain.changes(told)]
+    kinds = {kind for _bid, kind in types_of(w, subject)}
+    from orkcraft import check_cli
+    from orkcraft.realm import check
+    folder = check_cli.latest(root)
+    if folder is not None:
+        try:
+            data = json.loads((folder / "results.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            data = {}
+        mine = [sc for sc in data.get("scenarios") or [] if sc.get("type") in kinds]
+        if mine:
+            told_ = check.told(root, folder.name, mine)
+            every = [st for sc in told_["scenarios"] for st in sc["stories"]]
+            out += [f"Night check, {st['case']}: {st['summary']} " + " ".join(st["details"])
+                    for st in every if st["status"] != "good"]
+            out += [f"Night check — to change: {c['what']} — {c['why']}" for c in told_["changes"]]
+    out += [f"The person disliked it — {c['title']}: {c.get('why', '')}" for c in w.cases_of(subject["id"])
+            if c.get("source") == "dislike"]
+    return [" ".join(x.split())[:400] for x in out][:limit]
+
+
+def trouble(root: Path, w, subject: dict) -> int:
+    """How much is wrong with what it tests (for the night's order): the cases not good, and the 👎 cases."""
+    told = stories(root, w, subject)
+    return sum(st["status"] != "good" for st in told) + \
+        sum(c.get("source") == "dislike" for c in w.cases_of(subject["id"]))
