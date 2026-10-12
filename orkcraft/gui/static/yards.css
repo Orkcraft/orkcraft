@@ -210,16 +210,6 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 [data-look="camp"] .gui-hut.is-bare.is-broken .gui-hut__plinth { filter: drop-shadow(0 0 6px var(--fire-glow)); }
 
 /* -- the map view (docs/design/map-view.md): every building bare ---------------------------------------------- */
-/* A building that has a yard in Cards keeps a picket of its fence at each end of its plinth: it has a view inside. */
-[data-look="camp"] .gui-hut.is-yard-far { --fence-side: image-set(url("/ds/sprites/fence/side.png") 1x, url("/ds/sprites/fence/side@2x.png") 2x); }
-[data-look="camp"] .gui-hut.is-yard-far.is-renown-2 { --fence-side: image-set(url("/ds/sprites/fence/side-2.png") 1x, url("/ds/sprites/fence/side-2@2x.png") 2x); }
-[data-look="camp"] .gui-hut.is-yard-far.is-renown-3 { --fence-side: image-set(url("/ds/sprites/fence/side-3.png") 1x, url("/ds/sprites/fence/side-3@2x.png") 2x); }
-[data-look="camp"] .gui-hut.is-yard-far .gui-hut__plinth { position: relative; }
-[data-look="camp"] .gui-hut.is-yard-far .gui-hut__plinth::before, [data-look="camp"] .gui-hut.is-yard-far .gui-hut__plinth::after {
-  content: ""; position: absolute; bottom: 2px; width: 15px; height: 27px; image-rendering: pixelated;
-  background: var(--fence-side) 0 0 / 15px 27px no-repeat; }
-[data-look="camp"] .gui-hut.is-yard-far .gui-hut__plinth::before { left: -12px; }
-[data-look="camp"] .gui-hut.is-yard-far .gui-hut__plinth::after { right: -12px; }
 /* Its card peeks under the plinth while it wants the person or a drag is held over it, wide enough to be read. */
 [data-look="camp"] .gui-hut.is-far .gui-hut__peek { top: 100%; left: 0; right: auto; width: max(100%, 260px); border-top: var(--ok-stroke, 2px) solid var(--frame); }
 

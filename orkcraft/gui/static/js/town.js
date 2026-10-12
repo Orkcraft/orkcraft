@@ -22,9 +22,10 @@ import { foldQuiet, unfoldAll, quiet } from "./fold.js";
 import { Ghost, planned as onboardingPlan, risen } from "./onboarding.js";
 import { activeBiome } from "./icons.js";
 import { FrameSelect, Schemes } from "./frame.js";
-import { mapView, setMap, toggleMap } from "./zoom.js";
+import { zoomLevel, zoomBy, zooming, mapView, toggleMap } from "./zoom.js";
 
 const room = signal({ w: 1, h: 1, strip: 0 });
+const pinched = { sum: 0, last: 0, at: 0 };   // the pinch under way (js/town.js Town): its wheel deltas so far
 let numbered = [];                         // the huts' ids in the order of the numbers on their names
 
 // 1–9 select the building with that number on its name (again: open it), from anywhere but a field, a terminal or
@@ -102,11 +103,17 @@ function grow(buildings, spots, rects, held) {
   return out;
 }
 
-/** The room a hut's spot is a fraction of: the canvas less a usual hut, the margins and the foot. The same for
- *  every hut whatever its size, so a hut that grows, shrinks or stands up from its scaffolding keeps its corner. */
+// The zoom changes only how far down the town its buildings stand (docs/design/map-view.md): the map is short and
+// wide, close up the town is taller than the window and scrolls. Across, every building keeps its place.
+const DEPTH = { a: 0.5, b: 1, c: 1.4 };
+
+/** The room a hut's spot is a fraction of: the canvas less a usual hut, the margins and the foot, its height as deep
+ *  as the zoom's level. The same for every hut whatever its size, so a hut that grows, shrinks or stands up from its
+ *  scaffolding keeps its corner. */
 function free() {
   const r = room.value;
-  return { w: Math.max(r.w - DEFAULT_SIZE.w - 2 * MARGIN, 1), h: Math.max(r.h - DEFAULT_SIZE.h - 2 * MARGIN - r.strip, 1) };
+  return { w: Math.max(r.w - DEFAULT_SIZE.w - 2 * MARGIN, 1),
+           h: Math.max(r.h - DEFAULT_SIZE.h - 2 * MARGIN - r.strip, 1) * (DEPTH[zoomLevel.value] || 1) };
 }
 
 /** A hut without a spot of its own: a grid of four across, as fractions like a spot of its own. */
@@ -434,6 +441,8 @@ function bareMenu(e, buildings, roads) {
     buildings.some((b) => b.id !== CORNER && !b.pinned) && { label: "Tidy up", hint: "along the roads", run: () => tidy(buildings, roads) },
     buildings.some(quiet) && { label: "Fold the quiet ones", hint: "/fold", run: () => foldQuiet(buildings) },
     buildings.some((b) => b.folded) && { label: "Unfold all", hint: "/unfold", run: () => unfoldAll(buildings) },
+    zoomLevel.value !== "c" && { label: "Zoom in", hint: "⌘+ · pinch", run: () => zoomBy(1) },
+    zoomLevel.value !== "a" && { label: "Zoom out", hint: "⌘− · pinch", run: () => zoomBy(-1) },
     { label: mapView.value ? "Leave the map view" : "Map view", hint: "M", run: toggleMap },
     { label: "Settings", run: () => { settingsOpen.value = true; } },
     { label: "Set up again…", hint: "AI tools · class · MCP", run: () => command("onboarding.start").catch(() => {}) },
@@ -637,8 +646,8 @@ export function Town({ buildings, roads }) {
   const still = new Set([drag && drag.id, stretch && stretch.id].filter(Boolean));
   const r20 = (v) => Math.round((v || 0) / 20);
   const shape = JSON.stringify([room.value, panelW, buildings.map((b) => [b.id, b.size, b.folded, b.hut])]);
-  // The map view draws no card: none grows till Cards come back (docs/design/map-view.md §4).
-  const auto = mapView.value ? {} : steady(() => grow(buildings, spots, rects, still),
+  // Only close up does a card grow into the room around it (docs/design/map-view.md).
+  const auto = zoomLevel.value !== "c" ? {} : steady(() => grow(buildings, spots, rects, still),
     JSON.stringify([shape, [...still], buildings.map((b) => [r20(spots[b.id].x), r20(spots[b.id].y),
       natural[b.id] ? [r20(natural[b.id].w), r20(natural[b.id].h)] : 0])]), shape);
   for (const b of buildings) {
@@ -656,13 +665,22 @@ export function Town({ buildings, roads }) {
   const grown = stretch && buildings.find((b) => b.id === stretch.id && rects[b.id]);
   const ghost = dragged ? landing(dragged, spots[dragged.id].x + drag.dx, spots[dragged.id].y + drag.dy).ghost
     : grown ? stretched(grown, stretch.w, stretch.h) : null;
-  // A pinch on the town (Ctrl or ⌘ with the wheel, as a trackpad sends it): out is the map view, in is Cards.
+  // A pinch on the town (a trackpad sends it as the wheel with Ctrl): out is a level further, in a level closer; one
+  // level a gesture, so a long pinch never runs through all three.
   const pinch = (e) => {
-    if (!(e.ctrlKey || e.metaKey) || Math.abs(e.deltaY) < 4) return;
+    if (!(e.ctrlKey || e.metaKey)) return;
     e.preventDefault();
-    setMap(e.deltaY > 0);
+    const now = Date.now();
+    if (now - pinched.last > 400) pinched.sum = 0;
+    pinched.last = now;
+    if (now - pinched.at < 300) return;
+    pinched.sum += e.deltaY;
+    if (Math.abs(pinched.sum) < 24) return;
+    zoomBy(pinched.sum > 0 ? -1 : 1);
+    pinched.sum = 0;
+    pinched.at = now;
   };
-  return html`<main ref=${ref} class=${cls("ok-ground gui-town", { "is-map": mapView.value })} onClick=${bare}
+  return html`<main ref=${ref} class=${cls(`ok-ground gui-town is-zoom-${zoomLevel.value}`, { "is-map": mapView.value, "is-zooming": zooming.value })} onClick=${bare}
       onContextMenu=${(e) => bareMenu(e, buildings, here)} onWheel=${pinch}>
     <div class="gui-town__room" style=${`width:${wide + panelW}px;height:${tall}px`}>
       <${Schemes} buildings=${buildings} rects=${rects} />

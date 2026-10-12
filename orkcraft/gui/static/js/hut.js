@@ -10,8 +10,10 @@
 // A drag or a stretch by an edge or corner never moves the hut at once: a ghost outline follows the mouse, red
 // where it would stand on another hut, and the hut goes there on the drop only if it is free (js/town.js
 // Footprint). A card stretched larger shows more (docs/design/building-views.md §1a): its size is kept in the
-// Town Scroll (`hut.size`). In the map view (docs/design/map-view.md) every building stands as a bare one in Camp — its
-// house, its plinth, its name, its mark — and folded in Office; it peeks as a folded card does.
+// Town Scroll (`hut.size`). The town's zoom (docs/design/map-view.md) draws it at one of three levels: on the map as a
+// bare building in Camp (its house, its plinth, its name; only a question or what broke over it) and folded in Office,
+// peeking as a folded card does; in the overview its card at its smallest; close up at its medium size, a bare
+// building in a small yard of its own. Its width is the same at the overview and close up: only its height changes.
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -25,7 +27,7 @@ import { town, say, command, toast } from "./link.js";
 import { Outside } from "./visit.js";
 import { openOrders } from "./orders.js";
 import { TypeIcon, HutSprite, OrkHead, Scheme, activeBiome } from "./icons.js";
-import { mapView } from "./zoom.js";
+import { zoomLevel } from "./zoom.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
 export const CORNER = "town_hall";          // stands in the town's bottom-right corner, as in the TUI: never moved
@@ -46,6 +48,7 @@ const snap = (v, by) => (by ? Math.max(by, Math.round(v / by) * by) : v);
 /** How much a card shows by its size (docs/design/building-views.md §1a): `s` as it comes, `m` stretched, `l` big. */
 // The least size of each: a card shows more as soon as it has the room.
 export const LEVEL_M = { w: 300, h: 170 }, LEVEL_L = { w: 460, h: 320 };
+const LEVEL_S_H = 120;                     // a small card's height: the zoom's overview (docs/design/map-view.md)
 export function levelOf(b, auto = null) {
   const [w, h] = (b && b.size) || (auto && [auto[0], auto[1] || 0]) || [0, 0];
   return w >= LEVEL_L.w && h >= LEVEL_L.h ? "l" : w >= LEVEL_M.w && h >= LEVEL_M.h ? "m" : "s";
@@ -74,10 +77,11 @@ function togglePin(e, id) {
 const peekReasons = (b) => { const away = putAway.value[b.id] || []; return reasons(b).filter((r) => !away.includes(r)); };
 
 /** A folded hut's mark: what its card would have said first — an error, a pause, else its type's own `mark(b)`. */
-export function Mark({ b }) {
+export function Mark({ b, quiet = false }) {
   const mod = b.page ? typeModule(b.type) : null;
   const own = mod && mod.mark ? mod.mark(b) : null;
   const m = b.state === "ERROR" ? { text: "error", tone: "error" } : b.paused ? { text: "paused", tone: "wait" } : own;
+  if (quiet && !(m && m.tone === "error")) return null;      // the map says only what broke
   return m && m.text ? html`<span class=${cls("gui-hut__mark", m.tone && `ok-tone-${m.tone}`)}>${say(String(m.text))}</span>` : null;
 }
 
@@ -402,12 +406,15 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   const busy = busyOf(b);
   const broken = brokenOf(b);
   const hot = !!broken;                      // fire is what broke; a question only glows (yards.css .is-alert)
-  // The map view draws it as a bare building in Camp, folded in Office; its own fold and size stay in the Town Scroll.
+  // The zoom's level (docs/design/map-view.md): the map draws it as a bare building in Camp, folded in Office; close up a
+  // bare building stands in a small yard. Its own fold and size stay in the Town Scroll as the person set them.
   const camp = document.documentElement.dataset.look !== "office";
-  const far = mapView.value && b.id !== CORNER;
-  const bare = bareOf(b) || (far && camp);
-  const yard = fenced(b) && !bare;
-  const folded = (!!b.folded || far) && b.id !== CORNER && !(far && camp);
+  const lvl = b.id === CORNER ? "c" : zoomLevel.value;
+  const far = lvl === "a";
+  const roomy = lvl === "c" && camp && bareOf(b);
+  const bare = (bareOf(b) && !roomy) || (far && camp);
+  const yard = (fenced(b) || roomy) && !bare;
+  const folded = b.id !== CORNER && !(far && camp) && !roomy && (!!b.folded || far);
   // Its card is not drawn, so it may peek: folded, or a card building drawn bare in the map view. A bare building's
   // card is never drawn in Camp, map view or not (yards.md §7).
   const hides = bare && camp ? far && !bareOf(b) : folded;
@@ -448,10 +455,17 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   }
 
   const x = spot.x, y = spot.y;
-  const own = folded || far ? null : b.size || auto;
-  const level = levelOf(b, folded || far ? null : auto);
+  // A card is as wide as its medium size, or as the person stretched it, at the overview and close up: only its height
+  // changes, as tall as what it says but no taller than a small card at the overview and a medium one close up (the UX
+  // bench's sizes, js/buildings/ux_lab.js SIZE_PX). A size the person gave shows close up only.
+  const mine = b.size || auto;
+  const wide = Math.max(mine ? mine[0] : 0, LEVEL_M.w);
+  const tall = lvl === "c" && mine && mine[1] ? Math.max(mine[1], LEVEL_M.h) : null;
+  const own = b.id === CORNER ? mine : folded || bare || roomy ? null : [wide, tall];
+  const cap = b.id === CORNER || !own || tall ? 0 : lvl === "c" ? LEVEL_M.h : LEVEL_S_H;
+  const level = b.id === CORNER ? levelOf(b, auto) : own ? levelOf(null, [wide, tall || cap]) : "s";
   const sized = !!own;
-  const step = stepOf(b);                  // a yard's size, as saved before, is drawn in whole pickets
+  const step = yard && camp ? YARD_STEP : null;   // a yard is drawn in whole pickets
   const w = sized ? snap(own[0], step && step.w) : 0, h = sized && own[1] ? snap(own[1], step && step.h) : 0;
   // The name heads the card: in Camp a bevelled title bar with the garrison's badge under the header
   // sprite, as on a window; in Office a plain line, so a block on the map is one box and its roads
@@ -462,11 +476,11 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       <span class="gui-hut__name">${say(b.title)}</span>
       <${Keeper} garrison=${b.garrison} alert=${b.alert} yard=${!!b.yard} visit=${b.visit || ""} />
       ${b.alert && html`<span class="ok-word gui-hut__ask">?</span>`}
-      ${folded && html`<${Mark} b=${b} />`}
+      ${folded && html`<${Mark} b=${b} quiet=${far} />`}
 </span>`;      // pin and fold live in its menu (right click): the card carries no controls of its own
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px` + (sized ? `;width:${w}px` : "")}
       class=${cls("ok-hut m gui-hut", { "is-selected": selected.value === b.id, "is-busy": busy, "is-yard": !!b.yard, "is-fenced": yard, "is-bare": bare,
-                                        "is-far": far, "is-yard-far": far && camp && fenced(b),
+                                        "is-far": far,
                                         "is-alert": !!b.alert, "is-broken": !!broken, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id,
                                         "is-fresh": fresh, "is-folded": folded, "is-peek": peek,
@@ -477,9 +491,9 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
       level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${broken ? { id: `broken:${b.id}:${broken}`, waited: 0 } : null} />
       <${Doing} b=${b} busy=${busy} />${b.id !== CORNER && html`<${YardName} b=${b} number=${number} />`}
-      ${bare && html`<span class="gui-hut__badge"><${Mark} b=${b} /></span>`}
+      ${bare && html`<span class="gui-hut__badge"><${Mark} b=${b} quiet=${far} /></span>`}
       <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} selected=${selected.value === b.id} /></span></div>
-    <div class="ok-hut__card" style=${h ? `height:${h}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
+    <div class="ok-hut__card" style=${h ? `height:${h}px` : cap ? `max-height:${snap(cap, step && step.h)}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
       ${title}
       ${freeRoads(b) && html`<button ref=${road} class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}><img class="ok-sprite" src="/ds/sprites/icons/road-handle.png"
@@ -487,7 +501,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       ${peek && hides ? html`<div class="gui-hut__peek"><${Card} b=${b} /></div>`
         : bare && camp ? html`<div class="gui-hut__unseen" hidden><${Card} b=${b} /></div>`     // unseen, its card still wires the building (a drop zone)
         : !folded && html`<${Card} b=${b} level=${level} />`}
-      ${!folded && !bare && onSized && html`<${Grips} b=${b} onSized=${onSized} />`}
+      ${lvl === "c" && !folded && !bare && onSized && html`<${Grips} b=${b} onSized=${onSized} />`}
     </div>
   </div>`;
 }

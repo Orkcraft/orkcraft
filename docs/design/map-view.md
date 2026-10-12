@@ -1,107 +1,92 @@
-# Design — the map view: the town from above, buildings without their cards
+# Design — the zoom: the map, the overview, close up
 
-Status: design notes, written 2026-10-12; stage 1 is implemented (`js/zoom.js`, `js/hut.js`, `js/town.js`,
-`yards.css`). Builds on the folded cards ([folded-cards.md](folded-cards.md)), the yards and the bare buildings
-([yards.md](yards.md) §3, §7) and the calm town ([calm-town.md](calm-town.md)). Wording: ork, orkestration (CLAUDE.md).
+Status: design notes, written 2026-10-12; stages 1 and 2 are implemented (`js/zoom.js`, `js/hut.js`, `js/town.js`,
+`yards.css`, `layout.css`). Builds on the folded cards ([folded-cards.md](folded-cards.md)), the yards and the bare
+buildings ([yards.md](yards.md) §3, §7), the card sizes of the UX bench ([improve-buildings.md](improve-buildings.md)
+§6.3) and the calm town ([calm-town.md](calm-town.md)). Wording: ork, orkestration (CLAUDE.md).
 
 | stage | what | state |
 |---|---|---|
-| 1 | the map view: every building as its house, its plinth, its name and its mark; a peek on trouble and on a drag; `M`, a pinch, the bare town's menu | done |
-| 2 | the mark floats up over the house when it changes, and settles; at most three in the air; a `mark(b)` for the types with none yet (Task board, Calendar, Wiki, File tree) | |
-| 3 | a button for it in the HUD; `/map` in the Warchief's line; the phone keeps its own | |
+| 1 | the map view: every building as its house, its plinth and its name; a peek on trouble and on a drag; `M`, a pinch, the bare town's menu | done |
+| 2 | three levels — the map, the overview, close up — by a pinch and ⌘+ / ⌘−; a building as wide at every level, only its height and its place down the town change; the huts glide | done |
+| 3 | the mark floats up over a house when it changes, and settles; at most three in the air; a `mark(b)` for the types with none yet (Task board, Calendar, Wiki, File tree) | |
+| 4 | a button for the zoom in the HUD; `/zoom` in the Warchief's line; the phone keeps its own | |
 
 ## 1. Why
 
-A person who runs orks mostly watches (calm-town.md). Folding (folded-cards.md) gave a quiet hut back its room, one
-hut at a time, but a folded hut is still a strip of interface: a number, an icon, a name, a pin. A town of twelve
-huts, half of them folded, still reads as a dashboard with houses drawn on it.
+A person who runs orks mostly watches (calm-town.md). A town of twelve cards reads as a dashboard with houses drawn on
+it; most of them say the same thing all day. The zoom is the strategy game's camera: pulled back, the town is its
+houses, its roads, its carts and its fire, and only what needs the person is said; brought close, the cards say what
+each building is doing. It is also the picture that says what Orkcraft is in half a second.
 
-The map view is the town seen from above, as a strategy game's camera pulled back: the houses on their plinths, the
-roads, the carts on them, the fire — and over a house only what changed. Nothing else asks to be read. It is also the
-picture that says what Orkcraft is in half a second: the frame for a GIF, a screenshot, a first look.
+## 2. Three levels of the whole town, not a state of each card
 
-## 2. A view of the town, not a state of each card
+| level | a building with a card | a bare building (Router, Transformer…) | over a house |
+|---|---|---|---|
+| **a — the map** | its house, its plinth, its name; no fence | the same | only a question (its ork's `!`, the plinth's glow) and what broke (the fire, an `error` mark) |
+| **b — the overview** (default) | its card in its yard, no taller than a small card (120 px) | its house and its mark, as yards.md §7 | its mark |
+| **c — close up** | its card in its yard, no taller than a medium card (170 px), or the size the person stretched it to | its card in a small yard of its own | everything |
 
-The person asked first for a third state of a card — open, folded, hidden to its sprite. It is a view of the whole
-town instead:
+- **One handle, not twelve.** A level is the whole town's; it changes no building. Each building's fold, size, spot and
+  pin stay in the Town Scroll as the person left them.
+- **The person's choices hold.** A folded card stays its title bar at every level ("always small"). A card the person
+  stretched shows that size close up only; at the overview it is a small card like the rest. Cards are stretched close
+  up only (the grip shows there).
+- **A card is as tall as what it says, up to its level's height.** A quiet card is shorter; a long one is cut at the
+  level's height, so what a small card shows first is its type's to say — the Alchemist lays a card out at each size
+  (improve-buildings.md §6.3).
+- **The Town Hall** stands as it is in its corner at every level.
+- **Office** draws no house (portrait.md §3): on the map every card is folded to its title bar; the overview and close
+  up draw the cards at their heights.
 
-- **One handle, not twelve.** A third state per card is a choice to make for every building and to remember after:
-  which ones were hidden, and why that one is open. One view is one press, and the same press brings everything back
-  as it was.
-- **Nothing to keep.** The view changes no building: its fold, its size, its spot, its pin stay in the Town Scroll as
-  the person left them. Leaving the map view shows each card exactly as before.
-- **Fewer states to carry.** The peek, the drop target, the quick actions, the parts already have two states to
-  serve (open, folded). A view draws every building in one way the town already knows — the bare building (yards.md
-  §7) — and adds no third.
+## 3. Only down the town: widths never change
 
-Two views, then: **Cards** (as now: each card open or folded, as the person set it) and **Map view**. Folding stays;
-a per-card "sprite only" is not added.
+- **A building is as wide at the overview as close up**: its medium width (300 px, whole pickets in Camp), or wider as
+  the person stretched it. Zooming between them, a card grows or shrinks down, never across, and the roads keep their
+  runs across the town. On the map a house stands where its card's left side stood.
+- **Down the town, a spot is deeper the closer the zoom** (js/town.js `DEPTH`: the map ½, the overview 1, close up
+  1.4 of the room's height). Across, a spot is the same at every level. On the map the town is short and wide: long
+  roads across it. Close up it is taller than the window and scrolls. A card that grew onto the one under it pushes it
+  down (js/town.js `settle`), as it always did.
+- **The huts glide** to their new places in a quarter of a second and the roads come in again; under
+  `prefers-reduced-motion` they jump.
 
-## 3. What a building shows in the map view
+## 4. How the person zooms
 
-```
-          ┌──────┐
-          │ house│      2/4 at work         ← its mark, in the air right of the house
-      ▐▌  │      │  ▐▌                       ← a picket of its fence at each end, for a building that has a yard
-      ═══════════════                        ← its plinth: roads meet it
-       3 ⚒ Branches & PRs                    ← its number, icon and name over it (yards.md §3)
-```
+- **A pinch** on the town (a trackpad sends it as Ctrl with the wheel): out a level, in a level; one level a gesture,
+  so a long pinch never runs through all three. The plain wheel scrolls the town, as before.
+- **⌘+ / ⌘−** (Ctrl on other systems) a level in or out, the page itself never zoomed; **⌘0** back to the overview.
+- **`M`** the map and back to the level before it.
+- **The bare town's right click** has *Zoom in*, *Zoom out* and *Map view*.
+- The level is the person's on this machine (this browser's storage, `orkcraft.zoom`; the map view of before,
+  `orkcraft.map`, is read once as the map). A storage that cannot be read starts at the overview.
+- **Coming close to one building is choosing it**, never the zoom: a press selects it, a second opens it, and the
+  camera brings it and the buildings on its roads into view (js/town.js `useCamera`).
 
-- **Its house, its plinth, its name, its mark** — as a bare building stands in Camp (yards.md §7), whatever its type.
-  The Signpost and the Mill look the same in both views.
-- **A picket at each end of its plinth** for a building that has a fenced yard in Cards: it says "this one has a
-  view inside" without the fence around it.
-- **Its mark** is what a folded card says first (folded-cards.md §1): `error`, `paused`, else its type's `mark(b)` —
-  `2/4 at work`, `3 failing`, `N PRs`. It stands in the air right of the house. A building with nothing to say shows
-  nothing.
-- **The ork and the fire stay.** An ork that asks comes out with its `!` and the plinth glows; a building that broke
-  burns (yards.md §8). Questions and breakage are what the map view is for.
-- **The Town Hall stays as it is** in its corner: it is the way to the Warchief.
-- **Office** draws no house (portrait.md §3). In the map view every Office card is folded to its title bar, with its
-  mark; leaving the view brings back each one's own fold.
+## 5. What stays the same
 
-## 4. What stays the same
+- **Where buildings stand across**, their roads' runs, a press, a right click, a drag (its ghost the size of what is
+  drawn), a road pulled from a plinth or a fence.
+- **The peek.** On the map a building whose ork asks, whose worker failed or that is paused opens its card under its
+  plinth, over its neighbours, never pushing them (folded-cards.md §2); so does a file or a link held over it, so Drop
+  file here takes a drop on the map.
+- **Growth of cards** into the room around them (yards.md §7) happens close up only.
 
-- **Where buildings stand.** A spot is a fraction of the room, never of a card's size (js/town.js `place`): the houses
-  stand where their cards stood, the roads are planned again to their plinths. A town gets airier, never reshuffled —
-  only a building that a taller card above it pushed down (js/town.js `settle`) stands at its own spot again.
-- **A press selects, a second opens; a right click has the building's menu; a drag moves it** (its ghost the size of
-  what is drawn); a road is pulled from its plinth.
-- **The peek.** A building whose ork asks, whose worker failed or that is paused opens its card under its plinth, over
-  its neighbours, never pushing them (folded-cards.md §2). So does a file or a link held over it: Drop file here takes
-  a drop in the map view as in Cards.
-- **Sizes and growth.** A card's size the person stretched is kept and not drawn; the town's growth of cards (yards.md
-  §7) waits for Cards.
-
-## 5. How the person gets there
-
-- **`M`** toggles it, from anywhere but a field, a terminal or a dialog.
-- **A pinch** on the town (Ctrl or ⌘ with the wheel, which a trackpad's pinch sends): out is the map view, in is Cards
-  — the strategy game's camera.
-- **The bare town's right click** has *Map view* (or *Leave the map view*), with `M` as its hint.
-- The view is the person's on this machine (this browser's storage, as `orkcraft.grow`): the Town Scroll does not keep
-  it and another person's town is not changed by it. A storage that cannot be read starts in Cards.
-
-## 6. Later: the mark in the air (stage 2)
+## 6. Later: the mark in the air (stage 3)
 
 The mark says what changed, so it moves only when it changes:
 
-- **A new mark floats up** from the roof and settles beside it in about a second, as an RTS's "+5" does. The same mark
-  again draws nothing.
-- **Priority:** fire, then a question, then an error mark, then any other. At most three float at once; the rest settle
-  without floating.
-- **Under `prefers-reduced-motion`, in quiet hours or with Do not disturb** nothing floats: the marks stand.
-
-## 7. Later: a button and a command (stage 3)
-
-- A button in the HUD, next to **Stop all**: *Map view* / *Cards*, so it is found without its key.
-- `/map` and `/cards` in the Warchief's line.
-- The phone app keeps its own layout (mobile.md): the map view is the desktop's.
+- **A new mark floats up** from the roof and settles beside it in about a second, as an RTS's "+5" does.
+- **Priority:** fire, then a question, then an error mark, then any other. At most three float at once.
+- **Under `prefers-reduced-motion`, in quiet hours or with Do not disturb** nothing floats.
 
 ## As built
 
-- **Stage 1.** `js/zoom.js` keeps the view (`mapView`, `orkcraft.map` in localStorage) and its key `M`. `js/hut.js`
-  draws a building in the map view as bare in Camp (`is-bare is-far`, plus `is-yard-far` for a type that has a
-  fenced yard) and folded in Office; a peek opens its card under the plinth while it wants the person or a drag is
-  held over it. `js/town.js` gives the bare town's menu its item, takes a pinch, and holds the cards' growth while the
-  view is on. The word is `map_view` in `realm/lexicon.py`.
+- **Stage 1.** The map view, `M`, a pinch and the menu; a building on the map is bare in Camp (`is-bare is-far`) and
+  folded in Office, and peeks.
+- **Stage 2.** `js/zoom.js` keeps the level (`zoomLevel`: a, b, c) and its keys. `js/hut.js` draws a building at its
+  level: on the map as before, its marks only an error's (`Mark` `quiet`); its card as wide as a medium one
+  (`LEVEL_M.w`) and no taller than the level's height (`max-height`), the person's size close up only, the grip close
+  up only; a bare building in a small yard close up (`roomy`). `js/town.js` makes a spot deeper or shallower by the
+  level (`DEPTH` in `free()`), takes a pinch a level a gesture, gives the bare town's menu Zoom in and Zoom out, and
+  marks the town `is-zoom-<level>` and, for a moment, `is-zooming` (layout.css: the huts glide).

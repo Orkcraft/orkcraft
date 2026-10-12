@@ -212,6 +212,12 @@ button { font: inherit; color: inherit; }
 .gui-hut__mark.ok-tone-error { color: var(--danger); }
 .gui-hut__mark.ok-tone-wait { color: var(--warning); }
 .gui-town__room > .gui-hut.is-peek { z-index: 2; }
+/* The zoom changed (js/zoom.js): the huts glide to their new places down the town, the roads come in again. */
+.gui-town.is-zooming .gui-town__room > .gui-hut { transition: top .25s ease, left .25s ease; }
+.gui-town.is-zooming :is(.gui-roads, .gui-signs, .gui-loose-ends) { animation: gui-zoom-in .32s ease both; }
+@keyframes gui-zoom-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .gui-town.is-zooming .gui-town__room > .gui-hut { transition: none; }
+  .gui-town.is-zooming :is(.gui-roads, .gui-signs, .gui-loose-ends) { animation: none; } }
 .gui-hut__peek { position: absolute; z-index: 2; top: 100%; left: calc(-1 * var(--ok-stroke, 2px)); right: calc(-1 * var(--ok-stroke, 2px));
   background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame); border-top: 0; box-shadow: var(--shadow-window);
   animation: gui-peek .15s ease-out both; }
