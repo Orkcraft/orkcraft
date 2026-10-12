@@ -22,7 +22,7 @@ look bigger and vaguer than it is.
 |---|---|---|
 | **Core** (offered by default) | Task board, Agent pool, Review gate, Inspector, External listeners | the main path: a task → agents in parallel → a diff → the person approves. External listeners as the way in from GitHub |
 | **Plumbing** (not picked by hand, placed when needed) | Router, Transformer, Script | the cheapest thing that works ([script-first.md](script-first.md)). The Warchief or the building designer places one when a road needs logic; they stay findable in the catalog |
-| **More buildings** (a shelf, off by default) | Wiki, Research, Review board, File tree, Drop file here, Audio briefing, Publisher, Branches & PRs (§3b), Metrics (§3a), the Calendar's meetings ([town-time.md](town-time.md)) | useful, not for a first look |
+| **More buildings** (a shelf, off by default) | Wiki, Research, Review board, File tree, Drop file here, Audio briefing, Publisher, Branches & PRs (§3b), Metrics (§3a), Calendar (the person's meetings only; the town's time moves to the HUD's dial, [town-time.md](town-time.md) §5) | useful, not for a first look |
 | **Improve tools** (not in the catalog; through Improve) | Test bench, UX bench | they improve buildings, not the person's work: for experienced users and contributors |
 | **Not a building** | Sound alerts | §3 |
 
@@ -52,10 +52,7 @@ Decided with the owner 2026-10-12. **Metrics is not there to count tokens per an
   building and a road. That cadence shows on the Calendar like every schedule ([town-time.md](town-time.md) §2). A road
   may still ask it for a fresh chart.
 
-Open: **how it reaches the source.** Orkcraft keeps no API keys and talks to models only through the person's AI
-tools. Through those tools' MCP servers (as the Publisher does) each refresh is a model call, which an hourly chart
-should not cost; through the source's own API it needs a token, kept as the name of an environment variable (as the
-audit already asks). To decide before it is built.
+**How it reaches the source:** MCP first, a token later ([connections.md](connections.md)).
 
 The catalog's own description of `crag` and `docs/reference.md` change with the build, not before: the reference
 says what is built.
@@ -85,6 +82,6 @@ hostile to AI, so it waits until testers ask for it.
 ## 6. Decided
 
 1. Branches & PRs: manual git, More shelf (§3b).
-2. The Calendar is two things: the town's time (P1, [town-time.md](town-time.md)) and the person's meetings (More
-   shelf).
+2. The Calendar keeps the person's meetings (More shelf); the town's time moves to the HUD's sun and moon dial (P1,
+   [town-time.md](town-time.md) §5).
 3. Metrics: a chart of an outside source, Later; the town's own numbers to a HUD window, P1 (§3a).
