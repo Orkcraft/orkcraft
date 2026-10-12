@@ -6,7 +6,7 @@
 import { signal } from "@preact/signals";
 import { useState } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { command, say, town } from "./link.js";
+import { command, openLink, say, town } from "./link.js";
 import { Dialog } from "./dialog.js";
 import { MascotHead, BIOMES, headerSprite, TypeIcon, ToolMark } from "./icons.js";
 import { terrainUrl } from "./terrain.js";
@@ -61,7 +61,7 @@ function RequestTool() {
   const [f, setF] = useState({ name: "", link: "", note: "" });
   const close = () => { asking.value = false; };
   const open = () => command("onboarding.request", f).then((r) => {
-    window.open(r.url, "_blank", "noopener");
+    openLink(r.url);
     close();
   }, () => {});
   const field = (k) => (e) => setF({ ...f, [k]: e.target.value });

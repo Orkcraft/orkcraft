@@ -132,8 +132,9 @@ class Host:
         self.crashes = crashes.install(self.town.machine, face="gui", demo=demo)
         self.commands["crash.window"] = lambda a: self.crashes.capture_window(str(a.get("message", ""))[:2000],
                                                                               str(a.get("stack", ""))[:8000])
+        self.commands["link.open"] = self._open_link         # the window's own web view opens no tab: the browser does
         self._opened()
-        self.updates = updates.Updates(self)        # what is out, installed with a click (gui/updates.py)
+        self.updates = updates.Updates(self)      # what is out, installed with a click (gui/updates.py)
         self.commands.update(self.updates.commands())
         self.onboarding = onboarding.Onboarding(self)   # a project with no town yet opens on it (gui/onboarding.py)
         self.commands.update(self.onboarding.commands())
@@ -369,6 +370,14 @@ class Host:
         self.crashes.close()
 
     # -- the page's commands -------------------------------------------------------------------
+
+    def _open_link(self, args: dict) -> bool:
+        """A link of the page, in the person's browser (the app's window is a web view: it opens no tab)."""
+        import webbrowser
+        url = str(args.get("url", ""))
+        if not url.lower().startswith(("http://", "https://")):
+            raise CommandError("Only web links open in the browser")
+        return webbrowser.open(url)
 
     def command(self, name: str, args: dict | None = None) -> Any:
         fn = self.commands.get(name)

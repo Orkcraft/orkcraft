@@ -6,7 +6,7 @@
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { command, say, town } from "./link.js";
+import { command, openLink, say, town } from "./link.js";
 import { Dialog } from "./dialog.js";
 
 export const googleOpen = signal(false);
@@ -55,7 +55,7 @@ function SignIn({ a, setA }) {
   const flip = (id) => setParts(parts.includes(id) ? parts.filter((x) => x !== id) : [...parts, id]);
   const go = () => command("google.connect", { parts }).then((r) => {
     setA(r);
-    if (r.consent) window.open(r.consent.url, "_blank", "noopener");
+    if (r.consent) openLink(r.consent.url);
   }, () => {});
   if (c && c.state === "waiting") {
     return html`<div class="gui-form">

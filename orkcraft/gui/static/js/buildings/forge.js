@@ -8,7 +8,7 @@
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { act, details, toast, say } from "../link.js";
+import { act, details, toast, say, openLink } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 import { showBuilding } from "../windows.js";
@@ -34,7 +34,7 @@ function merge(id, name) {
 }
 
 function openPr(id, name) {
-  act(id, "pr", { branch: name }).then((url) => { if (url) window.open(url, "_blank", "noopener"); }, () => {});
+  act(id, "pr", { branch: name }).then((url) => { if (url) openLink(url); }, () => {});
 }
 
 function diff(id, name) {

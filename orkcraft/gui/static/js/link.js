@@ -64,6 +64,12 @@ export function command(name, args = {}) {
   });
 }
 
+/** A web link in the person's browser. The app's own window (pywebview) opens no tab, so the host opens it there. */
+export function openLink(url) {
+  if (window.pywebview) command("link.open", { url }).catch(() => {});
+  else window.open(url, "_blank", "noopener");
+}
+
 /** Who draws a session's bytes (js/terminal.js); kind 0 is output, 1 the whole of it again. */
 export function onTerminal(key, fn) {
   terminals.set(key, fn);

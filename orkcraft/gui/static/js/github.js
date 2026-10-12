@@ -4,7 +4,7 @@
 // person's account yet: Install opens the app's page (it pushes to their fork there).
 import { useEffect, useState } from "preact/hooks";
 import { html } from "./html.js";
-import { command, say, town } from "./link.js";
+import { command, openLink, say, town } from "./link.js";
 
 export function GithubAccount() {
   const [g, setG] = useState(null);
@@ -18,7 +18,7 @@ export function GithubAccount() {
   if (!g) return null;
   const connect = () => command("github.connect").then((x) => {
     setG(x);
-    if (x.waiting) window.open(x.waiting.uri, "_blank", "noopener");
+    if (x.waiting) openLink(x.waiting.uri);
   }, () => {});
   return html`<div class="gui-field gui-github" aria-label=${say("GitHub")}>
     <span class="ok-font-label">${say("GitHub")}</span>

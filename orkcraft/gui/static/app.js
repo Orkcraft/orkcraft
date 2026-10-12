@@ -3,7 +3,7 @@
 // the HUD, the map, the panel on the right, the War Map of orkspaces at the bottom left and the Warchief's line.
 import { render } from "preact";
 import { html } from "./js/html.js";
-import { town, connect } from "./js/link.js";
+import { town, connect, openLink } from "./js/link.js";
 import { Hud, Toasts } from "./js/chrome.js";
 import { WarMap } from "./js/warmap.js";
 import { wearGround } from "./js/terrain.js";
@@ -77,7 +77,7 @@ document.addEventListener("click", (e) => {
   const a = e.target instanceof Element && e.target.closest("a[href]");
   if (!a || e.defaultPrevented || !/^https?:/i.test(a.href) || new URL(a.href).origin === location.origin) return;
   e.preventDefault();
-  window.open(a.href, "_blank", "noopener");
+  openLink(a.href);
 });
 
 watchErrors();
