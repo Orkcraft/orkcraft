@@ -30,10 +30,12 @@ is `(harness, prompt, model) → (text, cost)`; tests pass a fake one.
 """
 from __future__ import annotations
 
+import contextvars
 import json
 import re
 import threading
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -413,7 +415,7 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         cancel: threading.Event | None = None, brief_of: BriefOf | None = None,
         routes: list[str] | tuple[str, ...] = (), exits: list[Exit] | tuple[Exit, ...] = (),
         sessions: Callable[[str], bool] | None = None,
-        on_call: Callable[[Discussion], None] | None = None) -> Discussion:
+        on_call: Callable[[Discussion], None] | None = None, together: bool = False) -> Discussion:
     """Run (or resume after the operator answered, or after it stopped) until the steward decides, or it
     stops. A clan that routes (`routes`) names who takes an approved document on (`d.route`).
 
@@ -421,7 +423,8 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
     be named up front), each turn's session gets an id before it starts (`d.under_way`, told to
     `on_call`), and the runner is called as `runner(h, prompt, model, session=…, reopen=…)`: a turn that
     was stopped (or failed) goes on in its own session with `GO_ON`, and starts again only when that
-    session cannot be reopened."""
+    session cannot be reopened. `together`: the members' reviews are asked all at once when none of their tools
+    names a session (the time of the slowest, not of them all; the budget is looked at once before them)."""
     cancel = cancel or threading.Event()
     brief_of = brief_of or (lambda _m: ("", ""))
 
@@ -450,12 +453,17 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         text, cost = runner(harness, prompt, model, session=d.under_way["session"], reopen=False)
         return text, cost, False
 
-    def call(harness: str, model: str, prompt: str, turn: str) -> tuple[str, float | None, bool] | None:
+    def call_allowed() -> bool:
         if cancel.is_set():
             d.outcome = "stopped"
-            return None
+            return False
         if budget and d.spent >= budget:
             d.outcome = "budget"
+            return False
+        return True
+
+    def call(harness: str, model: str, prompt: str, turn: str) -> tuple[str, float | None, bool] | None:
+        if not call_allowed():
             return None
         try:
             text, cost, went_on = take(harness, model, prompt, turn)
@@ -474,21 +482,58 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         if on_turn is not None:
             on_turn(d, turn)
 
-    d.outcome = "running"
-    for i, m in enumerate(team):
-        if i in d.reviewed:
-            continue
+    def prompt_of(m: Member) -> str:
         path, text = brief_of(m)
-        got = call(m.harness, m.model, review_prompt(d, m, team, path, text, inline=roads.resolve(m.harness) not in roads.IN_REPO),
-                   m.role)
-        if got is None:
-            return _end(d)
+        return review_prompt(d, m, team, path, text, inline=roads.resolve(m.harness) not in roads.IN_REPO)
+
+    def heard(i: int, m: Member, got: tuple[str, float | None, bool]) -> None:
         verdict, body = parse_verdict(got[0])
         note = WENT_ON if got[2] else ""
         if verdict == "veto" and m.role.lower() not in veto:
             verdict, note = "changes", _notes(note, "a veto from a role without one counts as changes")
         add(Turn(m.role, "review", body, verdict, got[1], now_iso(), note))
         d.reviewed.append(i)
+
+    def at_once(pending: list[tuple[int, Member]]) -> bool:
+        """The members asked all at once (none reads another's review), heard in the clan's order; False when
+        one of them failed or it was stopped (the others' reviews are kept)."""
+        if not call_allowed():
+            return False
+        d.under_way = {"turn": pending[0][1].role, "session": ""}
+        if on_call is not None:
+            on_call(d)
+        ctx = contextvars.copy_context()                   # each call is charged as this thread's are
+        with ThreadPoolExecutor(len(pending)) as pool:
+            asked = [pool.submit(ctx.copy().run, runner, m.harness, prompt_of(m), m.model) for _, m in pending]
+        failed = ("", "")
+        for (i, m), f in zip(pending, asked):
+            try:
+                text, cost = f.result()
+            except InterruptedError:
+                failed = failed if failed[0] else ("stopped", "")
+                continue
+            except Exception as e:  # one failing call ends the gathering, the app goes on
+                failed = failed if failed[0] else ("error", f"{e}"[:300])
+                continue
+            d.spent = round(d.spent + (cost or 0.0), 4)
+            heard(i, m, (text or "", cost, False))
+        d.under_way = {}
+        if failed[0]:
+            d.outcome, d.error = failed[0], failed[1] or d.error
+        return not failed[0]
+
+    d.outcome = "running"
+    pending = [(i, m) for i, m in enumerate(team) if i not in d.reviewed]
+    if together and len(pending) > 1 and not (sessions and any(sessions(m.harness) for _, m in pending)):
+        if not at_once(pending):
+            return _end(d)
+    for i, m in pending:
+        if i in d.reviewed:
+            continue
+        got = call(m.harness, m.model, prompt_of(m), m.role)
+        if got is None:
+            return _end(d)
+        heard(i, m, got)
 
     routes = [e.id for e in exits] or list(routes)
     got = call(steward.harness, steward.model, decide_prompt(d, steward, veto, max_cycles,
