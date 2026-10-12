@@ -96,3 +96,26 @@ def test_the_alchemist_lays_a_types_cards_out(host, monkeypatch, level, applied)
     assert said and said[0].startswith("Alchemist: ")
     assert (card_docs.load("barracks") == doc) is applied
     assert (host.town.worker(bench).card is not None) is (not applied)
+
+
+def test_the_night_proposes_from_what_was_found_and_works_on_the_worst_bench_first(host, monkeypatch):
+    from orkcraft.core import buildings as core_buildings
+    from orkcraft.core import delivery
+    from orkcraft.realm import lab_cases, pipes
+    quiet_lab, quiet_pool = _raised(host, "lab"), _raised(host, "barracks", worktrees=False)
+    _road(host, quiet_pool, quiet_lab, "pool.done")
+    lab, pool = _raised(host, "lab"), _raised(host, "barracks", worktrees=False)
+    _road(host, pool, lab, "pool.done")
+    delivery.deliver(host.town, pool, pipes.Payload(pipes.TEXT, "Write a slugify with tests", "pit", "push"))
+    core_buildings.dislike(host.town, pool, "logic", "no tests written")
+    host.detail(lab)                                                    # it takes the 👎 in
+    order = [b.id for b in host.nightly.improve._in_order(host.bench) if b.id in (lab, quiet_lab)]
+    assert order == [lab, quiet_lab]                                   # the one with something wrong first
+    seen = []
+    monkeypatch.setattr(lab_runs.jobs, "run_read", lambda tool, prompt, *a, **k: (seen.append(prompt) or
+                                                                                  '{"proposals": []}', 0.0, 0, ""))
+    w = host.town.worker(lab)
+    host.bench.lab.propose(w, w.subject())
+    assert _until(lambda: seen)
+    assert "The person disliked it — 👎" in seen[0] and "no tests written" in seen[0]
+    assert lab_cases.DEFAULT_GOAL in seen[0]                           # no goal written: the default one

@@ -105,6 +105,16 @@ nothing does when nothing came in. A Test bench that tests the building takes it
 (core/workers/lab.py `take_regressions`; its row says *from a 👎*), so Run all and the night run it against the AI
 tool alone like any other. The input stays on this machine, as the feedback does.
 
+## 10. The night works on what was found (built 2026-10-12)
+
+The Mechanic's proposals (gui/lab_runs.py `propose`, by day and at night) start from what is wrong, in words
+(gui/lab_export.py `findings`): its own runs' stories and changes (realm/explain.py, read from the model calls), the
+last night check's on the same building types, and the person's 👎 cases with what they said; each proposal says which
+it fixes. At night (gui/improve_night.py) the Test benches with the most wrong go first (`trouble`: cases not good,
+and 👎 cases), and one with no goal written works to `lab_cases.DEFAULT_GOAL` — as well as the AI tool alone, for
+less time and fewer tokens — instead of being skipped. What it tries is still measured on the virtual building and
+kept only when better, by the town's autonomy (improve-buildings.md §8).
+
 ## 7. Next
 
 The plan (2026-10-11), in layers — evals, not tests: repeats and medians, a baseline (the AI tool alone, and last
@@ -124,7 +134,7 @@ In order:
 2. ~~**A 👎 becomes a case**~~ — built (§9).
 3. **Recorded answers** for the models too: the free layer on every commit.
 4. **The Alchemist's visual regression:** building windows, screenshot against last night.
-5. **The night improvement (gui/improve_night.py) works on what the check found**, not on proposals at random.
+5. ~~**The night improvement works on what the check found**~~ — built (§10).
 
 Kits still to write: the Wiki (letters in, the pages that should change and the facts they should hold), a chain
 (External listeners → Task board, the whole way a letter takes).
