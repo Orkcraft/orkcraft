@@ -31,8 +31,8 @@ hidden or frozen, so older towns keep loading (CLAUDE.md, Wording).
 | **The night's processes, six of them** | **Merge** into one flow, the Town Hall's night council ([town-hall-roles.md](town-hall-roles.md) §2): one switch, one budget, one morning brief. [simplify.md](simplify.md) §4 and §7 already go this way | **P1** |
 | **Autonomy in three places** (the town's level, a building's own level and waits, a building's Freedom for its retro) | **Merge**: one Autonomy per ork ([ork-console.md](ork-console.md) §2), gates on buildings; the building's level, its own waits and its Freedom go | **P1** |
 | **External listeners' sources** (Gmail, Slack, Jira, Confluence, Figma, Google, GitHub, schedules, webhooks) | **Hide** all but GitHub, a schedule, a webhook and a file | the main scenario needs GitHub; the rest are the owner's | **P0** (what is offered only) |
-| **The phone's places** (the town's rules by where the phone is) | **Drop**, if the owner confirms it is unused (§3: still open) | far from the main scenario; Tailscale and the place rules are upkeep for a few | **P1** |
-| **The phone app** | **Keep** (used daily, §3), no new work until testers ask: it shows what burns and what asks, and lets the person answer | the README sells "the phone app shows them too"; that much stays | — |
+| **The phone's places** (the town's rules by where the phone is) | **Drop** (§3: the owner does not use Orkcraft's phone app) | far from the main scenario; Tailscale and the place rules are upkeep for a few | **P1** |
+| **The phone app** | **Freeze**, and out of the README's first screen (§3) | nobody uses it yet, the owner included: the owner's phone is Claude Code's app. Not sold until a tester asks for it | **P0** (the README line) |
 | **The Test bench and the UX bench** | **Freeze**, through Improve only ([catalog-shelves.md](catalog-shelves.md)); gate in [improve-buildings.md](improve-buildings.md) §12.4 | the biggest area, made for the owner and contributors | — |
 | **Wiki, Research, Audio briefing** | **Freeze**, More shelf | — | — |
 | **Orkspaces beyond the first** (F2–F8, each in its biome) | **Hide** from the first session: one town until the person asks for a second | small in code; one more idea in the first fifteen minutes | **P1** |
@@ -43,9 +43,13 @@ hidden or frozen, so older towns keep loading (CLAUDE.md, Wording).
 
 ## 3. The owner's answers (2026-10-12)
 
-1. **The phone is used every day.** It stays as it is (fires, questions, answers) and is not frozen out of use; no new
-   work on it until testers ask. Whether its **places** (rules by where the phone is) are used too is still to be
-   answered: only they are a candidate to drop.
+1. **The phone:** corrected the same day. The owner uses **Claude Code's** phone app every day, **not Orkcraft's**. So:
+   - Orkcraft's phone app is **frozen**: it works as it is, no new work on it;
+   - its **places** are **dropped**: rules on top of an app nobody uses;
+   - **the README's first screen stops selling it** ("the phone app shows them too"): what the author does not use, a
+     first tester should not be promised;
+   - later, by what testers ask: perhaps no app of Orkcraft's own at all, only 🔥 and ❓ sent where the person already
+     is (a push, Slack, mail), as the person already chose another tool's app for their phone.
 2. **What is read from the night:** changes to the product (technical and product), and proposals to improve the
    person's ways of working. So the merged night council ([town-hall-roles.md](town-hall-roles.md) §2) makes exactly
    two things for the morning brief:
