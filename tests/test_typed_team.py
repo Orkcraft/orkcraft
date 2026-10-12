@@ -37,8 +37,23 @@ def test_members_verdicts_and_decisions_parse():
     assert tm.parse_decision("Looks good")[0] == "ask"                                     # no decision: ask
 
 
-def test_all_approve_and_the_steward_lets_it_go():
-    s = Script({"PM": ["APPROVE"], "Architect": ["APPROVE — notes"], "Security": ["APPROVE"],
+def test_all_approve_and_the_steward_is_not_asked():
+    s = Script({"PM": ["APPROVE"], "Architect": ["APPROVE — notes"], "Security": ["APPROVE"]})
+    d = tm.run(tm.new("PRD", "# PRD\nbuild it"), TEAM, STEWARD, {"security"}, 3, 1.0, s)
+    assert d.outcome == "approved" and d.decision == "Every member approved. The steward was not asked."
+    assert [c[0] for c in s.calls] == ["PM", "Architect", "Security"] and d.turns[-1].note == tm.ALL_APPROVED
+    one_exit = tm.run(tm.new("PRD", "x"), TEAM, STEWARD, set(), 3, 1.0,
+                      Script({"PM": ["APPROVE"], "Architect": ["APPROVE"], "Security": ["APPROVE"]}),
+                      exits=[tm.Exit("dev", "Development")])
+    assert one_exit.outcome == "approved" and one_exit.route == "dev" and "it goes on to Development" in one_exit.decision
+    two = Script({"PM": ["APPROVE"], "Architect": ["APPROVE"], "Security": ["APPROVE"],
+                  "Steward": ["DECISION: approve\nEXIT: dev\nbuild"]})
+    tm.run(tm.new("PRD", "x"), TEAM, STEWARD, set(), 3, 1.0, two, exits=[tm.Exit("dev", "Dev"), tm.Exit("ops", "Ops")])
+    assert [c[0] for c in two.calls][-1] == "Steward"                    # two ways on: the steward picks one
+
+
+def test_one_asks_for_changes_and_the_steward_weighs_it():
+    s = Script({"PM": ["APPROVE"], "Architect": ["APPROVE — notes"], "Security": ["CHANGES: add auth"],
                 "Steward": ["DECISION: approve\nNobody blocks it."]})
     d = tm.run(tm.new("PRD", "# PRD\nbuild it"), TEAM, STEWARD, {"security"}, 3, 1.0, s)
     assert d.outcome == "approved" and d.decision == "Nobody blocks it."
@@ -150,4 +165,4 @@ def test_together_a_failing_member_keeps_the_others_reviews_and_one_with_a_sessi
         calls.append(harness)
         return s(harness, prompt, model)
     d = tm.run(tm.new("PRD", "x"), TEAM, STEWARD, set(), 3, 0, named, sessions=lambda h: h == "agy", together=True)
-    assert d.outcome == "approved" and [c[0] for c in s.calls] == ["PM", "Architect", "Security", "Steward"]
+    assert d.outcome == "approved" and [c[0] for c in s.calls] == ["PM", "Architect", "Security"]   # all approved
