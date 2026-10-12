@@ -32,7 +32,7 @@ hidden or frozen, so older towns keep loading (CLAUDE.md, Wording).
 | **Autonomy in three places** (the town's level, a building's own level and waits, a building's Freedom for its retro) | **Merge**: one Autonomy per ork ([ork-console.md](ork-console.md) §2), gates on buildings; the building's level, its own waits and its Freedom go | **P1** |
 | **External listeners' sources** (Gmail, Slack, Jira, Confluence, Figma, Google, GitHub, schedules, webhooks) | **Hide** all but GitHub, a schedule, a webhook and a file | the main scenario needs GitHub; the rest are the owner's | **P0** (what is offered only) |
 | **The phone's places** (the town's rules by where the phone is) | **Drop** (§3: the owner does not use Orkcraft's phone app) | far from the main scenario; Tailscale and the place rules are upkeep for a few | **P1** |
-| **The phone app** | **Freeze**, and out of the README's first screen (§3) | nobody uses it yet, the owner included: the owner's phone is Claude Code's app. Not sold until a tester asks for it | **P0** (the README line) |
+| **The phone app** | **The console on the phone** (§3a): the ork slots list, ❓ and 🔥, the console and the waits, built once for both; out of the README's first screen until the owner switches to it | the owner would move from Claude Code's phone app to Orkcraft's once it does more; what it needs is what the desktop already gets | **P1**, after the console; the README line **P0** |
 | **The Test bench and the UX bench** | **Freeze**, through Improve only ([catalog-shelves.md](catalog-shelves.md)); gate in [improve-buildings.md](improve-buildings.md) §12.4 | the biggest area, made for the owner and contributors | — |
 | **Wiki, Research, Audio briefing** | **Freeze**, More shelf | — | — |
 | **Orkspaces beyond the first** (F2–F8, each in its biome) | **Hide** from the first session: one town until the person asks for a second | small in code; one more idea in the first fifteen minutes | **P1** |
@@ -64,3 +64,20 @@ hidden or frozen, so older towns keep loading (CLAUDE.md, Wording).
    The whole night stays **off by default** in a new town (§2).
 3. **Orkspaces beyond the first:** not used now, thought to be wanted. They stay, **hidden from the first session**
    until a person asks for a second town; no new work on them until a tester does.
+
+### 3a. The phone, a second time (2026-10-12)
+
+The owner: "I will move from Claude Code once Orkcraft's phone app does more." The owner is the main user and
+"useful to me" counts as success, so the phone is not frozen for good. But "does more" is a guess until it is said
+**what work** the owner does on the phone.
+
+- **No phone features of its own.** What the phone needs is what [ork-console.md](ork-console.md) gives the desktop:
+  the ork slots list with 🔥 and ❓ (§8), the console to answer, stop and read a session with its spend (§7), the
+  waits with their reason and Start now / Run anyway (§19). Built once, drawn for both.
+- **P1, right after the console works on the desktop** (P0). Orkcraft's own phone app as it is today stays frozen until
+  then; its places are still dropped.
+- **The test is the owner's switch.** The README promises the phone again on the day the owner stops opening Claude
+  Code's app for this town's work.
+- **To answer first:** the three to five things the owner does in Claude Code's phone app every day (start a session,
+  answer a permission, read a diff, review a pull request, go on with a conversation…). That list is the bar the phone
+  console has to clear, and nothing past it.
