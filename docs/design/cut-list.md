@@ -31,8 +31,8 @@ hidden or frozen, so older towns keep loading (CLAUDE.md, Wording).
 | **The night's processes, six of them** | **Merge** into one flow, the Town Hall's night council ([town-hall-roles.md](town-hall-roles.md) §2): one switch, one budget, one morning brief. [simplify.md](simplify.md) §4 and §7 already go this way | **P1** |
 | **Autonomy in three places** (the town's level, a building's own level and waits, a building's Freedom for its retro) | **Merge**: one Autonomy per ork ([ork-console.md](ork-console.md) §2), gates on buildings; the building's level, its own waits and its Freedom go | **P1** |
 | **External listeners' sources** (Gmail, Slack, Jira, Confluence, Figma, Google, GitHub, schedules, webhooks) | **Hide** all but GitHub, a schedule, a webhook and a file | the main scenario needs GitHub; the rest are the owner's | **P0** (what is offered only) |
-| **The phone's places** (the town's rules by where the phone is) | **Drop**, after the owner confirms it is unused (§3) | far from the main scenario; Tailscale and the place rules are upkeep for a few | **P1** |
-| **The phone app beyond its core** | **Freeze**: it shows what burns and what asks, and lets the person answer; nothing more until testers ask | the README sells "the phone app shows them too"; that much stays | — |
+| **The phone's places** (the town's rules by where the phone is) | **Drop**, if the owner confirms it is unused (§3: still open) | far from the main scenario; Tailscale and the place rules are upkeep for a few | **P1** |
+| **The phone app** | **Keep** (used daily, §3), no new work until testers ask: it shows what burns and what asks, and lets the person answer | the README sells "the phone app shows them too"; that much stays | — |
 | **The Test bench and the UX bench** | **Freeze**, through Improve only ([catalog-shelves.md](catalog-shelves.md)); gate in [improve-buildings.md](improve-buildings.md) §12.4 | the biggest area, made for the owner and contributors | — |
 | **Wiki, Research, Audio briefing** | **Freeze**, More shelf | — | — |
 | **Orkspaces beyond the first** (F2–F8, each in its biome) | **Hide** from the first session: one town until the person asks for a second | small in code; one more idea in the first fifteen minutes | **P1** |
@@ -41,9 +41,22 @@ hidden or frozen, so older towns keep loading (CLAUDE.md, Wording).
 | **Two looks, Camp and Office** | **Keep**, with a rule: Office is tokens and words only, never a layout of its own | Office answers "it is a toy"; a second layout would double every screen | — |
 | **Growth** (deeds, the mascot's stages) | **Keep**, no new work; never in the way of the main scenario | small; it carries the camp's voice | — |
 
-## 3. Open questions for the owner
+## 3. The owner's answers (2026-10-12)
 
-1. **The phone:** used daily? And its places (rules by where the phone is)? If places are unused, they are dropped.
-2. **The night:** which of its outputs are actually read in the morning? Only those come back in the merged night
-   council; the rest are dropped with it.
-3. **Orkspaces:** used beyond the first? If not, F2–F8 are hidden, not only from the first session.
+1. **The phone is used every day.** It stays as it is (fires, questions, answers) and is not frozen out of use; no new
+   work on it until testers ask. Whether its **places** (rules by where the phone is) are used too is still to be
+   answered: only they are a candidate to drop.
+2. **What is read from the night:** changes to the product (technical and product), and proposals to improve the
+   person's ways of working. So the merged night council ([town-hall-roles.md](town-hall-roles.md) §2) makes exactly
+   two things for the morning brief:
+   - **changes:** what the orks changed in a building, or propose to change, with the numbers that say it is better
+     (today's improvements of the Mechanic and the Alchemist, the night check, the probation of
+     `realm/evolution.py`);
+   - **proposals for the way of working:** what to do differently, new roads, work to drop (today's day review by the
+     Mechanic and the Farseer, the daily proposal, the weekly retro).
+
+   What makes neither is dropped with the merge: the Night round's marks on board cards unless they lead to one of
+   the two. The Elders' answers to permission questions at night are not read but act (under Autonomy); they stay.
+   The whole night stays **off by default** in a new town (§2).
+3. **Orkspaces beyond the first:** not used now, thought to be wanted. They stay, **hidden from the first session**
+   until a person asks for a second town; no new work on them until a tester does.
