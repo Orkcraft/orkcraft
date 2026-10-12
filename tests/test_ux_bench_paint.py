@@ -171,3 +171,86 @@ def test_a_moving_house_is_painted_as_two_layers_from_the_house_itself(fake_repo
     assert not (tokens.assets_dir() / part).exists()
     with pytest.raises(CommandError, match="No such picture"):
         act("paint", path="sprites/buildings/barracks/work-part.png", words="x")   # the Agent pool does not move
+
+
+MASCOT = "sprites/mascots/other-1.png"
+
+
+def _pixels(data: bytes) -> tuple[int, int, list[bytes]]:
+    """A PNG made by design/mascots.py read back: its size and its rows of RGBA (filter 0, one IDAT)."""
+    import struct
+    import zlib
+    w, h = struct.unpack(">II", data[16:24])
+    at, idat = 8, b""
+    while at < len(data):
+        n = struct.unpack(">I", data[at:at + 4])[0]
+        if data[at + 4:at + 8] == b"IDAT":
+            idat += data[at + 8:at + 8 + n]
+        at += 12 + n
+    raw = zlib.decompress(idat)
+    return w, h, [raw[y * (4 * w + 1) + 1:(y + 1) * (4 * w + 1)] for y in range(h)]
+
+
+def test_a_mascots_grid_is_checked_and_drawn_at_its_scale():
+    from orkcraft.design import mascots
+    g = mascots.grid(MASCOT)
+    assert mascots.problems(g) == [] and len(g) == 11 and all(len(r) == 12 for r in g)
+    assert any("not in the palette" in p for p in mascots.problems(["Z" * 12] * 11))
+    assert mascots.problems(["." * 12] * 11) == ["the grid is empty"]
+    assert "11 rows" in mascots.problems(g[:5])[0] and mascots.problems("nope")
+    w, h, rows = _pixels(mascots.png(g, 2))
+    assert (w, h) == (24, 22)                                                   # the sprite's 1x; its @2x at 4
+    k = mascots.palette()["K"]
+    y, x = next((y, x) for y, r in enumerate(g) for x, c in enumerate(r) if c == "K")
+    assert rows[2 * y][8 * x:8 * x + 4] == bytes(int(k[i:i + 2], 16) for i in (1, 3, 5)) + b"\xff"
+    assert rows[0][:4] == b"\x00\x00\x00\x00"                                    # "." is transparent
+    assert mascots.is_mascot(MASCOT) and not mascots.is_mascot("sprites/mascots/nope-1.png")
+    assert not mascots.is_mascot("sprites/mascots/other-5.png") and not mascots.is_mascot("../other-1.png")
+    assert "rows 0–5 and columns 6–11" in mascots.cells({"x": 0.5, "y": 0.0, "w": 0.5, "h": 0.5})
+
+
+def test_a_mascot_is_drawn_again_as_its_grid_and_kept_on_this_machine(fake_repo, isolated_layout_file, monkeypatch):
+    """§6.4: the mascots are a target of their own; a head is drawn again by a text model as its grid (a wrong answer
+    goes back once), never by the image tool; Apply keeps its picture, its @2x and its grid; Reset brings it back."""
+    from orkcraft.design import mascots
+    host = _host(fake_repo)
+    bench = _raised(host, "ux_lab")
+    act = lambda name, **a: host.command("act", {"id": bench, "act": name, "args": a})
+    act("pick", type="mascots")
+    d = host.detail(bench)["data"]
+    ghost = next(m for m in d["mascots"] if m["role"] == "other")
+    assert d["target"] == "mascots" and ghost["nick"] == "Wandering Ghost" and ghost["biome"] == "void"
+    assert ghost["paths"] == [f"sprites/mascots/other-{n}.png" for n in (1, 2, 3, 4)] and "window" not in d
+    card = next(b for b in host.snapshot()["buildings"] if b["id"] == bench)["card"]
+    assert card["title"] == "Mascots" and card["pictures"] == 4 * len(d["mascots"])
+
+    hooded = mascots.grid(MASCOT)
+    hooded[1] = "....llll...."
+    answers = iter([json.dumps({"grid": ["Z" * 12] * 11}), json.dumps({"grid": hooded, "why": "a green hood"})])
+    prompts = []
+    monkeypatch.setattr(runners, "STEWARD_RUNNER", lambda prompt: (prompts.append(prompt) or next(answers), 0.01))
+    monkeypatch.setattr(jobs, "run_work", lambda *a, **k: pytest.fail("a mascot is never painted by the image tool"))
+    act("paint", path=MASCOT, words="a green hood", region={"x": 0.0, "y": 0.0, "w": 1.0, "h": 0.2})
+    got = {}
+    assert _until(lambda: got.update(act("draft", path=MASCOT)) or got["src"].startswith("data:image/png;base64,"))
+    assert got["why"] == "a green hood" and "Wandering Ghost" in prompts[0] and "Change ONLY rows 0–2" in prompts[0]
+    assert "REJECTED" in prompts[1] and "not in the palette" in prompts[1]          # the wrong grid went back once
+
+    act("apply", path=MASCOT)
+    own = tokens.assets_dir() / MASCOT
+    assert _pixels(own.read_bytes())[:2] == (24, 22)
+    assert _pixels((tokens.assets_dir() / "sprites/mascots/other-1@2x.png").read_bytes())[:2] == (48, 44)
+    assert mascots.grid(MASCOT) == hooded and server.resolve(f"/ds/{MASCOT}") == own.resolve()
+    assert MASCOT in host.detail(bench)["data"]["own"]
+
+    answers = iter([json.dumps({"grid": hooded[:1] + ["K" * 12] + hooded[2:]})])
+    act("paint", path=MASCOT, words="a black band")                              # from this machine's own grid
+    assert _until(lambda: act("draft", path=MASCOT)["src"])
+    assert prompts[-1].count("....llll....") == 1
+
+    act("reset", path=MASCOT)
+    assert act("draft", path=MASCOT)["shipped"]
+    act("apply", path=MASCOT)
+    assert not own.exists() and not mascots.own_grid(MASCOT).exists() and mascots.grid(MASCOT) != hooded
+    with pytest.raises(CommandError, match="No such picture"):
+        act("paint", path="sprites/mascots/nope-1.png", words="x")

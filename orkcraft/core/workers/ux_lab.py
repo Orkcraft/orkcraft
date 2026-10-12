@@ -8,18 +8,23 @@ A picture painted again (realm/painter.py) is a **draft** beside the building un
 machine's own pictures (design/tokens.py `assets_dir`), served before the design system's; **Reset** brings the shipped
 one back (Apply then takes this machine's away). A window laid out again is its steward's redesign of the type's
 UI document, a draft too until Apply gives it to every building of the type (core/buildings.py `set_ui`).
+
+Its target may also be the operator's mascots (`MASCOTS`, §6.4): a head is drawn again as its grid by a text model
+(realm/painter.py `mascot`), never by the image tool, and Apply keeps its picture, its @2x and its grid on this machine.
 """
 from __future__ import annotations
 
+import json
 import threading
 from pathlib import Path
 
 from orkcraft.core.workers import Worker
-from orkcraft.design import agents, tokens
+from orkcraft.design import agents, mascots, tokens
 from orkcraft.realm import catalog, motion, painter
 
 IMAGE_TOOL = "agy"            # paints unless its settings name another (asked 2026-10-11)
 SHIPPED = "shipped"           # a draft that is the design system's own picture again (Reset)
+MASCOTS = "mascots"           # a target that is no building: the operator's mascots (§6.4)
 
 
 class UxLabWorker(Worker):
@@ -29,14 +34,16 @@ class UxLabWorker(Worker):
     def target(self) -> str:
         """The type whose look it works on, "" until one is picked (or when the one picked is gone)."""
         tid = str(self.config.get("target") or "")
-        return tid if tid in catalog.TYPES and tid != self.TYPE else ""
+        return tid if tid == MASCOTS or (tid in catalog.TYPES and tid != self.TYPE) else ""
 
     @property
     def image_tool(self) -> str:
         return str(self.config.get("image_tool") or IMAGE_TOOL)
 
     def pick(self, type_id: str) -> bool:
-        """Work on `type_id`'s look; False for a type the catalog has not (or itself)."""
+        """Work on `type_id`'s look (or the mascots'); False for a type the catalog has not (or itself)."""
+        if type_id == MASCOTS:
+            return self.save_config({"target": MASCOTS})
         tid = catalog.ALIASES.get(type_id, type_id)
         if tid not in catalog.TYPES or tid == self.TYPE:
             return False
@@ -58,6 +65,11 @@ class UxLabWorker(Worker):
 
     def _draft(self, path: str) -> Path:
         return self.state_dir / "drafts" / f"{self._key(path)}"
+
+    def _draft_grid(self, path: str) -> Path:
+        """A mascot's draft as its grid (and the line on why), beside its picture."""
+        f = self._draft(path)
+        return f.with_name(f.name + ".grid.json")
 
     @staticmethod
     def own(path: str) -> Path:
@@ -89,6 +101,8 @@ class UxLabWorker(Worker):
 
     def paint(self, path: str, words: str, region: dict | None = None, runner=None) -> None:
         """Painted again on its own thread from the picture as it stands (or its draft): the draft comes back."""
+        if mascots.is_mascot(path):
+            return self.draw(path, words, region, runner)
         if not painter.kind_of(path):
             raise painter.PaintError("The UX bench paints the Build icons, the houses, their moving parts and the orks")
         if self.painting.get(path) == "":
@@ -119,17 +133,68 @@ class UxLabWorker(Worker):
 
         threading.Thread(target=work, daemon=True, name="ux-paint").start()
 
+    def grid(self, path: str) -> list[str]:
+        """A mascot's grid as it would be drawn again: its draft's, the design system's after Reset, else this
+        machine's own or the design system's."""
+        have = self.draft(path)
+        if have == SHIPPED:
+            return mascots.shipped_grid(path)
+        try:
+            g = json.loads(self._draft_grid(path).read_text(encoding="utf-8"))["grid"] if have is not None else None
+        except (OSError, ValueError, KeyError):
+            g = None
+        return g if g and not mascots.problems(g) else mascots.grid(path)
+
+    def why(self, path: str) -> str:
+        try:
+            return str(json.loads(self._draft_grid(path).read_text(encoding="utf-8")).get("why") or "")
+        except (OSError, ValueError, AttributeError):
+            return ""
+
+    def draw(self, path: str, words: str, region: dict | None = None, runner=None) -> None:
+        """A mascot drawn again on its own thread, as its grid, by the Alchemist on a text model: the draft comes back."""
+        from orkcraft.core import runners
+        from orkcraft.realm import steward_models
+        if self.painting.get(path) == "":
+            raise painter.PaintError("It is being drawn already")
+        if len(words.strip()) < 3:
+            raise painter.PaintError("Say what to change")
+        current, what = self.grid(path), mascot_title(path)
+        run = runner or steward_models.runner_for(None, "redesign", runners.STEWARD_RUNNER)
+        self.painting[path] = ""
+        self.changed()
+
+        def work() -> None:
+            g, why, wrong = painter.mascot(path, current, words, region, what, runner=run)
+            self.town.call(done, g, why, "; ".join(wrong[:2]) if not g else "")
+
+        def done(g, why: str, error: str) -> None:
+            if g:
+                f = self._draft(path)
+                f.parent.mkdir(parents=True, exist_ok=True)
+                f.write_bytes(mascots.png(g))
+                self._draft_grid(path).write_text(json.dumps({"grid": g, "why": why}), encoding="utf-8")
+                f.with_suffix(".shipped").unlink(missing_ok=True)
+                self.painting.pop(path, None)
+            else:
+                self.painting[path] = error or "no grid came back"
+            self.changed()
+
+        threading.Thread(target=work, daemon=True, name="ux-mascot").start()
+
     def reset(self, path: str) -> None:
         """The draft is the design system's own picture again."""
         f = self._draft(path)
         f.parent.mkdir(parents=True, exist_ok=True)
         f.unlink(missing_ok=True)
+        self._draft_grid(path).unlink(missing_ok=True)
         f.with_suffix(".shipped").write_text("", encoding="utf-8")
         self.changed()
 
     def drop(self, path: str) -> None:
         f = self._draft(path)
         f.unlink(missing_ok=True)
+        self._draft_grid(path).unlink(missing_ok=True)
         f.with_suffix(".shipped").unlink(missing_ok=True)
         self.painting.pop(path, None)
         self.changed()
@@ -140,6 +205,8 @@ class UxLabWorker(Worker):
         have = self.draft(path)
         if have is None:
             return False
+        if mascots.is_mascot(path):
+            return self._apply_mascot(path, have)
         targets = [path] + ([path[:-4] + "@2x.png"] if not path.endswith("@2x.png") else [])
         for t in targets:
             own = self.own(t)
@@ -148,6 +215,23 @@ class UxLabWorker(Worker):
             else:
                 own.parent.mkdir(parents=True, exist_ok=True)
                 own.write_bytes(have)
+        self.drop(path)
+        return True
+
+    def _apply_mascot(self, path: str, have) -> bool:
+        """A mascot's draft drawn at both scales from its grid, the grid kept beside them; after Reset, all three go."""
+        files = {path: mascots.SCALE, path[:-4] + "@2x.png": 2 * mascots.SCALE}
+        if have == SHIPPED:
+            for t in files:
+                self.own(t).unlink(missing_ok=True)
+            mascots.own_grid(path).unlink(missing_ok=True)
+        else:
+            g = self.grid(path)
+            for t, scale in files.items():
+                own = self.own(t)
+                own.parent.mkdir(parents=True, exist_ok=True)
+                own.write_bytes(mascots.png(g, scale))
+            mascots.own_grid(path).write_text(json.dumps({"grid": g}, indent=1), encoding="utf-8")
         self.drop(path)
         return True
 
@@ -266,3 +350,11 @@ class UxLabWorker(Worker):
             self.card = None
             self.changed()                                 # the snapshot after it: every hut of the type draws it again
         return wrong
+
+
+def mascot_title(path: str) -> str:
+    """What a mascot's picture is, for the Alchemist: its nick, its role and its stage."""
+    from orkcraft.realm import intents
+    m = mascots.PATH.match(path)
+    role = next((r for r in intents.ROLES if r.id == m[1]), None) if m else None
+    return f"{role.nick}, the {role.title.lower()}'s mascot at stage {m[2]} of 4" if role else path

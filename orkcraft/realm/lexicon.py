@@ -75,7 +75,8 @@ TERMS: tuple[Term, ...] = (
     _t("look.office", "Office"),                                   # the calm look: monochrome, no sprites
     _t("dnd", "Do not disturb"),                                   # sounds, pushes, the Warchief's news wait
     # -- what a thing does, costs or risks: plain words ---------------------------------------------
-    _t("ghost", "preview", "", "ghost"),
+    _t("ghost", "preview"),                                        # Build's placing outline; "ghost" is no old spelling
+                                                                   # any more: the ghosts are a kin (Wandering Ghost)
     _t("loot", "output", "", "loot"),
     _t("cart_type", "content type", "content types"),            # message, doc, ticket… (realm/content.py)
     _t("fog_of_war", "new orkspace", "", "fog of war"),            # the War Map's foot: + Orkspace
