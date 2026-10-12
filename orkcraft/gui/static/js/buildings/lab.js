@@ -126,6 +126,9 @@ function Check({ id, c }) {
         ${last.zip && html`<a class="ok-btn" href=${`/api/check/latest?t=${encodeURIComponent(TOKEN)}`} download
           title=${say("Every run and every model call it made, with a README for the agent that reads it")}>${say("Download (.zip)")}</a>`}</span></div>
     <p class="ok-font-status ok-tone-muted">${say("Mail sorted, tasks from mail, the Review board and pictures redrawn, each 3 times against the AI tool alone (agy, its cheapest model), then a quiet town. It spends: each run stops at $2.")}</p>
+    ${c.night && html`<label class="lab-check"><input type="checkbox" checked=${c.night.on}
+        onChange=${(e) => act(id, "check_nightly", { on: e.target.checked })} />
+      <span class="ok-font-body">${say(`Every night, in the quiet hours: ${c.night.per_night} jobs in turn, all of them on Saturday night. Tonight: ${c.night.tonight.join(", ")}.`)}</span></label>`}
     ${job && html`<pre class="gui-bench__log gui-bench__term">${(job.lines || []).slice(-LOG_LINES).join("\n")}</pre>`}
     ${job && job.error && html`<p class="ok-font-status ok-tone-error">${job.error}</p>`}
     ${last.stamp && html`<${CheckVerdict} last=${last} />`}
@@ -142,6 +145,10 @@ function CheckVerdict({ last }) {
     <p class=${cls("ok-font-body", last.green ? "ok-tone-ok" : "ok-tone-error")}><b>${say(last.green
       ? "Green: the main jobs pass." : `Red: ${bad ? many(bad, "case") + " to fix" : "over its budget"}.`)}</b>
       <span class="ok-font-status ok-tone-muted"> ${say(`Checked ${when}`)}</span></p>
+    ${(last.since || []).length > 0 && html`<div class="lab-check__job"><h5 class="ok-font-label">${say("Since the last check")}</h5>
+      <ul class="lab-stories">${last.since.map((m, n) => html`<li key=${n} class=${cls("lab-story", m.dir === "worse" ? "is-bad" : "is-good")}>
+        <span class="lab-story__mark" aria-hidden="true">${m.dir === "worse" ? "▼" : "▲"}</span>
+        <span class="ok-font-body">${say(`${m.case}: ${m.said}`)}</span></li>`)}</ul></div>`}
     ${told.scenarios.filter((sc) => sc.stories.length).map((sc) => html`<div key=${sc.id} class="lab-check__job">
       <h5 class="ok-font-label">${say(sc.title)}</h5><${Stories} stories=${sc.stories} /></div>`)}
     ${idle && html`<p class=${cls("ok-font-status", idle.calls ? "ok-tone-error" : "ok-tone-muted")}>${say(idle.calls

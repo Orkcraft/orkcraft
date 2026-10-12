@@ -16,6 +16,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import math
+import statistics
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -106,7 +107,8 @@ def judge(reports: list[bench.Report], budget: dict) -> dict:
     return {"ok": not why, "why": "; ".join(why), "runs": n, "building": building, "bare": bare,
             "time": g["time"], "spend": g["spend"], "spend_by": g["spend_by"], "time_range": g.get("time_range"),
             "cost": round(sum(r.building.cost for r in pairs) / n, 4),
-            "tokens": int(sum(r.building.tokens for r in pairs) / n)}
+            "tokens": int(statistics.median(r.building.tokens for r in pairs)),
+            "seconds": round(statistics.median(r.building.seconds for r in pairs), 1)}
 
 
 def judge_pictures(runs: list[dict], budget: dict) -> dict:
