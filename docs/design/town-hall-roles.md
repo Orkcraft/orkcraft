@@ -79,7 +79,8 @@ Eleven names to eight, each with one meaning wherever the person meets it.
   Artisan's prompt in `builders.py` becomes the Alchemist's brief (`design/agents/alchemist.md`) with the builder's
   task.
 
-## 6. Open
+## 6. Decided
 
-1. The audit's "huts without quick actions" is about how a building reads, so it looks like the Alchemist's, not the
-   Pathfinder's. To be decided with the owner.
+1. **A building's quick actions are the Alchemist's** (2026-10-12): whether they are there, whether they work and
+   whether they are easy to use, not only the audit's "huts without quick actions". A building it changes is checked
+   again after the change. The Pathfinder keeps the town's layout and its roads.
