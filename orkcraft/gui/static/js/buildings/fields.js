@@ -197,8 +197,8 @@ function noteLanes(data) {
 }
 
 /** The selected card in a strip: its title, Open, where it goes next (the orks, a note, my to-dos) and
- *  Send; Colour and Delete quiet after them; × lets it go. */
-function Acts({ id, sel, setDialog, onPlan, wiki }) {
+ *  Send; Colour and Delete quiet after them; × lets it go. A task's status lanes are one click each. */
+function Acts({ id, sel, lanes, setDialog, onPlan, wiki }) {
   const a = (label, onClick) => html`<button class="ok-act" onClick=${onClick}><span class="ok-act__label">${label}</span></button>`;
   return html`<div class="fields-sel" role="toolbar" aria-label=${say("The selected card")}>
     <span class="fields-sel__what" title=${sel.title}>${sel.title}</span>
@@ -206,6 +206,8 @@ function Acts({ id, sel, setDialog, onPlan, wiki }) {
       <button class="ok-btn primary" onClick=${() => setDialog({ card: sel })}>Open</button>
       ${sel.kind !== "task" && a("Give it to the orks", () => act(id, "flip", { card: sel.id }))}
       ${sel.kind === "task" && a("Make it a note", () => act(id, "flip", { card: sel.id }))}
+      ${sel.kind === "task" && lanes.filter((ln) => ln.id !== sel.column).map((ln) => a(`→ ${say(ln.label)}`,
+        () => act(id, "move", { card: sel.id, lane: ln.id }).catch(() => {})))}
       ${sel.kind !== "mine" && sel.mine && a("Make it my to-do", () => act(id, "mine", { card: sel.id }))}
       ${sel.kind === "mine" && a(sel.plan && sel.plan.length ? "🧭 Plan" : "🧭 Make a plan",
         () => (sel.plan && sel.plan.length ? setDialog({ plan: sel.id }) : onPlan(sel)))}
@@ -385,7 +387,7 @@ function Board({ id, data }) {
   const todoOpen = parts ? data.todos.cards.filter((c) => !c.done).length : 0;
   return html`<div class="gui-fields">
     <${Head} id=${id} data=${data} setDialog=${setDialog} />
-    ${sel && html`<${Acts} id=${id} sel=${sel} setDialog=${setDialog} onPlan=${plan} wiki=${data.wiki} />`}
+    ${sel && html`<${Acts} id=${id} sel=${sel} lanes=${data.lanes.filter((ln) => ln.kind === "task")} setDialog=${setDialog} onPlan=${plan} wiki=${data.wiki} />`}
     ${parts ? html`
       <div class="gui-fields__lower">
         <section class="gui-fields__part"><h3 class="ok-font-heading">My to-dos <small>${todoOpen}/${data.todos.cards.length}</small></h3>
