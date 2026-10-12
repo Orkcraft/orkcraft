@@ -298,7 +298,8 @@ button { font: inherit; color: inherit; }
 .gui-infopage__back { flex: none; margin-left: auto; }
 .gui-infopage__body { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .gui-infopage__acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
-.gui-thumb { gap: 3px; }
+.ok-act.gui-thumb { gap: 3px; width: auto; height: auto; min-height: 28px; padding: 2px var(--space-2); }   /* wider than the square command button: icon and count */
+.gui-thumb > .gui-thumb__icon { width: 20px; height: 20px; }   /* not .ok-act img's 32 px */
 /* Camp: the green pixel thumb (js/console.js Thumb); Office: the emoji (office.css). */
 .gui-thumb__icon { image-rendering: pixelated; margin: -2px 0; }   /* 20 px as in the bubble, a pixel a CSS pixel */
 .gui-thumb__emoji { display: none; }
