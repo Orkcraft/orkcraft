@@ -436,6 +436,13 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         heard(i, m, got)
 
     routes = [e.id for e in exits] or list(routes)
+    if _all_approved(d, team, routes):                  # nothing for the steward to weigh: no call (asked 2026-10-12)
+        d.route = routes[0] if routes else ""
+        where = next((e.name for e in exits if e.id == d.route), d.route)
+        body = f"Every member approved{f': it goes on to {where}' if where else ''}. The steward was not asked."
+        add(Turn("Steward", "decide", body, "approve", 0.0, now_iso(), ALL_APPROVED))
+        d.decision, d.outcome = body, "approved"
+        return _end(d)
     got = call(steward.harness, steward.model, decide_prompt(d, steward, veto, max_cycles,
                                                              inline=roads.resolve(steward.harness) not in roads.IN_REPO,
                                                              routes=routes, exits=exits), STEWARD_TURN)
@@ -466,6 +473,15 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
 
 
 WENT_ON = "went on from where it stopped"
+ALL_APPROVED = "every member approved"
+
+
+def _all_approved(d: Discussion, team: list[Member], routes: list[str]) -> bool:
+    """Every member of the clan approved, there is at most one way on, and the operator said nothing to weigh: the
+    steward's decision would only repeat theirs."""
+    reviews = d.reviews()
+    return bool(reviews) and len(reviews) >= len(team) and all(t.verdict == "approve" for t in reviews) \
+        and len(routes) <= 1 and not d.answers()
 
 
 def _notes(*notes: str) -> str:

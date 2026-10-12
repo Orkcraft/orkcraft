@@ -182,7 +182,9 @@ def look(feed: Feed, since: str = "", seen: list[str] | None = None, run: Callab
         cmd = argv(feed, asked)
         start = time.monotonic()
         try:
-            proc = run(cmd) if run is not None else halt.run(cmd, input="", timeout=TIMEOUT_S, who="feeds", agent=True)
+            replayed = call_log.answer("look", asked)
+            proc = subprocess.CompletedProcess(cmd, *replayed) if replayed is not None else \
+                run(cmd) if run is not None else halt.run(cmd, input="", timeout=TIMEOUT_S, who="feeds", agent=True)
         except FileNotFoundError:
             return Look(error="agent: Claude Code is not installed here", kind="target")
         except subprocess.TimeoutExpired:

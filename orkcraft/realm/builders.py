@@ -130,7 +130,8 @@ def ask(harness_id: str, prompt: str, model: str | None = None) -> tuple[str, fl
     — harnesses.model_on; None keeps its default). Raises RuntimeError on failure."""
     h = harnesses.need(harness_id)
     start = time.monotonic()
-    proc = _call(h, prompt, model)
+    replayed = call_log.answer("ask", prompt)                # a recorded answer, when a check plays one back
+    proc = subprocess.CompletedProcess([], *replayed) if replayed is not None else _call(h, prompt, model)
     if proc.returncode != 0:
         call_log.record(None, "ask", h.id, model or "", prompt, proc.stdout, proc.stderr, proc.returncode,
                         time.monotonic() - start, who=f"{h.id} -p")

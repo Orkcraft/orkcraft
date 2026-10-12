@@ -128,7 +128,8 @@ class Script:
 
 
 def test_clan_fire_closed_command_and_full(fake_repo, monkeypatch):
-    s = Script({"Planner": ["APPROVE fine", "APPROVE"], "Steward": ["DECISION: ask\nShip on Friday?", "DECISION: approve\nyes", "DECISION: approve\nok"]})
+    s = Script({"Planner": ["CHANGES fine, but when?", "APPROVE"],      # every one approving asks no steward: one asks
+                "Steward": ["DECISION: ask\nShip on Friday?", "DECISION: approve\nyes", "DECISION: approve\nok"]})
     monkeypatch.setattr(CouncilWorker, "runner", staticmethod(s))
     host = _host(fake_repo)
     bid = _raised(host, "council", members=["Planner:claude"], veto=["Planner"], max_cycles=3)
@@ -140,9 +141,9 @@ def test_clan_fire_closed_command_and_full(fake_repo, monkeypatch):
     w = host.town.worker(bid)
     assert _until(lambda: w.current is not None and w.current.outcome == "asked")
     card = _card(host, bid)["card"]
-    assert card["state"] == "asked" and card["cycle"] == 1 and card["max"] == 3 and card["ok"] == 1 and card["no"] == 0
+    assert card["state"] == "asked" and card["cycle"] == 1 and card["max"] == 3 and card["ok"] == 0 and card["no"] == 1
     d = host.detail(bid)["data"]
-    assert d["members"] == [{"role": "Planner", "label": "claude", "tier": "", "veto": True, "verdict": "approve", "says": "fine",
+    assert d["members"] == [{"role": "Planner", "label": "claude", "tier": "", "veto": True, "verdict": "changes", "says": "fine, but when?",
                              "brief": d["members"][0]["brief"], "briefed": False}]
     r = d["current"]
     assert r["title"] == "Launch plan" and r["question"].startswith("Ship on Friday?") and "<h1>Launch plan</h1>" in r["doc_html"]

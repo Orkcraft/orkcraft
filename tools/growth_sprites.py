@@ -76,7 +76,8 @@ PALETTE = {
     "h": "#e8c76a", "j": "#b08a3a",                   # blonde hair, its shade
     "a": "#a8552e", "A": "#6e3418",                   # auburn hair, its shade
     "v": "#8e88a8",                                   # lich
-    "w": "#c4ced8", "x": "#5f6f80",                   # wraith face, its hood
+    "f": "#e4edf5", "F": "#9fb3c8",                   # ghost sheet, its shade
+    "u": "#b9ab8a",                                   # mummy's bandage shade
     "s": "#fffbe6",                                   # lamp light
     "z": "#3b8f8f",                                   # visor green
 }
@@ -137,17 +138,17 @@ BASES = {
              "...vvvvvv...",
              "............",
              "............"],
-    "wraith": ["............",
-               "....xxxx....",
-               "..xxxxxxxx..",
-               ".xxwwwwwwxx.",
-               ".xwwwwwwwwx.",
-               ".xwKKwwKKwx.",
-               ".xwwwwwwwwx.",
-               ".xwwwKKwwwx.",
-               "..xwwwwwwx..",
-               "..xwxwwxwx..",
-               "...x.ww.x..."],
+    "mummy": ["............",
+              "...IIIIII...",
+              "..uuuuIIII..",
+              ".IIIIIuuuuI.",
+              ".uuuIIIIIuu.",
+              ".IKKIuuIKKI.",
+              ".IIuuIIIIuu.",
+              ".uuIIIIuuII.",
+              ".IIIuKKuIII.",
+              "..uuIIIIuuI.",
+              "...IIuuII..."],
     "knight": ["............",
                "............",
                "............",
@@ -159,17 +160,17 @@ BASES = {
                ".MMKMKMKMMM.",
                "..MMMMMMMM..",
                "...MMMMMM..."],
-    "skeleton": ["............",
-                 "............",
-                 "............",
-                 "...IIIIII...",
-                 "..IIIIIIII..",
-                 ".IIIIIIIIII.",
-                 ".IKKIIIIKKI.",
-                 ".IKKIIIIKKI.",
-                 "..IIIKKIII..",
-                 "...IKIKIK...",
-                 "...IIIIII..."],
+    "ghost": ["............",
+              "....ffff....",
+              "..ffffffff..",
+              ".fffffffffF.",
+              ".fffffffffF.",
+              ".ffKKffKKfF.",
+              ".ffKKffKKfF.",
+              ".fffffffffF.",
+              ".ffffKKfffF.",
+              ".fffffffffF.",
+              ".ff.ff.ff.F."],
 }
 
 E = ["............"] * 11                             # an empty overlay
@@ -230,15 +231,14 @@ ROLES = {
         ov(r1="q..........q", r2="qq........qq", r3="qq........qq", r4="qvYYYvvYYYvq", r5="qq........qq",
            r6="qqq......qqq", r7="qqq......qqq", r8="qqqP....Pqqq", r9="qqqGGWWGGqqq", r10="...GG..GG..."),
     ]),
-    # Product manager — Roadmap Wraith: a pale wraith in its hood, then a rolled roadmap, a map pin over
-    # the hood, a gold-hemmed hood and the roadmap unrolled with its milestones.
-    "product_manager": ("wraith", [
+    # Product manager — Roadmap Mummy: a mummy in its bandages, then a rolled roadmap, a map pin on its
+    # head, a gold band and gold eyes over the roadmap unrolled with its milestones.
+    "product_manager": ("mummy", [
         E,
-        ov(r8="..xwwwwwwxtI", r9="..xwxwwxwIRI", r10="...x.ww.IIt."),
-        ov(r0="....RRR.....", r1="....RsRx....", r2="..xxxRxxxx..", r8="..xwwwwwwxtI",
-           r9="..xwxwwxwIRI", r10="...x.ww.IIt."),
-        ov(r0="....GGGG....", r1="...GxxxxG...", r2="..GxxxxxxG..", r5=".xwccwwccwx.", r8="IIIIIIIIIIII",
-           r9="IRIIYIIRIIYI", r10="tIIIIIIIIIIt"),
+        ov(r8="..........jh", r9=".........hRh", r10="........hhj."),
+        ov(r0="....RRR.....", r1="....RsR.....", r2=".....R......", r8="..........jh", r9=".........hRh",
+           r10="........hhj."),
+        ov(r1="..GGGGGGGG..", r5=".IYYIuuIYYI.", r8="jhhhhhhhhhhj", r9="hRhhYhhRhhYh", r10="jhhhhhhhhhhj"),
     ]),
     # Product designer — Gradient-Sick Elf: a sprout of a designer, then the hair and the rainbow, a
     # ranger's green hood with a pencil, long hair, gold pins and gold eyes, swatches at the ears.
@@ -295,13 +295,14 @@ ROLES = {
            r5=".HGGGGGGGGH.", r6=".HHYYYYYYHH.", r7=".HHHHHHHHHH.", r8=".HHGHGHGHHH.", r9="..HHHHHHHH..",
            r10="...HHHHHH..."),
     ]),
-    # Someone else — Wandering Skeleton: a bare skull, then a wanderer's straw hat, a pirate captain's
-    # hat and an eye patch, and a crest of a thousand open tabs with gold eyes.
-    "other": ("skeleton", [
+    # Someone else — Wandering Ghost: a bare sheet, then a wanderer's straw hat, a pirate captain's hat
+    # and an eye patch, and a crest of a thousand open tabs with gold eyes.
+    "other": ("ghost", [
         E,
         ov(r1="....htth....", r2="...hhhhhh...", r3="jhhhhhhhhhhj"),
-        ov(r0="....qqqq....", r1="..qqqIqqqq..", r2="GqqqqqqqqqqG", r6=".IKKIIKKKKI.", r7=".IKKIIIKKKI."),
-        ov(r0="BB.RR.LL.PP.", r1="BBBRRRLLLPPP", r2="ccccccccccc.", r6=".IYYIIIIYYI."),
+        ov(r0="....qqqq....", r1="..qqqIqqqq..", r2="GqqqqqqqqqqG", r4=".K.....KK...", r5=".ffKKfKKKKF.",
+           r6=".ffKKfKKKKF."),
+        ov(r0="BB.RR.LL.PP.", r1="BBBRRRLLLPPP", r2="ccccccccccc.", r5=".ffYYffYYfF.", r6=".ffYYffYYfF."),
     ]),
 }
 

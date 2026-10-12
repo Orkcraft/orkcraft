@@ -194,7 +194,7 @@ def _check_run(w, args: dict) -> bool:
     from orkcraft.gui.check_runs import CheckError
     picked = [str(x)[:20] for x in args.get("scenarios") or []][:10]
     try:
-        _engine(w).check.start(picked)
+        _engine(w).check.start(picked, replay=bool(args.get("replay")))
     except CheckError as e:
         raise ActError(str(e)) from None
     return True

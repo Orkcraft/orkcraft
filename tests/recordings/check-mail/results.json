@@ -1,0 +1,54 @@
+{
+ "series": "20261011-181700",
+ "green": true,
+ "scenarios": [
+  {
+   "id": "mail",
+   "type": "watchtower",
+   "cases": [
+    {
+     "case": "customer-orders",
+     "ok": true,
+     "why": "",
+     "runs": 1,
+     "building": 1,
+     "bare": 1,
+     "time": 0.4750000000000001,
+     "spend": 0.059385159338148905,
+     "spend_by": "$",
+     "time_range": null,
+     "cost": 0.0032,
+     "tokens": 40209
+    },
+    {
+     "case": "on-call",
+     "ok": true,
+     "why": "",
+     "runs": 1,
+     "building": 1,
+     "bare": 1,
+     "time": 0.13636363636363627,
+     "spend": -0.05635154050611009,
+     "spend_by": "$",
+     "time_range": null,
+     "cost": 0.003,
+     "tokens": 39902
+    },
+    {
+     "case": "sales-leads",
+     "ok": true,
+     "why": "",
+     "runs": 1,
+     "building": 1,
+     "bare": 1,
+     "time": 0.4375,
+     "spend": 0.06375777268463442,
+     "spend_by": "$",
+     "time_range": null,
+     "cost": 0.0033,
+     "tokens": 40341
+    }
+   ]
+  }
+ ]
+}

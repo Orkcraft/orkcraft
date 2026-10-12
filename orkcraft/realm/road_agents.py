@@ -229,7 +229,8 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
         if telemetry.charged(run_env):                    # the session hook records what it was for
             run_env = {**telemetry.purpose_env(), **run_env}
         start = time.monotonic()
-        code, stdout, stderr = run_proc(cmd, workdir, run_env, harness_stdin(harness, prompt), wait, harness)
+        code, stdout, stderr = call_log.answer("agent", prompt) or \
+            run_proc(cmd, workdir, run_env, harness_stdin(harness, prompt), wait, harness)
     if code != 0:
         call_log.record(env, "agent", harness, model, prompt, stdout, stderr, code, time.monotonic() - start,
                         workdir=workdir)

@@ -24,6 +24,7 @@ from orkcraft.realm import bench, check_pictures, explain
 
 DIR = bench.BENCH.parent / "check"          # .orkcraft/check/<stamp>/report.md
 PICTURE = "picture"                         # the pictures scenario's own kind: no bare tool to hold it against
+LOOK = "look"                               # the windows' look, held against the last check's (gui/look_check.py)
 
 
 @dataclass(frozen=True)
@@ -44,6 +45,8 @@ SCENARIOS: tuple[Scenario, ...] = (
              "several orks debate a design and send a letter down the right exit"),
     Scenario("pictures", "Pictures redrawn", PICTURE, tuple(c["id"] for c in check_pictures.CASES),
              "the Alchemist paints a sprite again from a person's words; a judge compares before and after"),
+    Scenario("looks", "Windows look right", LOOK, ("windows",),
+             "every building's window pictured and held against the last check; a changed one judged: broken or not"),
     Scenario("wiki", "Wiki from mail", "", (),
              "the Wiki takes in what letters say: no Test bench kit for it yet"),
 )
@@ -146,6 +149,11 @@ def report(results: list[dict], idle: dict | None, budget: dict, tool: str = "ma
             continue
         for cid, j in res["cases"]:
             green = green and j["ok"]
+            if sc.type == LOOK:
+                share = "" if j.get("share") is None else f"{j['share']:.0%} changed"
+                rows.append(f"| {sc.title} | {cid} | {share or '—'} | — | — | {'✅' if j['ok'] else '❌'} | "
+                            f"{j['why'] or 'as before'} |")
+                continue
             if sc.type == PICTURE:
                 score = "—" if j.get("score") is None else f"{j['score']:g}/10"
                 rows.append(f"| {sc.title} | {cid} | {j.get('building', 0)}/{j['runs']} · judge {score} | "
@@ -182,6 +190,13 @@ def told(root: Path, series: str, scenarios: list[dict]) -> dict:
         stories = []
         for c in sc.get("cases") or []:
             cid = c.get("case", "")
+            if sc.get("type") == LOOK:
+                stories.append({"case": "every window" if cid == "windows" else f"the {cid} window",
+                                "status": "good" if c.get("ok") else "bad", "summary": c.get("why") or "As before.",
+                                "details": [], "changes": [] if c.get("ok") else [{
+                                    "what": f"Fix how the {cid} window reads", "why": c.get("why") or "",
+                                    "case": cid, "weight": 2}]})
+                continue
             if sc.get("type") == PICTURE:
                 words = next((p["words"] for p in check_pictures.CASES if p["id"] == cid), cid)
                 score = c.get("score")

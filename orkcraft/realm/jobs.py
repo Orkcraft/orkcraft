@@ -131,9 +131,9 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     resumed = roads.codex_thread_usage(resume, run_env) if harness == "codex" and resume else None
     before = resumed or 0
     start = time.monotonic()
-    code, out, err = road_agents.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
-                                    lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True),
-                                    harness)
+    code, out, err = call_log.answer("work", prompt) or road_agents.run_proc(
+        cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
+        lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True), harness)
     if code != 0:
         call_log.record(env, "work", harness, model, prompt, out, err, code, time.monotonic() - start, workdir=workdir)
         raise roads.failure(harness, code, out, err)
@@ -162,9 +162,9 @@ def run_read(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     cmd = h.read(prompt, workdir, model, False)
     run_env = {**os.environ, **h.env("read", workdir), **(env or {})}
     start = time.monotonic()
-    code, out, err = road_agents.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
-                                    lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True),
-                                    harness)
+    code, out, err = call_log.answer("read", prompt) or road_agents.run_proc(
+        cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
+        lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True), harness)
     if code != 0:
         call_log.record(env, "read", harness, model, prompt, out, err, code, time.monotonic() - start, workdir=workdir)
         raise roads.failure(harness, code, out, err)

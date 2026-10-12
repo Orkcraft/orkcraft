@@ -6,7 +6,7 @@ known at a glance and two lands that touch on the War Map never share a colour.
     biomes.settle(scroll, home="ice")    once per camp: the old default ("forest" everywhere, the GUI showed
                                          dirt) spread over the orkspaces, the first on the operator's home;
                                          True when it changed them
-    biomes.home_of(profile)  -> "ice"    the home of the operator's kin (the onboarding's role: a lich's ice)
+    biomes.home_of(profile)  -> "lava"   the home of the operator's kin (the onboarding's role: a lich's lava)
 
 Pure: no face. The colours of each ground are the face's (`gui/static/js/biomes.js`).
 """
@@ -19,9 +19,10 @@ SETTLED = "biomes"          # meta key: the camp's biomes were spread once (the 
 assert set(ORDER) == set(BIOMES)
 
 # Each kin's home ground (docs/design/war-map.md §3.3): the operator's first orkspace stands on it, and their
-# mascot stands on it in Settings. The orks keep the camp's dirt; the knights got a field of their own.
-HOMES = {"orc": "dirt", "knight": "meadow", "elf": "forest", "lich": "ice", "goblin": "dust", "skeleton": "void",
-         "gnome": "lava"}
+# mascot stands on it in Settings. The orks keep the camp's dirt; the knights got a field of their own. The
+# "skeleton" kin is the ghosts (its id kept for the profiles that saved it): the void is theirs.
+HOMES = {"orc": "dirt", "knight": "meadow", "elf": "forest", "lich": "lava", "goblin": "dust", "skeleton": "void",
+         "gnome": "ice"}
 
 
 def home_of(profile: dict | None) -> str:
