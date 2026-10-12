@@ -252,7 +252,7 @@ function giveToOrks(id, sel, sendsItself) {
 /** The selected card in a strip: its title, where it goes next (the orks, a note, my to-dos), what it keeps
  *  beside it; Delete in red at the end; × lets it go. A double click opens the card; its colour is the
  *  model's, picked as it names the card (core/workers/fields.py). */
-function Acts({ id, sel, setDialog, onPlan, wiki, sendsItself }) {
+function Acts({ id, sel, lanes, setDialog, onPlan, wiki, sendsItself }) {
   const a = (label, onClick, extra) => html`<button class=${cls("ok-act", extra)} onClick=${onClick}><span class="ok-act__label">${label}</span></button>`;
   const give = sel.kind !== "task" || (!sel.sent && !sel.goes && !sel.into && sel.column !== "done");
   return html`<div class="fields-sel" role="toolbar" aria-label=${say("The selected card")}>
@@ -261,6 +261,8 @@ function Acts({ id, sel, setDialog, onPlan, wiki, sendsItself }) {
       ${give && html`<button class="ok-btn primary" onClick=${() => giveToOrks(id, sel, sendsItself)}>${say("Give it to the orks")}</button>`}
       ${(sel.goes || sel.into) && a("Send now", () => act(id, "send", { card: sel.id }))}
       ${sel.kind === "task" && a("Make it a note", () => act(id, "flip", { card: sel.id }))}
+      ${sel.kind === "task" && lanes.filter((ln) => ln.id !== sel.column).map((ln) => a(`→ ${say(ln.label)}`,
+        () => act(id, "move", { card: sel.id, lane: ln.id }).catch(() => {})))}
       ${sel.kind !== "mine" && sel.mine && a("Make it my to-do", () => act(id, "mine", { card: sel.id }))}
       ${sel.kind === "mine" && a(sel.plan && sel.plan.length ? "🧭 Plan" : "🧭 Make a plan",
         () => (sel.plan && sel.plan.length ? setDialog({ plan: sel.id }) : onPlan(sel)))}
@@ -440,7 +442,7 @@ function Board({ id, data }) {
   const todoOpen = parts ? data.todos.cards.filter((c) => !c.done).length : 0;
   return html`<div class="gui-fields">
     <${Head} id=${id} data=${data} setDialog=${setDialog} />
-    ${sel && html`<${Acts} id=${id} sel=${sel} setDialog=${setDialog} onPlan=${plan} wiki=${data.wiki}
+    ${sel && html`<${Acts} id=${id} sel=${sel} lanes=${data.lanes.filter((ln) => ln.kind === "task")} setDialog=${setDialog} onPlan=${plan} wiki=${data.wiki}
       sendsItself=${data.settle !== null && data.settle !== undefined} />`}
     ${parts ? html`
       <div class="gui-fields__lower">
