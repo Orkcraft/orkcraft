@@ -5,7 +5,15 @@ any code"). Builds on [select-a-building.md](select-a-building.md) §2 (the Warc
 command card), [warchief-line-and-cards.md](warchief-line-and-cards.md) §0 (buildings with and without a view),
 [yards.md](yards.md) (an ork lives only where a model thinks), [roads-and-orcs.md](roads-and-orcs.md) and
 [steward-at-work.md](steward-at-work.md) (stewards and their tier), [calm-town.md](calm-town.md) (the HUD: Stop all,
-Answers, Agents).
+Answers, Agents). The Town Hall's roles are in [town-hall-roles.md](town-hall-roles.md).
+
+**Priorities** (the owner asked for hard ones, 2026-10-12), used in §11 and on every later section:
+
+- **P0** — before the first outside testers, and only for the buildings in the demo GIF and the testers' first
+  fifteen minutes. The launch plan waits on these.
+- **P1** — after the testers, decided again by what they showed.
+- **Later** — worth doing, not this quarter.
+- **No** — not needed; said so, with the reason.
 
 ## 1. Why
 
@@ -65,6 +73,12 @@ Decisions this takes:
 3. **Tools: the building gives the default set, an ork may narrow it, never widen it.** Widening goes through the
    building, where the Warder and the person see it.
 4. **Three 👎, three meanings:** on a session (this answer), on an ork (this role), on a building (this flow or view).
+5. **An ork is a role; runs side by side are sessions** (decided 2026-10-12). Three Grunts on tests at once are
+   one ork, the Grunt for tests, with three sessions. Its history and its 👎 gather on the role, so a worse persona
+   shows. An ork slot (🥩) is taken by a session, not by a role.
+6. **A role is an expertise wherever it works.** The Test bench is the Mechanic's place of work, not its owner; the
+   same role may work in several buildings and flows, each run a session there
+   ([town-hall-roles.md](town-hall-roles.md)).
 
 ## 3. What stays as built
 
@@ -245,20 +259,28 @@ to an ork instead of one. To fill in from the code before stage 1:
 | Answers (HUD button) | `calm-town.md` | ❓ N and the ork slots list (§8) |
 | | | |
 
-## 11. Stages
+## 11. Stages and priorities
 
-0. **The log check** (§1a). No code. Decides how much of stage 1 the ask channel is.
-1. **Before the first outside testers** (the main scenario: see who works and who waits, step in to one):
-   1. the way to ask and to mark assumptions, for Claude Code first (§4);
-   2. one status on the town (§5), 🔥 / smouldering on buildings, ❓ on orks;
-   3. the ork slots list with 🔥 · ❓ counts and Stop all beside it (§8);
-   4. the console, folded and unfolded (§7), for the selected ork;
-   5. the removals of §10 that the console replaces.
+| | what | § | priority |
+|---|---|---|---|
+| 0 | the log check | §1a | **P0**, no code; decides how big the ask channel is |
+| 1 | a way to ask and to mark assumptions, Claude Code first | §4 | **P0** |
+| 2 | one status on the town: ❓ on orks, 🔥 / smouldering on buildings | §5 | **P0** |
+| 3 | the ork slots list, 🔥 · ❓ counts, Stop all beside it | §8 | **P0** |
+| 4 | the console, folded and unfolded, for the selected ork | §7 | **P0** |
+| 5 | the removals the console replaces | §10 | **P0**, in the same change as 4 |
+| 6 | the Agent pool's lanes as roles with session chips | §14 | **P0**, the lanes only (they exist); the data model behind them is P1 |
+| 7 | Work keeps data and flow; Info split into the building's and the ork's | §15 | **P1** |
+| 8 | the Town Hall's roles folded, 11 names to 8 | [town-hall-roles.md](town-hall-roles.md) | **P1**, before the ork's Info ships (or it ships 11 role cards) |
+| 9 | a yard's failure: the Warchief sorts it, the Mason repairs | §16 | **P1** |
+| 10 | tier and Autonomy on the ork in settings; a session's 👎 apart from its ork's | §2 | **P1** |
+| 11 | quick actions for every building | §7 | **P1** |
+| 12 | the yard with lines between its orks; forms over every AI tool's questions | §5, §7 | **Later** |
+| 13 | a cart's price and load on the roads | §17 | **Later** |
+| 14 | the phone app (PWA) on the same status | | **Later** |
+| 15 | a hidden Town Hall feature for reviewing the person's own project | §18 | **No** |
 
-   Only for the buildings in the demo GIF and the testers' first fifteen minutes.
-2. **After the testers, by what they show:** quick actions for every building; tier and Autonomy moved onto the ork
-   in settings; the yard with its lines between orks; forms over the questions of every AI tool; a 👎 on a session
-   apart from one on its ork; the phone app (PWA) on the same status.
+P0 is for the buildings in the demo GIF and the testers' first fifteen minutes only, not every type.
 
 ## 12. Open questions for engineering
 
@@ -278,3 +300,119 @@ to an ork instead of one. To fill in from the code before stage 1:
 - The owner, after two weeks: the log check (§1a) again, on sessions run with the ask channel. Fewer unseen
   assumptions, and the ones left are marked.
 - No outside tester calls the orks "a black box" when asked how the town works.
+
+## 14. An ork's runs side by side on its building's card (P0: the lanes)
+
+An ork is a role, its runs are sessions (§2, decision 5). On a card a role is shown once, its sessions as chips in
+the one status, as an RTS shows a squad: one portrait, a number, each unit's state small.
+
+The Agent pool's medium card, a lane a role (today a lane an ork, [warchief-line-and-cards.md](warchief-line-and-cards.md) §4):
+
+```
+Grunt · tests       ⚙ ⚙ ❓      3 at work · 4 waiting
+Grunt · frontend    💭           1 at work · 0 waiting
+Grunt · any work    Zz           —
+```
+
+- A role whose session asks shows ❓ on its chip and on its head.
+- A chip opens the console on that session; the role opens the console on the role: a row of chips over it
+  (`#1 ⚙ · #2 ⚙ · #3 ❓`), the asking one first, else the longest running; below, the role's history.
+- By zoom: the map, the building's count and ❓; overview, one head with `×3`; close, three orks under one hat in the
+  yard, a bubble each.
+
+## 15. Work keeps data and flow; two Infos (P1)
+
+**The test for any element:** take every ork out of the building. Does the element still make sense? Yes: it is the
+building's (Work or the building's Info). No: it is the ork's (the console or the ork's Info).
+
+**Work keeps:**
+
+1. **The flow strip**, one line on top, the same on every building: in → at work → waiting at a gate → done, with
+   counts; stopped and failed on it too. Where it stands, without reading a log.
+2. **The building's data**, its own per type: tasks, files, events, mail, diffs. What the window is opened for.
+3. **Results**, each with its state, its "N assumptions" and its 👍 / 👎; a click on one opens the session that made
+   it in the console. This is the one link from Work to the orks.
+4. **Actions on a row of data** (take a task, open a file, pass the gate). The building's own actions (Run, Check
+   now) are its command card's Q, W, E, never repeated as buttons in Work.
+5. **An empty state:** one sentence on what the building does, one action.
+
+**Work gives up:** the orks' logs and thinking (to the console), their questions (❓, the console), the AI tool and
+tier pickers (the ork's Info), a session's spend (the console; the building's total stays in its Info), settings and
+rules (the building's Info).
+
+**The exception is the Agent pool**, whose data are partly its orks. Its lanes stay in Work as data about the tasks
+(topic, queue, what is at work); the head in a lane is the one status and opens the console; no ork's log in a lane.
+
+**The building's Info** — what it is and how it works: name, type, goal, card size; the flow's shape (in turn, side
+by side, a debate, a router first, a check last) and its gates; roads in and out and their road rules (a road rule
+is the flow, even when its steward carries it out); its code part (chains, scripts); its record (runs, done,
+failed, a week's spend, 👍 / 👎 with notes); Watch, Report, Redesign (the upkeep of its view and flow); **its orks**,
+each a link.
+
+**The ork's Info** — who it is and how it thinks: its role (prompt, editable; topic or persona); its tier; its tools
+(the building's set, what is narrowed marked); its **Autonomy** (ask, assume and mark, decide; it moves here from the
+building's Freedom); its default AI tool (by tier, or a preferred one; the real one is the session's); its sessions
+(date, length, spend, AI tool, assumptions, 👍 / 👎); a 👎 on the role with a note; the buildings it works in.
+
+Two windows, linked both ways, never two tabs of one: tabs would glue back together what §2 takes apart. The
+building's Info from ⚙ on its card or ⋯ in its command card; the ork's from its name in the console, a right click
+on its portrait, or its row in the ork slots list.
+
+**Spend has one source, the sessions**, and is only summed elsewhere: a session (the console), an ork (its Info), a
+building (its Info), a cart's way (§17), the town (the HUD's 🪙). Never counted twice two ways.
+
+## 16. A yard's failure has an owner (P1)
+
+A yard has no ork of its own (yards.md). When it fails:
+
+1. its flow stands: the building burns (§5);
+2. **the Warchief** sorts it out: a cheap session that reads the error and decides who takes it;
+3. a broken script or chain goes to **the Mason**, who built it: a fix proposed, the person applies it as a builder's
+   change is applied today;
+4. a cause outside the code (mail access ran out, `gh` missing) is not repaired: the Warchief says plainly what is
+   needed from the person.
+
+No new ork. The Mason builds, the Mason repairs.
+
+## 17. A cart's price and load (Later)
+
+A cart gathers spend on its way: one mail from Mail to a sent reply, one task from the board to a pull request. Two
+amounts, shown apart:
+
+- **🪙 the way's price:** what every session on its way has spent on it so far. The past.
+- **🪵 the load:** the tokens it carries on (text, context, attachments). The future: every next building reads it,
+  so a growing load is why spend compounds.
+
+Calm by default: the cart's heap grows with its load (no number); its price tag on the mouse ("$0.07 · 12k tokens ·
+3 stops"); a road's mean price per cart on the selected building's roads (`≈$0.04 / cart`); a soft mark only on an
+outlier (over three times its road's median, or a load more than doubled at one stop). A click on a cart opens its
+**waybill**: each stop, its building, its session (a link to the console), its price, its load before and after.
+
+Hard parts: a session that handled ten carts at once (split evenly, and the waybill says "a share of a batch of
+10"); spend with no cart (Watch, the night's council, the audit) is the building's and the town's overhead, never a
+cart's; whether a cart knows today which sessions it went through is a question for engineering.
+
+**Why Later:** it answers a question no other tool in this class asks (what does one unit of work cost from intake to
+result), and it is the Treasurer's best data. But no first user needs it to see who works and who waits.
+
+## 18. Not a Town Hall feature: reviewing the person's own project (No)
+
+Asked 2026-10-12: a night's look at the person's own project and its quarter's goals, with a product manager, a
+product designer and an AI architect. **It is a building's work, a Review board's, not a hidden Town Hall flow.** The
+Town Hall and its flows (the Elders, the audit, the builder) look after the town itself; the person's work is done by
+buildings, so its flow shows on the map with its spend, its exits and its 👎. The Town Hall's roles are written for
+Orkcraft and would give the wrong advice on another project.
+
+How it is set up today, by hand: the goals in a file of the project (`docs/goals-q4.md`); a schedule in External
+listeners, **weekly**, plus a run when that file changes (a quarter's goals do not change overnight; three opinions a
+night are paid for the same answers), or the Calendar when it is for a meeting; a Review board whose purpose says
+what to judge, its clan proposed by its steward and cut to the three roles; one exit "To me" (the morning brief), and
+"To the Task board" for actions if wanted; no veto (opinions, not a gate).
+
+To check on the first run: does a clan member read the project's code, or only the document it is given? An AI
+architect needs the code's context.
+
+**Later, not a hidden feature: a recipe.** The person tells the Warchief what they want and it lays the whole set
+(schedule → Review board with its clan → the brief), all on the map and all editable. A good thing for buildings
+from the community. And later still a role may be an expertise whose context the building gives, so the Farseer
+could sit on the person's own clan.
