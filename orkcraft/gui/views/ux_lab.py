@@ -7,7 +7,7 @@ import base64
 
 from orkcraft.design import tokens, ui
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import biomes, card_docs, catalog, harnesses, painter
+from orkcraft.realm import biomes, card_docs, catalog, harnesses, motion, painter
 
 SPRITES = {"loot_vault": "loot"}           # a type drawn under another's name (js/icons.js spriteName)
 FLAT = ("dirt", "forest")                  # the biomes that wear the plain header.png (js/icons.js DRAWN_FOR)
@@ -39,6 +39,11 @@ def detail(w) -> dict:
     out = {"target": tid, "title": catalog.TYPES[tid].title if tid else "", "biomes": drawn_biomes(tid) if tid else [],
            "image_tool": w.image_tool, "tools": tools(w), "painting": dict(w.painting),
            "own": {p: int(w.own(p).stat().st_mtime) for p in w.owned()}, "sprite": SPRITES.get(tid, tid)}
+    m = motion.MOTIONS.get(out["sprite"]) if tid else None
+    if m:                                       # a house that moves at work: its two layers and how (docs/design/building-motion.md)
+        still, part = motion.paths(out["sprite"])
+        out["motion"] = {**motion.as_data(m), "still": still, "part": part,
+                         "brief": {still: m.still, part: m.part}}
     if tid:
         bid = w.first_of_type()
         contract = ui.contract(tid)
@@ -64,7 +69,7 @@ def _tool(w, args: dict) -> bool:
 
 def _path(args: dict) -> str:
     path = text(args, "path", 200)
-    if not painter.kind_of(path) or not (tokens.SYSTEM / path).is_file():
+    if not painter.kind_of(path) or not ((tokens.SYSTEM / path).is_file() or motion.of_path(path)):
         raise ActError("No such picture")
     return path
 
@@ -92,7 +97,7 @@ def _draft(w, args: dict) -> dict:
     """What the dialog shows on the left: the draft (a data URL), the shipped one after Reset, or none yet."""
     path = _path(args)
     got = w.draft(path)
-    shown = got if isinstance(got, bytes) else (tokens.SYSTEM / path).read_bytes() if got == "shipped" else b""
+    shown = got if isinstance(got, bytes) else w.shipped(path) if got == "shipped" else b""
     src = "data:image/png;base64," + base64.b64encode(shown).decode() if shown else ""
     return {"src": src, "shipped": got == "shipped", "painting": path in w.painting and w.painting[path] == "",
             "error": w.painting.get(path) or ""}

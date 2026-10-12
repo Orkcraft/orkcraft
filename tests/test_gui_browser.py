@@ -1541,6 +1541,22 @@ def test_the_map_view_draws_every_building_bare_and_brings_its_card_back(page):
     call("town.demolish", {"id": forge})
 
 
+def test_the_ux_bench_shows_a_moving_house_at_work(page):
+    """docs/design/building-motion.md: the mill picked, the UX bench shows its two layers to paint and their preview."""
+    pg = page
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    bench = call("town.build", {"type": "ux_lab"})
+    call("act", {"id": bench, "act": "pick", "args": {"type": "mill"}})
+    pg.keyboard.press("Escape")
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", bench)
+    pg.get_by_text("At work", exact=True).wait_for(state="visible", timeout=WAIT_MS)
+    pg.get_by_text("The moving part", exact=True).click()
+    dialog = pg.locator(".gui-modal")
+    assert "four sails" in dialog.locator("textarea").input_value()          # its brief, ready to paint or change
+    dialog.get_by_role("button", name="Close").click()
+    call("town.demolish", {"id": bench})
+
+
 def test_a_task_that_settles_says_when_it_goes_and_what_joined_it(page, gui):
     """A send_new board holds a new task (⏳ goes at …, Send now); a related one joins it (↳ with …, +1 added) and
     Split off takes it out again; a near one asks Join or Keep apart (docs/design/settle-and-join.md)."""

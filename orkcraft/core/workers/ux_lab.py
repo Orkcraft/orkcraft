@@ -16,7 +16,7 @@ from pathlib import Path
 
 from orkcraft.core.workers import Worker
 from orkcraft.design import agents, tokens
-from orkcraft.realm import catalog, painter
+from orkcraft.realm import catalog, motion, painter
 
 IMAGE_TOOL = "agy"            # paints unless its settings name another (asked 2026-10-11)
 SHIPPED = "shipped"           # a draft that is the design system's own picture again (Reset)
@@ -64,11 +64,21 @@ class UxLabWorker(Worker):
         return tokens.assets_dir() / path
 
     def picture(self, path: str) -> bytes:
-        """The picture as it stands on this machine: its own, else the design system's."""
+        """The picture as it stands on this machine: its own, else the design system's. A moving house's layer not
+        painted yet is painted from the house itself (realm/motion.py)."""
         for p in (self.own(path), tokens.SYSTEM / path):
             if p.is_file():
                 return p.read_bytes()
+        got = motion.of_path(path)
+        if got:
+            return self.picture(f"sprites/buildings/{got[0]}/header.png")
         raise painter.PaintError("No such picture")
+
+    @staticmethod
+    def shipped(path: str) -> bytes:
+        """The design system's own picture, b"" when it ships none (a moving house's layer not painted yet)."""
+        p = tokens.SYSTEM / path
+        return p.read_bytes() if p.is_file() else b""
 
     def draft(self, path: str) -> bytes | str | None:
         """Its draft: the new picture, SHIPPED when Reset asked for the design system's again, None when none."""
@@ -80,12 +90,12 @@ class UxLabWorker(Worker):
     def paint(self, path: str, words: str, region: dict | None = None, runner=None) -> None:
         """Painted again on its own thread from the picture as it stands (or its draft): the draft comes back."""
         if not painter.kind_of(path):
-            raise painter.PaintError("The UX bench paints the Build icons, the houses and the orks")
+            raise painter.PaintError("The UX bench paints the Build icons, the houses, their moving parts and the orks")
         if self.painting.get(path) == "":
             raise painter.PaintError("It is being painted already")
         have = self.draft(path)
         reference = have if isinstance(have, bytes) else self.picture(path) if have is None else \
-            (tokens.SYSTEM / path).read_bytes()
+            (self.shipped(path) or self.picture(path))
         self.painting[path] = ""
         self.changed()
 

@@ -6,6 +6,7 @@ person's words say what changes, and a region marked on it says where only. The 
 checked to be a PNG of a sane size, and nothing else in the folder is read.
 
     painter.kind_of("sprites/buildings/barracks/header.png")   → "sprite"
+    painter.kind_of("sprites/buildings/mill/work-part.png")    → "motion" (a moving house's layer, realm/motion.py)
     painter.paint(tool, model, path, reference_bytes, words, region) → the new picture's bytes
 """
 from __future__ import annotations
@@ -17,7 +18,7 @@ import threading
 from pathlib import Path
 
 from orkcraft.design import agents
-from orkcraft.realm import jobs
+from orkcraft.realm import jobs, motion
 
 PROMPTS = Path(__file__).resolve().parent.parent / "design" / "prompts"
 KINDS = {"intents": "icon", "buildings": "sprite", "orks": "ork"}       # a sprites/ folder → the prompt it uses
@@ -32,10 +33,10 @@ class PaintError(Exception):
 
 
 def kind_of(path: str) -> str:
-    """icon, sprite or ork for a picture of the design system ("" for one the UX bench does not paint)."""
+    """icon, sprite, ork or motion for a picture of the design system ("" for one the UX bench does not paint)."""
     if not PATH.match(path or "") or ".." in path:
         return ""
-    return KINDS[path.split("/")[1]]
+    return "motion" if motion.of_path(path) else KINDS[path.split("/")[1]]
 
 
 def prompt(kind: str, what: str, words: str, region: dict | None = None) -> str:

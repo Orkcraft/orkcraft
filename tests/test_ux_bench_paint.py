@@ -136,3 +136,38 @@ def test_a_card_document_shows_roles_only_and_is_kept_on_this_machine(fake_repo,
     act("card_reset")
     act("card_apply")
     assert card_docs.load("barracks") is None
+
+
+def test_a_moving_house_is_painted_as_two_layers_from_the_house_itself(fake_repo, isolated_layout_file, monkeypatch):
+    """docs/design/building-motion.md: the mill's still layer and its sails, each painted from the house with its brief
+    and the motion prompt, a draft until Apply; the bench says how they move."""
+    from orkcraft.realm import motion
+    host = _host(fake_repo)
+    bench = _raised(host, "ux_lab")
+    act = lambda name, **a: host.command("act", {"id": bench, "act": name, "args": a})
+    act("pick", type="mill")
+    still, part = motion.paths("mill")
+    m = host.detail(bench)["data"]["motion"]
+    assert m["move"] == "turn" and m["still"] == still and m["part"] == part and "sails" in m["brief"][part]
+    assert painter.kind_of(part) == "motion" and painter.kind_of("sprites/buildings/mill/header.png") == "sprite"
+    asked = []
+
+    def work(tool, prompt, folder, cancel, model="", *a, **kw):
+        asked.append((prompt, (folder / "reference.png").read_bytes()))
+        (folder / "out.png").write_bytes(PNG)
+        return "", None, None, ""
+
+    monkeypatch.setattr(jobs, "run_work", work)
+    assert act("draft", path=part)["src"] == ""                                  # nothing painted yet
+    act("paint", path=part, words=m["brief"][part])
+    assert _until(lambda: act("draft", path=part)["src"].startswith("data:image/png;base64,"))
+    house = (tokens.SYSTEM / "sprites/buildings/mill/header.png").read_bytes()
+    assert asked[0][1] == house and "pixel for pixel" in asked[0][0] and "four sails" in asked[0][0]
+    act("apply", path=part)
+    assert (tokens.assets_dir() / part).read_bytes() == PNG and part in host.detail(bench)["data"]["own"]
+    act("reset", path=part)
+    assert act("draft", path=part) == {"src": "", "shipped": True, "painting": False, "error": ""}
+    act("apply", path=part)
+    assert not (tokens.assets_dir() / part).exists()
+    with pytest.raises(CommandError, match="No such picture"):
+        act("paint", path="sprites/buildings/barracks/work-part.png", words="x")   # the Agent pool does not move

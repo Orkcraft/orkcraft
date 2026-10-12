@@ -84,6 +84,7 @@ function Gallery({ id, data }) {
       <${Picture} key=${`o${v(data, ork)}`} label="Its ork" onOpen=${() => setOpen({ path: ork, label: "Its ork" })}>
         <span class="ux-picture__ork">${img(data, ork)}</span></${Picture}>
     </div></section>
+    ${data.motion && html`<${Motion} data=${data} onOpen=${setOpen} />`}
     ${data.cards && html`<section class="ux-gallery__group"><h3 class="ok-list__head">${say("Cards")}</h3><div class="ux-gallery__row">
       ${SIZES.map((z) => html`<${Picture} key=${z} label=${`${SIZE_WORDS[z]} card`} onOpen=${data.cards.building ? () => setOpen({ card: z }) : null}>
         <${CardPreview} data=${data} size=${z} small=${true} /></${Picture}>`)}
@@ -94,7 +95,8 @@ function Gallery({ id, data }) {
         onOpen=${data.window.panes.length > 1 ? () => setOpen({ window: true }) : null}>
         <${Wire} doc=${(data.window.draft && data.window.draft.doc) || data.window.doc} small=${true} /></${Picture}>
     </div></section>`}
-    ${open && open.path && html`<${PaintDialog} id=${id} data=${data} path=${open.path} label=${open.label} onClose=${() => setOpen(null)} />`}
+    ${open && open.path && html`<${PaintDialog} id=${id} data=${data} path=${open.path} label=${open.label} brief=${open.brief || ""}
+      fallback=${open.fallback || ""} onClose=${() => setOpen(null)} />`}
     ${open && open.window && html`<${LayoutDialog} id=${id} data=${data} onClose=${() => setOpen(null)} />`}
     ${open && open.card && html`<${CardDialog} id=${id} data=${data} size=${open.card} onClose=${() => setOpen(null)} />`}
   </div>`;
@@ -102,9 +104,9 @@ function Gallery({ id, data }) {
 
 /** A picture large on the left (drag on it to mark a region), what to change on the right; Reset at the top brings
  *  the shipped one back, Apply at the bottom keeps it on this machine. */
-function PaintDialog({ id, data, path, label, onClose }) {
+function PaintDialog({ id, data, path, label, brief = "", fallback = "", onClose }) {
   const [d, setD] = useState({ src: "", shipped: false, painting: false, error: "" });
-  const [words, setWords] = useState("");
+  const [words, setWords] = useState(brief);
   const [region, setRegion] = useState(null);
   const box = useRef(null);
   const look = () => act(id, "draft", { path }).then(setD, () => {});
@@ -114,7 +116,7 @@ function PaintDialog({ id, data, path, label, onClose }) {
     const t = setInterval(look, 1500);
     return () => clearInterval(t);
   }, [d.painting]);
-  const left = d.src || `/ds/${path}${v(data, path)}`;
+  const left = d.src || (fallback && !data.own[path] ? fallback : `/ds/${path}${v(data, path)}`);
   const down = (e) => {
     const r = box.current.getBoundingClientRect();
     const at = (ev) => ({ x: Math.min(Math.max((ev.clientX - r.left) / r.width, 0), 1), y: Math.min(Math.max((ev.clientY - r.top) / r.height, 0), 1) });
@@ -151,6 +153,29 @@ function PaintDialog({ id, data, path, label, onClose }) {
       </div>
     </div>
   </${Dialog}>`;
+}
+
+/** A house that moves at work (docs/design/building-motion.md): its two layers, each painted from the house with its
+ *  brief (the house without the part that moves, the part alone), and the two laid over each other moving as the
+ *  town moves them while its ork works. A layer not painted yet shows the house it will be painted from. */
+function Motion({ data, onOpen }) {
+  const m = data.motion;
+  const house = `/ds/sprites/buildings/${data.sprite}/header.png`;
+  const layer = (path) => (data.own[path] ? `/ds/${path}${v(data, path)}` : "");
+  const open = (path, label) => onOpen({ path, label, brief: m.brief[path], fallback: house });
+  const ready = !!(layer(m.still) && layer(m.part));
+  return html`<section class="ux-gallery__group"><h3 class="ok-list__head">${say("At work")}</h3><div class="ux-gallery__row">
+    ${[[m.still, "Without the moving part"], [m.part, "The moving part"]].map(([path, label]) => html`<${Picture} key=${path + v(data, path)}
+        label=${label} onOpen=${() => open(path, label)}>
+      ${layer(path) ? img(data, path, "ok-sprite ux-picture__house") : html`<img class="ok-sprite ux-picture__house is-unpainted" src=${house} alt="" draggable="false" />`}
+    </${Picture}>`)}
+    <${Picture} label=${ready ? `It ${m.move === "turn" ? "turns" : "swings"}` : "Paint both, then Apply"}>
+      ${ready ? html`<span class="gui-work" style=${`--work-x:${m.pivot[0] * 100}%;--work-y:${m.pivot[1] * 100}%;--work-deg:${m.degrees}deg;--work-steps:${m.steps}`}>
+          <img class="ok-sprite gui-work__still ux-picture__house" src=${layer(m.still)} alt="" draggable="false" />
+          <img class=${`ok-sprite gui-work__part is-${m.move}`} src=${layer(m.part)} alt="" draggable="false" /></span>`
+        : html`<img class="ok-sprite ux-picture__house is-unpainted" src=${house} alt="" draggable="false" />`}
+    </${Picture}>
+  </div></section>`;
 }
 
 const SIZES = ["s", "m", "l"];
