@@ -455,3 +455,40 @@ they take any repository as their subject. Written down so that what is built no
 - **How the cost of an app's own model calls is seen:** its traces (OpenTelemetry), or a local proxy before its
   model provider.
 - **Where it runs:** in the person's town, on their machine and their AI tools (as now), or headless in CI at night.
+
+## 13. Improve reads a day: the Mechanic and the Farseer (asked 2026-10-12)
+
+Asked by the owner: instead of copying a day's logs out for someone to read, **Improve** in the Warchief's line has the
+town's own councillors read them and offer the changes. The Mechanic stays where a single building or scheme is
+reviewed (the Test bench); Improve is the town's whole day.
+
+**The Farseer** (`design/agents/farseer.md`, `orc.farseer` in the lexicon) is the Elders' product manager, named after
+the orc shaman of WC3: what the person needed from a building and whether they got it — the work they did again by
+hand, the answer they turned down, the thing nobody asked for. It sits on the Council (`fastpath.ROLES`, 🔮): it
+objects when a change gives the person more to do, hides what a building did, or adds work nobody asked for.
+
+**How a day is read** (realm/hotspots.py, realm/day_review.py, gui/day_review.py):
+
+1. **Improve → a day.** Improve opens the days with logs (`js/improve.js`): each says what the Elders found when they
+   read it, with *Read again*; *Only the latest 👎* is the old way. With no day kept, Improve is the old way at once.
+2. **Hotspots, by code, free.** The day's 👎 (with what was said and what was made), failed calls, an Agent pool's
+   reworks (follow-up, reuse, retier), the same opening of a prompt sent three times or more (context sent again),
+   and the five costliest calls. Each gets an id (H1, H2, …) and an excerpt of its call: its prompt's head and tail,
+   its output. The digest the councillors read is at most 40k characters: never the whole day.
+3. **Two asks, on the main tool:** the Mechanic (quality per token) and the Farseer (what the person needed), each
+   with its whole persona and the digest; each says at most six findings, each with one change of a kind (setting,
+   prompt, rule, step, tier, road, code, drop). **A finding that cites no hotspot of the day is dropped**: no proof,
+   no finding. A councillor whose ask fails is said; the other's findings stand. A day with no hotspot asks no model.
+4. **The Warchief offers them** one by one, to apply or skip, as it does any change. A code change is not made here:
+   it is said, and the Test bench can try it (§5.3; a pull request only from there, shown before it goes, §4 — what
+   the logs hold never goes into one).
+5. **Kept** in `.orkcraft/council/days/<day>.json`: picking the day again hands the same findings to the Warchief at
+   no cost.
+
+**At night** (gui/nightly.py, after the check, before the night's improvements; the Council's `review_nightly`, on by
+default): the day that just ended is read once its date has passed, while it is quiet; the morning's Elders' toast says
+what was found, and Improve goes through it at no cost. Yesterday's logs wait for that reading before the morning's
+clearing (gui/day_logs.py), whether or not the logs are kept for analysis.
+
+**Next:** the code changes it offers, made on the Test bench's virtual building and measured before a pull request is
+offered (the person sends it).

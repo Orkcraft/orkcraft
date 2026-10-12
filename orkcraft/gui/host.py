@@ -29,7 +29,7 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import (accounts, awake, bench, builder, console, day_logs, failures, github, growth, history, mobile, nightly, onboarding, projects,
+from orkcraft.gui import (accounts, awake, bench, builder, console, day_logs, day_review, failures, github, growth, history, mobile, nightly, onboarding, projects,
                           state, town_settings, updates, views, you)
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
@@ -56,6 +56,7 @@ class Host:
         self.night.restore()
         self.nightly = nightly.Nightly(self)       # …the retros and the orks' own changes (gui/nightly.py)
         self.day_logs = day_logs.DayLogs(self.town)    # every model call by day and building (gui/day_logs.py)
+        self.day_review = day_review.DayReview(self)   # Improve: the Mechanic and the Farseer read a day (gui/day_review.py)
         self.town.budget_ok = lambda: not self.town.demo and not self.treasury.exhausted()
         # How long a cart is on a plain road before it arrives: 0 (at once) unless asked, e.g. to film a flow
         # slowly enough that a person sees each cart on its road before its building acts (tools/landing_flow.py).
@@ -149,6 +150,7 @@ class Host:
         snap["portrait"] = self.you.snapshot()             # the look, Do not disturb, what gathered (gui/you.py)
         snap["usage_ask"] = self.usage.should_ask()        # the one question about usage stats (js/settings.js)
         snap["update"] = self.updates.snapshot()           # a newer Orkcraft, if one is out (js/update.js)
+        snap["improve"] = self.day_review.state()          # the days Improve can read, and the one read now
         snap["onboarding"] = self.onboarding.snapshot()    # the first run's steps and the town going up (js/onboarding.js)
         return snap
 

@@ -177,6 +177,8 @@ def test_the_town_serves_a_buildings_day_and_clears_by_its_dislikes(fake_repo, i
         yesterday = (today - dt.timedelta(days=1)).isoformat()
         _day(fake_repo, yesterday, "liked_one")
         _day(fake_repo, yesterday, "town_hall")
+        from orkcraft.realm import fastpath
+        fastpath.save_settings(fake_repo, {"review_nightly": False})       # no night reading to wait for
         incident = feedback.Incident(f"{yesterday}T12:00:00", "town_hall", "logic", "", "")
         feedback._append(feedback._dir(fake_repo) / "incidents.jsonl", dataclasses.asdict(incident))
         host.day_logs.cleared = ""

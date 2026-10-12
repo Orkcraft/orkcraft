@@ -1323,6 +1323,33 @@ def test_settings_turn_an_ai_tool_on_and_make_it_the_main_one(page):
                 "{ tools: { pi: false }, main_tool: '' }))")
 
 
+def test_improve_offers_the_days_with_logs_and_reads_one(page, gui):
+    """Improve → the days with logs: one read before says what was found, and picking it again costs nothing."""
+    import datetime as dt
+    from orkcraft.realm import call_log, day_review
+    server, _ = gui
+    host = server.host
+    root = host.town.repo_root
+    today = dt.date.today().isoformat()
+    folder = call_log.day_folder(root, today, "town_hall")
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / call_log.LINES).write_text("{}\n")
+    day_review.save(root, day_review.Review(today))                  # read before: nothing worth a look
+    host.day_review._days = (-1e9, [])
+    host.town.call(host.on_change)
+    pg = page
+    pg.wait_for_function("() => import('/static/js/link.js').then(m => (m.town.value.improve || {}).days?.length > 0)",
+                         timeout=WAIT_MS)
+    pg.wait_for_timeout(300)                                         # the line drawn again with its days
+    pg.locator(".gui-warchief__improve").click()
+    pick = pg.locator(".gui-warchief__day").first
+    pick.wait_for(timeout=WAIT_MS)
+    assert "nothing in the logs worth a look" in pick.text_content()
+    pick.get_by_role("button", name="Today").click()
+    pg.wait_for_function("() => document.querySelector('.gui-warchief__said')?.textContent.includes('worth a look')",
+                         timeout=WAIT_MS)
+
+
 def test_settings_keep_logs_for_analysis_and_download_a_period(page):
     """Settings → Keep logs for analysis: on, the logs stay a month; Download analytics is the period's zip."""
     pg = page

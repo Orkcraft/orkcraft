@@ -39,6 +39,7 @@ import { HALL, hallTab } from "./tent.js";
 import { Message } from "./buildings/town_hall.js";
 import { WarchiefHead, StewardHead } from "./icons.js";
 import { askKeeper } from "./keeper.js";
+import { ImprovePick } from "./improve.js";
 import { fold, foldQuiet, unfoldAll } from "./fold.js";
 
 const THREAD = 3;                          // the last messages shown over the line
@@ -442,6 +443,7 @@ export function WarchiefLine() {
   const [focused, setFocused] = useState(false);
   const [shown, setShown] = useState(0);         // when the last answer came (it stays over the line a while)
   const [said, setSaid] = useState("");          // what a command answered (a word on how to use it)
+  const [picking, setPicking] = useState(false);  // Improve's days, over the bar
   const [back, setBack] = useState(-1);          // where ↑ is in the history
   const root = useRef(null);
   const data = hall();
@@ -497,23 +499,33 @@ export function WarchiefLine() {
   const suB = su ? t.buildings.find((x) => x.id === su.id) : null;
   const setting = !!(suB && suMod && suMod.Setup);
   // A press anywhere off the line and its thread puts the thread away: it never hangs over the town.
-  const over = !!shown || !!said || setting || buildOn;
+  const over = !!shown || !!said || setting || buildOn || picking;
   useEffect(() => {
     if (!over) return undefined;
     const away = (e) => {
       if (framing.value) return;                    // a setup's frame is being drawn on the map: the line waits for it
-      if (root.current && !root.current.contains(e.target)) { setShown(0); setSaid(""); endSetup(); buildOpen.value = false; }
+      if (root.current && !root.current.contains(e.target)) { setShown(0); setSaid(""); setPicking(false); endSetup(); buildOpen.value = false; }
     };
     document.addEventListener("pointerdown", away, true);
     return () => document.removeEventListener("pointerdown", away, true);
   }, [over]);
 
   const set = (text) => { line.value = { ...line.value, text }; setSaid(""); };
-  // Improve (docs/design/warchief-line-and-cards.md §1): the latest 👎 handed to the Warchief to go through.
-  const improve = () => command("warchief.improve").then((r) => {
-    if (r.none) setSaid(say(r.none));
-    else ask(r.text, []).catch(() => {});
-  }, () => {});
+  // Improve (docs/design/warchief-line-and-cards.md §1): a day's logs read by the Mechanic and the Farseer, whose
+  // findings the Warchief then offers (gui/day_review.py, docs/design/improve-buildings.md §13); or, with no day,
+  // the latest 👎 handed to the Warchief to go through.
+  const improve = (day = "", again = false) => {
+    setPicking(false);
+    if (day) {
+      command("warchief.improve", { day, again }).then((r) => setSaid(say(r.said)), (e) => setSaid(say(String(e.message || e))));
+      return;
+    }
+    command("warchief.improve").then((r) => {
+      if (r.none) setSaid(say(r.none));
+      else ask(r.text, []).catch(() => {});
+    }, () => {});
+  };
+  const improveDays = ((t && t.improve) || {}).days || [];
   const clear = () => { line.value = { ...line.value, text: "", about: [] }; setBack(-1); };
 
   function pick(h) {
@@ -597,7 +609,9 @@ export function WarchiefLine() {
       </button>`;
   const thread = !!data && (focused || !!shown || data.thinking);
   return html`<div ref=${root} class=${cls("gui-warchief", { "is-focused": focused, "is-alert": t.alerts.length > 0 })}>
-    ${buildOn ? html`<div key="build" class="ok-win gui-warchief__over gui-warchief__grown">
+    ${picking ? html`<div key="improve" class="ok-win gui-warchief__over gui-warchief__grown">
+      <div class="ok-win__frame"><div class="ok-win__body"><${ImprovePick} im=${t.improve} onPick=${improve} /></div></div></div>`
+    : buildOn ? html`<div key="build" class="ok-win gui-warchief__over gui-warchief__grown">
       <div class="ok-win__frame"><div class="ok-win__body"><${BuildRow} query=${l.text} /></div></div></div>`
     : setting && !focused ? html`<div key="setup" class="ok-win gui-warchief__over gui-warchief__setup">
       <div class="ok-win__frame"><div class="ok-win__body">
@@ -638,8 +652,9 @@ export function WarchiefLine() {
           title=${say(`What the orks wait on you for (${t.alerts.length})`)} aria-label=${say(`Answers (${t.alerts.length})`)}
           onClick=${() => openOrders()}>${card ? `❓ ${t.alerts.length}` : html`<span class="gui-warchief__long">${say(`Answers (${t.alerts.length})`)}</span><span
             class="gui-warchief__short">❓ ${t.alerts.length}</span>`}</button>`}
-        ${!card && html`<button class="ok-btn gui-warchief__improve" title=${say("The Warchief goes through the latest 👎 and offers what to change")}
-          onClick=${improve}>${say("Improve")}</button>`}
+        ${!card && html`<button class=${cls("ok-btn gui-warchief__improve", { "is-on": picking })}
+          title=${say("The Mechanic and the Farseer read a day's logs, and the Warchief offers what to change")}
+          aria-pressed=${picking} onClick=${() => (improveDays.length ? setPicking(!picking) : improve())}>${say("Improve")}</button>`}
       </span>
       <input ref=${ref} class="ok-input gui-warchief__input" value=${l.text} aria-label=${ph.replace(/…$/, "")}
         placeholder=${ph}

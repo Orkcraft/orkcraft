@@ -124,6 +124,7 @@ TERMS: tuple[Term, ...] = (
     # the night's council of orks (realm/elders.py, realm/fastpath.py ROLES): orks, so their Camp name, whatever the look
     _t("elders", "Elders", "Elders"),                               # never "Elder" alone: that was the heaviest tier
     _t("builders", "Building designer", "", "Mason & Artisan"),
+    _t("orc.farseer", "Farseer", "Farseers"),     # the Elders' product manager: reads a day with the Mechanic (design/agents/farseer.md)
     # the Town Hall's own orks
     _t("orc.mason", "Mason"),
     _t("orc.artisan", "Artisan"),

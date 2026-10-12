@@ -1,13 +1,14 @@
 """📜 The town's day logs in the GUI (realm/day_log.py): every model call is kept by day and building while the window
 is open, a building's day is a zip to download (gui/server.py `/api/logs/<building>?day=`), and each morning the days
 nobody asked for and no 👎 marked are cleared — none is while the town keeps its logs for analysis (Town settings), and
-a period of every building's days is one zip (realm/analytics.py, `/api/analytics?days=`)."""
+a period of every building's days is one zip (realm/analytics.py, `/api/analytics?days=`). Yesterday waits for the
+Elders' night reading (gui/day_review.py) before it is cleared."""
 from __future__ import annotations
 
 import dataclasses
 import datetime as dt
 
-from orkcraft.realm import analytics, call_log, day_log, fastpath, feedback
+from orkcraft.realm import analytics, call_log, day_log, day_review, fastpath, feedback
 
 
 class DayLogs:
@@ -25,7 +26,11 @@ class DayLogs:
         self.cleared = today.isoformat()
         try:
             rows = feedback.incidents(self.root, 1000)
-            day_log.clear(self.root, today, lambda b, day: bool(self._dislikes(rows, b, day)), self.keeping())
+            yesterday = (today - dt.timedelta(days=1)).isoformat()
+            unread = (bool(fastpath.settings(self.root).get("review_nightly", True))
+                      and day_review.load(self.root, yesterday) is None)       # the Elders read it tonight first
+            day_log.clear(self.root, today, lambda b, day: bool(self._dislikes(rows, b, day))
+                          or (unread and day == yesterday), self.keeping())
         except OSError:
             pass
 
