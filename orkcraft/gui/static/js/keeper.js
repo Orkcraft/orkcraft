@@ -9,7 +9,7 @@
 import { useState } from "preact/hooks";
 import { html } from "./html.js";
 import { command, say } from "./link.js";
-import { Dialog } from "./dialog.js";
+import { Dialog, Waiting } from "./dialog.js";
 
 /** Ask a building's keeper: `request` in plain words, `selection` what was selected in Lake (optional:
  *  `{text, path?, title?, lines?: [first, last]}` or the text). The job's id, or null when refused (toasted). */
@@ -63,8 +63,9 @@ export function KeeperJob({ job }) {
   const apply = () => command("job.accept", { job: job.id }).catch(() => {});
   const title = say(`Keeper — ${job.title}`);
   if (job.state === "running") {
-    return html`<${Dialog} title=${title} text=${job.text} onCancel=${drop}
+    return html`<${Dialog} title=${title} onCancel=${drop}
       actions=${html`<button class="ok-btn" onClick=${drop}>Cancel</button>`}>
+      <${Waiting} job=${job} />
       <p class="ok-font-status ok-tone-muted">This calls a model; it takes a moment.</p></${Dialog}>`;
   }
   if (job.state === "failed") {

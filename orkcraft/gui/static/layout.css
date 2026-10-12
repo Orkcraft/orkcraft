@@ -239,6 +239,15 @@ button { font: inherit; color: inherit; }
   border: 2px solid color-mix(in srgb, var(--unit-active) 30%, transparent); border-top-color: var(--unit-active);
   animation: gui-spin .8s linear infinite; }
 @keyframes gui-spin { to { transform: rotate(360deg); } }
+/* A model call under way (js/dialog.js Waiting): Camp's hourglass turns over in steps, Office's ring turns; the words
+   beside it say what it is doing now, and the clock how long. */
+.gui-wait { display: flex; align-items: center; gap: var(--space-2); }
+.gui-wait__glass { flex: none; width: 32px; height: 32px; image-rendering: pixelated; animation: gui-wait-flip 1.6s steps(1) infinite;
+  background: image-set(url("/ds/sprites/icons/res-quota.png") 1x, url("/ds/sprites/icons/res-quota@2x.png") 2x) center / 32px 32px no-repeat; }
+@keyframes gui-wait-flip { 0% { transform: none; } 50% { transform: rotate(180deg); } }
+.gui-wait__what { flex: 1; min-width: 0; }
+.gui-wait__time { flex: none; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .gui-wait__glass { animation-duration: 4.8s; } }
 @media (prefers-reduced-motion: reduce) { .gui-hut__spin { animation-duration: 2.4s; } }
 .gui-hut > .ok-head { margin-top: var(--space-1); }
 /* A building, its flag and an ork on a card are never dragged as pictures: a press on them drags the hut

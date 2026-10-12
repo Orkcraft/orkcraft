@@ -84,3 +84,6 @@
 /* Build's icons say what each is for (js/build.js): Office keeps them, in grey, as it keeps no other sprite. */
 [data-look="office"] .gui-build__tile > .ok-sprite { display: block; filter: grayscale(1) contrast(1.15); opacity: .85; }
 [data-look="office"] .gui-build__tile:is(:hover, :focus-visible) > .ok-sprite { opacity: 1; }
+
+[data-look="office"] .gui-wait__glass { width: 14px; height: 14px; box-sizing: border-box; border-radius: 50%; background: none; animation: gui-spin .8s linear infinite;
+  border: 2px solid color-mix(in srgb, var(--ink) 25%, transparent); border-top-color: var(--ink); }

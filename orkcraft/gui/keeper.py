@@ -87,7 +87,7 @@ class KeeperMixin:
             by = looker or building_id                 # landscape: the steward its wake names (core/wakes.py)
             return keeper.ask(repo, spec, snapshot, building_id, request, selection=selection, existing_ids=others,
                               runner=steward.runner_for(snapshot.building(by), "keeper", runners.KEEPER_RUNNER),
-                              looker=looker if looker != building_id else "", history=history)
+                              looker=looker if looker != building_id else "", history=history, step=self._step)
 
         def done(job: dict, p: keeper.Proposal) -> None:
             if p.error:
