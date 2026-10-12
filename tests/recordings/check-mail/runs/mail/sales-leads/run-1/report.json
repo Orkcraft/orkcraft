@@ -1,0 +1,189 @@
+{
+ "id": "20261011-181739-watchtower-sales-leads",
+ "type": "watchtower",
+ "case": "sales-leads",
+ "tool": "claude",
+ "tier": "laborer",
+ "at": "2026-10-11T18:17:39",
+ "building": {
+  "name": "building",
+  "seconds": 11.5,
+  "cost": 0.0033,
+  "tokens": 40341,
+  "error": "",
+  "cut": false,
+  "passed": true,
+  "check_tail": "",
+  "files": [],
+  "lines": 0,
+  "text": "",
+  "how": [
+   "#1: kept · high · answer person · Asks for demo of booking system for 40-clinic rollout",
+   "#2: left out · — · answer — · ",
+   "#3: kept · high · answer agent · Asks monthly pricing for three studios, twelve instructors",
+   "#4: left out · — · answer — · ",
+   "#5: left out · — · answer — · "
+  ],
+  "orks": 0,
+  "where": "",
+  "steps": [],
+  "checks": [
+   {
+    "name": "#1 Demo for a 40-clinic rollout?: kept",
+    "ok": true,
+    "detail": "kept — Asks for demo of booking system for 40-clinic rollout"
+   },
+   {
+    "name": "#2 Book more meetings with our outbound platform: left out",
+    "ok": true,
+    "detail": "left out"
+   },
+   {
+    "name": "#3 Pricing for 3 studios: kept",
+    "ok": true,
+    "detail": "kept — Asks monthly pricing for three studios, twelve instructors"
+   },
+   {
+    "name": "#4 Senior engineers ready to start: left out",
+    "ok": true,
+    "detail": "left out"
+   },
+   {
+    "name": "#5 Bookings page shows the wrong timezone: left out",
+    "ok": true,
+    "detail": "left out"
+   }
+  ],
+  "result": {
+   "messages": [
+    {
+     "n": 5,
+     "kept": false,
+     "importance": "",
+     "answer": "",
+     "why": ""
+    },
+    {
+     "n": 4,
+     "kept": false,
+     "importance": "",
+     "answer": "",
+     "why": ""
+    },
+    {
+     "n": 3,
+     "kept": true,
+     "importance": "high",
+     "answer": "agent",
+     "why": "Asks monthly pricing for three studios, twelve instructors"
+    },
+    {
+     "n": 2,
+     "kept": false,
+     "importance": "",
+     "answer": "",
+     "why": ""
+    },
+    {
+     "n": 1,
+     "kept": true,
+     "importance": "high",
+     "answer": "person",
+     "why": "Asks for demo of booking system for 40-clinic rollout"
+    }
+   ]
+  },
+  "model": "laborer",
+  "score": null,
+  "kept": ""
+ },
+ "bare": {
+  "name": "bare",
+  "seconds": 8.0,
+  "cost": 0.00310221,
+  "tokens": 41301,
+  "error": "",
+  "cut": false,
+  "passed": true,
+  "check_tail": "",
+  "files": [],
+  "lines": 0,
+  "text": "{\"messages\": [{\"n\": 1, \"keep\": true, \"importance\": \"high\", \"answer\": \"person\", \"why\": \"Enterprise demo request for a 40-clinic rollout\"}, {\"n\": 2, \"keep\": false, \"importance\": \"low\", \"answer\": \"\", \"why\": \"Unsolicited vendor pitch, not a buyer\"}, {\"n\": 3, \"keep\": true, \"importance\": \"normal\", \"answer\": \"agent\", \"why\": \"Buyer asking for pricing for three studios\"}, {\"n\": 4, \"keep\": false, \"importance\": \"low\", \"answer\": \"\", \"why\": \"Recruiter offering staff, not a buyer\"}, {\"n\": 5, \"keep\": false, \"importance\": \"normal\", \"answer\": \"person\", \"why\": \"Existing customer's timezone bug report, not a lead\"}]}",
+  "how": [],
+  "orks": 0,
+  "where": "",
+  "steps": [],
+  "checks": [
+   {
+    "name": "#1 Demo for a 40-clinic rollout?: kept",
+    "ok": true,
+    "detail": "kept — Enterprise demo request for a 40-clinic rollout"
+   },
+   {
+    "name": "#2 Book more meetings with our outbound platform: left out",
+    "ok": true,
+    "detail": "left out — Unsolicited vendor pitch, not a buyer"
+   },
+   {
+    "name": "#3 Pricing for 3 studios: kept",
+    "ok": true,
+    "detail": "kept — Buyer asking for pricing for three studios"
+   },
+   {
+    "name": "#4 Senior engineers ready to start: left out",
+    "ok": true,
+    "detail": "left out — Recruiter offering staff, not a buyer"
+   },
+   {
+    "name": "#5 Bookings page shows the wrong timezone: left out",
+    "ok": true,
+    "detail": "left out — Existing customer's timezone bug report, not a lead"
+   }
+  ],
+  "result": {
+   "messages": [
+    {
+     "n": 1,
+     "kept": true,
+     "importance": "high",
+     "answer": "person",
+     "why": "Enterprise demo request for a 40-clinic rollout"
+    },
+    {
+     "n": 2,
+     "kept": false,
+     "importance": "low",
+     "answer": "",
+     "why": "Unsolicited vendor pitch, not a buyer"
+    },
+    {
+     "n": 3,
+     "kept": true,
+     "importance": "normal",
+     "answer": "agent",
+     "why": "Buyer asking for pricing for three studios"
+    },
+    {
+     "n": 4,
+     "kept": false,
+     "importance": "low",
+     "answer": "",
+     "why": "Recruiter offering staff, not a buyer"
+    },
+    {
+     "n": 5,
+     "kept": false,
+     "importance": "normal",
+     "answer": "person",
+     "why": "Existing customer's timezone bug report, not a lead"
+    }
+   ]
+  },
+  "model": "laborer",
+  "score": null,
+  "kept": ""
+ },
+ "orders_changed": false,
+ "subject": "",
+ "series": "20261011-181700"
+}

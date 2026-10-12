@@ -26,6 +26,7 @@ The exit code is 0 when it is green, 1 when it is red. `--tool` and `--tier` run
 | `todos` Tasks from mail | Task board | mail-to-todos, long-cards, boiler-with-contacts | to-dos named from letters, planned with the wiki |
 | `board` Review board | Review board | planted-flaws, route-a-request | several orks debate a design; a letter sent down the right exit |
 | `pictures` Pictures redrawn | UX bench (the Alchemist) | roof-red, ork-hat, icon-bolder | a sprite painted again from a person's words: a PNG of its size, not the same, judged ≥ 6/10 by the AI tool reading both |
+| `looks` Windows look right | UX bench (the Alchemist) | every building's window | pictured and held against the last check; a changed one judged broken or not (§12) |
 | `wiki` Wiki from mail | Wiki | — | **not checked yet**: the Wiki has no Test bench kit (§7) |
 
 A task for Jira is checked as the Task board's draft of it: a check never writes to Jira, mail or any service.
@@ -115,6 +116,30 @@ and 👎 cases), and one with no goal written works to `lab_cases.DEFAULT_GOAL` 
 less time and fewer tokens — instead of being skipped. What it tries is still measured on the virtual building and
 kept only when better, by the town's autonomy (improve-buildings.md §8).
 
+## 11. Recorded answers, played back (built 2026-10-12)
+
+`orkcraft check --replay <stamp|latest>` runs each run of a check again with its building's model calls answered from
+what that check recorded (realm/call_log.py `replaying` / `answer`): every seam that would start an AI tool — `jobs`,
+`road_agents`, `builders.ask`, `feeds_agent` — takes the recorded call of the same kind (`mode`, then `purpose`) whose
+prompt is the closest instead, so a date in a prompt or calls made at once in another order do not matter. Nothing is
+called, nothing is paid. A run is **the same** when its building finishes, passes or fails its check as it did (the
+same checks), and asks for no more and no less than it did; `Unrecorded` when it asks for something the recording has
+no answer to. Exit 0 when every run is the same. The Test bench's Check has **Play it back (free)**.
+
+On every commit: `tests/test_replay.py` plays back `tests/recordings/check-mail` — a real check of the mail scenario
+on Claude (2026-10-11, its session ids and trails taken out) — and fails when External listeners would no longer sort
+those letters as they did. A new recording is a check's `runs/<scenario>/` copied in the same way.
+
+## 12. The windows' look (built 2026-10-12)
+
+The `looks` scenario (gui/look_check.py): the dashboard demo opened in a headless Chromium, every building's window (its
+Work) pictured with animations stopped, held against the last check that pictured them, pixel by pixel in the browser;
+a window more than 2 % of whose pixels moved is shown, before and after, to a judge (the check's AI tool) that says
+whether it is **broken** — cut text, things on top of each other, a part gone, unreadable — or a change that reads
+well. Broken is red. The first check only pictures them. It needs Playwright and a Chromium (`orkcraft[browser]`,
+`playwright install chromium`); without them it says so and is not red. Tried here: 41 windows in ~40 s, the same twice
+over (0 % changed), and a window turned askew in its CSS caught and judged broken.
+
 ## 7. Next
 
 The plan (2026-10-11), in layers — evals, not tests: repeats and medians, a baseline (the AI tool alone, and last
@@ -132,8 +157,8 @@ In order:
 
 1. ~~**The night check in the Mechanic**~~ — built (§8).
 2. ~~**A 👎 becomes a case**~~ — built (§9).
-3. **Recorded answers** for the models too: the free layer on every commit.
-4. **The Alchemist's visual regression:** building windows, screenshot against last night.
+3. ~~**Recorded answers**~~ — built (§11).
+4. ~~**The Alchemist's visual regression**~~ — built (§12).
 5. ~~**The night improvement works on what the check found**~~ — built (§10).
 
 Kits still to write: the Wiki (letters in, the pages that should change and the facts they should hold), a chain

@@ -56,6 +56,8 @@ def test_the_shipped_cases_of_every_scenario_are_there(tmp_path):
     from orkcraft.realm import check_pictures
     for s in check.SCENARIOS:
         for cid in s.cases:
+            if s.type == check.LOOK:
+                continue                                    # every window of the demo: no case to look up
             if s.type == check.PICTURE:
                 case = next(c for c in check_pictures.CASES if c["id"] == cid)
                 assert (tokens.SYSTEM / case["path"]).is_file(), case

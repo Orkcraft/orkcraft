@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import re
 import sys
 import tempfile
 import zipfile
@@ -31,10 +32,15 @@ def add_parser(subparsers) -> None:
     p.add_argument("--repeat", type=int, default=None, help="Runs of each case (default: the budget's, 3)")
     p.add_argument("--max-spend", type=float, default=None, help="$ one run of a building may spend (default: 2)")
     p.add_argument("--list", action="store_true", help="Say what it would run, and the budget, and stop")
+    p.add_argument("--replay", default="", metavar="STAMP",
+                   help="Run the buildings again on the answers a check recorded (its stamp, or latest): free, no AI "
+                        "tool is called; says whether each run came out as it did then")
 
 
 def run(root: Path, args: argparse.Namespace, tier_words: dict[str, str]) -> int:
     from orkcraft.realm import bench, check
+    if args.replay:
+        return replay(root, args.replay, args.scenario)
     budget = check.budgets(root)
     for key, value in (("repeat", args.repeat), ("max_spend", args.max_spend), ("tool", args.tool),
                        ("tier", args.tier)):
@@ -53,7 +59,7 @@ def run(root: Path, args: argparse.Namespace, tier_words: dict[str, str]) -> int
         return 2
     tool = str(budget["tool"] or "main")
     scenarios = check.picked(args.scenario) if args.only != "idle" else []
-    runs = sum(len(s.cases) for s in scenarios if s.type) * int(budget["repeat"])
+    runs = sum(len(s.cases) for s in scenarios if s.type and s.type != check.LOOK) * int(budget["repeat"])
     print(f"Orkcraft check: {runs} runs on {tool}{' (' + budget['tier'] + ')' if budget['tier'] else ''}, each "
           f"building run stopped at ${budget['max_spend']:.2f}; the bare tool's answers already kept are not asked again"
           + ("" if args.only == "scenarios" else f"; then a quiet demo town ticked for {budget['idle_hours']} hours "
@@ -70,6 +76,9 @@ def run(root: Path, args: argparse.Namespace, tier_words: dict[str, str]) -> int
     for s in scenarios:
         cases = []
         for cid in s.cases:
+            if s.type == check.LOOK:
+                cases += _looks(root, folder, tool, tier)
+                break
             if s.type == check.PICTURE:
                 cases.append((cid, _picture(s, cid, tool, tier, budget, folder / "runs" / s.id / cid)))
             elif s.type:
@@ -250,3 +259,134 @@ def latest(root: Path) -> Path | None:
     folder = root / check.DIR / stamp
     return folder if stamp and folder.is_dir() else None
 
+
+
+# -- the answers played back (docs/design/check.md §11) -------------------------------------------------------------------
+
+def replay(root: Path, stamp: str, scenarios: list[str] | None = None) -> int:
+    """Each run of the check `stamp` again, its building's calls answered from what was recorded (realm/call_log.py
+    `replaying`): no AI tool is called, nothing is paid. A run is the same when its building finishes, asks for no
+    more than it did, and passes or fails its check as it did then. 0 when every run is the same."""
+    from orkcraft.core import bench as building_bench
+    from orkcraft.realm import bench, call_log, check
+    folder = latest(root) if stamp == "latest" else root / check.DIR / stamp
+    try:
+        data = json.loads((folder / "results.json").read_text(encoding="utf-8")) if folder else {}
+    except (OSError, ValueError):
+        data = {}
+    if not data:
+        sys.stderr.write(f"orkcraft error: no check {stamp!r} to play back (.orkcraft/check/<stamp>/results.json)\n")
+        return 2
+    series = dt.datetime.now().strftime("%Y%m%d-%H%M%S") + "-replay"
+    rows, same_all = [], True
+    for sc in data.get("scenarios") or []:
+        if not sc.get("type") or sc["type"] == check.PICTURE or (scenarios and sc.get("id") not in scenarios):
+            continue
+        for case_dir in sorted((folder / "runs" / sc["id"]).glob("*")):
+            case = bench.case(root, sc["type"], case_dir.name)
+            for n, run_dir in enumerate(sorted(case_dir.glob("run-*"))):
+                try:
+                    then = bench.Report.load(run_dir / "report.json")
+                except (OSError, ValueError, TypeError):
+                    continue
+                if case is None or then.building is None:
+                    rows.append((sc["id"], case_dir.name, run_dir.name, "—", "no such case now", False))
+                    same_all = False
+                    continue
+                print(f"{sc['id']} · {case.title} · {run_dir.name}: played back", flush=True)
+                with call_log.replaying(run_dir / "calls"):
+                    try:
+                        now, _f = building_bench.run(root, case, then.tool, then.tier, "", bench.DEFAULT_MAX_SPEND,
+                                                     sides=("building",), attempt=n, series=series)
+                    except (ValueError, RuntimeError, OSError) as e:
+                        now = None
+                        error = str(e)[:200]
+                    left = call_log.unanswered()
+                same, why = _same(then.building, now.building if now is not None else None, left)
+                if now is None:
+                    why = f"it did not run: {error}"
+                rows.append((sc["id"], case_dir.name, run_dir.name, bench.verdict(then.building),
+                             why, same))
+                same_all = same_all and same
+    out = [f"# Replay of the check {folder.name}", "",
+           "Each run again, its building's model calls answered from what was recorded: no AI tool called.", "",
+           "| Scenario | Case | Run | Then | Now | |", "|---|---|---|---|---|---|"]
+    out += [f"| {s} | {c} | {r} | {t} | {w} | {'✅' if ok else '❌'} |" for s, c, r, t, w, ok in rows]
+    out += ["", f"**{'SAME' if same_all and rows else 'CHANGED'}**: {sum(r[5] for r in rows)} of {len(rows)} runs came "
+                "out as they did"]
+    text = "\n".join(out) + "\n"
+    target = root / check.DIR / series
+    target.mkdir(parents=True, exist_ok=True)
+    (target / "report.md").write_text(text, encoding="utf-8")
+    print("\n" + text)
+    return 0 if same_all and rows else 1
+
+
+def _same(then, now, left: int) -> tuple[bool, str]:
+    """Whether a run played back came out as it was recorded, and what it came to now, in words."""
+    from orkcraft.realm import bench
+    if now is None:
+        return False, "it did not run"
+    if now.error:
+        return False, f"did not finish: {now.error[:160]}"
+    failed = lambda s: sorted(x["name"] for x in s.checks if not x.get("ok"))  # noqa: E731
+    said = bench.verdict(now)
+    if now.passed != then.passed or failed(now) != failed(then):
+        return False, f"{said} (then {bench.verdict(then)})"
+    if left:
+        return False, f"{said}, but it asked the AI tool {left} time{'s' if left > 1 else ''} less than then"
+    return True, said
+
+
+# -- the windows' look (gui/look_check.py, docs/design/check.md §12) -------------------------------------------------------
+
+def _looks(root: Path, folder: Path, tool: str, tier: str) -> list[tuple[str, dict]]:
+    """Every window pictured, held against the last check that pictured them; a changed one judged, broken or not."""
+    import shutil
+    from orkcraft.gui import look_check
+    from orkcraft.realm import call_log, check, tiers
+    print("\nWindows look right · every building's window pictured…", flush=True)
+    after = folder / "runs" / "looks" / "after"
+    got = look_check.capture(after)
+    if got["error"]:
+        return [("windows", {"ok": True, "runs": 0, "why": f"not checked: {got['error']}"})]
+    before = next((d / "runs" / "looks" / "after" for d in sorted((root / check.DIR).glob("2*"), reverse=True)
+                   if d != folder and (d / "runs" / "looks" / "after").is_dir()), None)
+    if before is None:
+        return [("windows", {"ok": True, "runs": 1,
+                             "why": f"{len(got['windows'])} windows pictured: the next check holds them against these"})]
+    shares = look_check.compare(before, after)
+    changed = {w: s for w, s in shares.items() if s > look_check.CHANGED}
+    if not changed:
+        return [("windows", {"ok": True, "runs": 1, "share": 0.0,
+                             "why": f"{len(shares)} windows, none changed since {before.parent.parent.parent.name}"})]
+    model = tiers.resolve(tool, tier) if tier else ""
+    model = "" if model in tiers.TIERS else model
+    out = []
+    for window, share in changed.items():
+        at = folder / "runs" / "looks" / window
+        at.mkdir(parents=True, exist_ok=True)
+        if (before / f"{window}.png").is_file():
+            shutil.copy(before / f"{window}.png", at / "before.png")
+        else:
+            shutil.copy(after / f"{window}.png", at / "before.png")      # a new window: judged on itself
+        shutil.copy(after / f"{window}.png", at / "after.png")
+        verdict = {}
+        with tempfile.TemporaryDirectory(prefix="orkcraft-look-") as tmp, call_log.kept(at / "calls_raw", "building"):
+            for name in ("before.png", "after.png"):
+                shutil.copy(at / name, Path(tmp) / name)
+            try:
+                text = _read(tool, look_check.judge_prompt(window), Path(tmp), model)
+                m = re.search(r"\{.*\}", text or "", re.S)
+                verdict = json.loads(m.group(0)) if m else {}
+            except (RuntimeError, OSError, ValueError) as e:
+                verdict = {"notes": f"the judge failed: {e}"[:200]}
+        _export_calls(at / "calls_raw", at / "calls")
+        (at / "judge.json").write_text(json.dumps(verdict, indent=2, ensure_ascii=False), encoding="utf-8")
+        broken = bool(verdict.get("broken")) or (isinstance(verdict.get("score"), (int, float)) and verdict["score"] < 5)
+        why = f"{share:.0%} of it changed; " + (f"broken: {verdict.get('notes', '')}" if broken else
+                                                 f"reads well: {verdict.get('notes', '') or 'the judge saw nothing wrong'}")
+        print(f"  {window}: {why[:160]}", flush=True)
+        out.append((window, {"ok": not broken, "runs": 1, "share": share, "why": why[:300],
+                             "score": verdict.get("score")}))
+    return out
