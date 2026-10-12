@@ -13,6 +13,8 @@ import { BIOMES, BIOME_ORDER } from "./icons.js";
 import { useScrollCue } from "./scrollcue.js";
 import { projectFor } from "./project.js";
 import { historyFor } from "./history.js";
+import { Dialog } from "./dialog.js";
+import { HALL } from "./tent.js";
 
 const N = 36, W = 52, T = 4;               // 36 rows × 52 columns of 4 px: 208 × 144, a minimap's landscape
 const FOG_ROWS = 12, CLOSED_MIN = 7, OPEN_MIN = 12;  // the fog (Add orkspace) 48 px, easy to hit; a closed land 28 px at least
@@ -140,6 +142,7 @@ export function WarMap() {
   const view = useRef(null), land = useRef(null), frame = useRef(null);
   useScrollCue(view);
   const [naming, setNaming] = useState(null);          // "new" | an orkspace id being renamed
+  const [removing, setRemoving] = useState(null);      // the orkspace id whose Remove… is asked
   const asked = useRef(null);                           // orkspace id → its questions at the last render
   const called = useRef({});                            // orkspace id → when it last called
   const { H, tops, border } = layout(lands, open);
@@ -157,7 +160,7 @@ export function WarMap() {
     ...BIOME_ORDER.map((b) => ({ label: `${b === o.biome ? "✓ " : ""}Biome: ${b}`,
       run: () => command("orkspace.biome", { id: o.id, biome: b }).catch(() => {}) })),
     "-",
-    lands.length > 1 && { label: "Remove", danger: true, run: () => command("orkspace.remove", { id: o.id }).catch(() => {}) },
+    lands.length > 1 && { label: "Remove…", danger: true, run: () => setRemoving(o.id) },
   ]);
   function key(e) {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
@@ -257,5 +260,22 @@ export function WarMap() {
         })()}
       </div>
     </div></div>
+    ${removing && lands.some((o) => o.id === removing) && html`<${RemoveLand} land=${lands.find((o) => o.id === removing)}
+      onClose=${() => setRemoving(null)} />`}
   </nav>`;
+}
+
+/** Remove…: the land's buildings named (the Town Hall stands on every map: never one of them) — they come down
+ *  with it — and the person says yes. An empty land asks only that. */
+function RemoveLand({ land, onClose }) {
+  const ids = new Set(land.buildings);
+  const standing = town.value.buildings.filter((b) => ids.has(b.id) && b.id !== HALL);
+  const remove = () => command("orkspace.remove", { id: land.id, demolish: standing.length > 0 }).then(onClose, () => {});
+  return html`<${Dialog} title=${say(`Remove ${land.name}?`)} warn onCancel=${onClose}
+      text=${standing.length ? say(`${standing.length === 1 ? "This building comes" : `These ${standing.length} buildings come`} down `
+        + "with it. What they did stays in their history; a building can be raised again.") : say("It holds no building.")}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>Cancel</button>
+        <button class="ok-btn danger" onClick=${remove}>${standing.length ? say(`Remove it and ${plural(standing.length, "building")}`) : say("Remove it")}</button>`}>
+    ${standing.length > 0 && html`<ul class="gui-map__doomed">${standing.map((b) => html`<li key=${b.id}>${say(b.title)}</li>`)}</ul>`}
+  </${Dialog}>`;
 }

@@ -149,11 +149,16 @@ def test_task_fields_card_is_written_as_one_text_and_a_light_model_names_it(fake
     # a short line is its own title: no model
     card = host.command("act", {"id": bid, "act": "add", "args": {"lane": "todo", "text": " Ship  it "}})
     assert card and not asked and _written(host, bid, "todo", "Ship it")["body"] == ""
-    # a longer text is the card's text; the model names it, the card shows up once named
+    # a longer text is the card's text: on the board at once by its first words, renamed once the model named it
     long = "the login page hangs on submit\nwhen the password has a quote in it"
-    assert host.command("act", {"id": bid, "act": "add", "args": {"lane": "todo", "text": long}}) == ""
+    assert host.command("act", {"id": bid, "act": "add", "args": {"lane": "todo", "text": long}}) == "the-login-page-hangs"
     named = _written(host, bid, "todo", "Fix the login")
     assert named["body"] == long and len(asked) == 1 and long in asked[0]
+    assert not any(c["title"] == "The login page hangs" for c in host.detail(bid)["data"]["lanes"][0]["cards"])
+    # the model picks its colour as it names it (the board has no Colour button)
+    monkeypatch.setattr(runners, "FASTPATH_RUNNER", lambda prompt: ("🟥 Fix the crash", 0.001))
+    host.command("act", {"id": bid, "act": "add", "args": {"lane": "todo", "text": "it crashes when the level loads twice"}})
+    assert _written(host, bid, "todo", "Fix the crash")["color"] == "red"
     # an edit keeps the title and changes its text; a title-only card's short line renames it
     host.command("act", {"id": bid, "act": "edit", "args": {"card": named["id"], "text": "only the quote"}})
     assert _written(host, bid, "todo", "Fix the login")["body"] == "only the quote"

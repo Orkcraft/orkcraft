@@ -573,7 +573,7 @@ from orkcraft.scroll_checks import (  # noqa: E402, F401
 from orkcraft.scroll_garrisons import (  # noqa: E402, F401
     HOTKEYS, MAX_ORKSPACES, ensure_presets, _slug, new_orkspace, orkspace_by_hotkey, move_building, copy_building,
     remove_orkspace, _orc_id, _building, _unique_orc_id, add_handler, remove_handler, set_steward, update_orc,
-    recruit, dismiss_orc,
+    recruit, dismiss_orc, standing_in,
 )
 from orkcraft.scroll_events import events_file, append_event, read_events  # noqa: E402, F401
 from orkcraft.scroll_roads import (  # noqa: E402, F401

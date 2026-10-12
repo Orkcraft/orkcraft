@@ -15,10 +15,11 @@ import { act, say, details } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 import { PartToggles, shown, hidden } from "../parts.js";
-import { usePeek } from "../windows.js";
+import { usePeek, openBuilding } from "../windows.js";
 
 const selected = signal({});       // building id → card id
 const asking = signal(null);       // {id, lane, kind}: a New task / note / chore asked from its Info's quick actions
+const writing = signal(null);      // {id, lane}: a new note written in the panel on the right, the whole of it
 // The closed card's three parts, each one the person may hide (js/parts.js).
 // The person's own first — their to-dos and notes side by side — the orks' work under them.
 const PARTS = [{ key: "chores", label: "My to-dos" }, { key: "scribbles", label: "Notes" }, { key: "work", label: "Ork work" }];
@@ -73,6 +74,48 @@ function CardDialog({ id, card, lane, onClose }) {
     ${!card && html`<label class="fields-personal"><input type="checkbox" checked=${personal}
       onChange=${(e) => setPersonal(e.target.checked)} /> 🔒 Personal — never sent to a model</label>`}
   </${Dialog}>`;
+}
+
+/** A new note is written in the panel on the right, beside the town, the whole panel its page: the board
+ *  opens there with the writer in its place (+ Note on the board's card, + New note in a lane of notes). */
+export function writeNote(id, lane) {
+  writing.value = { id, lane };
+  openBuilding(id, "work");
+}
+
+/** The writer: one text, as a card is written (a short line is its title, a longer text gets one), the folder
+ *  it goes to, Personal; Add it puts it on the board at once. */
+function Writer({ id, data, lane: first }) {
+  const lanes = noteLanes(data);
+  const [body, setBody] = useState("");
+  const [personal, setPersonal] = useState(false);
+  const [lane, setLane] = useState(lanes.some((ln) => ln.id === first) ? first : lanes[0].id);
+  const close = () => { writing.value = null; };
+  function keep() {
+    act(id, "add", { lane, text: body, ...(personal ? { private: true } : {}) }).then((kept) => {
+      if (kept) selected.value = { ...selected.value, [id]: kept };
+      close();
+    }, () => {});
+  }
+  const keys = (e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && body.trim()) { e.preventDefault(); keep(); } };
+  return html`<div class="fields-writer">
+    <div class="fields-writer__head">
+      <h3 class="ok-font-heading">${say("New note")}</h3>
+      <span class="fields-head__spacer"></span>
+      ${lanes.length > 1 && html`<select class="ok-input" value=${lane} aria-label=${say("Note folder")}
+        onChange=${(e) => setLane(e.target.value)}>${lanes.map((ln) => html`<option key=${ln.id} value=${ln.id}>${ln.label}</option>`)}</select>`}
+    </div>
+    <textarea class="ok-input gui-textarea fields-writer__text" value=${body} autofocus aria-label=${say("Text")}
+      placeholder=${say("What it is — a short line is its title, a longer text gets one (Ctrl+Enter adds it)")}
+      onInput=${(e) => setBody(e.target.value)} onKeyDown=${keys}></textarea>
+    <div class="fields-writer__foot">
+      <label class="fields-personal"><input type="checkbox" checked=${personal}
+        onChange=${(e) => setPersonal(e.target.checked)} /> 🔒 Personal — never sent to a model</label>
+      <span class="fields-head__spacer"></span>
+      <button class="ok-btn" onClick=${close}>Cancel</button>
+      <button class="ok-btn primary" disabled=${!body.trim()} onClick=${keep}>Add it</button>
+    </div>
+  </div>`;
 }
 
 function Confirm({ title, text, yes, onYes, onClose }) {
@@ -196,21 +239,32 @@ function noteLanes(data) {
   return notes.length ? notes : [{ id: "ideas", label: "Ideas", kind: "note", cards: [] }];
 }
 
-/** The selected card in a strip: its title, Open, where it goes next (the orks, a note, my to-dos) and
- *  Send; Colour and Delete quiet after them; × lets it go. */
-function Acts({ id, sel, setDialog, onPlan, wiki }) {
-  const a = (label, onClick) => html`<button class="ok-act" onClick=${onClick}><span class="ok-act__label">${label}</span></button>`;
+/** Give it to the orks: a note or a to-do becomes a task and goes to them (by itself on a board that sends its
+ *  new tasks); a task that has not gone yet goes; one that waits to go, now. */
+function giveToOrks(id, sel, sendsItself) {
+  if (sel.kind === "task") return act(id, "send", { card: sel.id }).catch(() => {});
+  return act(id, "flip", { card: sel.id }).then((lane) => {
+    if (lane && !sendsItself) return act(id, "send", { card: sel.id });
+    return null;
+  }).catch(() => {});
+}
+
+/** The selected card in a strip: its title, where it goes next (the orks, a note, my to-dos), what it keeps
+ *  beside it; Delete in red at the end; × lets it go. A double click opens the card; its colour is the
+ *  model's, picked as it names the card (core/workers/fields.py). */
+function Acts({ id, sel, setDialog, onPlan, wiki, sendsItself }) {
+  const a = (label, onClick, extra) => html`<button class=${cls("ok-act", extra)} onClick=${onClick}><span class="ok-act__label">${label}</span></button>`;
+  const give = sel.kind !== "task" || (!sel.sent && !sel.goes && !sel.into && sel.column !== "done");
   return html`<div class="fields-sel" role="toolbar" aria-label=${say("The selected card")}>
     <span class="fields-sel__what" title=${sel.title}>${sel.title}</span>
     <span class="fields-sel__acts">
-      <button class="ok-btn primary" onClick=${() => setDialog({ card: sel })}>Open</button>
-      ${sel.kind !== "task" && a("Give it to the orks", () => act(id, "flip", { card: sel.id }))}
+      ${give && html`<button class="ok-btn primary" onClick=${() => giveToOrks(id, sel, sendsItself)}>${say("Give it to the orks")}</button>`}
+      ${(sel.goes || sel.into) && a("Send now", () => act(id, "send", { card: sel.id }))}
       ${sel.kind === "task" && a("Make it a note", () => act(id, "flip", { card: sel.id }))}
       ${sel.kind !== "mine" && sel.mine && a("Make it my to-do", () => act(id, "mine", { card: sel.id }))}
       ${sel.kind === "mine" && a(sel.plan && sel.plan.length ? "🧭 Plan" : "🧭 Make a plan",
         () => (sel.plan && sel.plan.length ? setDialog({ plan: sel.id }) : onPlan(sel)))}
       ${a(`📜 Context${sel.pages && sel.pages.length ? ` ${sel.pages.length}` : ""}`, () => setDialog({ context: sel.id }))}
-      ${a(sel.goes || sel.into ? "Send now" : "Send", () => act(id, "send", { card: sel.id }))}
       ${sel.goes && a(sel.later ? "Urgent again" : "🐢 Not urgent", () => act(id, "later", { card: sel.id }).catch(() => {}))}
       ${sel.into && a("Split off", () => act(id, "split", { card: sel.id }))}
       ${sel.kind === "task" && sel.column !== "done" && !sel.into && a("Join with…", () => setDialog({ join: sel.id }))}
@@ -222,8 +276,7 @@ function Acts({ id, sel, setDialog, onPlan, wiki }) {
         </select></label>`}
       ${a(sel.private ? "🔒 Not personal" : "🔒 Personal", () => act(id, "private", { card: sel.id }))}
       ${wiki && sel.kind === "note" && !sel.private && a("→ Wiki", () => act(id, "to_wiki", { card: sel.id }).catch(() => {}))}
-      ${a("Colour", () => act(id, "color", { card: sel.id }))}
-      ${a("Delete", () => setDialog({ remove: sel }))}
+      ${a("Delete", () => setDialog({ remove: sel }), "fields-sel__delete")}
       <button class="ok-act" aria-label=${say("Let the card go")} title=${say("Let the card go")} onClick=${() => pick(id, null)}>
         <span class="ok-act__label">×</span></button>
     </span>
@@ -379,13 +432,16 @@ function Board({ id, data }) {
   const byId = (cid) => cards.find((c) => c.id === cid);
   const lanes = (list) => html`<div class="ok-board" style=${`--lanes:${list.length}`}>
       ${list.map((ln) => html`<${Lane} key=${ln.id} id=${id} lane=${ln} sel=${sel && sel.id}
-        onOpen=${open} onMark=${mark} onAdd=${(lane) => setDialog({ lane })} />`)}
+        onOpen=${open} onMark=${mark} onAdd=${(lane) => (lane.kind === "note" ? writeNote(id, lane.id) : setDialog({ lane }))} />`)}
     </div>`;
   if (data.error) return html`<p class="ok-tone-error">⚠ ${data.error}</p>`;
+  const w = writing.value;
+  if (w && w.id === id) return html`<${Writer} id=${id} data=${data} lane=${w.lane} />`;
   const todoOpen = parts ? data.todos.cards.filter((c) => !c.done).length : 0;
   return html`<div class="gui-fields">
     <${Head} id=${id} data=${data} setDialog=${setDialog} />
-    ${sel && html`<${Acts} id=${id} sel=${sel} setDialog=${setDialog} onPlan=${plan} wiki=${data.wiki} />`}
+    ${sel && html`<${Acts} id=${id} sel=${sel} setDialog=${setDialog} onPlan=${plan} wiki=${data.wiki}
+      sendsItself=${data.settle !== null && data.settle !== undefined} />`}
     ${parts ? html`
       <div class="gui-fields__lower">
         <section class="gui-fields__part"><h3 class="ok-font-heading">My to-dos <small>${todoOpen}/${data.todos.cards.length}</small></h3>
@@ -410,6 +466,19 @@ function Board({ id, data }) {
 }
 
 const mark = (m, t, i) => html`<span key=${i} class="gui-fhut__item"><span class="gui-fhut__mark">${m}</span>${t}</span>`;
+const keep = (e) => e.stopPropagation();          // a press on the card's control is not a press on the hut
+
+/** + Note and + To-do on the closed card: a note is written in the panel on the right (`writeNote`), a to-do
+ *  is one line in a small window over the town. A kanban of tasks only has neither. */
+function Adds({ id, c }) {
+  if (c.mode === "tasks") return null;
+  const btn = (label, title, run) => html`<button class="ok-act gui-fhut__add" title=${say(title)} onPointerDown=${keep}
+      onDblClick=${keep} onClick=${(e) => { keep(e); run(); }}><span class="ok-act__label">${say(label)}</span></button>`;
+  return html`<div class="gui-fhut__adds">
+    ${btn("+ Note", "Write a note: it opens in the panel on the right", () => writeNote(id, c.note_lane))}
+    ${c.todos && btn("+ To-do", "A to-do of my own", () => { asking.value = { id, lane: c.todo_lane || "mine", kind: "mine" }; })}
+  </div>`;
+}
 
 // How many titles a closed card lists by its size (js/hut.js levelOf; docs/design/building-views.md §1a):
 // small as it comes, stretched more, big the orks' lanes side by side as cards.
@@ -437,6 +506,7 @@ export function card(b, level = "s") {
       ${notes.length > 0 && html`<div class="gui-hut__text gui-counters">${notes.map(counter)}</div>`}
       ${doing && html`<div class="gui-hut__foot"><span>${wall ? "✎" : "⚒"} ${doing}</span></div>`}
       ${c.waiting > 0 && html`<div class="gui-hut__text ok-tone-muted">⏳ ${c.waiting} waiting to go</div>`}
+      <${Adds} id=${b.id} c=${c} />
     </div>`;
   }
   const doing = c.lanes.filter((l) => l.id === "in_progress").flatMap((l) => l.top.slice(0, level === "s" ? 1 : n.next));
@@ -450,6 +520,7 @@ export function card(b, level = "s") {
   const quiet = !doing.length && !next.length && !t.top.length;
   return html`<div class=${cls("gui-fhut", { "is-folded": hidden(b.id).length > 0, "is-quiet": quiet })}>
     <${PartToggles} id=${b.id} parts=${PARTS} />
+    <${Adds} id=${b.id} c=${c} />
     ${on("chores") && html`<section class=${cls("gui-fhut__part", { "gui-fhut__part--solo": lower === 1 })}>
       <div class="gui-fhut__head"><span class="ok-font-label">My to-dos</span><span><b>${t.open}</b><span class="ok-tone-muted">/${t.count}</span></span></div>
       ${t.top.slice(0, n.list).map((x, i) => mark("☐", x, i))}
@@ -482,7 +553,7 @@ function Asking({ id, data }) {
 /** The type's quick actions in its Info (realm/catalog.py): New task, New note, New chore. */
 const QUICK = {
   "tasks.new": (id) => { asking.value = { id, lane: "todo", kind: "task" }; },
-  "notes.new": (id) => { asking.value = { id, lane: noteLane(id), kind: "note" }; },
+  "notes.new": (id) => writeNote(id, noteLane(id)),
   "todos.new": (id) => { asking.value = { id, lane: "mine", kind: "mine" }; },
 };
 

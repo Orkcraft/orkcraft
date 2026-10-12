@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from orkcraft.core import buildings, runners
-from orkcraft.core.workers import scrolls
+from orkcraft.core.workers import fields_lore, scrolls
 from orkcraft.gui.host import CommandError, Host
 from orkcraft.realm import checkpoint, privacy
 
@@ -73,11 +73,16 @@ def test_a_card_gets_its_context_from_the_wiki_without_a_model(fake_repo, monkey
     monkeypatch.setattr(runners, "FASTPATH_RUNNER", lambda prompt: (asked.append(prompt), ("Title", 0.0))[1])
     host, bid, kb, page = _board(fake_repo, monkeypatch)
     assert _act(host, bid, "add", lane="mine", title="Позвонить в банк про карту") == "позвонить-в-банк-про-карту"
+    w = host.town.worker(bid)
+    assert _todo(host, bid, "Позвонить в банк про карту")["pages"] == []               # on the board at once…
+    assert w.look_up_waiting() == 0                                                   # …the wikis asked in a batch,
+    assert w.look_up_waiting(time.time() + fields_lore.CONTEXT_EVERY_S) == 1          # every CONTEXT_EVERY_S
     card = _todo(host, bid, "Позвонить в банк про карту")
     assert [p["title"] for p in card["pages"]] == ["Банк"] and not card["stale"]      # "банк", "карту" by their start
     assert not asked                                                                  # no model looked
     assert host.town.worker(kb).lent["by"] == bid                                     # the wiki's card says it lent
     _act(host, bid, "add", lane="ideas", title="Something unrelated entirely")
+    w.look_up_waiting(force=True)
     note = next(c for ln in host.detail(bid)["data"]["lanes"] for c in ln["cards"] if c["title"].startswith("Something"))
     assert note["pages"] == []                                                        # nothing found: no context
     # the page changes: the context is stale till it is looked up again
@@ -88,10 +93,12 @@ def test_a_card_gets_its_context_from_the_wiki_without_a_model(fake_repo, monkey
     assert not _todo(host, bid, "Позвонить в банк про карту")["stale"]
     # an edit renames the card (its id follows its title): its context follows it
     _act(host, bid, "edit", card="позвонить-в-банк-про-карту", text="Позвонить в банк сегодня")
+    w.look_up_waiting(force=True)
     assert [p["title"] for p in _todo(host, bid, "Позвонить в банк сегодня")["pages"]] == ["Банк"]
     # `wikis: []` turns the context off
     off = _raised(host, "fields", path="OFF.md", wikis=[])
     _act(host, off, "add", lane="mine", title="Позвонить в банк")
+    host.town.worker(off).look_up_waiting(force=True)
     assert _todo(host, off, "Позвонить в банк")["pages"] == []
 
 
