@@ -140,7 +140,7 @@ def test_improve_reads_a_day_and_hands_the_findings_to_the_warchief(fake_repo, i
         monkeypatch.setattr(host.town, "call", lambda fn, *a: fn(*a))
         hall = host.town.workers["town_hall"]
         monkeypatch.setattr(hall, "ask", lambda text, about: asked.append((text, about)))
-        assert host.snapshot()["improve"] == {"running": "", "days": [{"day": TODAY, "read": ""}]}
+        assert host.snapshot()["improve"] == {"running": "", "days": [{"day": TODAY, "read": "", "changes": 0}]}
         said = host.command("warchief.improve", {"day": TODAY})["said"]
         assert said == f"The Mechanic and the Farseer are reading {TODAY}"
         for _ in range(500):

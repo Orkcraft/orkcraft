@@ -429,6 +429,7 @@ function Proposals({ id, d, on }) {
       <label class="lab-check"><input type="checkbox" checked=${picks.has(p.id)} onChange=${() => flip(p.id)} />
         <span class="lab-area">${say(AREA[p.area] || p.area)}</span> <b class="ok-font-body">${p.title}</b></label>
       <p class="ok-font-status">${p.detail}</p>
+      ${p.from && html`<p class="ok-font-status ok-tone-muted">${say(`From ${p.from}`)}</p>`}
       ${(p.where || p.effect) && html`<p class="ok-font-status ok-tone-muted">${p.where ? `${say("Where")}: ${p.where}` : ""}${p.where && p.effect ? " · " : ""}${p.effect ? `${say("Should")}: ${p.effect}` : ""}</p>`}
       ${p.area !== "roads" && html`<span><button class="ok-btn" disabled=${on || !!d.busy_what}
         title=${say("Tried on the Test bench's copy of the building only: the town's keeps what it has until Save changes")}

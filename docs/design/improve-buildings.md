@@ -490,5 +490,14 @@ default): the day that just ended is read once its date has passed, while it is 
 what was found, and Improve goes through it at no cost. Yesterday's logs wait for that reading before the morning's
 clearing (gui/day_logs.py), whether or not the logs are kept for analysis.
 
-**Next:** the code changes it offers, made on the Test bench's virtual building and measured before a pull request is
-offered (the person sends it).
+**Measured in the Test bench** (gui/day_try.py, built 2026-10-12). A read day has **Changes** in Improve: each
+finding with **Try in <its Test bench>**, or why it cannot be (no Test bench tests its building: raise one and pick
+it; a road: on the map). Try hands it to the bench as a proposal (*From the Farseer, in the logs of <day> (H1)*, first,
+and kept when the Mechanic writes its own again), puts it on the virtual building — settings and prompts through the
+building's keeper, code in the bench's copy of the package (§5.3) — and runs the bench's cases; with none, it says to
+add a case set. The bench's window then has the numbers, and **Send to Orkcraft** when they are ahead (§4): a pull
+request only from there, shown before it goes, sent by the person, with numbers and never the logs.
+
+At night every finding of the day just read goes to its Test bench the same way (free), and the night's
+improvements (§8.4) try its settings and prompt ones first, as they try any proposal. **Code is not the night's**: an
+agent writing code with nobody there, and its cost, wait for the person's Try in the morning.
