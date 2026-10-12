@@ -57,6 +57,10 @@ shows the hour as a sun or a moon, and Do not disturb is proposed for it ([selec
 - **The dial:** the sun for the person's hours, the moon for the quiet ones (the night round, the Elders, held work
   that runs at night); a small mark for the next beat and for a coming reset; the number of held tasks. No more: the
   dial stays a glance.
+- **The hours come from the onboarding** (decided 2026-10-12): the moon is the 🌙 quiet hours the person already sets
+  in its Camp rules step (23:00–08:00 by default, [onboarding.md](onboarding.md)), changed in Settings; the sun is the
+  rest. No new field, no guessing from meetings or activity: the person sees and sets the one answer. (The hours the
+  person is around, `realm/awake.py`, stay what they are: a count of time, not the dial's.)
 - **A click opens the time strip:** every schedule (§2) with Run now, Pause, Move; each AI tool's windows (§3); held
   work (§4) with Run anyway.
 - **The Calendar building keeps the person's meetings only:** imported calendars, meeting documents, preparing for a
