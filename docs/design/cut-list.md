@@ -107,3 +107,5 @@ Claude Code's app long answers are hard to read and questions get lost on a smal
 - **The owner's game meets gate 1 of §12.4** for the Alchemist's side: two weeks on the owner's own second project.
 - **Long answers and lost questions** are the console's problem on every screen, not only the phone's:
   [ork-console.md](ork-console.md) §20.
+- **Talks lost across tabs** (the owner forgets where a thing was talked through): a talk belongs to its card, with
+  one list of recent talks, [ork-console.md](ork-console.md) §21, P1 with the phone.

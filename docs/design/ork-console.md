@@ -479,3 +479,21 @@ block shows its last paragraph as the gist and its text as it is, and the consol
 
 **Priority:** the pinned questions are **P0**, part of the way to ask (§4, §11 stage 1). The gist and the folded text
 are **P1**, with the phone ([cut-list.md](cut-list.md) §3a).
+
+## 21. A talk belongs to what it is about, never to a tab (P1)
+
+Asked 2026-10-12: with today's tools the owner forgets in which tab or session something was talked through.
+
+> **A talk lives on the thing it is about: an idea's card, a task, a building. There are no tabs of talks.**
+
+- **On the card:** an idea's or a task's card holds its talks, each a session (§2) with its ork, its date and how it
+  ended. Opening the card opens its talk; going on with it is going on with that session.
+- **Recent talks**, one list in the console: the newest first, each with what it is about (a link to its card) and how
+  it ended: **decided**, **waits for you** (❓, §5), or **left without a decision**.
+- **A talk left without a decision** puts a soft mark on its card ("talked, not decided"), so it is not lost; the
+  morning brief names those older than a day.
+- **A talk started with no card** (from the Warchief's line) asks once, at its end, where it belongs: a new idea card,
+  an existing card, or nowhere.
+- **Search across all talks:** Later, once there are enough to need it.
+
+With the phone's bar ([cut-list.md](cut-list.md) §3a: drop an idea, talk it through, send it to be built), **P1**.
