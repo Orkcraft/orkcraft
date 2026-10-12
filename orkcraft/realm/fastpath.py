@@ -41,7 +41,8 @@ SETTINGS = {"fast_llm": True, "fast_model": "haiku", "weekly_model": "opus", "we
             "round_at": "daily 04:40",          # the Night round (realm/nightround.py): "" is off
             "elders_per_night": 40, "elders_context": 14,    # the Elders (realm/elders.py): questions, screen lines
             "improve_per_night_usd": 1.0,       # what the Mechanic and the Alchemist may spend a night (gui/improve_night.py)
-            "check_nightly": True, "check_per_night": 2}   # the Mechanic's night check (gui/night_check.py)
+            "check_nightly": True, "check_per_night": 2,   # the Mechanic's night check (gui/night_check.py)
+            "logs_for_analysis": False}         # every day's model calls kept, not cleared (realm/day_log.py)
 SUBJECT_LIMIT = 6000
 
 # (id, icon, name, duty, the councillor's fixed prompt)
