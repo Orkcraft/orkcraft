@@ -154,3 +154,41 @@ def test_github_connects_in_the_mascots_menu(host, monkeypatch):
     monkeypatch.setattr(github_app, "installed", lambda acct: False)
     status = host.command("github.status", {"check": True})
     assert status["login"] == "orkfan" and status["installed"] is False and status["install"].endswith("/installations/new")
+
+
+def test_settings_tried_go_as_their_types_defaults_and_a_new_building_starts_with_them(host, monkeypatch, tmp_path):
+    """§5.4: the settings and prompts tried on the virtual building go as a pull request too, as the defaults a new
+    building of their type starts with (orkcraft/design/defaults/<type>.json): only the keys they set."""
+    from orkcraft.core import buildings
+    from orkcraft.realm import github_app, type_defaults
+    monkeypatch.setattr(type_defaults, "DIR", tmp_path / "defaults")
+    lab, pool = _raised(host, "lab"), _raised(host, "barracks", worktrees=False)
+    _road(host, pool, lab, "pool.done")
+    host.detail(lab)
+    w = host.town.worker(lab)
+    before = dict(host.town.spec_of(pool)["config"])
+    w.add_change(pool, {"id": "v1", "kind": "config", "building": pool, "title": "Shorter orders", "why": "One line",
+                        "after": {**before, "orders": "Answer in one line."}, "diff": [], "at": "2026-10-11T10:00:00"})
+    w.state["cases"][pool] = [{"id": "c1", "title": "Fix bug 1", "text": "secret input"}]
+    w.state["results"][pool] = {"c1": {"scheme": {"cost": 0.1}, "bare": {}, "at": "2026-10-11T09:00:00", "quality": 1}}
+    got = _act(host, lab, "pr_preview")
+    assert not got["ready"] and "Run the cases with the change" in got["why"]       # the same evidence decides
+    w.state["results"][pool]["c1"]["at"] = "2026-10-11T11:00:00"
+    got = _act(host, lab, "pr_preview")
+    assert got["ready"] and got["title"] == "One line" and "## Settings and prompts" in got["body"]
+    assert "orkcraft/design/defaults/barracks.json" in got["diff"] and '"orders": "Answer in one line."' in got["diff"]
+    monkeypatch.setattr(github_app, "account", lambda: {"login": "orkfan", "token": "t"})
+    sent = {}
+    monkeypatch.setattr(github_app, "send", lambda changes, title, body, branch: sent.update(changes=changes)
+                        or "https://github.com/orkcraft/orkcraft/pull/10")
+    _act(host, lab, "pr_send")
+    assert _until(lambda: host.detail(lab)["data"]["pr"].endswith("/pull/10"))
+    [(path, (base, mine))] = sent["changes"].items()
+    assert path == "orkcraft/design/defaults/barracks.json" and base == ""
+    assert json.loads(mine) == {"config": {"orders": "Answer in one line."}}       # only what the change set
+    type_defaults.DIR.mkdir()
+    type_defaults.path("barracks").write_text(mine, encoding="utf-8")                # as the release brings it
+    spec = buildings.type_spec(host.town, "barracks")
+    assert spec["config"] == {"orders": "Answer in one line."}
+    assert buildings.raise_spec(host.town, spec) is not None
+    assert "config" not in buildings.type_spec(host.town, "scrolls")               # a type with none: as before

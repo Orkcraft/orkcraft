@@ -429,6 +429,7 @@ function Proposals({ id, d, on }) {
       <label class="lab-check"><input type="checkbox" checked=${picks.has(p.id)} onChange=${() => flip(p.id)} />
         <span class="lab-area">${say(AREA[p.area] || p.area)}</span> <b class="ok-font-body">${p.title}</b></label>
       <p class="ok-font-status">${p.detail}</p>
+      ${p.from && html`<p class="ok-font-status ok-tone-muted">${say(`From ${p.from}`)}</p>`}
       ${(p.where || p.effect) && html`<p class="ok-font-status ok-tone-muted">${p.where ? `${say("Where")}: ${p.where}` : ""}${p.where && p.effect ? " · " : ""}${p.effect ? `${say("Should")}: ${p.effect}` : ""}</p>`}
       ${p.area !== "roads" && html`<span><button class="ok-btn" disabled=${on || !!d.busy_what}
         title=${say("Tried on the Test bench's copy of the building only: the town's keeps what it has until Save changes")}
@@ -471,10 +472,11 @@ function Virtual({ id, d, on }) {
         onClick=${() => act(id, "save_changes").catch(() => {})}>${say("Save changes")}</button>`}
       <span class="ok-font-status ok-tone-muted">${say(data.length ? "Settings and prompts become the buildings' own, a checkpoint each (undo takes them back)." : "")}</span>
     </div>
-    ${code && html`<div class="gui-bench__row">
-      ${d.pr ? html`<a class="gui-link ok-font-status" href=${d.pr} target="_blank" rel="noopener">${say("Its pull request")}</a>`
-        : html`<button class="ok-btn" disabled=${on || d.busy_what === "pr"} onClick=${() => setPr(true)}>${say(d.busy_what === "pr" ? "Sending…" : "Send to Orkcraft as a pull request…")}</button>`}
-      <span class="ok-font-status ok-tone-muted">${say("Code changes reach you only through a pull request and the update that carries it.")}</span></div>`}
+    <div class="gui-bench__row">
+      ${d.pr && html`<a class="gui-link ok-font-status" href=${d.pr} target="_blank" rel="noopener">${say("Its pull request")}</a>`}
+      <button class="ok-btn" disabled=${on || d.busy_what === "pr"} onClick=${() => setPr(true)}>${say(d.busy_what === "pr" ? "Sending…" : "Send to Orkcraft as a pull request…")}</button>
+      <span class="ok-font-status ok-tone-muted">${say(code ? "Code reaches everyone only through a pull request and the update that carries it; settings and prompts go with it as their type's defaults."
+        : "Settings and prompts go as the defaults a new building of their type starts with.")}</span></div>
     ${pr && html`<${PullRequest} id=${id} onClose=${() => setPr(false)} />`}
   </section>`;
 }

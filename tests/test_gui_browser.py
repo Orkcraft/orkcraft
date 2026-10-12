@@ -1323,6 +1323,80 @@ def test_settings_turn_an_ai_tool_on_and_make_it_the_main_one(page):
                 "{ tools: { pi: false }, main_tool: '' }))")
 
 
+def test_improve_offers_the_days_with_logs_and_reads_one(page, gui):
+    """Improve → the days with logs: one read before says what was found, and picking it again costs nothing."""
+    import datetime as dt
+    from orkcraft.realm import call_log, day_review
+    server, _ = gui
+    host = server.host
+    root = host.town.repo_root
+    today = dt.date.today().isoformat()
+    folder = call_log.day_folder(root, today, "town_hall")
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / call_log.LINES).write_text("{}\n")
+    day_review.save(root, day_review.Review(today))                  # read before: nothing worth a look
+    host.day_review._days = (-1e9, [])
+    host.town.call(host.on_change)
+    pg = page
+    pg.wait_for_function("() => import('/static/js/link.js').then(m => (m.town.value.improve || {}).days?.length > 0)",
+                         timeout=WAIT_MS)
+    pg.wait_for_timeout(300)                                         # the line drawn again with its days
+    pg.locator(".gui-warchief__improve").click()
+    pick = pg.locator(".gui-warchief__day").first
+    pick.wait_for(timeout=WAIT_MS)
+    assert "nothing in the logs worth a look" in pick.text_content()
+    pick.get_by_role("button", name="Today").click()
+    pg.wait_for_function("() => document.querySelector('.gui-warchief__said')?.textContent.includes('worth a look')",
+                         timeout=WAIT_MS)
+
+
+def test_a_read_days_changes_say_where_each_can_be_tried(page, gui):
+    """Improve → a read day → Changes: each finding, with Try in its Test bench or why it cannot be tried."""
+    import datetime as dt
+    from orkcraft.realm import call_log, day_review
+    server, _ = gui
+    host = server.host
+    root = host.town.repo_root
+    day = (dt.date.today() - dt.timedelta(days=1)).isoformat()
+    folder = call_log.day_folder(root, day, "town_hall")
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / call_log.LINES).write_text("{}\n")
+    day_review.save(root, day_review.Review(day, hotspots=[{"id": "H1"}], findings=[day_review.Finding(
+        "farseer", "town_hall", "the answer was too long", "read twice", "prompt", "answer in three lines", ["H1"])]))
+    host.day_review._days = (-1e9, [])
+    host.town.call(host.on_change)
+    pg = page
+    pg.wait_for_function("() => import('/static/js/link.js').then(m => (m.town.value.improve || {}).days?.some(d => d.changes))",
+                         timeout=WAIT_MS)
+    pg.wait_for_timeout(300)                                         # the line drawn again with its days
+    pg.locator(".gui-warchief__improve").click()
+    row = pg.locator(".gui-warchief__day", has_text="Yesterday")
+    row.get_by_role("button", name="Changes").click()
+    change = row.locator(".gui-improve__changes li").first
+    change.wait_for(timeout=WAIT_MS)
+    assert "the answer was too long" in change.text_content() and "No Test bench tests it" in change.text_content()
+
+
+def test_settings_keep_logs_for_analysis_and_download_a_period(page):
+    """Settings → Keep logs for analysis: on, the logs stay a month; Download analytics is the period's zip."""
+    pg = page
+    pg.locator(".gui-hud .gui-hud__menu").click()
+    modal = pg.locator(".gui-modal")
+    modal.wait_for(state="visible", timeout=WAIT_MS)
+    modal.get_by_role("group", name="Keep logs for analysis").get_by_role("button", name="On").click()
+    pg.wait_for_function("() => document.querySelector('.gui-modal').textContent.includes('is kept 30 days')",
+                         timeout=WAIT_MS)
+    modal.get_by_role("group", name="Analytics of").get_by_role("button", name="30 days").click()
+    settings = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings'))")
+    assert settings["logs"]["on"] is True
+    link = modal.get_by_role("link", name="Download analytics (.zip)")
+    if link.count():                                              # a day's calls kept: the zip of 30 days
+        assert "/api/analytics?days=30&t=" in link.get_attribute("href")
+    else:
+        assert modal.get_by_role("button", name="Download analytics (.zip)").is_disabled()
+    pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings.set', { logs: false }))")
+
+
 def test_settings_choose_a_tiers_model_and_reset_it(page):
     """Settings → AI tools: each tier of a tool that is on runs on Latest of its family; another model typed is
     kept and said; Reset to latest drops it."""
@@ -2200,6 +2274,29 @@ def test_the_ux_bench_shows_a_buildings_pictures_and_opens_one_to_change(page, g
     pg.keyboard.press("Escape")
     for bid in (bench, pool):
         pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
+def test_what_a_ux_bench_applied_is_sent_from_a_dialog_that_shows_it_first(page, gui, monkeypatch, tmp_path):
+    """docs/design/improve-buildings.md §6.5: once a picture is this machine's own, Send to Orkcraft shows; its dialog
+    shows the picture before and after, ticked, the title and the description, and Send waits for GitHub."""
+    from orkcraft.design import tokens
+    monkeypatch.setenv("ORKCRAFT_ASSETS_DIR", str(tmp_path / "assets"))
+    house = "sprites/buildings/barracks/header-ice.png"
+    own = tokens.assets_dir() / house
+    own.parent.mkdir(parents=True)
+    own.write_bytes((tokens.SYSTEM / "sprites/buildings/barracks/header.png").read_bytes())
+    pg = page
+    bench = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", "ux_lab")
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", bench)
+    pg.locator(".ux-pick .gui-build__tile[title='In parallel']").click()
+    pg.locator(".ux-send button", has_text="Send to Orkcraft").click()
+    dialog = pg.locator(".ok-dialog", has_text="A pull request to Orkcraft")
+    dialog.locator(".ux-send__item").first.wait_for(timeout=WAIT_MS)
+    assert dialog.locator(".ux-send__item input:checked").count() == 1
+    assert dialog.locator(".ux-send__pair img").count() == 2 and "ux bench: 1 picture" in dialog.inner_text().lower()
+    assert dialog.locator("button", has_text="Send").last.is_disabled()          # GitHub is not connected here
+    pg.keyboard.press("Escape")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bench)
 
 
 def test_the_ux_bench_shows_the_mascots_and_opens_one_to_draw_again(page, gui):

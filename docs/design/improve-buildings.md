@@ -2,7 +2,8 @@
 
 Status: stages 0–8 and 3b built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
 road rule; a building's inputs; the Test bench's setup; environments, case sets and what is kept to spend less; the
-virtual building; GitHub and pull requests; the UX bench painting pictures and laying windows and cards out). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
+virtual building; GitHub and pull requests; the UX bench painting pictures and laying windows and cards out); stages
+9 and 11 on 2026-10-12 (the mascots; Send to Orkcraft from both benches). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
 and keep it, **faster and cheaper than testing and rewriting it through Claude Code**.
 
 | stage | what | state |
@@ -19,7 +20,7 @@ and keep it, **faster and cheaper than testing and rewriting it through Claude C
 | 8 | Orks by their orkish names, buildings by what they do; the Mechanic and the Alchemist as agents (design/agents/), on the Council of Elders, improving the town at night by the autonomy (§8) | built |
 | 9 | The mascots in the UX bench: a target that is no building; each head drawn again as its grid by a text model, never the image tool (§6.4) | built |
 | 10 | A moving house's two layers in the UX bench's *At work* group (docs/design/building-motion.md, its own stages) | building-motion.md |
-| 11 | **Propose**: what was applied on this machine goes to Orkcraft as a pull request (the picture, its @2x, a grid in its source), as the Mechanic's code changes do (§4) | |
+| 11 | **Send to Orkcraft** from both benches: the UX bench's pictures, mascots, cards and windows (§6.5); the Test bench's settings and prompts as a type's shipped defaults, beside its code (§5.4) | built |
 
 ## 1. Why
 
@@ -94,7 +95,11 @@ so nothing but a person could give a building that input.
 - **Before it goes** the dialog shows exactly what leaves the machine: the title, the body and the diff.
 - **When the release brings it:** the bench's copy is of the version it was made on; a pull request is merged onto
   `main` as it is when sent. (Dropping the copy when an update carries the change is next.)
-- Settings and prompts saved locally are not sent: they are the person's town's.
+- **The same way for both benches** (stage 11): the Test bench sends its code change and the settings and prompts it
+  tried, as the defaults a new building of their type starts with (§5.4); the UX bench sends what its machine applied
+  (§6.5). A picture goes as bytes: there are no lines to merge, so it is refused when Orkcraft's `main` changed it
+  since the installed version.
+- What *Save changes* made a building's own stays the person's town's; what goes is what the bench tried.
 
 ## 5. The Mechanic
 
@@ -175,6 +180,21 @@ and prompt builders in Python).
 - The prompts the code builds today move to template files a step at a time (§9); each that moves becomes data the
   keeper can change without code.
 
+### 5.4 A type's defaults (stage 11, built 2026-10-12)
+
+Asked by the owner: what the Mechanic finds better should reach every new building, not only this town's.
+
+- **Orkcraft ships a type's defaults** as data: `orkcraft/design/defaults/<type>.json`, `{"config": {...}}`
+  (`realm/type_defaults.py`). A building raised from Build starts with them (`core/buildings.py` `type_spec`); a
+  type with none starts as before. A building already standing keeps its settings.
+- **Send to Orkcraft** on the virtual building now goes with settings and prompts alone too: each building's config
+  as tried against its config now gives the keys the changes set (`type_defaults.changed`), over the defaults its type
+  ships already (`lab_pr.defaults`). Only those keys go, never the rest of the person's config. A part a type keeps
+  outside its spec (the Workshop's script) stays here.
+- **The same evidence decides**: the cases run after the earliest change sent, ahead of the bare AI tool on the goal's
+  metric in most of them (`lab_pr.ready`). The body says the settings and prompts under their own heading; the
+  dialog shows their file's diff beside the code's.
+
 ## 6. The Alchemist
 
 ### 6.1 Settings (stage 0)
@@ -246,8 +266,24 @@ Asked by the owner: the mascots are drawn again inside Orkcraft, not by a script
   (`assets_dir`, `sprites/mascots/<role>-<stage>.grid.json`), so the next drawing starts from it; **Reset** brings
   the design system's back (Apply then takes all three away). Every place that shows a mascot reads `/ds/`, so the
   portrait, Settings and the onboarding show this machine's at once.
-- **Not yet:** a head's name and ranks (realm/intents.py, realm/growth.py) and its kin's home are code, not pictures;
-  and a head applied here stays on this machine until **Propose** (stage 11) sends it to Orkcraft.
+- **Not yet:** a head's name and ranks (realm/intents.py, realm/growth.py) and its kin's home are code, not pictures.
+  A head applied here goes to Orkcraft with **Send to Orkcraft** (§6.5).
+
+### 6.5 Send to Orkcraft (stage 11, built 2026-10-12)
+
+What this machine applied in the UX bench stays on it until Orkcraft takes it in. **Send to Orkcraft as a pull
+request… (n)** under the bench's settings opens what would leave the machine, item by item (`realm/ux_pr.py`):
+
+| item | the files of Orkcraft's repository it changes |
+|---|---|
+| a picture (a Build icon, a house on a ground, an ork, a moving house's layer) | `design-system/<path>` and its @2x, as bytes |
+| a mascot's head | its picture and @2x; its grid in `grids.json` and in `drawn.json`, which tools/growth_sprites.py keeps over the heads its code draws, so a run of the tool keeps it |
+| a type's cards | `design-system/cards/<type>.json`: the card Orkcraft ships (`card_docs.shipped`), laid out by every hut until a machine has its own |
+| a type's window (the type the bench works on, when its buildings have a layout of their own) | the `default` of `orkcraft/design/buildings/<type>.json`, the rest of the file as written |
+
+Each item is ticked and shown — a picture before and after, a text's diff — with the title and the description of
+those ticked (the Alchemist's line for a head, never the person's words). **Send** needs GitHub connected (§4) and
+goes through the same app as the Test bench's, on a branch `improve/ux-<time>`; the bench then links its pull request.
 
 ## 8. The orks: their names, who they are, and the night (stage 8, built 2026-10-11)
 
@@ -419,3 +455,49 @@ they take any repository as their subject. Written down so that what is built no
 - **How the cost of an app's own model calls is seen:** its traces (OpenTelemetry), or a local proxy before its
   model provider.
 - **Where it runs:** in the person's town, on their machine and their AI tools (as now), or headless in CI at night.
+
+## 13. Improve reads a day: the Mechanic and the Farseer (asked 2026-10-12)
+
+Asked by the owner: instead of copying a day's logs out for someone to read, **Improve** in the Warchief's line has the
+town's own councillors read them and offer the changes. The Mechanic stays where a single building or scheme is
+reviewed (the Test bench); Improve is the town's whole day.
+
+**The Farseer** (`design/agents/farseer.md`, `orc.farseer` in the lexicon) is the Elders' product manager, named after
+the orc shaman of WC3: what the person needed from a building and whether they got it — the work they did again by
+hand, the answer they turned down, the thing nobody asked for. It sits on the Council (`fastpath.ROLES`, 🔮): it
+objects when a change gives the person more to do, hides what a building did, or adds work nobody asked for.
+
+**How a day is read** (realm/hotspots.py, realm/day_review.py, gui/day_review.py):
+
+1. **Improve → a day.** Improve opens the days with logs (`js/improve.js`): each says what the Elders found when they
+   read it, with *Read again*; *Only the latest 👎* is the old way. With no day kept, Improve is the old way at once.
+2. **Hotspots, by code, free.** The day's 👎 (with what was said and what was made), failed calls, an Agent pool's
+   reworks (follow-up, reuse, retier), the same opening of a prompt sent three times or more (context sent again),
+   and the five costliest calls. Each gets an id (H1, H2, …) and an excerpt of its call: its prompt's head and tail,
+   its output. The digest the councillors read is at most 40k characters: never the whole day.
+3. **Two asks, on the main tool:** the Mechanic (quality per token) and the Farseer (what the person needed), each
+   with its whole persona and the digest; each says at most six findings, each with one change of a kind (setting,
+   prompt, rule, step, tier, road, code, drop). **A finding that cites no hotspot of the day is dropped**: no proof,
+   no finding. A councillor whose ask fails is said; the other's findings stand. A day with no hotspot asks no model.
+4. **The Warchief offers them** one by one, to apply or skip, as it does any change. A code change is not made here:
+   it is said, and the Test bench can try it (§5.3; a pull request only from there, shown before it goes, §4 — what
+   the logs hold never goes into one).
+5. **Kept** in `.orkcraft/council/days/<day>.json`: picking the day again hands the same findings to the Warchief at
+   no cost.
+
+**At night** (gui/nightly.py, after the check, before the night's improvements; the Council's `review_nightly`, on by
+default): the day that just ended is read once its date has passed, while it is quiet; the morning's Elders' toast says
+what was found, and Improve goes through it at no cost. Yesterday's logs wait for that reading before the morning's
+clearing (gui/day_logs.py), whether or not the logs are kept for analysis.
+
+**Measured in the Test bench** (gui/day_try.py, built 2026-10-12). A read day has **Changes** in Improve: each
+finding with **Try in <its Test bench>**, or why it cannot be (no Test bench tests its building: raise one and pick
+it; a road: on the map). Try hands it to the bench as a proposal (*From the Farseer, in the logs of <day> (H1)*, first,
+and kept when the Mechanic writes its own again), puts it on the virtual building — settings and prompts through the
+building's keeper, code in the bench's copy of the package (§5.3) — and runs the bench's cases; with none, it says to
+add a case set. The bench's window then has the numbers, and **Send to Orkcraft** when they are ahead (§4): a pull
+request only from there, shown before it goes, sent by the person, with numbers and never the logs.
+
+At night every finding of the day just read goes to its Test bench the same way (free), and the night's
+improvements (§8.4) try its settings and prompt ones first, as they try any proposal. **Code is not the night's**: an
+agent writing code with nobody there, and its cost, wait for the person's Try in the morning.

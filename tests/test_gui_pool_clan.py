@@ -111,6 +111,11 @@ def test_an_ork_of_the_barracks_opens_its_terminal(fake_repo, tmp_path, monkeypa
         assert s.env["ORKCRAFT_ORC"] == f"{bid}/grub"
         assert host.command("act", {"id": bid, "act": "terminal", "args": {"ork": "Grub"}}) == key   # the same one
         assert any(x["key"] == key for x in host.snapshot()["sessions"])
+        host.command("term.stop", {"key": key})                   # the ork's CLI ends…
+        assert _until(lambda: not s.running)
+        assert [x["running"] for x in host.snapshot()["sessions"] if x["key"] == key] == [False]
+        again = host.command("act", {"id": bid, "act": "terminal", "args": {"ork": "Grub"}})   # …and its terminal reopens
+        assert again == key and host.sessions.get(key).running and host.sessions.get(key) is not s
     finally:
         host.sessions.close()
 

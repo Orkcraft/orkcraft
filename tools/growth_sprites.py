@@ -309,7 +309,14 @@ ROLES = {
 }
 
 
+# Heads drawn again in a UX bench and sent to Orkcraft (orkcraft/realm/ux_pr.py): kept over the ones drawn here.
+DRAWN = SPRITES / "mascots" / "drawn.json"
+
+
 def mascot_grid(role: str, stage: int) -> list[str]:
+    drawn = json.loads(DRAWN.read_text(encoding="utf-8")) if DRAWN.is_file() else {}
+    if f"{role}-{stage}" in drawn:
+        return list(drawn[f"{role}-{stage}"])
     base, stages = ROLES[role]
     grid = [list(r) for r in BASES[base]]
     layers = stages[stage - 1]

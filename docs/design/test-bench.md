@@ -349,3 +349,10 @@ brain folder; codex's output holds its own). A building's Info has **Today's log
 /api/logs/<building>?day=`) with a README that adds the calls up, every call, and what its steward decided.
 Each morning the days before are cleared building by building, unless the log was downloaded (`.asked`) or the
 building got a 👎 that day; those stay 14 days (`day_log.KEEP_DAYS`).
+
+**Keep logs for analysis** (Town settings, asked 2026-10-12; the Council's `logs_for_analysis`, off by default): while
+it is on, no day is cleared — every building's day stays 30 days (`day_log.KEEP_ANALYSIS`). **Download analytics**
+there is a period (today, 7 or 30 days) of every building, one zip (`GET /api/analytics?days=`, realm/analytics.py):
+`README.md` adds the period up (by building, then each day: calls, time, tokens, cost, failed calls, reworks — an
+Agent pool steward's follow-up, reuse and retier — and 👎, then by ork and purpose), `summary.json` the same for a
+script, and `<day>/<building>/` the calls in full, `decisions.jsonl` and `dislikes.jsonl`.

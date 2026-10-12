@@ -93,8 +93,13 @@ def needs_title(text: str) -> bool:
     return len(words) > TITLE_WORDS or len([ln for ln in text.splitlines() if ln.strip()]) > 1
 
 
+# The card's colour comes with its title (the board has no Colour button): the model picks it by what it is about.
+COLOR_HINT = ("Start the title with one colour mark for what it is about: 🟥 urgent or broken, 🟨 money or admin, "
+              "🟩 people and meetings, 🟦 code and tools, 🟪 ideas and research. ")
+
+
 def title_prompt(text: str) -> str:
-    return ("Name this task or note in 2 to 4 words, in the language it is written in. "
+    return ("Name this task or note in 2 to 4 words, in the language it is written in. " + COLOR_HINT +
             "Answer with the title only: no quotes, no full stop.\n\n" + text[:4000])
 
 
@@ -104,7 +109,8 @@ def titles_prompt(texts: list[str]) -> str:
         return title_prompt(texts[0])
     cards = "\n\n".join(f"[{n}]\n{t[:4000]}" for n, t in enumerate(texts, 1))
     return (f"Name each of these {len(texts)} tasks or notes in 2 to 4 words, each in the language it is written in. "
-            "Answer with one line per card, its number then its title, as `1. Title`: no quotes, no full stop.\n\n"
+            + COLOR_HINT
+            + "Answer with one line per card, its number then its title, as `1. Title`: no quotes, no full stop.\n\n"
             + cards)
 
 
@@ -127,7 +133,10 @@ def parse_title(answer: str) -> str:
     """The model's title: its first line, quotes and a full stop aside, at most a few words; "" when it said none."""
     line = next((ln for ln in answer.splitlines() if ln.strip()), "")
     line = line.strip().strip("\"'`*«»“”").rstrip(".")
-    return " ".join(line.split()[:TITLE_WORDS + 1])[:60]
+    color = color_of(line)
+    line = plain(line).strip().strip("\"'`*«»“”").rstrip(".")
+    words = " ".join(line.split()[:TITLE_WORDS + 1])[:60]
+    return f"{color} {words}" if color and words else words
 
 
 def color_of(title: str) -> str:

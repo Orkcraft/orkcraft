@@ -46,7 +46,10 @@ calm town (calm-town.md §1: the orkspaces at the bottom left) and the flat spri
   orkspace on "forest" becomes dirt (today's look), the others take the free biomes; biomes chosen on
   purpose stay (§6, the recommended way).
 - **Rename, Biome, Remove** are the land's right click (`orkspace.rename`, `orkspace.biome`,
-  `orkspace.remove`; a land with buildings is not removed).
+  `orkspace.remove`). *Remove…* asks first and names the buildings that stand on the land (the Town Hall,
+  on every map, is never one of them); with the person's yes (`demolish: true`) they come down with it, as
+  Demolish takes one: their specs and history stay. What the land still lists — the Town Hall, demolished
+  buildings — moves to the first land left.
 
 ## 1. Why
 

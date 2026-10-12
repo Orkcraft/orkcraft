@@ -1,11 +1,13 @@
 """The Council's Fast Path: a quick review of every new building, agent and road.
 
 Presets skip it — they are code that was reviewed once. Everything the operator or a model makes
-from scratch goes past five councillors, each with a fixed duty:
+from scratch goes past the councillors, each with a fixed duty (`ROLES`):
 
     👑 Chief     budget          model calls per event, re-runs, a reason for not using a cheaper kind
     🧱 Mason     schemas         the spec, the orc and the filter against their JSON Schemas; scripts parse
-    🎨 Artisan   the TUI         titles, icons, keys, hut lines that fit the screen
+    ⚗️ Alchemist UI/UX           titles, labels, the design system's roles (its id stays `artisan`)
+    🔧 Mechanic  quality, spend  a check removed, a heavier tier with no measured reason, context sent again
+    🔮 Farseer   the person      more for the person to do, a building's work hidden, work nobody asked for
     🛡 Warder    bash security   commands and scripts: sudo, curl | sh, rm -rf, secrets, the network
     ⛏ Peon      worktrees,      shared working trees, merges without tests, skipped permissions,
                  permissions,    scripts outside their folder
@@ -13,7 +15,7 @@ from scratch goes past five councillors, each with a fixed duty:
 
 Rules come first: they are free, instant and their findings are facts. A `block` stops the build
 and says why. After the rules, when a light model is allowed (`fast_model`, haiku by default), the
-five duties go to it in one call; its objections are opinions — the operator may approve anyway.
+duties go to it in one call; its objections are opinions — the operator may approve anyway.
 A model that cannot be reached never blocks: the review falls back to the rules.
 
 Every review is appended to `.orkcraft/council/reviews.jsonl`; the settings live in
@@ -41,7 +43,9 @@ SETTINGS = {"fast_llm": True, "fast_model": "haiku", "weekly_model": "opus", "we
             "round_at": "daily 04:40",          # the Night round (realm/nightround.py): "" is off
             "elders_per_night": 40, "elders_context": 14,    # the Elders (realm/elders.py): questions, screen lines
             "improve_per_night_usd": 1.0,       # what the Mechanic and the Alchemist may spend a night (gui/improve_night.py)
-            "check_nightly": True, "check_per_night": 2}   # the Mechanic's night check (gui/night_check.py)
+            "check_nightly": True, "check_per_night": 2,   # the Mechanic's night check (gui/night_check.py)
+            "logs_for_analysis": False,         # every day's model calls kept, not cleared (realm/day_log.py)
+            "review_nightly": True}             # the Mechanic and the Farseer read the day at night (gui/day_review.py)
 SUBJECT_LIMIT = 6000
 
 # (id, icon, name, duty, the councillor's fixed prompt)
@@ -63,6 +67,10 @@ ROLES = (
      "You are a senior AI engineer and you guard quality per token. Object when a change removes a check, a "
      "review or a test, raises a model tier with no measured reason, sends the same context again where it could "
      "be reused or cached, or cannot be shown better on the building's cases."),
+    ("farseer", "🔮", "Farseer", "what the person needs",
+     "You are the product manager and you guard what the person gets. Object when a change makes the person do "
+     "more themselves (read, decide, fix or copy by hand), hides what a building did or why, or adds work, reports "
+     "or questions nobody asked for."),
     ("warder", "🛡", "Warder", "bash security",
      "You guard the machine. Object to shell commands that delete, escalate (sudo), pipe the network into "
      "a shell, interpolate untrusted text into a command, write outside the project, or hold a secret."),

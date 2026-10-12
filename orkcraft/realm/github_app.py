@@ -8,7 +8,8 @@ on the person's own account (for their fork), which `installed` checks and `INST
 
 A pull request is made with the API only, no clone: the person's fork (made when missing), a branch from Orkcraft's
 `main` with the changed files (each merged three ways when `main` changed it since the installed version, refused
-when that conflicts), and the pull request into `main`.
+when that conflicts; a picture, given as bytes, is refused when `main` changed it to anything else), and the pull
+request into `main`. The Test bench sends code and a type's defaults, the UX bench pictures, cards and windows.
 
     d = github_app.start(); github_app.poll(d) → "" while waiting, the login once signed in
     github_app.send(changes, title, body) → the pull request's URL
@@ -176,9 +177,10 @@ def _fork(acct: dict, opener=None) -> str:
     raise GithubError("GitHub is still making your fork of Orkcraft: try again in a minute")
 
 
-def send(changes: dict[str, tuple[str, str]], title: str, body: str, branch: str, acct: dict | None = None,
-         opener=None) -> str:
-    """The changed files ({path: (as installed, as changed)}) as a pull request into Orkcraft's main; its URL."""
+def send(changes: dict[str, tuple[str, str] | tuple[bytes, bytes]], title: str, body: str, branch: str,
+         acct: dict | None = None, opener=None) -> str:
+    """The changed files ({path: (as installed, as changed)}, text or bytes) as a pull request into Orkcraft's main;
+    its URL."""
     acct = acct or account()
     if acct is None:
         raise GithubError("Connect GitHub first (the mascot's menu → GitHub)")
@@ -192,6 +194,15 @@ def send(changes: dict[str, tuple[str, str]], title: str, body: str, branch: str
     for path, (base, mine) in sorted(changes.items()):
         code, got = _call("GET", f"{API}/repos/{UPSTREAM}/contents/{urllib.parse.quote(path)}?ref={head}",
                           token=token, opener=opener)
+        if isinstance(mine, bytes):                   # a picture: no lines to merge, so main must not have moved it
+            theirs_b = base64.b64decode(got.get("content") or "") if code == 200 else None
+            if theirs_b is not None and theirs_b not in (base, mine):
+                raise GithubError(f"{path} changed in Orkcraft's main since this version: update Orkcraft and draw it "
+                                  "again")
+            blob = _api("POST", f"/repos/{fork}/git/blobs", {"content": base64.b64encode(mine).decode(),
+                                                             "encoding": "base64"}, token, opener=opener)
+            entries.append({"path": path, "mode": "100644", "type": "blob", "sha": blob["sha"]})
+            continue
         theirs = base64.b64decode(got.get("content") or "").decode("utf-8") if code == 200 else ""
         text = merged(base, mine, theirs) if code == 200 else mine
         if text is None:

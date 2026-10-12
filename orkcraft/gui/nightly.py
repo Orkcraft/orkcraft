@@ -9,6 +9,7 @@ with the same core (core/retros.py, core/night.py): the host's clock calls `tick
                    only while it is still quiet and the Council lets it is it applied, hushed
     probation      every few minutes: a change with a 👎 or more failed runs since goes back by itself
     the check      the Mechanic's night check (gui/night_check.py), before the night's improvements
+    the day        the day that ended, read by the Mechanic and the Farseer (gui/day_review.py), after the check
     the morning    what the orks changed while the operator was away, in one toast
 
     nightly = Nightly(host)
@@ -46,7 +47,7 @@ class Nightly:
             words = retros.morning_words(self.town)
             if words:
                 self.town.toast(words, title="While you were away, the orks changed", timeout=20)
-            improved = self.check.morning() + self.improve.morning()
+            improved = self.check.morning() + self.host.day_review.morning() + self.improve.morning()
             if improved:
                 self.town.toast(".\n".join(improved) + ".", title="While you were away, the Elders", timeout=20)
         exhausted = self.host.treasury.exhausted(quiet=True)
@@ -64,7 +65,9 @@ class Nightly:
                         self.host.growth.soon()          # its morning line, when it had one
         self.check.tick(quiet, exhausted, now)
         if not self.check.busy:                  # one job on the AI tool at a time: the check's numbers stay true
-            self.improve.tick(quiet, exhausted, now)
+            self.host.day_review.tick(quiet, exhausted)     # the day just ended, read (gui/day_review.py)
+            if not self.host.day_review.running:
+                self.improve.tick(quiet, exhausted, now)
         taken = self.host.night.next_change(quiet, self.town.machine.autonomy, exhausted)
         if taken is not None:
             self._consider(*taken)

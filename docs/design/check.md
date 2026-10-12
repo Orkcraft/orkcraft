@@ -38,7 +38,8 @@ tool's answers are kept and read back, so a second check pays only for the build
 
 - the building passed its check in at least `pass_share` (⅔) of its runs, and in no fewer than the bare tool;
 - its median time is at most `time_over` (+50 %) over the bare tool's, and its spend at most `spend_over` (+30 %),
-  in tokens when the tool says no price;
+  in tokens when the tool says no price — every token counted, what was read from the tool's cache too, so a
+  call on a warm cache weighs as one on a cold cache (agy names its cache apart; docs/nights/2026-10-11.md);
 - no run was cut at its spend limit (`max_spend`, $2) or its time.
 
 The quiet town: the dashboard demo built in a temporary folder, ticked a minute a tick for `idle_hours` (8) with every

@@ -105,6 +105,14 @@ def test_the_war_map_lands_get_biomes_names_and_go(fake_repo, isolated_layout_fi
     assert host.town.scroll.orkspace(odd).biome == "ice"                     # an unknown one: as if none
     for x in (picked, odd):
         host.command("orkspace.remove", {"id": x})
+    # a land with buildings: refused with their names, removed with them when the person said yes
+    full = host.command("orkspace.new", {"name": "Full"})
+    pit = buildings.raise_spec(host.town, buildings.type_spec(host.town, "pit")).id
+    assert host.town.scroll.orkspace_of(pit).id == full
+    with pytest.raises(CommandError, match="still holds 1 building"):
+        host.command("orkspace.remove", {"id": full})
+    host.command("orkspace.remove", {"id": full, "demolish": True})
+    assert host.town.scroll.orkspace(full) is None and host.town.scroll.building(pit).demolished
     host.command("orkspace.biome", {"id": oid, "biome": "lava"})
     host.command("orkspace.rename", {"id": oid, "name": "Payments"})
     land = next(o for o in host.snapshot()["orkspaces"] if o["id"] == oid)

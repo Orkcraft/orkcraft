@@ -244,3 +244,24 @@ def test_another_cart_with_the_same_ref_is_a_task_of_its_own(camp):
     task = camp.add_task("Prep the sync", "the agenda", ref="drum:sync")
     other = camp.add_task("Prep the sync", "the open items", ref="drum:sync")
     assert other is not task and task.text == "the agenda" and len(camp.state.queue) == 2
+
+
+def test_the_status_of_the_work_moves_its_card_with_no_road_back(fake_repo, isolated_layout_file):
+    """A Barracks' status of a card on the board moves it, with no road from the Barracks back to the board:
+    the statuses are the board's own, not a road's (core/delivery.py `_status_board`)."""
+    checkpoint.ensure(fake_repo)
+    host = Host(fake_repo, auto_commit=False)
+    try:
+        spec = buildings.type_spec(host.town, "fields")
+        spec["config"] = {**(spec.get("config") or {}), "path": "BOARD.md"}
+        w = host.town.worker(buildings.raise_spec(host.town, spec).id)
+        card = w.add(CSV, "todo")
+        ref = w.ref(card)
+        camp_id = buildings.raise_spec(host.town, buildings.type_spec(host.town, "barracks")).id
+        assert not host.town.roads.has_roads(camp_id, "pool.assigned")
+        host.town.emit_typed(camp_id, "pool.assigned", "Grub (claude) ← " + CSV, CSV, ref=ref)
+        assert w.card(card.id).column == "in_progress"
+        host.town.emit_typed(camp_id, "pool.done", "Done: the export is in", CSV, ref=ref)
+        assert w.card(card.id).column == "done"
+    finally:
+        host.close()

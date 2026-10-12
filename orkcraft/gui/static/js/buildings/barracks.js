@@ -331,9 +331,10 @@ function Tasks({ id, data }) {
 function OrkTab({ id, o }) {
   const s = sessionOf(o.terminal);
   const open = () => act(id, "terminal", { ork: o.name }).catch(() => {});
-  if (s) return html`<${Terminal} key=${s.key} sessionKey=${s.key} />`;
+  if (s && s.running) return html`<${Terminal} key=${s.key} sessionKey=${s.key} />`;   // an ended one takes no keys: reopen it
   return html`<div class="gui-section">
-    <p class="ok-tone-muted">${o.status === "working" ? say("It is working now: its terminal opens when it is free.") : say("No terminal open.")}
+    <p class="ok-tone-muted">${s ? say("Its session has ended") + (s.exit_code ? ` · ${s.exit_code}` : "")
+      : o.status === "working" ? say("It is working now: its terminal opens when it is free.") : say("No terminal open.")}
       ${o.status !== "working" && html` <button class="ok-btn" onClick=${open}
         title=${say("Its last session, on its worktree")}>${o.session ? say("Resume its session") : say("Open its terminal")}</button>`}</p>
     ${o.recent.length > 0 && html`<h3 class="ok-font-heading">${say("Its recent work")}</h3>

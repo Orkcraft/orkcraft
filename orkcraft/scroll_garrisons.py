@@ -125,18 +125,30 @@ def copy_building(scroll: TownScroll, building_id: str, orkspace_id: str, new_id
     return b, left
 
 
+def standing_in(scroll: TownScroll, orkspace_id: str) -> list[BuildingSpec]:
+    """The buildings that stand in an orkspace: the Town Hall (on every map, never on its own) and the
+    demolished ones left out."""
+    ork = scroll.orkspace(orkspace_id)
+    ids = set(ork.buildings) if ork is not None else set()
+    return [b for b in scroll.buildings if b.id in ids and not b.demolished and b.id != "town_hall"]
+
+
 def remove_orkspace(scroll: TownScroll, orkspace_id: str) -> None:
-    """Delete an empty orkspace; never the last one. The active one falls back to the first left."""
+    """Delete an orkspace with no building standing in it; never the last one. What it still lists — the Town
+    Hall, demolished buildings kept to be raised again — moves to the first orkspace left, which becomes the
+    active one when this one was."""
     ork = scroll.orkspace(orkspace_id)
     if ork is None:
         raise ValueError(f"unknown orkspace {orkspace_id!r}")
     if len(scroll.orkspaces) == 1:
         raise ValueError("the last orkspace cannot be removed")
-    if ork.buildings:
+    if standing_in(scroll, orkspace_id):
         raise ValueError(f"{ork.name} still holds buildings: move or demolish them first")
     scroll.orkspaces.remove(ork)
+    heir = scroll.orkspaces[0]
+    heir.buildings.extend(b for b in ork.buildings if b not in heir.buildings)
     if scroll.active_orkspace_id == orkspace_id:
-        scroll.active_orkspace_id = scroll.orkspaces[0].id
+        scroll.active_orkspace_id = heir.id
 
 
 # -- garrison operations -----------------------------------------------------------------------------------

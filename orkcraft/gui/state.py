@@ -86,7 +86,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "pinned": bool(bs.pinned),
             "folded": bool(bs.folded) and bs.id != TOWN_HALL,   # its title bar only (js/hut.js)
             "roads": catalog.type_of(spec).roads if spec else "free",   # "setup"/"none": no road handle (catalog)
-            "card_doc": card_docs.load(type_id) if spec else None,        # this machine's layout of its card (UX bench)
+            "card_doc": card_docs.current(type_id) if spec else None,     # its card's layout: this machine's, else shipped
             "level": bs.level or 0, "goal": bs.aim,              # the flag on its roof (docs/design/growth.md §5)
             "status": (lines := _hut_lines(town, bs.id)),
             "status_plain": [modes.plain(x) for x in lines],

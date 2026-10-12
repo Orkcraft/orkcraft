@@ -16,6 +16,7 @@ from typing import Any, Callable
 
 from orkcraft import scroll as ts
 from orkcraft import settings
+from orkcraft.core import buildings
 from orkcraft.realm import biomes, growth, intents
 
 SETTLE_S = 60.0          # how often the levels, deeds and stage are looked at again
@@ -127,11 +128,27 @@ class Growth:
         self.host.on_change()
 
     def _remove(self, args: dict) -> None:
+        """Remove a land. One with buildings standing in it is removed only with `demolish` (the War Map asks
+        first, naming them): they come down with it, as Demolish takes one (their specs and history stay)."""
+        town = self.host.town
+        ork = self._orkspace(args)
+        standing = ts.standing_in(town.scroll, ork.id)
+        if standing and not args.get("demolish"):
+            raise GrowthError(f"{ork.name} still holds {len(standing)} building{'s' if len(standing) != 1 else ''}: "
+                              + ", ".join(town.title_of(b.id) for b in standing))
+        if len(town.scroll.orkspaces) == 1:
+            raise GrowthError("the last orkspace cannot be removed")
+        for b in standing:
+            buildings.demolish(town, b.id)
         try:
-            ts.remove_orkspace(self.host.town.scroll, self._orkspace(args).id)
+            ts.remove_orkspace(town.scroll, ork.id)
         except ValueError as e:
             raise GrowthError(str(e)) from None
-        self.host.town.save()
+        town.save()
+        town.checkpoint("orkspace", "", f"removed {ork.name}" + (f" and {len(standing)} buildings" if standing else ""),
+                        orkspace=ork.id)
+        if standing:
+            self.host.refresh_roster()
         self.host.on_change()
 
     def commands(self) -> dict[str, Callable[[dict], Any]]:
