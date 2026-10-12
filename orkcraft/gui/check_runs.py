@@ -38,14 +38,17 @@ class CheckRuns:
     def job(self):
         return self.engine.jobs.get(KEY)
 
-    def start(self, scenarios: list[str] | None = None) -> None:
+    def start(self, scenarios: list[str] | None = None, replay: bool = False) -> None:
+        """The check (`replay`: the last one played back on its recorded answers: free, no AI tool called)."""
         if (job := self.job()) and not job.done:
             raise CheckError("A check is on: stop it first")
         from orkcraft.gui.bench import Job
         argv = [sys.executable, "-m", "orkcraft", "--repo", str(self.root), "check"]
         for s in scenarios or []:
             argv += ["--scenario", s]
-        job = Job(KEY, KEY, "the check")
+        if replay:
+            argv += ["--replay", "latest"]
+        job = Job(KEY, KEY, "the check played back" if replay else "the check")
         try:
             job.proc = subprocess.Popen(argv, cwd=self.root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                         text=True, start_new_session=True, env={**os.environ, "PYTHONUNBUFFERED": "1"})

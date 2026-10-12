@@ -1,0 +1,234 @@
+{
+ "id": "20261011-181720-watchtower-on-call",
+ "type": "watchtower",
+ "case": "on-call",
+ "tool": "claude",
+ "tier": "laborer",
+ "at": "2026-10-11T18:17:20",
+ "building": {
+  "name": "building",
+  "seconds": 10.0,
+  "cost": 0.003,
+  "tokens": 39902,
+  "error": "",
+  "cut": false,
+  "passed": true,
+  "check_tail": "",
+  "files": [],
+  "lines": 0,
+  "text": "",
+  "how": [
+   "#1: kept · high · answer person · PagerDuty: api-prod p99 latency 4.2s for 10 minutes",
+   "#2: left out · low · answer — · comes from noreply@dependabot.com",
+   "#3: kept · high · answer person · Uptime monitor: checkout.example.com down, HTTP 502 for 3 minutes",
+   "#4: left out · — · answer — · ",
+   "#5: kept · high · answer person · Customer reports all API calls from their stores timing out since 9:40",
+   "#6: left out · low · answer — · has an unsubscribe link"
+  ],
+  "orks": 0,
+  "where": "",
+  "steps": [],
+  "checks": [
+   {
+    "name": "#1 [TRIGGERED] api-prod p99 latency 4.2s > 1s: kept",
+    "ok": true,
+    "detail": "kept — PagerDuty: api-prod p99 latency 4.2s for 10 minutes"
+   },
+   {
+    "name": "#1 [TRIGGERED] api-prod p99 latency 4.2s > 1s: importance high",
+    "ok": true,
+    "detail": "said high"
+   },
+   {
+    "name": "#2 Bump requests from 2.31 to 2.32: left out",
+    "ok": true,
+    "detail": "left out — comes from noreply@dependabot.com"
+   },
+   {
+    "name": "#3 Monitor is DOWN: checkout.example.com: kept",
+    "ok": true,
+    "detail": "kept — Uptime monitor: checkout.example.com down, HTTP 502 for 3 minutes"
+   },
+   {
+    "name": "#3 Monitor is DOWN: checkout.example.com: importance high",
+    "ok": true,
+    "detail": "said high"
+   },
+   {
+    "name": "#4 Your estimated charges exceeded $500: left out",
+    "ok": true,
+    "detail": "left out"
+   },
+   {
+    "name": "#5 Everything times out on your side: kept",
+    "ok": true,
+    "detail": "kept — Customer reports all API calls from their stores timing out since 9:40"
+   },
+   {
+    "name": "#6 Last chance: DevConf early-bird tickets: left out",
+    "ok": true,
+    "detail": "left out — has an unsubscribe link"
+   }
+  ],
+  "result": {
+   "messages": [
+    {
+     "n": 6,
+     "kept": false,
+     "importance": "low",
+     "answer": "",
+     "why": "has an unsubscribe link"
+    },
+    {
+     "n": 5,
+     "kept": true,
+     "importance": "high",
+     "answer": "person",
+     "why": "Customer reports all API calls from their stores timing out since 9:40"
+    },
+    {
+     "n": 4,
+     "kept": false,
+     "importance": "",
+     "answer": "",
+     "why": ""
+    },
+    {
+     "n": 3,
+     "kept": true,
+     "importance": "high",
+     "answer": "person",
+     "why": "Uptime monitor: checkout.example.com down, HTTP 502 for 3 minutes"
+    },
+    {
+     "n": 2,
+     "kept": false,
+     "importance": "low",
+     "answer": "",
+     "why": "comes from noreply@dependabot.com"
+    },
+    {
+     "n": 1,
+     "kept": true,
+     "importance": "high",
+     "answer": "person",
+     "why": "PagerDuty: api-prod p99 latency 4.2s for 10 minutes"
+    }
+   ]
+  },
+  "model": "laborer",
+  "score": null,
+  "kept": ""
+ },
+ "bare": {
+  "name": "bare",
+  "seconds": 8.8,
+  "cost": 0.00317915,
+  "tokens": 41525,
+  "error": "",
+  "cut": false,
+  "passed": true,
+  "check_tail": "",
+  "files": [],
+  "lines": 0,
+  "text": "{\"messages\": [{\"n\": 1, \"keep\": true, \"importance\": \"high\", \"answer\": \"person\", \"why\": \"production API p99 latency 4.2s, degraded now\"}, {\"n\": 2, \"keep\": false, \"importance\": \"low\", \"answer\": \"\", \"why\": \"routine dependency PR, not a service problem\"}, {\"n\": 3, \"keep\": true, \"importance\": \"high\", \"answer\": \"person\", \"why\": \"checkout is down with HTTP 502 for 3 minutes\"}, {\"n\": 4, \"keep\": false, \"importance\": \"low\", \"answer\": \"person\", \"why\": \"billing threshold, not a service outage; still needs a look\"}, {\"n\": 5, \"keep\": true, \"importance\": \"high\", \"answer\": \"person\", \"why\": \"customer reports all store API calls timing out since 9:40\"}, {\"n\": 6, \"keep\": false, \"importance\": \"low\", \"answer\": \"\", \"why\": \"conference marketing email\"}]}",
+  "how": [],
+  "orks": 0,
+  "where": "",
+  "steps": [],
+  "checks": [
+   {
+    "name": "#1 [TRIGGERED] api-prod p99 latency 4.2s > 1s: kept",
+    "ok": true,
+    "detail": "kept — production API p99 latency 4.2s, degraded now"
+   },
+   {
+    "name": "#1 [TRIGGERED] api-prod p99 latency 4.2s > 1s: importance high",
+    "ok": true,
+    "detail": "said high"
+   },
+   {
+    "name": "#2 Bump requests from 2.31 to 2.32: left out",
+    "ok": true,
+    "detail": "left out — routine dependency PR, not a service problem"
+   },
+   {
+    "name": "#3 Monitor is DOWN: checkout.example.com: kept",
+    "ok": true,
+    "detail": "kept — checkout is down with HTTP 502 for 3 minutes"
+   },
+   {
+    "name": "#3 Monitor is DOWN: checkout.example.com: importance high",
+    "ok": true,
+    "detail": "said high"
+   },
+   {
+    "name": "#4 Your estimated charges exceeded $500: left out",
+    "ok": true,
+    "detail": "left out — billing threshold, not a service outage; still needs a look"
+   },
+   {
+    "name": "#5 Everything times out on your side: kept",
+    "ok": true,
+    "detail": "kept — customer reports all store API calls timing out since 9:40"
+   },
+   {
+    "name": "#6 Last chance: DevConf early-bird tickets: left out",
+    "ok": true,
+    "detail": "left out — conference marketing email"
+   }
+  ],
+  "result": {
+   "messages": [
+    {
+     "n": 1,
+     "kept": true,
+     "importance": "high",
+     "answer": "person",
+     "why": "production API p99 latency 4.2s, degraded now"
+    },
+    {
+     "n": 2,
+     "kept": false,
+     "importance": "low",
+     "answer": "",
+     "why": "routine dependency PR, not a service problem"
+    },
+    {
+     "n": 3,
+     "kept": true,
+     "importance": "high",
+     "answer": "person",
+     "why": "checkout is down with HTTP 502 for 3 minutes"
+    },
+    {
+     "n": 4,
+     "kept": false,
+     "importance": "low",
+     "answer": "person",
+     "why": "billing threshold, not a service outage; still needs a look"
+    },
+    {
+     "n": 5,
+     "kept": true,
+     "importance": "high",
+     "answer": "person",
+     "why": "customer reports all store API calls timing out since 9:40"
+    },
+    {
+     "n": 6,
+     "kept": false,
+     "importance": "low",
+     "answer": "",
+     "why": "conference marketing email"
+    }
+   ]
+  },
+  "model": "laborer",
+  "score": null,
+  "kept": ""
+ },
+ "orders_changed": false,
+ "subject": "",
+ "series": "20261011-181700"
+}

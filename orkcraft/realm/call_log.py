@@ -190,3 +190,61 @@ def totals(lines: list[dict]) -> list[dict]:
             if isinstance(v, int):
                 row["usage"][k] = row["usage"].get(k, 0) + v
     return list(rows.values())
+
+
+# -- answers played back (docs/design/check.md §11): a check's calls answered again, no AI tool started ------------------
+
+_REPLAY: dict = {"calls": None, "source": ""}
+
+
+class Unrecorded(RuntimeError):
+    """A call the recording has no answer for: the building now asks the AI tool something it did not then."""
+
+
+@contextlib.contextmanager
+def replaying(folder: Path, side: str = "building"):
+    """In this block every call is answered from `folder` (a check's run `calls/`: `<side>-<n>-<who>.json`), the
+    recorded call of the same kind whose prompt is the closest; none is made to an AI tool."""
+    calls = []
+    for path in sorted(folder.glob(f"{side}-*.json")):
+        try:
+            got = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        line = got.get("line") or {}
+        calls.append({"mode": line.get("mode", ""), "purpose": line.get("purpose", ""), "prompt": got.get("prompt", ""),
+                      "stdout": got.get("stdout", ""), "stderr": got.get("stderr", ""), "code": int(line.get("code") or 0),
+                      "used": False})
+    with _LOCK:
+        outer = dict(_REPLAY)
+        _REPLAY.update(calls=calls, source=str(folder))
+    try:
+        yield calls
+    finally:
+        with _LOCK:
+            _REPLAY.update(outer)
+
+
+def answer(mode: str, prompt: str) -> tuple[int, str, str] | None:
+    """(exit code, stdout, stderr) of the recorded call that answers this one, when answers are played back; None
+    when they are not (the AI tool is called). Raises `Unrecorded` when the recording has none left of its kind."""
+    import difflib
+    with _LOCK:
+        calls = _REPLAY["calls"]
+        if calls is None:
+            return None
+        purpose = telemetry.purpose_now()
+        left = [c for c in calls if not c["used"] and c["mode"] == mode]
+        left = [c for c in left if c["purpose"] == purpose] or left
+        if not left:
+            raise Unrecorded(f"the recording has no answer left for a {mode} call ({purpose}): the building now asks "
+                             "the AI tool more often, or for something else, than when it was recorded")
+        best = max(left, key=lambda c: difflib.SequenceMatcher(None, c["prompt"][:3000], prompt[:3000]).quick_ratio())
+        best["used"] = True
+        return best["code"], best["stdout"], best["stderr"]
+
+
+def unanswered() -> int:
+    """Recorded calls not asked for in this block: the building asks less than it did."""
+    with _LOCK:
+        return sum(not c["used"] for c in _REPLAY["calls"] or [])

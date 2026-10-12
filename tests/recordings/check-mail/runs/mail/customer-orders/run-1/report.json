@@ -1,0 +1,164 @@
+{
+ "id": "20261011-181700-watchtower-customer-orders",
+ "type": "watchtower",
+ "case": "customer-orders",
+ "tool": "claude",
+ "tier": "laborer",
+ "at": "2026-10-11T18:17:00",
+ "building": {
+  "name": "building",
+  "seconds": 11.8,
+  "cost": 0.0032,
+  "tokens": 40209,
+  "error": "",
+  "cut": false,
+  "passed": true,
+  "check_tail": "",
+  "files": [],
+  "lines": 0,
+  "text": "",
+  "how": [
+   "#1: kept · high · answer person · Customer asks where order #10482 is; tracking stalled since Monday.",
+   "#2: left out · low · answer — · comes from promo@coin-moon.biz",
+   "#3: kept · high · answer person · Damaged lamp on #10511; wants refund or replacement.",
+   "#4: left out · low · answer — · has an unsubscribe link"
+  ],
+  "orks": 0,
+  "where": "",
+  "steps": [],
+  "checks": [
+   {
+    "name": "#1 Where is my order #10482?: kept",
+    "ok": true,
+    "detail": "kept — Customer asks where order #10482 is; tracking stalled since Monday."
+   },
+   {
+    "name": "#2 Turn $100 into $10,000 this week: left out",
+    "ok": true,
+    "detail": "left out — comes from promo@coin-moon.biz"
+   },
+   {
+    "name": "#3 Refund for a damaged lamp: kept",
+    "ok": true,
+    "detail": "kept — Damaged lamp on #10511; wants refund or replacement."
+   },
+   {
+    "name": "#4 10 shelf styles for autumn: left out",
+    "ok": true,
+    "detail": "left out — has an unsubscribe link"
+   }
+  ],
+  "result": {
+   "messages": [
+    {
+     "n": 4,
+     "kept": false,
+     "importance": "low",
+     "answer": "",
+     "why": "has an unsubscribe link"
+    },
+    {
+     "n": 3,
+     "kept": true,
+     "importance": "high",
+     "answer": "person",
+     "why": "Damaged lamp on #10511; wants refund or replacement."
+    },
+    {
+     "n": 2,
+     "kept": false,
+     "importance": "low",
+     "answer": "",
+     "why": "comes from promo@coin-moon.biz"
+    },
+    {
+     "n": 1,
+     "kept": true,
+     "importance": "high",
+     "answer": "person",
+     "why": "Customer asks where order #10482 is; tracking stalled since Monday."
+    }
+   ]
+  },
+  "model": "laborer",
+  "score": null,
+  "kept": ""
+ },
+ "bare": {
+  "name": "bare",
+  "seconds": 8.0,
+  "cost": 0.0030206200000000008,
+  "tokens": 41080,
+  "error": "",
+  "cut": false,
+  "passed": true,
+  "check_tail": "",
+  "files": [],
+  "lines": 0,
+  "text": "{\"messages\": [{\"n\": 1, \"keep\": true, \"importance\": \"high\", \"answer\": \"person\", \"why\": \"stalled delivery two weeks on; may need carrier trace or reship\"}, {\"n\": 2, \"keep\": false, \"importance\": \"low\", \"answer\": \"\", \"why\": \"trading-bot spam with guaranteed returns\"}, {\"n\": 3, \"keep\": true, \"importance\": \"high\", \"answer\": \"person\", \"why\": \"damaged item; refund or replacement is a money decision\"}, {\"n\": 4, \"keep\": false, \"importance\": \"low\", \"answer\": \"\", \"why\": \"marketing newsletter, not an order question\"}]}",
+  "how": [],
+  "orks": 0,
+  "where": "",
+  "steps": [],
+  "checks": [
+   {
+    "name": "#1 Where is my order #10482?: kept",
+    "ok": true,
+    "detail": "kept — stalled delivery two weeks on; may need carrier trace or reship"
+   },
+   {
+    "name": "#2 Turn $100 into $10,000 this week: left out",
+    "ok": true,
+    "detail": "left out — trading-bot spam with guaranteed returns"
+   },
+   {
+    "name": "#3 Refund for a damaged lamp: kept",
+    "ok": true,
+    "detail": "kept — damaged item; refund or replacement is a money decision"
+   },
+   {
+    "name": "#4 10 shelf styles for autumn: left out",
+    "ok": true,
+    "detail": "left out — marketing newsletter, not an order question"
+   }
+  ],
+  "result": {
+   "messages": [
+    {
+     "n": 1,
+     "kept": true,
+     "importance": "high",
+     "answer": "person",
+     "why": "stalled delivery two weeks on; may need carrier trace or reship"
+    },
+    {
+     "n": 2,
+     "kept": false,
+     "importance": "low",
+     "answer": "",
+     "why": "trading-bot spam with guaranteed returns"
+    },
+    {
+     "n": 3,
+     "kept": true,
+     "importance": "high",
+     "answer": "person",
+     "why": "damaged item; refund or replacement is a money decision"
+    },
+    {
+     "n": 4,
+     "kept": false,
+     "importance": "low",
+     "answer": "",
+     "why": "marketing newsletter, not an order question"
+    }
+   ]
+  },
+  "model": "laborer",
+  "score": null,
+  "kept": ""
+ },
+ "orders_changed": false,
+ "subject": "",
+ "series": "20261011-181700"
+}

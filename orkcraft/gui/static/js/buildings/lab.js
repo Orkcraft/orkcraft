@@ -122,7 +122,9 @@ function Check({ id, c }) {
       ${on && html`<span class="gui-bench__spin" aria-hidden="true"></span>`}${say("Check the main jobs")}</h4>
       <span class="gui-bench__acts">
         ${on ? html`<button class="ok-btn" onClick=${() => act(id, "check_stop")}>${say("Stop")}</button>`
-          : html`<button class="ok-btn primary" onClick=${() => act(id, "check_run")}>${say("Run the check")}</button>`}
+          : html`<button class="ok-btn primary" onClick=${() => act(id, "check_run")}>${say("Run the check")}</button>
+            ${last.stamp && html`<button class="ok-btn" onClick=${() => act(id, "check_run", { replay: true })}
+              title=${say("The last check's runs again, on the answers the AI tool gave then: free, nothing is asked. It says whether each comes out as it did, so a change in the code that breaks a building shows at once.")}>${say("Play it back (free)")}</button>`}`}
         ${last.zip && html`<a class="ok-btn" href=${`/api/check/latest?t=${encodeURIComponent(TOKEN)}`} download
           title=${say("Every run and every model call it made, with a README for the agent that reads it")}>${say("Download (.zip)")}</a>`}</span></div>
     <p class="ok-font-status ok-tone-muted">${say("Mail sorted, tasks from mail, the Review board and pictures redrawn, each 3 times against the AI tool alone (agy, its cheapest model), then a quiet town. It spends: each run stops at $2.")}</p>
