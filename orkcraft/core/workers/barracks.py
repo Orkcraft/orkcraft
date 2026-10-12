@@ -153,6 +153,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         super().__init__(town, building_id)
         self.bk: bk.Barracks | None = None
         self._cancels: dict[str, threading.Event] = {}
+        self._by_hand: set[str] = set()      # orks whose run the person took over in a terminal (take_over)
         self._pumped = False
         self._merge_lock = threading.Lock()     # one part at a time is merged into its parent's branch
         self._prs_at = time.monotonic() - PR_CHECK_S + PR_FIRST_S
@@ -450,9 +451,40 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         threading.Thread(target=self._work, args=args, daemon=True,
                          name=f"pool-{self.building_id}-{orc.name}").start()
 
+    def take_over(self, orc_name: str) -> bool:
+        """The person takes a working ork's run over: its headless run stops where it is (what it wrote to the
+        worktree stays) and the person goes on in a terminal there. False when it is not at work on a task."""
+        orc = self.state.orc(orc_name)
+        task = self.state.task(orc.task) if orc is not None and orc.task else None
+        cancel = self._cancels.get(orc_name)
+        if orc is None or task is None or task.status != "working" or cancel is None or cancel.is_set():
+            return orc_name in self._by_hand
+        self._by_hand.add(orc_name)
+        cancel.set()
+        self.changed()
+        return True
+
+    def taken_over(self, orc_name: str) -> bool:
+        return orc_name in self._by_hand
+
+    def hand_back(self, orc_name: str) -> bool:
+        """The person is done in the terminal: the task goes to the steward's review as it stands in the worktree."""
+        orc = self.state.orc(orc_name)
+        task = self.state.task(orc.task) if orc is not None and orc.task else None
+        if orc is None or task is None or orc_name not in self._by_hand:
+            return False
+        self._by_hand.discard(orc_name)
+        cancel = threading.Event()
+        self._cancels[orc_name] = cancel
+        workdir = Path(orc.worktree) if orc.worktree else self.code_root
+        threading.Thread(target=self._work, args=(task, orc, workdir, "", "", cancel, True), daemon=True,
+                         name=f"pool-{self.building_id}-{orc.name}-back").start()
+        return True
+
     def _work(self, task: bk.PoolTask, orc: bk.PoolOrc, workdir: Path, prompt: str, resume: str,
-              cancel: threading.Event) -> None:
-        """In the orc's thread: the branch, the orc's run, the steward's answers and its review."""
+              cancel: threading.Event, by_hand: bool = False) -> None:
+        """In the orc's thread: the branch, the orc's run, the steward's answers and its review. `by_hand`: the
+        person did the run in a terminal (take_over): only the review is left."""
         out = RunOutcome()
         runner = type(self).work_runner or (self._sandbox_work() if self.simulated else jobs.run_work)
         if runner is jobs.run_work and self.rules.level >= autonomy.FREE:
@@ -473,10 +505,13 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         where, project = timeline.for_building(self.town, self.building_id, workdir)   # no worktree: snapshots
         timeline.take(self.town, where, project, f"before {orc.name}: {task.title}")
         try:
-            if git is not None:
+            if git is not None and not by_hand:
                 git.prepare(workdir, task.branch, task.base)
-            run(prompt, resume)
-            for _ in range(bk.MAX_STEWARD_ANSWERS + 1):
+            if by_hand:
+                out.text = "The work was done by hand in the ork's terminal; review what is in the worktree."
+            else:
+                run(prompt, resume)
+            for _ in range(0 if by_hand else bk.MAX_STEWARD_ANSWERS + 1):
                 question = bk.question_of(out.text)
                 if not question:
                     break
@@ -497,6 +532,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
                 self._call(self._mark, task.id, "reviewing")
                 self._review(task, workdir, git, cancel, out)
         except InterruptedError:
+            if orc.name in self._by_hand:      # taken over: the person works on in a terminal; hand_back() goes on
+                return
             out.error = "stopped"
         except Exception as e:  # one orc's failure must not take the barracks down
             out.error = str(e)[:300]

@@ -331,12 +331,21 @@ function Tasks({ id, data }) {
 function OrkTab({ id, o }) {
   const s = sessionOf(o.terminal);
   const open = () => act(id, "terminal", { ork: o.name }).catch(() => {});
-  if (s && s.running) return html`<${Terminal} key=${s.key} sessionKey=${s.key} />`;   // an ended one takes no keys: reopen it
+  const take = () => act(id, "take_over", { ork: o.name }).catch(() => {});
+  const back = () => act(id, "hand_back", { ork: o.name }).catch(() => {});
+  const handBack = o.by_hand && html`<div class="gui-section"><button class="ok-btn primary" onClick=${back}
+      title=${say("Close the terminal: the steward reviews what is in its worktree")}>${say("Hand back to review")}</button>
+    <span class="ok-tone-muted"> ${say("You took this over: type to it here.")}</span></div>`;
+  if (s && s.running) return html`${handBack}<${Terminal} key=${s.key} sessionKey=${s.key} />`;   // an ended one takes no keys: reopen it
   return html`<div class="gui-section">
     <p class="ok-tone-muted">${s ? say("Its session has ended") + (s.exit_code ? ` · ${s.exit_code}` : "")
-      : o.status === "working" ? say("It is working now: its terminal opens when it is free.") : say("No terminal open.")}
+      : o.status === "working" ? say("It is working now: take it over to type to it.") : say("No terminal open.")}
+      ${o.by_hand ? html` <button class="ok-btn" onClick=${open}>${say("Reopen its terminal")}</button>` : null}
+      ${o.status === "working" && !o.by_hand && html` <button class="ok-btn" onClick=${take}
+        title=${say("Stop its run where it is and go on in a terminal on its worktree")}>${say("Take over")}</button>`}
       ${o.status !== "working" && html` <button class="ok-btn" onClick=${open}
         title=${say("Its last session, on its worktree")}>${o.session ? say("Resume its session") : say("Open its terminal")}</button>`}</p>
+    ${handBack}
     ${o.recent.length > 0 && html`<h3 class="ok-font-heading">${say("Its recent work")}</h3>
       <ul class="gui-rows">${o.recent.map((r, i) => html`<li key=${i}>${r}</li>`)}</ul>`}
   </div>`;
