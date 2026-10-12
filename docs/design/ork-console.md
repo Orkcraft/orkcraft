@@ -322,6 +322,10 @@ Grunt · any work    Zz           —
 
 ## 15. Work keeps data and flow; two Infos (P1)
 
+**Later the same day (2026-10-12): Work goes altogether** ([lighter-buildings.md](lighter-buildings.md) §2). What this
+section says Work keeps moves to the building's card (its large size in place); the rest of the section, the test
+and the two Infos, stands.
+
 **The test for any element:** take every ork out of the building. Does the element still make sense? Yes: it is the
 building's (Work or the building's Info). No: it is the ork's (the console or the ork's Info).
 
