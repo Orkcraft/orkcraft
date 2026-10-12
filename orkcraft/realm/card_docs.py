@@ -9,7 +9,8 @@ hidden. A type with none keeps its card as its code draws it.
 The documents are this machine's look, like its pictures: one file per type under design/tokens.py `assets_dir`,
 `cards/<type>.json`. The UX bench writes them (one checked model call from the person's words), the hut applies them.
 
-    card_docs.load("barracks")            → the document, or None
+    card_docs.load("barracks")            → this machine's document, or None
+    card_docs.current("barracks")         → this machine's, else the one Orkcraft ships (design-system/cards/), or None
     card_docs.ask(type, title, current, words, size, part, runner) → (document, problems, cost)
 """
 from __future__ import annotations
@@ -78,7 +79,21 @@ _READ: dict[Path, tuple[float, dict | None]] = {}     # a file → (its mtime, w
 
 
 def load(type_id: str) -> dict | None:
-    p = path(type_id)
+    """This machine's card document of the type, or None."""
+    return _read(path(type_id), type_id)
+
+
+def shipped(type_id: str) -> dict | None:
+    """The one Orkcraft ships (design-system/cards/<type>.json, sent from a UX bench), or None."""
+    return _read(tokens.SYSTEM / "cards" / f"{type_id}.json", type_id)
+
+
+def current(type_id: str) -> dict | None:
+    """The type's card as the huts lay it out: this machine's, else the shipped one, else None (as its code draws)."""
+    return load(type_id) or shipped(type_id)
+
+
+def _read(p: Path, type_id: str) -> dict | None:
     try:
         mtime = p.stat().st_mtime
     except OSError:

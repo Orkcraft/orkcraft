@@ -471,10 +471,11 @@ function Virtual({ id, d, on }) {
         onClick=${() => act(id, "save_changes").catch(() => {})}>${say("Save changes")}</button>`}
       <span class="ok-font-status ok-tone-muted">${say(data.length ? "Settings and prompts become the buildings' own, a checkpoint each (undo takes them back)." : "")}</span>
     </div>
-    ${code && html`<div class="gui-bench__row">
-      ${d.pr ? html`<a class="gui-link ok-font-status" href=${d.pr} target="_blank" rel="noopener">${say("Its pull request")}</a>`
-        : html`<button class="ok-btn" disabled=${on || d.busy_what === "pr"} onClick=${() => setPr(true)}>${say(d.busy_what === "pr" ? "Sending…" : "Send to Orkcraft as a pull request…")}</button>`}
-      <span class="ok-font-status ok-tone-muted">${say("Code changes reach you only through a pull request and the update that carries it.")}</span></div>`}
+    <div class="gui-bench__row">
+      ${d.pr && html`<a class="gui-link ok-font-status" href=${d.pr} target="_blank" rel="noopener">${say("Its pull request")}</a>`}
+      <button class="ok-btn" disabled=${on || d.busy_what === "pr"} onClick=${() => setPr(true)}>${say(d.busy_what === "pr" ? "Sending…" : "Send to Orkcraft as a pull request…")}</button>
+      <span class="ok-font-status ok-tone-muted">${say(code ? "Code reaches everyone only through a pull request and the update that carries it; settings and prompts go with it as their type's defaults."
+        : "Settings and prompts go as the defaults a new building of their type starts with.")}</span></div>
     ${pr && html`<${PullRequest} id=${id} onClose=${() => setPr(false)} />`}
   </section>`;
 }

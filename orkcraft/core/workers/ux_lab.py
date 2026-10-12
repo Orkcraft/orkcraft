@@ -226,12 +226,12 @@ class UxLabWorker(Worker):
                 self.own(t).unlink(missing_ok=True)
             mascots.own_grid(path).unlink(missing_ok=True)
         else:
-            g = self.grid(path)
+            g, why = self.grid(path), self.why(path)
             for t, scale in files.items():
                 own = self.own(t)
                 own.parent.mkdir(parents=True, exist_ok=True)
                 own.write_bytes(mascots.png(g, scale))
-            mascots.own_grid(path).write_text(json.dumps({"grid": g}, indent=1), encoding="utf-8")
+            mascots.own_grid(path).write_text(json.dumps({"grid": g, "why": why}, indent=1), encoding="utf-8")
         self.drop(path)
         return True
 
@@ -300,7 +300,7 @@ class UxLabWorker(Worker):
 
     def card_now(self) -> dict:
         from orkcraft.realm import card_docs
-        return card_docs.load(self.target) or card_docs.default(self.target)
+        return card_docs.current(self.target) or card_docs.default(self.target)
 
     def card_ask(self, words: str, size: str = "", part: str = "", runner=None, after=None) -> None:
         """Its cards laid out again from the person's words (one checked call): a draft until Apply."""
@@ -332,7 +332,8 @@ class UxLabWorker(Worker):
 
     def card_reset(self) -> None:
         from orkcraft.realm import card_docs
-        self.card = {"busy": False, "doc": card_docs.default(self.target), "error": "", "shipped": True}
+        self.card = {"busy": False, "doc": card_docs.shipped(self.target) or card_docs.default(self.target), "error": "",
+                     "shipped": True}
         self.changed()
 
     def card_apply(self) -> list[str]:

@@ -115,3 +115,33 @@ def test_the_evidence_decides_whether_it_may_go():
                        ["orkcraft/core/workers/barracks.py"], ["Agent pool: Shorter orders"])
     assert "**2 of 2**" in body and "| Fix one failing test | Tiny shop | 2 | +0% | -20% | +0.5 |" in body
     assert "Fix bug" not in body and "Shorter orders" in body
+
+
+def test_a_picture_goes_as_bytes_and_is_refused_when_main_moved_it():
+    """The UX bench sends pictures (docs/design/improve-buildings.md §6.5): bytes, base64 on the wire, no merge."""
+    acct = {"login": "orkfan", "token": "gho_x"}
+    old, new = b"\x89PNG old", b"\x89PNG new"
+
+    def gh(upstream: bytes):
+        return FakeGithub({
+            ("GET", "/user/installations"): (200, {"installations": [{"account": {"login": "orkfan"}}]}),
+            ("GET", "/repos/orkfan/orkcraft"): (200, {}),
+            ("GET", "/repos/orkcraft/orkcraft/git/ref/heads/main"): (200, {"object": {"sha": "h"}}),
+            ("GET", "/repos/orkcraft/orkcraft/git/commits/h"): (200, {"tree": {"sha": "t"}}),
+            ("GET", "/repos/orkcraft/orkcraft/contents/design-system/sprites/x.png"):
+                (200, {"content": base64.b64encode(upstream).decode()}),
+            ("GET", "/repos/orkcraft/orkcraft/contents/design-system/sprites/new.png"): (404, {}),
+            ("POST", "/repos/orkfan/orkcraft/git/blobs"): (201, {"sha": "b"}),
+            ("POST", "/repos/orkfan/orkcraft/git/trees"): (201, {"sha": "t2"}),
+            ("POST", "/repos/orkfan/orkcraft/git/commits"): (201, {"sha": "c2"}),
+            ("POST", "/repos/orkfan/orkcraft/git/refs"): (201, {}),
+            ("POST", "/repos/orkcraft/orkcraft/pulls"): (201, {"number": 8, "html_url": "https://x/pull/8"}),
+            ("POST", "/repos/orkcraft/orkcraft/issues/8/labels"): (200, {}),
+        })
+    changes = {"design-system/sprites/x.png": (old, new), "design-system/sprites/new.png": (b"", new)}
+    fine = gh(old)
+    assert github_app.send(changes, "UX bench: 2 pictures", "b", "improve/ux-1", acct, opener=fine).endswith("/pull/8")
+    blobs = [b for m, p, b in fine.seen if p.endswith("/git/blobs")]
+    assert len(blobs) == 2 and all(b["encoding"] == "base64" and base64.b64decode(b["content"]) == new for b in blobs)
+    with pytest.raises(github_app.GithubError, match="changed in Orkcraft's main"):
+        github_app.send(changes, "t", "b", "br", acct, opener=gh(b"\x89PNG theirs"))
