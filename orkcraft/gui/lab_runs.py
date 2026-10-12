@@ -388,7 +388,9 @@ class LabRuns:
         roads = [f"{r['source']} → {r['target']} ({r['event']})" for r in spec.get("roads") or []]
         results = w.results_of(subject["id"])
         lines = [lab_cases.result_line(c, results[c["id"]]) for c in w.cases_of(subject["id"]) if c["id"] in results]
-        prompt = lab_cases.propose_prompt(w.state["goal"], spec["about"], files, roads, lines)
+        prompt = lab_cases.propose_prompt(w.state["goal"] or lab_cases.DEFAULT_GOAL, spec["about"], files, roads, lines,
+                                          lab_export.findings(self.engine.root, w, subject))
+
         def done(text: str) -> None:
             w.set_proposals(subject["id"], lab_cases.parse_proposals(text))
             if after is not None:

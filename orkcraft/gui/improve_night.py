@@ -30,6 +30,7 @@ from pathlib import Path
 
 from orkcraft import autonomy
 from orkcraft.core.workers.lab import CODE
+from orkcraft.gui import lab_export
 from orkcraft.realm import card_docs, catalog, fastpath, lab_cases, lab_envs
 
 LOG = Path(".orkcraft") / "council" / "improve.jsonl"
@@ -98,7 +99,7 @@ class ImproveNight:
             return
         self.checked = now
         engine = getattr(self.host, "bench", None)
-        for b in self.town.scroll.buildings:
+        for b in self._in_order(engine):
             if b.demolished or b.id in self.done:
                 continue
             kind = catalog.type_of(self.town.spec_of(b.id)).id
@@ -111,6 +112,20 @@ class ImproveNight:
             if self.busy:
                 return
 
+    def _in_order(self, engine) -> list:
+        """The buildings, the Test benches with the most wrong first: what their runs, the night check and the 👎 found
+        (gui/lab_export.py `trouble`) — so the night works on what was found, not at random."""
+        def wrong(b) -> int:
+            if engine is None or catalog.type_of(self.town.spec_of(b.id)).id != "lab":
+                return 0
+            w = self.town.worker(b.id)
+            s = w.subject() if w is not None else None
+            try:
+                return lab_export.trouble(self.town.repo_root, w, s) if s else 0
+            except (OSError, ValueError, KeyError):
+                return 0
+        return sorted(self.town.scroll.buildings, key=lambda b: -wrong(b))
+
     # -- the Mechanic -------------------------------------------------------------------------------------------------
 
     def _mechanic(self, w, lab) -> None:
@@ -118,7 +133,7 @@ class ImproveNight:
         s = w.subject()
         cases = w.cases_of(s["id"]) if s else []
         est = lab_envs.estimate(cases, w.results_of(s["id"]), len(cases)) if s else {}
-        if not s or not cases or not w.state["goal"].strip() or not est:
+        if not s or not cases or not est:
             self._finish(bid)                # nothing to measure, or never run by day: the night cannot price it
             return
         need = est["cost"] + 2 * ASK_USD
@@ -127,7 +142,7 @@ class ImproveNight:
             self._say("Mechanic", f"{w.title}: left for another night — its cases cost about ${est['cost']:.2f}, "
                                   f"more than the night has left")
             return
-        metric = lab_cases.metric_of(w.state["goal"])
+        metric = lab_cases.metric_of(w.state["goal"] or lab_cases.DEFAULT_GOAL)
         before = lab_envs.summary_of(cases, w.results_of(s["id"]))
         tried = set(w.state.setdefault("night_tried", []))
         self.busy = bid

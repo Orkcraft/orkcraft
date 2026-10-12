@@ -89,6 +89,14 @@ def run(root: Path, args: argparse.Namespace, tier_words: dict[str, str]) -> int
     if plain:
         text = text.replace("\n\n**GREEN**", f"\n\n## In plain words\n\n{plain}\n\n**GREEN**") \
             .replace("\n\n**RED**", f"\n\n## In plain words\n\n{plain}\n\n**RED**")
+    from orkcraft.realm import check_history
+    check_history.add(root, series, json.loads(json.dumps(data, default=str)))
+    moved = check_history.since(root, series)
+    data["since"] = moved
+    if moved:
+        lines = "\n".join(f"- {'▼' if m['dir'] == 'worse' else '▲'} {m['case']}: {m['said']}" for m in moved)
+        text = text.replace("\n\n## In plain words", f"\n\n## Since the last check\n\n{lines}\n\n## In plain words", 1) \
+            if "## In plain words" in text else text + f"\n## Since the last check\n\n{lines}\n"
     (folder / "report.md").write_text(text, encoding="utf-8")
     (folder / "results.json").write_text(json.dumps(data, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
     (folder / "README.md").write_text(readme(series, green, text), encoding="utf-8")

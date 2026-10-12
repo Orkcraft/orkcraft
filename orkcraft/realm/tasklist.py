@@ -98,6 +98,31 @@ def title_prompt(text: str) -> str:
             "Answer with the title only: no quotes, no full stop.\n\n" + text[:4000])
 
 
+def titles_prompt(texts: list[str]) -> str:
+    """Several cards named in one call (cards written at once); one card is asked as `title_prompt`."""
+    if len(texts) == 1:
+        return title_prompt(texts[0])
+    cards = "\n\n".join(f"[{n}]\n{t[:4000]}" for n, t in enumerate(texts, 1))
+    return (f"Name each of these {len(texts)} tasks or notes in 2 to 4 words, each in the language it is written in. "
+            "Answer with one line per card, its number then its title, as `1. Title`: no quotes, no full stop.\n\n"
+            + cards)
+
+
+_NUMBERED = re.compile(r"^\[?(\d+)[\].):*]*\s+(.+)$")
+
+
+def parse_titles(answer: str, n: int) -> list[str]:
+    """`titles_prompt`'s answer: a title for each of `n` cards, in order ("" for one it did not name)."""
+    if n == 1:
+        return [parse_title(answer)]
+    out = [""] * n
+    for line in answer.splitlines():
+        m = _NUMBERED.match(line.strip().strip("*`"))
+        if m and 1 <= int(m.group(1)) <= n and not out[int(m.group(1)) - 1]:
+            out[int(m.group(1)) - 1] = parse_title(m.group(2))
+    return out
+
+
 def parse_title(answer: str) -> str:
     """The model's title: its first line, quotes and a full stop aside, at most a few words; "" when it said none."""
     line = next((ln for ln in answer.splitlines() if ln.strip()), "")
@@ -202,7 +227,12 @@ class TaskList:
         cards: list[Task] = []
         ids: set[str] = set()
         last: Task | None = None
+        blank = 0                                   # empty lines inside a card's text (written as "": _write_file)
         for line in lines:
+            if not line.strip():
+                blank += 1
+                continue
+            gap, blank = "\n" * blank, 0
             m = _HEAD.match(line)
             if m:
                 lid = lane_of(m.group(1))
@@ -213,7 +243,7 @@ class TaskList:
                 last = None
                 continue
             if lane is None:
-                head.append(line)
+                head += [""] * len(gap) + [line]
                 continue
             m = _ITEM.match(line)
             if m:
@@ -228,8 +258,8 @@ class TaskList:
                 continue
             b = _BODY.match(line)
             if b and last is not None:
-                last.body = f"{last.body}\n{b.group(1)}" if last.body else b.group(1)
-            elif line.strip():
+                last.body = f"{last.body}\n{gap}{b.group(1)}" if last.body else b.group(1)
+            else:
                 last = None                         # free text between cards ends the card above
         return head, lanes, cards
 

@@ -39,6 +39,7 @@ def detail(w) -> dict:
     if s is None:
         return out
     metric = lab_cases.metric_of(w.state["goal"])
+    w.take_regressions(s)                                            # a 👎 on what it tests is a case of it now
     job = engine.lab.job(w) if engine is not None else None
     out.update({
         "metric": metric, "entries": w.entries(s), "cases": w.cases_of(s["id"]), "results": w.results_of(s["id"]),
@@ -199,6 +200,14 @@ def _check_run(w, args: dict) -> bool:
     return True
 
 
+def _check_nightly(w, args: dict) -> bool:
+    """The Mechanic's night check on or off (the Council's `check_nightly`, gui/night_check.py)."""
+    from orkcraft.realm import fastpath
+    fastpath.save_settings(w.repo_root, {"check_nightly": bool(args.get("on"))})
+    w.changed()
+    return True
+
+
 def _check_stop(w, args: dict) -> bool:
     _engine(w).check.stop()
     return True
@@ -347,6 +356,6 @@ def _candidates(w, args: dict) -> list[dict]:
     return out
 
 
-ACTS = {"check_run": _check_run, "check_stop": _check_stop, "export": _export, "recommend": _recommend, "cassette_reset": _cassette_reset, "pr_preview": _pr_preview, "pr_send": _pr_send, "try": _try, "take_back": _take_back, "save_changes": _save_changes, "env_add": _env_add, "set_add": _set_add, "set_run": _set_run, "set_remove": _set_remove, "setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
+ACTS = {"check_nightly": _check_nightly, "check_run": _check_run, "check_stop": _check_stop, "export": _export, "recommend": _recommend, "cassette_reset": _cassette_reset, "pr_preview": _pr_preview, "pr_send": _pr_send, "try": _try, "take_back": _take_back, "save_changes": _save_changes, "env_add": _env_add, "set_add": _set_add, "set_run": _set_run, "set_remove": _set_remove, "setup": _setup, "candidates": _candidates, "refresh": _refresh, "pick": _pick, "goal": _goal, "settings": _settings, "generate": _generate, "add": _add, "remove": _remove,
         "run": _run, "run_all": lambda w, a: _run(w, a, every=True), "stop": _stop, "propose": _propose,
         "tasks": _tasks, "lab.run": _run_first}

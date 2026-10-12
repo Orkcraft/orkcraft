@@ -30,10 +30,12 @@ is `(harness, prompt, model) → (text, cost)`; tests pass a fake one.
 """
 from __future__ import annotations
 
+import contextvars
 import json
 import re
 import threading
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -41,6 +43,8 @@ from typing import Callable
 from orkcraft import scroll as ts
 from orkcraft.realm import roads, tiers
 from orkcraft.realm.jobs import now_iso
+from orkcraft.realm.team_exits import (ASK, BACK, OUT_KEEP, PRESETS, TEMPLATES, Exit, Preset, exit_id,  # noqa: F401
+                                       exits_of, parse_exit, parse_route, parse_task, parse_when, routes_of)
 
 DEFAULT_MEMBERS = ("Product manager:main", "Architect:main")
 DEFAULT_CYCLES = 3
@@ -48,9 +52,6 @@ DEFAULT_BUDGET = 2.0
 INLINE_CHARS = 24_000          # per text put into an agy prompt (it cannot read our files)
 _VERDICT = re.compile(r"^[\s*#_>`-]*(APPROVE|CHANGES|VETO)\b[\s*_`]*:?\s*", re.I)
 _DECISION = re.compile(r"^[\s*#_>`-]*DECISION\b[\s*_`]*:?\s*(approve|rework|ask)\b[\s*_`.:-]*", re.I)
-_ROUTE = re.compile(r"^[\s*#_>`-]*(?:ROUTE|EXIT)\b[\s*_`]*:?[\s*_`]*([A-Za-z0-9_-]{1,32})[\s*_`.]*$", re.I | re.M)
-_TASK = re.compile(r"^[\s*#_>`-]*TASK\b[\s*_`]*:[\s*_`]*(.+?)[\s*_`]*$", re.I | re.M)
-_WHEN = re.compile(r"^[\s*#_>`-]*WHEN\b[\s*_`]*:[\s*_`]*(.+?)[\s*_`.]*$", re.I | re.M)
 _ROLE = re.compile(r"^You are (.+?) in a clan")
 
 Runner = Callable[[str, str, str], tuple[str, float | None]]
@@ -245,105 +246,6 @@ def review_prompt(d: Discussion, me: Member, team: list[Member], brief_path: str
     return "\n\n".join(p for p in parts if p)
 
 
-@dataclass(frozen=True)
-class Exit:
-    """Where a judged document can go (docs/design/review-board.md §2): a name, the rule the steward reads, and
-    `id`, the route a road out waits for. *Back to the author* and *Ask me* are built in, not exits here."""
-    id: str
-    name: str
-    when: str = ""
-
-
-BACK, ASK = "back", "ask"                     # the built-in exits' ids
-TEMPLATES = {                                 # the setup's one-click starts
-    "decision": ("Next: it may go on as it is",),
-    "who": ("To an agent: an agent can do it", "To a person: it needs a person's judgment or a reply"),
-}
-OUT_KEEP = 20_000                             # what went out, as the discussion keeps it
-
-
-@dataclass(frozen=True)
-class Preset:
-    """A board set up in one click: its purpose, its members (role, what it checks, tier) and its rounds."""
-    id: str
-    title: str
-    purpose: str
-    members: tuple[tuple[str, str, str], ...]
-    max_cycles: int
-    wiki: bool = False                         # its members check against the town's Wiki (config `notes`)
-
-
-# A preset is a Review board set up as one, not a building type of its own (docs/design/barracks-flows.md §6.2).
-PRESETS: dict[str, Preset] = {p.id: p for p in (
-    Preset("reply_check", "Reply check",
-           "A reply an ork drafted, before it goes out: its tone and its facts. Approve lets it go on to the Review "
-           "gate; rework sends it back to the ork that wrote it, with what to change.",
-           (("Tone", "Polite and plain, in the language of the message. No promise of a date, a price, money or a "
-                     "commitment the person did not make; nothing private about other people.", "laborer"),
-            ("Facts", "Every claim in the draft is found in the Wiki's notes lent with it or in the message and its "
-                      "thread; a claim found nowhere is marked, and the draft says it will be checked.", "laborer")),
-           max_cycles=2, wiki=True),
-)}
-
-
-def exit_id(name: str) -> str:
-    return re.sub(r"[^a-z0-9_-]+", "-", str(name).strip().lower()).strip("-")[:32]
-
-
-def parse_exit(entry: str) -> Exit | None:
-    """`To development: ready to build, no open risk` → Exit("to-development", "To development", "ready to …")."""
-    name, _, when = str(entry).partition(":")
-    name, when = " ".join(name.split())[:60], " ".join(when.split())[:300]
-    eid = exit_id(name)
-    return Exit(eid, name, when) if eid and eid not in (BACK, ASK) else None
-
-
-def exits_of(config: dict) -> list[Exit]:
-    """A board's exits: its `exits`, else its `routes` of old (no rule), else none (it only approves)."""
-    out: list[Exit] = []
-    raw = config.get("exits")
-    for e in (parse_exit(x) for x in raw) if isinstance(raw, list) and raw else (Exit(r, r) for r in routes_of(config)):
-        if e is not None and all(x.id != e.id for x in out):
-            out.append(e)
-    return out
-
-
-def routes_of(config: dict) -> list[str]:
-    """The routes a clan that routes chooses from (`routes`), as road filters spell them."""
-    out = []
-    for r in config.get("routes") or []:
-        r = re.sub(r"[^a-z0-9_-]+", "-", str(r).strip().lower()).strip("-")[:32]
-        if r and r not in out:
-            out.append(r)
-    return out
-
-
-def parse_route(text: str, routes: list[str] | tuple[str, ...]) -> tuple[str, str]:
-    """(the route the steward named — one of `routes` — or "", its answer without the ROUTE line)."""
-    m = _ROUTE.search(text or "")
-    if not m:
-        return "", text
-    rest = (text[:m.start()] + text[m.end():]).strip()
-    route = m.group(1).lower()
-    return (route if route in routes else ""), rest
-
-
-def parse_task(text: str) -> tuple[str, str]:
-    """(the task the steward named in one line, or "", its answer without the TASK line)."""
-    m = _TASK.search(text or "")
-    if not m:
-        return "", text
-    return " ".join(m.group(1).split())[:120], (text[:m.start()] + text[m.end():]).strip()
-
-
-def parse_when(text: str) -> tuple[str, str]:
-    """(the time the steward named — `tomorrow 11:00, 30 min` — or "", its answer without the WHEN line)."""
-    m = _WHEN.search(text or "")
-    if not m:
-        return "", text
-    return " ".join(m.group(1).split())[:60], (text[:m.start()] + text[m.end():]).strip()
-
-
 def routed_text(d: Discussion) -> str:
     """What a routed document carries on: the document, after a `When:` line when the steward named a time."""
     return f"When: {d.when}\n\n{d.doc}" if d.when else d.doc
@@ -413,7 +315,7 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         cancel: threading.Event | None = None, brief_of: BriefOf | None = None,
         routes: list[str] | tuple[str, ...] = (), exits: list[Exit] | tuple[Exit, ...] = (),
         sessions: Callable[[str], bool] | None = None,
-        on_call: Callable[[Discussion], None] | None = None) -> Discussion:
+        on_call: Callable[[Discussion], None] | None = None, together: bool = False) -> Discussion:
     """Run (or resume after the operator answered, or after it stopped) until the steward decides, or it
     stops. A clan that routes (`routes`) names who takes an approved document on (`d.route`).
 
@@ -421,7 +323,8 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
     be named up front), each turn's session gets an id before it starts (`d.under_way`, told to
     `on_call`), and the runner is called as `runner(h, prompt, model, session=…, reopen=…)`: a turn that
     was stopped (or failed) goes on in its own session with `GO_ON`, and starts again only when that
-    session cannot be reopened."""
+    session cannot be reopened. `together`: the members' reviews are asked all at once when none of their tools
+    names a session (the time of the slowest, not of them all; the budget is looked at once before them)."""
     cancel = cancel or threading.Event()
     brief_of = brief_of or (lambda _m: ("", ""))
 
@@ -450,12 +353,17 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         text, cost = runner(harness, prompt, model, session=d.under_way["session"], reopen=False)
         return text, cost, False
 
-    def call(harness: str, model: str, prompt: str, turn: str) -> tuple[str, float | None, bool] | None:
+    def call_allowed() -> bool:
         if cancel.is_set():
             d.outcome = "stopped"
-            return None
+            return False
         if budget and d.spent >= budget:
             d.outcome = "budget"
+            return False
+        return True
+
+    def call(harness: str, model: str, prompt: str, turn: str) -> tuple[str, float | None, bool] | None:
+        if not call_allowed():
             return None
         try:
             text, cost, went_on = take(harness, model, prompt, turn)
@@ -474,21 +382,58 @@ def run(d: Discussion, team: list[Member], steward: Steward, veto: set[str], max
         if on_turn is not None:
             on_turn(d, turn)
 
-    d.outcome = "running"
-    for i, m in enumerate(team):
-        if i in d.reviewed:
-            continue
+    def prompt_of(m: Member) -> str:
         path, text = brief_of(m)
-        got = call(m.harness, m.model, review_prompt(d, m, team, path, text, inline=roads.resolve(m.harness) not in roads.IN_REPO),
-                   m.role)
-        if got is None:
-            return _end(d)
+        return review_prompt(d, m, team, path, text, inline=roads.resolve(m.harness) not in roads.IN_REPO)
+
+    def heard(i: int, m: Member, got: tuple[str, float | None, bool]) -> None:
         verdict, body = parse_verdict(got[0])
         note = WENT_ON if got[2] else ""
         if verdict == "veto" and m.role.lower() not in veto:
             verdict, note = "changes", _notes(note, "a veto from a role without one counts as changes")
         add(Turn(m.role, "review", body, verdict, got[1], now_iso(), note))
         d.reviewed.append(i)
+
+    def at_once(pending: list[tuple[int, Member]]) -> bool:
+        """The members asked all at once (none reads another's review), heard in the clan's order; False when
+        one of them failed or it was stopped (the others' reviews are kept)."""
+        if not call_allowed():
+            return False
+        d.under_way = {"turn": pending[0][1].role, "session": ""}
+        if on_call is not None:
+            on_call(d)
+        ctx = contextvars.copy_context()                   # each call is charged as this thread's are
+        with ThreadPoolExecutor(len(pending)) as pool:
+            asked = [pool.submit(ctx.copy().run, runner, m.harness, prompt_of(m), m.model) for _, m in pending]
+        failed = ("", "")
+        for (i, m), f in zip(pending, asked):
+            try:
+                text, cost = f.result()
+            except InterruptedError:
+                failed = failed if failed[0] else ("stopped", "")
+                continue
+            except Exception as e:  # one failing call ends the gathering, the app goes on
+                failed = failed if failed[0] else ("error", f"{e}"[:300])
+                continue
+            d.spent = round(d.spent + (cost or 0.0), 4)
+            heard(i, m, (text or "", cost, False))
+        d.under_way = {}
+        if failed[0]:
+            d.outcome, d.error = failed[0], failed[1] or d.error
+        return not failed[0]
+
+    d.outcome = "running"
+    pending = [(i, m) for i, m in enumerate(team) if i not in d.reviewed]
+    if together and len(pending) > 1 and not (sessions and any(sessions(m.harness) for _, m in pending)):
+        if not at_once(pending):
+            return _end(d)
+    for i, m in pending:
+        if i in d.reviewed:
+            continue
+        got = call(m.harness, m.model, prompt_of(m), m.role)
+        if got is None:
+            return _end(d)
+        heard(i, m, got)
 
     routes = [e.id for e in exits] or list(routes)
     got = call(steward.harness, steward.model, decide_prompt(d, steward, veto, max_cycles,

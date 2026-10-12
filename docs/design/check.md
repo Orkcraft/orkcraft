@@ -80,6 +80,41 @@ in the Mechanic's building, without leaving the product. Today the reading and t
 it (Claude Code with the folder); next, the Mechanic does them itself on the night's budget
 (docs/design/improve-buildings.md §11), proposing the change and checking it before it is kept.
 
+## 8. Every night, and against the last time (built 2026-10-12)
+
+**The night check** (gui/night_check.py, in gui/nightly.py's quiet hours): once a night (`check_history.night_key`: a
+night is its evening's date), in a town that has a Test bench, while the Council's `check_nightly` is on (it is by
+default; the Test bench's Check has the switch), `orkcraft check` runs the scenarios in turn — `check_per_night` (2) of
+them a night, all of them on Saturday night — and the quiet town. The night's improvements (gui/improve_night.py)
+wait while it runs: on one AI tool account two jobs slow each other, and the night of 2026-10-11 showed the numbers
+move with it (docs/nights/2026-10-11.md). In the morning one line joins the Elders' toast: what it checked, green or
+red, and what got worse (else better) than the last time.
+
+**The history** (realm/check_history.py, `.orkcraft/check/history.jsonl`): each check's cases, a line. A case is
+**worse** than its last check when it passed fewer of its runs or its building's median time or tokens grew by more
+than a fifth; **better** the other way round; what moved less is the noise of a few runs and is not said. `report.md`
+has **Since the last check**; the Test bench's Check lists it (▼ worse, ▲ better).
+
+## 9. A 👎 is a case (built 2026-10-12)
+
+Every cart that comes into a building is remembered, the last one (realm/regressions.py `record_input`, from
+core/delivery.py). A 👎 for the building's own logic keeps that cart as a test case of the building
+(`.orkcraft/feedback/cases/<building>.jsonl`): its input what came in, its `why` what the person said and what it made
+then, its title `👎 <day>: <what they said>`. A 👎 for broken inputs makes none (that is the suppliers' fault), and
+nothing does when nothing came in. A Test bench that tests the building takes it in among its own cases, once
+(core/workers/lab.py `take_regressions`; its row says *from a 👎*), so Run all and the night run it against the AI
+tool alone like any other. The input stays on this machine, as the feedback does.
+
+## 10. The night works on what was found (built 2026-10-12)
+
+The Mechanic's proposals (gui/lab_runs.py `propose`, by day and at night) start from what is wrong, in words
+(gui/lab_export.py `findings`): its own runs' stories and changes (realm/explain.py, read from the model calls), the
+last night check's on the same building types, and the person's 👎 cases with what they said; each proposal says which
+it fixes. At night (gui/improve_night.py) the Test benches with the most wrong go first (`trouble`: cases not good,
+and 👎 cases), and one with no goal written works to `lab_cases.DEFAULT_GOAL` — as well as the AI tool alone, for
+less time and fewer tokens — instead of being skipped. What it tries is still measured on the virtual building and
+kept only when better, by the town's autonomy (improve-buildings.md §8).
+
 ## 7. Next
 
 The plan (2026-10-11), in layers — evals, not tests: repeats and medians, a baseline (the AI tool alone, and last
@@ -95,12 +130,11 @@ night), checks in code wherever code can tell, a judge only where it cannot:
 
 In order:
 
-1. **The night check in the Mechanic:** its hour, its budget, scenarios in turn (some each night, all once a week), the
-   history and how tonight stands against last night, and one line in the morning.
-2. **A 👎 becomes a case** of its building, kept with the town's own cases: the evals grow from real failures.
+1. ~~**The night check in the Mechanic**~~ — built (§8).
+2. ~~**A 👎 becomes a case**~~ — built (§9).
 3. **Recorded answers** for the models too: the free layer on every commit.
 4. **The Alchemist's visual regression:** building windows, screenshot against last night.
-5. **The night improvement (gui/improve_night.py) works on what the check found**, not on proposals at random.
+5. ~~**The night improvement works on what the check found**~~ — built (§10).
 
 Kits still to write: the Wiki (letters in, the pages that should change and the facts they should hold), a chain
 (External listeners → Task board, the whole way a letter takes).

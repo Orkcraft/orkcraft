@@ -88,12 +88,15 @@ class CheckRuns:
         return {"stamp": folder.name, "green": bool(data.get("green")), "report": report,
                 "zip": (folder / "check.zip").is_file(),
                 "told": check.told(self.root, folder.name, data.get("scenarios") or []),
-                "idle": data.get("idle")}
+                "idle": data.get("idle"), "since": data.get("since") or []}
 
     def state(self) -> dict:
         job = self.job()
+        night = getattr(getattr(self.host, "nightly", None), "check", None)
+        titles = {s.id: s.title for s in check.SCENARIOS}
         return {"job": job.public() if job else None, "last": self.last(),
-                "scenarios": [{"id": s.id, "title": s.title, "checked": bool(s.type)} for s in check.SCENARIOS]}
+                "scenarios": [{"id": s.id, "title": s.title, "checked": bool(s.type)} for s in check.SCENARIOS],
+                "night": {**night.settings(), "tonight": [titles[i] for i in night.tonight()]} if night else None}
 
     def pack(self) -> tuple[str, bytes] | None:
         from orkcraft import check_cli
