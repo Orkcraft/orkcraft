@@ -24,9 +24,13 @@
   overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .gui-hut.is-size-m .gui-fhut__item, .gui-hut.is-size-l .gui-fhut__item { white-space: normal; display: -webkit-box;
   -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-/* + Note and + To-do: on the card itself, under the part toggles (a wall or a kanban: at its foot). */
+/* + Task, + Note and + To-do: on the card's top row, under the part toggles (a wall or a kanban: above its number), so a
+   card cut short at its foot never cuts them off. A small card keeps them in one row, each label shortened. */
 .gui-fhut__adds { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: var(--space-1); }
-.gui-hut__body-in > .gui-fhut__adds { margin-top: var(--space-1); }
+.gui-hut__body-in > .gui-fhut__adds { margin-bottom: var(--space-1); }
+.gui-hut.is-size-s > .ok-hut__card .gui-fhut__adds { flex-wrap: nowrap; }
+.gui-hut.is-size-s > .ok-hut__card .gui-fhut__add { flex: 1 1 0; min-width: 0; overflow: hidden; }
+.gui-fhut__add .ok-act__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* -- open: the head ------------------------------------------------------------------------------------- */
 /* The board fills its pane, and its parts scroll on their own — the orks' lanes, the to-dos, the notes — so a

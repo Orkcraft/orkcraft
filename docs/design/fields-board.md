@@ -62,10 +62,10 @@ in another.
   it (🟥 urgent or broken, 🟨 money or admin, 🟩 people, 🟦 code, 🟪 ideas): the GUI has no Colour button.
 - A card written as a longer text is on the board at once, its first words its title; the model's title
   replaces them a moment later, unless the person renamed the card first or the task already went to the orks.
-- The closed card has **+ Note** and **+ To-do**. A note is written in the panel on the right, the whole panel
-  its page; a to-do is one line in a small window. The selected card's strip leads with *Give it to the orks*
-  (a note or a to-do becomes a task and goes; a task not gone yet goes) and ends with *Delete* in red; a double
-  click opens the card.
+- The closed card has **+ Task**, **+ Note** and **+ To-do** on its top row. Each is written in the panel on the
+  right, the whole panel its page, as is the text of a card a double click opens (a task, a note or a to-do alike).
+  The selected card's strip leads with *Give it to the orks* (a note or a to-do becomes a task and goes; a task
+  not gone yet goes) and ends with *Delete* in red.
 
 ## 4. The file
 
