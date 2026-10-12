@@ -90,3 +90,15 @@ thin lines, while the roads are meant to be the lines that matter.
 | isometric | **No** (at most Later, for the map zoom with no cards; likely never) | every sprite in every biome redrawn; rectangular cards of text do not sit in isometry; roads, clicks and layout rewritten; the 1990s style it follows was top-down anyway |
 
 Checked as §3 is: in grey and squinted, the yard must stand off the ground and the roads must be seen first.
+
+**A fence stays, as decoration, in the way of Stardew Valley** (the owner, 2026-10-12: that look is liked). The yard
+is still the patch of ground; the fence is a light touch on it, never its frame:
+
+- **light, warm wood**, lower in contrast than the roads, never the dark posts of today;
+- **not a closed box:** short runs and corners, the back of the yard more than its sides, as a field's fence in that
+  game;
+- **open at its gates:** wherever a road enters, a gap with two posts;
+- **smaller** than today's posts, and only at the overview and close zooms; the map zoom shows none;
+- **none in Office** (calm and monochrome by design).
+
+The test does not change: in grey and squinted, the roads are seen before the fence.
