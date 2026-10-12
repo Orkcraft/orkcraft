@@ -102,3 +102,26 @@ is still the patch of ground; the fence is a light touch on it, never its frame:
 - **none in Office** (calm and monochrome by design).
 
 The test does not change: in grey and squinted, the roads are seen before the fence.
+
+## 7. Pixel art stays; a painted style like Kingdom Rush is No
+
+Asked 2026-10-12: move the look toward Kingdom Rush, or keep the pixels?
+
+**Keep the pixels.**
+
+1. **Cost:** a painted cartoon style (outlines, gradients, rich detail, animation frames) means redrawing twenty types
+   × five biomes × their motions; and the whole pipeline is made for pixels (Scale2x, `tools/hat_sprites.py`, mascots
+   drawn as grids by a text model, the painter's edit within a marked region). A painted style is far harder to make
+   consistent with an image model.
+2. **Small sizes:** buildings are drawn at 16 to 80 px; pixel art stays crisp there, painted detail turns to mush.
+3. **Beside text:** pixels and a clean text face sit well together; a painted cartoon beside dense text reads as a
+   mobile game's advert, and "it is a toy" gets louder.
+4. **The audience:** to developers pixels say an indie craft they grew up with; the painted style says casual mobile.
+5. **Another brand:** looking like one particular game is the risk of [open-questions.md](open-questions.md) Q18 again.
+
+**What to take from it without changing the drawing:**
+
+- **Juice:** a short motion and a flash when a cart arrives, an ork finishes, a ❓ appears or is answered. That, more
+  than its drawing, is why it feels good. With [building-motion.md](building-motion.md); P1.
+- **Warm, saturated accents on a dark ground:** the rule of §2 already.
+- **Big, friendly silhouettes:** the buildings have them.
