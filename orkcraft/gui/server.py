@@ -75,9 +75,15 @@ def _response(status: HTTPStatus, body: bytes, content_type: str = "text/plain; 
     return Response(status.value, status.phrase, headers, body)
 
 
-def resolve(path: str) -> Path | None:
+def resolve(path: str, preview: Path | None = None) -> Path | None:
     """The file a static path names, never one outside its folder; a design-system picture this machine has its own
-    of (a UX bench applied it, design/tokens.py `assets_dir`) is that one."""
+    of (a UX bench applied it, design/tokens.py `assets_dir`) is that one; with a fix's page in preview (gui/fixes.py),
+    its copy's file first."""
+    if preview is not None and path.startswith("/static/"):
+        page = preview.resolve()
+        mine = (page / path[len("/static/"):]).resolve()
+        if mine.is_file() and mine.is_relative_to(page):
+            return mine
     if path.startswith("/ds/sprites/"):
         own = tokens.assets_dir().resolve()
         mine = (own / path[len("/ds/"):]).resolve()
@@ -117,6 +123,14 @@ class Server:
         self.tail_watch = pwa.TailWatch(self.phones)   # Tailscale that came after the town (gui/pwa.py)
         host.commands.update(pwa.commands(self.phones))   # the app in a phone's browser: Tailscale's state
         self.notifier = notify.Notifier(host, self.phones)   # what came, to the phones that are open
+
+    def _preview(self) -> Path | None:
+        """The page of the fix shown in preview (gui/fixes.py), or None."""
+        fixes = getattr(self.host, "fixes", None)
+        try:
+            return fixes.preview_dir() if fixes is not None else None
+        except Exception:
+            return None
 
     @property
     def origin(self) -> str:
@@ -173,13 +187,15 @@ class Server:
             if not self._token_ok(request):
                 return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
             return self._audio(parts.path.removeprefix("/api/audio/"), "dl=1" in parts.query.split("&"))
+        preview = self._preview()
         if parts.path in ("/", "/index.html"):
-            return _response(HTTPStatus.OK, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
+            page = preview / "index.html" if preview is not None and (preview / "index.html").is_file() else None
+            return _response(HTTPStatus.OK, (page or STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
         if parts.path == "/favicon.ico":                  # the ork mark (design-system/logo)
             return _response(HTTPStatus.OK, (tokens.SYSTEM / "logo" / "favicon.ico").read_bytes(), "image/x-icon")
         if parts.path == "/roles.css":
             return _response(HTTPStatus.OK, tokens.roles_css().encode(), "text/css; charset=utf-8")
-        target = resolve(parts.path)
+        target = resolve(parts.path, preview)
         if target is None:
             return _response(HTTPStatus.NOT_FOUND, b"Not found")
         kind = mimetypes.guess_type(target.name)[0] or "application/octet-stream"

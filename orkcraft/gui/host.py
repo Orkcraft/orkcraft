@@ -22,14 +22,14 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft.core import bus
-from orkcraft.core import crashes, runners, usage, wakes
+from orkcraft.core import crashes, running, runners, usage, wakes
 from orkcraft.core.night import Night
 from orkcraft.core.roster import Muster
 from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import (accounts, awake, bench, builder, console, day_logs, day_review, failures, github, growth, history, mobile, nightly, onboarding, projects,
+from orkcraft.gui import (accounts, awake, bench, builder, console, day_logs, day_review, failures, fixes, github, growth, history, mobile, nightly, onboarding, projects,
                           state, town_settings, updates, views, you)
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
@@ -56,6 +56,7 @@ class Host:
         self.night.restore()
         self.nightly = nightly.Nightly(self)       # …the retros and the orks' own changes (gui/nightly.py)
         self.day_logs = day_logs.DayLogs(self.town)    # every model call by day and building (gui/day_logs.py)
+        running.mark()                                 # since when this machine runs its code now (core/running.py)
         self.day_review = day_review.DayReview(self)   # Improve: the Mechanic and the Farseer read a day (gui/day_review.py)
         self.town.budget_ok = lambda: not self.town.demo and not self.treasury.exhausted()
         # How long a cart is on a plain road before it arrives: 0 (at once) unless asked, e.g. to film a flow
@@ -113,6 +114,8 @@ class Host:
         self.bench = bench.Bench(self)              # the Test bench's runs and reviews, for its building (gui/bench.py)
         self.commands.update(self.bench.commands())
         self.commands.update(self.day_review.commands())   # Improve: a day's findings tried (gui/day_try.py)
+        self.fixes = fixes.Fixes(self)              # Improve Orkcraft: comments and code fixes as pull requests (gui/fixes.py)
+        self.commands.update(self.fixes.commands())
         self.commands.update(mobile.commands(self))   # what a phone reads (gui/mobile.py, docs/design/mobile.md)
         self.growth = growth.Growth(self)           # levels, deeds, the mascot; the War Map's lands (gui/growth.py)
         self.commands.update(self.growth.commands())
@@ -156,6 +159,7 @@ class Host:
         snap["usage_ask"] = self.usage.should_ask()        # the one question about usage stats (js/settings.js)
         snap["update"] = self.updates.snapshot()           # a newer Orkcraft, if one is out (js/update.js)
         snap["improve"] = self.day_review.state()          # the days Improve can read, and the one read now
+        snap["fixes"] = self.fixes.summary()               # Improve Orkcraft: comments waiting, fixes written (js/fixes.js)
         snap["onboarding"] = self.onboarding.snapshot()    # the first run's steps and the town going up (js/onboarding.js)
         return snap
 
@@ -349,6 +353,7 @@ class Host:
     def close(self) -> None:
         """The window closed: what an editor holds is written, what runs stops, the scroll is kept."""
         self.day_logs.close()
+        self.fixes.close()
         for bid, w in list(self.town.workers.items()):
             flush = getattr(views.of(self.type_of(bid)), "flush", None)
             if flush is not None:
@@ -374,7 +379,7 @@ class Host:
             result = fn(args)
         except (console.ConsoleError, growth.GrowthError, updates.UpdateError, onboarding.OnboardingError,
                 you.YouError, accounts.AccountsError, github.GithubCommandError, bench.BenchError, projects.ProjectCommandError,
-                history.HistoryError) as e:
+                history.HistoryError, fixes.FixError) as e:
             raise CommandError(str(e)) from None
         self._used(name, args, result)
         return result

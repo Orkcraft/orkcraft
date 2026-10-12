@@ -140,7 +140,9 @@ def test_improve_reads_a_day_and_hands_the_findings_to_the_warchief(fake_repo, i
         monkeypatch.setattr(host.town, "call", lambda fn, *a: fn(*a))
         hall = host.town.workers["town_hall"]
         monkeypatch.setattr(hall, "ask", lambda text, about: asked.append((text, about)))
-        assert host.snapshot()["improve"] == {"running": "", "days": [{"day": TODAY, "read": "", "changes": 0}]}
+        snap = host.snapshot()["improve"]
+        assert snap["running"] == "" and snap["days"] == [{"day": TODAY, "read": "", "changes": 0}]
+        assert snap["update"]["at"] and snap["update"]["key"] == ""
         said = host.command("warchief.improve", {"day": TODAY})["said"]
         assert said == f"The Mechanic and the Farseer are reading {TODAY}"
         for _ in range(500):
@@ -184,5 +186,61 @@ def test_the_night_reads_the_day_that_ended_and_its_logs_wait_for_it(fake_repo, 
         r.running = ""
         r.tick(True, when=evening + dt.timedelta(hours=4))                            # once a night
         assert started == ["day-review"]
+    finally:
+        host.close()
+
+
+def test_a_span_reads_only_the_calls_inside_it(tmp_path):
+    """Since the last update: the logs from the moment the code changed up to now, never the hours before."""
+    _call(tmp_path, "tower", "before the update", 40_000)
+    folder = call_log.day_folder(tmp_path, TODAY, "tower")
+    lines = [json.loads(x) for x in (folder / call_log.LINES).read_text().splitlines()]
+    lines[0]["at"] = f"{TODAY}T00:00:00"
+    (folder / call_log.LINES).write_text("".join(json.dumps(x) + "\n" for x in lines))
+    _call(tmp_path, "tower", "after the update", 30_000)
+    since = dt.datetime.now().replace(second=0, microsecond=0)                   # the update: a moment ago
+    key = day_review.span_key(since, dt.datetime.now())
+    assert day_review.bounds(key)[0] == since.isoformat() and day_review.bounds(key)[2] == [TODAY]
+    assert day_review.label(key).startswith(f"{TODAY} {since:%H:%M}–")
+    spots = hotspots.find(tmp_path, key, TITLES, _decisions, _dislikes)
+    assert [h.said for h in spots if h.kind == "costly"] == ["a costly call of External listeners: 30,000 tokens"]
+    assert len(hotspots.find(tmp_path, TODAY, TITLES, _decisions, _dislikes)) == 3       # the whole day: both, a 👎
+    review = day_review.run(tmp_path, key, lambda w, p: (_answer([]), 0), TITLES, _decisions, lambda b, d: [])
+    assert review.said.startswith(f"{TODAY} {since:%H:%M}–") and day_review.load(tmp_path, key) is not None
+
+
+def test_a_span_runs_past_midnight():
+    key = day_review.span_key(dt.datetime(2026, 10, 11, 22, 30), dt.datetime(2026, 10, 12, 1, 5))
+    assert day_review.bounds(key) == ("2026-10-11T22:30:00", "2026-10-12T01:05:59", ["2026-10-11", "2026-10-12"])
+    assert day_review.label(key) == "2026-10-11 22:30–2026-10-12 01:05"
+    with pytest.raises(ValueError):
+        day_review.bounds(day_review.span_key(dt.datetime(2026, 10, 12), dt.datetime(2026, 10, 11)))
+
+
+def test_the_code_running_now_is_kept_with_when_it_started(tmp_path, monkeypatch):
+    from orkcraft.core import running
+    path = tmp_path / "running.json"
+    monkeypatch.setattr(running, "code", lambda: "0.2.9+abc")
+    first = running.mark(dt.datetime(2026, 10, 12, 9, 0), path)
+    assert running.mark(dt.datetime(2026, 10, 12, 15, 0), path) == first          # the same code: the first start
+    monkeypatch.setattr(running, "code", lambda: "0.2.9+def")                     # a git pull
+    assert running.mark(dt.datetime(2026, 10, 12, 15, 0), path)["since"] == "2026-10-12T15:00:00"
+    assert running.since(path) == dt.datetime(2026, 10, 12, 15, 0)
+
+
+def test_improve_reads_the_logs_since_the_last_update(fake_repo, isolated_layout_file, monkeypatch):
+    from orkcraft.gui.host import Host
+    from orkcraft.realm import checkpoint
+    checkpoint.ensure(fake_repo)
+    host = Host(fake_repo, auto_commit=False)
+    try:
+        with pytest.raises(Exception, match="No logs kept since the last update"):
+            host.command("warchief.improve", {"since_update": True})
+        _day(fake_repo)
+        started = []
+        monkeypatch.setattr(host.day_review, "start", lambda key, **kw: started.append(key) or "reading")
+        assert host.command("warchief.improve", {"since_update": True})["said"] == "reading"
+        [key] = started
+        assert day_review.is_span(key) and day_review.bounds(key)[2][-1] == TODAY
     finally:
         host.close()

@@ -1008,3 +1008,30 @@ button { font: inherit; color: inherit; }
 .gui-toolpick__one { display: flex; align-items: center; gap: 6px; width: 100%; padding: 4px 8px; text-align: left;
   background: none; border: 0; color: var(--ink); cursor: pointer; white-space: nowrap; }
 .gui-toolpick__one:hover, .gui-toolpick__one.is-on { background: var(--selection); }
+
+/* Comment mode and Improve Orkcraft (js/fixes.js, docs/design/improve-buildings.md §14): a bar at the top, a frame
+   round what the pointer is on, a note beside what was pressed; the dialog's comments and fixes. */
+.gui-comment__bar { position: fixed; top: var(--space-2); left: 50%; transform: translateX(-50%); z-index: 9000;
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); max-width: calc(100vw - 32px);
+  padding: var(--space-1) var(--space-3); color: var(--ink); background: var(--panel-raised);
+  box-shadow: var(--shadow-window); border: 1px solid var(--frame-focus); border-radius: var(--radius-sm); }
+.gui-comment__frame { position: fixed; z-index: 8999; pointer-events: none; border: 2px dashed var(--frame-focus);
+  border-radius: var(--radius-sm); }
+.gui-comment__note { position: fixed; z-index: 9001; width: 320px; display: flex; flex-direction: column;
+  gap: var(--space-1); padding: var(--space-2) var(--space-3); color: var(--ink); background: var(--panel-raised);
+  box-shadow: var(--shadow-window); border: 1px solid var(--frame); border-radius: var(--radius-sm); }
+.gui-comment__note textarea { width: 100%; resize: vertical; }
+.gui-comment__acts, .gui-fixes__acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);
+  justify-content: flex-end; }
+.gui-fixes { display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-fixes__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-fixes__fix { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3);
+  background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
+.gui-fixes__fix p, .gui-fixes__fix ul { margin: 0; }
+.gui-fixes__acts { justify-content: flex-start; }
+.gui-fixes__more { display: flex; gap: var(--space-1); flex: 1 1 260px; }
+.gui-fixes__more input { flex: 1; min-width: 0; }
+.gui-fixes__diff { margin: 0; max-height: 320px; overflow: auto; padding: var(--space-2); white-space: pre-wrap;
+  word-break: break-word; font: 12px/17px var(--font-mono); color: var(--ink); background: var(--panel);
+  box-shadow: var(--bevel-sunken); }
+.gui-fixes__pr { display: flex; flex-direction: column; gap: var(--space-1); }

@@ -19,6 +19,7 @@ import { settingsOpen } from "./settings.js";
 import { RoleIcon } from "./roles.js";
 import { usePairing, PairQr, PairNote } from "./phones.js";
 import { GithubAccount } from "./github.js";
+import { commentMode, fixesOpen } from "./fixes.js";
 
 export const portraitOpen = signal(false);
 
@@ -60,8 +61,14 @@ export function Steps({ label, items, value, onPick }) {
     </span></div>`;
 }
 
+function fixesLine(f) {
+  const n = (f && (f.comments + f.writing + f.ready)) || 0;
+  return n ? `Comments and fixes (${n})…` : "Comments and fixes…";
+}
+
 function Menu({ y, p }) {
   const ref = useRef(null);
+  const t = town.value || {};
   useEffect(() => {
     const away = (e) => { if (ref.current && !ref.current.contains(e.target) && !e.target.closest(".gui-portrait")) portraitOpen.value = false; };
     const esc = (e) => { if (e.key === "Escape") portraitOpen.value = false; };
@@ -97,6 +104,14 @@ function Menu({ y, p }) {
     ${!office && html`<${Steps} label="Card background" value=${cardGround.value} onPick=${setCards}
       items=${[["ground", "Ground"], ["yard", "Yard"]]} />
     <p class="ok-font-status ok-tone-muted">${say("Ground: the cards are drawn on the town's ground, and the selected one in its yard. Yard: inside its fence each card is a step lighter than the ground. This browser only.")}</p>`}
+    <div class="gui-field" aria-label=${say("Improve Orkcraft")}>
+      <span class="ok-font-label">${say("Improve Orkcraft")}</span>
+      <p class="ok-font-status ok-tone-muted">${say("Comment on any part of the window: the Alchemist writes the change on this machine's main tool, you see it, and it goes to Orkcraft as a pull request.")}</p>
+      <p class="gui-portrait__links">
+        <button class="ok-btn" onClick=${() => { portraitOpen.value = false; commentMode.value = true; }}>${say("Comment mode")}</button>
+        <button class="gui-link" onClick=${() => { portraitOpen.value = false; fixesOpen.value = true; }}>${say(fixesLine(t.fixes))}</button>
+      </p>
+    </div>
     <${GithubAccount} />
     <div class="gui-portrait__links">
       <button class="gui-link" onClick=${() => { portraitOpen.value = false; settingsOpen.value = true; }}>${say("Town settings…")}</button>

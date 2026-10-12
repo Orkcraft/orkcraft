@@ -39,7 +39,7 @@ import { HALL, hallTab } from "./tent.js";
 import { Message } from "./buildings/town_hall.js";
 import { WarchiefHead, StewardHead } from "./icons.js";
 import { askKeeper } from "./keeper.js";
-import { ImprovePick } from "./improve.js";
+import { ImprovePick, SINCE_UPDATE } from "./improve.js";
 import { fold, foldQuiet, unfoldAll } from "./fold.js";
 
 const THREAD = 3;                          // the last messages shown over the line
@@ -517,7 +517,7 @@ export function WarchiefLine() {
   const improve = (day = "", again = false) => {
     setPicking(false);
     if (day) {
-      command("warchief.improve", { day, again }).then((r) => setSaid(say(r.said)), (e) => setSaid(say(String(e.message || e))));
+      command("warchief.improve", day === SINCE_UPDATE ? { since_update: true } : { day, again }).then((r) => setSaid(say(r.said)), (e) => setSaid(say(String(e.message || e))));
       return;
     }
     command("warchief.improve").then((r) => {

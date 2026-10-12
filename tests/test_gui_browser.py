@@ -59,7 +59,8 @@ def gui(tmp_path_factory):
     for key, value in {"ORKCRAFT_LAYOUT_FILE": tmp / "layout.json", "ORKCRAFT_SETTINGS_FILE": tmp / "settings.json", "ORKCRAFT_LOOK": "camp",
                        "ORKCRAFT_CALENDARS_FILE": tmp / "calendars.json", "XDG_CACHE_HOME": tmp / "cache",
                        "ORKCRAFT_ONBOARDING": "0", "ORKCRAFT_LIMITS": "0", "ORKCRAFT_COUNCIL_LLM": "0",
-                       "ORKCRAFT_WIKI_AUTO": "0", "ORKCRAFT_NIGHT_ROUND": "0", "ORKCRAFT_GOOGLE": "1"}.items():
+                       "ORKCRAFT_WIKI_AUTO": "0", "ORKCRAFT_NIGHT_ROUND": "0", "ORKCRAFT_GOOGLE": "1",
+                       "ORKCRAFT_STATE_DIR": tmp / "state"}.items():
         mp.setenv(key, str(value))
     repo = tmp / "project"
     (repo / "src").mkdir(parents=True)
@@ -1343,9 +1344,10 @@ def test_improve_offers_the_days_with_logs_and_reads_one(page, gui):
                          timeout=WAIT_MS)
     pg.wait_for_timeout(300)                                         # the line drawn again with its days
     pg.locator(".gui-warchief__improve").click()
-    pick = pg.locator(".gui-warchief__day").first
+    pick = pg.locator(".gui-warchief__day:not(.is-update)").first
     pick.wait_for(timeout=WAIT_MS)
     assert "nothing in the logs worth a look" in pick.text_content()
+    assert "Since the last update" in pg.locator(".gui-warchief__day.is-update").text_content()   # the first row
     pick.get_by_role("button", name="Today").click()
     pg.wait_for_function("() => document.querySelector('.gui-warchief__said')?.textContent.includes('worth a look')",
                          timeout=WAIT_MS)
@@ -2317,3 +2319,28 @@ def test_the_ux_bench_shows_the_mascots_and_opens_one_to_draw_again(page, gui):
     assert pg.locator(".ok-dialog button", has_text="Draw it").count() == 1
     pg.keyboard.press("Escape")
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bench)
+
+
+def test_comment_mode_sends_what_was_pressed_to_the_alchemist(page, gui):
+    """Ctrl+Shift+M (docs/design/improve-buildings.md §14): a frame follows the pointer, a press opens a note, Send keeps
+    the comment with where it was; Improve Orkcraft lists it."""
+    server, _browser = gui
+    page.keyboard.press("Control+Shift+M")
+    page.wait_for_selector(".gui-comment__bar", timeout=WAIT_MS)
+    face = page.locator(".gui-warchief__face").first
+    face.hover()
+    page.wait_for_selector(".gui-comment__frame", timeout=WAIT_MS)
+    face.click()
+    page.wait_for_selector(".gui-comment__note textarea", timeout=WAIT_MS)
+    assert page.locator(".gui-warchief__menu, .gui-warchief__picker").count() == 0       # the press opened nothing else
+    page.fill(".gui-comment__note textarea", "The Warchief's face could say what it does")
+    page.click(".gui-comment__note .ok-btn.is-primary")
+    page.wait_for_selector(".gui-comment__note", state="detached", timeout=WAIT_MS)
+    [c] = server.host.fixes.store.waiting()
+    assert c.text == "The Warchief's face could say what it does" and "gui-warchief__face" in c.where["selector"]
+    page.click(".gui-comment__bar .gui-link")                                           # Improve Orkcraft (1 waiting)
+    page.wait_for_selector(".gui-fixes", timeout=WAIT_MS)
+    assert page.locator(".gui-comment__bar").count() == 0                                # the mode left for the dialog
+    assert "The Warchief's face could say what it does" in page.inner_text(".gui-fixes")
+    page.keyboard.press("Escape")
+    server.host.fixes.store.drop_comment(c.id)
