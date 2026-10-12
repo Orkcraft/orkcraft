@@ -353,3 +353,44 @@ better. Not decided yet:
 - **Where it shows**: back in the Test bench window, or in the building's own window ("try a better version").
 
 Until then the loop stays folded and works as before for whoever opens it.
+
+## 12. Beyond Orkcraft: the Mechanic and the Alchemist on any codebase (asked 2026-10-12)
+
+Orkcraft testing and improving itself is one case of something wider. The Mechanic measures what an app's logic does
+and what it costs, finds why, tries a change on a copy and keeps it only when the numbers say it is better; the
+Alchemist does the same for how an app looks. Neither needs the app to be Orkcraft. **Now:** both stay on Orkcraft
+until the scenario format, the check and the night loop have held up for some weeks (docs/design/check.md). **Later:**
+they take any repository as their subject. Written down so that what is built now does not close that door.
+
+### 12.1 What is Orkcraft's own today
+
+| Part | Orkcraft only | The general form |
+|---|---|---|
+| The subject | a building or a chain of them (`flow_spec`) | an app: a repository and the jobs it does |
+| A scenario | a Test bench kit (`realm/bench_kits.py`) runs a building on a case | an adapter runs the app's job: a command, an HTTP call, a script, a browser flow |
+| The baseline | the bare AI tool on the same model | the bare AI tool, the app's previous version, last night |
+| The check | kit checks by words, a test command, a judge | the same three: exit code, words, a judge only where code cannot tell |
+| The cost | tokens and time from the call log (`realm/call_log.py`) | time for any app; tokens for an app that calls models, from its own traces or a proxy in front of its model calls |
+| Where it reads | Orkcraft's own source (`bench_review.source_dir`) | the subject's repository |
+| A change tried | the package copied beside the bench (`realm/code_overlay.py`) | a worktree of the subject's repository |
+| A change kept | data locally; code as a pull request to Orkcraft (`realm/lab_pr.py`) | a pull request to the subject's repository, with its numbers |
+| The Alchemist | the design system's pictures (`realm/painter.py`) and building windows | any app's assets and screens: screenshots night to night (visual regression), assets redrawn from words, the design system's rules held |
+
+### 12.2 What keeps the door open now
+
+- Scenarios are data, not code: a scenario names its job, its cases, its checks and its budget (`realm/check.py`
+  `Scenario`, budgets.json). A subject's own file of them (`.orkcraft/check/scenarios.json` in its repository) is the
+  next form, Orkcraft's shipped ones its first instance.
+- The check, the call log, the explaining in words (`realm/explain.py`) and the folder for an agent know nothing of
+  buildings: they read runs (`bench.Report`) and calls. New code there stays so.
+- What the Mechanic and the Alchemist propose goes through one gate: tried on a copy, measured against the baseline
+  over repeats, kept only when better, never written to the subject but through its own review (a pull request).
+
+### 12.3 Not decided
+
+- **Who it is for first.** Indie and game developers (docs: the conversation of 2026-10-11): the Mechanic on a game's
+  LLM features and tooling, the Alchemist on its assets and screens. Or any team with an LLM feature to keep honest.
+- **The adapter's shape:** a command per job with JSON out (simplest), or a small SDK the app calls to report.
+- **How the cost of an app's own model calls is seen:** its traces (OpenTelemetry), or a local proxy before its
+  model provider.
+- **Where it runs:** in the person's town, on their machine and their AI tools (as now), or headless in CI at night.
