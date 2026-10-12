@@ -425,7 +425,7 @@ function Raising({ o }) {
       </div>`}
       ${ask && html`<label class="ok-check">
         <input type="checkbox" class="gui-onb__hide" checked=${share} onChange=${() => setShare(!share)} />
-        <i>${share ? "✓" : ""}</i><span>${say("Share anonymous usage stats")}</span></label>
+        <i>${share ? "✓" : ""}</i><span>${say("Share anonymous usage stats and crash reports")}</span></label>
         <p class="ok-font-status ok-tone-muted">${say(USAGE_WHAT)}</p>`}
       <div class="gui-onb__foot"><span class="ok-font-status ok-tone-muted">All of this changes any time in Settings.</span>
         <span class="gui-onb__spacer"><button class="ok-btn primary" disabled=${!done} onClick=${open}>Open the town</button></span></div>

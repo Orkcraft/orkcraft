@@ -25,6 +25,7 @@ import { WarchiefLine } from "./js/warchief.js";
 import { Overlays } from "./js/types.js";
 import { Pocket, narrow } from "./js/pocket.js";
 import { Portrait } from "./js/portrait.js";
+import { watchErrors } from "./js/crashes.js";
 
 function App() {
   const t = town.value;
@@ -76,5 +77,6 @@ document.addEventListener("click", (e) => {
   window.open(a.href, "_blank", "noopener");
 });
 
+watchErrors();
 connect();
 render(html`<${App} />`, document.getElementById("app"));

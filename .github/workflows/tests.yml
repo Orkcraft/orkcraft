@@ -46,3 +46,23 @@ jobs:
         run: python -m playwright install --with-deps chromium
       - name: The GUI in Chromium
         run: python -m pytest -q -m browser
+
+  installer:                       # install.sh from scratch, with this commit's code (docs/install.md)
+    name: installer (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        run: ORKCRAFT_INSTALL_FROM=. sh install.sh --no-report
+      - name: It runs
+        run: |
+          ~/.local/bin/orkcraft --version
+          ~/.local/bin/orkcraft usage status
+      - name: The log
+        if: always()
+        run: cat ~/.orkcraft/install.log

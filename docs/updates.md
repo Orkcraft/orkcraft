@@ -39,7 +39,7 @@ With the tool that installed this copy, so its records stay right:
 |---|---|
 | `brew install orkcraft/orkcraft/orkcraft` (the tap below) | `brew update && brew upgrade orkcraft/orkcraft/orkcraft` |
 | `pipx install "orkcraft[gui] @ git+…"` | `pipx upgrade orkcraft` |
-| `uv tool install …` | `uv tool upgrade orkcraft` |
+| `uv tool install …`, or the installer (`install.sh`, [install.md](install.md)) | `uv tool upgrade orkcraft` |
 | `pip install "orkcraft @ git+…"` | `python -m pip install --upgrade "orkcraft @ git+…"` (the same URL) |
 | a git checkout (`bin/orkcraft`, `pip install -e`) | `git pull --ff-only` (then `uv pip install -e .` when `uv` is there) |
 
