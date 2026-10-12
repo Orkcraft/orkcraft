@@ -201,13 +201,13 @@ function PaintDialog({ id, data, path, label, brief = "", fallback = "", onClose
 function Motion({ data, onOpen }) {
   const m = data.motion;
   const house = `/ds/sprites/buildings/${data.sprite}/header.png`;
-  const layer = (path) => (data.own[path] ? `/ds/${path}${v(data, path)}` : "");
-  const open = (path, label) => onOpen({ path, label, brief: m.brief[path], fallback: house });
+  const layer = (path) => (m.have[path] ? `/ds/${path}?v=${m.have[path]}` : "");
+  const open = (path, label) => onOpen({ path, label, brief: m.brief[path], fallback: m.have[path] ? "" : house });
   const ready = !!(layer(m.still) && layer(m.part));
   return html`<section class="ux-gallery__group"><h3 class="ok-list__head">${say("At work")}</h3><div class="ux-gallery__row">
-    ${[[m.still, "Without the moving part"], [m.part, "The moving part"]].map(([path, label]) => html`<${Picture} key=${path + v(data, path)}
+    ${[[m.still, "Without the moving part"], [m.part, "The moving part"]].map(([path, label]) => html`<${Picture} key=${path + (m.have[path] || "")}
         label=${label} onOpen=${() => open(path, label)}>
-      ${layer(path) ? img(data, path, "ok-sprite ux-picture__house") : html`<img class="ok-sprite ux-picture__house is-unpainted" src=${house} alt="" draggable="false" />`}
+      ${layer(path) ? html`<img class="ok-sprite ux-picture__house" src=${layer(path)} alt="" draggable="false" />` : html`<img class="ok-sprite ux-picture__house is-unpainted" src=${house} alt="" draggable="false" />`}
     </${Picture}>`)}
     <${Picture} label=${ready ? `It ${m.move === "turn" ? "turns" : "swings"}` : "Paint both, then Apply"}>
       ${ready ? html`<span class="gui-work" style=${`--work-x:${m.pivot[0] * 100}%;--work-y:${m.pivot[1] * 100}%;--work-deg:${m.degrees}deg;--work-steps:${m.steps}`}>

@@ -33,6 +33,10 @@ Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite is shown
   docs/design/select-a-building.md §2).
 - `orks/warchief*.png` (24×20, its states 40×20): the Warchief, the ork's head under a gold crown, and its
   states with the ork's glyphs beside it (the crown's points burn while it waits), drawn by `tools/logo.py` (`js/icons.js` `WarchiefHead`; docs/design/growth.md §8).
+- `buildings/mill/work-still.png`, `work-part.png`, `buildings/catapult/work-still.png`, `work-part.png` (and `@2x`):
+  a house at work as two layers on its header's canvas, the house without its moving part and the part alone, painted
+  by Gemini from the briefs in `orkcraft/realm/motion.py` and keyed off magenta; the town turns or swings the part
+  while the building works (`js/icons.js` `HutSprite`; docs/design/building-motion.md).
 - `buildings/<type>/header-<biome>.png`: each header redrawn by `tools/growth_sprites.py` for ice (snow), dust
   (dry olive, sand), void (ashen violet) and lava (basalt, embers); dirt and forest wear `header.png`
   (`js/icons.js` `headerSprite`; docs/design/war-map.md §3).

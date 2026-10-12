@@ -25,7 +25,7 @@ from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.gui import projects as gui_projects
 from orkcraft.gui import views
-from orkcraft.realm import card_docs, catalog, halt, lexicon, modes, pipes, script_first, steward_models
+from orkcraft.realm import card_docs, catalog, halt, lexicon, modes, motion, pipes, script_first, steward_models
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.scroll import road_key
 
@@ -305,4 +305,5 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "hud": hud(town, muster, treasury, limits),
         "sessions": sessions(live),
         "alerts": alerts(town, muster, night),
+        "motions": motion.ready(),               # the houses that move at work (docs/design/building-motion.md)
     }

@@ -4,7 +4,8 @@ A house that moves is two pictures beside its `header.png`, painted by the UX be
 is (realm/painter.py, design/prompts/motion.md): `work-still.png`, the house without the part that moves, and
 `work-part.png`, that part alone, both on the house's canvas so they lie over it pixel for pixel. The town turns or
 swings the part around its pivot while the building is busy (js/icons.js `HutSprite`); the painting is the model's,
-the motion is the code's, so the house never jumps between frames.
+the motion is the code's, so the house never jumps between frames. The mill and the catapult ship their layers; a
+layer the Alchemist applies is this machine's and is served before the shipped one.
 
     motion.MOTIONS["mill"].move     → "turn"
     motion.paths("mill")           → ("sprites/buildings/mill/work-still.png", "sprites/buildings/mill/work-part.png")
@@ -12,6 +13,8 @@ the motion is the code's, so the house never jumps between frames.
 from __future__ import annotations
 
 from dataclasses import dataclass
+
+from orkcraft.design import tokens
 
 STILL, PART = "still", "part"
 
@@ -26,8 +29,8 @@ class Motion:
     steps: int = 4                     # frames a turn or a swing takes
 
 
-# Keyed by the house's sprite folder (js/icons.js spriteName). The pivots were read off the shipped headers
-# (2026-10-12): the mill's hub, the catapult's gold pivot block.
+# Keyed by the house's sprite folder (js/icons.js spriteName). The pivots were read off the shipped layers
+# (2026-10-12, painted by Gemini from the briefs below): the mill's hub, where the catapult's arm crosses its pivot block.
 MOTIONS: dict[str, Motion] = {
     "mill": Motion(
         still="The same windmill with the four sails and the round dark-green cap with the hub REMOVED. Keep only the "
@@ -35,13 +38,13 @@ MOTIONS: dict[str, Motion] = {
               "looks behind them, continuing its shading and its outline.",
         part="ONLY the four sails together with the dark-green cap and the hub, exactly as in the reference, in the same "
              "X shape and position. Remove the tower, the door and the base completely.",
-        move="turn", pivot=(0.477, 0.399), degrees=90),
+        move="turn", pivot=(0.480, 0.402), degrees=90),
     "catapult": Motion(
         still="The same catapult with the long throwing arm, its bucket and the gold stone REMOVED. Keep the wheels, the "
               "frame, the skull, the small block on the left and the gold pivot block where the arm was attached.",
         part="ONLY the long throwing arm with its bucket, exactly as in the reference, in the same position and angle, "
              "with the gold stone in the bucket. Remove the wheels, the frame, the skull and everything else.",
-        move="swing", pivot=(0.5, 0.427), degrees=70),
+        move="swing", pivot=(0.5, 0.435), degrees=70),
 }
 
 
@@ -71,3 +74,23 @@ def brief(path: str) -> str:
 
 def as_data(m: Motion) -> dict:
     return {"move": m.move, "pivot": list(m.pivot), "degrees": m.degrees, "steps": m.steps}
+
+
+def stamp(path: str) -> int:
+    """When the picture at `path` was last written, as this machine shows it (its own before the design system's);
+    0 when there is none."""
+    for p in (tokens.assets_dir() / path, tokens.SYSTEM / path):
+        if p.is_file():
+            return int(p.stat().st_mtime)
+    return 0
+
+
+def ready() -> dict[str, dict]:
+    """The houses that move at work on this machine, both layers painted: sprite → how it moves, and `v`, a stamp
+    that changes when a layer is painted again (the town asks for the picture anew)."""
+    out = {}
+    for sprite, m in MOTIONS.items():
+        stamps = [stamp(p) for p in paths(sprite)]
+        if all(stamps):
+            out[sprite] = {**as_data(m), "v": max(stamps)}
+    return out

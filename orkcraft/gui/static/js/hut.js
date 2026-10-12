@@ -489,6 +489,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       onPointerDown=${down} onContextMenu=${(e) => buildingMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}
 >
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
+      busy=${busy && !((town.value && town.value.hud) || {}).quiet}
       level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${broken ? { id: `broken:${b.id}:${broken}`, waited: 0 } : null} />
       <${Doing} b=${b} busy=${busy} />${b.id !== CORNER && html`<${YardName} b=${b} number=${number} />`}
       ${bare && html`<span class="gui-hut__badge"><${Mark} b=${b} quiet=${far} /></span>`}

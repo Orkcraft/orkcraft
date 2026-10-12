@@ -83,17 +83,34 @@ const FOOTING_ROWS = { 1: 2, 2: 4, 3: 6 };     // the footing's height in its pi
  *  from I a flag on the roof (ivory, taller at II, gold at III) and stones under it, a course more at each
  *  level; beside it an annex by its goal, a lean-to over logs for thrift, a crystal for quality, none for
  *  balance. */
-export function HutSprite({ type, biome, goal, level, className = "", onError }) {
+/** A house at work (docs/design/building-motion.md): over its header, kept for its size and hidden, the house without
+ *  its moving part and the part turning or swinging round its pivot (realm/motion.py, layout.css .gui-work). Only on the
+ *  ground its layers are painted for (dirt and forest), only while `busy`. */
+function Working({ name }) {
+  const m = (town.value && town.value.motions || {})[name];
+  if (!m) return null;
+  const at = (layer) => `/ds/sprites/buildings/${name}/work-${layer}.png?v=${m.v}`;
+  const two = (layer) => `${at(layer)} 1x, ${at(layer).replace(".png?", "@2x.png?")} 2x`;
+  return html`<span class="gui-work is-over" aria-hidden="true"
+      style=${`--work-x:${m.pivot[0] * 100}%;--work-y:${m.pivot[1] * 100}%;--work-deg:${m.degrees}deg;--work-steps:${m.steps}`}>
+    <img class="ok-sprite is-painted gui-work__still" src=${at("still")} srcset=${two("still")} alt="" draggable="false" />
+    <img class=${`ok-sprite is-painted gui-work__part is-${m.move}`} src=${at("part")} srcset=${two("part")} alt="" draggable="false" />
+  </span>`;
+}
+
+export function HutSprite({ type, biome, goal, level, className = "", onError, busy = false }) {
   const at = FLAG_AT[spriteName(type)];
   const n = Math.min(Math.max(level || 0, 0), 3);
   const annex = goal === "thrift" || goal === "quality" ? goal : "";
   const src = headerSprite(type, biome);
   const painted = PAINTED.has(spriteName(type));
-  return html`<span class=${`gui-sprite ${className}`} data-goal=${goal || "balance"} data-level=${n}>
+  const moving = busy && !DRAWN_FOR.has(biome) && !!((town.value && town.value.motions) || {})[spriteName(type)];
+  return html`<span class=${`gui-sprite ${className}${moving ? " is-working" : ""}`} data-goal=${goal || "balance"} data-level=${n}>
     <span class="gui-sprite__hut">
       <span class="gui-sprite__walls">
         <img class=${`ok-sprite${painted ? " is-painted" : ""}`} src=${src} alt="" draggable="false" onError=${onError}
           srcset=${painted ? `${src} 1x, ${src.replace(/\.png$/, "@2x.png")} 2x` : null} />
+        ${moving && html`<${Working} name=${spriteName(type)} />`}
         ${n > 0 && at && html`<img class=${`ok-sprite gui-sprite__flag${biome === "ice" ? " is-on-snow" : ""}`}
           src=${`/ds/sprites/flags/level-${n}.png`} alt="" draggable="false"
           style=${`left:${at[0] * 2}px;bottom:${(at[2] - at[1]) * 2}px`} />`}

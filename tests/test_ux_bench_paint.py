@@ -139,8 +139,8 @@ def test_a_card_document_shows_roles_only_and_is_kept_on_this_machine(fake_repo,
 
 
 def test_a_moving_house_is_painted_as_two_layers_from_the_house_itself(fake_repo, isolated_layout_file, monkeypatch):
-    """docs/design/building-motion.md: the mill's still layer and its sails, each painted from the house with its brief
-    and the motion prompt, a draft until Apply; the bench says how they move."""
+    """docs/design/building-motion.md: the mill's still layer and its sails, each painted again from the shipped layer
+    with its brief and the motion prompt, a draft until Apply; the bench says how they move and which it has."""
     from orkcraft.realm import motion
     host = _host(fake_repo)
     bench = _raised(host, "ux_lab")
@@ -149,6 +149,7 @@ def test_a_moving_house_is_painted_as_two_layers_from_the_house_itself(fake_repo
     still, part = motion.paths("mill")
     m = host.detail(bench)["data"]["motion"]
     assert m["move"] == "turn" and m["still"] == still and m["part"] == part and "sails" in m["brief"][part]
+    assert set(m["have"]) == {still, part}                                       # both shipped
     assert painter.kind_of(part) == "motion" and painter.kind_of("sprites/buildings/mill/header.png") == "sprite"
     asked = []
 
@@ -158,15 +159,14 @@ def test_a_moving_house_is_painted_as_two_layers_from_the_house_itself(fake_repo
         return "", None, None, ""
 
     monkeypatch.setattr(jobs, "run_work", work)
-    assert act("draft", path=part)["src"] == ""                                  # nothing painted yet
     act("paint", path=part, words=m["brief"][part])
     assert _until(lambda: act("draft", path=part)["src"].startswith("data:image/png;base64,"))
-    house = (tokens.SYSTEM / "sprites/buildings/mill/header.png").read_bytes()
-    assert asked[0][1] == house and "pixel for pixel" in asked[0][0] and "four sails" in asked[0][0]
+    assert asked[0][1] == (tokens.SYSTEM / part).read_bytes()                    # painted again from the shipped sails
+    assert "pixel for pixel" in asked[0][0] and "four sails" in asked[0][0]
     act("apply", path=part)
     assert (tokens.assets_dir() / part).read_bytes() == PNG and part in host.detail(bench)["data"]["own"]
     act("reset", path=part)
-    assert act("draft", path=part) == {"src": "", "shipped": True, "painting": False, "error": ""}
+    assert act("draft", path=part)["shipped"]
     act("apply", path=part)
     assert not (tokens.assets_dir() / part).exists()
     with pytest.raises(CommandError, match="No such picture"):
@@ -254,3 +254,23 @@ def test_a_mascot_is_drawn_again_as_its_grid_and_kept_on_this_machine(fake_repo,
     assert not own.exists() and not mascots.own_grid(MASCOT).exists() and mascots.grid(MASCOT) != hooded
     with pytest.raises(CommandError, match="No such picture"):
         act("paint", path="sprites/mascots/nope-1.png", words="x")
+
+
+def test_the_town_is_told_which_houses_move_and_a_layer_not_painted_is_painted_from_the_house(fake_repo, isolated_layout_file, monkeypatch, tmp_path):
+    """docs/design/building-motion.md: the snapshot's `motions` names a house whose two layers this machine has (its own
+    before the design system's); a house missing one does not move, and its layer is painted from the house."""
+    from orkcraft.realm import motion
+    host = _host(fake_repo)
+    got = host.snapshot()["motions"]
+    assert set(got) == {"mill", "catapult"} and got["mill"]["move"] == "turn" and got["catapult"]["move"] == "swing"
+    assert got["mill"]["v"] > 0 and 0 < got["mill"]["pivot"][0] < 1
+    system = tmp_path / "system"
+    monkeypatch.setattr(tokens, "SYSTEM", system)
+    head = system / "sprites/buildings/mill/header.png"
+    head.parent.mkdir(parents=True)
+    head.write_bytes(PNG)
+    (system / motion.paths("mill")[0]).write_bytes(PNG)                             # the still layer, no sails yet
+    assert motion.ready() == {}
+    bench = _raised(host, "ux_lab")
+    worker = host.town.worker(bench)
+    assert worker.picture(motion.paths("mill")[1]) == PNG                          # the house itself

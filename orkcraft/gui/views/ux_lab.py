@@ -56,7 +56,8 @@ def detail(w) -> dict:
     if m:                                       # a house that moves at work: its two layers and how (docs/design/building-motion.md)
         still, part = motion.paths(out["sprite"])
         out["motion"] = {**motion.as_data(m), "still": still, "part": part,
-                         "brief": {still: m.still, part: m.part}}
+                         "brief": {still: m.still, part: m.part},
+                         "have": {p: motion.stamp(p) for p in (still, part) if motion.stamp(p)}}
     if tid == MASCOTS:
         out.update(title="Mascots", biomes=[], mascots=mascot_roles())
     elif tid:

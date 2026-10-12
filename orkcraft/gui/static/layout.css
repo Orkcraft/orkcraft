@@ -687,6 +687,10 @@ button { font: inherit; color: inherit; }
    or swung round its pivot in steps, as a sprite's frames are. */
 .gui-work { position: relative; display: inline-block; line-height: 0; }
 .gui-work__still { display: block; }
+/* In the town, over its header: the header keeps the size and is hidden while the house works. */
+.gui-work.is-over { position: absolute; inset: 0; }
+.gui-work.is-over > .gui-work__still { width: 100%; height: 100%; }
+.gui-sprite.is-working .gui-sprite__walls > img:first-child { visibility: hidden; }
 .gui-work__part { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-origin: var(--work-x) var(--work-y); }
 .gui-work__part.is-turn { animation: gui-work-turn .8s steps(var(--work-steps, 4)) infinite; }
 .gui-work__part.is-swing { animation: gui-work-swing .9s steps(var(--work-steps, 4)) infinite alternate; }

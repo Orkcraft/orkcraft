@@ -1,12 +1,12 @@
 # Design — buildings at work: the mill turns, the catapult throws
 
-Status: design notes, written 2026-10-12; stage 0 is built. Builds on the painted headers (tools/painted.py,
+Status: design notes, written 2026-10-12; stages 0 and 1 are built. Builds on the painted headers (tools/painted.py,
 building-sprites.md), the fire (yards.md §8) and the map view (map-view.md). Wording: ork, orkestration (CLAUDE.md).
 
 | stage | what | state |
 |---|---|---|
 | 0 | the Alchemist paints a moving house's two layers (the house without its moving part, the part alone) from the house and a brief, and previews them moving | done |
-| 1 | the town plays them while the building is busy: the mill's sails turn, the catapult's arm swings | |
+| 1 | the town plays them while the building is busy: the mill's sails turn, the catapult's arm swings; the two ship their layers | done |
 | 2 | the catapult throws when a cart leaves it, a gold stone flying along the road; sparks over the forge and the watchtower's lamp, drawn in code | |
 | 3 | the rest of the catalog, one by one, as their layers are painted; each biome's colours | |
 
@@ -38,7 +38,8 @@ house cannot jump between frames.
 
 - **The Alchemist paints them** (the UX bench, docs/design/improve-buildings.md §6): its window has an *At work*
   section for a type that moves — the two layers, each opened in the paint dialog with its brief written in, and a
-  preview of the two moving. A layer is a draft until Apply puts it in this machine's pictures; the town ships none yet.
+  preview of the two moving. A layer is a draft until Apply puts it in this machine's pictures; Reset
+  brings back the shipped one.
 - **The prompt** is `design/prompts/motion.md`: the house's style, and "what you keep at exactly the same scale and in
   exactly the same position". The brief (what to remove, what to keep) is the type's in `MOTIONS`, and the person may
   change it before painting.
@@ -51,3 +52,9 @@ house cannot jump between frames.
   `realm/painter.py` (`kind_of` → `motion`), `core/workers/ux_lab.py` (a layer not painted yet is painted from the
   house), `gui/views/ux_lab.py` (`motion` in its detail), `js/buildings/ux_lab.js` (`Motion`), `layout.css`
   (`.gui-work`, the preview the town will use).
+- **Stage 1.** The mill's and the catapult's layers ship (`design-system/sprites/buildings/<type>/work-still.png`,
+  `work-part.png` and `@2x`), painted by Gemini from the briefs on magenta, keyed and laid on the header's canvas; the
+  pivots were measured on them. `realm/motion.py` `ready()` names the houses whose two layers this machine has (its own
+  before the shipped), in the snapshot's `motions`; `js/icons.js` `HutSprite` lays them over a busy house's header
+  (`Working`, hidden header for its size) on the grounds they are painted for (dirt and forest), never in quiet hours;
+  layout.css turns the mill's sails a quarter of a quarter-turn a step and swings the catapult's arm 70° and back.
