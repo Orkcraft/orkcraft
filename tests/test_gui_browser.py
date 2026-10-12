@@ -1506,6 +1506,41 @@ def test_the_bare_map_and_the_warchiefs_line_fold_the_quiet_ones_and_unfold_all(
         call("town.demolish", {"id": bid})
 
 
+def test_the_map_view_draws_every_building_bare_and_brings_its_card_back(page):
+    """docs/design/map-view.md: `M`, a pinch and the bare map's menu draw every building as its house, its plinth, its
+    name and its mark (a yard's building keeps a picket at each end); leaving it brings each card back as it was."""
+    pg = page
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    forge = call("town.build", {"type": "forge"})
+    call("hut.move", {"id": forge, "x": 0.3, "y": 0.05})
+    pg.keyboard.press("Escape")
+    hut = _hut(pg, forge)
+    hut.wait_for(state="visible", timeout=WAIT_MS)
+    far = lambda: pg.locator(f'.gui-hut.is-far[data-id="{forge}"]')
+    cards = lambda: pg.locator(f'.gui-hut.is-fenced:not(.is-far)[data-id="{forge}"]')
+    cards().wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("m")
+    far().wait_for(state="visible", timeout=WAIT_MS)
+    c = hut.get_attribute("class")
+    assert "is-bare" in c and "is-yard-far" in c and "is-fenced" not in c
+    assert hut.locator(".gui-hut__unseen").count() == 1                    # its card is not drawn, still wired
+    _name(hut).wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.locator(".gui-town.is-map").count() == 1
+    room = pg.locator(".gui-town__room").bounding_box()
+    pg.mouse.click(room["x"] + room["width"] * 0.5, room["y"] + room["height"] * 0.6, button="right")
+    pg.locator(".gui-menu__item", has_text="Leave the map view").click()
+    cards().wait_for(state="visible", timeout=WAIT_MS)
+    pg.mouse.move(room["x"] + room["width"] * 0.5, room["y"] + room["height"] * 0.6)
+    pg.keyboard.down("Control")
+    pg.mouse.wheel(0, 120)                                                 # a pinch out: the map view
+    far().wait_for(state="visible", timeout=WAIT_MS)
+    pg.mouse.wheel(0, -120)                                                # a pinch in: the cards
+    pg.keyboard.up("Control")
+    cards().wait_for(state="visible", timeout=WAIT_MS)
+    assert not pg.evaluate("() => localStorage.getItem('orkcraft.map') === '1'")
+    call("town.demolish", {"id": forge})
+
+
 def test_a_task_that_settles_says_when_it_goes_and_what_joined_it(page, gui):
     """A send_new board holds a new task (⏳ goes at …, Send now); a related one joins it (↳ with …, +1 added) and
     Split off takes it out again; a near one asks Join or Keep apart (docs/design/settle-and-join.md)."""
