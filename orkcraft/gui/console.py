@@ -196,7 +196,13 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
     def improve(self, args: dict) -> dict:
         """Improve, in the Warchief's line (docs/design/warchief-line-and-cards.md §1): the latest 👎 of every building,
         as one ask for the Warchief to go through — what went wrong in each and what to change. With no 👎, nothing to
-        ask: `none` says so. (Looking through each building's use with no 👎 is written down, not built.)"""
+        ask: `none` says so. With a `day` (YYYY-MM-DD), the Mechanic and the Farseer read that day's logs first
+        (gui/day_review.py; `again`: read it again though it was read): `said` tells what they are doing."""
+        day = str(args.get("day") or "")
+        if day:
+            if day not in {d["day"] for d in self.host.day_review.days()}:
+                raise ConsoleError(f"No logs kept for {day}")
+            return {"said": self.host.day_review.start(day, again=args.get("again") is True)}
         rows = [r for r in feedback.incidents(self.town.repo_root, IMPROVE_LOOK) if r.source == feedback.EXPLICIT]
         if not rows:
             return {"none": "No 👎 yet. Press 👎 on a building whose work went wrong, then Improve goes through them."}
