@@ -264,7 +264,7 @@ to an ork instead of one. To fill in from the code before stage 1:
 | | what | § | priority |
 |---|---|---|---|
 | 0 | the log check | §1a | **P0**, no code; decides how big the ask channel is |
-| 1 | a way to ask and to mark assumptions, Claude Code first | §4 | **P0** |
+| 1 | a way to ask and to mark assumptions, Claude Code first; its questions pinned on top of the answer | §4, §20 | **P0** |
 | 2 | one status on the town: ❓ on orks, 🔥 / smouldering on buildings; every wait says why and until when, and a task where it goes next | §5, §19 | **P0** |
 | 3 | the ork slots list, 🔥 · ❓ counts, Stop all beside it | §8 | **P0** |
 | 4 | the console, folded and unfolded, for the selected ork | §7 | **P0** |
@@ -459,3 +459,23 @@ hand is the command card's: **Send to ▸** with the buildings on its roads.
 answered on the cards. If the testers still open the panels for it, a line is missing.
 
 In §11 this is part of stage 2 (one status), P0.
+
+## 20. Long answers, lost questions: what is read first (questions P0, the rest P1)
+
+Asked 2026-10-12: in Claude Code's phone app long answers are hard to read and a question is lost in them on a small
+screen. The same holds on the desktop, only less.
+
+**An ork's answer is shown in this order, on every screen:**
+
+1. **Its questions, pinned on top**, each a card with its answers as buttons (or a field), until answered. Never only
+   inside the text.
+2. **The gist**, three lines at most: what was done or found.
+3. **Its assumptions** (§4), each a line.
+4. **The whole text, folded.** One press opens it; on the phone it opens as its own page.
+
+**Where the gist and the questions come from:** the ork gives them as a short structured block at the end of its run,
+through the same way to ask and to mark of §4. No second model call to summarise. An ork whose AI tool gives no such
+block shows its last paragraph as the gist and its text as it is, and the console says so.
+
+**Priority:** the pinned questions are **P0**, part of the way to ask (§4, §11 stage 1). The gist and the folded text
+are **P1**, with the phone ([cut-list.md](cut-list.md) §3a).

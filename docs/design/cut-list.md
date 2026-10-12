@@ -87,7 +87,23 @@ The owner: "I will move from Claude Code once Orkcraft's phone app does more." T
   | **1. Drop an idea** in one press, text or voice | the Task board's **Ideas** lane (notes; taken by moving into To Do, [night-round.md](night-round.md)) | P1, with the phone console |
   | **2. Talk an idea through** with an ork, and come back to the talk later | the console (§7 of [ork-console.md](ork-console.md)) on the Task board's steward; the card is rewritten from the talk | P1 |
   | **3. Send it to be built and follow it** | Send to ▸ the Agent pool; the ork slots list, ❓ and the waits; pass the result at the Review gate | P1 (the console's parts) |
-  | **4. A picture from words**, on a card, by the Gemini side (agy) | `realm/painter.py` paints only the design system's pictures today; a picture for any card is new | **Later**, unless the owner's switch waits on it |
+  | **4. Make an asset** (a picture from words, by the Gemini side, agy), **see it at once, edit it quickly** | `realm/painter.py` already paints from words within a marked region; new: a picture for any card, its preview on the card, a quick edit (mark a region, say what changes, a new version), Accept writes the file into the repository | **P1**: the owner's switch waits on it (§3b) |
 
-  Items 1–3 are the switch test: once they work on the phone, the owner stops opening Claude Code's app for this
+  Items 1–4 are the switch test: once they work on the phone, the owner stops opening Claude Code's app for this
   town's ideas, or says what is still missing.
+
+### 3b. Assets, and reading on a small screen (2026-10-12)
+
+The owner: making assets (pictures and the like) is an important step, with a preview and a quick edit; and with
+Claude Code's app long answers are hard to read and questions get lost on a small screen.
+
+- **Assets are P1, in the phone's bar.** Built on `realm/painter.py`: one image call (agy by default) in an empty
+  folder, the person's words, a marked region. What is new: any card can hold a picture, shown on the card at once;
+  **Edit** marks a region and says what changes, and makes a new version beside the old; **Accept** writes the chosen
+  version where the card says, in the person's repository.
+- **Not a contradiction with [improve-buildings.md](improve-buildings.md) §12.4.** That line is about what Orkcraft
+  **offers and advertises** to game developers (no "AI makes your game" in the README or the launch posts). What the
+  product can do for a person who asks for it, the owner first, is another matter.
+- **The owner's game meets gate 1 of §12.4** for the Alchemist's side: two weeks on the owner's own second project.
+- **Long answers and lost questions** are the console's problem on every screen, not only the phone's:
+  [ork-console.md](ork-console.md) §20.
