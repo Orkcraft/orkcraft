@@ -80,6 +80,21 @@ in the Mechanic's building, without leaving the product. Today the reading and t
 it (Claude Code with the folder); next, the Mechanic does them itself on the night's budget
 (docs/design/improve-buildings.md §11), proposing the change and checking it before it is kept.
 
+## 8. Every night, and against the last time (built 2026-10-12)
+
+**The night check** (gui/night_check.py, in gui/nightly.py's quiet hours): once a night (`check_history.night_key`: a
+night is its evening's date), in a town that has a Test bench, while the Council's `check_nightly` is on (it is by
+default; the Test bench's Check has the switch), `orkcraft check` runs the scenarios in turn — `check_per_night` (2) of
+them a night, all of them on Saturday night — and the quiet town. The night's improvements (gui/improve_night.py)
+wait while it runs: on one AI tool account two jobs slow each other, and the night of 2026-10-11 showed the numbers
+move with it (docs/nights/2026-10-11.md). In the morning one line joins the Elders' toast: what it checked, green or
+red, and what got worse (else better) than the last time.
+
+**The history** (realm/check_history.py, `.orkcraft/check/history.jsonl`): each check's cases, a line. A case is
+**worse** than its last check when it passed fewer of its runs or its building's median time or tokens grew by more
+than a fifth; **better** the other way round; what moved less is the noise of a few runs and is not said. `report.md`
+has **Since the last check**; the Test bench's Check lists it (▼ worse, ▲ better).
+
 ## 7. Next
 
 The plan (2026-10-11), in layers — evals, not tests: repeats and medians, a baseline (the AI tool alone, and last
@@ -95,8 +110,7 @@ night), checks in code wherever code can tell, a judge only where it cannot:
 
 In order:
 
-1. **The night check in the Mechanic:** its hour, its budget, scenarios in turn (some each night, all once a week), the
-   history and how tonight stands against last night, and one line in the morning.
+1. ~~**The night check in the Mechanic**~~ — built (§8).
 2. **A 👎 becomes a case** of its building, kept with the town's own cases: the evals grow from real failures.
 3. **Recorded answers** for the models too: the free layer on every commit.
 4. **The Alchemist's visual regression:** building windows, screenshot against last night.
