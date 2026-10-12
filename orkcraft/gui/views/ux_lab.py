@@ -1,13 +1,15 @@
 """⚗️ The UX bench in the GUI (docs/design/improve-buildings.md §6): its card says whose look it works on; its window
 is its settings (which building, which image tool) over the gallery of that building's pictures. The page lays the
-gallery out (js/buildings/ux_lab.js): it knows the Build icons and the sprites; this says which of them are drawn."""
+gallery out (js/buildings/ux_lab.js): it knows the Build icons and the sprites; this says which of them are drawn.
+Its target may be the operator's mascots instead of a building (§6.4): every role's head at its four stages."""
 from __future__ import annotations
 
 import base64
 
-from orkcraft.design import tokens, ui
+from orkcraft.core.workers.ux_lab import MASCOTS
+from orkcraft.design import mascots, tokens, ui
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import biomes, card_docs, catalog, harnesses, painter
+from orkcraft.realm import biomes, card_docs, catalog, harnesses, intents, painter
 
 SPRITES = {"loot_vault": "loot"}           # a type drawn under another's name (js/icons.js spriteName)
 FLAT = ("dirt", "forest")                  # the biomes that wear the plain header.png (js/icons.js DRAWN_FOR)
@@ -29,17 +31,30 @@ def tools(w) -> list[dict]:
     return [{"id": t, "title": harnesses.need(t).title if harnesses.get(t) else t, "on": t in on} for t in ids]
 
 
+def mascot_roles() -> list[dict]:
+    """Every role's mascot, on its kin's home ground, its four stages."""
+    return [{"role": r.id, "nick": r.nick, "title": r.title, "biome": biomes.HOMES.get(r.mascot, "dirt"),
+             "paths": [mascots.path(r.id, n) for n in mascots.STAGES]}
+            for r in intents.ROLES if mascots.is_mascot(mascots.path(r.id, 1))]
+
+
 def card(w) -> dict:
     tid = w.target
+    if tid == MASCOTS:
+        return {"target": tid, "title": "Mascots", "pictures": 4 * len(mascot_roles())}
     return {"target": tid, "title": catalog.TYPES[tid].title if tid else "", "pictures": 2 + len(drawn_biomes(tid)) if tid else 0}
 
 
 def detail(w) -> dict:
     tid = w.target
-    out = {"target": tid, "title": catalog.TYPES[tid].title if tid else "", "biomes": drawn_biomes(tid) if tid else [],
+    building = tid if tid in catalog.TYPES else ""
+    out = {"target": tid, "title": catalog.TYPES[tid].title if building else "",
+           "biomes": drawn_biomes(tid) if building else [],
            "image_tool": w.image_tool, "tools": tools(w), "painting": dict(w.painting),
            "own": {p: int(w.own(p).stat().st_mtime) for p in w.owned()}, "sprite": SPRITES.get(tid, tid)}
-    if tid:
+    if tid == MASCOTS:
+        out.update(title="Mascots", biomes=[], mascots=mascot_roles())
+    elif tid:
         bid = w.first_of_type()
         contract = ui.contract(tid)
         out["window"] = {"panes": sorted(contract.panes) if hasattr(contract, "panes") else [],
@@ -64,7 +79,7 @@ def _tool(w, args: dict) -> bool:
 
 def _path(args: dict) -> str:
     path = text(args, "path", 200)
-    if not painter.kind_of(path) or not (tokens.SYSTEM / path).is_file():
+    if not (painter.kind_of(path) or mascots.is_mascot(path)) or not (tokens.SYSTEM / path).is_file():
         raise ActError("No such picture")
     return path
 
@@ -95,7 +110,7 @@ def _draft(w, args: dict) -> dict:
     shown = got if isinstance(got, bytes) else (tokens.SYSTEM / path).read_bytes() if got == "shipped" else b""
     src = "data:image/png;base64," + base64.b64encode(shown).decode() if shown else ""
     return {"src": src, "shipped": got == "shipped", "painting": path in w.painting and w.painting[path] == "",
-            "error": w.painting.get(path) or ""}
+            "error": w.painting.get(path) or "", "why": w.why(path) if isinstance(got, bytes) else ""}
 
 
 def _reset(w, args: dict) -> bool:

@@ -6,7 +6,8 @@ docs/design/war-map.md):
 - `design-system/sprites/mascots/<role>-<stage>.png` (and `@2x`): the operator's mascot, a head on the
   landing's 12 × 11 class grid per onboarding role, each of its four stages adding its own headgear or
   prop (a red bandana, then a horned helm; a keyword tag, then rating stars…), never a crown: the crown
-  is the Warchief's.
+  is the Warchief's. `grids.json` beside them: every head as its grid and the palette, which the UX bench
+  draws again from a person's words (orkcraft/design/mascots.py).
 - `design-system/sprites/flags/`: a building's renown and goal, drawn at the header sprites' scale (2 px
   a pixel). `level-<n>.png`, the flag on its roof at I–III (ivory, taller at II, gold at III; the pole's
   foot at the bottom left, `js/icons.js` `FLAG_AT` says where on each roof it stands); `footing-<n>.png`,
@@ -22,6 +23,7 @@ Needs Pillow.
 """
 from __future__ import annotations
 
+import json
 import pathlib
 
 from PIL import Image, ImageDraw, ImageFilter
@@ -330,6 +332,10 @@ def mascots() -> None:
     for role in ROLES:
         for stage in STAGES:
             save_pair(grid_image(mascot_grid(role, stage), PALETTE, 2), SPRITES / "mascots" / f"{role}-{stage}.png")
+    # Each head as its grid, for the UX bench to draw again (orkcraft/design/mascots.py): the product has no Pillow
+    grids = {f"{role}-{stage}": mascot_grid(role, stage) for role in ROLES for stage in STAGES}
+    (SPRITES / "mascots" / "grids.json").write_text(json.dumps({"palette": PALETTE, "grids": grids}, indent=1) + "\n",
+                                                    encoding="utf-8")
 
 
 # -- a building's renown and goal (docs/design/growth.md §5) ---------------------------------------------

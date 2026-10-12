@@ -3,12 +3,15 @@
 // never one building's on the map), and the AI tool that paints — over the gallery of that building's pictures:
 // its Build icon and its Office icon, its house on each ground it is drawn for, its ork. Painting them again from
 // your words, and its window and cards, come next (stage 6). It lays no road (realm/catalog.py `roads`).
+// Its target may be no building but the operator's mascots (§6.4): every role's head at its four stages, on its
+// kin's ground, each drawn again by the Alchemist as its grid (a text model, never the image tool).
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say, town } from "../link.js";
 import { Card } from "../hut.js";
 import { GROUPS, INTENTS } from "../build.js";
-import { TypeIcon, HATS } from "../icons.js";
+import { TypeIcon, HATS, BIOMES } from "../icons.js";
+import { terrainUrl } from "../terrain.js";
 import { Dialog } from "../dialog.js";
 
 const sheet = new URL("./ux_lab.css", import.meta.url).href;
@@ -20,6 +23,7 @@ if (!document.querySelector(`link[href="${sheet}"]`)) {
 }
 
 const OWN = "ux_lab";
+const MASCOTS = "mascots";               // core/workers/ux_lab.py MASCOTS: a target that is no building
 const GROUND = { dirt: "Dirt and forest", ice: "Ice", dust: "Dust", void: "Void", lava: "Lava", meadow: "Meadow" };
 
 export function card(b) {
@@ -41,6 +45,14 @@ export function card(b) {
 function Pick({ id, target }) {
   const tiles = INTENTS.filter((x) => x.type !== OWN);
   return html`<div class="ux-pick" role="group" aria-label=${say("Which building")}>
+    <div class="gui-build__group" role="group" aria-label=${say("Not a building")}>
+      <span class="gui-build__group-word">${say("Not a building")}</span>
+      <div class="gui-build__group-tiles">
+        <button class=${cls("gui-catalog__item gui-build__tile", { "is-picked": target === MASCOTS })} aria-pressed=${target === MASCOTS}
+            title=${say("Mascots")} onClick=${() => act(id, "pick", { type: MASCOTS })}>
+          <img class="ok-sprite" src="/ds/sprites/mascots/engineer-1.png" srcset="/ds/sprites/mascots/engineer-1@2x.png 2x"
+            width="32" height="30" alt="" draggable="false" />
+          <span class="gui-build__word">${say("Mascots")}</span></button></div></div>
     ${GROUPS.map((g) => ({ ...g, tiles: tiles.filter((x) => x.group === g.id) })).filter((g) => g.tiles.length).map((g) => html`
       <div key=${g.id} class="gui-build__group" role="group" aria-label=${say(g.word)}>
         <span class="gui-build__group-word">${say(g.word)}</span>
@@ -100,10 +112,32 @@ function Gallery({ id, data }) {
   </div>`;
 }
 
+/** A biome's ground as a style: its colour and its glyphs (js/terrain.js), as the onboarding's cards stand on it. */
+function ground(biome) {
+  const b = BIOMES[biome] || BIOMES.dirt;
+  const glyphs = terrainUrl(biome);
+  return `background-color:${b.ground};${glyphs ? `background-image:url("${glyphs}");` : ""}`;
+}
+
+/** The mascots: a row per role, its nick and its four stages on its kin's ground; a press opens one to draw again. */
+function MascotGallery({ id, data }) {
+  const [open, setOpen] = useState(null);           // {path, label, biome}
+  return html`<div class="ux-gallery">
+    ${data.mascots.map((m) => html`<section key=${m.role} class="ux-gallery__group">
+      <h3 class="ok-list__head">${m.nick} <span class="ok-tone-muted">· ${say(m.title)}</span></h3>
+      <div class="ux-gallery__row">${m.paths.map((p, i) => html`<${Picture} key=${p + v(data, p)} label=${`Stage ${i + 1}`}
+          onOpen=${() => setOpen({ path: p, label: `${m.nick} · stage ${i + 1}`, biome: m.biome })}>
+          <span class="ux-picture__ground" style=${ground(m.biome)}>${img(data, p, "ok-sprite ux-picture__mascot")}</span></${Picture}>`)}
+      </div></section>`)}
+    ${open && html`<${PaintDialog} id=${id} data=${data} path=${open.path} label=${open.label} mascot=${true}
+      backdrop=${ground(open.biome)} onClose=${() => setOpen(null)} />`}
+  </div>`;
+}
+
 /** A picture large on the left (drag on it to mark a region), what to change on the right; Reset at the top brings
  *  the shipped one back, Apply at the bottom keeps it on this machine. */
-function PaintDialog({ id, data, path, label, onClose }) {
-  const [d, setD] = useState({ src: "", shipped: false, painting: false, error: "" });
+function PaintDialog({ id, data, path, label, onClose, mascot = false, backdrop = "" }) {
+  const [d, setD] = useState({ src: "", shipped: false, painting: false, error: "", why: "" });
   const [words, setWords] = useState("");
   const [region, setRegion] = useState(null);
   const box = useRef(null);
@@ -134,18 +168,24 @@ function PaintDialog({ id, data, path, label, onClose }) {
       <div class="ux-edit__left">
         <div class="ux-edit__bar"><span class="ok-font-status ok-tone-muted">${say(d.shipped ? "As shipped" : d.src ? "The new one" : "As it is")}</span>
           <button class="ok-btn" disabled=${d.painting} onClick=${() => act(id, "reset", { path }).then(() => { setRegion(null); look(); }, () => {})}>${say("Reset")}</button></div>
-        <div ref=${box} class="ux-edit__picture" onPointerDown=${down}>
-          <img src=${left} alt="" draggable="false" />
+        <div ref=${box} class="ux-edit__picture" style=${backdrop} onPointerDown=${down}>
+          <img class=${mascot ? "is-mascot" : ""} src=${left} alt="" draggable="false" />
           ${region && region.w > 0.01 && html`<div class="ux-edit__region" style=${`left:${region.x * 100}%;top:${region.y * 100}%;width:${region.w * 100}%;height:${region.h * 100}%`}></div>`}
         </div>
-        <p class="ok-font-status ok-tone-muted">${say("Drag on it to mark a region: then only that part is painted again.")}</p>
+        <p class="ok-font-status ok-tone-muted">${say(mascot ? "Drag on it to mark a region: then only those cells change."
+          : "Drag on it to mark a region: then only that part is painted again.")}</p>
+        ${d.why && html`<p class="ok-font-status ok-tone-muted">${d.why}</p>`}
       </div>
       <div class="ux-edit__right">
         <label class="gui-field"><span class="ok-font-label">${say(region && region.w > 0.01 ? "What to change in the region" : "What to change")}</span>
-          <textarea class="ok-input gui-textarea" rows="5" maxlength="2000" value=${words} placeholder=${say("e.g. make it cuter: rounder roof, a small banner")}
+          <textarea class="ok-input gui-textarea" rows="5" maxlength="2000" value=${words}
+            placeholder=${say(mascot ? "e.g. a green hood instead of the cap, gold eyes" : "e.g. make it cuter: rounder roof, a small banner")}
             onInput=${(e) => setWords(e.target.value)}></textarea></label>
-        <p class="ok-font-status ok-tone-muted">${say(`It goes with the style's own prompt to ${data.image_tool}; one picture each time.`)}</p>
-        <span><button class="ok-btn primary" disabled=${words.trim().length < 3 || d.painting} onClick=${paint}>${say(d.painting ? "Painting…" : "Paint it")}</button>
+        <p class="ok-font-status ok-tone-muted">${say(mascot
+          ? "The Alchemist draws it again as its 12 × 11 grid, in the mascots' own palette: no image tool."
+          : `It goes with the style's own prompt to ${data.image_tool}; one picture each time.`)}</p>
+        <span><button class="ok-btn primary" disabled=${words.trim().length < 3 || d.painting} onClick=${paint}>${say(mascot
+          ? (d.painting ? "Drawing…" : "Draw it") : (d.painting ? "Painting…" : "Paint it"))}</button>
           ${region && region.w > 0.01 && html`<button class="gui-link" onClick=${() => setRegion(null)}>${say("Whole picture")}</button>`}</span>
         ${d.error && html`<p class="ok-font-status ok-tone-error" role="alert">✗ ${say(d.error)}</p>`}
       </div>
@@ -252,8 +292,9 @@ function Window({ id, data }) {
           ${data.tools.map((x) => html`<option key=${x.id} value=${x.id}>${x.title}${x.on ? "" : ` (${say("off")})`}</option>`)}
         </select></label>
     </section>
-    ${data.target ? html`<${Gallery} id=${id} data=${data} />`
-      : html`<p class="ok-font-status ok-tone-muted">${say("Pick a building above: its pictures show here.")}</p>`}
+    ${data.target === MASCOTS ? html`<${MascotGallery} id=${id} data=${data} />`
+      : data.target ? html`<${Gallery} id=${id} data=${data} />`
+      : html`<p class="ok-font-status ok-tone-muted">${say("Pick a building above, or the mascots: their pictures show here.")}</p>`}
   </div>`;
 }
 
