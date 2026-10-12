@@ -35,7 +35,7 @@ class Role:
     id: str
     icon: str
     title: str
-    mascot: str                               # orc · elf · lich · gnome · goblin · knight · skeleton
+    mascot: str                               # orc · elf · lich · gnome · goblin · knight · skeleton (the ghosts)
     sources: tuple[str, ...] = ()             # interview options most people in the role use
     outputs: tuple[str, ...] = ()
     nick: str = ""                            # the mascot's name: Burnout Peon, The Jira Lich, Indie Knight…
@@ -109,13 +109,13 @@ MASCOTS: dict[str, tuple[str, ...]] = {
                "   _|    |_ $ ",
                "  / |____| \\  ",
                "   /GOBLIN\\   "),
-    "skeleton": ("    .----.    ",
-                 "   ( o  o )   ",
-                 "    | ^^ |    ",
-                 "    '-==-'    ",
-                 "   --|##|--   ",
-                 "     |##|     ",
-                 "  /SKELETON\\  "),
+    "skeleton": ("    .----.    ",          # the ghosts: the id stays for the profiles that saved it
+                 "   /      \\   ",
+                 "   | O  O |   ",
+                 "   |  oo  |   ",
+                 "   |      |   ",
+                 "   |/\\/\\/\\|   ",
+                 "    /GHOST\\   "),
 }
 
 ROLES: tuple[Role, ...] = (
@@ -126,7 +126,7 @@ ROLES: tuple[Role, ...] = (
     Role("eng_manager", "🧭", "Engineering manager", "lich",
          ("jira", "github", "slack", "gcal", "confluence"), ("confluence", "slack", "md_reports"), "The Jira Lich"),
     Role("product_manager", "📋", "Product manager", "lich",
-         ("jira", "confluence", "analytics", "slack", "mail"), ("confluence", "jira", "slack"), "Roadmap Wraith"),
+         ("jira", "confluence", "analytics", "slack", "mail"), ("confluence", "jira", "slack"), "Roadmap Mummy"),
     Role("designer", "🎨", "Product designer", "elf",
          ("figma", "jira", "notion", "slack"), ("figma", "jira", "slack"), "Gradient-Sick Elf"),
     Role("game_designer", "🎮", "Game designer", "elf",
@@ -141,7 +141,7 @@ ROLES: tuple[Role, ...] = (
     Role("founder", "🛡", "Founder / indie maker", "knight",
          ("mail", "github", "analytics", "notion"), ("github", "notion", "mail"), "Indie Knight"),
     Role(OTHER, "🧩", "Someone else", "skeleton", ("mail", "slack", "gdrive", "files"), ("gdocs", "slack", "mail"),
-         "Wandering Skeleton"),
+         "Wandering Ghost"),
 )
 
 INDUSTRIES: tuple[Choice, ...] = (

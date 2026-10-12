@@ -33,7 +33,7 @@ OPEN = frozenset({"fields", "loot", "watchtower", "pit"})   # stand open: the pe
 RAISE_STEP_S = 0.8          # between two raising steps: slow enough to see each building go up
 ISSUES = "https://github.com/Orkcraft/orkcraft/issues/new"
 KIN_WORDS = {"orc": "orks", "lich": "undead", "elf": "elves", "gnome": "gnomes", "goblin": "goblins",
-             "knight": "knights", "skeleton": "skeletons"}     # "Two kinds of gnomes" on step 2
+             "knight": "knights", "skeleton": "ghosts"}     # "Two kinds of gnomes" on step 2
 USES_MAX = 6                # the chips "The planner will use" starts with: the MCP servers on, then the class's usual
 USES_MCP = 4                # …of which MCP servers at most, so the class's usual always shows too
 RECOMMENDED = ("claude", "codex", "cursor")    # what the step offers to install when no AI tool is here

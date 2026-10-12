@@ -63,12 +63,12 @@ code → hands-on work), so ★ still finds the towns that fit.
 | Role | Kin | Mascot |
 |---|---|---|
 | Software engineer · QA engineer | orks | Burnout Peon · Bug Ork |
-| Engineering manager · Product manager | undead | The Jira Lich · Roadmap Wraith |
+| Engineering manager · Product manager | undead | The Jira Lich · Roadmap Mummy |
 | Product designer · Game designer | elves | Gradient-Sick Elf · Lore Elf |
 | ASO manager · Marketing / growth | gnomes | Keyword Gnome · Growth-Hack Gnome |
 | Data analyst | goblins | Data-Mining Goblin |
 | Founder / indie maker | knights | Indie Knight |
-| Someone else | skeletons | Wandering Skeleton |
+| Someone else | ghosts | Wandering Ghost |
 
 The nicks of the first role of each kin are the classes of orkcraft.dev. The page hands its pick to
 `orkcraft --role <class>` (or a role id): it is kept in `profile.role` before the first run, so this
