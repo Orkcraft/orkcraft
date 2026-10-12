@@ -467,7 +467,7 @@ evaluation platform") so that neither is heard. Nothing of §12.2 changes: the d
 
 **It starts when one of these holds:**
 
-1. the owner has used the Test bench on his own second project (not Orkcraft) for two weeks: the cheapest test;
+1. the owner has used the Test bench on their own second project (not Orkcraft) for two weeks: the cheapest test;
 2. after the launch, three or more outside people have asked, in an issue or a discussion, to point it at their own
    project.
 
