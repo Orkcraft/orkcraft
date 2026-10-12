@@ -199,7 +199,14 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         """Improve, in the Warchief's line (docs/design/warchief-line-and-cards.md §1): the latest 👎 of every building,
         as one ask for the Warchief to go through — what went wrong in each and what to change. With no 👎, nothing to
         ask: `none` says so. With a `day` (YYYY-MM-DD), the Mechanic and the Farseer read that day's logs first
-        (gui/day_review.py; `again`: read it again though it was read): `said` tells what they are doing."""
+        (gui/day_review.py; `again`: read it again though it was read); with `since_update`, the logs since this
+        machine started on the code it runs now. `said` tells what they are doing."""
+        if args.get("since_update") is True:              # the logs since this machine started on its code now
+            try:
+                key = self.host.day_review.since_update()
+            except ValueError as e:
+                raise ConsoleError(str(e)) from None
+            return {"said": self.host.day_review.start(key)}
         day = str(args.get("day") or "")
         if day:
             if day not in {d["day"] for d in self.host.day_review.days()}:

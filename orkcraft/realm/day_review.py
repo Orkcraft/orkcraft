@@ -3,9 +3,14 @@ Mechanic (quality per token) and the Farseer (what the person needed); each read
 (realm/hotspots.py: found by code, a few calls in full) and says what to change. A finding must cite a hotspot it
 rests on: one that cites none, or one the day does not have, is dropped — no proof, no finding.
 
-    day_review.run(root, day, ask, titles, decisions, dislikes)   a Review, kept in `.orkcraft/council/days/<day>.json`
+    day_review.run(root, key, ask, titles, decisions, dislikes)   a Review, kept in `.orkcraft/council/days/<key>.json`
     day_review.load(root, day)                                    the kept one, or None
     day_review.warchief_text(review)                              what the Warchief is asked to go through
+    day_review.span_key(since, until)                             a span's key: the logs from `since` to `until`
+    day_review.bounds(key), day_review.label(key)                 its first and last second and its days; in words
+
+A key is a day (`2026-10-12`) or a span (`2026-10-12T14-05_2026-10-12T17-20`): Improve's *Since the last update*
+reads the logs from the moment this machine started on the code it runs now (core/running.py) until the press.
 
 `ask(name, prompt) -> (text, cost)` is the model seam (builders.ask on the main tool, in the GUI); a councillor whose
 ask fails is said in `errors` and the other's findings stand. No face here: gui/day_review.py runs it.
@@ -31,8 +36,8 @@ PROMPT = """{persona}
 
 ---
 
-You read one day of Orkcraft, a town of AI agents: its buildings take work in, call AI tools, and pass work on. The
-day is {day}. Code found its hotspots below; each has an id (H1, H2, …), what is wrong or costly, and an excerpt of
+You read the logs of Orkcraft, a town of AI agents: its buildings take work in, call AI tools, and pass work on. The
+logs are {day}. Code found its hotspots below; each has an id (H1, H2, …), what is wrong or costly, and an excerpt of
 the call it rests on (its prompt's head and tail, its output).
 
 {digest}
@@ -71,14 +76,54 @@ class Review:
     def said(self) -> str:
         """One line: what the Elders found in the day."""
         if not self.hotspots:
-            return f"{self.day}: nothing in the logs worth a look"
+            return f"{label(self.day)}: nothing in the logs worth a look"
         n = len(self.findings)
-        return (f"{self.day}: {len(self.hotspots)} hotspot{'' if len(self.hotspots) == 1 else 's'}, "
+        return (f"{label(self.day)}: {len(self.hotspots)} hotspot{'' if len(self.hotspots) == 1 else 's'}, "
                 f"{n} change{'' if n == 1 else 's'} offered")
 
 
+SPAN = "_"                                 # between a span's two ends in its key
+STAMP = "%Y-%m-%dT%H-%M"
+
+
+def span_key(since: dt.datetime, until: dt.datetime) -> str:
+    return f"{since.strftime(STAMP)}{SPAN}{until.strftime(STAMP)}"
+
+
+def is_span(key: str) -> bool:
+    return SPAN in key
+
+
+def bounds(key: str) -> tuple[str, str, list[str]]:
+    """(its first second, its last, its days) as ISO text; a key that is neither a day nor a span: ValueError."""
+    if not is_span(key):
+        day = dt.date.fromisoformat(key).isoformat()
+        return f"{day}T00:00:00", f"{day}T23:59:59", [day]
+    a, b = (dt.datetime.strptime(x, STAMP) for x in key.split(SPAN, 1))
+    if b < a:
+        raise ValueError(f"a span that ends before it starts: {key}")
+    days, d = [], a.date()
+    while d <= b.date():
+        days.append(d.isoformat())
+        d += dt.timedelta(days=1)
+    return a.isoformat(timespec="seconds"), b.replace(second=59).isoformat(timespec="seconds"), days
+
+
+def label(key: str) -> str:
+    """`2026-10-12`, or `2026-10-12 14:05–17:20` for a span (its days when it runs past midnight)."""
+    if not is_span(key):
+        return key
+    try:
+        a, b = (dt.datetime.strptime(x, STAMP) for x in key.split(SPAN, 1))
+    except ValueError:
+        return key
+    end = b.strftime("%H:%M") if a.date() == b.date() else b.strftime("%Y-%m-%d %H:%M")
+    return f"{a.strftime('%Y-%m-%d %H:%M')}–{end}"
+
+
 def prompt(who: str, day: str, digest: str) -> str:
-    return PROMPT.format(persona=agents.persona(who), day=day, digest=digest, most=MAX_FINDINGS,
+    when = f"from {label(day)}" if is_span(day) else f"of the day {day}"
+    return PROMPT.format(persona=agents.persona(who), day=when, digest=digest, most=MAX_FINDINGS,
                          kinds=", ".join(KINDS))
 
 
@@ -146,6 +191,6 @@ def warchief_text(review: Review, titles: dict[str, str]) -> str:
         where = f"@{titles.get(f.building, f.building)}" if f.building else "the town"
         lines.append(f"- {where} — {TITLES[f.who]}: {f.what} ({f.why}) Change ({f.kind}): {f.change} "
                      f"[{', '.join(f.hotspots)}]")
-    return (f"The Mechanic and the Farseer read the logs of {review.day} and found these. Go through them one by one: "
+    return (f"The Mechanic and the Farseer read the logs of {label(review.day)} and found these. Go through them one by one: "
             "for each, offer the change as one I can apply or skip. A code change is not made here: say it, and that "
-            "Improve → this day → Try in the Test bench measures it before a pull request.\n" + "\n".join(lines))
+            "Improve → these logs → Try in the Test bench measures it, or Write the fix makes it as a pull request.\n" + "\n".join(lines))

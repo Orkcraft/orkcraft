@@ -29,7 +29,7 @@ export function GithubAccount() {
       : g.waiting ? html`<p class="ok-font-status">${say("Type this code at GitHub:")} <b class="gui-github__code">${g.waiting.code}</b>
           <a class="gui-link" href=${g.waiting.uri} target="_blank" rel="noopener">${say("Open GitHub")}</a>
           <button class="gui-link" onClick=${() => command("github.cancel").then(setG, () => {})}>${say("Cancel")}</button></p>`
-      : html`<p class="ok-font-status ok-tone-muted">${say("A Test bench sends what it improved to Orkcraft as a pull request, with the tests that show it.")}
+      : html`<p class="ok-font-status ok-tone-muted">${say("The Test bench, the UX bench and Improve Orkcraft send what they improved to Orkcraft as pull requests.")}
           <button class="ok-btn" onClick=${connect}>${say("Connect GitHub")}</button></p>`}
     ${g.error && html`<p class="ok-font-status ok-tone-error" role="alert">✗ ${say(g.error)}</p>`}
   </div>`;

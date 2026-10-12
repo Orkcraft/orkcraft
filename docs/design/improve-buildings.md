@@ -21,6 +21,8 @@ and keep it, **faster and cheaper than testing and rewriting it through Claude C
 | 9 | The mascots in the UX bench: a target that is no building; each head drawn again as its grid by a text model, never the image tool (§6.4) | built |
 | 10 | A moving house's two layers in the UX bench's *At work* group (docs/design/building-motion.md, its own stages) | building-motion.md |
 | 11 | **Send to Orkcraft** from both benches: the UX bench's pictures, mascots, cards and windows (§6.5); the Test bench's settings and prompts as a type's shipped defaults, beside its code (§5.4) | built |
+| 12 | Improve reads **the logs since the last update** (§13): from the moment this machine started on the code it runs now | built |
+| 13 | **Improve Orkcraft**: Comment mode on any part of the window for the Alchemist, *Write the fix* on the Mechanic's code findings; each fix written in a copy of Orkcraft's source (a worktree of the checkout it runs from), previewed, sent as a pull request (§14) | built |
 
 ## 1. Why
 
@@ -485,6 +487,13 @@ objects when a change gives the person more to do, hides what a building did, or
 5. **Kept** in `.orkcraft/council/days/<day>.json`: picking the day again hands the same findings to the Warchief at
    no cost.
 
+**Since the last update** (asked 2026-10-12). The first row of Improve reads the logs from the moment this machine
+started on the code it runs now up to the press: the code is known by its version and, in a git checkout, its commit
+(core/running.py, `~/.orkcraft/running.json` keeps when each was first seen), so after an update or a `git pull` the
+Elders read only the work done on the latest changes. Its key is a span (`2026-10-12T14-05_2026-10-12T17-20`,
+`day_review.span_key`); the hotspots count only the calls, 👎 and decisions inside it (`hotspots.find`), and a span
+may run past midnight. Pressed again later, it reads up to the new moment; the latest reading's changes stay under it.
+
 **At night** (gui/nightly.py, after the check, before the night's improvements; the Council's `review_nightly`, on by
 default): the day that just ended is read once its date has passed, while it is quiet; the morning's Elders' toast says
 what was found, and Improve goes through it at no cost. Yesterday's logs wait for that reading before the morning's
@@ -501,3 +510,41 @@ request only from there, shown before it goes, sent by the person, with numbers 
 At night every finding of the day just read goes to its Test bench the same way (free), and the night's
 improvements (§8.4) try its settings and prompt ones first, as they try any proposal. **Code is not the night's**: an
 agent writing code with nobody there, and its cost, wait for the person's Try in the morning.
+
+## 14. Improve Orkcraft: comments on the window and fixes as pull requests (asked 2026-10-12)
+
+Asked by the owner: to use Orkcraft on real work at their own machine and, from there, have **comments on any part of
+the interface** go to the Alchemist and **what the Mechanic finds in the logs** become a fix, both written by the
+machine's own AI tool and sent to Orkcraft as pull requests.
+
+- **Comment mode** (`js/fixes.js`): the mascot's menu → *Improve Orkcraft* → **Comment mode**, or Ctrl/⌘+Shift+M
+  anywhere. A bar says it is on; a dashed frame follows the pointer; a press on any element opens a note beside it
+  instead of doing what the press would. **Send to the Alchemist** keeps the comment with where it was: a CSS path of
+  the element, its text, its markup (1,500 characters), the window it is in (`aria-label`), the building of a card,
+  the look and the window's size — never what is behind it (`fixes.clean_where` keeps only those keys). Esc leaves.
+- **Comments and fixes…** (the dialog, `FixesDialog`): the comments waiting, **Ask the Alchemist** (all of them as
+  one fix), and the fixes, newest first.
+- **Write the fix**: in Improve, a read day's or span's finding of kind *code* has it beside *Try in the Test bench*:
+  the Mechanic writes it from the finding, its change and the hotspots it cites (never the logs themselves).
+- **A copy per fix** (`realm/work_copy.py`), in `~/.orkcraft/improve/copies/<fix>` (`ORKCRAFT_STATE_DIR`):
+  - Orkcraft runs from a **git checkout** (bin/orkcraft, `pip install -e`): a `git worktree` of it at the commit it
+    runs — the whole repository, so the agent reads CLAUDE.md and runs the tests. Its `.claude/settings.local.json`
+    (never part of the change) lets Claude Code run pytest and read git there; it may not commit or push.
+  - Else: the package as installed, in a git repository of its own (no tests there; the dialog says so).
+- **The agent** is the machine's main tool (`builders.main_tool`, Claude Code by default) working in the copy
+  (`jobs.run_work`, edits accepted), with its persona (design/agents/), the comments or the finding, and the rules:
+  CLAUDE.md in a worktree; the wording and the design system's roles in a package copy (`fixes.prompt`). Stop all
+  stops it like any agent. A fix is *written* (it changed files), *nothing changed*, or *could not be written*;
+  **Change it** / **Write it again** asks once more in the same copy with what else to do.
+- **Preview**: a written fix that changes the page (`orkcraft/gui/static`) can be shown in this window: the server
+  serves the copy's page first (`server.resolve(path, preview)`) and the window reloads; **Stop preview** goes back.
+  Its Python part runs once Orkcraft takes the pull request and this machine updates.
+- **Send as a pull request…** shows what leaves the machine (the title and the body; the diff is under *What
+  changes*), then sends it through the Orkcraft Improve app (§4, `github_app.send`) on a branch
+  `improve/<alchemist|mechanic>-<time>`: the changed files merged three ways onto `main`, pictures as bytes. A file
+  the copy deleted is not sent (the API path adds and changes files only); the body says so. The body says who wrote
+  it, from which commit, what the person said (their own words: they typed them to be sent) or the finding, what the
+  agent said it did and the files.
+- **Kept on this machine, not in a town** (`realm/fixes.py`, `~/.orkcraft/improve/fixes.json`): they are about
+  Orkcraft, whichever town shows it. A fix being written when the window closed is said as one to write again.
+

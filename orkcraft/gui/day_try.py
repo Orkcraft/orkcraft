@@ -49,7 +49,7 @@ def _proposal(host, review: day_review.Review, n: int) -> dict:
     by = day_review.TITLES[f.who].removeprefix("the ").capitalize()
     return {"id": _pid(review.day, n), "area": AREA.get(f.kind, "prompt"), "title": f.what[:200],
             "detail": f"{f.change} — {f.why}".strip(" —")[:2000], "where": host.town.title_of(f.building),
-            "effect": f.why[:300], "from": f"{by}, in the logs of {review.day} ({', '.join(f.hotspots)})"}
+            "effect": f.why[:300], "from": f"{by}, in the logs of {day_review.label(review.day)} ({', '.join(f.hotspots)})"}
 
 
 def findings(host, day: str) -> list[dict]:

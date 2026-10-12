@@ -1,7 +1,9 @@
 """🔥 Where a day went wrong or cost the most, found in its logs by code — no model (docs/design/improve-buildings.md
 §13): the first step of Improve, so the Mechanic and the Farseer read a few calls in full, never the whole day.
+`key` is a day (`2026-10-12`) or a span (`2026-10-12T14-05_2026-10-12T17-20`, realm/day_review.py `span_key`): only
+the calls, 👎 and decisions inside it count.
 
-    hotspots.find(root, day, titles, decisions, dislikes)    [Hotspot], each with an id the review cites (H1, H2, …)
+    hotspots.find(root, key, titles, decisions, dislikes)    [Hotspot], each with an id the review cites (H1, H2, …)
     hotspots.digest(spots)                                  what the council reads: each hotspot and its excerpts
 
 The kinds, in the order they are listed:
@@ -55,48 +57,53 @@ def _excerpt(folder: Path, line: dict) -> str:
     return (f"{head}\nPROMPT:\n{prompt}\nOUTPUT:\n{out[:OUT]}" + (f"\nERRORS:\n{err[-OUT:]}" if err else ""))
 
 
-def find(root: Path, day: str, titles: dict[str, str], decisions: Callable[[str, str], list[dict]],
+def find(root: Path, key: str, titles: dict[str, str], decisions: Callable[[str, str], list[dict]],
          dislikes: Callable[[str, str], list[dict]]) -> list[Hotspot]:
+    from orkcraft.realm import day_review
+    since, until, days = day_review.bounds(key)
+    inside = lambda at: not at or since <= str(at)[:19] <= until          # noqa: E731 — a line with no time: kept
     found: dict[str, list[Hotspot]] = defaultdict(list)
-    costly: list[tuple[int, str, dict]] = []
-    for bid in analytics._buildings(root, day):
-        folder = call_log.day_folder(root, day, bid)
+    costly: list[tuple[int, str, Path, dict]] = []
+    blds = sorted({bid for day in days for bid in analytics._buildings(root, day)})
+    for bid in blds:
         title = titles.get(bid, bid)
-        lines = call_log.read(folder)
-        for d in dislikes(bid, day):
+        lines = [(call_log.day_folder(root, day, bid), x) for day in days
+                 for x in call_log.read(call_log.day_folder(root, day, bid)) if inside(x.get("at"))]
+        for d in (d for day in days for d in dislikes(bid, day) if inside(d.get("ts"))):
             note = str(d.get("note") or "").strip()
             found["dislike"].append(Hotspot("", "dislike", bid, title,
                                             f"a 👎 on {title}" + (f": “{note[:300]}”" if note else " (no words)"),
                                             excerpt=f"What it made then:\n{str(d.get('output') or '')[:OUT]}"))
-        for x in lines:
+        for folder, x in lines:
             if x.get("code"):
                 found["failed"].append(Hotspot("", "failed", bid, title, f"a call of {title} failed (exit "
                                                f"{x.get('code')})", [_ref(bid, x)], _excerpt(folder, x)))
             if int(x.get("tokens") or 0) >= COSTLY_MIN:
-                costly.append((int(x.get("tokens") or 0), bid, x))
-        sent_back = [d for d in decisions(bid, day) if d.get("action") in analytics.REWORKS]
+                costly.append((int(x.get("tokens") or 0), bid, folder, x))
+        sent_back = [d for day in days for d in decisions(bid, day)
+                     if d.get("action") in analytics.REWORKS and inside(d.get("at"))]
         if sent_back:
             found["rework"].append(Hotspot("", "rework", bid, title,
                                            f"{title} sent work back or again {len(sent_back)} time"
                                            f"{'' if len(sent_back) == 1 else 's'}",
                                            excerpt="\n".join(f"- {d.get('action')}: {d.get('orc') or 'the steward'} — "
                                                              f"{str(d.get('why') or '')[:300]}" for d in sent_back[:8])))
-        same: dict[str, list[dict]] = defaultdict(list)
-        for x in lines:
+        same: dict[str, list[tuple[Path, dict]]] = defaultdict(list)
+        for folder, x in lines:
             prompt = str(call_log.raw(folder, x).get("prompt") or "")
             if len(prompt) >= REPEAT_HEAD:
-                same[hashlib.sha1(prompt[:REPEAT_HEAD].encode()).hexdigest()].append(x)
+                same[hashlib.sha1(prompt[:REPEAT_HEAD].encode()).hexdigest()].append((folder, x))
         for group in same.values():
             if len(group) >= REPEAT_MIN:
-                tokens = sum(int(x.get("tokens") or 0) for x in group)
+                tokens = sum(int(x.get("tokens") or 0) for _f, x in group)
                 found["repeated"].append(Hotspot("", "repeated", bid, title,
                                                  f"{title} sent the same opening of a prompt {len(group)} times "
-                                                 f"({tokens:,} tokens in all)", [_ref(bid, x) for x in group],
-                                                 _excerpt(folder, group[0])))
-    for tokens, bid, x in sorted(costly, key=lambda c: -c[0])[:COSTLY]:
+                                                 f"({tokens:,} tokens in all)", [_ref(bid, x) for _f, x in group],
+                                                 _excerpt(*group[0])))
+    for tokens, bid, folder, x in sorted(costly, key=lambda c: -c[0])[:COSTLY]:
         title = titles.get(bid, bid)
         found["costly"].append(Hotspot("", "costly", bid, title, f"a costly call of {title}: {tokens:,} tokens",
-                                       [_ref(bid, x)], _excerpt(call_log.day_folder(root, day, bid), x)))
+                                       [_ref(bid, x)], _excerpt(folder, x)))
     spots = [h for kind in ("dislike", "failed", "rework", "repeated", "costly") for h in found[kind]]
     for n, h in enumerate(spots, 1):
         h.id = f"H{n}"
