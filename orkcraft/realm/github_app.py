@@ -138,11 +138,27 @@ def disconnect() -> bool:
     return logins.remove(LOGIN)
 
 
+def installations(acct: dict, opener=None) -> list[str]:
+    """The accounts the app is installed on that this person can see (all pages)."""
+    out: list[str] = []
+    for page in range(1, 6):
+        got = _api("GET", f"/user/installations?per_page=100&page={page}", token=acct["token"], opener=opener)
+        rows = got.get("installations") or []
+        out += [str((i.get("account") or {}).get("login") or "") for i in rows]
+        if len(rows) < 100:
+            break
+    return out
+
+
 def installed(acct: dict, opener=None) -> bool:
     """Whether the app is installed on the person's own account (it pushes to their fork there)."""
-    got = _api("GET", "/user/installations", token=acct["token"], opener=opener)
-    return any(str((i.get("account") or {}).get("login") or "").lower() == acct["login"].lower()
-               for i in got.get("installations") or [])
+    return acct["login"].lower() in [a.lower() for a in installations(acct, opener)]
+
+
+def _not_installed(acct: dict, opener=None) -> str:
+    elsewhere = [a for a in installations(acct, opener) if a]
+    where = f" It is installed on {', '.join(elsewhere)}, not on @{acct['login']}." if elsewhere else ""
+    return f"Install the Orkcraft Improve app on your own account (@{acct['login']}) first: {INSTALL}.{where}"
 
 
 # -- a pull request ----------------------------------------------------------------------------------------------------
@@ -185,7 +201,7 @@ def send(changes: dict[str, tuple[str, str] | tuple[bytes, bytes]], title: str, 
     if acct is None:
         raise GithubError("Connect GitHub first (the mascot's menu → GitHub)")
     if not installed(acct, opener):
-        raise GithubError(f"Install the Orkcraft Improve app on your account first: {INSTALL}")
+        raise GithubError(_not_installed(acct, opener))
     token = acct["token"]
     fork = _fork(acct, opener)
     head = _api("GET", f"/repos/{UPSTREAM}/git/ref/heads/{BASE}", token=token, opener=opener)["object"]["sha"]
