@@ -39,11 +39,15 @@ TIERS = ("elder", "warrior", "laborer")
 # -- output ---------------------------------------------------------------------------------------
 
 def _tokens_of(usage) -> int | None:
-    """All tokens of a usage block: input, output and cache (Claude's names, and the plain ones)."""
+    """All tokens of a usage block: input, output and cache (Claude's names, and the plain ones). A tool that names
+    its cache otherwise (agy: read from the cache apart from its input, docs/nights/2026-10-11.md) has every
+    `…cache…token…` count added too, so a call on a warm cache counts what it read as one on a cold cache does."""
     if not isinstance(usage, dict):
         return None
     keys = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
     vals = [usage[k] for k in keys if isinstance(usage.get(k), int)]
+    vals += [v for k, v in usage.items() if k not in keys and isinstance(v, int) and not isinstance(v, bool)
+             and "cache" in k.lower() and "token" in k.lower()]
     return sum(vals) if vals else None
 
 
