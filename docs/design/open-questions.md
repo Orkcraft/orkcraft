@@ -67,6 +67,16 @@ launch wait on. Answers go under each question, and the doc it changes is update
     II (1995)" ([sprites.md](sprites.md)), the Warcraft III clock. A style is not owned, but a name and a look close to
     a well-defended brand can draw a letter. Has this been weighed? **Blocks the launch**, not P0. *Default:* no
     "Warcraft" in the README, the posts or any prompt that ships; "a real-time strategy game" instead.
+  *Assessed 2026-10-12* (a product view, not legal advice): found in the repository **no Blizzard art, sounds or game
+  quotes**; the fonts are open (OFL: Pixelify Sans, Titillium Web, JetBrains Mono, Almendra SC); the word "Warcraft"
+  in about 15 files, among them the shipped `orkcraft/design/prompts/ork.md` and the design system. **Low likelihood,
+  medium impact, growing with visibility:** the realistic worst case is a polite request to rename, cheap now and
+  painful after a launch. The name alone is a small risk ("-craft" is everywhere, orks are common fantasy, a free
+  developer tool, not a game); a Pixel style of the 1990s is not owned; using "Warcraft" to promote would be the
+  likeliest trigger. **Before the launch (about an hour):** "Warcraft" out of the shipped prompts and the design
+  system ("1990s real-time strategy pixel art", checked on a few renders), and out of the README, the posts and the
+  article; the design docs may keep it as history; no trademark filed for "Orkcraft"; a lawyer if money ever comes
+  under the name.
 - **Q19.** **Buildings from the community:** is a building one folder a person can send as a pull request? Asked at the
     start of the day, not answered. *Default:* not yet; the "Build a building" guide waits for it.
 - **Q20.** **The author's story:** how much of "built with the agents it runs" is to be told, and does anything (an employer,
