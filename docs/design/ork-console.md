@@ -265,7 +265,7 @@ to an ork instead of one. To fill in from the code before stage 1:
 |---|---|---|---|
 | 0 | the log check | §1a | **P0**, no code; decides how big the ask channel is |
 | 1 | a way to ask and to mark assumptions, Claude Code first | §4 | **P0** |
-| 2 | one status on the town: ❓ on orks, 🔥 / smouldering on buildings | §5 | **P0** |
+| 2 | one status on the town: ❓ on orks, 🔥 / smouldering on buildings; every wait says why and until when, and a task where it goes next | §5, §19 | **P0** |
 | 3 | the ork slots list, 🔥 · ❓ counts, Stop all beside it | §8 | **P0** |
 | 4 | the console, folded and unfolded, for the selected ork | §7 | **P0** |
 | 5 | the removals the console replaces | §10 | **P0**, in the same change as 4 |
@@ -416,3 +416,39 @@ architect needs the code's context.
 (schedule → Review board with its clan → the brief), all on the map and all editable. A good thing for buildings
 from the community. And later still a role may be an expertise whose context the building gives, so the Farseer
 could sit on the person's own clan.
+
+## 19. Every wait says why, until when, and how to skip it (P0)
+
+Asked 2026-10-12. The owner opens the Task board's and the Agent pool's Work panels every day, not for their data but
+to find out **why something is not moving**: when a task will be made or started (there is a delay), how to hand a
+task on, why an ork does not start or what it is doing. The cure is the status, not a bigger window: the same
+unseen state as §1, on tasks and carts as well as orks.
+
+> **Whatever waits says why, until when, and offers the way to skip the wait**, on its card and in its row of the
+> ork slots list, in the one status of §5.
+
+**The waits that exist today** ([barracks-planning.md](barracks-planning.md), [town-time.md](town-time.md)), each with
+its plain line:
+
+| why it waits | the line | the way past it |
+|---|---|---|
+| its plan waits for the person (Autonomy: propose only) | "waits for your yes to its plan" | **Approve** (the console opens on the plan) |
+| its plan waits its timer (Autonomy: apply if unanswered) | "starts on its own in 4 min" | **Start now** |
+| another task first (`after`) | "after «Fix the login»" | a link to that task |
+| no ork for its topic yet | "hiring a Grunt for design" | — |
+| no free ork slot | "no free slot (8/8)" | **Run anyway** (over the limit, said so) |
+| held for a limit's reset | "held by the Treasurer until 14:00" | **Run anyway** |
+| the steward is sorting or planning it | "the steward is planning it" | the steward's session in the console |
+| quiet hours | "starts at 08:00, after quiet hours" | **Start now** |
+
+A wait with no line in this table is a bug: either it gets its line, or it should not wait.
+
+**Handing a task on.** A task's card says where it goes next: "goes to the Agent pool when ready (by its road)". With
+no road out it says so: "no road out", and offers **Lay a road to…** the buildings that would take it. Handing on by
+hand is the command card's: **Send to ▸** with the buildings on its roads.
+
+**What it takes from the panel:** the Task board's and the Agent pool's daily opens
+([lighter-buildings.md](lighter-buildings.md) §6) were all to answer "why is it waiting"; with this and §5 they are
+answered on the cards. If the testers still open the panels for it, a line is missing.
+
+In §11 this is part of stage 2 (one status), P0.

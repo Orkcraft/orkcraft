@@ -83,7 +83,10 @@ work: the acceptance test of the console ([ork-console.md](ork-console.md) §11)
 - In the testers' recordings: how often a panel is opened, and whether each time was an emergency. A panel opened
   for everyday work means a card that cannot hold its job.
 
-## 6. Open
+## 6. The owner's use (answered 2026-10-12)
 
-1. **The owner's use:** which buildings' Work panels are opened daily today, and the one thing done in each. Each is
-   a large card to redesign; it replaces the first guesses of §2 and §3.
+The panels opened daily are the **Task board's** (when a task will be made or start, there is a delay; how to hand it
+on) and the **Agent pool's** (why an ork does not start, what it is doing). Neither is for the data: both answer "why
+is it not moving". That is the status's job, P0: every wait says why, until when and how to skip it, and a task says
+where it goes next ([ork-console.md](ork-console.md) §19, §5). Their large cards then keep the everyday jobs of §2,
+and the panel its emergencies.
