@@ -102,3 +102,14 @@ def test_a_cards_empty_lines_survive_the_next_card(fake_repo: Path):
     tl.add("Third", "todo")
     assert tl.load()[0].body == letter
     assert (fake_repo / "TASKS.md").read_text().startswith("# Tasks\n\n## To Do\n")
+
+
+def test_cards_written_at_once_are_named_in_one_call():
+    one = tasklist.titles_prompt(["fix the login page that hangs"])
+    assert one == tasklist.title_prompt("fix the login page that hangs")
+    many = tasklist.titles_prompt(["book the venue for the party", "чеки бухгалтеру до пятницы"])
+    assert many.startswith("Name each of these 2") and "[1]\nbook the venue" in many and "[2]\nчеки" in many
+    answer = "Here they are:\n1. Book party venue\n**2.** \"Чеки бухгалтеру.\"\n3. Extra"
+    assert tasklist.parse_titles(answer, 2) == ["Book party venue", "Чеки бухгалтеру"]
+    assert tasklist.parse_titles("[2] Second", 3) == ["", "Second", ""]
+    assert tasklist.parse_titles("Just one", 1) == ["Just one"]
