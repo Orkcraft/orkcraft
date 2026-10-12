@@ -12,6 +12,7 @@ proposals are written again by themselves.
 from __future__ import annotations
 
 import copy
+import difflib
 import json
 import os
 import subprocess
@@ -27,8 +28,8 @@ import orkcraft
 from orkcraft.core import keeper, runners
 from orkcraft.core.workers.lab import CODE
 from orkcraft.gui import lab_export
-from orkcraft.realm import (bench, bench_review, cassette, code_overlay, github_app, halt, harnesses, jobs, lab_cases, lab_envs,
-                            lab_pr, lexicon, steward, tiers)
+from orkcraft.realm import (bench, bench_review, cassette, catalog, code_overlay, github_app, halt, harnesses, jobs, lab_cases,
+                            lab_envs, lab_pr, lexicon, steward, tiers)
 
 TIER_FLAG = {"laborer": "novice", "warrior": "seasoned", "elder": "veteran"}
 BUSY = {"generate": "writing cases", "env": "writing an environment", "set": "writing a case set",
@@ -244,24 +245,43 @@ class LabRuns:
 
     # -- a pull request (docs/design/improve-buildings.md §4) --------------------------------------------------------
 
+    def _defaults(self, w, subject: dict) -> dict[str, tuple[str, str]]:
+        """The settings and prompts tried on the virtual building, as their types' shipped defaults."""
+        touched = []
+        for bid in dict.fromkeys(c["building"] for c in w.changes_of(subject["id"]) if c["kind"] != CODE):
+            spec = self.host.town.spec_of(bid)
+            if spec:
+                touched.append((catalog.type_of(spec).id, dict(spec.get("config") or {}),
+                                dict(w.virtual_spec(subject["id"], bid).get("config") or {})))
+        return lab_pr.defaults(touched)
+
     def pr_preview(self, w, subject: dict) -> dict:
-        """Exactly what would leave the machine: the title, the body and the diff; whether it may go yet."""
-        code = next((c for c in w.changes_of(subject["id"]) if c["kind"] == CODE), None)
-        if code is None:
-            raise LabError("Only a code change goes to Orkcraft as a pull request")
+        """Exactly what would leave the machine: the title, the body and the diff; whether it may go yet. A code change
+        goes as itself; settings and prompts as the defaults a new building of their type starts with."""
+        changes = w.changes_of(subject["id"])
+        code = next((c for c in changes if c["kind"] == CODE), None)
+        data = [c for c in changes if c["kind"] != CODE]
+        defaults = self._defaults(w, subject)
+        if code is None and not defaults:
+            raise LabError("Try a change on the virtual building first: its code, or settings a new building could "
+                           "start with")
+        since = min(c["at"] for c in ([code] if code else []) + data)
         metric = lab_cases.metric_of(w.state["goal"])
         cases, results = w.cases_of(subject["id"]), w.results_of(subject["id"])
-        rows = lab_pr.with_change(cases, results, code["at"])
-        ok, why = lab_pr.ready(cases, results, code["at"], metric)
+        rows = lab_pr.with_change(cases, results, since)
+        ok, why = lab_pr.ready(cases, results, since, metric)
         sets = [{**cs, "env_name": (w.env(cs["env"]) or {}).get("name", "")} for cs in w.sets_of(subject["id"])]
-        data = [f"{self.host.town.title_of(c['building'])}: {c['title']}" for c in w.changes_of(subject["id"])
-                if c["kind"] != CODE]
-        body = lab_pr.body(w.state["goal"], w.flow_spec(subject)["about"], code["why"], metric, sets, rows,
-                           code["files"], data)
+        lines = [f"{self.host.town.title_of(c['building'])}: {c['title']}" for c in data] if defaults else []
+        said = code["why"] if code else "; ".join(dict.fromkeys(c["why"] for c in data if c.get("why")))
+        body = lab_pr.body(w.state["goal"], w.flow_spec(subject)["about"], said, metric, sets, rows,
+                           (code["files"] if code else []) + sorted(defaults), lines)
+        diff = code_overlay.diff(w.state_dir) if code else ""
+        for path, (base, mine) in sorted(defaults.items()):
+            diff += "\n".join(difflib.unified_diff(base.splitlines(), mine.splitlines(), f"a/{path}", f"b/{path}",
+                                                   lineterm="")) + "\n"
         acct = github_app.account()
-        return {"ready": ok, "why": why, "title": lab_pr.title(code["why"]), "body": body,
-                "diff": code_overlay.diff(w.state_dir), "login": acct["login"] if acct else "",
-                "sent": (w.state.get("prs") or {}).get(subject["id"], "")}
+        return {"ready": ok, "why": why, "title": lab_pr.title(said), "body": body, "diff": diff,
+                "login": acct["login"] if acct else "", "sent": (w.state.get("prs") or {}).get(subject["id"], "")}
 
     def send_pr(self, w, subject: dict) -> None:
         got = self.pr_preview(w, subject)
@@ -273,7 +293,8 @@ class LabRuns:
         if key in self.busy:
             raise LabError(f"It is already {BUSY.get(self.busy[key], 'thinking')}")
         self.busy[key] = "pr"
-        changes = lab_pr.files(w.state_dir)
+        code = any(c["kind"] == CODE for c in w.changes_of(subject["id"]))
+        changes = {**(lab_pr.files(w.state_dir) if code else {}), **self._defaults(w, subject)}
         branch = f"improve/{subject['type'].replace(':', '-')}-{time.strftime('%Y%m%d-%H%M%S')}"
         town = self.host.town
 

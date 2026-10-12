@@ -5,11 +5,14 @@ Its target may be the operator's mascots instead of a building (§6.4): every ro
 from __future__ import annotations
 
 import base64
+import difflib
+import threading
+import time
 
 from orkcraft.core.workers.ux_lab import MASCOTS
 from orkcraft.design import mascots, tokens, ui
 from orkcraft.gui.views import ActError, text
-from orkcraft.realm import biomes, card_docs, catalog, harnesses, intents, motion, painter
+from orkcraft.realm import biomes, card_docs, catalog, github_app, harnesses, intents, motion, painter, ux_pr
 
 SPRITES = {"loot_vault": "loot"}           # a type drawn under another's name (js/icons.js spriteName)
 FLAT = ("dirt", "forest")                  # the biomes that wear the plain header.png (js/icons.js DRAWN_FOR)
@@ -66,7 +69,79 @@ def detail(w) -> dict:
                          "doc": ui.current(w.town.scroll.building(bid), tid) if bid else ui.default(tid),
                          "standing": bool(bid), "draft": w.layout}
         out["cards"] = {"doc": w.card_now(), "draft": w.card, "own": card_docs.load(tid) is not None, "building": bid}
+    out["send"] = {"count": len(ux_pr.items(_window(w))), "busy": bool(getattr(w, "sending", False)),
+                   "sent": getattr(w, "sent", "")}
     return out
+
+
+# -- what this machine applied, sent to Orkcraft as a pull request (docs/design/improve-buildings.md §6.5) -------------
+
+def _window(w) -> tuple[str, dict] | None:
+    """The target type's window as its buildings have it here, when one stands."""
+    tid, bid = w.target, w.first_of_type()
+    return (tid, ui.current(w.town.scroll.building(bid), tid)) if tid in catalog.TYPES and bid else None
+
+
+def _png(data: bytes) -> str:
+    return "data:image/png;base64," + base64.b64encode(data).decode() if data else ""
+
+
+def _shown(path: str, base, mine) -> dict:
+    """One file as the dialog shows it: a picture before and after, or a text's diff."""
+    if isinstance(mine, bytes):
+        return {"path": path, "before": _png(base), "after": _png(mine)}
+    diff = difflib.unified_diff(base.splitlines(), mine.splitlines(), f"a/{path}", f"b/{path}", lineterm="", n=2)
+    return {"path": path, "diff": "\n".join(diff)}
+
+
+def _send_preview(w, args: dict) -> dict:
+    """Exactly what would leave the machine: each item with its files (pictures shown, texts as diffs), the title and
+    the description of all of them, and whether GitHub is connected."""
+    window = _window(w)
+    items = [{**i, "files": [_shown(p, *pair) for p, pair in ux_pr.files([i["id"]], window).items()
+                             if "@2x" not in p]} for i in ux_pr.items(window)]
+    ids = [i["id"] for i in items]
+    if isinstance(args.get("ids"), list):                    # the title and description of those picked
+        ids = [x for x in ids if x in set(args["ids"])]
+    acct = github_app.account()
+    return {"items": items, "title": ux_pr.title(ids, window), "body": ux_pr.body(ids, window),
+            "login": acct["login"] if acct else "", "sent": getattr(w, "sent", "")}
+
+
+def _send(w, args: dict) -> bool:
+    ids = [str(x) for x in (args.get("ids") or []) if isinstance(x, str)][:200]
+    window = _window(w)
+    changes = ux_pr.files(ids, window)
+    if not changes:
+        raise ActError("Pick what to send")
+    if github_app.account() is None:
+        raise ActError("Connect GitHub first: the mascot's menu → GitHub")
+    if getattr(w, "sending", False):
+        raise ActError("It is being sent already")
+    title, body = ux_pr.title(ids, window), ux_pr.body(ids, window)
+    branch = f"improve/ux-{time.strftime('%Y%m%d-%H%M%S')}"
+    town = w.town
+    w.sending = True
+    w.changed()
+
+    def work() -> None:
+        try:
+            url, error = github_app.send(changes, title, body, branch), ""
+        except github_app.GithubError as e:
+            url, error = "", str(e)
+        town.call(finish, url, error)
+
+    def finish(url: str, error: str) -> None:
+        w.sending = False
+        if error:
+            town.toast(error, title="GitHub", severity="error")
+        else:
+            w.sent = url
+            town.toast(f"Pull request opened: {url}", title="GitHub")
+        w.changed()
+
+    threading.Thread(target=work, daemon=True, name="ux-pr").start()
+    return True
 
 
 def _pick(w, args: dict) -> bool:
@@ -189,5 +264,5 @@ def _card_drop(w, args: dict) -> bool:
     return True
 
 
-ACTS = {"card": _card, "card_apply": _card_apply, "card_reset": _card_reset, "card_drop": _card_drop, "pick": _pick, "tool": _tool, "paint": _paint, "draft": _draft, "reset": _reset, "drop": _drop, "apply": _apply,
+ACTS = {"send_preview": _send_preview, "send": _send, "card": _card, "card_apply": _card_apply, "card_reset": _card_reset, "card_drop": _card_drop, "pick": _pick, "tool": _tool, "paint": _paint, "draft": _draft, "reset": _reset, "drop": _drop, "apply": _apply,
         "layout": _layout, "layout_apply": _layout_apply, "layout_reset": _layout_reset}

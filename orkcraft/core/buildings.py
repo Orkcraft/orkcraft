@@ -15,7 +15,7 @@ from orkcraft import autonomy, scroll
 from orkcraft.core import bus
 from orkcraft.core.town import Town
 from orkcraft.realm import (catalog, checkpoint, evolution, feedback, masonry, optimize, pipes, regressions, steward,
-                            tiers, workshop)
+                            tiers, type_defaults, workshop)
 from orkcraft.design import ui as design_ui
 from orkcraft.realm.buildings import Building, custom_building
 
@@ -51,7 +51,7 @@ FREEDOM_WORDS = {"chains": "its questions and its changes wait for you",
 # -- raising ---------------------------------------------------------------------------------------
 
 def type_spec(town: Town, type_id: str) -> dict | None:
-    """A camp building's spec from the catalog: the type's defaults and a free id."""
+    """A camp building's spec from the catalog: the type's defaults (realm/type_defaults.py too) and a free id."""
     t = catalog.TYPES.get(type_id)
     if t is None or type_id in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES:
         return None
@@ -59,8 +59,10 @@ def type_spec(town: Town, type_id: str) -> dict | None:
     bid, n = type_id, 1
     while bid in taken:
         bid, n = f"{type_id}_{n}", n + 1
-    return {"id": bid, "type": type_id, "title": t.title, "icon": t.icon, "summary": t.summary[:200],
+    spec = {"id": bid, "type": type_id, "title": t.title, "icon": t.icon, "summary": t.summary[:200],
             "orc": {"name": t.orc, "role": t.preview[:80]}}
+    shipped = type_defaults.config(type_id)       # the settings Orkcraft ships for the type (a Test bench sent them)
+    return {**spec, "config": shipped} if shipped else spec
 
 
 def raise_spec(town: Town, spec: dict, hut: list[float] | None = None, folded: bool | None = None) -> Building | None:

@@ -2222,6 +2222,29 @@ def test_the_ux_bench_shows_a_buildings_pictures_and_opens_one_to_change(page, g
         pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 
+def test_what_a_ux_bench_applied_is_sent_from_a_dialog_that_shows_it_first(page, gui, monkeypatch, tmp_path):
+    """docs/design/improve-buildings.md §6.5: once a picture is this machine's own, Send to Orkcraft shows; its dialog
+    shows the picture before and after, ticked, the title and the description, and Send waits for GitHub."""
+    from orkcraft.design import tokens
+    monkeypatch.setenv("ORKCRAFT_ASSETS_DIR", str(tmp_path / "assets"))
+    house = "sprites/buildings/barracks/header-ice.png"
+    own = tokens.assets_dir() / house
+    own.parent.mkdir(parents=True)
+    own.write_bytes((tokens.SYSTEM / "sprites/buildings/barracks/header.png").read_bytes())
+    pg = page
+    bench = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", "ux_lab")
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", bench)
+    pg.locator(".ux-pick .gui-build__tile[title='In parallel']").click()
+    pg.locator(".ux-send button", has_text="Send to Orkcraft").click()
+    dialog = pg.locator(".ok-dialog", has_text="A pull request to Orkcraft")
+    dialog.locator(".ux-send__item").first.wait_for(timeout=WAIT_MS)
+    assert dialog.locator(".ux-send__item input:checked").count() == 1
+    assert dialog.locator(".ux-send__pair img").count() == 2 and "ux bench: 1 picture" in dialog.inner_text().lower()
+    assert dialog.locator("button", has_text="Send").last.is_disabled()          # GitHub is not connected here
+    pg.keyboard.press("Escape")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bench)
+
+
 def test_the_ux_bench_shows_the_mascots_and_opens_one_to_draw_again(page, gui):
     """docs/design/improve-buildings.md §6.4: the mascots are picked beside the buildings; each role's four stages
     stand on its kin's ground, and a press opens the dialog that draws the head again as its grid."""

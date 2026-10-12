@@ -307,6 +307,55 @@ function LayoutDialog({ id, data, onClose }) {
   </${Dialog}>`;
 }
 
+/** What this machine applied, sent to Orkcraft as a pull request (§6.5): a button when there is something to send,
+ *  and the last one sent. */
+function SendRow({ id, send }) {
+  const [open, setOpen] = useState(false);
+  if (!send || (!send.count && !send.sent)) return null;
+  return html`<div class="ux-send">
+    ${send.count > 0 && html`<button class="ok-btn" disabled=${send.busy} onClick=${() => setOpen(true)}>${say(send.busy
+      ? "Sending…" : `Send to Orkcraft as a pull request… (${send.count})`)}</button>`}
+    ${send.sent && html`<a class="gui-link ok-font-status" href=${send.sent} target="_blank" rel="noopener">${say("Its pull request")}</a>`}
+    <span class="ok-font-status ok-tone-muted">${say("What you applied stays on this machine until Orkcraft takes it in.")}</span>
+    ${open && html`<${SendDialog} id=${id} onClose=${() => setOpen(false)} />`}
+  </div>`;
+}
+
+/** Exactly what would leave the machine, before it does: each item ticked (a picture before and after, a text's
+ *  diff), the title and the description; Send when GitHub is connected. */
+function SendDialog({ id, onClose }) {
+  const [x, setX] = useState(null);
+  const [off, setOff] = useState(new Set());
+  const look = (picked) => act(id, "send_preview", picked ? { ids: picked } : {}).then(setX, onClose);
+  useEffect(() => { look(); }, [id]);
+  const picked = x ? x.items.map((i) => i.id).filter((i) => !off.has(i)) : [];
+  const toggle = (i) => {
+    const next = new Set(off);
+    if (next.has(i)) next.delete(i); else next.add(i);
+    setOff(next);
+    look(x.items.map((it) => it.id).filter((it) => !next.has(it)));
+  };
+  return html`<${Dialog} title=${say("A pull request to Orkcraft")} wide=${true} onCancel=${onClose}
+      actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
+        <button class="ok-btn primary" disabled=${!x || !x.login || !picked.length}
+          onClick=${() => act(id, "send", { ids: picked }).then(onClose, () => {})}>${say("Send")}</button>`}>
+    ${!x ? html`<p class="ok-tone-muted">${say("Looking…")}</p>` : html`
+      <p class="ok-font-status">${say("This is all that leaves this machine: what is ticked below, the title and the description. Your town and projects stay here.")}</p>
+      ${!x.login && html`<p class="ok-font-status ok-tone-wait">${say("Connect GitHub first: the mascot's menu → GitHub.")}</p>`}
+      <ul class="ux-send__items">${x.items.map((i) => html`<li key=${i.id}>
+        <label class="ux-send__item"><input type="checkbox" checked=${!off.has(i.id)} onChange=${() => toggle(i.id)} />
+          <span class="ok-font-label">${i.label}</span></label>
+        <div class="ux-send__files">${i.files.map((f) => f.diff !== undefined
+          ? html`<details key=${f.path}><summary class="ok-font-status ok-tone-muted">${f.path}</summary><pre class="ux-send__diff">${f.diff}</pre></details>`
+          : html`<span key=${f.path} class="ux-send__pair" title=${f.path}>
+              ${f.before ? html`<img src=${f.before} alt="" />` : html`<span class="ok-font-status ok-tone-muted">${say("new")}</span>`}
+              <span aria-hidden="true">→</span><img src=${f.after} alt="" /></span>`)}</div>
+      </li>`)}</ul>
+      <p class="ok-font-label">${x.title}</p>
+      <pre class="ux-send__diff">${x.body}</pre>`}
+  </${Dialog}>`;
+}
+
 function Window({ id, data }) {
   return html`<div class="ux-window">
     <section class="ux-settings">
@@ -316,6 +365,7 @@ function Window({ id, data }) {
         <select class="ok-input" value=${data.image_tool} onChange=${(e) => act(id, "tool", { tool: e.target.value })}>
           ${data.tools.map((x) => html`<option key=${x.id} value=${x.id}>${x.title}${x.on ? "" : ` (${say("off")})`}</option>`)}
         </select></label>
+      <${SendRow} id=${id} send=${data.send} />
     </section>
     ${data.target === MASCOTS ? html`<${MascotGallery} id=${id} data=${data} />`
       : data.target ? html`<${Gallery} id=${id} data=${data} />`

@@ -254,3 +254,64 @@ def test_a_mascot_is_drawn_again_as_its_grid_and_kept_on_this_machine(fake_repo,
     assert not own.exists() and not mascots.own_grid(MASCOT).exists() and mascots.grid(MASCOT) != hooded
     with pytest.raises(CommandError, match="No such picture"):
         act("paint", path="sprites/mascots/nope-1.png", words="x")
+
+
+def test_what_this_machine_applied_goes_to_orkcraft_as_a_pull_request(fake_repo, isolated_layout_file, monkeypatch):
+    """§6.5: a picture, a mascot's head (its grid too, kept over the code's by the tool) and a type's cards, each
+    ticked in the dialog, go as the files of Orkcraft's repository; nothing leaves before Send."""
+    from orkcraft.design import mascots
+    from orkcraft.realm import card_docs, github_app, ux_pr
+    host = _host(fake_repo)
+    bench = _raised(host, "ux_lab")
+    act = lambda name, **a: host.command("act", {"id": bench, "act": name, "args": a})
+    act("pick", type="barracks")
+    assert host.detail(bench)["data"]["send"]["count"] == 0
+    own = tokens.assets_dir() / HOUSE
+    own.parent.mkdir(parents=True, exist_ok=True)
+    own.write_bytes(PNG)                                                       # as Apply leaves them
+    hooded = mascots.grid(MASCOT)
+    hooded[1] = "....llll...."
+    (tokens.assets_dir() / MASCOT).parent.mkdir(parents=True, exist_ok=True)
+    (tokens.assets_dir() / MASCOT).write_bytes(mascots.png(hooded))
+    (tokens.assets_dir() / MASCOT.replace(".png", "@2x.png")).write_bytes(mascots.png(hooded, 4))
+    mascots.own_grid(MASCOT).write_text(json.dumps({"grid": hooded, "why": "a green hood"}), encoding="utf-8")
+    small = {**card_docs.default("barracks")}
+    small["sizes"] = {**small["sizes"], "s": {"parts": [{"id": "big"}]}}
+    card_docs.save("barracks", small)
+    got = act("send_preview")
+    ids = [i["id"] for i in got["items"]]
+    assert ids == [f"picture:{HOUSE}", f"mascot:{MASCOT}", "card:barracks"] and got["login"] == ""
+    assert got["title"] == "UX bench: 1 picture, 1 mascot, 1 type's cards" and "a green hood" in got["body"]
+    pic = next(i for i in got["items"] if i["kind"] == "picture")["files"][0]
+    assert pic["path"] == f"design-system/{HOUSE}" and pic["before"].startswith("data:image/png") and pic["after"]
+    files = ux_pr.files(ids)
+    assert files[f"design-system/{HOUSE}"] == ((tokens.SYSTEM / HOUSE).read_bytes(), PNG)
+    assert json.loads(files["design-system/sprites/mascots/drawn.json"][1]) == {"other-1": hooded}
+    assert json.loads(files["design-system/sprites/mascots/grids.json"][1])["grids"]["other-1"] == hooded
+    assert json.loads(files["design-system/cards/barracks.json"][1]) == small
+    assert f"design-system/{MASCOT.replace('.png', '@2x.png')}" in files
+    assert act("send_preview", ids=[f"picture:{HOUSE}"])["title"] == "UX bench: 1 picture"
+    with pytest.raises(CommandError, match="Connect GitHub"):
+        act("send", ids=ids)
+    with pytest.raises(CommandError, match="Pick what to send"):
+        act("send", ids=[])
+    monkeypatch.setattr(github_app, "account", lambda: {"login": "orkfan", "token": "t"})
+    sent = {}
+    monkeypatch.setattr(github_app, "send", lambda changes, title, body, branch: sent.update(
+        changes=changes, title=title, branch=branch) or "https://github.com/orkcraft/orkcraft/pull/11")
+    act("send", ids=[f"picture:{HOUSE}", "card:barracks"])
+    assert _until(lambda: host.detail(bench)["data"]["send"]["sent"].endswith("/pull/11"))
+    assert set(sent["changes"]) == {f"design-system/{HOUSE}", "design-system/cards/barracks.json"}
+    assert sent["branch"].startswith("improve/ux-") and sent["title"] == "UX bench: 1 picture, 1 type's cards"
+
+
+def test_a_shipped_card_is_what_huts_lay_out_until_this_machine_has_its_own(fake_repo, monkeypatch, tmp_path):
+    from orkcraft.realm import card_docs
+    system = tmp_path / "system"
+    (system / "cards").mkdir(parents=True)
+    small = card_docs.default("barracks")
+    small["sizes"]["s"] = {"parts": [{"id": "big"}]}
+    (system / "cards" / "barracks.json").write_text(json.dumps(small), encoding="utf-8")
+    monkeypatch.setattr(tokens, "SYSTEM", system)
+    assert card_docs.load("barracks") is None and card_docs.shipped("barracks") == small
+    assert card_docs.current("barracks") == small and card_docs.current("scrolls") is None
