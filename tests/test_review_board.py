@@ -174,8 +174,8 @@ class Stops:
     """A clan whose tool names its sessions: `stop_at` is cut off (InterruptedError) the first time it speaks;
     every call recorded as (role, prompt, session, reopen)."""
 
-    def __init__(self, stop_at: str, reopens: bool = True) -> None:
-        self.stop_at, self.reopens, self.calls = stop_at, reopens, []
+    def __init__(self, stop_at: str, reopens: bool = True, says: str = "APPROVE — fine.") -> None:
+        self.stop_at, self.reopens, self.calls, self.says = stop_at, reopens, [], says
 
     def __call__(self, harness, prompt, model, session="", reopen=False):
         role = "Steward" if prompt.startswith("You are the steward") else (
@@ -187,7 +187,7 @@ class Stops:
             raise RuntimeError("No conversation found with session ID")
         if role == "Steward":
             return "DECISION: approve\nEXIT: to-development\nShip it.", 0.05
-        return "APPROVE — fine.", 0.05
+        return self.says, 0.05
 
 
 def test_go_on_reopens_the_very_turn_it_stopped_at():
@@ -210,7 +210,8 @@ def test_go_on_reopens_the_very_turn_it_stopped_at():
 
 
 def test_a_session_that_cannot_be_reopened_starts_its_turn_again():
-    team, clan = tm.members_of({"members": ["Product critic:claude"]}), Stops("Steward", reopens=False)
+    team, clan = tm.members_of({"members": ["Product critic:claude"]}), Stops("Steward", reopens=False,
+                                                                             says="CHANGES: the goal is vague")
     d = tm.new("PRD", PRD)
     tm.run(d, team, tm.Steward(), set(), 3, 2.0, clan, sessions=lambda h: True)
     assert d.outcome == "stopped" and d.under_way["turn"] == tm.STEWARD_TURN
