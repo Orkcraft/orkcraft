@@ -202,7 +202,12 @@ class TaskList:
         cards: list[Task] = []
         ids: set[str] = set()
         last: Task | None = None
+        blank = 0                                   # empty lines inside a card's text (written as "": _write_file)
         for line in lines:
+            if not line.strip():
+                blank += 1
+                continue
+            gap, blank = "\n" * blank, 0
             m = _HEAD.match(line)
             if m:
                 lid = lane_of(m.group(1))
@@ -213,7 +218,7 @@ class TaskList:
                 last = None
                 continue
             if lane is None:
-                head.append(line)
+                head += [""] * len(gap) + [line]
                 continue
             m = _ITEM.match(line)
             if m:
@@ -228,8 +233,8 @@ class TaskList:
                 continue
             b = _BODY.match(line)
             if b and last is not None:
-                last.body = f"{last.body}\n{b.group(1)}" if last.body else b.group(1)
-            elif line.strip():
+                last.body = f"{last.body}\n{gap}{b.group(1)}" if last.body else b.group(1)
+            else:
                 last = None                         # free text between cards ends the card above
         return head, lanes, cards
 

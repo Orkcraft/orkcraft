@@ -90,3 +90,15 @@ def test_a_folder_board_keeps_notes_in_subfolders(fake_repo: Path):
     assert "status: note" in (base / "ideas" / "T1.md").read_text()
     tl.remove("dark-mode")
     assert not (base / "ideas" / "dark-mode.md").exists()
+
+
+def test_a_cards_empty_lines_survive_the_next_card(fake_repo: Path):
+    tl = tasklist.TaskList(fake_repo)
+    letter = "From: Lena\nSubject: Q3 VAT\n\nCould you send the invoices?\n\n\nThanks"
+    tl.add("Send Q3 invoices", "todo", letter)
+    tl.add("Fix the crash", "todo", "Level 3\n\ncrashes")                 # the file is written again
+    cards = {t.id: t for t in tl.load()}
+    assert cards["send-q3-invoices"].body == letter and cards["fix-the-crash"].body == "Level 3\n\ncrashes"
+    tl.add("Third", "todo")
+    assert tl.load()[0].body == letter
+    assert (fake_repo / "TASKS.md").read_text().startswith("# Tasks\n\n## To Do\n")
