@@ -160,7 +160,7 @@ def test_the_town_serves_a_buildings_day_and_clears_by_its_dislikes(fake_repo, i
     try:
         jobs.run_work("claude", "hall work", fake_repo, threading.Event(), env={"ORKCRAFT_ORC": "town_hall/Chief"})
         server = Server(host)
-        server.start_thread()
+        thread = server.start_thread()
         try:
             base = f"{server.origin}/api/logs/town_hall"
             with urllib.request.urlopen(f"{base}?t={server.token}", timeout=5) as r:
@@ -172,6 +172,7 @@ def test_the_town_serves_a_buildings_day_and_clears_by_its_dislikes(fake_repo, i
                     urllib.request.urlopen(bad, timeout=5)
         finally:
             server.stop()
+            thread.join(10)                      # it closes the host: not at once with the test
         today = dt.date.today()
         yesterday = (today - dt.timedelta(days=1)).isoformat()
         _day(fake_repo, yesterday, "liked_one")
@@ -245,7 +246,7 @@ def test_the_town_keeps_its_logs_and_serves_a_period(fake_repo, isolated_layout_
         assert town_settings.read(host)["logs"] == {"on": False, "days": 0, "keep": day_log.KEEP_ANALYSIS}
         assert town_settings.change(host, {"logs": True})["logs"]["on"] is True and host.day_logs.keeping()
         server = Server(host)
-        server.start_thread()
+        thread = server.start_thread()
         try:
             url = f"{server.origin}/api/analytics?days=7&t={server.token}"
             with pytest.raises(urllib.error.HTTPError):                     # nothing kept yet
@@ -260,6 +261,7 @@ def test_the_town_keeps_its_logs_and_serves_a_period(fake_repo, isolated_layout_
                 urllib.request.urlopen(f"{server.origin}/api/analytics?days=7&t=nope", timeout=5)
         finally:
             server.stop()
+            thread.join(10)                      # it closes the host: not at once with the test
         yesterday = (dt.date.today() - dt.timedelta(days=1)).isoformat()
         _day(fake_repo, yesterday, "liked_one")
         host.day_logs.cleared = ""
