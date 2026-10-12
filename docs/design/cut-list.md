@@ -37,7 +37,7 @@ hidden or frozen, so older towns keep loading (CLAUDE.md, Wording).
 | **Wiki, Research, Audio briefing** | **Freeze**, More shelf | — | — |
 | **Orkspaces beyond the first** (F2–F8, each in its biome) | **Hide** from the first session: one town until the person asks for a second | small in code; one more idea in the first fifteen minutes | **P1** |
 | **The builder** (new buildings from words) | **Keep**, out of the first fifteen minutes | the wow, and a risk: a weak generated building is a tester's first bad impression | — |
-| **Onboarding** (role, industry, mascot, a typical day as chips, intents, quiet hours, look) | **Measure first**, then cut to three screens and a minute | P0 is the measure: the time from first open to the town ([dogfood-logs.md](dogfood-logs.md) §3, the local event log) | P0 measure, P1 cut |
+| **Onboarding** (role, industry, mascot, a typical day as chips, intents, quiet hours, look) | **Cut to the AI tools found**; the rest to Settings or out (decided 2026-10-12) | the first session becomes a game's first mission ([first-mission.md](first-mission.md)) | **P0** |
 | **Two looks, Camp and Office** | **Keep**, with a rule: Office is tokens and words only, never a layout of its own | Office answers "it is a toy"; a second layout would double every screen | — |
 | **Growth** (deeds, the mascot's stages) | **Keep**, no new work; never in the way of the main scenario | small; it carries the camp's voice | — |
 

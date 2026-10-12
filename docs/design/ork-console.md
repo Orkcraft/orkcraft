@@ -271,6 +271,7 @@ to an ork instead of one. To fill in from the code before stage 1:
 | 5 | the removals the console replaces | §10 | **P0**, in the same change as 4 |
 | 5b | a local full-detail event log; the events the P0 checks need; every wait logged with its reason and length | [dogfood-logs.md](dogfood-logs.md) §3 | **P0**: without it the checks of §13 cannot be measured |
 | 5c | the night's work off by default in a new town; External listeners offer GitHub, a schedule, a webhook and a file only | [cut-list.md](cut-list.md) | **P0** |
+| 5d | the first session as Mission 1: a drill cart, real work on the person's repository, two orks at once; the onboarding form cut to the AI tools found | [first-mission.md](first-mission.md) | **P0** |
 | 6 | the Agent pool's lanes as roles with session chips | §14 | **P0**, the lanes only (they exist); the data model behind them is P1 |
 | 7 | Work keeps data and flow; Info split into the building's and the ork's | §15 | **P1** |
 | 8 | the Town Hall's roles folded, 11 names to 8 | [town-hall-roles.md](town-hall-roles.md) | **P1**, before the ork's Info ships (or it ships 11 role cards) |
