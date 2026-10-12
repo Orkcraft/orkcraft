@@ -387,8 +387,12 @@ class Server:
             self.host.town.toast(str(e), title="Phones", severity="warning")
 
     def stop(self) -> None:
-        if self.loop is not None and self._stop is not None:
-            self.loop.call_soon_threadsafe(self._stop.set)
+        """Ask the server to stop; once it has, asking again does nothing (its loop is closed by then)."""
+        if self.loop is not None and self._stop is not None and not self.loop.is_closed():
+            try:
+                self.loop.call_soon_threadsafe(self._stop.set)
+            except RuntimeError:                 # it closed between the look and the call
+                pass
 
     def start_thread(self) -> threading.Thread:
         """Serve on a thread of its own (the window takes the main thread); returns once it listens."""

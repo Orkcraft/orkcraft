@@ -7,13 +7,28 @@ curl -fsSL https://raw.githubusercontent.com/Orkcraft/orkcraft/main/install.sh |
 ```
 
 [`install.sh`](../install.sh) at the root of the repository is the whole installer: read it before you
-run it. It needs only `sh` and `curl`.
+run it. It needs only `sh` and `curl`. In a terminal it opens with the Warchief, drawn from his sprite
+(`tools/install_banner.py`; not with `NO_COLOR` or outside a terminal).
+
+At the end it opens the town. orkcraft.dev hands it the class and look picked there:
+
+```bash
+curl -fsSL https://orkcraft.dev/install.sh | sh -s -- --role engineer --look camp
+```
+
+| Option | |
+|---|---|
+| `--role ROLE`, `--look camp\|office` | passed to `orkcraft` when the town opens (`orkcraft --help`) |
+| `--no-open` | install only; with no terminal (a script, CI) it never opens |
+| `--report`, `--no-report` | the question below, answered beforehand |
+
+On Linux without GTK or Qt for Python the town opens in the browser.
 
 ## What it does
 
 | Step | What happens |
 |---|---|
-| `uv` | uses the [uv](https://docs.astral.sh/uv/) that is there, or puts the pinned version in `~/.local/bin` |
+| `uv` | uses the [uv](https://docs.astral.sh/uv/) that is there and answers, or puts the pinned version in `~/.local/bin` |
 | `python` | `uv python install 3.12`: a Python of its own, whatever the system has |
 | `package` | `uv tool install "orkcraft[gui] @ git+https://github.com/Orkcraft/orkcraft"` (GitHub's archive of `main` when git does not work, e.g. a Mac without the developer tools) |
 | `version` | `orkcraft --version` runs |

@@ -112,7 +112,9 @@ def test_without_uv_it_puts_the_pinned_one_in_place(tmp_path):
     home = tmp_path / "home"
     curl = f"""#!/bin/sh
 echo "curl $*" >> "{home}/curl-calls"
-cat <<'EOS'
+out=/dev/stdout
+while [ $# -gt 0 ]; do [ "$1" = -o ] && out="$2"; shift; done
+cat > "$out" <<'EOS'
 mkdir -p "$HOME/.local/bin"
 cat > "$HOME/.local/bin/uv" <<'UVEOF'
 {UV.strip()}
@@ -144,3 +146,36 @@ def test_the_script_is_plain_posix_sh():
     for shell in ("dash", "bash"):
         if any(Path(d, shell).exists() for d in os.environ.get("PATH", "").split(os.pathsep)):
             assert subprocess.run([shell, "-n", str(SCRIPT)]).returncode == 0
+
+
+def test_a_pick_from_orkcraft_dev_is_said_back_when_the_town_cannot_open_here(tmp_path):
+    done, events, home = _run(tmp_path, "--no-report", "--role", "engineer", "--look", "office")
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert "To open it on your pick: orkcraft --role engineer --look office" in done.stdout
+    assert "\x1b[" not in done.stdout                  # no terminal: no Warchief in colour, no escapes in the log
+
+
+@pytest.mark.parametrize("args", [("--look", "necropolis"), ("--role",), ("--role", "x; rm -rf ~"), ("--wat",)])
+def test_a_wrong_option_stops_before_anything_is_installed(tmp_path, args):
+    done, events, home = _run(tmp_path, "--no-report", *args)
+    assert done.returncode == 2 and not (home / "uv-calls").exists()
+
+
+def test_the_banner_is_the_warchiefs_sprite_as_drawn_now():
+    pytest.importorskip("PIL")
+    import sys
+    sys.path.insert(0, str(SCRIPT.parent / "tools"))
+    try:
+        import install_banner
+    finally:
+        sys.path.pop(0)
+    assert install_banner.block() in SCRIPT.read_text(encoding="utf-8")   # run tools/install_banner.py after a redraw
+
+
+def test_a_failed_download_of_uv_fails_its_step_as_a_network_error(tmp_path):
+    _bin(tmp_path / "bin", "curl", "#!/bin/sh\necho 'curl: (6) Could not resolve host: astral.sh' >&2\nexit 6\n")
+    done, events, home = _run(tmp_path, "--report", uv=False)
+    assert done.returncode == 1
+    assert events[1]["events"][0]["props"] == {"step": "uv", "ok": False, "seconds": "<10", "error": "network",
+                                               "found": False}
+    assert "does not answer" not in done.stdout

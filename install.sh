@@ -26,17 +26,42 @@ LOG="${LOG_DIR}/install.log"
 STEP_OUT="${LOG_DIR}/install.step"
 
 REPORT="${ORKCRAFT_REPORT:-}"
-for arg in "$@"; do
-  case "$arg" in
+ROLE=""                                       # --role / --look: as orkcraft.dev asked, handed to the town it opens
+LOOK=""
+OPEN=1                                        # open the town at the end, when there is a terminal
+USAGE="sh install.sh [--report | --no-report] [--role ROLE] [--look camp|office] [--no-open]"
+while [ $# -gt 0 ]; do
+  case "$1" in
     --report) REPORT=1 ;;
     --no-report) REPORT=0 ;;
-    -h|--help) echo "sh install.sh [--report | --no-report]: ${REPO}/blob/main/docs/install.md"; exit 0 ;;
-    *) echo "orkcraft install: unknown option $arg (--report, --no-report)" >&2; exit 2 ;;
+    --no-open) OPEN=0 ;;
+    --role|--look)
+      [ $# -ge 2 ] || { echo "orkcraft install: $1 needs a value" >&2; exit 2; }
+      case "$2" in *[!a-z0-9_-]*|"") echo "orkcraft install: $1 takes a word such as engineer or camp" >&2; exit 2 ;; esac
+      if [ "$1" = --role ]; then ROLE="$2"; else LOOK="$2"; fi
+      shift ;;
+    -h|--help) echo "${USAGE}"; echo "${REPO}/blob/main/docs/install.md"; exit 0 ;;
+    *) echo "orkcraft install: unknown option $1 (${USAGE})" >&2; exit 2 ;;
   esac
+  shift
 done
+case "$LOOK" in ""|camp|office) ;; *) echo "orkcraft install: --look is camp or office" >&2; exit 2 ;; esac
 
 mkdir -p "$LOG_DIR" || { echo "orkcraft install: cannot write ${LOG_DIR}" >&2; exit 1; }
 : > "$LOG"
+
+# -- banner: tools/install_banner.py --
+banner() {
+  printf '        \033[0m\033[38;5;221;48;5;221m▀▀\033[0m\033[38;5;221m▄▄\033[0m\033[38;5;221;48;5;221m▀▀▀▀\033[0m\033[38;5;221m▄▄\033[0m\033[38;5;221;48;5;221m▀▀\033[0m      \033[0m\n'
+  printf '  \033[0m\033[38;5;70m▄▄\033[0m  \033[0m\033[38;5;70m▄▄\033[0m\033[38;5;70;48;5;70m▀▀▀▀▀▀▀▀▀▀▀▀\033[0m\033[38;5;70m▄▄\033[0m  \033[0m\033[38;5;70m▄▄\033[0m   \033[1mOrkcraft\033[0m\n'
+  printf '  \033[0m\033[38;5;70m▀▀\033[0m\033[38;5;70;48;5;70m▀▀▀▀\033[0m\033[38;5;70;48;5;234m▀▀▀▀\033[0m\033[38;5;70;48;5;70m▀▀▀▀\033[0m\033[38;5;70;48;5;234m▀▀▀▀\033[0m\033[38;5;70;48;5;70m▀▀▀▀\033[0m\033[38;5;70m▀▀\033[0m   \033[2mMany coding agents in one project, as a real-time strategy game\033[0m\n'
+  printf '      \033[0m\033[38;5;70;48;5;70m▀▀\033[0m\033[38;5;70;48;5;253m▀▀\033[0m\033[38;5;70;48;5;70m▀▀▀▀▀▀▀▀\033[0m\033[38;5;70;48;5;253m▀▀\033[0m\033[38;5;70;48;5;70m▀▀\033[0m    \033[0m   \033[2mThe Warchief raises your camp: uv, Python, Orkcraft\033[0m\n'
+  printf '      \033[0m\033[38;5;70m▀▀\033[0m\033[38;5;253;48;5;70m▀▀\033[0m\033[38;5;70;48;5;70m▀▀▀▀▀▀▀▀\033[0m\033[38;5;253;48;5;70m▀▀\033[0m\033[38;5;70m▀▀\033[0m    \033[0m\n'
+}
+# -- end of banner --
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != dumb ]; then
+  echo; banner; echo
+fi
 
 say() { printf '%s\n' "$*"; printf '%s\n' "$*" >> "$LOG"; }
 
@@ -159,17 +184,22 @@ UPGRADE=false
 command -v orkcraft >/dev/null 2>&1 && UPGRADE=true
 event install_started "\"method\": \"sh\", \"arch\": \"${ARCH}\", \"upgrade\": ${UPGRADE}"
 
-uv_install() {
+uv_install() {                               # fetched first, run after: a failed download fails the step
   command -v curl >/dev/null 2>&1 || { echo "curl not found"; return 1; }
-  curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | env UV_NO_MODIFY_PATH=1 sh
+  curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" -o "${LOG_DIR}/uv-install.sh" || return 1
+  env UV_NO_MODIFY_PATH=1 sh "${LOG_DIR}/uv-install.sh"
+  code=$?
+  rm -f "${LOG_DIR}/uv-install.sh"
+  return $code
 }
-if command -v uv >/dev/null 2>&1; then
+uv_works() { uv --version 2>/dev/null | grep -q '^uv '; }   # a uv that answers, not an empty or broken file
+if uv_works; then
   say "uv: found ($(uv --version 2>/dev/null))"
   event install_step "\"step\": \"uv\", \"ok\": true, \"seconds\": \"<10\", \"found\": true"
 else
   say "uv: putting it in place…"
   step uv ', "found": false' uv_install || fail uv
-  command -v uv >/dev/null 2>&1 || { FAILED=uv; say "uv was installed but is not on PATH"; fail uv; }
+  uv_works || { say "uv was put in ~/.local/bin but does not answer"; fail uv; }
 fi
 
 say "Python ${PYTHON}: making sure there is one for Orkcraft…"
@@ -221,4 +251,15 @@ fi
 
 finish true
 say ""
-say "Orkcraft is installed. Open a new terminal, go to a project and run: orkcraft"
+say "Orkcraft is installed. Next time: open a new terminal, go to a project and run: orkcraft"
+
+# The town opens now, on the class and look picked on orkcraft.dev, when there is a terminal to hold it.
+if [ "$OPEN" = 1 ] && [ -t 1 ] && (: </dev/tty) 2>/dev/null; then
+  set -- 
+  [ -n "$ROLE" ] && set -- "$@" --role "$ROLE"
+  [ -n "$LOOK" ] && set -- "$@" --look "$LOOK"
+  say "Opening the town…"
+  exec "$ORKCRAFT" "$@" </dev/tty
+elif [ -n "$ROLE$LOOK" ]; then
+  say "To open it on your pick: orkcraft${ROLE:+ --role $ROLE}${LOOK:+ --look $LOOK}"
+fi
