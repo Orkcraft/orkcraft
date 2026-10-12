@@ -458,6 +458,34 @@ they take any repository as their subject. Written down so that what is built no
   model provider.
 - **Where it runs:** in the person's town, on their machine and their AI tools (as now), or headless in CI at night.
 
+### 12.4 Priority and the gate to start (decided 2026-10-12)
+
+**Later**, and the one item most likely to pull the product apart. Taking any repository as the subject makes the
+Test bench and the UX bench a second product: LLM evaluation and visual regression for any app, a field with strong
+tools of its own. Opened before the launch, it splits the story ("a control room for coding agents" and "an
+evaluation platform") so that neither is heard. Nothing of §12.2 changes: the door stays open.
+
+**It starts when one of these holds:**
+
+1. the owner has used the Test bench on his own second project (not Orkcraft) for two weeks: the cheapest test;
+2. after the launch, three or more outside people have asked, in an issue or a discussion, to point it at their own
+   project.
+
+**Answers to §12.3 that are plain already:**
+
+- **First for:** the owner's own second project, then whoever asks (gate 2). Not game developers first.
+- **The adapter:** a command per job with JSON out, the simplest; an SDK only if commands fall short.
+- **Where it runs:** in the person's town, on their machine and their AI tools, as now. CI at night is Later.
+- **How an app's own model calls are costed:** left open until gate 1 or 2 is met.
+
+**A line not to cross with game developers:** visual regression (screens night to night, the design system's rules
+held) is fine; **redrawing a game's assets from words is not offered to them.** For that audience it is the "AI
+makes the game" story Orkcraft keeps away from ([ork-console.md](ork-console.md); the launch plan of 2026-10-12).
+
+**It fits the model of 2026-10-12:** a role is an expertise and its context comes from where it works
+([town-hall-roles.md](town-hall-roles.md) §2): the Mechanic and the Alchemist on another repository are the same move
+as the Farseer on a person's own Review board ([ork-console.md](ork-console.md) §18).
+
 ## 13. Improve reads a day: the Mechanic and the Farseer (asked 2026-10-12)
 
 Asked by the owner: instead of copying a day's logs out for someone to read, **Improve** in the Warchief's line has the
