@@ -62,8 +62,31 @@ and five seconds with a tester ("what needs you here?"). The variant where the a
 - **A light theme:** Later, if testers ask.
 - **Office:** untouched by this pass; it is calm and monochrome by design.
 
-## 5. Open
+## 5. Decided with the owner (2026-10-12)
 
-1. Is the green-on-green of Camp · forest a choice the owner wants to keep (a forest camp), so that only the buildings
-   are lifted, or may the ground change?
-2. Which display face stays: Pixelify Sans or Almendra SC?
+1. **The biomes are a task of their own, P1.** Each building has a header per biome (`header-meadow`, `-dust`, `-ice`,
+   `-lava`, `-void`); each is compared with its biome's ground, in grey and squinted, as in §3. The P0 pass touches
+   only Camp · forest, the biome of the demo and the GIF.
+2. **Almendra SC stays for the product's name only:** the wordmark "Orkcraft" is a picture of a name, not the
+   interface's face. Every other display text is Pixelify Sans; text Titillium Web; code JetBrains Mono.
+
+## 6. The yard's frame: ground, not a fence (P1)
+
+Asked 2026-10-12: does the picket fence round a building's card fit the idea, should the whole window be a big
+building, should the window be apart from the map, should the town go isometric?
+
+**What the fence gets right:** a building has its plot, and its card is its yard
+([yards.md](yards.md)); with Work gone, the data lives on the card on the town ([lighter-buildings.md](lighter-buildings.md) §2).
+
+**What it gets wrong:** the fence is the densest repeated pattern on the screen; the building is tiny beside its
+fenced card, so the town reads as "windows with fences" more than as a town; and its thick posts outweigh the roads'
+thin lines, while the roads are meant to be the lines that matter.
+
+| option | verdict | why |
+|---|---|---|
+| the whole window drawn as a big building | **No** | data inside drawn art scales badly and reads badly; art per type × three sizes × five biomes |
+| the window's interface apart from the map | **No** | it is the Work panel the owner decided to drop the same day |
+| **the yard as a patch of ground**: the card on trodden earth a little lighter than the ground, no fence line; posts only where a road enters, as a gate | **Yes, P1** | the yard stands off the ground by tone, not by pattern; **the roads become the only lines on the map**; at the map zoom there are no cards at all, only buildings and roads, where the strategy-game feel is strongest |
+| isometric | **No** (at most Later, for the map zoom with no cards; likely never) | every sprite in every biome redrawn; rectangular cards of text do not sit in isometry; roads, clicks and layout rewritten; the 1990s style it follows was top-down anyway |
+
+Checked as §3 is: in grey and squinted, the yard must stand off the ground and the roads must be seen first.
