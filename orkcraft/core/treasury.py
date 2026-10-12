@@ -73,7 +73,7 @@ def subscriptions(machine) -> list[str]:
 
 def quota(machine, limits: list) -> tuple[str, str, bool]:
     """(quota, its level, whether 🪙 shows): the HUD corner follows each tool's billing — the used
-    share of the tightest window for a subscription, 🪙 for an API."""
+    share still left of the tightest window for a subscription, 🪙 for an API (its level follows what is used)."""
     on = [t for t, c in machine.tools.items() if c.enabled]
     subs = subscriptions(machine)
     if not subs:
@@ -84,7 +84,7 @@ def quota(machine, limits: list) -> tuple[str, str, bool]:
         if left:
             used = round((1 - min(left)) * 100)
             worst = max(worst, used)
-            parts.append(f"{t} {used}%")
+            parts.append(f"{t} {100 - used}%")
         else:
             parts.append(f"{t} —")
     return " · ".join(parts), telemetry.level(worst, 100), len(subs) < len(on)

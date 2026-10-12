@@ -911,7 +911,7 @@ def test_the_task_board_card_counts_the_note_folders_too(fake_repo, isolated_lay
 
 
 def test_the_hud_quota_shows_what_the_town_hall_read(fake_repo, isolated_layout_file):
-    """The HUD's quota is the used share of each subscription's tightest window the Town Hall read,
+    """The HUD's quota is the share left of each subscription's tightest window the Town Hall read,
     not a dash, as the TUI's `_quota_text`."""
     from orkcraft.sources.limits import Limit
 
@@ -921,7 +921,7 @@ def test_the_hud_quota_shows_what_the_town_hall_read(fake_repo, isolated_layout_
     host.town.worker("town_hall").limits = [Limit("claude", "", "5h session", 0.25, None),
                                             Limit("claude", "", "weekly", 0.6, None),
                                             Limit("agy", "pro", "weekly", None, None, "no answer")]
-    assert host.snapshot()["hud"]["quota"] == "claude 75% · agy —"
+    assert host.snapshot()["hud"]["quota"] == "claude 25% · agy —"
 
 
 def test_the_hud_counts_working_agents_of_all_the_keepers_too(fake_repo, isolated_layout_file):

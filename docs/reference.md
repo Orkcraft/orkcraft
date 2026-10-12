@@ -950,7 +950,7 @@ the CLI paths.
   is never counted as $0.
 - Unit Chronicles show the same 🪙 and 🪵 per run.
 - **⏳ Limits** — with subscriptions chosen at onboarding (`tools` in the machine settings), the HUD
-  shows the used share of each one's tightest window (`[⏳ claude 38% · agy 71% · codex 12%]`, read by the
+  shows the share left of each one's tightest window (`[⏳ claude 62% · agy 29% · codex 88%]`, read by the
   Town Hall's Limits tab every few minutes), and 🪙 only while some tool runs on an API key.
 
 ## Worktrees and the Council
