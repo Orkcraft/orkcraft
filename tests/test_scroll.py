@@ -273,9 +273,13 @@ def test_remove_orkspace_only_when_empty_and_not_last():
         pass
     else:
         raise AssertionError("removed an orkspace with buildings")
-    ts.move_building(scroll, "farm", main.id)
+    # the Town Hall and a demolished building do not hold it: they go to the first land left
+    scroll.building("farm").demolished = True
+    lab.buildings.append("town_hall")
+    assert ts.standing_in(scroll, lab.id) == []
     ts.remove_orkspace(scroll, lab.id)
     assert [o.id for o in scroll.orkspaces] == [main.id] and scroll.active_orkspace_id == main.id
+    assert {"farm", "town_hall"} <= set(main.buildings) and scroll.orkspace_of("farm") is main
 
 
 def test_v1_biome_and_solid_black_migrate():

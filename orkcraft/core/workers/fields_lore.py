@@ -2,7 +2,8 @@
 its methods run with the worker as `self`. What it keeps lives beside the board (realm/cardlore.py).
 
     context 📜   `find_context`: the town's Scroll Dumps (`wikis`, default every one) give the pages that
-                 share the card's words — no model, nothing leaves the machine
+                 share the card's words — no model, nothing leaves the machine; a new or edited card waits
+                 for it (`context_later`) and the waiting ones are looked up together every `CONTEXT_EVERY_S`
     plan 🧭      `plan_preview` says what would leave (cleaned by realm/privacy.py), `plan` asks its steward
                  (its `plan`, realm/steward.py WORK) off the town's thread, `plan_to_todos` makes its steps to-dos
     personal 🔒  `private`, `set_private`: a personal card never reaches a model
@@ -10,12 +11,14 @@ its methods run with the worker as `self`. What it keeps lives beside the board 
 from __future__ import annotations
 
 import threading
+import time
 
 from orkcraft.core import runners
 from orkcraft.realm import cardlore, privacy, tasklist
 from orkcraft.realm.tasklist import MINE
 
 TITLE = "🌾 Task Fields"
+CONTEXT_EVERY_S = 15 * 60       # the wikis are asked for the waiting cards' context in one batch this often
 
 
 def card_text(card: tasklist.Task) -> str:
@@ -63,6 +66,25 @@ class CardLore:
         return [bid for bid, spec in sorted(self.town.custom_specs.items())
                 if type_id(spec) == "scrolls" and not spec.get("demolished")]
 
+    def context_later(self, card_id: str, was: str = "") -> None:
+        """A new or edited card waits for its context: the wikis are asked for every waiting card at once, every
+        `CONTEXT_EVERY_S` (`look_up_waiting`), so a card shows the moment it is written."""
+        self._context_due.discard(was)
+        self._context_due.add(card_id)
+        self.changed()
+
+    def look_up_waiting(self, now: float | None = None, force: bool = False) -> int:
+        """The cards that wait for their context get it, when `CONTEXT_EVERY_S` passed since the last batch (or
+        `force`). How many cards were looked up."""
+        now = time.time() if now is None else now
+        due = self._context_due
+        if not due or (not force and now - self._context_at < CONTEXT_EVERY_S):
+            return 0
+        self._context_at, self._context_due = now, set()
+        for card_id in sorted(due):
+            self.find_context(card_id)
+        return len(due)
+
     def find_context(self, card_id: str) -> int:
         """Ask the wikis for the pages that matter for the card (the words they share; no model). How many
         it found; none found, the card has no context."""
@@ -103,6 +125,9 @@ class CardLore:
 
     def _outgoing(self, card: tasklist.Task, pages: list[str] | None = None):
         """What a plan of the card would send: the cleaned ask, the scrub, and the pages it takes."""
+        if card.id in self._context_due:            # a plan does not wait for the batch: its context now
+            self._context_due.discard(card.id)
+            self.find_context(card.id)
         chosen = [p for p in self.lore.context(card.id) if pages is None or p.path in pages]
         scrub = privacy.scrub(card_text(card))
         todo = scrub.text

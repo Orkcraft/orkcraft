@@ -105,8 +105,8 @@ def _title(args: dict) -> str:
 
 
 def _add(w, args: dict) -> str:
-    """A card written as one `text` (its title a few words a light model picks; "" back while it does), or
-    a `title` with a `body` (a to-do of the person's own)."""
+    """A card written as one `text` (on the board at once by its first words; a light model renames it in a
+    moment), or a `title` with a `body` (a to-do of the person's own). The card's id."""
     lane = text(args, "lane", 200) or "todo"
     written = text(args, "text", 20_000).strip()
     if written:
