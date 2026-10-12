@@ -2,12 +2,14 @@
 
     python tools/install_banner.py            # rewrites the banner between its marks in install.sh
 
-`design-system/sprites/orks/warchief.png` is 24×20 in 2×2 pixels: 12×10 of his own. Each of those is
-one column wide and half a row high (▀ / ▄ with a foreground and a background colour) — a square on a
-terminal's cells — so he stands 12 columns by 5 rows. The colours are the xterm 256 palette's nearest,
-which every terminal of macOS and Linux draws (Terminal.app has no 24-bit colour). Beside him go three
-short lines, only when the terminal is wide enough (`banner WIDTH`); in a narrow one he stands alone,
-so nothing wraps under him. Needs Pillow.
+`design-system/sprites/orks/warchief.png` is 24×20 in 2×2 pixels: 12×10 of his own. He is drawn in
+five of those rows (`ROWS`: the crown's points, the ears, the eyes, the tusks, the chin), one coloured
+space per pixel: a terminal's cell is about twice as tall as wide, so 12×5 cells keep his shape. Only
+background colour, no ▀ / ▄ glyphs: a glyph stops where the font does, and a terminal with more line
+spacing left a dark seam on every row; a cell's background fills the whole row. The colours are the
+xterm 256 palette's nearest, which every terminal of macOS and Linux draws (Terminal.app has no 24-bit
+colour). Beside him go three short lines, only when the terminal is wide enough (`banner WIDTH`); in a
+narrow one he stands alone, so nothing wraps under him. Needs Pillow.
 """
 from __future__ import annotations
 
@@ -22,6 +24,7 @@ BEGIN, END = "# -- banner: tools/install_banner.py --", "# -- end of banner --"
 # Beside him, on the rows of his face (the camp's voice: the Warchief speaks first, then the facts).
 WORDS = {1: r"\033[1mOrkcraft\033[0m", 2: "The Warchief raises your camp", 3: r"\033[2muv · Python · Orkcraft\033[0m"}
 WIDE = 48            # the columns his words need beside him; below it he stands alone
+ROWS = (0, 3, 5, 7, 9)   # of his ten: the crown's points, the ears, the eyes, the tusks, the chin
 
 _LEVELS = (0, 95, 135, 175, 215, 255)
 
@@ -44,24 +47,15 @@ def rows() -> list[str]:
     im = im.resize((im.width // 2, im.height // 2), Image.NEAREST)
     px = im.load()
     out = []
-    for y in range(0, im.height, 2):
+    for y in ROWS:
         line, last = "", None
         for x in range(im.width):
-            top = px[x, y]
-            low = px[x, y + 1] if y + 1 < im.height else (0, 0, 0, 0)
-            t, b = (xterm(top[:3]) if top[3] > 127 else None), (xterm(low[:3]) if low[3] > 127 else None)
-            if t is None and b is None:
-                cell, style = " ", None
-            elif t is not None and b is not None:
-                cell, style = "▀", f"38;5;{t};48;5;{b}"
-            elif t is not None:
-                cell, style = "▀", f"38;5;{t}"
-            else:
-                cell, style = "▄", f"38;5;{b}"
+            p = px[x, y]
+            style = f"48;5;{xterm(p[:3])}" if p[3] > 127 else None
             if style != last:
                 line += r"\033[0m" + (rf"\033[{style}m" if style else "")
                 last = style
-            line += cell
+            line += " "
         line += r"\033[0m"
         out.append(line)
     return out
