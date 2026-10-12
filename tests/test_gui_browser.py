@@ -838,7 +838,8 @@ def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     assert fields.locator(".gui-fhut__part").count() == 1               # only My to-dos left
     after = {t: box(t) for t in ids}
     shrunk = before["fields"]["height"] - after["fields"]["height"]
-    assert shrunk > 10 and after["fields"]["y"] == before["fields"]["y"]   # a quiet board is as tall as what it says
+    # a quiet board is as tall as what it says, up to a medium card's height close up (map-view.md §2)
+    assert shrunk > 4 and after["fields"]["y"] == before["fields"]["y"]
     assert abs(before["pit"]["y"] - after["pit"]["y"] - shrunk) <= 1   # the hut under it moved up as much
     assert after["war_drum"]["height"] <= before["war_drum"]["height"]
     pg.reload()
