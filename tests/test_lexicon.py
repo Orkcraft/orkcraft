@@ -37,6 +37,7 @@ def test_an_old_camp_spelling_reads_in_todays_word():
     assert say("Ask the Warchief") == "Ask the Warchief"
     assert say("Standing orders & trigger") == "Instructions & trigger"
     assert say("📯 War Horn") == "📯 Stop all" and say("Not enough food") == "No ork slots left"
+    assert say("Wandering Ghost") == "Wandering Ghost" and say("Inbox Ghost") == "Inbox Ghost"   # a kin, never a preview
 
 
 def test_a_word_inside_another_stays():

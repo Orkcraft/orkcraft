@@ -17,6 +17,9 @@ and keep it, **faster and cheaper than testing and rewriting it through Claude C
 | 6 | The Alchemist redraws: images through the image tool with the shipped prompts, a region marked and commented, Reset; the Work window's layout as a UI document (§6) | built |
 | 7 | Cards s/m/l as documents, so the Alchemist lays them out too (§6.3) | built |
 | 8 | Orks by their orkish names, buildings by what they do; the Mechanic and the Alchemist as agents (design/agents/), on the Council of Elders, improving the town at night by the autonomy (§8) | built |
+| 9 | The mascots in the UX bench: a target that is no building; each head drawn again as its grid by a text model, never the image tool (§6.4) | built |
+| 10 | A moving house's two layers in the UX bench's *At work* group (docs/design/building-motion.md, its own stages) | building-motion.md |
+| 11 | **Propose**: what was applied on this machine goes to Orkcraft as a pull request (the picture, its @2x, a grid in its source), as the Mechanic's code changes do (§4) | |
 
 ## 1. Why
 
@@ -223,6 +226,28 @@ what it says), `foot` (what it works on, where it sends), `when` (when it last d
   **Lay it out** is one call (the steward's tool) whose answer is checked and sent back once with its problems;
   **Reset** shows the card as its code draws it; **Apply** keeps the layout for every building of the type (after
   Reset, it takes this machine's away).
+
+### 6.4 The mascots (stage 9, built 2026-10-12)
+
+Asked by the owner: the mascots are drawn again inside Orkcraft, not by a script and a session in Claude Code.
+
+- **A target that is no building.** Beside Build's groups, *Not a building* holds **Mascots**
+  (`core/workers/ux_lab.py` `MASCOTS`). Its gallery is every role's head (realm/intents.py `ROLES`) at its four
+  stages, each on its kin's home ground (realm/biomes.py `HOMES`), under its nick and its role.
+- **A head is a grid, so it is drawn as one.** Each is a 12 × 11 grid of palette letters (tools/growth_sprites.py
+  draws them and ships them as `design-system/sprites/mascots/grids.json`). An image model keeps neither the grid nor
+  the palette, and a run of the tool would draw its picture over, so the Alchemist edits the **grid as text**:
+  **Draw it** is one call on the steward's tool (`realm/painter.py` `mascot`) with the grid, the palette and what each
+  letter is for, the person's words and, when a region is marked, the rows and columns it covers. The answer is
+  checked (`design/mascots.py` `problems`: 11 rows of 12, palette letters only) and sent back once with its problems.
+  The image tool is never asked.
+- **The picture is made from the grid** (`design/mascots.py` `png`, no Pillow in the product), at the sprite's scale
+  and its @2x, pixel for pixel as the tool draws it. **Apply** keeps both and the grid beside them on this machine
+  (`assets_dir`, `sprites/mascots/<role>-<stage>.grid.json`), so the next drawing starts from it; **Reset** brings
+  the design system's back (Apply then takes all three away). Every place that shows a mascot reads `/ds/`, so the
+  portrait, Settings and the onboarding show this machine's at once.
+- **Not yet:** a head's name and ranks (realm/intents.py, realm/growth.py) and its kin's home are code, not pictures;
+  and a head applied here stays on this machine until **Propose** (stage 11) sends it to Orkcraft.
 
 ## 8. The orks: their names, who they are, and the night (stage 8, built 2026-10-11)
 

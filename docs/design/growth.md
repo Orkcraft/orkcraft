@@ -239,6 +239,9 @@ adds its own headgear or prop, so every stage reads as a step up:
 | Founder (knight) | a squire's leather coif | a steel helm, a pink plume | a sprout and a gold trim | a white-and-gold helm, a glowing visor |
 | Someone else (ghost) | a bare sheet | a straw hat | a captain's hat, an eye patch | a crest of open tabs, gold eyes |
 
+The heads are drawn again in the UX bench too, from a person's words (improve-buildings.md §6.4): a machine's own
+head is kept beside the design system's and shown before it.
+
 | Stage | Reached when (starting values) |
 |---|---|
 | 1 | the first town is raised |

@@ -2200,3 +2200,22 @@ def test_the_ux_bench_shows_a_buildings_pictures_and_opens_one_to_change(page, g
     pg.keyboard.press("Escape")
     for bid in (bench, pool):
         pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
+def test_the_ux_bench_shows_the_mascots_and_opens_one_to_draw_again(page, gui):
+    """docs/design/improve-buildings.md §6.4: the mascots are picked beside the buildings; each role's four stages
+    stand on its kin's ground, and a press opens the dialog that draws the head again as its grid."""
+    pg, (server, _browser) = page, gui
+    bench = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", "ux_lab")
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", bench)
+    pg.locator(".ux-pick .gui-build__tile[title='Mascots']").click()
+    gallery = pg.locator(".ux-gallery")
+    gallery.wait_for(timeout=WAIT_MS)
+    ghost = gallery.locator(".ux-gallery__group", has_text="Wandering Ghost")
+    assert ghost.locator("button.ux-picture").count() == 4
+    ghost.locator("button.ux-picture", has_text="Stage 3").click()
+    assert pg.locator(".ok-dialog").count() == 1
+    assert pg.locator(".ux-edit__picture img.is-mascot").get_attribute("src").startswith("/ds/sprites/mascots/other-3.png")
+    assert pg.locator(".ok-dialog button", has_text="Draw it").count() == 1
+    pg.keyboard.press("Escape")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bench)

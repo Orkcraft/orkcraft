@@ -40,3 +40,7 @@ button.ux-picture:hover .ux-picture__frame, button.ux-picture:focus-visible .ux-
 .ux-card:not(.is-small) .ux-card__hut { cursor: pointer; }
 .ux-card.is-part-big .gui-hut__big, .ux-card.is-part-text .gui-hut__text, .ux-card.is-part-foot .gui-hut__foot,
 .ux-card.is-part-when .gui-hut__when { outline: 2px dashed var(--frame-focus); outline-offset: 2px; }
+/* The mascots (§6.4): each head on its kin's ground, drawn large and sharp. */
+.ux-picture__ground { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.ux-picture__mascot { width: 48px; height: 44px; image-rendering: pixelated; }
+.ux-edit__picture img.is-mascot { width: min(100%, 264px); height: auto; }
