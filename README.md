@@ -6,180 +6,179 @@
   </picture>
 </p>
 
-# Orkcraft
+<h3 align="center">Run many coding agents in one project — and see them like a real-time strategy game.</h3>
 
-**A harness for running many coding agents in one project — as a real-time strategy game.**
+<p align="center">
+  Claude Code · Codex · Antigravity — no API keys · local-first · Apache 2.0
+</p>
 
-Windows are **buildings** with a resident **ork**. Agents are the **clan**. Buildings send **carts**
-to each other along **roads**. The HUD shows what you spend. Agents never pop dialogs: when one
-needs you it sets its hut on fire 🔥 and waits for your orders, and the **Warchief**, the lead agent
-in the line at the town's foot, builds, commands and answers for you.
-
-Orkcraft opens your project as a town in a window. It works in any git project and talks to
-models only through the CLIs you already have — [Claude Code](https://claude.com/claude-code) (`claude`),
-Google Antigravity (`agy`) and [OpenAI Codex](https://github.com/openai/codex) (`codex`) — so there are no API
-keys to configure.
-
+<!-- The hero GIF goes here: a town at work, a cart on a road, a hut on fire waiting for you. -->
 ![The town: a task board, a calendar and a wiki feed a daily brief; the War Map of orkspaces at the bottom left, the Warchief's line at the foot](docs/img/town.png)
 
-> [!WARNING]
-> **Alpha version — it may be unstable.** Orkcraft is under active development: features, settings
-> and file formats can change between versions, and some things may break or behave unexpectedly.
-> It has ~1,300 tests and is used daily, but try it on projects you have committed or backed up, and
-> keep an eye on what the agents do. Issues and ideas are welcome.
+Running three or five agents at once gets messy fast: which one is working, which one is stuck
+waiting for you, what did they change, and how much has this cost today? Terminals and tabs don't
+answer that.
 
-## Try it
+**Orkcraft opens your project as a town.** Every window is a **building** with an **ork** inside — an
+agent, a script or a chain of data steps. Buildings send **carts** to each other along **roads**, so
+work flows on its own. You see the whole town at a glance:
+
+- 🔥 **An ork that needs you sets its hut on fire** and waits. No pop-ups, no lost questions — and the
+  phone app shows them too.
+- 🪙 **The HUD shows what you spend**, by building and purpose, with budgets that stop model calls.
+- 🛤 **Roads do the orkestration.** Mail, GitHub, a calendar or a dropped file starts work; a task
+  goes to the Agent pool, a branch to Branches & PRs, a result to the Review gate where you approve it.
+- 🛡 **Safe by default.** The Warder hook blocks `rm -rf`, secret reads and force-pushes; Orkcraft
+  snapshots files before an ork touches them; **Stop all** halts everything.
+- 🧰 **Your tools, your login.** It talks to models only through the CLIs you already have —
+  [Claude Code](https://claude.com/claude-code) (`claude`), [OpenAI Codex](https://github.com/openai/codex)
+  (`codex`) and Google Antigravity (`agy`). No keys, no accounts, no servers.
+
+> [!WARNING]
+> **Alpha.** Orkcraft is used daily and has ~1,300 tests, but features and file formats still change
+> between versions. Try it on a project you have committed or backed up, and keep the Warder on.
+> Bug reports and ideas are very welcome in [Issues](https://github.com/Orkcraft/orkcraft/issues).
+
+## Try it in a minute
 
 ```bash
 brew tap orkcraft/orkcraft https://github.com/Orkcraft/orkcraft
 brew install orkcraft/orkcraft/orkcraft
-orkcraft --demo                    # a sandbox with simulated data: nothing real is touched, no model is called
+orkcraft --demo        # a sandbox town with simulated data: nothing real is touched, no model is called
 ```
 
 Without Homebrew: `pipx install "orkcraft[gui] @ git+https://github.com/Orkcraft/orkcraft"`.
+You need Python 3.11+ and git.
 
-In a real project:
+Then in a real project:
 
 ```bash
 cd your-project
-orkcraft hooks install             # session log + the Warder guard in .claude/settings.json (reversible)
-orkcraft                           # open the town in a window (macOS: the system's WebKit); gui --browser for a tab
+orkcraft hooks install   # the session log + the Warder guard in .claude/settings.json (reversible)
+orkcraft                 # open the town in a window; `orkcraft gui --browser` opens it in a tab
 ```
 
-> [!NOTE]
-> **The town lives in its window.** The terminal UI was removed
-> ([docs/design/calm-town.md](docs/design/calm-town.md) §9). Without the window's toolkit (`pywebview`)
-> the town opens in the browser; on a machine without a display, use `orkcraft gui --browser` over a
-> forwarded port.
+Optional: `claude`, `codex` and/or `agy` on your `PATH` for agents (building new buildings needs
+`claude`), and `gh` for GitHub events. Orkcraft updates itself: a critical fix installs when the town
+opens, any other update is offered ([docs/updates.md](docs/updates.md)).
 
-Orkcraft updates itself: a critical fix installs by itself when the town opens, any other update is
-offered (`orkcraft update` installs it now; [docs/updates.md](docs/updates.md)).
+Worth knowing: `/` or `Ctrl+K` puts you in the Warchief's line (`/build`, `/road`, `/orkspace`,
+`@a building`, or just ask) · a right click on a hut or on the bare map has its menu · **Stop all** in
+the HUD stops every running agent, script and browser. Prefer a calm screen? Settings has the
+**Office** look: monochrome, no sprites, same town.
 
-You need Python 3.11+ and git. Optional: `claude`, `agy` and/or `codex` on your `PATH` (agents; the
-Builder needs `claude`), `gh` (GitHub events in the Watchtower).
-
-Worth knowing: `/` or `Ctrl+K` puts you in the Warchief's line (`/build`, `/road`, `/orkspace`, `@a building`,
-or just ask) · a right click on a hut or on the bare map has its menu · ↑ / ↓ and Enter walk the War Map ·
-**Stop all** in the HUD stops every running agent, script and browser.
-
-## The idea
+## How it works
 
 | In the game | In your project |
 |---|---|
-| 🏰 **Town** | one map per workflow (an **orkspace**, `F1`–`F8`, each on its own biome), every building a small hut with live status lines |
+| 🏰 **Town** | one map per workflow (an **orkspace**, `F1`–`F8`, each in its own folder and biome); every building a small hut with live status lines |
 | 🏗 **Building** | a window: tasks, files, git, a mailbox, a webhook, a chart… |
 | 🧌 **Ork** | an agent, a script or a free chain of data steps living in a building |
 | 🛤 **Road** | a subscription: what happens in one building travels as a cart to the buildings that listen |
 | 🪙 / 🪵 / 🥩 | money, context tokens and running agents — with budgets you set |
+| 🧌 **Warchief** | the lead agent in the line at the town's foot: builds, lays roads and answers for you |
 
-Roads are the point. A building never needs to know who listens to it; the listener decides
-what to do with each cart. The cheapest thing that works wins: a plain road, then a **chain**
-(data steps, no model), then a **script**, and only then an **agent**.
+Roads are the point. A building never needs to know who listens to it; the listener decides what to
+do with each cart. **The cheapest thing that works wins:** a plain road, then a **chain** (data steps,
+no model), then a **script**, and only then an **agent**.
 
-## The camp
+## The buildings
 
-The catalog, each building with its own events and settings — and a custom one the Builder writes for you:
+Each building has its own events and settings — and when the catalog lacks one, the **Builder**
+writes a new one for you (a script first, a model only where a script can't do the job).
 
 | | |
 |---|---|
-| **Intake and routing** | 🕳️ Pit (drop files, paste links) · 🗼 Watchtower (mail and Gmail, GitHub, comments and mentions in Slack / Jira / Confluence / Figma, schedules, webhooks — one tower, filtered by your intent) · 🚏 Signpost (if/switch routes) · ⚙️ Mill (map / flat map: data steps, an agent where a script can't) · 📯 Horn (a sound of your choice per incoming event) |
-| **Queues and work** | 🌾 Task Fields (a board of tasks and sticky notes) · 🏕️ Barracks (agents in parallel, a branch per task, reviewed by its steward; a PR for code and what goes out) · 🪔 Clan Fire (the clan reviews a document from every side; the steward lets it go or sends it back) · 🥁 War Drum (your calendar; agents prepare documents for meetings ahead of time) |
-| **Storage, code, inspection** | 🌲 File Forest · 🗑️ Scroll Dump (an LLM wiki its ork keeps from your notes, code, git and Confluence) · ⛏️ Mine (deep research on the web: every AI tool searches alone, findings checked against each other, what stays disputed you decide; the report goes to the wiki) · 📻 Gramophone (a report or a day's summary spoken as a short episode, to play or download to your phone) · 🌊 Lake of Insight (diffs, Markdown; edit a file in place — your notes right in the text — with autosave) · ⚒️ Forge (tests a branch in a throw-away worktree, squash-merges) |
-| **Results and egress** | 📦 Loot Vault (the review checkpoint: carts pass by rules or wait for you; send back for rework, see what the chain cost) · 🪨 Tally Crag (spend, tokens, load as bars) · 🎯 Catapult (waits for several roads, checks a JSON Schema, sends over HTTP or through the MCP servers your AI tools have (Slack, Jira, Notion, email… — then learns a direct path) — or, where there is no API, its ork finds the forms of an intent and fills them in a browser) |
+| **Intake and routing** | Drop file here (files and links) · External listeners (mail and Gmail, GitHub, Slack, Jira, Confluence, Figma, schedules, webhooks — filtered by your intent) · Router (if / switch) · Transformer (data steps, an agent where a script can't) · Sound alerts |
+| **Queues and work** | Task board (tasks and sticky notes) · Agent pool (agents in parallel, a branch per task, a pull request for code) · Review board (the clan reviews a document from every side) · Calendar (agents prepare for your meetings) |
+| **Knowledge and code** | File tree · Wiki (kept by its ork from your notes, code, git and Confluence) · Research (every AI tool searches alone, findings checked against each other) · Audio briefing (a report spoken as a short episode) · Inspector (diffs and Markdown, edit in place) · Branches & PRs (tests a branch in a throw-away worktree, merges) |
+| **Results and output** | Review gate (carts pass by rules or wait for you) · Metrics (spend, tokens, load) · Publisher (sends over HTTP or your AI tools' MCP servers — or fills a form in a browser where there is no API) |
+| **Improve** | Test bench (runs a building's cases beside the bare AI tool and says what to change) · UX bench (looks at a building's window) |
 
 ## The Town Hall
 
-The 🏰 Town Hall is where the town changes. Everything goes through it, and everything it does is
-a commit in the camp's own git, so it can be undone.
+The 🏰 Town Hall is where the town changes. Everything goes through it, and everything it does is a
+commit in the camp's own git, so it can be undone.
 
 ![The Town Hall: the Warchief's chat, its Hall, the sessions and the limits](docs/img/town-hall.png)
 
-- **🏗 Build** — `/build` or a right click on the map: say what you need, or pick a block from the
-  catalog and it stands where you clicked. No model call for a block from the catalog.
-
-  ![Build: say what you need, or pick a building; then place it on the town](docs/img/build.png)
-- **🛠 New** — ask the Warchief for what the catalog lacks: the **Builder** asks what the building
-  should do and writes a **script** (a model only where a script cannot do the job). The blueprint is
-  previewed, reviewed by the Council and run on mock carts in a sandbox before you approve it.
-- **🏛 The Council** reviews what is made from scratch — 👑 Chief (budget), 🧱 Mason (schemas),
-  🎨 Artisan (the screen and your cognitive load), 🛡 Warder (shell commands, prompts, secrets),
-  ⛏ Peon (worktrees, permissions, housekeeping). Rules first; a light model (`haiku`) adds opinions.
-- **🛤 Roads with a prompt** — pick a source and its events, say in words what to do with each
-  cart; a chain or a script is made unless the rule really needs judgement.
-- **👍 / 👎** beside every steward. A 👎 asks whether the *inputs* were broken (the buildings that
-  fed it are penalised upstream along the roads) or its own *logic* was wrong.
-- **You teach it by working.** What you do with a result counts as well, with a smaller weight: a cart
-  accepted, edited or sent back in a 📦 Loot, an ork's file whose format you changed in a 🌊 Lake
-  (filling it in does not count against it), a pull request merged or closed, a change taken back
-  with `Z` — and a result nobody opens tells the Town retro the building may be unused.
-- **Retros, never automatic.** Daily, the 🔧 Building retro proposes one change for the building
-  that eats most of the camp and of your limit and that you are unhappy with; weekly, the 🗓 Town
-  retro has a heavy model (`opus`) audit the whole camp. Nothing
-  applies without your click, each change is a checkpoint, and one building can be taken back on its own.
+- **🏗 Build** — `/build` or a right click on the map: say what you need, or pick from the catalog.
+- **🛠 New** — the **Builder** asks what the building should do and writes it. The blueprint is
+  reviewed by the Council (budget, schemas, the screen, shell safety, housekeeping) and run on mock
+  carts in a sandbox before you approve it.
+- **🛤 Roads with a prompt** — say in words what to do with each cart; a chain or a script is made
+  unless the rule really needs judgement.
+- **👍 / 👎 and what you do** teach the orks: a 👎 asks whether the *inputs* were broken or the ork's
+  own *logic* was wrong; a result accepted, edited, sent back, merged or never opened counts too.
+- **Retros, never automatic.** A daily Building retro proposes one change where it matters most; a
+  weekly Town retro audits the whole camp. Nothing applies without your click.
 
 ## Growth
 
-Buildings and their operator grow, from what the orks learned — never from clicks
-([docs/design/growth.md](docs/design/growth.md)).
+Buildings and their operator grow from what the orks learned — never from clicks
+([docs/design/growth.md](docs/design/growth.md)). A building earns **Renown I–III** and shows it as a
+flag on its roof; your mascot grows from a Standup Zombie to a Release Night King and collects
+**deeds**; the Warchief says what grew and wears the crown. The **War Map** shows your orkspaces as
+lands, and calls you with rings when an ork in another one asks — as a strategy game does when your
+units are attacked.
 
-- **🚩 Renown I–III.** A building earns it from the changes of its orks that passed probation and
-  what you liked since; it never drops. It shows as a flag on its roof (ivory at I, taller at II,
-  gold at III) and the stones it stands on, a course more at each level. Its **goal** (🪙 thrift ·
-  ⚖️ balance · 💎 quality) shows as an annex beside it from the start: a lean-to over logs, none, a
-  crystal. Info says what the next level asks.
-
-  ![A building's Info: its sprite with its banner, its renown and goal, its garrison](docs/img/info.png)
-- **Your mascot.** Settings opens with you: the mascot of the role you gave in the onboarding (an
-  ork, a lich, an elf…), four stages from a Standup Zombie to a Release Night King, and your **deeds** — the
-  first road, the first change the orks kept, a building at III; the ones ahead are grey with a hint.
-
-  ![Settings: your mascot, its stage and deeds, then the project's rules](docs/img/settings.png)
-- **The Warchief says what grew** — a level, a deed, and the loop closed on your review ("your 👎 on
-  Brief → the orks changed it → 4 👍 since"). He wears the crown; the clan stays green.
-- **The War Map.** The orkspaces are lands in a framed map at the bottom left, each in its biome
-  (dirt, forest, ice, dust, void, lava, meadow — the ground and the huts follow it), the open one tall with its status; the fog of war makes a new one. When an ork asks
-  in another orkspace, the map calls you with rings, as a strategy game does when your units are
-  attacked ([docs/design/war-map.md](docs/design/war-map.md)).
+![A building's Info: its sprite with its banner, its renown and goal, its garrison](docs/img/info.png)
 
 ## Safety
 
-- **Your CLIs, your login.** Models are called as `claude -p …` / `agy --print …` / `codex exec …`. Orkcraft has no
-  API keys, accounts or servers, and sends nothing anywhere on its own. A building talks to the
-  network only if you configure it to (Watchtower, Catapult, Lake with a URL).
-- **Usage stats are off until you say yes.** The window asks once; if you agree, a short list of
-  anonymous feature counts is shared — never code, prompts, paths or names
-  ([docs/usage-stats.md](docs/usage-stats.md)). `orkcraft usage off` stops it, and `DO_NOT_TRACK=1` always does.
-- **🛡 Warder** is a Claude Code and Codex `PreToolUse` hook (`orkcraft hooks install`): it denies catastrophic or
-  secret-leaking calls (`rm -rf /`, `curl … | sh`, reading `.env` / `.ssh`, force-push…) and asks
-  about destructive ones (Codex cannot ask yet, so there it denies and says why). Codex runs a project's
-  hooks once you trust them with `/hooks`. `agy` has no such hook.
-- **Scripts** run as `python3 -I` or `bash` with no shell interpolation and a timeout; the Builder's
-  sandbox uses an empty folder and a bare environment. Handler scripts run only after review and are
-  held again if the file changes.
-- **Personal nodes** (Markdown with `subtype: personal` in its front matter) never reach a model.
-- **Budgets** — 🪙 per session, 🪵 context — stop model calls; 🛑 Halt All stops everything.
+- **Your CLIs, your login.** Models are called as `claude -p …` / `codex exec …` / `agy --print …`.
+  Orkcraft has no API keys, accounts or servers, and sends nothing anywhere on its own. A building
+  talks to the network only if you configure it to.
+- **🛡 Warder** is a Claude Code and Codex `PreToolUse` hook (`orkcraft hooks install`): it denies
+  catastrophic or secret-leaking calls (`rm -rf /`, `curl … | sh`, reading `.env` / `.ssh`,
+  force-push…) and asks about destructive ones (Codex cannot ask yet, so there it denies and says
+  why). `agy` has no such hook yet.
+- **Snapshots.** Before and after an ork works in a project, Orkcraft keeps a snapshot of its files
+  without touching your branch, index or git log; a land's History takes them back.
+- **Scripts** run as `python3 -I` or `bash` with no shell interpolation and a timeout; handler
+  scripts run only after review and are held again if the file changes.
+- **Personal notes** (Markdown with `subtype: personal` in its front matter) never reach a model.
+- **Budgets** — 🪙 per session, 🪵 context — stop model calls; **Stop all** stops everything.
+- **Usage stats are off until you say yes** — anonymous feature counts only, never code, prompts,
+  paths or names ([docs/usage-stats.md](docs/usage-stats.md)); `DO_NOT_TRACK=1` always stops them.
 
-Orkcraft is alpha software that runs agents on your machine. Read what a building does before you
-let it loose, and keep the Warder on.
+Orkcraft runs agents on your machine. Read what a building does before you let it loose.
+
+## How it's designed
+
+Every feature of Orkcraft started as a design note: the problem, the options, what was decided and
+why, and an *As built* section once it shipped. A few worth reading:
+
+- [Roads and orks](docs/design/roads-and-orcs.md) — the core model: buildings, carts, and why the
+  cheapest step that works wins.
+- [Calm town](docs/design/calm-town.md) — why the terminal UI was removed and the window became the one face.
+- [Agent pool flows](docs/design/barracks-flows.md) — how the kind of work decides an agent's path and its review.
+- [Guarding agy](docs/design/agy-guard.md) — a safety hook written from a spec, and what is still unverified.
+- [Growth](docs/design/growth.md) — progression that rewards what the orks learned, not clicks.
+
+The rest is in [docs/design/](docs/design/); the full reference — every key, building, file format
+and flow — is in [docs/reference.md](docs/reference.md), and what comes next is in
+[docs/roadmap.md](docs/roadmap.md).
 
 ## Where things live
 
-Inside the project it runs in, orkcraft keeps only local state (add these to your `.gitignore`):
+Inside the project it runs in, Orkcraft keeps only local state (add these to your `.gitignore`):
 
-- `.orkcraft.json` — the Town Scroll: canvases, buildings, roads, garrisons, budgets
+- `.orkcraft.json` — the Town file: maps, buildings, roads, garrisons, budgets
 - `.orkcraft/` — logs, sessions, per-building state and **the camp's own git** (branch `camp`) that
-  tracks building specs, scripts and blueprints; `Z` reads it. It is separate from your project's history.
+  tracks building specs, scripts and blueprints. It is separate from your project's history.
 
-Environment variables are `ORKCRAFT_*` (`ORKCRAFT_CLAUDE_BIN`, `ORKCRAFT_AGY_BIN`, `ORKCRAFT_CODEX_BIN`, `ORKCRAFT_LIMITS=0`,
-`ORKCRAFT_LAYOUT_FILE`, `ORKCRAFT_COUNCIL_LLM=0`…). Models and schedules of the Council and the
-Elders' limits are set in the Town Hall and stored in `.orkcraft/council/settings.json`; you, your
-role, mascot and deeds are per machine in `~/.config/orkcraft/settings.json`.
+Environment variables are `ORKCRAFT_*` (`ORKCRAFT_CLAUDE_BIN`, `ORKCRAFT_AGY_BIN`,
+`ORKCRAFT_CODEX_BIN`, `ORKCRAFT_LIMITS=0`, `ORKCRAFT_COUNCIL_LLM=0`…). You, your role, mascot and
+deeds are per machine in `~/.config/orkcraft/settings.json`.
 
-The full reference — every key, building, file format and flow — is in [docs/reference.md](docs/reference.md);
-the design of roads and orks is in [docs/design/roads-and-orks.md](docs/design/roads-and-orcs.md).
-What is planned next is in [docs/roadmap.md](docs/roadmap.md).
+## Contributing
 
-## Development
+Orkcraft is young and built in the open — ideas, bug reports and pull requests are welcome.
+The quickest way to help is to try `orkcraft --demo` or a real project and
+[open an issue](https://github.com/Orkcraft/orkcraft/issues) with what confused you or broke.
+Before writing code, read [CLAUDE.md](CLAUDE.md): it has the wording rules (ork, orkestration) and
+where code goes.
 
 ```bash
 git clone https://github.com/Orkcraft/orkcraft && cd orkcraft
@@ -188,21 +187,26 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 .venv/bin/orkcraft --demo
 ```
 
-Every pull request and every push to `main` runs the tests on GitHub Actions (`.github/workflows/tests.yml`).
+Every pull request and every push to `main` runs the tests on GitHub Actions.
 
 ```
 orkcraft/
   cli.py             the command line
   core/              the town without a face: state, services, the bus
   gui/               the GUI face: host and server over the core, the page (Preact, no build step)
-  design/            tokens, the building UI contracts; design/system → design-system/ (the GUI's CSS, fonts, sprites)
-  tools/             the sprites drawn from code (logo.py, growth_sprites.py), the gallery and landing captures
-  realm/             the logic: catalog, roads, chains, council (fastpath), workshop, blueprint,
-                     feedback, optimize, weekly, checkpoint, housekeeping…
+  realm/             the logic: catalog, roads, chains, council, workshop, feedback, retros…
+  design/            tokens and the building UI contracts → design-system/ (CSS, fonts, sprites)
   quota/             each AI tool's quota readers (no quota spent)
   sources/ hooks/    sessions, telemetry, limits; the Claude Code and Codex hooks
   demo/              the showcase sandbox
+  tools/             sprites drawn from code, the gallery and landing captures
 ```
+
+## Author
+
+Orkcraft is made by **Vadim Sidoryk** ([@VadimSidoryk](https://github.com/VadimSidoryk)) — first
+as a tool for running the author's own agents, now for everyone who runs more than one. Much of its
+code was written by coding agents under the author's direction; the decisions are in the design notes.
 
 ## License
 
