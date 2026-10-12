@@ -2,6 +2,12 @@
   "about": "The releases of Orkcraft, newest first: what an installed copy reads to update itself (docs/updates.md). A release marked critical installs by itself when the town opens.",
   "releases": [
     {
+      "version": "0.2.9",
+      "date": "2026-10-12",
+      "critical": false,
+      "notes": "Crash reports: if you share usage stats, Orkcraft now also reports where in its own code something broke — the error's type, its message with paths, addresses and quoted text taken out, and the file and line in Orkcraft. Never your code, prompts, local values or project names. The same answer covers both (Settings → Share anonymous usage stats and crash reports); each crash's full traceback also stays on your machine in ~/.orkcraft/crashes. On Linux without GTK or Qt the town now opens in the browser instead of failing to start. A new one-line installer for macOS and Linux (curl -fsSL https://orkcraft.dev/install.sh | sh) puts uv, Python and Orkcraft in place and opens the town. orkcraft --version says the version."
+    },
+    {
       "version": "0.2.8",
       "date": "2026-10-11",
       "critical": false,
