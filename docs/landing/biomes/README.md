@@ -21,10 +21,10 @@ Void has no glyphs (as in the TUI): the colour alone.
 |---|---|---|---|
 | dirt | `#1a1813` | `#3a3326` | orks |
 | forest | `#101a0b` | `#22341a` | elves |
-| ice | `#070d14` | `#1c2c3c` | the undead |
+| ice | `#070d14` | `#1c2c3c` | gnomes |
 | dust | `#2a2014` | `#5a462a` | goblins |
-| void | `#0e0c14` | `#2c263c` | skeletons |
-| lava | `#161212` | `#342c2a` | gnomes |
+| void | `#0e0c14` | `#2c263c` | ghosts |
+| lava | `#161212` | `#342c2a` | the undead |
 | meadow | `#0d1a16` | `#24443a` | knights |
 
 The huts of each biome are `design-system/sprites/buildings/<type>/header-<biome>.png` (dirt and forest:
