@@ -358,6 +358,7 @@ function CaseRow({ id, c, r, d, on }) {
       <b class="ok-font-body">${c.title}</b>
       ${(d.entries || []).length > 1 && entry && html`<span class="ok-font-status ok-tone-muted">→ ${entry.title}</span>`}
       ${c.source === "generated" && html`<span class="ok-font-status ok-tone-muted">${say("from the goal")}</span>`}
+      ${c.source === "dislike" && html`<span class="ok-font-status ok-tone-fire" title=${c.why || ""}>${say("from a 👎")}</span>`}
       <span class="gui-bench__acts">
         <button class="ok-btn" disabled=${on} onClick=${() => act(id, "run", { case: c.id })}>${say("Test this case")}</button>
         <button class="ok-btn" title=${say("Remove the case")} onClick=${() => act(id, "remove", { case: c.id })}>×</button></span>

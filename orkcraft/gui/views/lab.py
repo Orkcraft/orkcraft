@@ -39,6 +39,7 @@ def detail(w) -> dict:
     if s is None:
         return out
     metric = lab_cases.metric_of(w.state["goal"])
+    w.take_regressions(s)                                            # a 👎 on what it tests is a case of it now
     job = engine.lab.job(w) if engine is not None else None
     out.update({
         "metric": metric, "entries": w.entries(s), "cases": w.cases_of(s["id"]), "results": w.results_of(s["id"]),
