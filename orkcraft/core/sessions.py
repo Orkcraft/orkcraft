@@ -31,9 +31,9 @@ from typing import Callable
 
 import pyte
 
-from orkcraft.core import bus
+from orkcraft.core import bus, timeline
 from orkcraft.core.town import Town
-from orkcraft.realm import chronicles, harnesses, pipes, worktrees
+from orkcraft.realm import chronicles, harnesses, pipes, projects, worktrees
 from orkcraft.realm.roster import WorkerInfo
 from orkcraft.sources import sessions as past
 
@@ -52,6 +52,7 @@ class Session:
     env: dict[str, str] = field(default_factory=dict)
     ticket: str | None = None
     ork: str = ""                                    # "<building id>/<ork id>" of a deployed garrison ork
+    orkspace: str = ""                               # where it was opened: its project's snapshots (core/timeline.py)
     pid: int | None = None
     fd: int | None = None
     running: bool = False
@@ -126,6 +127,9 @@ class Sessions:
         s = Session(key, list(command), harness, title, cwd or str(self.cwd()), merged, ticket, ork)
         if size is not None:
             s.screen.resize(max(int(size[1]), 5), max(int(size[0]), 20))
+        b_ork = self.town.scroll.orkspace_of(ork.partition("/")[0]) if ork else None
+        s.orkspace = b_ork.id if b_ork is not None else self.town.scroll.active_orkspace_id
+        timeline.take(self.town, s.orkspace, timeline.folder_for(self.town, s.orkspace, s.cwd), f"before {title}")
         self.live[key] = s
         self._start(s)
         self.town.publish(bus.SESSION, key=key, state="opened")
@@ -305,6 +309,7 @@ class Sessions:
 
     def _finished(self, s: Session, code: int | None, tail: bytes) -> None:
         s.running, s.exit_code = False, code
+        timeline.later(self.town, s.orkspace, timeline.folder_for(self.town, s.orkspace, s.cwd), f"after {s.title}")
         self.on_output(s.key, tail)
         self.town.publish(bus.SESSION, key=s.key, state="exited", code=code)
         if s.ork:
@@ -325,8 +330,9 @@ class Sessions:
         if b_spec is None or not town.roads.has_roads(b_id, pipes.ON_TASK):
             return
         title, md = pipes.task_report(name, b_spec.title, s.text_lines())
-        cwd, root = Path(s.cwd), town.repo_root
-        worktree = str(cwd.relative_to(root)) if cwd != root and root in cwd.parents else ""
+        cwd = Path(s.cwd)
+        root = projects.root_of(town.scroll, s.orkspace, town.repo_root) if s.orkspace else town.repo_root
+        worktree = str(cwd.relative_to(root)) if cwd != root and root in cwd.parents else ""   # Loot reads it there
         hop = pipes.hop(b_id, ork_id, "task", worktree=worktree, outcome="done",
                         since=max(0.0, time.monotonic() - s.started), run=s.key)
         town.roads.emit(pipes.Payload(kind=pipes.TEXT, value=md, source=b_id, mode=pipes.ON_TASK, title=title,

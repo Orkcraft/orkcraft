@@ -17,14 +17,15 @@ import time
 from pathlib import Path
 from typing import Any
 
-from orkcraft import schedule
+from orkcraft import schedule, settings
 from orkcraft.env import getenv
 from orkcraft.core import runners
 from orkcraft.core import treasury as tr
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
+from orkcraft.gui import projects as gui_projects
 from orkcraft.gui import views
-from orkcraft.realm import catalog, halt, lexicon, modes, pipes, script_first, steward_models
+from orkcraft.realm import card_docs, catalog, halt, lexicon, modes, pipes, script_first, steward_models
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.scroll import road_key
 
@@ -84,6 +85,8 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "size": list(bs.hut_size) if bs.hut_size else None,   # its card stretched by the person (js/hut.js)
             "pinned": bool(bs.pinned),
             "folded": bool(bs.folded) and bs.id != TOWN_HALL,   # its title bar only (js/hut.js)
+            "roads": catalog.type_of(spec).roads if spec else "free",   # "setup"/"none": no road handle (catalog)
+            "card_doc": card_docs.current(type_id) if spec else None,     # its card's layout: this machine's, else shipped
             "level": bs.level or 0, "goal": bs.aim,              # the flag on its roof (docs/design/growth.md §5)
             "status": (lines := _hut_lines(town, bs.id)),
             "status_plain": [modes.plain(x) for x in lines],
@@ -220,6 +223,7 @@ def orkspaces(town: Town, muster: Muster) -> list[dict[str, Any]]:
         ids = set(o.buildings)
         standing = [b for b in town.scroll.buildings if b.id in ids and not b.demolished and b.id != "town_hall"]
         out.append({"id": o.id, "name": o.name, "icon": o.icon, "biome": o.biome, "hotkey": o.hotkey,
+                    "project": o.project or "",                   # the folder it works in (docs/design/projects.md)
                     "buildings": list(o.buildings), "questions": len(muster.questions_of(o.id)),
                     "count": len(standing),                       # what the War Map's land says and dots
                     "paused": sum(1 for b in standing if _paused(town.workers.get(b.id))),
@@ -286,13 +290,14 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "project": town.scroll.meta.get("project_name") or town.repo_root.name,
         "repo": str(town.repo_root),
         "demo": bool(town.demo),
-        "look": town.machine.look,                 # camp | office, the person's (docs/design/portrait.md §3)
+        "look": settings.look_now(town.machine),   # camp | office now, the person's (docs/design/portrait.md §3)
         # Connect Google is put away for now (docs/design/google-account.md §3): its wizard is long. ORKCRAFT_GOOGLE=1 shows it.
         "google": getenv("GOOGLE").lower() in ("1", "true", "yes", "on"),
         "resources": {k: v[1] for k, v in modes.RESOURCES.items()},
         "words": lexicon.table(),
         "active_orkspace": town.scroll.active_orkspace_id,
         "orkspaces": orkspaces(town, muster),
+        "projects": gui_projects.snapshot(town),
         "buildings": buildings(town, muster),
         "roads": roads(town),
         "carts": carts(town),

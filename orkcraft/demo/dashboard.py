@@ -141,9 +141,11 @@ AGENT_YARD = {
             "Spend today = spend 24h warn 2 crit 5 all", "Runs = runs 24h all", "Busy orks = orcs 24h all",
             "Tokens = tokens 24h horizontal command", "Quotas = limits 24h horizontal warn 80 crit 95 command",
             "CPU = cpu 1h full"]),
+        typed("yard_ux", "ux_lab", "Alchemy Tower", "⚗️", "Alchemist", "the Barracks' look, picture by picture",
+              target="barracks"),
     ],
-    "layout": [(0.0, 0.0, 0.44, 0.46), (0.56, 0.0, 0.44, 0.46), (0.0, 0.54, 0.3, 0.46), (0.35, 0.54, 0.3, 0.46),
-               (0.7, 0.54, 0.3, 0.46)],
+    "layout": [(0.0, 0.0, 0.38, 0.46), (0.42, 0.0, 0.38, 0.46), (0.0, 0.54, 0.3, 0.46), (0.35, 0.54, 0.3, 0.46),
+               (0.7, 0.54, 0.3, 0.46), (0.84, 0.0, 0.16, 0.46)],
     "roads": [
         ("camp", "branches", "git.pr_opened", "on_pr_opened", None, None),
         ("council", "camp", "pool.done", "on_task_done", None, None),
@@ -238,14 +240,16 @@ LIBRARY = {
               wiki="team_wiki", limit=3.0),
         typed("lib_gramophone", "gramophone", "The Gramophone", "📻", "Bard", "the reports, spoken for the road",
               minutes=6),
+        typed("lib_lab", "lab", "Test bench", "🧪", "Mechanic", "tests the Barracks on its cases", max_spend=1.0),
     ],
     "huts": {"lib_camp": (0.0, 0.64)},                 # the Barracks clear of the board, Camp's sprite and all
     "layout": [(0.0, 0.0, 0.24, 0.46), (0.27, 0.0, 0.3, 0.46), (0.6, 0.0, 0.4, 0.46),
-               (0.0, 0.54, 0.18, 0.46), (0.205, 0.54, 0.18, 0.46), (0.41, 0.54, 0.18, 0.46), (0.615, 0.54, 0.18, 0.46),
-               (0.82, 0.54, 0.18, 0.46)],
+               (0.0, 0.54, 0.155, 0.46), (0.169, 0.54, 0.155, 0.46), (0.338, 0.54, 0.155, 0.46),
+               (0.507, 0.54, 0.155, 0.46), (0.676, 0.54, 0.155, 0.46), (0.845, 0.54, 0.155, 0.46)],
     "roads": [
         ("code_wiki", "lib_tasks", "tasks.created", "on_task", None, None),
         ("lib_camp", "code_wiki", "knowledge.chunks", "with_the_map", None, None),
+        ("lib_lab", "lib_camp", "pool.done", "under_test", None, None),
     ],
     "payloads": {
         ("lib_tasks", "tasks.created"): ("node", "add-yearly-billing", "Add yearly billing"),

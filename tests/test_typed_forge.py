@@ -56,3 +56,13 @@ def test_conflicts_dirty_tree_tests_and_a_base_not_checked_out(fake_repo: Path):
     assert res.ok and git(fake_repo, "log", "-1", "--format=%s", base) == "squash: red (1 commit)"
     assert not (fake_repo / "src" / "c.py").exists()                       # this checkout untouched
     assert len(git(fake_repo, "worktree", "list").splitlines()) == 1       # the test worktree is gone
+
+
+def test_a_test_command_that_needs_a_shell_gets_one(fake_repo: Path):
+    assert forge.test_argv("pytest -q") == ["pytest", "-q"]
+    assert forge.test_argv("pytest -q && ruff check .") == ["sh", "-c", "pytest -q && ruff check ."]
+    import threading
+    from orkcraft.realm import jobs
+    passed, out = jobs.TaskGit().test(fake_repo, "true && echo both ran", threading.Event())
+    assert passed and "both ran" in out
+    assert jobs.TaskGit().test(fake_repo, "true && false", threading.Event())[0] is False

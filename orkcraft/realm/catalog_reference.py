@@ -20,6 +20,8 @@ INTENTS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Listen to the results on the road", ("gramophone",)),
     ("Ship the results: merge, keep, send", ("forge", "loot", "catapult")),
     ("Watch load, limits and spend", ("crag",)),
+    ("Test a building on its cases", ("lab",)),
+    ("Work on a building's look", ("ux_lab",)),
     ("Hear what comes in", ("horn",)),
 )
 
@@ -62,6 +64,9 @@ TAKES: dict[str, str] = {
     "workshop": "anything (a file as its content): its script runs on the cart",
     "gramophone": "text, or a file (its content): its steward writes a script for the ear and Gemini TTS speaks it "
                   "→ gramophone.done (the transcript; the audio stays in the building) / gramophone.failed",
+    "lab": "anything from the building it tests: noted as what it last sent; its setup lays the roads that say "
+           "which building or chain it tests, and a run starts only from its window or its quick action → "
+           "lab.report / lab.missed",
     "mine": "a question (its title, else its first line; the rest of the text is what it must cover): a research "
             "starts, or waits behind the one running → mine.reported (the report) / mine.asked / mine.failed",
 }
@@ -74,7 +79,36 @@ ACCEPTS: dict[str, frozenset[str]] = {
     "workshop": _ANY, "lake": _ANY,
     "mill": frozenset({TEXT, FILE}), "council": frozenset({TEXT, FILE}), "war_drum": frozenset({TEXT, FILE}),
     "scrolls": frozenset({TEXT}), "forge": frozenset({TEXT}), "crag": frozenset({TEXT}),
-    "mine": frozenset({TEXT, FILE}), "gramophone": frozenset({TEXT, FILE}),
+    "mine": frozenset({TEXT, FILE}), "gramophone": frozenset({TEXT, FILE}), "lab": _ANY,
+}
+
+# Each quick action as an input (docs/design/improve-buildings.md §3): the act of its type's view a press ends in
+# (gui/views/<type>.py `ACTS`; "" its worker's `quick_action`), the argument the text a person gives goes to ("" when
+# it takes none) and what the press always sends. None: it only changes what the window shows (opens a file, flips a
+# chart, opens a form of the interface's own) — no input. tests/test_inputs.py keeps every act real.
+QUICK_INPUTS: dict[str, tuple[str, str, dict] | None] = {
+    "pit.paste": ("", "", {}),                      # its worker reads the clipboard
+    "mail.open_new": ("open_new", "", {}), "watch.read_all": ("read_all", "", {}), "mail.refresh": ("check_now", "", {}),
+    "mill.run": ("", "", {}),
+    "horn.test": ("test", "", {"event": "*"}), "horn.mute": ("mute", "", {}),
+    "tasks.new": ("add", "text", {"lane": "todo"}), "notes.new": ("add", "text", {"lane": "notes"}),
+    "todos.new": ("add", "text", {"lane": "mine"}),
+    "pool.answer": ("answer", "text", {}), "pool.pause": ("pause", "", {}), "pool.task": ("task", "brief", {}),
+    "team.add": None, "team.start": ("review", "text", {}),
+    "calendar.new": ("add", "title", {}), "calendar.prepare": ("prepare", "", {}), "calendar.import": None,
+    "files.open": None,
+    "wiki.note": ("note", "text", {}), "wiki.ingest": ("ingest", "", {}), "wiki.lint": ("lint", "", {}),
+    "knowledge.add": ("add_folder", "path", {}),
+    "mine.new": ("ask", "question", {}),
+    "gramophone.make": ("make", "text", {}),
+    "lab.run": ("lab.run", "", {}),
+    "lake.open": None, "lake.edit": None,
+    "forge.merge": ("merge", "branch", {}), "git.open_pr": None,
+    "loot.accept_all": ("accept_all", "", {}), "generator.accept_all": ("accept_files", "", {}),
+    "crag.flip": None, "crag.next": None,
+    "catapult.dry_run": ("dry_run", "", {}), "catapult.fire": ("fire", "", {}), "catapult.scout": ("scout", "", {}),
+    "hall.build": None, "hall.audit": ("audit", "", {}),
+    "workshop.run": ("workshop.run", "", {}), "workshop.test": ("workshop.test", "", {}),
 }
 
 # What a building does outside the camp on its own: the network, merges, money.
@@ -96,6 +130,8 @@ EFFECTS: dict[str, str] = {
     "workshop": "runs its script; its steward prompt runs a model",
     "gramophone": "runs a model for the script, then sends the script to Google (Gemini API) to be spoken: spends "
                   "money, up to `cap_usd` an episode",
+    "lab": "runs the building it tests in a copy of the project (no remote: nothing is pushed) and the bare AI tool "
+           "beside it: spends money, up to `max_spend` a case on the building's side; its reviewers run a model",
     "mine": "runs every AI tool that can search the web (spends money, up to `limit` a research and `month_limit` a "
             "month); they read the open web; writes its reports into the Wiki's inbox",
 }
@@ -197,6 +233,7 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "session_tasks": "tasks one ork session takes before it rolls over with a handoff (default 5)",
         "max_reworks": "how many times the steward sends a task back before asking the operator (default 3)",
         "test_cmd": "the command that must pass before the steward reads the diff, e.g. `pytest -q`",
+        "repo": "the folder of code its orks work in (a project the town does not live in); empty: the town's own",
         "steward": "`harness[:model]` of the steward that plans, answers and reviews (default main, the main tool: an elder plans, "
                    "a warrior reviews a part, the building's goal picks who looks at the whole)",
         "plan": "false: every task goes whole to one ork, the steward never plans it into parts (default true)",
@@ -309,10 +346,20 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
                   "[all|command|full]` (where it shows: the hut too, the Command Card, the dashboard only); "
                   "without it one chart from the settings above",
     },
+    "ux_lab": {
+        "target": "the type of building whose look it works on, by its id: barracks, watchtower, fields…",
+        "image_tool": "the AI tool that paints its pictures: agy (the default), or another the machine has",
+    },
+    "lab": {
+        "max_spend": "the most the building's side of one case may spend, in USD, 0.1–50 (default 2)",
+        "tool": "the AI tool both sides run on: main (the default), claude, agy, codex…",
+    },
     "gramophone": {
         "language": "auto (the source's own), ru or en (default auto)",
         "minutes": "how long an episode is, 2–20 minutes (default 8)",
-        "voice": "a Gemini prebuilt voice, e.g. Charon, Kore, Puck (default Charon)",
+        "format": "dialogue (two hosts in two voices, as a podcast) or monologue (one narrator) (default dialogue)",
+        "voice": "a Gemini prebuilt voice: the narrator, or the dialogue's first host, e.g. Charon, Puck (default Charon)",
+        "voice_b": "the dialogue's second host, another Gemini prebuilt voice, e.g. Kore, Aoede (default Kore)",
         "tts_model": "the Gemini TTS model (default the newest Gemini Flash TTS: gemini-flash-tts)",
         "model": "the model that writes the script (default its steward's, by its goal)",
         "key": "where the Gemini API key is: an environment variable, e.g. GEMINI_API_KEY (the default), or a login, "
@@ -402,6 +449,9 @@ def catalog_text(types: list[BuildingType] | None = None,
         lines.append(f"- {t.id} ({t.icon} {t.title}, size {t.size}): {t.summary}")
         lines.append(f"    hut shows: {t.preview}; open: {t.full}")
         lines.append(f"    takes from a road: {takes(t.id) or 'nothing — a road into it only shows a note'}")
+        if t.roads != "free":
+            lines.append("    roads: " + ("none — never lay one to or from it" if t.roads == "none"
+                                         else "only its own setup lays them — never lay one to or from it"))
         if t.events:
             lines.append("    events: " + "; ".join(f"{e.id} [{e.kind}] — {e.help}" for e in t.events))
         if t.actions:

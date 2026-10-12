@@ -31,9 +31,10 @@ person's, kept in the Town Scroll (`hut_size`, px). **The bigger the card, the m
 | Level | Size | What it shows |
 |---|---|---|
 | **small** `s` | as the card comes (no size of its own), or under medium | the anatomy of every card: the headline, up to two lines, the foot; lines cut with … |
-| **medium** `m` | at least 360 × 240 px | the same, its lines wrapping instead of cut; a type lists more of what it lists |
-| **large** `l` | at least 520 × 400 px | a type shows its items themselves, not only their count |
+| **medium** `m` | at least 300 × 170 px | the same, its lines wrapping instead of cut; a type lists more of what it lists |
+| **large** `l` | at least 460 × 320 px | a type shows its items themselves, not only their count |
 
+(2026-10-10: the steps were lowered from 360 × 240 and 520 × 400, so a card shows more as soon as it has the room.)
 A card keeps the size given: what does not fit is cut at its frame, never spilled over its neighbours.
 Folded, a card is its title bar whatever its size. A type that ignores `level` still gains room: its lines
 wrap from medium up.

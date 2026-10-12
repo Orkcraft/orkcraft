@@ -18,6 +18,7 @@ EVENTS: dict[str, tuple[str, str]] = {
     "building_raised": ("🏗", "raised in {orkspace}"),
     "building_demolished": ("💥", "demolished"),
     "building_moved": ("🧭", "moved to orkspace {orkspace}"),
+    "building_copied": ("📋", "copied from {source} into {orkspace}"),
     "pinned": ("📌", "pinned"),
     "unpinned": ("📍", "unpinned"),
     "folded": ("▸", "card folded"),

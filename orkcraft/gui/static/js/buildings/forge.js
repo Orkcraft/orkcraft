@@ -117,7 +117,8 @@ function Head({ id, data }) {
         : html`<span><b>${rows.length}</b> ${say("branches")}</span>
           <span><b>${prs}</b> ${say("PRs open")}</span>
           ${failing > 0 && html`<span class="ok-tone-error">✗ <b>${failing}</b> ${say("tests failing")}</span>`}
-          <span>${say("into")} <b>${data.base}</b></span>`}
+          <span>${say("into")} <b>${data.base}</b></span>
+          ${data.project && html`<span class="ok-tone-muted" title=${data.folder}>${say("in")} ${data.project}</span>`}`}
       ${data.merging && html`<span class="ok-tone-wait">${say("merging")} ${data.merging}…</span>`}
       ${data.testing.length > 0 && html`<span class="ok-tone-wait">${say("testing")} ${data.testing.join(", ")}…</span>`}
       ${last && !data.merging && html`<span class="forge-head__last" title=${last.ok ? "" : last.why}>

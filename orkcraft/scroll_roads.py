@@ -7,7 +7,7 @@ import re
 
 from orkcraft.scroll import (HISTORY_DIR, MAX_ROADS, ROAD_EVENTS, BuildingSpec, Garrison, OrcSpec, Road,
                              TownScroll, _typed_events)
-from orkcraft.scroll_checks import _cycle, filter_problems
+from orkcraft.scroll_checks import CASE_EVENT, _cycle, closes_no_loop, filter_problems
 from orkcraft.scroll_garrisons import _building, _orc_id
 
 # -- roads ------------------------------------------------------------------------------------------------
@@ -48,11 +48,19 @@ def has_outgoing(scroll: TownScroll, building_id: str, event: str) -> bool:
     return any(r.event == event for _, r in outgoing(scroll, building_id))
 
 
+# A Test bench's road into a chain it tests (docs/design/test-bench.md §2): it only says where the chain begins, and
+# no cart ever goes down it in the town (a run gives the case to a copy), so the road back from the chain's end
+# closes no loop.
+
+
+_closes_no_loop = closes_no_loop
+
+
 def _road_edges(scroll: TownScroll) -> dict[str, set[str]]:
     edges: dict[str, set[str]] = {}
     for b in scroll.buildings:
         for r in b.roads:
-            if not (r.filter or {}).get("returns"):         # a return road brings results back: no loop
+            if not _closes_no_loop(r.event, r.filter):      # a return road brings results back: no loop
                 edges.setdefault(r.source, set()).add(b.id)
     return edges
 
@@ -82,7 +90,7 @@ def subscribe(scroll: TownScroll, target_id: str, source_id: str, event: str = "
         if (r.source, r.event, r.handler, r.filter) == (source_id, event, handler, flt):
             raise ValueError(f"{dst.title} already has this road from {src.title}")
     edges = _road_edges(scroll)
-    if not flt.get("returns"):                        # a return road brings results back: it closes no loop
+    if not _closes_no_loop(event, flt):               # a return road brings results back: it closes no loop
         edges.setdefault(source_id, set()).add(target_id)
     if _cycle(edges) is not None:
         raise ValueError(f"{src.title} → {dst.title} would close a loop of roads")

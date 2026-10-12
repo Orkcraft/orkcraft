@@ -39,11 +39,15 @@ TIERS = ("elder", "warrior", "laborer")
 # -- output ---------------------------------------------------------------------------------------
 
 def _tokens_of(usage) -> int | None:
-    """All tokens of a usage block: input, output and cache (Claude's names, and the plain ones)."""
+    """All tokens of a usage block: input, output and cache (Claude's names, and the plain ones). A tool that names
+    its cache otherwise (agy: read from the cache apart from its input, docs/nights/2026-10-11.md) has every
+    `…cache…token…` count added too, so a call on a warm cache counts what it read as one on a cold cache does."""
     if not isinstance(usage, dict):
         return None
     keys = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
     vals = [usage[k] for k in keys if isinstance(usage.get(k), int)]
+    vals += [v for k, v in usage.items() if k not in keys and isinstance(v, int) and not isinstance(v, bool)
+             and "cache" in k.lower() and "token" in k.lower()]
     return sum(vals) if vals else None
 
 
@@ -189,6 +193,9 @@ class Harness:
     # (folders outside the workdir) → what a working agent's argv gets to read them, never write them (the
     # Wiki's folders outside the project: docs/design/wiki-folders-rules.md §1). None: it reads anywhere.
     read_dirs: Callable[[list[str]], list[str]] | None = None
+    # What a working agent's argv gets when its building is unchained (autonomy.FREE): a tool that cannot ask
+    # in a headless run and refuses what it would have asked about.
+    free_args: tuple[str, ...] = ()
     # (h) → the commands that print the models it has, tried in order, and the reader of their output.
     # None: it cannot say, and a family in its table runs on its own default.
     models_cmd: Callable[["Harness"], list[list[str]]] | None = None
@@ -237,9 +244,9 @@ class Harness:
         return self.read_cmd(self, prompt, str(workdir), self.pick(model), web)
 
     def work(self, prompt: str, workdir: str | Path, model: str = "", resume: str = "",
-             dirs: Iterable[str] = ()) -> list[str]:
-        """`dirs`: folders outside `workdir` it may read too."""
-        cmd = self.work_cmd(self, prompt, str(workdir), self.pick(model), resume)
+             dirs: Iterable[str] = (), free: bool = False) -> list[str]:
+        """`dirs`: folders outside `workdir` it may read too; `free`: its building is unchained."""
+        cmd = self.work_cmd(self, prompt, str(workdir), self.pick(model), resume) + list(self.free_args if free else ())
         dirs = [str(d) for d in dirs if str(d)]
         return cmd + self.read_dirs(dirs) if dirs and self.read_dirs else cmd
 
@@ -292,13 +299,20 @@ def _model(flag: str, model: str) -> list[str]:
     return [flag, model] if model else []
 
 
+def _claude_mcp() -> list[str]:
+    """A Test bench run's MCP servers only (realm/cassette.py): its configuration, and none of the person's own."""
+    from orkcraft.env import getenv
+    path = getenv("MCP_CONFIG")
+    return ["--mcp-config", path, "--strict-mcp-config"] if path else []
+
+
 def _claude_ask(h, prompt, folder, model):
-    return [h.bin, "-p", prompt, "--output-format", "json", *_model("--model", model)]
+    return [h.bin, "-p", prompt, "--output-format", "json", *_model("--model", model), *_claude_mcp()]
 
 
 def _claude_read(h, prompt, workdir, model, web):
     return [h.bin, "-p", prompt, "--output-format", "json", *(CLAUDE_READ_WEB if web else CLAUDE_READ_ONLY),
-            *_model("--model", model)]
+            *_model("--model", model), *_claude_mcp()]
 
 
 # Every built-in tool a carrier must not have; MCP tools not in --allowedTools are refused in -p.
@@ -307,7 +321,8 @@ CLAUDE_NO_TOOLS = "Bash,Edit,Write,MultiEdit,NotebookEdit,WebFetch,WebSearch,Rea
 
 def _claude_call(h, prompt, workdir, model, allow):
     return [h.bin, "-p", prompt, "--output-format", "stream-json", "--verbose",
-            "--allowedTools", ",".join(allow), "--disallowedTools", CLAUDE_NO_TOOLS, *_model("--model", model)]
+            "--allowedTools", ",".join(allow), "--disallowedTools", CLAUDE_NO_TOOLS, *_model("--model", model),
+            *_claude_mcp()]
 
 
 def _claude_read_dirs(dirs: list[str]) -> list[str]:
@@ -320,7 +335,7 @@ def _claude_read_dirs(dirs: list[str]) -> list[str]:
 
 def _claude_work(h, prompt, workdir, model, resume):
     return [h.bin, "-p", prompt, "--output-format", "json", "--permission-mode", "acceptEdits",
-            *_model("--model", model), *(["--resume", resume] if resume else [])]
+            *_model("--model", model), *(["--resume", resume] if resume else []), *_claude_mcp()]
 
 
 # agy (Antigravity) -------------------------------------------------------------------------------
@@ -503,6 +518,9 @@ register(Harness(
     task_models={"code": "gemini-flash-high", "docs": "gemini-pro-high"},
     models_cmd=lambda h: [[h.bin, "models"]], parse_models=model_families.parse_agy,
     read_dirs=lambda dirs: [a for d in dirs for a in ("--add-dir", d)],    # its sandbox sees only these
+    # `--print` denies every terminal command it would ask about and ends the turn with no answer (1.3.3), so a
+    # task whose ork runs its tests first comes back empty. Unchained, it asks nothing; `--sandbox` still holds.
+    free_args=("--dangerously-skip-permissions",),
     resume_cmd=lambda h, sid: [h.bin, "--conversation", sid]))
 register(Harness(
     "codex", "Codex", "codex", "npm i -g @openai/codex", "codex login",

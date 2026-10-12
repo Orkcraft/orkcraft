@@ -37,8 +37,23 @@ def test_members_verdicts_and_decisions_parse():
     assert tm.parse_decision("Looks good")[0] == "ask"                                     # no decision: ask
 
 
-def test_all_approve_and_the_steward_lets_it_go():
-    s = Script({"PM": ["APPROVE"], "Architect": ["APPROVE — notes"], "Security": ["APPROVE"],
+def test_all_approve_and_the_steward_is_not_asked():
+    s = Script({"PM": ["APPROVE"], "Architect": ["APPROVE — notes"], "Security": ["APPROVE"]})
+    d = tm.run(tm.new("PRD", "# PRD\nbuild it"), TEAM, STEWARD, {"security"}, 3, 1.0, s)
+    assert d.outcome == "approved" and d.decision == "Every member approved. The steward was not asked."
+    assert [c[0] for c in s.calls] == ["PM", "Architect", "Security"] and d.turns[-1].note == tm.ALL_APPROVED
+    one_exit = tm.run(tm.new("PRD", "x"), TEAM, STEWARD, set(), 3, 1.0,
+                      Script({"PM": ["APPROVE"], "Architect": ["APPROVE"], "Security": ["APPROVE"]}),
+                      exits=[tm.Exit("dev", "Development")])
+    assert one_exit.outcome == "approved" and one_exit.route == "dev" and "it goes on to Development" in one_exit.decision
+    two = Script({"PM": ["APPROVE"], "Architect": ["APPROVE"], "Security": ["APPROVE"],
+                  "Steward": ["DECISION: approve\nEXIT: dev\nbuild"]})
+    tm.run(tm.new("PRD", "x"), TEAM, STEWARD, set(), 3, 1.0, two, exits=[tm.Exit("dev", "Dev"), tm.Exit("ops", "Ops")])
+    assert [c[0] for c in two.calls][-1] == "Steward"                    # two ways on: the steward picks one
+
+
+def test_one_asks_for_changes_and_the_steward_weighs_it():
+    s = Script({"PM": ["APPROVE"], "Architect": ["APPROVE — notes"], "Security": ["CHANGES: add auth"],
                 "Steward": ["DECISION: approve\nNobody blocks it."]})
     d = tm.run(tm.new("PRD", "# PRD\nbuild it"), TEAM, STEWARD, {"security"}, 3, 1.0, s)
     assert d.outcome == "approved" and d.decision == "Nobody blocks it."
@@ -104,5 +119,50 @@ def test_briefs_are_files_claude_reads_and_agy_gets_inline():
     assert "short rule" in claude and "`steward.md`" in claude and "long knowledge" not in claude
     agy = tm.decide_prompt(d, st, set(), 3, inline=True)
     assert "short rule" in agy and "long knowledge" in agy
+    # inline, the call has nothing to read and agy ends its turn empty on a refused command: it is told so
+    assert tm.FROM_ABOVE in agy and tm.FROM_ABOVE not in claude
+    member = tm.review_prompt(d, TEAM[1], TEAM, inline=True)
+    assert tm.FROM_ABOVE in member and "read the repository" not in member
+    assert "read the repository" in tm.review_prompt(d, TEAM[0], TEAM)
     assert "WebSearch,WebFetch" in roads._harness_cmd("claude", "hi", Path("."), web=True)[6]
     assert "WebFetch" not in roads._harness_cmd("claude", "hi", Path("."))[6]
+
+
+def test_together_the_members_are_asked_at_once_and_heard_in_the_clans_order():
+    import threading
+    import time
+    started, both = [], threading.Barrier(3, timeout=5)
+
+    def runner(harness, prompt, model):
+        if prompt.startswith("You are the steward"):
+            return "DECISION: approve\nfine", 0.1
+        who = prompt.split("You are ", 1)[1].split(" in a", 1)[0]
+        started.append(who)
+        both.wait()                                   # each waits for the others: they run at the same time
+        time.sleep(0.05 if who == "PM" else 0)        # the first of the clan answers last
+        return ("VETO: no" if who == "Security" else "APPROVE"), 0.05
+    d = tm.run(tm.new("PRD", "x"), TEAM, STEWARD, {"security"}, 3, 0, runner, together=True)
+    assert sorted(started) == ["Architect", "PM", "Security"]
+    assert [t.role for t in d.turns] == ["PM", "Architect", "Security", "Steward"] and d.reviewed == [0, 1, 2]
+    assert d.outcome == "rework" and round(d.spent, 2) == 0.25 and d.under_way == {}
+
+
+def test_together_a_failing_member_keeps_the_others_reviews_and_one_with_a_session_goes_alone():
+    def runner(harness, prompt, model, **_session):
+        who = prompt.split("You are ", 1)[1].split(" in a", 1)[0]
+        if who == "Architect":
+            raise RuntimeError("agy is down")
+        return "APPROVE", 0.0
+    d = tm.run(tm.new("PRD", "x"), TEAM, STEWARD, set(), 3, 0, runner, together=True)
+    assert d.outcome == "error" and "agy is down" in d.error and [t.role for t in d.turns] == ["PM", "Security"]
+    assert d.reviewed == [0, 2]                       # Go on asks the Architect only
+
+    s = Script({"PM": ["APPROVE"], "Architect": ["APPROVE"], "Security": ["APPROVE"],
+                "Steward": ["DECISION: approve\nok"]})
+    calls = []
+
+    def named(harness, prompt, model, session="", reopen=False):
+        calls.append(harness)
+        return s(harness, prompt, model)
+    d = tm.run(tm.new("PRD", "x"), TEAM, STEWARD, set(), 3, 0, named, sessions=lambda h: h == "agy", together=True)
+    assert d.outcome == "approved" and [c[0] for c in s.calls] == ["PM", "Architect", "Security"]   # all approved

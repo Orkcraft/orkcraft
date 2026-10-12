@@ -29,7 +29,8 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import accounts, builder, console, failures, growth, mobile, nightly, onboarding, state, town_settings, updates, views, you
+from orkcraft.gui import (accounts, awake, bench, builder, console, day_logs, day_review, failures, github, growth, history, mobile, nightly, onboarding, projects,
+                          state, town_settings, updates, views, you)
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
 from orkcraft.realm import biomes, catalog, elders, fastpath, halt, modes
@@ -54,6 +55,8 @@ class Host:
         self.night = Night(self.town)               # quiet hours: the Elders' advice on the orks' questions
         self.night.restore()
         self.nightly = nightly.Nightly(self)       # …the retros and the orks' own changes (gui/nightly.py)
+        self.day_logs = day_logs.DayLogs(self.town)    # every model call by day and building (gui/day_logs.py)
+        self.day_review = day_review.DayReview(self)   # Improve: the Mechanic and the Farseer read a day (gui/day_review.py)
         self.town.budget_ok = lambda: not self.town.demo and not self.treasury.exhausted()
         # How long a cart is on a plain road before it arrives: 0 (at once) unless asked, e.g. to film a flow
         # slowly enough that a person sees each cart on its road before its building acts (tools/landing_flow.py).
@@ -91,9 +94,10 @@ class Host:
             "term.forget": lambda a: self.sessions.forget(self._word(a, "key")),
             "orders.answer": self._answer,
             "orders.follow": self._follow,
-            "town.catalog": lambda a: builder.catalog_types(),
+            "town.catalog": lambda a: builder.catalog_types(self.town.machine.profile),
             "town.build": lambda a: self._building(builder.build, a),
             "town.demolish": lambda a: self._building(builder.demolish, a),
+            "building.copy": lambda a: self._building(builder.copy_to, a),
             "roads.choices": lambda a: self._building(builder.road_choices, a),
             "roads.lay": lambda a: self._building(builder.lay_road, a),
             "roads.remove": lambda a: self._building(builder.remove_road, a),
@@ -105,9 +109,18 @@ class Host:
         self.commands.update(self.console.commands())
         self.commands.update(town_settings.commands(self))   # the HUD's menu: autonomy and its waits
         self.commands.update(accounts.commands(self))        # Settings → Accounts: a Google sign-in (gui/accounts.py)
+        self.commands.update(github.commands(self))          # the mascot's menu → GitHub: the Improve app (gui/github.py)
+        self.bench = bench.Bench(self)              # the Test bench's runs and reviews, for its building (gui/bench.py)
+        self.commands.update(self.bench.commands())
+        self.commands.update(self.day_review.commands())   # Improve: a day's findings tried (gui/day_try.py)
         self.commands.update(mobile.commands(self))   # what a phone reads (gui/mobile.py, docs/design/mobile.md)
         self.growth = growth.Growth(self)           # levels, deeds, the mascot; the War Map's lands (gui/growth.py)
         self.commands.update(self.growth.commands())
+        self.projects = projects.Projects(self)     # the folder each orkspace works in (gui/projects.py)
+        self.commands.update(self.projects.commands())
+        self.history = history.History(self)       # an orkspace's checkpoints, and going back (gui/history.py)
+        self.commands.update(self.history.commands())
+        self.awake = awake.Awake()                  # the computer kept from sleeping while it runs (gui/awake.py)
         self.you = you.You(self)                    # the portrait's menu: the look, Do not disturb (gui/you.py)
         self.commands.update(self.you.commands())
         # Anonymous usage stats, only when the operator said yes (core/usage.py, docs/usage-stats.md)
@@ -142,6 +155,7 @@ class Host:
         snap["portrait"] = self.you.snapshot()             # the look, Do not disturb, what gathered (gui/you.py)
         snap["usage_ask"] = self.usage.should_ask()        # the one question about usage stats (js/settings.js)
         snap["update"] = self.updates.snapshot()           # a newer Orkcraft, if one is out (js/update.js)
+        snap["improve"] = self.day_review.state()          # the days Improve can read, and the one read now
         snap["onboarding"] = self.onboarding.snapshot()    # the first run's steps and the town going up (js/onboarding.js)
         return snap
 
@@ -241,6 +255,7 @@ class Host:
                     crashes.capture(e, "clock")
                     self.town.toast(f"{type(e).__name__}: {e}", title=self.town.title_of(bid), severity="error")
         self.refresh_roster()
+        self.day_logs.tick()
         self._night()
         self._wakes(now)
         self.growth.tick(now)
@@ -333,6 +348,7 @@ class Host:
 
     def close(self) -> None:
         """The window closed: what an editor holds is written, what runs stops, the scroll is kept."""
+        self.day_logs.close()
         for bid, w in list(self.town.workers.items()):
             flush = getattr(views.of(self.type_of(bid)), "flush", None)
             if flush is not None:
@@ -357,7 +373,8 @@ class Host:
         try:
             result = fn(args)
         except (console.ConsoleError, growth.GrowthError, updates.UpdateError, onboarding.OnboardingError,
-                you.YouError, accounts.AccountsError) as e:
+                you.YouError, accounts.AccountsError, github.GithubCommandError, bench.BenchError, projects.ProjectCommandError,
+                history.HistoryError) as e:
             raise CommandError(str(e)) from None
         self._used(name, args, result)
         return result
@@ -398,15 +415,26 @@ class Host:
         self.on_change()
 
     def _new_orkspace(self, args: dict) -> str:
-        """A new empty orkspace, named by the person, and the town goes to it."""
+        """A new empty orkspace, named by the person, and the town goes to it. `project` (docs/design/projects.md
+        §4): "" works where the open orkspace works, "town" in the town's folder, "new" in a new project of its
+        own, else in that project."""
         from orkcraft import scroll
+        opened = self.town.scroll.active_orkspace_id
         try:
             biome = args.get("biome") if args.get("biome") in scroll.BIOMES else biomes.for_new(self.town.scroll)
             ork = scroll.new_orkspace(self.town.scroll, self._word(args, "name")[:60], biome=biome)
         except ValueError as e:
             raise CommandError(str(e)) from None
+        try:
+            did = self.projects.for_new(ork.id, str(args.get("project") or ""), opened, ork.name)
+        except projects.ProjectCommandError as e:
+            scroll.remove_orkspace(self.town.scroll, ork.id)
+            raise CommandError(str(e)) from None
+        if did:
+            self.on_toast({"message": did, "severity": "information"})
         self.town.scroll.active_orkspace_id = ork.id
         self.town.save()
+        self.town.checkpoint("orkspace", "", f"new orkspace {ork.name}", orkspace=ork.id)
         self.on_change()
         return ork.id
 

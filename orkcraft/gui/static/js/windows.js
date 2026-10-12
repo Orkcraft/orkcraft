@@ -15,7 +15,6 @@ import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 import { typeModule } from "./types.js";
 import { lake, tabs as docTabs, DocTab, DocBody } from "./lake.js";
 import { InfoTab, OrkView, RuleView } from "./console.js";
-import { OrkHead, Scheme } from "./icons.js";
 import { setupBack } from "./setup.js";
 import { buildingMenu } from "./hut.js";
 
@@ -27,8 +26,24 @@ export const panelWidth = signal(0);       // how wide the panel stands over the
 
 // The open building; `ork`: one of its orks picked in its garrison; `tab`: work | info; `full`: the whole town.
 export const opened = signal({ active: null, ork: null, tab: "work", full: false });
+// The selected building (docs/design/select-a-building.md §1): a click selects — its ork comes out, the Warchief's
+// line is its card — and opens nothing; a second click, a double click or Open on its card opens it. An open
+// building is selected too.
+export const selected = signal(null);
+
+/** A click on a building (or its number): selected; the selected one again, opened. */
+export function pickBuilding(id) {
+  if (selected.value === id) openBuilding(id);
+  else selected.value = id;
+}
+
+/** Nothing selected (a click on the bare town, Escape with no window up). */
+export function letGo() {
+  selected.value = null;
+}
 
 function select(id, tab) {
+  selected.value = id;
   const o = opened.value;
   if (o.active !== id) command("building.open", { id }).catch(() => {});
   opened.value = { active: id, ork: o.active === id ? o.ork : null, tab: tab || (o.active === id ? o.tab : "work"),
@@ -101,11 +116,13 @@ function stepBack() {
   else closePanel();
 }
 
-// Esc on the page, unless a dialog takes it or the keys go to a field or a terminal.
+// Esc on the page, unless a dialog takes it or the keys go to a field or a terminal: the window steps back; with
+// none up, the selected building is let go.
 window.addEventListener("keydown", (e) => {
-  if (e.key !== "Escape" || !panelShown() || document.querySelector(".gui-modal, .gui-menu")) return;
+  if (e.key !== "Escape" || document.querySelector(".gui-modal, .gui-menu")) return;
   if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable], .gui-term")) return;
-  stepBack();
+  if (panelShown()) stepBack();
+  else if (selected.value) letGo();
 });
 
 // The host sends the open building's own state, and the Town Hall's (the Warchief's line shows his chat),
@@ -129,20 +146,6 @@ effect(() => {
   const id = opened.value.active, peeked = Object.keys(peeking.value);
   if (online.value) command("watch", { ids: [...new Set([HALL, ...(id ? [id] : []), ...peeked])] }).catch(() => {});
 });
-
-/** The garrison badge: the lead ork's name, how many more, the harness scheme, `?` while asking. */
-function Badge({ garrison, alert }) {
-  if (!garrison.length) return null;
-  const lead = garrison.find((o) => o.lead) || garrison[0];
-  const more = garrison.length - 1;
-  const busy = garrison.some((o) => o.status === "busy");
-  return html`<span class=${cls("ok-badge", { "is-alert": !!alert })}>
-    <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} />
-    ${say(lead.name)}${more > 0 ? `+${more}` : ""}
-    ${lead.scheme && html` <${Scheme} scheme=${lead.scheme} />`}
-    ${alert ? html` <span class="ok-word">?</span>` : busy ? html` <span class="ok-word">busy</span>` : ""}
-  </span>`;
-}
 
 function Question({ alert }) {
   return html`<p class="ok-font-body ok-tone-fire gui-alert">${alert.title}
@@ -224,7 +227,14 @@ export function Panel() {
       <div class="ok-win__bar" onDblClick=${toggleFull}>
         ${b && html`<span class="ok-win__no">${numberOf(b)}</span>`}
         <span class="ok-win__title">${b ? say(b.title) : say("Lake")}</span>
-        ${b && html`<${Badge} garrison=${b.garrison} alert=${b.alert} />`}
+        <div class="ok-tabs gui-panel__tabs" role="tablist" onDblClick=${(e) => e.stopPropagation()}>
+          ${b && work && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "work" })} role="tab"
+              aria-selected=${!front && tab === "work"} onClick=${() => pickTab("work")}>${say("Work")}</button>`}
+          ${b && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "info" })} role="tab"
+              aria-selected=${!front && tab === "info"} onClick=${() => pickTab("info")}>${say("Info")}</button>`}
+          ${l.shown && docs.map((t) => html`<${DocTab} key=${t.id} t=${t} active=${front && activeDoc && t.id === activeDoc.id}
+              onPick=${() => pickDoc(t.id)} />`)}
+        </div>
         <span class="gui-head__spacer"></span>
         ${b && !front && setupBack.value[b.id] && html`<button class="ok-btn gui-panel__back" title=${say("One step back")}
           onClick=${setupBack.value[b.id]}>← ${say("Back")}</button>`}
@@ -235,14 +245,6 @@ export function Panel() {
           onClick=${closePanel}>×</button>
       </div>
       ${b && b.alert && html`<${Question} alert=${b.alert} />`}
-      <div class="ok-tabs gui-panel__tabs" role="tablist">
-        ${b && work && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "work" })} role="tab"
-            aria-selected=${!front && tab === "work"} onClick=${() => pickTab("work")}>${say("Work")}</button>`}
-        ${b && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "info" })} role="tab"
-            aria-selected=${!front && tab === "info"} onClick=${() => pickTab("info")}>${say("Info")}</button>`}
-        ${l.shown && docs.map((t) => html`<${DocTab} key=${t.id} t=${t} active=${front && activeDoc && t.id === activeDoc.id}
-            onPick=${() => pickDoc(t.id)} />`)}
-      </div>
       ${front ? html`<${DocBody} />`
         : tab === "work" ? html`<${Work} b=${b} />`
         : o.ork && b.garrison.some((x) => x.ref === o.ork) ? html`<${OrkView} b=${b} orkRef=${o.ork} />`

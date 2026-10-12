@@ -4,9 +4,9 @@ class Orkcraft < Formula
 
   desc "Run many coding agents in one project, as a real-time strategy game"
   homepage "https://github.com/Orkcraft/orkcraft"
-  url "https://github.com/Orkcraft/orkcraft/archive/2ac6dae5ba28ccb627cd67c5487b77599e5cceaa.tar.gz"
-  version "0.2.6"
-  sha256 "98c50f9a16f78fb3b38573f92d24727f325f854c4ce2ccc3f8c0ea6859756a31"
+  url "https://github.com/Orkcraft/orkcraft/archive/13beba148108b8d63987355d1a1313bc7b1fd73e.tar.gz"
+  version "0.2.8"
+  sha256 "bf880510c7c990e214f92b3a122b5305c2c9473e8fb1ae5340578df005a4946f"
   license "Apache-2.0"
   head "https://github.com/Orkcraft/orkcraft.git", branch: "main"
 

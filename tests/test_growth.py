@@ -180,7 +180,7 @@ def test_the_old_default_is_spread_once_and_chosen_biomes_stay():
 
 def test_each_kin_has_a_home_and_a_new_camp_opens_on_it():
     """docs/design/war-map.md §3.3: the onboarding's role gives the kin, the kin its home ground."""
-    assert biomes.home_of({"role": "eng_manager"}) == "ice"           # a lich: the frozen north
+    assert biomes.home_of({"role": "eng_manager"}) == "lava"          # a lich: the volcanic keep
     assert biomes.home_of({"role": "founder"}) == "meadow"            # a knight: the open field
     assert biomes.home_of({"role": "designer"}) == "forest"
     assert biomes.home_of({"role": "engineer"}) == "dirt"

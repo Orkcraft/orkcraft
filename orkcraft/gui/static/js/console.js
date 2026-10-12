@@ -18,7 +18,7 @@ import { laying } from "./build.js";
 import { Dialog } from "./dialog.js";
 import { OrdersDialog, ModelDialog, RedesignDialog, Field, Select } from "./acts.js";
 import { StewardTitle, StewardWindow, StewardModels, BuildingSettings } from "./steward.js";
-import { OrkHead, HutSprite, activeBiome, Scheme, TierMark } from "./icons.js";
+import { OrkHead, HutSprite, activeBiome, Scheme, TierMark, StewardHead } from "./icons.js";
 
 const infos = signal({});          // "<building>" or "<building>|<ork ref>" → what `info` said
 const asked = new Map();           // the same key → when it was asked last
@@ -44,12 +44,20 @@ function useInfo(id, ork) {
   return infos.value[keyOf(id, ork)];
 }
 
-/** 👍 or 👎 with how many it got: a like or a dislike, the same in Office and in Camp. */
+/** 👍 or 👎 with how many it got: a like or a dislike. Camp draws the green pixel thumb of the ork's bubble
+ *  (tools/visit_sprites.py), Office the emoji (office.css). */
 function Thumb({ up, count, title, onClick }) {
   const label = say(up ? "Good" : "Bad");
+  const icon = up ? "thumb-up" : "thumb-down";
   return html`<button class=${cls("ok-act gui-thumb", { "is-down": !up })} title=${title} aria-label=${label} onClick=${onClick}>
-    <span aria-hidden="true">${up ? "👍" : "👎"}</span><span class="gui-thumb__n">${count}</span></button>`;
+    <img class="ok-sprite gui-thumb__icon" src=${`/ds/sprites/icons/${icon}.png`}
+      srcset=${`/ds/sprites/icons/${icon}@2x.png 2x`} width="20" height="20" alt="" draggable="false" />
+    <span class="gui-thumb__emoji" aria-hidden="true">${up ? "👍" : "👎"}</span><span class="gui-thumb__n">${count}</span></button>`;
 }
+
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+/** The building's day log as a zip (gui/server.py `/api/logs`): today's. */
+const logOf = (id) => `/api/logs/${encodeURIComponent(id)}?t=${encodeURIComponent(TOKEN)}`;
 
 function Act({ label, title, onClick }) {
   return html`<button class="ok-act" title=${title || label} onClick=${onClick}>
@@ -153,6 +161,9 @@ function BuildingInfo({ b, i, redo, open }) {
     <p class="ok-font-body gui-info__about">${i.about_plain}</p>
     <${Row} text=${say(runs)} title=${runs}>
       <${Act} label=${say("History")} title=${say("Its chronicles")} onClick=${() => open("history")} />
+      <a class="ok-act" href=${logOf(b.id)} download
+        title=${say("Every model call it made today (what went in, what came out, how it worked) and what it decided, as a zip. A day nobody downloads and no 👎 marks is cleared the next morning.")}>
+        <span class="ok-act__label">${say("Today's log")}</span></a>
     </${Row}>
   </section>`;
 }
@@ -211,6 +222,21 @@ function Roads({ b, t }) {
     ${outgoing.length > 0 && html`<h3 class="ok-font-heading">${say("Roads out")}</h3>
       <ul class="gui-rows">${outgoing.map((r) => row(r, r.to))}</ul>`}
   </section>`;
+}
+
+/** Info's ork part heads with the ork itself (docs/design/yards.md §9): its face at full size, as the Warchief's line
+ *  shows it when the building is selected, its name, and why the building has an ork at all — apart from what the
+ *  building does. A yard has no ork of its own: its steward's face, and when it comes. */
+function OrkCard({ b, i }) {
+  const lead = b.garrison.find((o) => o.lead) || b.garrison[0];
+  const name = lead ? lead.name : (i.steward && i.steward.name) || say("Its steward");
+  return html`<div class="gui-orkcard">
+    <span class="gui-orkcard__face"><${StewardHead} type=${b.type} /></span>
+    <div class="gui-orkcard__who">
+      <b class="ok-font-body">${say(name)}</b>
+      <p class="ok-font-status gui-orkcard__why">${say(i.ork_why || "")}</p>
+    </div>
+  </div>`;
 }
 
 function Garrison({ garrison, b }) {
@@ -381,15 +407,22 @@ function UsualInfo({ b }) {
   const t = town.value;
   return html`<div class="ok-win__body gui-win__body gui-info-tab">
     ${!i ? html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>` : html`
-      <${BuildingInfo} b=${b} i=${i} redo=${redo} open=${open} />
-      <${BuildingSettings} b=${b} i=${i} redo=${redo} />
-      <${Quick} b=${b} i=${i} />
-      <${Garrison} garrison=${b.garrison} b=${b} />
-      <section class="gui-section gui-steward-part">
-        <h3 class="ok-font-heading"><${StewardTitle} i=${i} open=${open} /></h3>
-        <${StewardWindow} b=${b} i=${i} redo=${redo} open=${open} />
-      </section>
-      <${Roads} b=${b} t=${t} />
+      <div class="gui-info-part is-building">
+        <p class="gui-info-part__label ok-font-label">${say("The building")}</p>
+        <${BuildingInfo} b=${b} i=${i} redo=${redo} open=${open} />
+        <${BuildingSettings} b=${b} i=${i} redo=${redo} />
+        <${Quick} b=${b} i=${i} />
+        <${Roads} b=${b} t=${t} />
+      </div>
+      <div class="gui-info-part is-ork">
+        <p class="gui-info-part__label ok-font-label">${say("Its ork")}</p>
+        <${OrkCard} b=${b} i=${i} />
+        <${Garrison} garrison=${b.garrison} b=${b} />
+        <section class="gui-section gui-steward-part">
+          <h3 class="ok-font-heading"><${StewardTitle} i=${i} open=${open} /></h3>
+          <${StewardWindow} b=${b} i=${i} redo=${redo} open=${open} />
+        </section>
+      </div>
 `}
     <${Dialogs} b=${b} o=${null} i=${i} dialog=${dialog} close=${close} redo=${redo} />
   </div>`;

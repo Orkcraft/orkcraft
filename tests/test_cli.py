@@ -311,3 +311,29 @@ def test_without_its_packages_the_window_says_what_to_install(fake_repo: Path, m
     monkeypatch.setattr(cli, "_launching", lambda args: False)
     assert cli.main(["--repo", str(fake_repo)]) == 1
     assert "pip install 'orkcraft[gui]'" in capsys.readouterr().err
+
+
+def test_hooks_install_guards_the_towns_projects_too(tmp_path: Path, monkeypatch):
+    """docs/design/projects.md §8: `orkcraft hooks install` in a town guards each of its projects as well."""
+    import json
+    import subprocess
+
+    from orkcraft import scroll as ts
+    from orkcraft.cli import main
+    from orkcraft.realm import projects
+
+    town, shop = tmp_path / "town", tmp_path / "shop"
+    for folder in (town, shop):
+        folder.mkdir()
+        subprocess.run(["git", "init", "-q"], cwd=folder, check=True)
+    layout = town / ".orkcraft.json"
+    monkeypatch.setenv("ORKCRAFT_LAYOUT_FILE", str(layout))
+    scroll = ts.default_scroll({})
+    projects.link(scroll, scroll.orkspaces[0].id, projects.add(scroll, "Shop", shop).id)
+    assert ts.save(layout, scroll) == []
+    assert main(["--repo", str(town), "hooks", "install"]) == 0
+    for folder in (town, shop):
+        data = json.loads((folder / ".claude" / "settings.json").read_text())
+        assert data["hooks"]["PreToolUse"][0]["hooks"][0]["command"].endswith("-m orkcraft.hooks.warder")
+    assert main(["--repo", str(town), "hooks", "uninstall"]) == 0
+    assert json.loads((shop / ".claude" / "settings.json").read_text())["hooks"] == {}

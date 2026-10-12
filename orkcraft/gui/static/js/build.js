@@ -2,20 +2,20 @@
 // between two buildings and taking one up. The acts are the core's (gui/builder.py); the dialogs are the page's.
 import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { html } from "./html.js";
-import { town, command, act, say } from "./link.js";
+import { html, cls } from "./html.js";
+import { town, command, say } from "./link.js";
+import { HutSprite, activeBiome } from "./icons.js";
 import { Dialog } from "./dialog.js";
 import { HandlerDialog } from "./acts.js";
-import { opened, openBuilding, closeBuilding } from "./windows.js";
-
-const HALL = "town_hall";                          // the Warchief's hall (js/buildings/town_hall.js)
+import { closeBuilding } from "./windows.js";
 
 export const building = signal(false);            // the Build dialog is open: true, or {hut: [x, y], need}
 export const laying = signal(null);                // {from, to}: a road waits for what it carries
 export const pickedRoad = signal(null);            // the road key the person clicked
 export const demolishing = signal(null);           // the building id a Demolish dialog asks about
-export const settingUp = signal(null);             // {id, type}: a building just raised, its setup asked in the Warchief's line
-export const placing = signal(null);               // {type, title, bare}: a building picked in Build, its ghost under the mouse
+export const copying = signal(null);               // the building id a Copy to orkspace dialog asks about
+export const settingUp = signal(null);             // {id, type}: just raised, its setup asked in the Warchief's line
+export const placing = signal(null);               // {type, title, bare, yard}: picked in Build, its ghost under the mouse
 export const constructing = signal({});            // building id → until when its scaffolding stands (Infinity: its setup)
 export const built = signal(new Set());            // the buildings that just came up: they rise into place once
 const RAISE_MS = 1600;                             // a building with no questions: its construction, then it stands
@@ -25,7 +25,7 @@ const RAISE_MS = 1600;                             // a building with no questio
 
 /** Picked in Build: its ghost follows the mouse until a press places it (js/town.js), Escape lets it go. */
 export function place(t) {
-  placing.value = { type: t.id, title: t.title, bare: false };
+  placing.value = { type: t.id, title: t.title, bare: false, yard: !!t.yard };
   import(`./buildings/${t.id}.js`).then((m) => {
     if (placing.value && placing.value.type === t.id) placing.value = { ...placing.value, bare: !!m.bare };
   }, () => {});
@@ -55,46 +55,138 @@ export function raised(id, type) {
     constructing.value = { ...constructing.value, [id]: Date.now() + RAISE_MS };
     setTimeout(() => stands(id), RAISE_MS);
   };
-  import(`./buildings/${type}.js`).then((m) => { if (m.Setup) settingUp.value = { id, type }; else plain(); }, plain);
+  const setUp = () => {          // the line let go: its own hints would stand over the question the Warchief asks
+    if (document.activeElement) document.activeElement.blur();
+    settingUp.value = { id, type };
+  };
+  import(`./buildings/${type}.js`).then((m) => { if (m.Setup) setUp(); else plain(); }, plain);
 }
 
-/** Build, in one (docs/design/building-views.md §3, Town Hall): say what you need — the Warchief points
- *  at the building that does it (its chat offers to build it) — or pick one of the catalog, by what it is for. */
-export function BuildDialog() {
+// Build is a row of small icons the Warchief's line grows upward (docs/design/warchief-line-and-cards.md §2): each says
+// what you want done — take in what comes, work in parallel, talk a hard topic over — not which house does it
+// (tools/intent_sprites.py); where it listens or what it reads is its setup's. The icons stand in small groups by what
+// they are for, two or three each, the group's word over them and a rule under the word, always in this order: an icon
+// never moves (the role's own are framed in gold where they stand). The line's own field filters it while Build is on
+// (js/warchief.js), Enter takes the first icon left or, with none, asks the Warchief what to build. One line over the
+// row says what the icon under the mouse raises. A press picks one and its ghost follows the mouse (`place`), a double
+// press builds it at a free spot; from the map's menu (*Build here*) a press builds it on that spot.
+export const GROUPS = [
+  { id: "in", word: "Take in" },
+  { id: "think", word: "Think" },
+  { id: "make", word: "Make" },
+  { id: "check", word: "Check" },
+  { id: "know", word: "Know" },
+  { id: "plan", word: "Plan" },
+  { id: "tell", word: "Tell" },
+  { id: "improve", word: "Improve" },              // the buildings that improve the others (improve-buildings.md)
+];
+export const INTENTS = [
+  { id: "incoming", word: "Incoming", type: "watchtower", group: "in" },
+  { id: "drop", word: "Drop files", type: "pit", group: "in" },
+    { id: "agents", word: "In parallel", type: "barracks", group: "think" },
+  { id: "discuss", word: "Discuss", type: "council", group: "think" },
+  { id: "research", word: "Deep research", type: "mine", group: "think" },
+  { id: "code", word: "Code", type: "forge", group: "make" },
+  { id: "transform", word: "Process data", type: "mill", group: "make" },
+  { id: "route", word: "Route", type: "signpost", group: "make" },
+  { id: "check", word: "Validate", type: "loot", group: "check" },
+  { id: "chart", word: "Chart", type: "crag", group: "check" },
+  { id: "tasks", word: "Tasks", type: "fields", group: "plan" },
+  { id: "calendar", word: "Calendar", type: "war_drum", group: "plan" },
+  { id: "wiki", word: "Wiki", type: "scrolls", group: "know" },
+  { id: "send", word: "Send", type: "catapult", group: "tell" },
+  { id: "sound", word: "Sound", type: "horn", group: "tell" },
+  { id: "listen", word: "Podcast", type: "gramophone", group: "tell" },
+  { id: "logic", word: "Logic", type: "lab", group: "improve" },
+  { id: "uiux", word: "UI/UX", type: "ux_lab", group: "improve" },
+];
+const FOR_YOU = 3;
+const DOUBLE_MS = 240;                             // a second press within this builds at a free spot
+
+const norm = (s) => say(s || "").toLowerCase();
+
+/** The row's icons, in `INTENTS`' order: one per intent whose building the catalog has (a type with none keeps one
+ *  under its own name, its house for an icon, among the rest). */
+function tilesOf(types) {
+  const byType = Object.fromEntries(types.map((t) => [t.id, t]));
+  const tiles = INTENTS.filter((i) => byType[i.type]).map((i) => ({ ...i, t: byType[i.type] }));
+  const covered = new Set(tiles.map((x) => x.type));
+  for (const t of types) if (!covered.has(t.id)) tiles.push({ id: t.id, word: t.title, type: t.id, t, house: true, group: "more" });
+  return tiles;
+}
+
+/** The icons the words find: by their own word first ("data" is Process data), else by their building's name,
+ *  summary, group and what it sends. */
+function found(tiles, q) {
+  if (!q) return tiles;
+  const own = tiles.filter((x) => [x.word, x.id].some((w) => norm(w).includes(q)));
+  if (own.length) return own;
+  return tiles.filter(({ t }) => [t.title, t.summary, t.intent, t.id, ...(t.sends || [])].some((w) => norm(w).includes(q)));
+}
+
+/** Its first three for the role: its buildings not standing yet, framed in gold where they stand (never moved). */
+function forYou(tiles, standing) {
+  return tiles.filter((x) => x.t.yours >= 0 && !standing.has(x.type)).sort((a, b) => a.t.yours - b.t.yours).slice(0, FOR_YOU);
+}
+
+let enter = null;                                  // what Enter in the line does while the row stands
+
+/** Enter in the Warchief's line while Build is on: the first icon left is picked; false when none is left. */
+export function buildEnter() {
+  return enter ? enter() : false;
+}
+
+/** The row over the Warchief's line: `query` is the line's text. */
+export function BuildRow({ query }) {
   const [types, setTypes] = useState(null);
-  const [need, setNeed] = useState("");
-  const close = () => { building.value = false; setNeed(""); };
-  useEffect(() => {
-    if (building.value && types === null) command("town.catalog").then(setTypes, () => setTypes([]));
-    if (building.value && building.value.need) setNeed(building.value.need);
-  }, [building.value]);
-  if (!building.value) return null;
-  const hut = building.value.hut;
-  const raise = (t) => command("town.build", hut ? { type: t.id, hut } : { type: t.id })
-    .then((id) => { close(); raised(id, t.id); }, () => {});
-  const pick = (t) => { if (hut) raise(t); else { close(); place(t); } };   // a spot given (the map's menu): built there
-  const ask = () => need.trim() && act(HALL, "ask", { text: `What should I build? ${need.trim()}` })
-    .then(() => { close(); if (opened.value.active !== HALL) openBuilding(HALL); }, () => {});
-  const groups = [];
-  for (const t of types || []) {
-    if (!groups.length || groups[groups.length - 1][0] !== t.intent) groups.push([t.intent, []]);
-    groups[groups.length - 1][1].push(t);
-  }
-  return html`<${Dialog} title="Build" text=${say("Say what you need, or pick a building; its settings live in its window.")}
-      onCancel=${close} actions=${html`<button class="ok-btn" onClick=${close}>Cancel</button>`}>
-    <div class="gui-form__row">
-      <input class="ok-input" autofocus placeholder=${say("What do you need? e.g. sort my inbox into tasks")}
-        value=${need} onInput=${(e) => setNeed(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && ask()} />
-      <button class="ok-btn primary" style="flex:none" disabled=${!need.trim()} onClick=${ask}>${say("Ask the Warchief")}</button>
+  const [over, setOver] = useState(null);         // the icon under the mouse: the line over the row says it
+  const timer = useRef(null);
+  useEffect(() => { if (types === null) command("town.catalog").then(setTypes, () => setTypes([])); }, []);
+  useEffect(() => {                              // Escape from anywhere puts it away (the field's own does too)
+    const key = (e) => { if (e.key === "Escape" && !document.querySelector(".gui-modal")) building.value = false; };
+    window.addEventListener("keydown", key);
+    return () => { window.removeEventListener("keydown", key); enter = null; };
+  }, []);
+  const hut = building.value && building.value.hut;
+  const close = () => { building.value = false; };
+  const raise = (x, spot) => command("town.build", spot ? { type: x.type, hut: spot } : { type: x.type })
+    .then((id) => { close(); raised(id, x.type); }, () => {});
+  // a spot given: built there; else its ghost, the line let go so its thread does not stand over the town
+  const pick = (x) => { if (hut) raise(x, hut); else { close(); if (document.activeElement) document.activeElement.blur(); place(x.t); } };
+  const press = (x) => {
+    if (hut) { raise(x, hut); return; }
+    if (timer.current) { clearTimeout(timer.current); timer.current = null; raise(x); return; }   // twice: a free spot
+    timer.current = setTimeout(() => { timer.current = null; pick(x); }, DOUBLE_MS);
+  };
+  const tiles = tilesOf(types || []);
+  const q = norm((query || "").trim());
+  const shown = found(tiles, q);
+  const yours = q ? [] : forYou(shown, new Set(town.value.buildings.map((b) => b.type)));
+  const row = shown;                              // always in INTENTS' order: an icon never moves
+  enter = () => { if (!row.length) return false; pick(row[0]); return true; };
+  const biome = activeBiome();
+  const said = over ? `${say(over.word)} — ${say(over.t.title)}: ${over.t.summary}`
+    : types === null ? say("Looking…")
+    : !row.length ? say("Nothing by that name — Enter asks the Warchief what to build.")
+    : yours.length ? say(`For you, in gold: ${yours.map((x) => x.word).join(", ")}. ${hut ? "A press builds it here." : "A press places it; twice builds it at a free spot."}`)
+    : say(hut ? "A press builds it here." : "A press places it; a double press builds it at a free spot.");
+  const groups = [...GROUPS, { id: "more", word: "More" }]
+    .map((g) => ({ ...g, tiles: row.filter((x) => (x.group || "more") === g.id) })).filter((g) => g.tiles.length);
+  const tile = (x) => html`<button key=${x.id} class=${cls("gui-catalog__item gui-build__tile", { "is-yours": yours.includes(x) })}
+      data-type=${x.type} data-intent=${x.id} aria-label=${`${say(x.word)}: ${say(x.t.title)}`} title=${say(x.word)}
+      onMouseEnter=${() => setOver(x)} onFocus=${() => setOver(x)} onClick=${() => press(x)}>
+    ${x.house ? html`<${HutSprite} type=${x.type} biome=${biome} />`
+      : html`<img class="ok-sprite" src=${`/ds/sprites/intents/${x.id}.png`} srcset=${`/ds/sprites/intents/${x.id}@2x.png 2x`}
+          width="32" height="32" alt="" draggable="false" />`}
+    <span class="gui-build__word">${say(x.word)}</span></button>`;
+  return html`<div class="gui-build" role="group" aria-label=${say("Build")} onMouseDown=${(e) => e.preventDefault()}>
+    <p class="ok-font-status ok-tone-muted gui-build__said" title=${said}>${said}</p>
+    <div class="gui-build__row" onMouseLeave=${() => setOver(null)}>
+      ${groups.map((g) => html`<div key=${g.id} class="gui-build__group" role="group" aria-label=${say(g.word)}>
+        <span class="gui-build__group-word">${say(g.word)}</span>
+        <div class="gui-build__group-tiles">${g.tiles.map(tile)}</div></div>`)}
     </div>
-    ${types === null ? html`<p class="ok-tone-muted">Looking…</p>` : html`<ul class="gui-catalog">
-      ${groups.map(([intent, list]) => html`<li key=${intent} class="ok-font-heading ok-tone-muted">${intent}</li>
-        ${list.map((t) => html`<li key=${t.id} class="gui-catalog__item" onClick=${() => pick(t)}>
-          <b>${say(t.title)}</b>${t.agentic ? html` <span class="ok-word ok-tone-muted">agents</span>` : ""}
-          <div class="ok-font-status ok-tone-muted">${t.summary}</div>
-          ${t.sends.length > 0 && html`<div class="ok-font-status">sends: ${t.sends.join(" · ")}</div>`}
-        </li>`)}`)}</ul>`}
-  </${Dialog}>`;
+  </div>`;
 }
 
 /** A road in words, both ways in: + Listen on the receiver ({to, among}: the steward picks the source) and an
@@ -180,6 +272,23 @@ export function DemolishAsked() {
   const b = id && town.value.buildings.find((x) => x.id === id);
   if (!b) return null;
   return html`<${Demolish} b=${b} onClose=${() => { demolishing.value = null; }} />`;
+}
+
+/** Copy to orkspace, asked from the hut's menu (docs/design/projects.md §5): the copy is a building of its own on
+ *  the map picked, with its orks and settings; its history stays with the original. */
+export function CopyAsked() {
+  const id = copying.value;
+  const t = town.value;
+  const b = id && t.buildings.find((x) => x.id === id);
+  if (!b) return null;
+  const close = () => { copying.value = null; };
+  const others = t.orkspaces.filter((o) => o.id !== t.active_orkspace);
+  const copy = (o) => command("building.copy", { id: b.id, orkspace: o.id }).then(close, () => {});
+  return html`<${Dialog} title=${`${say("Copy")} ${say(b.title)}`} onCancel=${close}
+      text=${say("The copy is a building of its own on the map you pick: its orks, their instructions and its settings. Its history, level and spend stay with this one, and so do roads from buildings that are not on that map.")}
+      actions=${html`<button class="ok-btn" onClick=${close}>Cancel</button>`}>
+    <div class="ok-row">${others.map((o) => html`<button key=${o.id} class="ok-btn" onClick=${() => copy(o)}>${say("Copy to")} ${say(o.name)}</button>`)}</div>
+  </${Dialog}>`;
 }
 
 export function Demolish({ b, onClose }) {

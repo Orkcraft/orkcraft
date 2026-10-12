@@ -7,7 +7,8 @@
 // anonymous usage stats are shared (core/usage.py), which a small dialog of its own asks once; last,
 // which updates install by themselves (gui/updates.py; js/update.js offers the rest); and the phones
 // paired with this machine (js/phones.js). Accounts: a personal Google account for Gmail, the calendar and
-// Drive (js/accounts.js). The 🌙 Night round sits with the town's rules: on or off, Look now.
+// Drive (js/accounts.js). The 🌙 Night round sits with the town's rules: on or off, Look now. Keep logs for
+// analysis: every day's model calls kept, and a period of them downloaded as one zip (/api/analytics).
 import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -45,8 +46,8 @@ function UpdatesField({ s }) {
   const pick = (v) => command("update.policy", { policy: v }).then((r) => setU(r || { policy: v }), () => {});
   return html`<${Steps} label=${say("Updates that install by themselves")} value=${policy}
       items=${[["auto", say("All")], ["critical", say("Critical")], ["ask", say("None")]]} onPick=${pick} />
-    <p class="ok-font-status ok-tone-muted">${say(UPDATE_WHAT[policy] || "")}
-      ${" "}${say(`This is Orkcraft ${s.version}.`)}${t && t.update ? say(` ${t.update.version} is out.`) : ""}</p>
+    <p class="ok-font-status ok-tone-muted">${say(UPDATE_WHAT[policy] || "")}${t && t.update
+      ? say(` Orkcraft ${t.update.version} is out.`) : ""}</p>
     <span><button class="ok-btn" onClick=${check}>Check for updates</button></span>`;
 }
 
@@ -54,6 +55,19 @@ function UsageField({ s, onPick }) {
   return html`<${Steps} label=${say("Share anonymous usage stats and crash reports")} value=${s.usage === true}
       items=${[[true, say("On")], [false, say("Off")]]} onPick=${onPick} />
     <p class="ok-font-status ok-tone-muted">${say(s.usage_blocked ? `Off here: ${s.usage_blocked}.` : USAGE_WHAT)}</p>`;
+}
+
+/** Keep the computer awake while Orkcraft is open (gui/awake.py): the screen may turn off, the machine does not
+ *  sleep by itself. What holds it is the system's own (caffeinate, systemd-inhibit, Windows); where none is, it says so. */
+function AwakeField({ s, onPick }) {
+  const what = !s.keep_awake
+    ? "The computer sleeps as its power settings say. While it sleeps the orks stop, and a phone cannot reach the town."
+    : s.awake_how
+      ? "The screen may turn off; the computer does not sleep by itself, so the orks keep working and a phone reaches the town. Closing a laptop's lid still puts it to sleep."
+      : "This computer gives Orkcraft no way to keep it awake here: set its power settings so it does not sleep while the town works.";
+  return html`<${Steps} label=${say("Keep the computer awake while Orkcraft is open")} value=${s.keep_awake}
+      items=${[[true, say("On")], [false, say("Off")]]} onPick=${onPick} />
+    <p class="ok-font-status ok-tone-muted">${say(what)}</p>`;
 }
 
 /** Asked once, when the operator has not said yes or no: the town opens, then this. While the onboarding
@@ -80,6 +94,27 @@ function RoundField({ s, set, setS }) {
     <p class="ok-font-status">${say(`Last night: ${r.said}`)}</p>
     <span><button class="ok-btn" onClick=${now}>${say("Look now")}</button></span>
     ${s.round_said && html`<p class="ok-font-status ok-tone-ok">${say(s.round_said)}</p>`}`;
+}
+
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+const PERIODS = [[1, "Today"], [7, "7 days"], [30, "30 days"]];
+
+/** Every building's model calls kept by day (gui/day_logs.py): on, nothing is cleared for a month; a period of them,
+ *  with what each day added up to, is one zip to hand to whoever checks the buildings' work. */
+function LogsField({ s, set }) {
+  const [days, setDays] = useState(7);
+  const l = s.logs;
+  if (!l) return null;
+  const href = `/api/analytics?days=${days}&t=${encodeURIComponent(TOKEN)}`;
+  return html`<${Steps} label=${say("Keep logs for analysis")} value=${l.on}
+      items=${[[true, say("On")], [false, say("Off")]]} onPick=${(v) => set({ logs: v })} />
+    <p class="ok-font-status ok-tone-muted">${say(l.on
+      ? `Every model call each building makes is kept ${l.keep} days: what went in, what came out, the time and the tokens. It stays on this computer.`
+      : "A building's day is cleared the next morning, unless you downloaded it or gave it a 👎.")}</p>
+    <${Steps} label=${say("Analytics of")} value=${days} items=${PERIODS.map(([v, t]) => [v, say(t)])} onPick=${setDays} />
+    <p class="ok-font-status">${say(`${l.days} day${l.days === 1 ? "" : "s"} of logs kept`)}</p>
+    <span>${l.days ? html`<a class="ok-btn" href=${href} download>${say("Download analytics (.zip)")}</a>`
+      : html`<button class="ok-btn" disabled>${say("Download analytics (.zip)")}</button>`}</span>`;
 }
 
 /** The AI tools: which are on, and the main one decisions and `main` steps run on. */
@@ -143,7 +178,8 @@ export function SettingsDialog() {
   const level = s.levels.find((x) => x.id === s.autonomy) || s.levels[0];
   const t = town.value;
   return html`<${Dialog} title=${say("Town settings")} onCancel=${close}
-      actions=${html`<button class="ok-btn primary" onClick=${close}>${say("Close")}</button>`}>
+      actions=${html`<span class="ok-font-status ok-tone-muted gui-settings__version">Orkcraft ${s.version}</span>
+        <button class="ok-btn primary" onClick=${close}>${say("Close")}</button>`}>
     <div ref=${box} class="gui-form gui-settings gui-scrolls">
       <span class="gui-you__camp">${say(`Town: ${t.project}`)}</span>
       <${Steps} label=${say("Autonomy: how freely the orks decide")} value=${s.autonomy}
@@ -156,7 +192,9 @@ export function SettingsDialog() {
         <${Steps} label=${say("A change waits the hours you are around")} value=${s.rebuild}
           items=${s.rebuilds.map((v) => [v, `${v} h`])} onPick=${(v) => set({ rebuild: v })} />`}
       <${RoundField} s=${s} set=${set} setS=${setS} />
+      <${LogsField} s=${s} set=${set} />
       <${ToolsField} s=${s} set=${set} />
+      <${AwakeField} s=${s} onPick=${(v) => command("awake.set", { on: v }).then(setS, () => {})} />
       <${UsageField} s=${s} onPick=${(v) => command("usage.share", { share: v }).then(setS, () => {})} />
       ${!s.updates_blocked && html`<${UpdatesField} s=${s} />`}
       <${AccountsField} />

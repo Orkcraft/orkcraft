@@ -133,3 +133,31 @@ def test_a_folder_that_is_no_repository_is_said_plainly(tmp_path: Path):
     assert snap.error.startswith("this folder is not a git repository — run git init")
     assert "fatal" not in snap.error
     assert gitinfo.plain_error("fatal: bad object deadbeef") == "fatal: bad object deadbeef"
+
+
+def test_the_forge_works_in_its_orkspaces_project(forge, tmp_path: Path):
+    """docs/design/projects.md §8: an orkspace with a project — its Forge reads and merges the project's branches,
+    and keeps its own state in the town."""
+    from orkcraft.realm import projects
+    host, bid, w = forge
+    shop = tmp_path / "shop"
+    shop.mkdir()
+    (shop / "app.py").write_text("print('v1')\n")
+    git(shop, "init", "-q", "-b", "main")
+    git(shop, "add", "-A")
+    git(shop, "-c", "user.email=t@t", "-c", "user.name=T", "commit", "-qm", "init")
+    git(shop, "config", "user.email", "t@t")
+    git(shop, "config", "user.name", "T")
+    branch(shop, "login", {"login.py": "x = 1\n"})
+    ork = host.town.scroll.orkspace_of(bid)
+    projects.link(host.town.scroll, ork.id, projects.add(host.town.scroll, "Shop", shop).id)
+    assert w.project_root == shop.resolve() and w.repo_root != w.project_root
+    w.snap = None
+    w.refresh()
+    wait(lambda: w.snap is not None)
+    names = {b["name"] for b in host.detail(bid)["data"]["branches"]}
+    assert "login" in names and "feat" not in names
+    assert "+x = 1" in act(host, bid, "diff", branch="login")["text"]
+    assert w.state_dir.is_relative_to(host.town.repo_root)
+    d = host.detail(bid)["data"]
+    assert d["project"] == "Shop" and d["folder"] == str(shop.resolve())

@@ -47,7 +47,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from orkcraft import scroll as ts
-from orkcraft.realm import harnesses, tiers
+from orkcraft.realm import harnesses, plans, tiers
 from orkcraft.realm.jobs import now_iso
 
 DEFAULT_PROVIDERS = (harnesses.MAIN,)        # the machine's main tool
@@ -272,6 +272,10 @@ OUTSIDE_RULE = ("Never act outside this repository yourself: do not post, send o
                 "below it exactly what goes out — the title, the fields, the text. The operator approves it first; "
                 "then you post it.")
 
+PART_RULE = ("This is one part of a larger task: other agents do the other parts at the same time, and their work is "
+             "merged with yours after. Until then the project's tests may fail on your branch where they need the "
+             "other parts' code: make your part right, and do not write stand-ins for theirs.")
+
 ANSWER_RULE = ("When the task only asks a question or for information (find, explain, compare), your report is the "
                "answer: write it there in full; it needs no commit.")
 
@@ -326,6 +330,9 @@ def steward_answer_of(text: str) -> str:
     return m.group(1).strip() if m else ""
 
 
+FROM_ABOVE = plans.FROM_ABOVE         # the steward judges from its prompt (realm/plans.py)
+
+
 def _rules(orders: str) -> str:
     return f"## Your rules\n\n{orders.strip()}" if orders.strip() else "## Your rules\n\n(none written yet)"
 
@@ -337,7 +344,7 @@ def steward_question_prompt(keeper: str, orders: str, task: PoolTask, question: 
         f"## The orc working on it asks\n\n{question}",
         "If your rules, the task or plain good practice settle it, answer `ANSWER: …` with the decision. "
         "If only the operator can decide (taste, scope, money, anything your rules do not cover), answer "
-        "`ASK` and nothing else."])
+        "`ASK` and nothing else.", FROM_ABOVE])
 
 
 def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: str, tests: str,
@@ -358,7 +365,7 @@ def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: s
         "The report ends with a draft to post (`PUBLISH:`): judge it as the work. Nothing is posted until the "
         "operator approves it." if publish_of(report)[2] else "",
         "Judge whether the task is done and your rules are kept. Answer `ACCEPT` on the first line, or "
-        "`REWORK: …` with what exactly to fix.",
+        "`REWORK: …` with what exactly to fix. " + FROM_ABOVE,
         "" if scope else
         "Only documents changed. After ACCEPT add one line `SCOPE: local` when they are only for the operator's "
         "own use and stay in the camp (notes, a meeting's prep), or `SCOPE: external` when they go out — to the "
@@ -387,6 +394,12 @@ class Foreman:
         self.session_tasks = int(config.get("session_tasks") or DEFAULT_SESSION_TASKS)
         self.max_reworks = int(config["max_reworks"]) if config.get("max_reworks") is not None else DEFAULT_MAX_REWORKS
         self.stats = stats or {}
+
+    @property
+    def priced(self) -> bool:
+        """One of its tools says what a run costs. A pool on tools that say no price (agy) spends nothing it can
+        count, so its $ budget cannot run out and never turns a plan down."""
+        return any(h is not None and h.priced for h in (harnesses.get(p) for p, _ in self.providers))
 
     # -- the model ------------------------------------------------------------------------------------
 
@@ -523,12 +536,22 @@ class Barracks:
         self.tasks: list[PoolTask] = []       # working and finished, newest last
         self.paused = False
         self.steward_cost = 0.0
+        self.steward_tokens = 0               # its calls' tokens: what a tool that says no price spends
         self.stats: dict = {}
         self.load()
 
     @property
     def spent(self) -> float:
         return round(sum(o.cost_usd for o in self.orcs) + self.steward_cost, 4)
+
+    @property
+    def tokens(self) -> int:
+        """Every token the orks and the steward spent."""
+        return sum(o.tokens for o in self.orcs) + self.steward_tokens
+
+    def steward_spent(self, cost: float, tokens: int = 0) -> None:
+        self.steward_cost = round(self.steward_cost + cost, 4)
+        self.steward_tokens += tokens
 
     @property
     def asked(self) -> list[PoolTask]:
@@ -549,6 +572,7 @@ class Barracks:
             self.tasks = [PoolTask(**t) for t in data.get("tasks", [])]
             self.paused = bool(data.get("paused", False))
             self.steward_cost = float(data.get("steward_cost", 0.0))
+            self.steward_tokens = int(data.get("steward_tokens", 0))
         except (OSError, ValueError, TypeError):
             pass
         for t in [t for t in self.tasks if t.status == "planning"]:     # the plan is made again
@@ -575,7 +599,7 @@ class Barracks:
         self.dir.mkdir(parents=True, exist_ok=True)
         data = {"orcs": [asdict(o) for o in self.orcs], "queue": [asdict(t) for t in self.queue],
                 "tasks": [asdict(t) for t in self._kept()], "paused": self.paused,
-                "steward_cost": self.steward_cost}
+                "steward_cost": self.steward_cost, "steward_tokens": self.steward_tokens}
         (self.dir / "barracks.json").write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
         (self.dir / "stats.json").write_text(json.dumps(self.stats, indent=2), encoding="utf-8")
 

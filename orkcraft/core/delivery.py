@@ -11,7 +11,7 @@ from pathlib import Path
 
 from orkcraft import scroll
 from orkcraft.core import bus
-from orkcraft.realm import catalog, feedback, metrics, pipes, roads
+from orkcraft.realm import catalog, feedback, metrics, pipes, regressions, roads
 
 
 def engine(town) -> roads.Engine:
@@ -55,6 +55,8 @@ def deliver(town, target_id: str, payload: pipes.Payload, title: str = "", markd
     """A cart arrives in `target_id`: the faces show it (`DELIVERED`), the building's worker takes
     it, a text cart into Loot is kept as a report, and the receiver's chronicle says so."""
     feedback.record_delivery(town.repo_root, target_id, payload.source)            # the session's graph
+    regressions.record_input(town.repo_root, target_id, payload.kind, payload.value, payload.source,
+                             title)                                                 # what a 👎 makes a case of
     t, md = (title, markdown) if markdown else markdown_of(town, payload)
     worker = town.worker(target_id)
     town.publish(bus.DELIVERED, building=target_id, payload=payload, title=t, markdown=md,
@@ -114,19 +116,48 @@ def meta(town, payload: pipes.Payload) -> dict:
             "subtype": "personal" if entity.is_personal else entity.subtype}
 
 
+# The statuses a Barracks reports on the work a Task board sent it (core/workers/fields.py update_own).
+STATUS_EVENTS = ("pool.assigned", "pool.done", "pool.failed")
+
+
+def _status_board(town, building_id: str, event_id: str, ref: str) -> str:
+    """The Task board whose card a status event is about, when no road of this building carries the event
+    to it: `ref` is `<board id>:<card id>`. Its card moves by the event itself, so a task's status does not
+    wait for a road back to the board. "" when a road carries it there, or it is about no board's card."""
+    board, sep, card = ref.partition(":")
+    if event_id not in STATUS_EVENTS or not sep or not card or town.scroll is None:
+        return ""
+    found = town.scroll.building(board)
+    if found is None or found.demolished:
+        return ""
+    if any(r.event == event_id for dest, r in scroll.outgoing(town.scroll, building_id) if dest.id == board):
+        return ""
+    return board
+
+
 def emit(town, building_id: str, event_id: str, value: str, title: str = "",
          trail: tuple = (), ref: str = "", route: str = "", want: str = "") -> bool:
-    """A typed building sends one of its events: only when a road carries it (with the trail of
+    """A typed building sends one of its events: down the roads that carry it (with the trail of
     what it passes on, when it gives one, the route it was given, when it was routed, and the kind of
-    work wanted, when it was set: docs/design/barracks-flows.md §3)."""
+    work wanted, when it was set: docs/design/barracks-flows.md §3). A status of a Task board's card
+    reaches that board directly, road or none. True when a road took it."""
     spec = town.custom_specs.get(building_id)
     ev = catalog.type_of(spec).event(event_id) if spec else None
     if ev is not None:
         feedback.record_output(town.repo_root, building_id, event_id, value)      # what 👍 / 👎 rate
         if getattr(town, "lake", None) is not None:          # a road of it once went into a Lake building
             town.lake.follow(building_id, event_id, ev.kind, value, title)
-    if ev is None or town.scroll is None or not scroll.has_outgoing(town.scroll, building_id, event_id):
+    if ev is None or town.scroll is None:
         return False
-    town.roads.emit(pipes.Payload(ev.kind, value, building_id, event_id, title, tuple(trail), ref, route,
-                                  pipes.want_of(want)))
+    payload = pipes.Payload(ev.kind, value, building_id, event_id, title, tuple(trail), ref, route,
+                            pipes.want_of(want))
+    board = _status_board(town, building_id, event_id, ref)
+    if board:
+        worker = town.worker(board)
+        update_own = getattr(worker, "update_own", None)
+        if update_own is not None:
+            update_own(payload, value)
+    if not scroll.has_outgoing(town.scroll, building_id, event_id):
+        return False
+    town.roads.emit(payload)
     return True

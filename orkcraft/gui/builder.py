@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 from orkcraft.core import buildings, roads
-from orkcraft.realm import catalog, lake, modes, naming
+from orkcraft.realm import catalog, intents, lake, modes, naming, script_first
 
 
 class BuildError(Exception):
@@ -22,10 +22,26 @@ class BuildError(Exception):
 LANDSCAPE_GROUP = "Landscape: works by itself, needs no ork"   # the wizard's last group (landscape.md §6)
 
 
-def catalog_types() -> list[dict[str, Any]]:
+FOR_YOU = 6               # the role's buildings the tray may offer first; it shows three not standing yet
+
+
+def for_role(role_id: str) -> list[str]:
+    """The building types the onboarding's role uses most, most first: counted over its ready towns
+    (realm/intents.py INTENTS), the order they first come in breaking a tie."""
+    count: dict[str, int] = {}
+    for i in intents.INTENTS:
+        if i.role == role_id:
+            for b in i.plan.get("buildings", []):
+                count[b["type"]] = count.get(b["type"], 0) + 1
+    return sorted(count, key=lambda t: -count[t])[:FOR_YOU]
+
+
+def catalog_types(profile: dict | None = None) -> list[dict[str, Any]]:
     """Every type a building can be raised from, as the wizard lists them, each with what it is for
     (`intent`: the catalog's "What do you need?" groups, in their order). Buildings come first;
-    the landscape (no ork, docs/design/landscape.md) is a group of its own after them."""
+    the landscape (no ork, docs/design/landscape.md) is a group of its own after them. `yours`: its place among
+    the role's own (`for_role`, the onboarding's `profile`), -1 when it is not one (the Build row's first icons)."""
+    mine = for_role(intents.role(str((profile or {}).get("role") or "")).id)
     hidden = (catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES | lake.WINDOW_TYPES
               | {catalog.DEFAULT_TYPE})
     intent = {tid: need for need, ids in catalog.INTENTS for tid in ids}
@@ -34,7 +50,10 @@ def catalog_types() -> list[dict[str, Any]]:
                    key=lambda t: (t.landscape, order.get(t.id, len(order))))
     return [{"id": t.id, "title": t.title, "summary": modes.strip_emoji(t.summary), "agentic": t.agentic,
              "landscape": t.landscape, "takes": catalog.takes(t.id), "sends": [e.label for e in t.events][:6],
-             "intent": LANDSCAPE_GROUP if t.landscape else intent.get(t.id, "Something else")} for t in types]
+             "intent": LANDSCAPE_GROUP if t.landscape else intent.get(t.id, "Something else"),
+             "yours": mine.index(t.id) if t.id in mine else -1,
+             # raised as it comes, its work is code (no room for an ork: the ghost placed in Build is drawn so)
+             "yard": t.id in script_first.TYPES | script_first.WHEN_CODE} for t in types]
 
 
 def _id(args: dict, key: str) -> str:
@@ -77,6 +96,26 @@ def build(host, args: dict) -> str:
         host.raised_for[asked] = built.id
     host.refresh_roster()
     return built.id
+
+
+def copy_to(host, args: dict) -> str:
+    """A copy of the building in another orkspace (docs/design/projects.md §5); a toast names the roads that
+    stayed behind."""
+    town = host.town
+    bid, target = _id(args, "id"), _id(args, "orkspace")
+    try:
+        new_id, left = buildings.copy_to(town, bid, target)
+    except ValueError as e:
+        raise BuildError(str(e)) from None
+    town.worker(new_id)
+    ork = town.scroll.orkspace(target)
+    title = lambda x: getattr(town.scroll.building(x), "title", x)      # noqa: E731
+    names = [title(x) for x in left]
+    behind = (f" {len(names)} road{'s' if len(names) != 1 else ''} stayed behind: from {', from '.join(names)}."
+              if names else "")
+    town.toast(f"{title(new_id)} copied to {ork.name if ork else target}.{behind}", title="Copy")
+    host.refresh_roster()
+    return new_id
 
 
 def demolish(host, args: dict) -> bool:

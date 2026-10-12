@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Callable
 
 from orkcraft import scroll as ts
-from orkcraft.realm import halt, harnesses, tool_errors
+from orkcraft.realm import call_log, halt, harnesses, tool_errors
 from orkcraft.sources import telemetry
 
 AGENT_TIMEOUT_S = 600
@@ -228,10 +228,16 @@ def run_agent(harness: str, prompt: str, repo_root: Path, env: dict,
         run_env = {**os.environ, **tool_env, **env}
         if telemetry.charged(run_env):                    # the session hook records what it was for
             run_env = {**telemetry.purpose_env(), **run_env}
-        code, stdout, stderr = run_proc(cmd, workdir, run_env, harness_stdin(harness, prompt), wait, harness)
+        start = time.monotonic()
+        code, stdout, stderr = call_log.answer("agent", prompt) or \
+            run_proc(cmd, workdir, run_env, harness_stdin(harness, prompt), wait, harness)
     if code != 0:
+        call_log.record(env, "agent", harness, model, prompt, stdout, stderr, code, time.monotonic() - start,
+                        workdir=workdir)
         raise failure(harness, code, stdout, stderr)
     result = result_of(harness, stdout, model=model)[:3]
+    call_log.record(env, "agent", harness, model, prompt, stdout, stderr, code, time.monotonic() - start,
+                    result[1], result[2], workdir=workdir)
     what = dict(tokens=result[2], building=telemetry.building_of(env), model=model)
     if not telemetry.charged(run_env):                    # no ORKCRAFT_RUN: its transcript is not this run's
         telemetry.charge(result[1], f"{harness} agent", **what)

@@ -30,18 +30,37 @@ buttons, then the field.
 - **While a building is selected** the buttons are its own two or three quick actions and its steward speaks in the
   line (select-a-building.md §2): one place, one way. **Built** (its first step: the field still asks the Warchief).
 
-## 2. Build from the line, not a dialog
+## 2. Build from the line, not a dialog (built)
 
-The catalog of 21 buildings with a paragraph each is too much. Build opens a **tray of building icons upward from the
-line**:
+The catalog of 21 buildings with a paragraph each is too much. Build **grows the Warchief's line** by one row of small
+icons over its bar, in the line's own frame (`js/build.js` `BuildRow`), not a window of its own: the line's field is
+already where words go, so it finds in the row, and Enter that finds no icon asks the Warchief, whose line it is. The
+row is one line of 34-pixel icons with a thin rule between the groups, about 70 px tall in all (the first tray, a
+window of labelled tiles, stood six times as tall: the owner's call, 2026-10-09); a narrow line scrolls it sideways.
 
-- each icon is its house in pixels with the **intent** it covers drawn on it (mail and Jira on External listeners),
-  its short name under it, one line on hover;
-- the first row: **three for you**, by the role the onboarding asked; then the rest by intent, five or six a row;
-- typing filters the tray ("mail" leaves External listeners);
+- each icon says **what you want done**, not which house does it, and there are ten: take in what comes (mail, chats,
+  tickets — one icon, where it listens is its setup's), work in parallel, discuss a hard topic, a calendar, process
+  data, deep research, validate a model's output, drop files fast, tasks, a wiki; then, past a thin rule, the rest
+  (code, send, route, chart, sound, listen) — all in the one row, small enough to need no ⋯ (`design-system/sprites/intents/`, drawn by
+  `tools/intent_sprites.py`; which building each raises is `js/build.js` `INTENTS`). The line over the row says the
+  icon under the mouse: its word, its building, its summary;
+- **For you** first, framed in gold: three of the onboarding's role's own buildings not standing yet (`builder.for_role`:
+  counted over its ready towns); then the rest;
+- typing in the line filters it by the icon's own word first ("mail" leaves Mail), else by its building's name and
+  summary; Enter takes the first left, or with none asks the Warchief what to build; Escape, Build again or a press
+  elsewhere puts the row away;
 - a press picks it and its ghost follows the mouse (select-a-building.md §8); **a double press builds it at a free
-  spot**, no ghost, for a person who does not mind where.
+  spot**, no ghost, for a person who does not mind where; from the map's *Build here* a press builds it there.
 - *Later:* `^` in the line names a building to build, as `@` names one that stands.
+
+**Groups (2026-10-10):** the icons stand in small groups by meaning — Take in, Think, Make, Check, Know (the wiki), Plan, Tell (the podcast with send and sound)
+(js/build.js `GROUPS`) — each with its word over it and a bar under its 2–3 icons. The order never changes;
+For you only frames its icons in gold. A placed ghost over another building turns red and builds nothing; once
+placed, the building stands up from its scaffolding in the ghost's box, at the ghost's corner, and stays there
+(a hut's spot no longer hangs on its size, js/town.js `free`; huts the person placed or stretched are held, the
+others make way). The Warchief's news is a speech bubble over the line, never in it, so the line never shifts: in Camp the ork's pixel
+bubble of parchment, in Office a calm one, both from the line's left end with a tail down to his face, popping in; the line is
+720px wide at most, so the Build row stands in one line (Office shows its icons in grey).
 
 ## 3. Place first, then set up
 
@@ -63,6 +82,12 @@ itself: it was turned off, yards.md §7).
 
 Five types have a view: 5 × 3 cards. First the Task board, the Calendar and the Agent pool; the others keep the
 medium.
+
+**The Agent pool's card in lanes** (built 2026-10-09, the owner's ask): under its counts, an ork a lane — its head
+saying what it does (a gear at work, Zz resting, `!` asking; Office says it in a word), its name, its AI tool and tier,
+its **topic** (the persona it was hired as — tests, frontend — the kind of work it takes for good, never the one
+request; "any work" without one) and how many tasks of that topic wait (its follow-ups too), six lanes at most
+(`gui/views/barracks.py` `_lanes`). Later: an ork that keeps a module for good (tests, FE) and new tasks sent by topic.
 
 ## 5. Info stays a window of its own, its settings in it (built)
 
@@ -114,6 +139,6 @@ the steward heavier and 🪙 Thrift lighter, and the two could not be set apart.
 1. The line's buttons: Build, Questions (N), Improve (§1) — and a selected building's own (with select-a-building.md).
 2. Tiers' names and marks (§6), the ork wearing its mark; Info's two parts with the steward's tier and AI tool
    (§5, §7). **Built.**
-3. Build as a tray from the line, a double press builds at a free spot (§2).
+3. Build as a tray from the line, a double press builds at a free spot (§2). **Built.**
 4. The medium card by default and three snapping sizes for the Task board, the Calendar, the Agent pool (§4).
 5. `^` in the line (§2).

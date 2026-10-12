@@ -96,6 +96,15 @@ def test_only_ready_parts_start():
     assert [k.sub for k in plans.ready(kids, 0)] == ["ui", "docs", "api2"]
 
 
+def test_a_part_holds_the_whole_only_after_every_other_part():
+    from types import SimpleNamespace as P
+    kids = [P(sub="money", after=[]), P(sub="dates", after=[]), P(sub="report", after=["money", "dates"]),
+            P(sub="cli", after=["report"])]
+    assert not plans.holds_all(kids, "money") and not plans.holds_all(kids, "report")
+    assert plans.holds_all(kids, "cli")                         # through `report`, it has them all
+    assert plans.holds_all([P(sub="only", after=[])], "only")
+
+
 def test_a_plan_is_trimmed_to_the_budget_never_cut():
     subs = [plans.Sub("a", "A", "a", "elder", cheaper_ok=True), plans.Sub("b", "B", "b", "warrior")]
     costs = plans.tier_costs({})

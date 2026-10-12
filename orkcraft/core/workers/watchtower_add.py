@@ -324,6 +324,8 @@ class Adding:
             raise Refused("Log in first")
         if want is not None:
             want = paths.want_of_choice(want)
+            if want and want not in paths.source_choices(paths.source_of(self.service)):
+                raise Refused("That kind of work is not offered for this source")
             self.want = want
         s = quickadd.SERVICES[self.service]
         self.picks, self.about_me, self.folder, self.me = picks, about_me, folder, me.strip()
@@ -340,7 +342,7 @@ class Adding:
             if want is not None:                       # its source's kind of work, beside the others'
                 source = paths.source_of(login.service)
                 wants = {k: v for k, v in dict(self.w.config.get("wants") or {}).items() if k != source}
-                p.changes["wants"] = {**wants, source: want} if want else (wants or None)
+                p.changes["wants"] = {**wants, source: paths.want_setting(want)} if want else (wants or None)
             return p, quickadd.first_look(login, p, opener, runner, imap)
 
         def done(result) -> None:
@@ -465,7 +467,7 @@ class Adding:
         source = paths.source_of(self.service)
         got = self.w.config.get("wants")
         if isinstance(got, dict) and source in got:
-            return paths.want_of_choice(got[source])
+            return paths.choice_of_setting(got[source])
         return paths.SOURCE_DEFAULTS.get(source, "")
 
     def view(self) -> dict | None:
@@ -499,7 +501,8 @@ class Adding:
                    who=self.login.who if self.login else f"Claude's {self.via.name} connection" if self.via else "",
                    options=[asdict(o) for o in self.options], picks=list(self.picks), about_me=self.about_me,
                    folder=self.folder, want=self._want_now(),
-                   wants=[{"id": w, "label": lexicon.want_word(w)} for w in paths.SOURCE_CHOICES])
+                   wants=[{"id": w, "label": lexicon.want_word(w)}
+                          for w in paths.source_choices(paths.source_of(self.service))])
         if self.step == "check" and self.plan is not None:
             every = "every 2 min"
             if self.via:                                  # through Claude: what each look costs

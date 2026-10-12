@@ -30,6 +30,10 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
   background: image-set(url("/ds/sprites/orks/ork-stand.png") 1x, url("/ds/sprites/orks/ork-stand@2x.png") 2x) 0 0 / 24px 18px no-repeat; }
 /* Its tier's chevrons on its shoulder: how seasoned the mind at work is, seen without opening anything. */
 .gui-out__rank { position: absolute; right: -10px; top: -10px; width: 16px; height: 16px; image-rendering: pixelated; pointer-events: none; }
+/* Its AI tool over its other shoulder (js/visit.js): the tool's pixel mark, as on the steward's line in Info. */
+.gui-out__tool { position: absolute; left: -5px; top: -6px; width: 8px; height: 8px; pointer-events: auto; }
+.gui-out__tool .gui-toolmark { display: block; }
+.gui-out__tool .gui-toolmark img { display: block; width: 8px; height: 8px; image-rendering: pixelated; }   /* half its size: a hint, not a badge */
 .gui-out.is-step .gui-out__ork { animation: gui-step .24s steps(1) infinite; }
 /* A steward wears its building's hat (tools/hat_sprites.py) over its head: two pixels over the stand's blank top row,
    bobbing with the head as it walks. */
@@ -91,7 +95,7 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 
 .gui-hut__yard-name { display: none; }
 
-[data-look="camp"] .gui-hut.is-fenced { --fence-o: #0b0907; --fence-m: #262019; --fence-h: #3a3026; --yard-ground: var(--panel);
+[data-look="camp"] .gui-hut.is-fenced { --fence-o: #1a1813; --fence-m: #5a4730; --fence-h: #7a6240; --yard-fill: color-mix(in srgb, var(--ink) 6%, transparent); --yard-ground: var(--yard-fill);
   --fence-row: image-set(url("/ds/sprites/fence/row.png") 1x, url("/ds/sprites/fence/row@2x.png") 2x);
   --fence-side: image-set(url("/ds/sprites/fence/side.png") 1x, url("/ds/sprites/fence/side@2x.png") 2x);
   --fence-rail: linear-gradient(90deg, var(--fence-o) 0 1px, var(--fence-h) 1px 3px, var(--fence-m) 3px 6px, var(--fence-o) 6px 7px); }
@@ -99,11 +103,11 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 [data-look="camp"] .gui-hut.is-yard.m:not(.is-sized) { width: 294px; }
 
 /* Pickets along the bottom, the plain panel inside: text never sits on wood. The lower half of the bottom row stands
-   on the ground. The sides start under the top fence (::before), so nothing stands beside the house. */
+   on the ground. The sides start under the top fence (::before), so nothing stands beside the house. A row holds whole
+   pickets (`round`): a card of any width ends on a full one at its corner post, never a cut one. */
 [data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card {
   border: 0; box-shadow: none; image-rendering: pixelated; padding: 0 15px 21px;
   background:
-    var(--fence-row) left bottom / 21px 21px repeat-x,
     linear-gradient(var(--yard-ground), var(--yard-ground)) 15px var(--titlebar) / calc(100% - 30px) calc(100% - 12px - var(--titlebar)) no-repeat; }
 [data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card::before { content: ""; position: absolute; left: 0; right: 0;
   top: var(--titlebar); bottom: 14px; pointer-events: none; image-rendering: pixelated; animation: none; background:
@@ -112,16 +116,45 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
     var(--fence-rail) 4px 0 / 7px 100% no-repeat,
     var(--fence-rail) right 4px top 0 / 7px 100% no-repeat; }
 [data-look="camp"] .gui-hut.is-fenced.is-folded .ok-hut__card::before { display: none; }
-/* Selected: a gold glow round the fence (the corner brackets stay). Asking: the inside takes the fire's ground and
-   the fence its glow, as a hut's card does. */
-[data-look="camp"] .gui-hut.is-fenced.is-selected .ok-hut__card { filter: drop-shadow(0 0 2px var(--frame-focus)); }
-[data-look="camp"] .gui-hut.is-fenced.is-alert .ok-hut__card { --yard-ground: var(--fire-ground); filter: drop-shadow(0 0 6px var(--fire-glow)); }
-[data-look="camp"] .gui-hut.is-fenced.is-alert.is-hot .ok-hut__card { --yard-ground: var(--fire-ground-hot); }
+/* Its corners: at the top fence's end a bone tusk curling in over the card; at the bottom corners a stout post with an
+   iron head, neat and quiet. The building's renown adds iron, never more bone (tools/fence_sprites.py; docs/design/
+   yards.md §3): II an iron band round the tusk's root, III crossed axes where the top fence meets the house. */
+[data-look="camp"] .gui-hut.is-fenced { --tusk: image-set(url("/ds/sprites/fence/tusk-1.png") 1x, url("/ds/sprites/fence/tusk-1@2x.png") 2x); --corner-post: image-set(url("/ds/sprites/fence/corner-post.png") 1x, url("/ds/sprites/fence/corner-post@2x.png") 2x); }
+/* Renown along the whole fence: II iron caps on every picket and a spiked collar on the posts; III an iron-bound rail
+   and two bone horns on the posts, and the axes by the house. */
+[data-look="camp"] .gui-hut.is-fenced.is-renown-2 { --tusk: image-set(url("/ds/sprites/fence/tusk-2.png") 1x, url("/ds/sprites/fence/tusk-2@2x.png") 2x); --corner-post: image-set(url("/ds/sprites/fence/corner-post-2.png") 1x, url("/ds/sprites/fence/corner-post-2@2x.png") 2x);
+  --fence-row: image-set(url("/ds/sprites/fence/row-2.png") 1x, url("/ds/sprites/fence/row-2@2x.png") 2x); --fence-side: image-set(url("/ds/sprites/fence/side-2.png") 1x, url("/ds/sprites/fence/side-2@2x.png") 2x); }
+[data-look="camp"] .gui-hut.is-fenced.is-renown-3 { --tusk: image-set(url("/ds/sprites/fence/tusk-3.png") 1x, url("/ds/sprites/fence/tusk-3@2x.png") 2x); --corner-post: image-set(url("/ds/sprites/fence/corner-post-3.png") 1x, url("/ds/sprites/fence/corner-post-3@2x.png") 2x);
+  --fence-row: image-set(url("/ds/sprites/fence/row-3.png") 1x, url("/ds/sprites/fence/row-3@2x.png") 2x); --fence-side: image-set(url("/ds/sprites/fence/side-3.png") 1x, url("/ds/sprites/fence/side-3@2x.png") 2x); --fence-m: #4e585e; --fence-h: #6e7a80; }
+/* The bottom row of pickets stands here too, under the posts and on the card's own width (its content box), so the
+   fence glows alone when the card is selected or asks: the card's inside, its words, never do. */
+[data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card::after { content: ""; position: absolute; left: -8px; right: -8px;
+  top: calc(var(--titlebar) - 27px); bottom: 0; padding: 0 8px; pointer-events: none; image-rendering: pixelated; animation: none; background:
+    var(--tusk) right 11px top / 21px 27px no-repeat border-box,
+    var(--corner-post) left 2px bottom / 27px 36px no-repeat border-box,
+    var(--corner-post) right 2px bottom / 27px 36px no-repeat border-box,
+    var(--fence-row) left bottom / 21px 21px round no-repeat content-box; }
+[data-look="camp"] .gui-hut.is-fenced.is-renown-3:not(.is-folded) .gui-hut__title::after { content: ""; position: absolute;
+  left: calc(var(--house-w, 15px) + 2px); bottom: 2px; width: 27px; height: 21px; pointer-events: none; image-rendering: pixelated;
+  background: image-set(url("/ds/sprites/fence/axes.png") 1x, url("/ds/sprites/fence/axes@2x.png") 2x) 0 0 / 27px 21px no-repeat; }
+/* Selected: no glow, the fence stays as it is; on the Ground cards the inside becomes its yard, and its name over the
+   building turns gold. Asking: the inside takes the fire's ground and the fence its glow. A glow is the fence's alone
+   (--fence-glow on its pieces): the card's content is never lit. */
+[data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card::before,
+[data-look="camp"] .gui-hut.is-fenced:not(.is-folded) .ok-hut__card::after,
+[data-look="camp"] .gui-hut.is-fenced .gui-hut__title { filter: var(--fence-glow, none); }
+/* A question glows yellow, the ork out by its door with its `!` (a press opens the question); what broke burns
+   (docs/design/yards.md §8). Broken outranks asking. */
+[data-look="camp"] .gui-hut.is-fenced.is-alert:not(.is-broken) { --fence-glow: drop-shadow(0 0 5px color-mix(in srgb, var(--warning) 70%, transparent)); }
+[data-look="camp"] .gui-hut.is-fenced.is-alert:not(.is-broken) .ok-hut__card { --yard-ground: color-mix(in srgb, var(--warning) 12%, transparent); }
+[data-look="camp"] .gui-hut.is-fenced.is-broken { --fence-glow: drop-shadow(0 0 6px var(--fire-glow)); }
+[data-look="camp"] .gui-hut.is-fenced.is-broken .ok-hut__card { --yard-ground: var(--fire-ground); }
+[data-look="camp"] .gui-hut.is-fenced.is-broken.is-hot .ok-hut__card { --yard-ground: var(--fire-ground-hot); }
 
 /* The title bar is the top fence: its pickets start where the house ends (--house-w, js/hut.js measure) and run to the
    edge; its words went over the building (§3b). Fold keeps 26 px clear of the road handle at its right. */
 [data-look="camp"] .gui-hut.is-fenced .gui-hut__title { position: relative; height: var(--titlebar); margin: 0 -15px; padding: 0 0 0 var(--house-w, 15px);
-  gap: 0; box-shadow: none; image-rendering: pixelated; background: var(--fence-row) left bottom / 21px 21px repeat-x;
+  gap: 0; box-shadow: none; image-rendering: pixelated; background: var(--fence-row) left bottom / 21px 21px round no-repeat;
   background-origin: content-box; background-clip: content-box; }
 [data-look="camp"] .gui-hut.is-fenced .gui-hut__title > :is(.no, .gui-type-icon, .gui-hut__spin, .gui-hut__name) { display: none; }
 [data-look="camp"] .gui-hut.is-fenced .gui-hut__title > .gui-hut__mark { align-self: center; margin-left: 6px; padding: 2px 4px;
@@ -141,7 +174,8 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 [data-look="camp"] .gui-hut:is(.is-fenced, .is-bare) .gui-hut__yard-name .gui-type-icon { width: 12px; height: 12px; filter: drop-shadow(1px 1px 0 #000); }
 [data-look="camp"] .gui-hut:is(.is-fenced, .is-bare) .gui-hut__yard-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 [data-look="camp"] .gui-hut:is(.is-fenced, .is-bare).is-selected .gui-hut__yard-name { color: var(--ink-gold); }
-[data-look="camp"] .gui-hut:is(.is-fenced, .is-bare).is-alert .gui-hut__yard-name { color: var(--alert); }
+[data-look="camp"] .gui-hut:is(.is-fenced, .is-bare).is-alert .gui-hut__yard-name { color: var(--warning); }
+[data-look="camp"] .gui-hut:is(.is-fenced, .is-bare).is-broken .gui-hut__yard-name { color: var(--alert); }
 
 /* Folded: its name, its building and the top fence alone. */
 [data-look="camp"] .gui-hut.is-fenced.is-folded .ok-hut__card { border-color: transparent; background: none; box-shadow: none; }
@@ -172,10 +206,16 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 [data-look="camp"] .gui-hut.is-bare .gui-hut__badge .gui-hut__mark.ok-tone-error { color: var(--danger); border-color: var(--danger); }
 [data-look="camp"] .gui-hut.is-bare .gui-hut__badge .gui-hut__mark.ok-tone-wait { color: var(--warning); }
 [data-look="camp"] .gui-hut.is-bare.is-selected .gui-hut__plinth { filter: drop-shadow(0 0 2px var(--frame-focus)); }
-[data-look="camp"] .gui-hut.is-bare.is-alert .gui-hut__plinth { filter: drop-shadow(0 0 6px var(--fire-glow)); }
+[data-look="camp"] .gui-hut.is-bare.is-alert .gui-hut__plinth { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--warning) 70%, transparent)); }
+[data-look="camp"] .gui-hut.is-bare.is-broken .gui-hut__plinth { filter: drop-shadow(0 0 6px var(--fire-glow)); }
+
+/* -- the map view (docs/design/map-view.md): every building bare ---------------------------------------------- */
+/* Its card peeks under the plinth while it wants the person or a drag is held over it, wide enough to be read. */
+[data-look="camp"] .gui-hut.is-far .gui-hut__peek { top: 100%; left: 0; right: auto; width: max(100%, 260px); border-top: var(--ok-stroke, 2px) solid var(--frame); }
 
 /* -- the cards' background off (§3e): the town's ground shows through ------------------------------------------ */
 /* Chosen in the portrait's menu and kept in this browser (js/portrait.js): Ground (the default) draws the cards on the
-   town's ground, Panel on their own. The title bar keeps its plate; a card that asks keeps the fire's ground. */
-[data-look="camp"][data-cards="ground"] .gui-hut:not(.is-alert):not(.is-fenced):not(.is-bare) > .ok-hut__card { background: transparent; }
-[data-look="camp"][data-cards="ground"] .gui-hut.is-fenced:not(.is-alert) { --yard-ground: transparent; }
+   town's ground and the selected one in its yard; Yard draws every card's inside a step lighter. The title bar keeps its
+   plate; a card that asks keeps the fire's ground. */
+[data-look="camp"][data-cards="ground"] .gui-hut:not(.is-alert):not(.is-fenced):not(.is-bare):not(.is-selected) > .ok-hut__card { background: transparent; }
+[data-look="camp"][data-cards="ground"] .gui-hut.is-fenced:not(.is-alert):not(.is-broken):not(.is-selected) { --yard-ground: transparent; }

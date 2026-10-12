@@ -175,3 +175,18 @@ def test_search_more_on_a_dispute_runs_one_more_round(fake_repo, isolated_layout
                                             for _t, _w, p in agents.calls[before:])
     w.answer_alert("keep")
     assert w.get(rid)["status"] == "done" and "## Disputed" in w.report_text(w.get(rid))
+
+
+def test_with_one_tool_no_round_spends_on_what_it_could_never_confirm(fake_repo, isolated_layout_file, monkeypatch):
+    """A confirmed finding needs two minds; with one tool every finding stays one source, and the rounds searched the
+    web again and again for nothing. They are left out: one search, its report."""
+    agents = Agents()
+    monkeypatch.setattr(roads, "run_agent", agents)
+    host = _host(fake_repo)
+    bid = _raised(host, "mine", tools=["claude"], rounds=3, wiki="")
+    w = host.town.worker(bid)
+    rid = host.command("act", {"id": bid, "act": "ask", "args": {"question": "When does Acme's free tier end?"}})
+    assert _wait(lambda: w.get(rid)["status"] in ("done", "waiting", "failed")), w.get(rid)
+    r = w.get(rid)
+    assert r["round"] == 0
+    assert sum(1 for _t, web, _p in agents.calls if web) == 1                   # the one search, no more

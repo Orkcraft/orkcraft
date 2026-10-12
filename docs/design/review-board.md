@@ -24,6 +24,10 @@ A Review board is set up once, from what it is for:
 - **The exits are named.** The steward picks exactly one exit for each document. The person names
   them when setting up — "To development", "To the designer", "Backlog" — each with a rule in words
   for when it is taken, and each is a road on the map (§2).
+- **When every member approves, the steward is not asked** (asked 2026-10-12, realm/team.py `_all_approved`): with
+  at most one exit and no answer of the person's to weigh, its decision would only repeat theirs. The document is
+  approved and goes down the one exit (or on, with none); its turn says *every member approved*. With two exits or
+  more the steward still picks one, and a single *changes* or *veto* still goes to it.
 
 ## 2. Exits
 

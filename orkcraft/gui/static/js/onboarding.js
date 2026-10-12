@@ -467,8 +467,9 @@ export function risen() {
   return new Set(r ? r.buildings.filter((b) => b.state === "standing").map((b) => b.id) : []);
 }
 
-/** A building not standing yet: planned, or going up (`g.state` "raising"). `bare`: a building with no card of its own
- *  (js/hut.js bareOf) is its house alone, here too. */
+/** The onboarding's building not standing yet: planned, or going up (`g.state` "raising"). `bare`: a building with no
+ *  card of its own (js/hut.js bareOf) is its house alone, here too. One raised by Build goes up as its own hut under
+ *  scaffolding instead (js/town.js `.gui-town__raising`). */
 export function Ghost({ g, spot, biome, bare = false }) {
   const now = g.state === "raising";
   return html`<div class=${cls("gui-onb__ghost", { "is-raising": now, "is-bare": bare })} style=${`left:${spot.x}px;top:${spot.y}px`}

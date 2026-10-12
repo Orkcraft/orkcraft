@@ -3,7 +3,8 @@
 
     python tools/hat_sprites.py [--preview FILE]
 
-Out come, in `design-system/sprites/orks/` (the GUI serves it at `/ds/sprites/orks/`), at 2× and 4× (`@2x`):
+Out come, in `design-system/sprites/orks/` (the GUI serves it at `/ds/sprites/orks/`), at 2× and 4× (`@2x`), Scale2x'd
+and lit there as the ork out of its building is (tools/visit_sprites.py), so the hat is as fine as the head it sits on:
 
 - `hat-<role>.png` (12×2, 24×4 drawn): the hat alone, worn by the ork that comes out of its building (js/visit.js);
 - `steward-<role>.png` (12×10, 24×20 drawn): the head under its hat, the steward's face on the Warchief's line when
@@ -19,11 +20,12 @@ import pathlib
 from PIL import Image
 
 from logo import GRID, SPRITE_COLOURS, grid_image
+from visit_sprites import SHADE_COLOURS, scale2x, shade
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "design-system" / "sprites" / "orks"
 
-COLOURS = {**SPRITE_COLOURS, "B": "#3a4a8c", "W": "#efe6cc", "H": "#e8e0c8", "M": "#9aa0a6", "L": "#8b5a2b",
+COLOURS = {**SPRITE_COLOURS, **SHADE_COLOURS, "B": "#3a4a8c", "W": "#efe6cc", "H": "#e8e0c8", "M": "#9aa0a6", "L": "#8b5a2b",
            "Q": "#7fd4e8", "C": "#3f7fbf", "R": "#c8402a", "Y": "#f2c66d"}
 
 # two rows over the head's 12×8 grid; the head's crown is its columns 3–8
@@ -50,8 +52,9 @@ def build(out: pathlib.Path = OUT) -> dict[str, list[str]]:
         face = hat + GRID
         faces[role] = face
         for name, grid in ((f"hat-{role}", hat), (f"steward-{role}", face)):
-            grid_image(grid, COLOURS, 2).save(out / f"{name}.png")
-            grid_image(grid, COLOURS, 4).save(out / f"{name}@2x.png")
+            fine = shade(scale2x(grid))       # the face lit as the ork out of its door is; a hat has no green: as it is
+            grid_image(fine, COLOURS, 1).save(out / f"{name}.png")
+            grid_image(scale2x(fine), COLOURS, 1).save(out / f"{name}@2x.png")
     return faces
 
 

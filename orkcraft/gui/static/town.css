@@ -44,3 +44,13 @@
 /* Gold is selection only: the working spinner turns the meter's tan. */
 [data-look] .gui-hut__spin { border-color: color-mix(in srgb, var(--meter) 30%, transparent); border-top-color: var(--meter); }
 
+
+/* A frame round several buildings (js/frame.js): dragged on the map while a Test bench's setup asks for it, and
+   what each Test bench tests, framed as scaffolding is, its environment's name on the frame. */
+.gui-frame-select { position: absolute; inset: 0; z-index: 30; cursor: crosshair; background: color-mix(in srgb, var(--ground, #000) 12%, transparent); }
+.gui-frame-select__rect { position: absolute; border: 2px dashed var(--frame-focus); background: color-mix(in srgb, var(--frame-focus) 8%, transparent); }
+.gui-frame-select__picked { position: absolute; border: 2px solid var(--frame-focus); border-radius: 6px; pointer-events: none; }
+.gui-test-frame { position: absolute; z-index: 0; pointer-events: none; border: 2px dashed var(--frame-focus); border-radius: 10px;
+  background: repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in srgb, var(--frame-focus) 6%, transparent) 10px 14px); }
+.gui-test-frame__label { position: absolute; bottom: -0.9em; left: 12px; padding: 0 6px; background: var(--panel);
+  border: 1px solid var(--frame-focus); border-radius: 4px; white-space: nowrap; }

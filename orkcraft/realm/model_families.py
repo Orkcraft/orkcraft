@@ -96,7 +96,8 @@ def parse_codex(stdout: str) -> list[str]:
 
 
 def parse_agy(stdout: str) -> list[str]:
-    """`agy models`: a line per model, its id first (`gemini-3.8-flash-high Gemini 3.8 Flash (High)`)."""
+    """`agy models`: a line per model, its id first and then its name, a tab or a space between
+    (`gemini-3.8-flash-high\tGemini 3.8 Flash (High)`)."""
     try:
         data = json.loads(stdout)
     except ValueError:
@@ -107,7 +108,7 @@ def parse_agy(stdout: str) -> list[str]:
                 for i in items if i]
     out = []
     for line in stdout.splitlines():
-        word = line.strip().split(" ", 1)[0] if line.strip() else ""
+        word = line.split(None, 1)[0] if line.strip() else ""
         if re.match(r"^[a-z][a-z0-9.\-]*\d[a-z0-9.\-]*$", word):
             out.append(word)
     return out

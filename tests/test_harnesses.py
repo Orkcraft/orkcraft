@@ -30,6 +30,16 @@ def test_a_prompt_never_reads_as_a_flag(tool, tmp_path):
     assert h.interactive("-x") in (None, [*h.interactive(), *h.deploy_args, "Orders: -x"])
 
 
+def test_an_unchained_agy_asks_nothing_and_stays_in_its_sandbox(tmp_path):
+    # agy's --print denies every command it would ask about and ends its turn empty, so an ork that runs its
+    # tests first came back with nothing; unchained (autonomy.FREE) it skips the asking, never the sandbox.
+    h = harnesses.need("agy")
+    assert "--dangerously-skip-permissions" not in h.work("x", tmp_path)
+    free = h.work("x", tmp_path, free=True)
+    assert "--dangerously-skip-permissions" in free and "--sandbox" in free
+    assert harnesses.need("claude").work("x", tmp_path, free=True) == harnesses.need("claude").work("x", tmp_path)
+
+
 def test_hermes_reads_its_stream():
     out = _lines({"type": "system", "subtype": "init", "model": "m", "session_id": "20261007_120000_abcdef"},
                  {"type": "text", "text": "par"}, {"type": "text", "text": "tial"},
@@ -141,3 +151,11 @@ def test_mcp_servers_of_hermes_pi_and_cursor_are_named_never_read(tmp_path):
     (tmp_path / ".pi" / "agent" / "mcp.json").write_text('{"mcpServers": {"sentry": {}}}', encoding="utf-8")
     got = {s.id: s.tools for s in mcp.found(home=tmp_path)}
     assert got == {"github": ("hermes", "cursor"), "linear": ("hermes",), "figma": ("cursor",), "sentry": ("pi",)}
+
+
+def test_a_tool_that_names_its_cache_its_own_way_counts_what_it_read_from_it():
+    """agy: a warm cache's call reads most of its input from the cache, apart; counted, it weighs as a cold one."""
+    cold = {"input_tokens": 21_900, "output_tokens": 100}
+    warm = {"input_tokens": 2_000, "output_tokens": 100, "cache_read_tokens": 19_800, "cachedContentTokenCount": 0}
+    assert harnesses._tokens_of(cold) == 22_000 and harnesses._tokens_of(warm) == 21_900
+    assert harnesses._tokens_of({"input_tokens": 5, "cache_read_input_tokens": 7, "cache_hit": True}) == 12

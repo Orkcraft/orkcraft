@@ -75,7 +75,8 @@ TERMS: tuple[Term, ...] = (
     _t("look.office", "Office"),                                   # the calm look: monochrome, no sprites
     _t("dnd", "Do not disturb"),                                   # sounds, pushes, the Warchief's news wait
     # -- what a thing does, costs or risks: plain words ---------------------------------------------
-    _t("ghost", "preview", "", "ghost"),
+    _t("ghost", "preview"),                                        # Build's placing outline; "ghost" is no old spelling
+                                                                   # any more: the ghosts are a kin (Wandering Ghost)
     _t("loot", "output", "", "loot"),
     _t("cart_type", "content type", "content types"),            # message, doc, ticket… (realm/content.py)
     _t("fog_of_war", "new orkspace", "", "fog of war"),            # the War Map's foot: + Orkspace
@@ -110,7 +111,8 @@ TERMS: tuple[Term, ...] = (
     _t("recruiter", "Ork setup", "", "Recruiter"),
     _t("raise", "Set up", "", "Raise"),
     _t("raising", "Setting up the town", "", "Raising the town"),
-    _t("town_scroll", "Project file", "Project files", "Town Scroll", "Town Scrolls"),
+    _t("town_scroll", "Town file", "Town files", "Town Scroll", "Town Scrolls"),
+    _t("project", "Project", "Projects"),                           # the folder an orkspace works in (docs/design/projects.md)
     _t("account", "Account", "Accounts"),                           # a sign-in of the person's own (docs/design/google-account.md)
     _t("town_builder", "Town planner", "", "Town Builder"),
     _t("town_retro", "Weekly retro", "", "Town retro"),
@@ -119,15 +121,16 @@ TERMS: tuple[Term, ...] = (
     _t("freedom.clock", "Apply if unanswered", "", "On the clock"),
     _t("freedom.free", "Apply at once", "", "Unchained"),
     _t("chronicles", "History", "", "Chronicles"),
-    # the night's advisors were only ever "the Elders": a lone "Elder" was the heaviest model tier, a Veteran now
-    _t("elders", "Advisor", "Advisors", "", "Elders"),
+    # the night's council of orks (realm/elders.py, realm/fastpath.py ROLES): orks, so their Camp name, whatever the look
+    _t("elders", "Elders", "Elders"),                               # never "Elder" alone: that was the heaviest tier
     _t("builders", "Building designer", "", "Mason & Artisan"),
+    _t("orc.farseer", "Farseer", "Farseers"),     # the Elders' product manager: reads a day with the Mechanic (design/agents/farseer.md)
     # the Town Hall's own orks
-    _t("orc.mason", "Data planner", "", "Mason"),
-    _t("orc.artisan", "Layout designer", "", "Artisan"),
-    _t("orc.warder", "Security reviewer", "", "Warder"),
-    _t("orc.pathfinder", "Usability reviewer", "", "Pathfinder"),
-    _t("orc.treasurer", "Cost reviewer", "", "Treasurer"),
+    _t("orc.mason", "Mason"),
+    _t("orc.artisan", "Artisan"),
+    _t("orc.warder", "Warder"),
+    _t("orc.pathfinder", "Pathfinder"),
+    _t("orc.treasurer", "Treasurer"),
     _t("council_word", "Review board", "", "Council"),
     # the Task Fields' other two parts (one board: the orks' kanban, the person's checklist, the notes)
     _t("chore", "to-do", "to-dos", "chore", "chores"),             # a to-do of the person's own
@@ -149,6 +152,19 @@ TERMS: tuple[Term, ...] = (
     _t("want.doc", "Document"),                                     # a design, a decision, a brief
     _t("want.routine", "Routine"),                                  # what is already scripted
     _t("want.know", "Keep"),                                        # a page or a note in the Wiki
+    _t("want.reply+change", "Reply, or a code change when it asks for one"),   # a chat's two kinds (paths.REPLY_OR_CHANGE)
+    # what a model call was for (sources/telemetry.py PURPOSES), as the Spend window's *By purpose* says it
+    _t("purpose.work", "Orks' tasks"),
+    _t("purpose.sort", "Sorting"),
+    _t("purpose.plan", "Planning"),
+    _t("purpose.review", "Review boards"),
+    _t("purpose.check", "Checks"),
+    _t("purpose.ingest", "Wiki ingest"),
+    _t("purpose.answer", "Answering orks' questions"),
+    _t("purpose.look", "Watching sources"),
+    _t("purpose.retro", "Retros"),
+    _t("purpose.build", "New buildings, orks and roads"),
+    _t("purpose.chat", "The Warchief's chat"),
     # where a source of External listeners speaks: the groups of its Add a source (realm/quickadd.py GROUPS)
     _t("source_group.messengers", "Messengers"),                    # Slack, Discord
     _t("source_group.mail", "Mail"),                                # Gmail
@@ -164,6 +180,7 @@ TERMS: tuple[Term, ...] = (
     _t("quality_check", "Quality check", "Quality checks"),         # the wiki's lint on a schedule
     _t("agent_rules", "Rules for AI tools"),                        # what every AI tool is told about a wiki (docs/design/wiki-folders-rules.md)
     _t("fold", "Fold"),                                             # a hut shows its title bar only (docs/design/folded-cards.md)
+    _t("map_view", "Map view"),                                     # the town from above, no cards (docs/design/map-view.md)
     # the Mine's research (docs/design/mine.md)
     _t("finding", "Finding", "Findings"),                           # one claim of a report, with its sources
     _t("confirmed", "Confirmed"),                                   # two models, two sites (realm/research.py check)
@@ -185,42 +202,48 @@ TERMS: tuple[Term, ...] = (
     _t("forest", "File tree", "", "File Forest"),
     _t("scrolls", "Wiki", "", "Scroll Dump"),
     _t("mine", "Research", "", "The Mine"),                         # "Mine" alone stays: a Task board's lane says it
-    _t("gramophone", "Audio briefing", "", "The Gramophone"),       # a result spoken (docs/design/audio-briefing.md)
+    _t("gramophone", "Audio briefing", "", "The Gramophone"),
+    _t("lab", "Test bench"),                                        # a building on its test cases (docs/design/test-bench.md)
+    _t("ux_lab", "UX bench", "", "Alchemy Tower"),            # a building's look (docs/design/improve-buildings.md)
     _t("lake", "Inspector", "", "Lake of Insight"),
     _t("forge", "Branches & PRs", "", "The Forge"),
     _t("loot_vault", "Review gate", "", "Loot Vault"),
     _t("crag", "Metrics", "", "Tally Crag"),
     _t("catapult", "Publisher", "", "The Catapult"),
     _t("workshop", "Script", "Scripts", "Workshop", "Workshops"),
-    # -- the orks who live in them: named by their role ---------------------------------------------
-    _t("orc.pit", "Sorter", "", "Scavenger"),
-    _t("orc.watchtower", "Listener", "", "Lookout"),
-    _t("orc.signpost", "Router", "", "Grot Pointa"),
-    _t("orc.mill", "Transformer", "", "Miller"),
-    _t("orc.horn", "Notifier", "", "Hornblower"),
-    _t("orc.fields", "Task manager", "", "Taskmaster"),
-    _t("orc.barracks", "Worker", "Workers", "Grunt", "Grunts"),
-    _t("orc.council", "Reviewer", "Reviewers", "Chieftain", "Chieftains"),
-    _t("orc.war_drum", "Scheduler", "", "Drummer"),
-    _t("orc.forest", "File picker", "", "Woodcutter"),
-    _t("orc.scrolls", "Librarian", "", "Scroll Scrapper"),
-    _t("orc.gramophone", "Narrator", "", "Bard"),
-    _t("orc.mine", "Researcher", "Researchers", "Prospector", "Prospectors"),
-    _t("orc.lake", "Inspector", "", "Seer"),
-    _t("orc.forge", "Merger", "Mergers", "Smith", "Smiths"),
-    _t("orc.loot", "Gatekeeper", "", "Quartermaster"),
-    _t("orc.crag", "Metrics ork", "", "Crag Carver"),
-    _t("orc.catapult", "Publisher", "", "Loader"),
-    _t("orc.workshop", "Script runner", "", "Tinker"),
-    _t("orc.custom", "Worker", "Workers", "Peon", "Peons"),
+    # -- the orks who live in them: their orkish names, whatever the look (CLAUDE.md, Wording) ---------
+    _t("orc.pit", "Scavenger"),
+    _t("orc.watchtower", "Lookout"),
+    _t("orc.signpost", "Grot Pointa"),
+    _t("orc.mill", "Miller"),
+    _t("orc.horn", "Hornblower"),
+    _t("orc.fields", "Taskmaster"),
+    _t("orc.barracks", "Grunt", "Grunts"),
+    _t("orc.council", "Chieftain", "Chieftains"),
+    _t("orc.war_drum", "Drummer"),
+    _t("orc.forest", "Woodcutter"),
+    _t("orc.scrolls", "Scroll Scrapper"),
+    _t("orc.gramophone", "Bard"),
+    _t("orc.lab", "Mechanic", "Mechanics", "Gearhead", "Gearheads"),  # the Test bench's: a senior AI engineer (design/agents/mechanic.md)
+    _t("orc.ux_lab", "Alchemist", "Alchemists"),        # the UX bench's: a senior UI/UX designer (design/agents/alchemist.md)
+    _t("orc.mine", "Prospector", "Prospectors"),
+    _t("orc.lake", "Seer"),
+    _t("orc.forge", "Smith", "Smiths"),
+    _t("orc.loot", "Quartermaster"),
+    _t("orc.crag", "Crag Carver"),
+    _t("orc.catapult", "Loader"),
+    _t("orc.workshop", "Tinker"),
+    _t("orc.custom", "Peon", "Peons"),
 )
 
 # Short names the interface uses for a building as well as its full title.
 _ALSO = {"lake": ("Lake",), "pit": ("Pit",), "mill": ("Mill",), "horn": ("Horn",), "forge": ("Forge",),
-         "catapult": ("Catapult",), "gramophone": ("Gramophone",), "town_hall": ("Town hall",)}
+         "catapult": ("Catapult",), "gramophone": ("Gramophone",), "town_hall": ("Town hall",),
+         # the Test bench was the Alchemist's Lab with a Brewmaster before: older towns keep those
+         "lab": ("Alchemist's Lab",), "orc.lab": ("Brewmaster",)}
 
 # Whole phrases first: where a word for word would read wrong.
-_PHRASES = {"Into the pit": "Dropped", "the Elders' advice": "the advisors' advice",
+_PHRASES = {"Into the pit": "Dropped",
             "Not enough food": "No ork slots left", "Treasury empty": "Budget spent",
             "Halt All Operations": "Stop all", "Halt All": "Stop all"}
 
@@ -237,6 +260,8 @@ def _pairs() -> list[tuple[str, str]]:
     """Every old spelling with today's word, longest first."""
     out: dict[str, str] = dict(_PHRASES)
     for t in TERMS:
+        for short in _ALSO.get(t.key, ()):
+            out.setdefault(short, t.word)
         if not t.was and not t.was_many:
             continue
         if t.was:
@@ -245,8 +270,6 @@ def _pairs() -> list[tuple[str, str]]:
             out.setdefault(t.was_many, t.many or t.word)
         if t.was.startswith("The "):                        # "The Mill" is also "the Mill" mid-sentence
             out.setdefault("the " + t.was[4:], t.word)
-        for short in _ALSO.get(t.key, ()):
-            out.setdefault(short, t.word)
     return sorted(out.items(), key=lambda kv: len(kv[0]), reverse=True)
 
 
@@ -316,3 +339,9 @@ def want_word(want: str) -> str:
     """The kind of work in words (`reply` → Reply); "" for none or a word not known."""
     key = f"want.{want}"
     return term(key) if want and key in _BY_KEY else ""
+
+
+def purpose_word(purpose: str) -> str:
+    """What a model call was for in words (`review` → Review boards); the word itself when not known."""
+    key = f"purpose.{purpose}"
+    return term(key) if key in _BY_KEY else purpose

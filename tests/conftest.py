@@ -55,7 +55,9 @@ def isolated_layout_file(tmp_path: Path, tmp_path_factory: pytest.TempPathFactor
     monkeypatch.setenv("ORKCRAFT_LAYOUT_FILE", str(path))
     monkeypatch.setenv("ORKCRAFT_ONBOARDING", "0")      # test_onboarding.py opts in
     monkeypatch.setenv("ORKCRAFT_SETTINGS_FILE", str(tmp_path / "orkcraft-settings.json"))
+    monkeypatch.setenv("ORKCRAFT_LOOK", "camp")          # never by the shift: a test runs at any hour
     monkeypatch.setenv("ORKCRAFT_LOGINS_FILE", str(tmp_path / "orkcraft-logins.json"))   # never the keychain
+    monkeypatch.setenv("ORKCRAFT_ASSETS_DIR", str(tmp_path / "orkcraft-assets"))   # a UX bench's pictures: never ~/.config
     # No real claude/agy calls and no personal calendars in tests.
     monkeypatch.setenv("ORKCRAFT_LIMITS", "0")
     monkeypatch.setenv("ORKCRAFT_COUNCIL_LLM", "0")      # the Council's Fast Path: rules only

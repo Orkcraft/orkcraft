@@ -97,3 +97,21 @@ def test_warder_events_become_the_warder_orcs_alert(tmp_path: Path):
     orcs = [Orc("Warder", "security", COUNCIL, status="draft")]
     rs._warder_watch(repo, orcs, {events[0].id})
     assert orcs[0].status == "idle" and orcs[0].alert is None          # dismissed: live, quiet
+
+
+def test_a_folder_with_no_git_gets_one_before_the_orks_work_in_it(tmp_path):
+    """The Agent pool in a folder with no git (often ~/Orkcraft): git is started, the files as they are go in a first
+    commit with secrets and caches left out, and a worktree can be made of it; a second look changes nothing."""
+    from orkcraft.realm import jobs
+    (tmp_path / "app.py").write_text("print(1)\n")
+    (tmp_path / ".env").write_text("TOKEN=secret\n")
+    (tmp_path / ".orkcraft").mkdir()
+    (tmp_path / ".orkcraft" / "state.json").write_text("{}")
+    said = jobs.ensure_repo(tmp_path)
+    assert "started git here" in said and "first commit" in said and ".gitignore" in said
+    tracked = subprocess.run(["git", "ls-files"], cwd=tmp_path, capture_output=True, text=True).stdout.split()
+    assert "app.py" in tracked and ".gitignore" in tracked
+    assert ".env" not in tracked and not any(t.startswith(".orkcraft/") for t in tracked)
+    assert jobs.ensure_repo(tmp_path) == ""
+    path, _ = jobs.add_worktree(tmp_path, "pool", "Grok")
+    assert (path / "app.py").read_text() == "print(1)\n"

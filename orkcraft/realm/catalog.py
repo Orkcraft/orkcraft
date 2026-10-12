@@ -66,6 +66,8 @@ class BuildingType:
     agentic: bool = False           # its work is done by agents (the Agents group of the wizard)
     folded: bool = False            # built with its hut folded to the title bar (docs/design/folded-cards.md)
     landscape: bool = False         # part of the land, not a building: no ork of its own (docs/design/landscape.md)
+    roads: str = "free"             # who lays its roads: "free" anyone, "setup" only its setup, "none" no road at all
+    #                                 (the Improve buildings, docs/design/improve-buildings.md §2)
 
     def event(self, event_id: str) -> EventDef | None:
         return next((e for e in self.events if e.id == event_id), None)
@@ -191,6 +193,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 "providers": (list, None, False), "worktrees": (bool, None, False), "orders": (str, None, False),
                 "session_tasks": (int, (1, 20), False), "max_reworks": (int, (0, 10), False),
                 "test_cmd": (str, None, False), "steward": (str, None, False), "base": (str, None, False),
+                "repo": (str, None, False),       # the folder of code its orks work in; "" the town's own
                 "plan": (bool, None, False), "escalate": (bool, None, False),
                 "notes": (list, None, False), "claims": (str, ("wait", "flag", "off"), False),
                 "claim_wait": (int, (1, 1440), False), "claim_days": (int, (1, 90), False),
@@ -303,9 +306,36 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
                 _e("gramophone.failed", "episode failed", TEXT, "an episode failed: why")),
         actions=(_a("gramophone.make", "Make an episode", "📻", "an episode of the last text that came, or of text you paste"),),
         config={"language": (str, ("auto", "ru", "en"), False), "minutes": (int, (2, 20), False),
-                "voice": (str, None, False), "tts_model": (str, None, False), "model": (str, None, False),
+                "format": (str, ("dialogue", "monologue"), False), "voice": (str, None, False),
+                "voice_b": (str, None, False), "tts_model": (str, None, False), "model": (str, None, False),
                 "key": (str, None, False), "cap_usd": (float, (0.05, 5), False), "keep": (int, (1, 200), False)},
         art="rookery", orc="Bard", agentic=True),
+    BuildingType(
+        "lab", "Test bench", "🧪", "M",
+        "the Test bench: puts the building whose road comes in on its test cases, in a copy of it with its own "
+        "settings, beside the bare AI tool on the same model; its reviewers say what to change in the building's "
+        "code, its look and its first session (docs/design/test-bench.md)",
+        "the building it tests and its last run: passed or not, against the bare AI tool",
+        "Tech: run a case or a level of them, the runs side by side with what each side missed, the building's "
+        "decisions on the clock, the cases; UX and Product: the reviewers' findings and the AHA moment; Make tasks",
+        events=(_e("lab.case", "test case", TEXT, "a test case's input: its road says where a chain the Test bench "
+                   "tests begins (the runs give it to a copy of the chain, never to the town's own)"),
+                _e("lab.report", "test report", TEXT, "a run ended: the whole run as text, titled by the building "
+                   "and the case"),
+                _e("lab.missed", "a check missed", TEXT, "a run's building missed a check: what it missed and why"),
+                _e("lab.finding", "finding", TEXT, "a reviewer's finding sent with Make tasks: what to change and why")),
+        actions=(_a("lab.run", "Run the first case", "🧪", "the first case of the building it tests, on its main tool"),),
+        config={"max_spend": (float, (0.1, 50), False), "tool": (str, None, False)},
+        art="spire", orc="Mechanic", agentic=True, roads="setup"),
+    BuildingType(
+        "ux_lab", "Alchemy Tower", "⚗️", "M",
+        "the UX bench: the look of one type of building — its Build icon, its house, its ork, its window and its "
+        "cards — each picture in a gallery, and (next) painted again or laid out again from your words "
+        "(docs/design/improve-buildings.md §6)",
+        "the building whose look it works on and how many pictures it has",
+        "Settings: which building (picked as in Build, not on the map) and the image tool; Work: the gallery",
+        config={"target": (str, None, False), "image_tool": (str, None, False)},
+        art="spire", orc="Alchemist", roads="none"),
     BuildingType(
         "lake", "Lake of Insight", "🌊", "L",
         "the inspector: a file, a git diff side by side, Markdown, diagrams, a local URL as text; "
@@ -449,6 +479,8 @@ def migrate(spec: dict) -> dict:
     if tid == "totem":                         # the Totem's look stays the Totem's: the post wears its own
         spec = {**spec, "icon": "🚏" if spec.get("icon") in (None, "", "🗿") else spec["icon"],
                 "title": "Signpost" if spec.get("title") == "Totem" else spec.get("title", "Signpost")}
+    if tid == "lab" and spec.get("title") == "Mechanic":   # the Test bench's old title: the Mechanic is its ork now
+        spec = {**spec, "title": "Test bench"}
     if tid in ALIASES:
         spec = {**spec, "type": ALIASES[tid]}
         if isinstance(spec.get("events"), list):
@@ -477,8 +509,17 @@ RETIRED_TYPES = frozenset({DEFAULT_TYPE, "forest", "lake"})   # an old scroll's 
 # Lake window, never a building (realm/lake.py: a road into an old one becomes "open in Lake" on its source)
 LANDSCAPE = frozenset(t.id for t in TYPES.values() if t.landscape)   # the land between the buildings: no ork
 SCRATCH_TYPES = frozenset({"workshop"})        # only the Builder's interview makes these
-GUI_ONLY = frozenset({"mine", "gramophone"})   # built after the TUI was deprecated: no terminal view (calm-town.md §9)
+GUI_ONLY = frozenset({"mine", "gramophone", "lab", "ux_lab"})   # built after the TUI was deprecated: no terminal view (calm-town.md §9)
 MAX_QUICK_ACTIONS = 2
+
+
+ROAD_RULES = ("free", "setup", "none")
+
+
+def lays_roads(type_id: str, setup: bool = False) -> bool:
+    """Whether a road to or from a building of `type_id` may be laid: by anyone, or (`setup`) by its setup."""
+    rule = TYPES[type_id].roads if type_id in TYPES else "free"
+    return rule == "free" or (rule == "setup" and setup)
 
 
 def type_of(spec: dict | None) -> BuildingType:
@@ -519,5 +560,5 @@ from orkcraft.realm.catalog_checks import (  # noqa: E402, F401
     validate,
 )
 from orkcraft.realm.catalog_reference import (  # noqa: E402, F401
-    INTENTS, TAKES, _ANY, ACCEPTS, EFFECTS, CONFIG_HELP, takes, accepts, _param_text, catalog_text,
+    INTENTS, TAKES, _ANY, ACCEPTS, EFFECTS, CONFIG_HELP, QUICK_INPUTS, takes, accepts, _param_text, catalog_text,
 )

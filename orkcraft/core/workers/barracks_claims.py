@@ -51,7 +51,7 @@ class ClaimsMixin:
             return float(claims.DEFAULT_WAIT_MIN)
 
     def area(self) -> claims.Claims:
-        return claims.Claims(self.repo_root)
+        return claims.Claims(self.code_root)
 
     def _claim_key(self, task: bk.PoolTask) -> str:
         """A part claims under its parent: one task, one area."""
@@ -59,7 +59,7 @@ class ClaimsMixin:
 
     def found_briefs(self) -> list[briefs.Brief]:
         """The briefs merged into the repository (its main checkout)."""
-        return briefs.scan(self.repo_root, self.briefs_dir) if self.config.get("briefs", True) is not False else []
+        return briefs.scan(self.code_root, self.briefs_dir) if self.config.get("briefs", True) is not False else []
 
     # -- claiming ---------------------------------------------------------------------------------------
 
@@ -232,7 +232,7 @@ class ClaimsMixin:
                 if o.status != claims.REVIEW or not o.branch or git is None or not branch:
                     continue
                 try:
-                    found = git.would_conflict(self.repo_root, branch, o.branch)
+                    found = git.would_conflict(self.code_root, branch, o.branch)
                 except Exception:  # git cannot tell: no mark
                     found = None
                 if found:
@@ -280,7 +280,7 @@ class ClaimsMixin:
         path = briefs.path_for(self.briefs_dir, task.title, taken)
         text = briefs.render(task.title, task.text, task.id, self.building_id, subs, design)
         try:
-            self.task_git.commit_file(self.repo_root, task.branch, path, text, f"Design brief: {task.title}")
+            self.task_git.commit_file(self.code_root, task.branch, path, text, f"Design brief: {task.title}")
         except Exception as e:  # no brief is no reason to stop the plan
             self.state.log(bk.Decision(bk.now_iso(), task.id, "design", why=f"no design brief: {str(e)[:200]}"))
             return

@@ -395,7 +395,7 @@ class CouncilWorker(Worker):
                 with telemetry.tagged("review", self.building_id):
                     tm.run(d, team, steward, veto, cycles, budget, runner, kept, cancel,
                            lambda m: briefs.get(m.role, ("", "")), routes=routes, exits=exits,
-                           sessions=type(self).sessions if real else None, on_call=kept)
+                           sessions=type(self).sessions if real else None, on_call=kept, together=real)
             except Exception as e:  # the town goes on whatever happens in a review
                 d.outcome, d.error = "error", str(e)[:300]
             try:

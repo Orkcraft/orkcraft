@@ -67,8 +67,8 @@ person submits it there. No backend, no usage event.
 ## 3. Who are you?
 
 Every class at once, one card per role, in two rows (6 + 5): Burnout Peon, Bug Ork, The Jira Lich, Roadmap
-Wraith, Gradient-Sick Elf, Lore Elf, Keyword Gnome, Growth-Hack Gnome, Data-Mining Goblin, Indie Knight,
-Wandering Skeleton (Someone else). Each card is its nick and its role, the role's own mascot at stage 1
+Mummy, Gradient-Sick Elf, Lore Elf, Keyword Gnome, Growth-Hack Gnome, Data-Mining Goblin, Indie Knight,
+Wandering Ghost (Someone else). Each card is its nick and its role, the role's own mascot at stage 1
 (`design-system/sprites/mascots/<role>-1.png`) on its kin's biome ground (`--glyphs` of `js/terrain.js`), so
 the two gnomes are told apart by their own gear. One click picks it; there is no second question.
 

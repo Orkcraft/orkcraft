@@ -79,7 +79,7 @@ function MakeForm({ id, data, onDone }) {
     <textarea class="ok-input gui-textarea" rows="3" value=${text} onInput=${(e) => setText(e.target.value)}
       placeholder=${say(data.has_input ? "Paste a text, or leave it empty for the last text that came" : "Paste a report, a summary or a page")}></textarea>
     <div class="gui-gramophone__go">
-      <span class="ok-tone-muted">${say(`about ${s.minutes} min`)} · ${say(`~${money(data.per_minute)} a minute to speak`)} · ${say(`up to ${money(s.cap_usd)}`)}</span>
+      <span class="ok-tone-muted">${say(s.format === "monologue" ? "a monologue" : "a dialogue")} · ${say(`about ${s.minutes} min`)} · ${say(`~${money(data.per_minute)} a minute to speak`)} · ${say(`up to ${money(s.cap_usd)}`)}</span>
       <button class="ok-btn primary" disabled=${busy || !data.has_key || (!text.trim() && !data.has_input)} onClick=${go}>${say("Make an episode")}</button>
     </div>
   </div>`;
@@ -151,7 +151,8 @@ function Episodes({ id, data }) {
 function Settings({ id, data }) {
   const s = data.settings || {};
   const [secret, setSecret] = useState("");
-  const [form, setForm] = useState({ language: s.language, minutes: s.minutes, voice: s.voice, cap_usd: s.cap_usd, keep: s.keep });
+  const [form, setForm] = useState({ language: s.language, format: s.format, minutes: s.minutes, voice: s.voice,
+    voice_b: s.voice_b, cap_usd: s.cap_usd, keep: s.keep });
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
   const keep = () => act(id, "settings", form).catch(() => {});
   const saveKey = () => act(id, "save_key", { secret }).then(() => setSecret(""), () => {});
@@ -168,7 +169,10 @@ function Settings({ id, data }) {
       <label>${say("Language")}<select class="ok-input" value=${form.language} onChange=${set("language")}>
         <option value="auto">${say("As the text")}</option><option value="ru">Русский</option><option value="en">English</option></select></label>
       <label>${say("Minutes")}<input class="ok-input" type="number" min="2" max="20" value=${form.minutes} onInput=${set("minutes")} /></label>
-      <label>${say("Voice")}<input class="ok-input" value=${form.voice} onInput=${set("voice")} /></label>
+      <label>${say("Format")}<select class="ok-input" value=${form.format} onChange=${set("format")}>
+        <option value="dialogue">${say("Dialogue: two hosts")}</option><option value="monologue">${say("Monologue: one narrator")}</option></select></label>
+      <label>${say(form.format === "dialogue" ? "First host's voice" : "Voice")}<input class="ok-input" value=${form.voice} onInput=${set("voice")} /></label>
+      ${form.format === "dialogue" && html`<label>${say("Second host's voice")}<input class="ok-input" value=${form.voice_b} onInput=${set("voice_b")} /></label>`}
       <label>${say("Limit an episode, $")}<input class="ok-input" type="number" min="0.05" max="5" step="0.05" value=${form.cap_usd} onInput=${set("cap_usd")} /></label>
       <label>${say("Keep")}<input class="ok-input" type="number" min="1" max="200" value=${form.keep} onInput=${set("keep")} /></label>
     </div>

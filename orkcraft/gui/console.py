@@ -22,6 +22,7 @@ from typing import Any, Callable
 from orkcraft import scroll
 from orkcraft.core import buildings as core_buildings
 from orkcraft.core import roads as core_roads
+from orkcraft.core import inputs
 from orkcraft.gui import info
 from orkcraft.gui.jobs import ConsoleError, JobsMixin, plain
 from orkcraft.gui.keeper import KeeperMixin
@@ -29,7 +30,7 @@ from orkcraft.gui.recruiter import RecruiterMixin
 from orkcraft.gui.road_planner import RoadPlannerMixin
 from orkcraft.gui.steward import StewardMixin
 from orkcraft.gui.views import lake as lake_view
-from orkcraft.realm import catalog, chronicles, feedback, steward, tiers
+from orkcraft.realm import catalog, chronicles, feedback, harnesses, steward, tiers
 from orkcraft.realm.orcs import TRIGGERS, Trigger
 
 IMPROVE_LOOK, IMPROVE_ASK = 60, 8      # Improve reads the last 60 incidents and asks about the newest 8 👎
@@ -47,6 +48,7 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         self.town = host.town
         self.jobs: dict[str, dict[str, Any]] = {}
         self._ids = itertools.count(1)
+        self.town.presser = self._press                  # a building's inputs end in its view's acts (core/inputs.py)
 
     def commands(self) -> dict[str, Callable[[dict], Any]]:
         return {
@@ -69,6 +71,8 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
             "town.fold": self.fold_many,
             "building.revert": self.revert,
             "building.quick": self.quick,
+            "building.inputs": lambda a: [i.public() for i in inputs.of(self.town, self._spec(a).id)],
+            "building.input": self.press_input,
             "building.recruit": self.recruit,
             "building.recruit_ask": self.recruit_ask,
             "building.redesign": self.redesign,
@@ -183,7 +187,9 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
                                                      "expression": member.trigger.get("expression", "")},
                 "triggers": [[k, name] for k, (_, name) in TRIGGERS.items()],
                 "uses_model": bool(member.uses_model), "steps": steps,
-                "harnesses": list(scroll.HARNESSES), "ready": list(self.harnesses()), "tiers": tier_choices()}
+                "harnesses": list(scroll.HARNESSES), "ready": list(self.harnesses()), "tiers": tier_choices(),
+                "tools": [{"id": h, "title": found.title if (found := harnesses.get(h)) else "Main tool",
+                           "mark": found.mark if found else ""} for h in self.harnesses()]}
 
     def dislike_context(self, args: dict) -> dict:
         last, cascade = core_buildings.dislike_context(self.town, self._spec(args).id)
@@ -192,7 +198,13 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
     def improve(self, args: dict) -> dict:
         """Improve, in the Warchief's line (docs/design/warchief-line-and-cards.md §1): the latest 👎 of every building,
         as one ask for the Warchief to go through — what went wrong in each and what to change. With no 👎, nothing to
-        ask: `none` says so. (Looking through each building's use with no 👎 is written down, not built.)"""
+        ask: `none` says so. With a `day` (YYYY-MM-DD), the Mechanic and the Farseer read that day's logs first
+        (gui/day_review.py; `again`: read it again though it was read): `said` tells what they are doing."""
+        day = str(args.get("day") or "")
+        if day:
+            if day not in {d["day"] for d in self.host.day_review.days()}:
+                raise ConsoleError(f"No logs kept for {day}")
+            return {"said": self.host.day_review.start(day, again=args.get("again") is True)}
         rows = [r for r in feedback.incidents(self.town.repo_root, IMPROVE_LOOK) if r.source == feedback.EXPLICIT]
         if not rows:
             return {"none": "No 👎 yet. Press 👎 on a building whose work went wrong, then Improve goes through them."}
@@ -277,27 +289,54 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         return ok
 
     def quick(self, args: dict) -> Any:
-        """One of the type's quick actions (the Command Card): its view's act of the same id
-        (gui/views/<type>.py `ACTS`), else its worker's `quick_action`; until a type has either the
-        person is told so, never left with a silent button."""
+        """One of the type's quick actions (the Command Card) pressed with nothing to give: the input it is
+        (core/inputs.py) when it is one, else its view's act of the same id, else its worker's `quick_action`; until a
+        type has either the person is told so, never left with a silent button."""
         bs = self._spec(args)
         t = catalog.type_of(self.town.spec_of(bs.id))
         act = t.action(str(args.get("action") or ""))
         if act is None:
             raise ConsoleError(f"{bs.title} has no such action")
-        from orkcraft.gui import views
-        view, worker = views.of(t.id), self.town.worker(bs.id)
-        fn = getattr(view, "ACTS", {}).get(act.id) if worker is not None else None
-        if fn is not None:
-            try:
-                return fn(worker, {})
-            except views.ActError as e:
-                raise ConsoleError(str(e)) from None
-        quick = getattr(worker, "quick_action", None)      # a worker that does it
+        how = catalog.QUICK_INPUTS.get(act.id)
+        if how is not None and not how[1]:
+            return self.press_input({"id": bs.id, "input": act.id})
+        if self._view_act(bs.id, t.id, act.id) is not None:
+            return self._run_act(bs.id, t.id, act.id, {})
+        quick = getattr(self.town.worker(bs.id), "quick_action", None)      # a worker that does it
         if quick is not None and quick(act.id):
             return True
         self.town.toast(f"{act.label}: arrives with the {t.title} view", title=bs.title)
         return False
+
+    def press_input(self, args: dict) -> Any:
+        """One of a building's inputs pressed with the text a person gives it ({id, input, value, by})."""
+        bs = self._spec(args)
+        try:
+            return inputs.press(self.town, bs.id, str(args.get("input") or ""), str(args.get("value") or ""),
+                                by=str(args.get("by") or "person")[:20])
+        except inputs.InputError as e:
+            raise ConsoleError(str(e)) from None
+
+    def _press(self, building_id: str, inp, args: dict) -> Any:
+        """Where an input ends (`town.presser`): its view's act, else its worker's quick action."""
+        type_id = catalog.type_of(self.town.spec_of(building_id)).id
+        if inp.act and self._view_act(building_id, type_id, inp.act) is not None:
+            return self._run_act(building_id, type_id, inp.act, args)
+        quick = getattr(self.town.worker(building_id), "quick_action", None)
+        if quick is not None and quick(inp.id):
+            return True
+        raise inputs.InputError(f"{inp.label}: nothing here does it yet")
+
+    def _view_act(self, building_id: str, type_id: str, name: str):
+        from orkcraft.gui import views
+        return getattr(views.of(type_id), "ACTS", {}).get(name) if self.town.worker(building_id) is not None else None
+
+    def _run_act(self, building_id: str, type_id: str, name: str, args: dict) -> Any:
+        from orkcraft.gui import views
+        try:
+            return self._view_act(building_id, type_id, name)(self.town.worker(building_id), args)
+        except views.ActError as e:
+            raise ConsoleError(str(e)) from None
 
     # -- the garrison ---------------------------------------------------------------------------------
 

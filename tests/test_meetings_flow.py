@@ -191,3 +191,23 @@ def test_meetings_plays_the_whole_flow(tmp_path: Path):
         assert [x["outcome"] for x in loot_view.detail(loot)["delivered"]] == [mt.BRIEF_TITLE]
     finally:
         host.close()
+
+
+def test_who_comes_and_the_invitations_text_reach_the_brief(drum, fake_repo):
+    """An invitation's attendees and description were dropped by the parser, so a brief never knew who comes
+    or what the agenda was: both now travel in `meeting soon`."""
+    w, sent = drum
+    at = DAY.strftime("%Y%m%d")
+    (fake_repo / "cal.ics").write_text(
+        "BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:r1\r\n"
+        f"DTSTART:{at}T140000\r\nDTEND:{at}T150000\r\nSUMMARY:Design review\r\n"
+        "DESCRIPTION:Agenda:\\n- booking page\\n- reminders\\, payments later\r\n"
+        "ATTENDEE;CN=Mia Chen;ROLE=REQ-PARTICIPANT:mailto:mia@example.com\r\nATTENDEE:mailto:sam@example.com\r\n"
+        "END:VEVENT\r\nEND:VCALENDAR\r\n")
+    w.refresh()
+    [e] = w.day.events
+    assert e.attendees == ("Mia Chen", "sam@example.com") and e.description.startswith("Agenda:\n- booking page")
+    assert w.prepare(e) == ""
+    up = sent[-1]
+    assert "Who: Mia Chen, sam@example.com" in up.value and "- reminders, payments later" in up.value
+    assert f"[meet:{daybook.meet_id(e)}]" in up.value.splitlines()[0]

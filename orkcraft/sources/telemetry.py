@@ -93,6 +93,11 @@ def purpose_now() -> str:
     return _TAG.get()[0] or "work"
 
 
+def building_now() -> str:
+    """The building set by the caller (`tagged`), else ""."""
+    return _TAG.get()[1]
+
+
 def building_of(env: dict | None) -> str:
     """The building of a call started with `ORKCRAFT_ORC` (`<building>/<ork>`), else ""."""
     orc = str((env or {}).get("ORKCRAFT_ORC") or "")
@@ -169,7 +174,10 @@ def reset_charges() -> None:
 
 
 def calls(repo_root: Path, since: dt.datetime | None = None) -> list[dict]:
-    """The ledger's lines on disk (oldest first), from `since` on; malformed lines are skipped."""
+    """The ledger's lines on disk (oldest first), from `since` on (a time with no zone is local); malformed lines
+    are skipped."""
+    if since is not None and since.tzinfo is None:
+        since = since.astimezone()
     try:
         lines = (repo_root / CALLS).read_text(encoding="utf-8").splitlines()
     except OSError:

@@ -38,6 +38,7 @@ card moved by them over a return road. In the sandbox no model runs: an ork's re
 """
 from __future__ import annotations
 
+import functools
 import threading
 import time
 import uuid
@@ -46,14 +47,15 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from orkcraft.core import delivery
+from orkcraft import autonomy
+from orkcraft.core import delivery, timeline
 from orkcraft.core.workers import Worker
 from orkcraft.core.workers.barracks_claims import ClaimsMixin
 from orkcraft.core.workers.barracks_paths import PathsMixin
 from orkcraft.core.workers.barracks_plan import PlanMixin
 from orkcraft.core.workers.barracks_review import ReviewMixin
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, settle, steward
+from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, settle, steward, tiers
 from orkcraft.sources import telemetry
 
 ICON = {"idle": "💤", "working": "⚒"}
@@ -112,6 +114,7 @@ class RunOutcome:
     tokens: int = 0
     session: str = ""
     steward_cost: float = 0.0
+    steward_tokens: int = 0
     qa: list[list[str]] = field(default_factory=list)   # questions the steward answered in this run
     asked: str = ""                                      # a question for the operator
     accepted: bool | None = None                         # None: never reviewed (an error, a question)
@@ -142,7 +145,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
     APPROVAL = gate.APPROVAL      # the hop's outcome on a draft that waits for the operator (a Loot always holds it)
     work_runner = None            # tests swap the agent call (jobs.run_work) here
     worktree_maker = None         # and the worktree maker (jobs.add_worktree)
-    steward_runner = None         # and the steward's model call: (harness, prompt, workdir, cancel, model) → (text, cost)
+    steward_runner = None         # and the steward's model call: (harness, prompt, workdir, cancel, model) → (text, cost[, tokens])
     git = None                    # and the task's git (jobs.TaskGit)
     pr_reader = None              # and `gh` (gitinfo.pull_requests: head branch → PR)
 
@@ -150,6 +153,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         super().__init__(town, building_id)
         self.bk: bk.Barracks | None = None
         self._cancels: dict[str, threading.Event] = {}
+        self._by_hand: set[str] = set()      # orks whose run the person took over in a terminal (take_over)
         self._pumped = False
         self._merge_lock = threading.Lock()     # one part at a time is merged into its parent's branch
         self._prs_at = time.monotonic() - PR_CHECK_S + PR_FIRST_S
@@ -178,6 +182,18 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
     @property
     def orders(self) -> str:
         return str(self.config.get("orders") or "")
+
+    @property
+    def code_root(self) -> Path:
+        """The folder of code its orks work in (`repo`, chosen in its settings: a project the town does not live in),
+        else the town's own. Its branches, worktrees, tests, briefs and pull requests are there; its state stays in
+        the town. Without a folder of its own, its orkspace's project (docs/design/projects.md)."""
+        repo = str(self.config.get("repo") or "").strip()
+        if repo:
+            path = Path(repo).expanduser()
+            if path.is_dir():
+                return path
+        return self.project_root
 
     @property
     def uses_git(self) -> bool:
@@ -368,7 +384,11 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         if self.worktrees and not self.simulated:          # the sandbox describes worktrees, it does not make them
             maker = type(self).worktree_maker or jobs.add_worktree
             try:
-                path, _branch = maker(self.repo_root, self.building_id, name)
+                if type(self).worktree_maker is None:       # no git here yet: started, once, and said so
+                    done = jobs.ensure_repo(self.code_root)
+                    if done:
+                        self.toast(f"No git repository here, so the orks could not work: {done}.", title="🏕 Barracks")
+                path, _branch = maker(self.code_root, self.building_id, name)
             except (RuntimeError, OSError) as e:
                 self.toast(f"{name}: no worktree — {e}", title="🏕 Barracks", severity="error")
                 return None
@@ -414,7 +434,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         orc.status, orc.task = "working", task.id
         if (task.key or task.id) not in orc.keys:     # a rework of a task without a ticket comes back by its id
             orc.keys.append(task.key or task.id)
-        repo = self.repo_root
+        repo = self.code_root
         if self.uses_git and task.want != pipes.REPLY:      # a reply gets no branch: it changes no file
             task.branch = task.branch or bk.task_branch(self.building_id, task)
             task.base = task.base or self.task_git.base_of(repo, str(self.config.get("base") or ""))
@@ -431,11 +451,44 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         threading.Thread(target=self._work, args=args, daemon=True,
                          name=f"pool-{self.building_id}-{orc.name}").start()
 
+    def take_over(self, orc_name: str) -> bool:
+        """The person takes a working ork's run over: its headless run stops where it is (what it wrote to the
+        worktree stays) and the person goes on in a terminal there. False when it is not at work on a task."""
+        orc = self.state.orc(orc_name)
+        task = self.state.task(orc.task) if orc is not None and orc.task else None
+        cancel = self._cancels.get(orc_name)
+        if orc is None or task is None or task.status != "working" or cancel is None or cancel.is_set():
+            return orc_name in self._by_hand
+        self._by_hand.add(orc_name)
+        cancel.set()
+        self.changed()
+        return True
+
+    def taken_over(self, orc_name: str) -> bool:
+        return orc_name in self._by_hand
+
+    def hand_back(self, orc_name: str) -> bool:
+        """The person is done in the terminal: the task goes to the steward's review as it stands in the worktree."""
+        orc = self.state.orc(orc_name)
+        task = self.state.task(orc.task) if orc is not None and orc.task else None
+        if orc is None or task is None or orc_name not in self._by_hand:
+            return False
+        self._by_hand.discard(orc_name)
+        cancel = threading.Event()
+        self._cancels[orc_name] = cancel
+        workdir = Path(orc.worktree) if orc.worktree else self.code_root
+        threading.Thread(target=self._work, args=(task, orc, workdir, "", "", cancel, True), daemon=True,
+                         name=f"pool-{self.building_id}-{orc.name}-back").start()
+        return True
+
     def _work(self, task: bk.PoolTask, orc: bk.PoolOrc, workdir: Path, prompt: str, resume: str,
-              cancel: threading.Event) -> None:
-        """In the orc's thread: the branch, the orc's run, the steward's answers and its review."""
+              cancel: threading.Event, by_hand: bool = False) -> None:
+        """In the orc's thread: the branch, the orc's run, the steward's answers and its review. `by_hand`: the
+        person did the run in a terminal (take_over): only the review is left."""
         out = RunOutcome()
         runner = type(self).work_runner or (self._sandbox_work() if self.simulated else jobs.run_work)
+        if runner is jobs.run_work and self.rules.level >= autonomy.FREE:
+            runner = functools.partial(jobs.run_work, free=True)   # unchained: its tool asks nothing
         env = {"ORKCRAFT_ORC": f"{self.building_id}/{orc.name.lower()}"}
         git = self.task_git if self.uses_git else None
 
@@ -449,11 +502,16 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             return
         if task.publish:                         # the approved post: no branch, no review — the operator decided
             git = None
+        where, project = timeline.for_building(self.town, self.building_id, workdir)   # no worktree: snapshots
+        timeline.take(self.town, where, project, f"before {orc.name}: {task.title}")
         try:
-            if git is not None:
+            if git is not None and not by_hand:
                 git.prepare(workdir, task.branch, task.base)
-            run(prompt, resume)
-            for _ in range(bk.MAX_STEWARD_ANSWERS + 1):
+            if by_hand:
+                out.text = "The work was done by hand in the ork's terminal; review what is in the worktree."
+            else:
+                run(prompt, resume)
+            for _ in range(0 if by_hand else bk.MAX_STEWARD_ANSWERS + 1):
                 question = bk.question_of(out.text)
                 if not question:
                     break
@@ -474,9 +532,12 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
                 self._call(self._mark, task.id, "reviewing")
                 self._review(task, workdir, git, cancel, out)
         except InterruptedError:
+            if orc.name in self._by_hand:      # taken over: the person works on in a terminal; hand_back() goes on
+                return
             out.error = "stopped"
         except Exception as e:  # one orc's failure must not take the barracks down
             out.error = str(e)[:300]
+        timeline.take(self.town, where, project, f"after {orc.name}: {task.title}")
         self._call(self.finish, task.id, orc.name, out)
 
     def _sandbox_work(self):
@@ -500,23 +561,31 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             self.changed()
 
     def _steward(self, prompt: str, workdir: Path, cancel: threading.Event, out: RunOutcome,
-                 use: str = "review") -> str:
+                 use: str = "review", light: bool = False) -> str:
         """One model call of the steward's: `use` is its task (triage | plan | answer | review | final), on the
-        model `steward.pick` names — the tier picked for it, else its `steward` setting, else its goal's."""
+        model `steward.pick` names — the tier picked for it, else its `steward` setting, else its goal's; `light`:
+        the goal's is the light tier (a meeting's brief is read for its sections and facts, not reasoned over)."""
         harness, setting = bk.parse_provider(str(self.config.get("steward") or "main"))
         scroll = getattr(self.town, "scroll", None)
-        model = steward.pick(scroll.building(self.building_id) if scroll is not None else None, use, harness,
-                             type_id=self.TYPE, goal=self.aim_now, setting=setting).model
+        p = steward.pick(scroll.building(self.building_id) if scroll is not None else None, use, harness,
+                         type_id=self.TYPE, goal=self.aim_now, setting=setting)
+        model = tiers.resolve(harness, "laborer") if light and p.by == "level" else p.model
         if type(self).steward_runner is not None:
             runner = type(self).steward_runner
         elif self.simulated:
             runner = _simulated_steward
         else:
             env = {"ORKCRAFT_ORC": f"{self.building_id}/steward"}
-            runner = lambda h, p, w, c, m: roads.run_agent(h, p, w, env, c, m)[:2]      # noqa: E731
-        with telemetry.tagged(steward.purpose_of(use, self.TYPE), self.building_id):
-            text, cost = runner(harness, prompt, workdir, cancel, model)
-        out.steward_cost += cost or 0.0
+            runner = lambda h, p, w, c, m: roads.run_agent(h, p, w, env, c, m)[:3]      # noqa: E731
+        text = ""
+        for _ in range(2):        # an empty answer is no verdict (agy ends a turn empty on a denied command): once more
+            with telemetry.tagged(steward.purpose_of(use, self.TYPE), self.building_id):
+                got = runner(harness, prompt, workdir, cancel, model)     # (text, cost[, tokens])
+            text, cost = got[0], got[1]
+            out.steward_cost += cost or 0.0
+            out.steward_tokens += int((got[2] if len(got) > 2 else 0) or 0)
+            if (text or "").strip():
+                break
         return text or ""
 
     def _prompt(self, task: bk.PoolTask, orc: bk.PoolOrc, follow: bool, related: bool,
@@ -550,8 +619,11 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
                  f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", bk.body_of(task),
                  self.designs_md(task), self.overlap_md(task),
                  decisions, sent_back, ask, bk.OUTSIDE_RULE, bk.ANSWER_RULE,
-                 "This is a local document for a meeting: write it as your report (a commit is optional); it gets "
-                 "no pull request." if self._meeting(task) else "",
+                 bk.PART_RULE if task.parent and not plans.holds_all(self.children(self.state.task(task.parent) or task),
+                                                                        task.sub) else "",
+                 "This is a local document for a meeting: your answer IS the document. Write the whole of it in your "
+                 "answer, in the sections the rules above ask for, and nothing else — no file, no commit, no report "
+                 "of what you did; it gets no pull request." if self._meeting(task) else
                  "Finish with a short Markdown report: what you changed, what is left."]
         if related and orc.recent:       # a fresh session on related work: a handoff instead of the whole history
             parts.append("## Your recent work\n\n" + "\n".join(f"- {r}" for r in orc.recent))
@@ -584,7 +656,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         orc.status, orc.task, orc.last = "idle", "", bk.now_iso()
         orc.cost_usd = round(orc.cost_usd + out.cost, 4)
         orc.tokens += out.tokens
-        st.steward_cost = round(st.steward_cost + out.steward_cost, 4)
+        st.steward_spent(out.steward_cost, out.steward_tokens)
         if out.session:
             orc.session_tasks = orc.session_tasks + 1 if task.warm else 1
             orc.session = out.session
@@ -647,7 +719,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             delivery.ran(self.town, roads.HandlerRun(self.building_id, orc.name.lower(), orc.harness, task.id, 0.0, 0.0,
                                                      outcome="done" if ok else "error", markdown=out.text,
                                                      error=out.error or ("" if ok else out.notes),
-                                                     cost_usd=out.cost or None))
+                                                     cost_usd=(out.cost + out.steward_cost) or None,
+                                                     tokens=out.tokens or None))
         if task.parent:
             self._advance(st.task(task.parent))
         self._pump()

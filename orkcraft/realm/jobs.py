@@ -20,7 +20,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from orkcraft.realm import halt, harnesses, road_agents, roads
+from orkcraft.realm import call_log, forge, halt, harnesses, road_agents, roads
 from orkcraft.sources import telemetry
 
 SCRIPT_TIMEOUT_S = 300
@@ -110,32 +110,38 @@ def run_script(command: str, stdin: str, repo_root: Path, cancel: threading.Even
 
 
 def work_cmd(harness: str, prompt: str, workdir: Path, model: str = "", resume: str = "",
-             dirs: tuple = ()) -> list[str]:
-    """An agent that may change files — only inside `workdir` (a Barracks worktree); `dirs` it may read too."""
+             dirs: tuple = (), free: bool = False) -> list[str]:
+    """An agent that may change files — only inside `workdir` (a Barracks worktree); `dirs` it may read too;
+    `free`: its building is unchained (autonomy.FREE), so it asks nothing."""
     h = harnesses.get(roads.resolve(harness))
     if h is None:
         raise RuntimeError(f"harness {harness!r} cannot work in a worktree")
-    return h.work(prompt, workdir, model, resume if h.resumable else "", dirs)
+    return h.work(prompt, workdir, model, resume if h.resumable else "", dirs, free)
 
 
 def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, model: str = "",
              env: dict | None = None, resume: str = "",
-             timeout_s: int = WORK_TIMEOUT_S, dirs: tuple = ()) -> tuple[str, float | None, int | None, str]:
+             timeout_s: int = WORK_TIMEOUT_S, dirs: tuple = (),
+             free: bool = False) -> tuple[str, float | None, int | None, str]:
     """(text, cost, tokens, session) of an agent working in `workdir` (and reading `dirs` too)."""
     harness = roads.resolve(harness)
-    cmd = work_cmd(harness, prompt, workdir, model, resume, dirs)
+    cmd = work_cmd(harness, prompt, workdir, model, resume, dirs, free)
     tool_env = h.env("work", workdir) if (h := harnesses.get(harness)) else {}
     run_env = {**os.environ, **tool_env, **(env or {})}
     resumed = roads.codex_thread_usage(resume, run_env) if harness == "codex" and resume else None
     before = resumed or 0
-    code, out, err = road_agents.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
-                                    lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True),
-                                    harness)
+    start = time.monotonic()
+    code, out, err = call_log.answer("work", prompt) or road_agents.run_proc(
+        cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
+        lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True), harness)
     if code != 0:
+        call_log.record(env, "work", harness, model, prompt, out, err, code, time.monotonic() - start, workdir=workdir)
         raise roads.failure(harness, code, out, err)
     text, cost, tokens, session = roads.result_of(harness, out, before, model)
     if harness == "codex" and resume and resumed is None:
         cost = None                       # its running total holds earlier runs we cannot tell apart
+    call_log.record(env, "work", harness, model, prompt, out, err, code, time.monotonic() - start, cost, tokens,
+                    session, workdir)
     what = dict(tokens=tokens, building=telemetry.building_of(run_env), model=model)
     if not telemetry.charged(run_env):
         telemetry.charge(cost, f"{harness} worker", **what)
@@ -155,12 +161,16 @@ def run_read(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
         raise RuntimeError(f"harness {harness!r} cannot read")
     cmd = h.read(prompt, workdir, model, False)
     run_env = {**os.environ, **h.env("read", workdir), **(env or {})}
-    code, out, err = road_agents.run_proc(cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
-                                    lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True),
-                                    harness)
+    start = time.monotonic()
+    code, out, err = call_log.answer("read", prompt) or road_agents.run_proc(
+        cmd, workdir, run_env, roads.harness_stdin(harness, prompt),
+        lambda proc: _wait(proc, cancel, timeout_s, run_env.get("ORKCRAFT_ORC") or harness, True), harness)
     if code != 0:
+        call_log.record(env, "read", harness, model, prompt, out, err, code, time.monotonic() - start, workdir=workdir)
         raise roads.failure(harness, code, out, err)
     text, cost, tokens, _session = roads.result_of(harness, out, 0, model)
+    call_log.record(env, "read", harness, model, prompt, out, err, code, time.monotonic() - start, cost, tokens,
+                    workdir=workdir)
     what = dict(tokens=tokens, building=telemetry.building_of(run_env), model=model)
     if not telemetry.charged(run_env):
         telemetry.charge(cost, f"{harness} reader", **what)
@@ -220,6 +230,49 @@ def _ok(proc: subprocess.CompletedProcess) -> str:
     if proc.returncode != 0:
         raise RuntimeError((proc.stderr or proc.stdout).strip()[:300] or f"git failed ({proc.returncode})")
     return proc.stdout.strip()
+
+
+# A folder with no git yet: what its first commit leaves out when it has no .gitignore of its own — secrets, the
+# town's own state, what a build or an install makes again.
+FIRST_IGNORE = """# written by Orkcraft when it started git here: what the first commit left out
+.env
+.env.*
+*.pem
+*.key
+.orkcraft/
+node_modules/
+.venv/
+venv/
+__pycache__/
+dist/
+build/
+.DS_Store
+"""
+FIRST_AUTHOR = ("-c", "user.name=Orkcraft", "-c", "user.email=orkcraft@localhost")   # when git knows nobody here
+
+
+def ensure_repo(repo_root: Path) -> str:
+    """The folder the agents work in is a git repository with a first commit, so worktrees can be made of it: "" when
+    it already was, else what was done, in a sentence (git init; a .gitignore when there was none; the files as they
+    are in a first commit, secrets and caches left out). Raises RuntimeError when git cannot (not installed)."""
+    try:
+        inside = _git(repo_root, "rev-parse", "--is-inside-work-tree")
+    except (OSError, subprocess.SubprocessError) as e:
+        raise RuntimeError(f"git is not installed or did not answer: {e}") from e
+    done = []
+    if inside.returncode != 0 or inside.stdout.strip() != "true":
+        _ok(_git(repo_root, "init"))
+        done.append("started git here")
+    if _git(repo_root, "rev-parse", "--verify", "HEAD").returncode != 0:      # no commit yet: a worktree needs one
+        ignore = repo_root / ".gitignore"
+        if not ignore.exists():
+            ignore.write_text(FIRST_IGNORE, encoding="utf-8")
+            done.append("wrote a .gitignore (.env, keys, caches and .orkcraft/ left out)")
+        _ok(_git(repo_root, "add", "-A"))
+        who = () if _git(repo_root, "config", "user.email").stdout.strip() else FIRST_AUTHOR
+        _ok(_git(repo_root, *who, "commit", "--allow-empty", "-m", "Orkcraft: the first commit, so agents can work in worktrees"))
+        done.append("made a first commit of the files as they are")
+    return "; ".join(done)
 
 
 def add_worktree(repo_root: Path, building_id: str, orc: str) -> tuple[Path, str]:
@@ -351,7 +404,7 @@ class TaskGit:
 
     def test(self, workdir: Path, command: str, cancel: threading.Event) -> tuple[bool, str]:
         """(passed, the output's tail) of the operator's test command, run in the worktree."""
-        argv = shlex.split(command)
+        argv = forge.test_argv(command.strip()) if command.strip() else []
         if not argv:
             return True, ""
         try:

@@ -1,0 +1,419 @@
+"""🧪 The Test bench's engine for the GUI (js/bench.js, docs/design/test-bench.md): one building on its own, three tabs.
+
+The Test bench is a building (core/workers/lab.py): the buildings whose road comes into it are the ones it tests,
+and its window (gui/views/lab.py) draws this for the one picked; each command names that building. Tech runs a case in
+`orkcraft bench`, a process of its own (a run opens a town of its own, and one process holds one town); its
+lines are read as they come. Its reviews, UX's and Product's are agents that only read Orkcraft's source,
+each role in a thread, kept per type in `.orkcraft/bench/reviews/`. The first time a building is opened with
+no review kept, its three tabs are reviewed by themselves; after that only Review again starts them. Make
+tasks sends the ticked findings to an Agent pool of the town, one task each.
+
+    host.commands.update(bench.Bench(host).commands())
+"""
+from __future__ import annotations
+
+import json
+import os
+import signal
+import subprocess
+import sys
+import threading
+import time
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
+from typing import Any, Callable
+
+import orkcraft
+from orkcraft.core import bench as building_bench
+from orkcraft.realm import bench, bench_review, catalog, halt, harnesses, lexicon, tiers
+
+LINES = 400                        # a run's lines kept for the window
+CHAIN = "chain:"                   # a chain's id (core/workers/lab.py)
+ROADS = "@roads"                   # Make tasks' pool: down the Test bench's own roads (`lab.finding`)
+TIERS = (("", "The building's own"), ("laborer", "Novice"), ("warrior", "Seasoned"), ("elder", "Veteran"))
+
+
+class BenchError(Exception):
+    """A step the bench refuses; its text is shown to the person."""
+
+
+def _runs_for() -> str:
+    words = [lexicon.term(t) if t != "chain" else "a chain of them" for t in building_bench.TYPES]
+    return ", ".join(words[:-1]) + " and " + words[-1] if len(words) > 1 else words[0]
+
+
+@dataclass
+class Job:
+    what: str                      # run | case
+    type: str
+    label: str
+    started: float = field(default_factory=time.monotonic)
+    lines: list[str] = field(default_factory=list)
+    done: bool = False
+    error: str = ""
+    result: str = ""               # the run's id, the case's id
+    subject: str = ""              # the building it runs
+    reported: list[str] = field(default_factory=list)   # the runs it said (a series says one a case)
+    then: Callable[[], None] | None = field(default=None, repr=False)   # on the town's thread, once it ended
+    proc: subprocess.Popen | None = field(default=None, repr=False)
+    cancel: threading.Event = field(default_factory=threading.Event, repr=False)
+
+    def public(self) -> dict:
+        return {"what": self.what, "label": self.label, "lines": self.lines[-LINES:], "done": self.done,
+                "error": self.error, "result": self.result, "seconds": round(time.monotonic() - self.started)}
+
+
+class Bench:
+    def __init__(self, host) -> None:
+        self.host = host
+        self.jobs: dict[str, Job] = {}                       # type → its run or its case being written
+        from orkcraft.gui.lab_runs import LabRuns
+        from orkcraft.gui.check_runs import CheckRuns
+        self.lab = LabRuns(self)                             # a Test bench building's own cases (gui/lab_runs.py)
+        self.check = CheckRuns(self)                         # `orkcraft check` from its window (gui/check_runs.py)
+        self.reviewing: dict[tuple[str, str], dict[str, threading.Event]] = {}   # (type, tab) → role → cancel
+        self.asked: set[str] = set()                         # types reviewed by themselves on a first open
+        self._lock = threading.Lock()
+
+    @property
+    def root(self) -> Path:
+        return self.host.town.repo_root
+
+    def commands(self) -> dict[str, Callable[[dict], Any]]:
+        return {"bench.open": self.open, "bench.state": self.state, "bench.run": self.run, "bench.stop": self.stop,
+                "bench.review": self.review, "bench.case.write": self.write_case, "bench.case.read": self.read_case,
+                "bench.tasks": self.tasks}
+
+    # -- what the window sees ------------------------------------------------------------------------------
+
+    def _type(self, args: dict) -> tuple[str, str]:
+        bid = str(args.get("id") or "")
+        if bid.startswith(CHAIN):
+            if self._chain(bid, args) is None:
+                raise BenchError("That chain is not laid across a Test bench any more")
+            return bid, "chain"
+        if self.host.town.scroll.building(bid) is None:
+            raise BenchError("No such building")
+        return bid, self.host.type_of(bid)
+
+    def _chain(self, bid: str, args: dict):
+        """(the chain as its Test bench sees it, that Test bench) for a chain's id; None when no Test bench has it."""
+        lab = self._lab(args)
+        for w in ([lab] if lab is not None else []) + self.labs_of(bid):
+            found = next((s for s in w.subjects() if s["id"] == bid), None)
+            if found is not None:
+                return found, w
+        return None
+
+    def _cases(self, bid: str, type_id: str, args: dict) -> list:
+        """The cases of what is tested: a chain's, those that suit its first building."""
+        found = bench.cases(self.root, type_id)
+        if type_id == "chain":
+            chain = self._chain(bid, args)
+            first = chain[0]["first_type"] if chain else ""
+            found = [c for c in found if c.inputs.get("first", "") in ("", first)]
+        return found
+
+    @staticmethod
+    def _word(type_id: str) -> str:
+        return "chain" if type_id == "chain" else lexicon.term(type_id)
+
+    def _tools(self) -> list[dict]:
+        on = [t for t, c in self.host.town.machine.tools.items() if c.enabled and harnesses.get(t)]
+        return [{"id": "main", "title": "Main tool"}] + [{"id": t, "title": harnesses.need(t).title} for t in on]
+
+    def state(self, args: dict) -> dict[str, Any]:
+        bid, type_id = self._type(args)
+        spec = self.host.town.spec_of(bid) or {}
+        t = catalog.TYPES.get(type_id)
+        job = self.jobs.get(type_id)
+        done_runs = [r for r in bench.runs(self.root, type_id) if type_id != "chain" or r.subject == bid]
+        cases = self._cases(bid, type_id, args)
+        chain = self._chain(bid, args) if type_id == "chain" else None
+        reviews = {}
+        for tab in bench_review.TABS:
+            kept = bench_review.load(self.root, type_id, tab)
+            running = self.reviewing.get((type_id, tab), {})
+            roles = []
+            for rid, title, focus in bench_review.ROLES[tab]:
+                entry = (kept.get("roles") or {}).get(rid) or {}
+                roles.append({"id": rid, "title": title, "focus": focus, "running": rid in running,
+                              "status": "running" if rid in running else entry.get("status", ""),
+                              "error": entry.get("error", ""), "aha": entry.get("aha"),
+                              "cost": entry.get("cost", 0.0), "seconds": entry.get("seconds", 0),
+                              "findings": [{**f, "id": f"{tab}:{rid}:{n}"} for n, f in enumerate(entry.get("findings") or [])]})
+            reviews[tab] = {"at": kept.get("at", ""), "version": kept.get("version", ""), "tool": kept.get("tool", ""),
+                            "stale": bool(kept.get("version")) and kept.get("version") != orkcraft.__version__,
+                            "roles": roles}
+        return {
+            "id": bid, "type": type_id, "title": chain[0]["title"] if chain else spec.get("title") or bid,
+            "word": self._word(type_id),
+            "summary": (f"a chain: {chain[1].chain_spec(chain[0])['about']}" if chain else t.summary if t else ""), "can_run": type_id in building_bench.TYPES, "runs_for": _runs_for(),
+            "orders_of": building_bench.POOLED.get(type_id, type_id) if type_id in ("barracks", *building_bench.POOLED) else "",
+            "cases": [{**asdict(c), "own": (self.root / bench.BENCH / type_id / f"{c.id}.json").is_file()}
+                      for c in cases],
+            "runs": [{**asdict(r), "copy": bench.analysis(r, self._word(type_id), bench.calls_of(self.root, r))}
+                     for r in done_runs[:12]],
+            "against": [] if chain else bench.against(self.root, type_id),
+            "against_copy": self._against_copy(type_id, done_runs),
+            "levels": {lvl: sum(c.level == lvl and c.reviewed for c in cases) for lvl in bench.LEVELS},
+            "gap_limit": bench.GAP_LIMIT,
+            "job": job.public() if job else None,
+            "reviews": reviews,
+            "tools": self._tools(), "tiers": [{"id": i, "title": w} for i, w in TIERS],
+            "orders": self._orders(bid, type_id),
+            "max_spend": bench.DEFAULT_MAX_SPEND,
+            "pools": self._pools(args),
+            "roads": self._lab_roads(args),
+        }
+
+    def _lab(self, args: dict):
+        lab = str(args.get("lab") or "")
+        return self.host.town.worker(lab) if lab and self.host.type_of(lab) == "lab" else None
+
+    def _lab_roads(self, args: dict) -> list[dict]:
+        """Where the Test bench's results go: the buildings its roads reach."""
+        w = self._lab(args)
+        return [{"id": t, "title": self.host.town.title_of(t)} for t in w.targets()] if w is not None else []
+
+    def _pools(self, args: dict) -> list[dict]:
+        """The Agent pools a finding may go to: those the Test bench's roads reach first."""
+        w = self._lab(args)
+        near = set(w.targets()) if w is not None else set()
+        pools = [{"id": b.id, "title": b.title, "road": b.id in near} for b in self.host.town.scroll.buildings
+                 if not b.demolished and self.host.type_of(b.id) == "barracks"]
+        return sorted(pools, key=lambda p: not p["road"])
+
+    def _against_copy(self, type_id: str, kept: list) -> str:
+        """The latest run of each case side by side, as text to paste into an analysis."""
+        latest = bench.latest(kept)                        # its repeats too: the summary reads their medians
+        return bench.summary(latest, self._word(type_id)) if latest else ""
+
+    def _orders(self, bid: str, type_id: str) -> str:
+        """The instructions a run may change: the Agent pool's own; for a building that hands its work to one,
+        its case's, else that pool's in the town."""
+        if type_id == "barracks":
+            return str(((self.host.town.spec_of(bid) or {}).get("config") or {}).get("orders") or "")
+        return ""                         # a building that hands its work to a pool: its case's, unless changed
+
+    def open(self, args: dict) -> dict[str, Any]:
+        """The window opens: a building never reviewed has its three tabs reviewed now, once."""
+        _bid, type_id = self._type(args)
+        if type_id != "chain" and type_id not in self.asked and not any(bench_review.load(self.root, type_id, tab) for tab in bench_review.TABS):
+            self.asked.add(type_id)
+            for tab in bench_review.TABS:
+                self._review(type_id, tab, "main")
+        return self.state(args)
+
+    # -- Tech: a run ---------------------------------------------------------------------------------------
+
+    def run(self, args: dict) -> dict[str, Any]:
+        bid, type_id = self._type(args)
+        if type_id not in building_bench.TYPES:
+            raise BenchError(f"Runs come to {lexicon.term(type_id)} later: the Test bench runs {_runs_for()} so far")
+        if (job := self.jobs.get(type_id)) and not job.done:
+            raise BenchError("A run is on: stop it first")
+        pick = str(args.get("case") or "")
+        level = pick.partition(":")[2] if pick.startswith("level:") else ""
+        if level and level not in bench.LEVELS:
+            raise BenchError("No such level")
+        picked = bench.series(self._cases(bid, type_id, args), "" if level else pick, level) if pick else []
+        if not picked:
+            raise BenchError("Pick a case")
+        label = picked[0].title if len(picked) == 1 and pick != bench.ALL else \
+            f"{'every case' if pick == bench.ALL else f'every {level} case'} ({len(picked)})"
+        tier = str(args.get("tier") or "")
+        if tier and tier not in tiers.TIERS:
+            raise BenchError("No such tier")
+        tool = str(args.get("tool") or "main")
+        if tool != "main" and harnesses.get(tool) is None:
+            raise BenchError("No such AI tool")
+        try:
+            spend = min(max(float(args.get("max_spend") or bench.DEFAULT_MAX_SPEND), 0.1), 50.0)
+        except (TypeError, ValueError):
+            raise BenchError("The spend limit is a number of dollars") from None
+        argv = [sys.executable, "-m", "orkcraft", "--repo", str(self.root), "bench", type_id,
+                *(("--level", level) if level else ("--case", pick)),
+                "--tool", tool, "--max-spend", str(spend), "--building", bid]
+        if tier:
+            argv += ["--tier", {"laborer": "novice", "warrior": "seasoned", "elder": "veteran"}[tier]]
+        if args.get("only") in ("building", "bare"):
+            argv += ["--only", str(args["only"])]
+        try:
+            repeat = min(max(int(args.get("repeat") or 1), 1), bench.REPEAT_MAX)
+        except (TypeError, ValueError):
+            raise BenchError("Runs a case is a number") from None
+        if repeat > 1:
+            argv += ["--repeat", str(repeat)]
+        if type_id == "chain":                         # the chain as it stands now, for the copy to stand it the same
+            found, lab = self._chain(bid, args)
+            path = self.root / bench.BENCH / "chains" / f"{int(time.time())}.json"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(json.dumps({**lab.chain_spec(found), "first_type": found["first_type"]}, ensure_ascii=False),
+                            encoding="utf-8")
+            argv += ["--chain-file", str(path)]
+        orders = args.get("orders")
+        if isinstance(orders, str) and orders != self._orders(bid, type_id) and (orders.strip() or type_id == "barracks"):
+            path = self.root / bench.BENCH / "orders" / f"{type_id}-{int(time.time())}.md"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(orders[:20000], encoding="utf-8")
+            argv += ["--orders", str(path)]
+        job = Job("run", type_id, label, subject=bid)
+        try:
+            job.proc = subprocess.Popen(argv, cwd=self.root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                        text=True, start_new_session=True, env={**os.environ, "PYTHONUNBUFFERED": "1"})
+        except OSError as e:
+            raise BenchError(f"The run did not start: {e}") from None
+        halt.started(job.proc, f"{bid}/bench", agent=True)
+        self.jobs[type_id] = job
+        threading.Thread(target=self._follow, args=(job,), daemon=True, name=f"bench-{type_id}").start()
+        return self.state(args)
+
+    def _follow(self, job: Job) -> None:
+        proc = job.proc
+        for line in proc.stdout:
+            line = line.rstrip()
+            if line.startswith(bench.DONE):
+                job.result = line[len(bench.DONE):].strip()
+                self.host.town.call(self._reported, job, job.result)
+            elif line:
+                job.lines = (job.lines + [line])[-LINES:]
+        code = proc.wait()
+        halt.ended(proc)
+        if code != 0 and not job.result:
+            job.error = "stopped" if job.cancel.is_set() else f"the run ended with exit {code}"
+        job.done = True
+        if job.then is not None and not job.error:
+            self.host.town.call(job.then)
+        self.host.town.call(self.host.on_change)
+
+    def labs_of(self, building_id: str) -> list:
+        """The Test bench buildings that test `building_id` (its road comes into them)."""
+        out = []
+        for b in self.host.town.scroll.buildings:
+            if not b.demolished and self.host.type_of(b.id) == "lab":
+                w = self.host.town.worker(b.id)
+                if w is not None and any(s["id"] == building_id for s in w.subjects()):
+                    out.append(w)
+        return out
+
+    def _reported(self, job: Job, run_id: str) -> None:
+        """A run ended: each Test bench that tests its building says it down its roads."""
+        if run_id in job.reported:
+            return
+        job.reported.append(run_id)
+        r = next((x for x in bench.runs(self.root, job.type) if x.id == run_id), None)
+        if r is not None:
+            for w in self.labs_of(job.subject):
+                w.reported(job.subject, r)
+
+    def stop(self, args: dict) -> dict[str, Any]:
+        _bid, type_id = self._type(args)
+        job = self.jobs.get(type_id)
+        if job and not job.done:
+            job.cancel.set()
+            if job.proc is not None:
+                try:
+                    os.killpg(job.proc.pid, signal.SIGTERM)
+                except (ProcessLookupError, PermissionError):
+                    pass
+        for cancel in list(self.reviewing.get((type_id, str(args.get("tab") or "")), {}).values()):
+            cancel.set()
+        return self.state(args)
+
+    # -- the reviews ---------------------------------------------------------------------------------------
+
+    def review(self, args: dict) -> dict[str, Any]:
+        _bid, type_id = self._type(args)
+        tab = str(args.get("tab") or "")
+        if tab not in bench_review.TABS:
+            raise BenchError("No such tab")
+        if self.reviewing.get((type_id, tab)):
+            raise BenchError("This review is on")
+        self._review(type_id, tab, str(args.get("tool") or "main"))
+        return self.state(args)
+
+    def start_review(self, type_id: str, tab: str, tool: str, runs: str = "") -> None:
+        """A review of the type's, its reviewers reading `runs` (a Test bench's own) when given."""
+        with self._lock:
+            if self.reviewing.get((type_id, tab)):
+                raise BenchError("This review is on")
+        self._review(type_id, tab, tool, runs)
+
+    def _review(self, type_id: str, tab: str, tool: str, runs: str = "") -> None:
+        roles = {rid: threading.Event() for rid, _t, _f in bench_review.ROLES[tab]}
+        started = list(roles.items())              # a quick reviewer leaves `roles` before the last one starts
+        with self._lock:
+            self.reviewing[(type_id, tab)] = roles
+        for n, (rid, _cancel) in enumerate(started):
+            bench_review.put(self.root, type_id, tab, rid, {"status": "running", "findings": []}, tool, fresh=n == 0)
+        for rid, cancel in started:
+            threading.Thread(target=self._one, args=(type_id, tab, rid, tool, cancel, runs), daemon=True,
+                             name=f"bench-{tab}-{rid}").start()
+
+    def _one(self, type_id: str, tab: str, role: str, tool: str, cancel: threading.Event, runs: str = "") -> None:
+        try:
+            bench_review.review(self.root, type_id, tab, role, tool, cancel=cancel, runs=runs)
+        finally:
+            with self._lock:
+                running = self.reviewing.get((type_id, tab), {})
+                running.pop(role, None)
+                if not running:
+                    self.reviewing.pop((type_id, tab), None)
+            self.host.town.call(self.host.on_change)
+
+    # -- cases ---------------------------------------------------------------------------------------------
+
+    def write_case(self, args: dict) -> dict[str, Any]:
+        _bid, type_id = self._type(args)
+        if (job := self.jobs.get(type_id)) and not job.done:
+            raise BenchError("A run is on: wait for it, or stop it")
+        job = Job("case", type_id, "Writing a case")
+        self.jobs[type_id] = job
+        brief, tool = str(args.get("brief") or "")[:2000], str(args.get("tool") or "main")
+
+        def write() -> None:
+            try:
+                job.result = bench_review.write_case(self.root, type_id, brief, tool, cancel=job.cancel).id
+            except (RuntimeError, OSError) as e:
+                job.error = str(e)[:500]
+            job.done = True
+            self.host.town.call(self.host.on_change)
+
+        threading.Thread(target=write, daemon=True, name=f"bench-case-{type_id}").start()
+        return self.state(args)
+
+    def read_case(self, args: dict) -> dict[str, Any]:
+        _bid, type_id = self._type(args)
+        if not bench.mark_read(self.root, type_id, str(args.get("case") or "")):
+            raise BenchError("No such written case")
+        return self.state(args)
+
+    # -- Make tasks ----------------------------------------------------------------------------------------
+
+    def tasks(self, args: dict) -> dict[str, Any]:
+        bid, type_id = self._type(args)
+        pool = str(args.get("pool") or "")
+        lab = self._lab(args)
+        down_roads = pool == ROADS and lab is not None
+        if not down_roads and (self.host.type_of(pool) != "barracks" or self.host.town.scroll.building(pool) is None):
+            raise BenchError("Pick an Agent pool for the tasks")
+        picks = {str(x) for x in args.get("picks") or []}
+        chosen = [f for f in bench_review.findings(self.root, type_id) if f["id"] in picks]
+        if not chosen:
+            raise BenchError("Tick the findings to make tasks of")
+        worker = None if down_roads else self.host.town.worker(pool)
+        word = self._word(type_id)
+        made = 0
+        for f in chosen:
+            brief = (f"From the Test bench, {f['role']} ({f['tab']} review) of the {word} (`{type_id}`, building "
+                     f"`{bid}`), Orkcraft {orkcraft.__version__}.\n\n{f['detail']}"
+                     + (f"\n\nWhere: {f['where']}" if f.get("where") else "") + f"\n\nSeverity: {f['severity']}.")
+            title = f"{word}: {f['title']}"
+            if (lab.finding(title, brief) if down_roads else worker.new_task(title, brief) is not None):
+                made += 1
+        where = "down the Test bench's roads" if down_roads else f"to {self.host.town.title_of(pool)}"
+        if down_roads and not made:
+            raise BenchError("No road out of the Test bench takes them: pull one to the building they should go to")
+        self.host.town.toast(f"{made} task{'s' if made != 1 else ''} sent {where}", title="Test bench")
+        return {**self.state(args), "made": made}

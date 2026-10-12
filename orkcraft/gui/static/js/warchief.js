@@ -7,13 +7,17 @@
 //   words    go to the Warchief (core/workers/town_hall.py `ask`); its answer unrolls over the line, the
 //            last few messages, and its whole chat is the Town Hall's Chat tab
 //
+// Build grows the line: its row of icons stands over the bar, in the line's frame, and the field finds in it
+// (js/build.js `BuildRow`): Enter takes the first icon left, or asks the Warchief what to build; Escape, Build
+// again or a press elsewhere puts it away.
+//
 // Its cards (the work it gave a specialist: a plan, a building, a road, an ork, a change) stand in its
 // answers, Build / Cancel / Undo on them (js/buildings/town_hall.js `Card`, core/warchief.py). A press over
 // the line never takes the focus from the field, so what it shows stays put under the mouse.
 // While it is left alone the line says what wants a decision first: an ork's question (§8).
 //
 // A building selected, the line is its **command card** (docs/design/select-a-building.md §2): its steward's face
-// and name, its quick actions (three, ⋯ for its Info), the field asking about it; ✕ gives the Warchief back
+// and name, Open (its window, until it is open), its quick actions (three, ⋯ for its Info), the field asking about it; ✕ gives the Warchief back
 // while it stays selected (Build and Improve with him: the open panel leaves the line little room). What is typed
 // goes to its steward (js/keeper.js: it answers, or proposes a change of its rules and settings with Apply); to the
 // Warchief, with the building named as `@` does, from a yard (no steward), a building that keeps no settings, or
@@ -22,8 +26,11 @@ import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { act, command, details, town, say, toast } from "./link.js";
-import { opened, openBuilding } from "./windows.js";
-import { building as buildOpen, laying, demolishing, raised, settingUp, endSetup } from "./build.js";
+import { opened, openBuilding, selected } from "./windows.js";
+import { projectFor } from "./project.js";
+import { historyFor } from "./history.js";
+import { building as buildOpen, laying, demolishing, raised, settingUp, endSetup, BuildRow, buildEnter } from "./build.js";
+import { framing } from "./frame.js";
 import { typeModule, runQuick } from "./types.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
@@ -32,6 +39,7 @@ import { HALL, hallTab } from "./tent.js";
 import { Message } from "./buildings/town_hall.js";
 import { WarchiefHead, StewardHead } from "./icons.js";
 import { askKeeper } from "./keeper.js";
+import { ImprovePick } from "./improve.js";
 import { fold, foldQuiet, unfoldAll } from "./fold.js";
 
 const THREAD = 3;                          // the last messages shown over the line
@@ -199,6 +207,10 @@ const COMMANDS = [
       const o = town.value.orkspaces.find((x) => norm(x.name) === norm(rest));
       return o ? command("orkspace.select", { id: o.id }).catch(() => {}) : command("orkspace.new", { name: rest }).catch(() => {});
     } },
+  { word: "project", args: "", about: "the folder this orkspace works in",
+    run: () => { projectFor.value = town.value.active_orkspace; return null; } },
+  { word: "history", args: "", about: "every change of this orkspace, and going back to one",
+    run: () => { historyFor.value = town.value.active_orkspace; return null; } },
   { word: "sessions", args: "", about: "the War Tent: every session, its terminal",
     run: () => { hallTab.value = "sessions"; openBuilding(HALL, "work"); return null; } },
   { word: "audit", args: "", about: "the Warder, the Pathfinder and the Treasurer look over the town",
@@ -308,7 +320,7 @@ export function hints() {
     out.push({ label: `⚠ ${say(`Resume ${pn}`)}`, run: () => act(p.id, "pause").catch(() => {}) });
     if (p.card && p.card.failed) out.push({ label: say(`Why did ${pn}'s tasks fail?`), ask: "Why did its tasks fail?", about: [p.id] });
   }
-  const b = opened.value.active && opened.value.active !== HALL && t.buildings.find((x) => x.id === opened.value.active);
+  const b = selected.value && selected.value !== HALL && t.buildings.find((x) => x.id === selected.value);
   const name = b && say(b.title);
   if (b) {
     out.push({ label: say(`Add an ork to ${name}`), text: `/recruit @${name} ` });
@@ -373,9 +385,8 @@ function Thread({ data }) {
   </ul>`;
 }
 
-/** What wants a decision first, while the line is left alone: an ork's question, else the spend at its
- *  limit. Always mounted: a part before the field that comes and goes would move the field, and a moved
- *  field loses its focus. */
+/** What wants a decision first, while the line is left alone: an ork's question, else the news, else the spend at its
+ *  limit — a bubble over the line (layout.css), never a part of it: the line's buttons and field never move. */
 function Speaks({ hidden }) {
   const t = town.value;
   const a = t.alerts[0];
@@ -432,19 +443,25 @@ export function WarchiefLine() {
   const [focused, setFocused] = useState(false);
   const [shown, setShown] = useState(0);         // when the last answer came (it stays over the line a while)
   const [said, setSaid] = useState("");          // what a command answered (a word on how to use it)
+  const [picking, setPicking] = useState(false);  // Improve's days, over the bar
   const [back, setBack] = useState(-1);          // where ↑ is in the history
   const root = useRef(null);
   const data = hall();
   const b = t.buildings.find((x) => x.id === HALL);
   const chips = l.about.map((id) => t.buildings.find((x) => x.id === id)).filter(Boolean);
-  const open = opened.value.active;
+  const open = selected.value;                     // the selected building (open in the panel, or only selected)
   // the building open in the panel, named in what is typed — its card says so; ✕ on the card: the Warchief at large
   const auto = open && open !== HALL && !l.about.includes(open) && givenBack.value !== open
     ? t.buildings.find((x) => x.id === open) : null;
   const sel = open && open !== HALL ? t.buildings.find((x) => x.id === open) : null;
-  const card = sel && givenBack.value !== sel.id ? sel : null;      // the building's command card
+  const buildOn = !!buildOpen.value;               // Build's row over the bar: the line finds in it
+  const card = sel && givenBack.value !== sel.id && !buildOn ? sel : null;      // the building's command card
   const steward = card && !card.yard ? card.garrison.find((o) => o.lead) || null : null;
   useEffect(() => { if (givenBack.value && givenBack.value !== open) givenBack.value = null; }, [open]);
+  useEffect(() => {                              // Build on: the field is its finder (what /build named, else empty)
+    const need = buildOn && buildOpen.value.need ? buildOpen.value.need : "";
+    line.value = { ...line.value, text: need, about: buildOn ? [] : line.value.about, focus: line.value.focus + (buildOn ? 1 : 0) };
+  }, [buildOn]);
   const cardActs = card ? (card.quick || []).slice(0, CARD_ACTS) : [];
   useEffect(() => {                              // Q, W, E: its actions, from anywhere but a field, a terminal or a dialog
     if (!cardActs.length) return undefined;
@@ -482,22 +499,33 @@ export function WarchiefLine() {
   const suB = su ? t.buildings.find((x) => x.id === su.id) : null;
   const setting = !!(suB && suMod && suMod.Setup);
   // A press anywhere off the line and its thread puts the thread away: it never hangs over the town.
-  const over = !!shown || !!said || setting;
+  const over = !!shown || !!said || setting || buildOn || picking;
   useEffect(() => {
     if (!over) return undefined;
     const away = (e) => {
-      if (root.current && !root.current.contains(e.target)) { setShown(0); setSaid(""); endSetup(); }
+      if (framing.value) return;                    // a setup's frame is being drawn on the map: the line waits for it
+      if (root.current && !root.current.contains(e.target)) { setShown(0); setSaid(""); setPicking(false); endSetup(); buildOpen.value = false; }
     };
     document.addEventListener("pointerdown", away, true);
     return () => document.removeEventListener("pointerdown", away, true);
   }, [over]);
 
   const set = (text) => { line.value = { ...line.value, text }; setSaid(""); };
-  // Improve (docs/design/warchief-line-and-cards.md §1): the latest 👎 handed to the Warchief to go through.
-  const improve = () => command("warchief.improve").then((r) => {
-    if (r.none) setSaid(say(r.none));
-    else ask(r.text, []).catch(() => {});
-  }, () => {});
+  // Improve (docs/design/warchief-line-and-cards.md §1): a day's logs read by the Mechanic and the Farseer, whose
+  // findings the Warchief then offers (gui/day_review.py, docs/design/improve-buildings.md §13); or, with no day,
+  // the latest 👎 handed to the Warchief to go through.
+  const improve = (day = "", again = false) => {
+    setPicking(false);
+    if (day) {
+      command("warchief.improve", { day, again }).then((r) => setSaid(say(r.said)), (e) => setSaid(say(String(e.message || e))));
+      return;
+    }
+    command("warchief.improve").then((r) => {
+      if (r.none) setSaid(say(r.none));
+      else ask(r.text, []).catch(() => {});
+    }, () => {});
+  };
+  const improveDays = ((t && t.improve) || {}).days || [];
   const clear = () => { line.value = { ...line.value, text: "", about: [] }; setBack(-1); };
 
   function pick(h) {
@@ -509,6 +537,11 @@ export function WarchiefLine() {
 
   function send(value) {                       // the field's own value: a render may not have caught up yet
     const text = value.trim();
+    if (buildOn && !text.startsWith("/")) {      // Build's finder: the first icon left, else the Warchief is asked
+      if (!buildEnter() && text) { buildOpen.value = false; ask(`What should I build? ${text}`, []).catch(() => {}); }
+      clear();
+      return;
+    }
     if (!text) return;
     history.unshift(text);
     history.length = Math.min(history.length, HISTORY);
@@ -534,6 +567,7 @@ export function WarchiefLine() {
 
   function key(e) {
     if (e.key === "Enter") { e.preventDefault(); send(e.currentTarget.value); }
+    else if (e.key === "Escape" && buildOn) { e.preventDefault(); e.stopPropagation(); buildOpen.value = false; }
     else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); if (l.text) set(""); else e.currentTarget.blur(); }
     else if (e.key === "ArrowUp" && history.length && (!l.text || back >= 0)) {
       e.preventDefault();
@@ -558,7 +592,8 @@ export function WarchiefLine() {
   const name = data ? data.warchief : say("Warchief");
   const office = (t.portrait || {}).look === "office";
   const acts = card ? card.quick || [] : [];
-  const ph = steward && card.keeper ? say(`Tell ${steward.name} or ask it…`)
+  const ph = buildOn ? say(buildOpen.value.hut ? "Build here: what for? mail, tasks, a wiki…" : "What for? mail, tasks, a wiki… Enter asks the Warchief")
+    : steward && card.keeper ? say(`Tell ${steward.name} or ask it…`)
     : card ? say(`Ask the ${name} about ${card.title}…`) : say(`Ask the ${name}… or / for commands`);
   const face = card && steward
     ? html`<button class="gui-warchief__face is-steward" title=${say(`${steward.name}, the steward of ${card.title}: its Info`)}
@@ -574,7 +609,11 @@ export function WarchiefLine() {
       </button>`;
   const thread = !!data && (focused || !!shown || data.thinking);
   return html`<div ref=${root} class=${cls("gui-warchief", { "is-focused": focused, "is-alert": t.alerts.length > 0 })}>
-    ${setting && !focused ? html`<div key="setup" class="ok-win gui-warchief__over gui-warchief__setup">
+    ${picking ? html`<div key="improve" class="ok-win gui-warchief__over gui-warchief__grown">
+      <div class="ok-win__frame"><div class="ok-win__body"><${ImprovePick} im=${t.improve} onPick=${improve} /></div></div></div>`
+    : buildOn ? html`<div key="build" class="ok-win gui-warchief__over gui-warchief__grown">
+      <div class="ok-win__frame"><div class="ok-win__body"><${BuildRow} query=${l.text} /></div></div></div>`
+    : setting && !focused ? html`<div key="setup" class="ok-win gui-warchief__over gui-warchief__setup">
       <div class="ok-win__frame"><div class="ok-win__body">
         <p class="ok-font-status"><b>${say(name)}:</b> ${say(suMod.setupAsk ? suMod.setupAsk(suB) : `${suB.title} is going up. Set it up?`)}</p>
         <${suMod.Setup} id=${suB.id} b=${suB} done=${() => { endSetup(); }} />
@@ -589,6 +628,7 @@ export function WarchiefLine() {
         ${said && html`<p class="ok-font-status ok-tone-wait gui-warchief__said">${said}</p>`}
         ${focused && html`<${Over} text=${l.text} about=${[...l.about, ...(auto ? [auto.id] : [])]} onPick=${pick} />`}
       </div></div></div>` : null}
+    <${Speaks} hidden=${!!card || buildOn || focused || thread || !!said || !!setting || !!l.text || chips.length > 0} />
     <div key="bar" class="gui-warchief__bar">
       ${face}
       ${card && html`<span class="gui-warchief__who ok-font-status"
@@ -597,22 +637,24 @@ export function WarchiefLine() {
         <button class="gui-link gui-warchief__back" title=${say(`The ${name} again (${card.title} stays selected)`)}
           aria-label=${say(`The ${name} again`)} onMouseDown=${(e) => e.preventDefault()}
           onClick=${() => { givenBack.value = card.id; }}>✕</button></span>`}
-      <${Speaks} hidden=${!!card || focused || !!l.text || chips.length > 0} />
       ${chips.map((x) => html`<${Chip} key=${x.id} b=${x} onDrop=${() => { line.value = { ...l, about: l.about.filter((id) => id !== x.id) }; }} />`)}
       <span class="gui-warchief__buttons" onMouseDown=${(e) => e.preventDefault()}>
+        ${card && opened.value.active !== card.id && html`<button class="ok-btn primary gui-warchief__open"
+          title=${say("Open its window (or click it again)")} onClick=${() => openBuilding(card.id, "work")}>${say("Open")}</button>`}
         ${cardActs.map((a, n) => html`<button key=${a.id} class="ok-btn gui-warchief__act"
           title=${`${say(a.label)} (${CARD_KEYS[n].slice(3)})`} aria-keyshortcuts=${CARD_KEYS[n].slice(3).toLowerCase()}
           onClick=${() => runQuick(card, a.id)}>${say(a.label)}</button>`)}
         ${card && acts.length > CARD_ACTS && html`<button class="ok-btn gui-warchief__act" title=${say("Its other actions: its Info")}
           aria-label=${say("Its other actions")} onClick=${() => openBuilding(card.id, "info")}>⋯</button>`}
-        ${!card && html`<button class="ok-btn gui-warchief__build" title=${say("Raise a building")}
-          onClick=${() => { buildOpen.value = true; }}>${say("Build")}</button>`}
+        ${!card && html`<button class=${cls("ok-btn gui-warchief__build", { "is-on": buildOn })} title=${say("Raise a building")}
+          aria-pressed=${buildOn} onClick=${() => { buildOpen.value = !buildOn; }}>${say("Build")}</button>`}
         ${t.alerts.length > 0 && html`<button class=${cls("ok-btn gui-warchief__questions", { "is-count": !!card })}
           title=${say(`What the orks wait on you for (${t.alerts.length})`)} aria-label=${say(`Answers (${t.alerts.length})`)}
           onClick=${() => openOrders()}>${card ? `❓ ${t.alerts.length}` : html`<span class="gui-warchief__long">${say(`Answers (${t.alerts.length})`)}</span><span
             class="gui-warchief__short">❓ ${t.alerts.length}</span>`}</button>`}
-        ${!card && html`<button class="ok-btn gui-warchief__improve" title=${say("The Warchief goes through the latest 👎 and offers what to change")}
-          onClick=${improve}>${say("Improve")}</button>`}
+        ${!card && html`<button class=${cls("ok-btn gui-warchief__improve", { "is-on": picking })}
+          title=${say("The Mechanic and the Farseer read a day's logs, and the Warchief offers what to change")}
+          aria-pressed=${picking} onClick=${() => (improveDays.length ? setPicking(!picking) : improve())}>${say("Improve")}</button>`}
       </span>
       <input ref=${ref} class="ok-input gui-warchief__input" value=${l.text} aria-label=${ph.replace(/…$/, "")}
         placeholder=${ph}

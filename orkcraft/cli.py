@@ -3,6 +3,8 @@ The terminal UI is gone (docs/design/calm-town.md §9); `orkcraft tui` only says
 from __future__ import annotations
 
 import argparse
+import datetime as dt
+import json
 import sys
 from pathlib import Path
 
@@ -123,6 +125,104 @@ def _launching(args) -> bool:
     return args.subcommand in (None, "gui")
 
 
+TIER_WORDS = {"novice": "laborer", "seasoned": "warrior", "veteran": "elder"}
+
+
+def _bench(root: Path, args: argparse.Namespace) -> int:
+    """`orkcraft bench`: a building on a test case beside the bare AI tool (docs/design/test-bench.md)."""
+    from orkcraft.core import bench as building_bench
+    from orkcraft.realm import bench, lexicon
+    if args.type not in building_bench.TYPES:
+        sys.stderr.write(f"orkcraft error: the Test bench runs {', '.join(building_bench.TYPES)} so far\n")
+        return 2
+    cases = bench.cases(root, args.type)
+    if args.cases_file:                                     # a Test bench building's own cases (realm/lab_cases.py)
+        cases = [bench.Case.of(d, args.type) for d in json.loads(args.cases_file.read_text(encoding="utf-8"))]
+    elif args.type == "chain" and args.chain_file:            # the cases that suit the chain's first building
+        first = str(json.loads(args.chain_file.read_text(encoding="utf-8")).get("first_type") or "")
+        cases = [c for c in cases if c.inputs.get("first", "") in ("", first)]
+    if args.list:
+        for c in cases:
+            print(f"{c.id:16} {c.level or '':9} {c.title}" + ("" if c.reviewed else "  (not read yet: it does not count)"))
+        for r in bench.runs(root, args.type)[:10]:
+            sides = [s for s in (r.building, r.bare) if s]
+            print(f"{r.id}: " + " · ".join(f"{s.name} {bench.verdict(s)}, {s.seconds:.0f} s, ${s.cost:.2f}" for s in sides))
+        return 0
+    if args.level and args.level not in bench.LEVELS:
+        sys.stderr.write(f"orkcraft error: --level is {', '.join(bench.LEVELS)}\n")
+        return 2
+    picked = bench.series(cases, args.case, args.level)
+    if not picked:
+        known = ", ".join(c.id for c in cases) or "none"
+        sys.stderr.write(f"orkcraft error: no case {args.case or args.level!r}; the {args.type} cases: {known}\n")
+        return 2
+    tier = TIER_WORDS.get(args.tier.lower(), args.tier.lower())
+    if tier and tier not in TIER_WORDS.values():
+        sys.stderr.write("orkcraft error: --tier is novice, seasoned or veteran\n")
+        return 2
+    max_spend = bench.DEFAULT_MAX_SPEND if args.max_spend is None else args.max_spend
+    if not 1 <= args.repeat <= bench.REPEAT_MAX:
+        sys.stderr.write(f"orkcraft error: --repeat is 1 to {bench.REPEAT_MAX}\n")
+        return 2
+    sides = (args.only,) if args.only else ("building", "bare")
+    word = "chain" if args.type == "chain" else lexicon.term(args.type)
+    times = f", each {args.repeat} times" if args.repeat > 1 else ""
+    if len(picked) > 1 or args.repeat > 1:
+        print(f"Test bench: {len(picked)} case{'' if len(picked) == 1 else 's'}{times}, one after another. Each run "
+              f"spends up to ${max_spend:.2f} on the building's side; nothing leaves the copies it makes.", flush=True)
+    series = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    reports = []
+    for n, case in enumerate(picked):
+        for attempt in range(args.repeat):
+            again = f" (run {attempt + 1} of {args.repeat})" if args.repeat > 1 else ""
+            print(f"Test bench: {case.title}{again}. It runs AI tools and spends up to ${max_spend:.2f} on the "
+                  "building's side; nothing leaves the copies it makes.", flush=True)
+            try:
+                orders = args.orders.read_text(encoding="utf-8") if args.orders else None
+                chain = json.loads(args.chain_file.read_text(encoding="utf-8")) if args.chain_file else None
+                bare_tier = TIER_WORDS.get(args.bare_tier.lower(), args.bare_tier.lower())
+                report, folder = building_bench.run(root, case, args.tool, tier, args.building, max_spend, sides,
+                                                    say=lambda line: print(line, flush=True), orders=orders,
+                                                    chain=chain, bare_tool=args.bare_tool, bare_tier=bare_tier,
+                                                    fresh=args.fresh, attempt=attempt, series=series)
+            except (ValueError, RuntimeError, OSError) as e:      # a chain file that does not read is a ValueError
+                sys.stderr.write(f"orkcraft error: {e}\n")
+                return 1
+            reports.append(report)
+            print()
+            print(bench.render(report, word))
+            if calls := bench.calls_text(bench.calls_of(root, report), word):
+                print("\n".join(calls))
+            print(f"\nKept in {folder}")
+            print(f"{bench.DONE}{report.id}", flush=True)
+        groups = bench.by_case(reports)
+        if args.stop_behind and len(groups) >= args.stop_behind and n + 1 < len(picked) and \
+                all(any(r.building and r.bare for r in g) and not bench.within(bench.pooled_gaps(g)) for g in groups):
+            print(f"\nTest bench: stopped early — the building is behind the bare AI tool on every one of the first "
+                  f"{len(groups)} cases; the other {len(picked) - n - 1} wait (nothing more spent).", flush=True)
+            break
+    if len(reports) > 1:
+        print()
+        print(bench.summary(reports, word))
+    return 0
+
+
+def _mcp_cassette(args: argparse.Namespace) -> int:
+    """`orkcraft mcp-cassette`: one of the person's MCP servers for a Test bench run (realm/cassette.py) — recorded
+    from the real server on a case set's first run, played back from its cassette after."""
+    import os
+    from orkcraft.realm import cassette, mcp
+    tape = cassette.Tape(Path(args.cassette), args.server)
+    if args.mode == "replay":
+        cassette.replay(tape, sys.stdin, sys.stdout)
+        return 0
+    launch = mcp.launch(args.server, repo=args.repo)
+    if launch is None:
+        sys.stderr.write(f"orkcraft error: no local MCP server {args.server!r} to record\n")
+        return 2
+    return cassette.record(tape, [launch.command, *launch.args], {**os.environ, **dict(launch.env)}, sys.stdin, sys.stdout)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="orkcraft",
@@ -173,6 +273,37 @@ def main(argv: list[str] | None = None) -> int:
     fb_p = subparsers.add_parser("feedback", help="What the operator's quiet feedback weighs: calibrate the weights")
     fb_p.add_argument("action", choices=("calibrate",))
     fb_p.add_argument("--days", type=int, default=None, help="Only the last N days (default: all kept)")
+    cas_p = subparsers.add_parser("mcp-cassette", help="A Test bench run's MCP server, recorded once, played back after")
+    cas_p.add_argument("--server", required=True, help="The MCP server's name, as the AI tools know it")
+    cas_p.add_argument("--cassette", required=True, help="The case set's cassette file")
+    cas_p.add_argument("--mode", choices=("record", "replay"), default="replay")
+    bench_p = subparsers.add_parser("bench", help="Test bench: run a building on a test case beside the bare AI tool")
+    bench_p.add_argument("type", nargs="?", default="barracks", help="The building type (default: barracks)")
+    bench_p.add_argument("--case", default="", help="The case's id, or all (default: the first); --list shows them")
+    bench_p.add_argument("--level", default="", help="Every case of a level: simple, medium or parallel")
+    bench_p.add_argument("--list", action="store_true", help="List the type's cases and its last runs")
+    bench_p.add_argument("--tool", default="main", help="The AI tool both sides run on (default: the main tool)")
+    bench_p.add_argument("--tier", default="", help="novice, seasoned or veteran (default: the building's own)")
+    bench_p.add_argument("--building", default="", help="Which of your buildings of the type to copy the settings of")
+    bench_p.add_argument("--max-spend", type=float, default=None, help="$ the building's side may spend (default: 2)")
+    bench_p.add_argument("--only", choices=("building", "bare"), default=None, help="Run one side only")
+    bench_p.add_argument("--fresh", action="store_true",
+                         help="Ask the bare AI tool again even when its answer to the same case is kept")
+    bench_p.add_argument("--repeat", type=int, default=1, metavar="N",
+                         help="Run each case N times (1–10): the summary reads their medians and the spread")
+    bench_p.add_argument("--stop-behind", type=int, default=0, metavar="N",
+                         help="Stop a series when the building is behind on each of its first N cases")
+    bench_p.add_argument("--cases-file", type=Path, default=None,
+                         help="A JSON list of cases to run instead of the shipped ones (a Test bench writes it)")
+    bench_p.add_argument("--bare-tool", default="", help="The AI tool the bare side runs on (default: --tool)")
+    bench_p.add_argument("--bare-tier", default="", help="Its tier: novice, seasoned or veteran (default: as --tier)")
+    bench_p.add_argument("--chain-file", type=Path, default=None,
+                         help="For the chain type: a JSON file with the chain's buildings and roads (the Test bench "
+                              "writes it)")
+    bench_p.add_argument("--orders", type=Path, default=None,
+                         help="A file with the building's instructions for this run only (default: its own)")
+    from orkcraft import check_cli
+    check_cli.add_parser(subparsers)
     up_p = subparsers.add_parser("update", help="Install the latest version, see what is out, or say what installs by itself")
     up_p.add_argument("action", nargs="?", choices=("check", "auto", "critical", "ask"), default=None,
                       help="check: only say what is out · auto | critical | ask: which updates install by "
@@ -217,12 +348,16 @@ def main(argv: list[str] | None = None) -> int:
         try:
             if args.action == "install":
                 paths = hooks_install.install_all(root)
+                for folder in hooks_install.project_folders(root):     # the town's projects are guarded too
+                    paths += hooks_install.install_all(folder)
                 if any(p.parent.name == ".agents" for p in paths) and _agy_global_yes(args.agy_global):
                     paths.append(hooks_install.install_agy_global())
                 if hooks_install.wants_hermes() and _agy_global_yes(args.hermes_global, hooks_install.HERMES_GLOBAL_ASK):
                     paths.append(hooks_install.install_hermes_global())
             else:
                 paths = hooks_install.uninstall_all(root, agy_global=args.agy_global is not False)
+                for folder in hooks_install.project_folders(root):
+                    paths += hooks_install.uninstall_all(folder, agy_global=False)
         except ValueError as e:
             sys.stderr.write(f"orkcraft error: {e}\n")
             return 1
@@ -248,6 +383,26 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         print(calibrate.render(calibrate.report(root, args.days)))
         return 0
+
+    if args.subcommand == "mcp-cassette":                  # a Test bench run's MCP server, recorded or played back
+        return _mcp_cassette(args)
+
+    if args.subcommand == "bench":
+        try:
+            root = find_project_root(args.repo)
+        except FileNotFoundError as e:
+            sys.stderr.write(f"orkcraft error: {e}\n{NOT_A_PROJECT_HINT}\n")
+            return 1
+        return _bench(root, args)
+
+    if args.subcommand == "check":                         # the gate before people use it (check_cli.py)
+        try:
+            root = find_project_root(args.repo)
+        except FileNotFoundError as e:
+            sys.stderr.write(f"orkcraft error: {e}\n{NOT_A_PROJECT_HINT}\n")
+            return 1
+        from orkcraft import check_cli
+        return check_cli.run(root, args, TIER_WORDS)
 
     # No subcommand: the window.
     if args.subcommand is None:

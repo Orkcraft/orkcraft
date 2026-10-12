@@ -8,6 +8,8 @@ with the same core (core/retros.py, core/night.py): the host's clock calls `tick
                    apply (core/night.py `candidates`): the Council's Fast Path looks first (a thread), and
                    only while it is still quiet and the Council lets it is it applied, hushed
     probation      every few minutes: a change with a 👎 or more failed runs since goes back by itself
+    the check      the Mechanic's night check (gui/night_check.py), before the night's improvements
+    the day        the day that ended, read by the Mechanic and the Farseer (gui/day_review.py), after the check
     the morning    what the orks changed while the operator was away, in one toast
 
     nightly = Nightly(host)
@@ -22,6 +24,8 @@ from typing import Any, Callable
 
 from orkcraft import schedule
 from orkcraft.core import retros, runners
+from orkcraft.gui.improve_night import ImproveNight
+from orkcraft.gui.night_check import NightCheck
 from orkcraft.realm import fastpath, nightround
 
 RETRO_CHECK_S = 60.0          # how often the retros' schedules are looked at
@@ -33,6 +37,8 @@ class Nightly:
         self.host = host
         self.town = host.town
         self.busy: set[str] = set()              # the retros running now: daily | weekly
+        self.improve = ImproveNight(host)        # the Mechanic and the Alchemist at night (gui/improve_night.py)
+        self.check = NightCheck(host)            # …and first, the Mechanic's night check (gui/night_check.py)
         self.checked_at = -RETRO_CHECK_S
 
     def tick(self, quiet: bool, morning: bool = False, now: float | None = None) -> None:
@@ -41,6 +47,9 @@ class Nightly:
             words = retros.morning_words(self.town)
             if words:
                 self.town.toast(words, title="While you were away, the orks changed", timeout=20)
+            improved = self.check.morning() + self.host.day_review.morning() + self.improve.morning()
+            if improved:
+                self.town.toast(".\n".join(improved) + ".", title="While you were away, the Elders", timeout=20)
         exhausted = self.host.treasury.exhausted(quiet=True)
         if now - self.checked_at >= RETRO_CHECK_S and not exhausted:
             self.checked_at = now
@@ -54,6 +63,11 @@ class Nightly:
                         self._thread(name, work, done)
                     if name == "round":
                         self.host.growth.soon()          # its morning line, when it had one
+        self.check.tick(quiet, exhausted, now)
+        if not self.check.busy:                  # one job on the AI tool at a time: the check's numbers stay true
+            self.host.day_review.tick(quiet, exhausted)     # the day just ended, read (gui/day_review.py)
+            if not self.host.day_review.running:
+                self.improve.tick(quiet, exhausted, now)
         taken = self.host.night.next_change(quiet, self.town.machine.autonomy, exhausted)
         if taken is not None:
             self._consider(*taken)

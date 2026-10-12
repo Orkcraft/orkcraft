@@ -248,6 +248,15 @@ class GitLink:
 
 
 @dataclass
+class Project:
+    """The folder orkspaces work in (docs/design/projects.md §3); `managed`: Orkcraft started its git."""
+    id: str
+    name: str
+    path: str
+    managed: bool = False
+
+
+@dataclass
 class Orkspace:
     id: str
     name: str
@@ -258,6 +267,7 @@ class Orkspace:
     buildings: list[str] = field(default_factory=list)
     window_order: list[str] = field(default_factory=list)
     active_building: str | None = None
+    project: str | None = None        # a project id (docs/design/projects.md); None: the town's own folder
 
 
 @dataclass
@@ -285,6 +295,7 @@ class TownScroll:
     orkspaces: list[Orkspace]
     buildings: list[BuildingSpec]
     budget: Budget = field(default_factory=Budget)
+    projects: list[Project] = field(default_factory=list)
     preferences: dict = field(default_factory=_default_preferences)
     meta: dict = field(default_factory=lambda: {"project_name": "orkcraft", "tagline": "Work vs Humans"})
     version: str = VERSION
@@ -294,6 +305,9 @@ class TownScroll:
 
     def orkspace(self, orkspace_id: str) -> Orkspace | None:
         return next((o for o in self.orkspaces if o.id == orkspace_id), None)
+
+    def project(self, project_id: str | None) -> Project | None:
+        return next((p for p in self.projects if p.id == project_id), None) if project_id else None
 
     @property
     def active_orkspace(self) -> Orkspace:
@@ -343,6 +357,7 @@ class TownScroll:
             "budget": asdict(self.budget),
             "preferences": dict(self.preferences),
             "active_orkspace_id": self.active_orkspace_id,
+            **({"projects": [asdict(p) for p in self.projects]} if self.projects else {}),
             "orkspaces": orkspaces,
             "buildings": buildings,
         }
@@ -377,13 +392,14 @@ class TownScroll:
                 id=o["id"], name=o["name"], biome=o.get("biome", "forest"), icon=o.get("icon", "🏰"),
                 hotkey=o.get("hotkey", ""), git=GitLink(**(o.get("git") or {"enabled": False})),
                 buildings=list(o.get("buildings", [])), window_order=list(o.get("window_order", [])),
-                active_building=o.get("active_building"),
+                active_building=o.get("active_building"), project=o.get("project") or None,
             )
             for o in data.get("orkspaces", [])
         ]
+        projects = [Project(p["id"], p["name"], p["path"], bool(p.get("managed", False))) for p in data.get("projects", [])]
         return cls(
             active_orkspace_id=data["active_orkspace_id"], orkspaces=orkspaces, buildings=buildings,
-            budget=Budget(**(data.get("budget") or {})),
+            budget=Budget(**(data.get("budget") or {})), projects=projects,
             preferences={**_default_preferences(), **{k: v for k, v in (data.get("preferences") or {}).items()
                                                        if k not in _OLD_PREFERENCES}},
             meta={k: v for k, v in (data.get("meta") or {}).items() if k != "updated_at"} or
@@ -549,47 +565,17 @@ def save(path: Path, scroll: TownScroll) -> list[str]:
     return []
 
 
-# -- Building Chronicles (event sourcing) ---------------------------------------------------------------------
-
-def events_file(repo_root: Path, building_id: str) -> Path:
-    return repo_root / HISTORY_DIR / f"{building_id}.events.jsonl"
-
-
-def append_event(repo_root: Path, building_id: str, event: dict[str, Any]) -> Path:
-    """Append one mutation, e.g. {"type": "card_moved", "id": "T1001", "to": "done", "by": "operator"}."""
-    path = events_file(repo_root, building_id)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    entry = {"ts": dt.datetime.now().isoformat(timespec="seconds"), "building": building_id, **event}
-    with path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    return path
-
-
-def read_events(repo_root: Path, building_id: str, limit: int = 200) -> list[dict[str, Any]]:
-    """Newest last; malformed lines are skipped."""
-    try:
-        lines = events_file(repo_root, building_id).read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return []
-    out = []
-    for line in lines[-limit:]:
-        try:
-            out.append(json.loads(line))
-        except ValueError:
-            continue
-    return out
-
-
 # -- the parts (validation, orkspace and garrison edits, roads): every name stays importable from here --
 from orkcraft.scroll_checks import (  # noqa: E402, F401
     _schema, _schema_errors, _regex_problem, orc_problems, filter_problems, _cycle, validate, _common_refs,
     validate_v2,
 )
 from orkcraft.scroll_garrisons import (  # noqa: E402, F401
-    HOTKEYS, MAX_ORKSPACES, ensure_presets, _slug, new_orkspace, orkspace_by_hotkey, move_building,
+    HOTKEYS, MAX_ORKSPACES, ensure_presets, _slug, new_orkspace, orkspace_by_hotkey, move_building, copy_building,
     remove_orkspace, _orc_id, _building, _unique_orc_id, add_handler, remove_handler, set_steward, update_orc,
-    recruit, dismiss_orc,
+    recruit, dismiss_orc, standing_in,
 )
+from orkcraft.scroll_events import events_file, append_event, read_events  # noqa: E402, F401
 from orkcraft.scroll_roads import (  # noqa: E402, F401
     incoming, outgoing, road_key, split_key, find_road, has_outgoing, _road_edges, subscribe, unsubscribe,
     set_road_handler, set_road_filter, add_custom_building,

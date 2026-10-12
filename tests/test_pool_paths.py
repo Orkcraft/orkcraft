@@ -166,6 +166,25 @@ def test_a_code_change_takes_today_s_way(pool):
     assert len(runs.work) == 1 and runs.read == []
 
 
+def test_an_ork_working_in_the_project_itself_is_snapshotted_before_and_after(pool, host, fake_repo, monkeypatch):
+    """docs/design/projects.md §7.1: no worktree, so the project's files are kept before and after its work."""
+    from orkcraft.realm import snapshots
+    make, runs, _steward, sent, post = pool
+    w, bid = make(plan=False)
+    work = runs.worker
+
+    def writes(harness, prompt, workdir, cancel, model, env, resume):
+        (Path(workdir) / "parser.py").write_text("fixed = True\n", encoding="utf-8")
+        return work(harness, prompt, workdir, cancel, model, env, resume)
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(writes))
+    w.receive(_cart("change", "Fix the parser", post, "Fix the parser"), "", "")
+    assert _ended(w)
+    oid = host.town.scroll.orkspace_of(bid).id
+    after, before = snapshots.listed(fake_repo, oid)[:2]
+    assert before.why.startswith("before ") and before.why.endswith("Fix the parser") and after.why.startswith("after ")
+    assert "parser.py" in snapshots.changed(fake_repo, after.sha, before.sha)
+
+
 def test_the_table_names_a_kind_when_the_cart_names_none(pool, host):
     make, runs, _steward, sent, post = pool
     w, bid = make(want_by_source={post: "reply"})
@@ -252,3 +271,51 @@ def test_a_publisher_asks_before_it_sends_a_reply_no_gate_let_through(host, monk
     w.receive(pipes.Payload(pipes.TEXT, "{}", "camp", "pool.done", "x", want="reply"), "x", "")
     assert w.ask_next == 1
     assert w.must_confirm() and w.ask_next == 0 and not w.must_confirm()
+
+
+def test_the_pool_works_in_a_folder_of_its_own_and_gives_it_back(fake_repo, tmp_path):
+    """Settings → Folder (the owner's ask: a pool on code that lives elsewhere): its orks' git is there, its state
+    stays in the town; a folder that is not there is refused; "" gives it back to the town's own."""
+    host = Host(fake_repo, False, fake_repo / ".orkcraft.json")
+    bid = buildings.raise_spec(host.town, buildings.type_spec(host.town, "barracks")).id
+    w = host.town.worker(bid)
+    act = lambda name, args: host.command("act", {"id": bid, "act": name, "args": args})   # noqa: E731
+    code = tmp_path / "elsewhere"
+    code.mkdir()
+    assert w.code_root == fake_repo
+    assert act("repo", {"path": str(code)}) == str(code.resolve())
+    assert w.code_root == code.resolve() and w.repo_root == fake_repo        # its state stays in the town
+    assert host.town.machine.recent_folders[0] == str(code.resolve())
+    with pytest.raises(Exception):
+        act("repo", {"path": str(tmp_path / "nowhere")})
+    assert act("repo", {"path": ""}) == str(fake_repo)
+
+
+def test_its_card_has_a_lane_per_ork_with_its_topic_and_what_of_it_waits():
+    """The owner's ask: the card says who works on what — an ork a lane, its tool and tier, working, resting or
+    asking, its topic (the persona it is hired as) and the tasks of that topic in the queue, its follow-ups too."""
+    from types import SimpleNamespace
+    from orkcraft.gui.views import barracks as view
+    from orkcraft.realm import barracks as bk
+    tests = bk.PoolOrc("Grub", "claude", "sonnet", status="working", persona="tests")
+    front = bk.PoolOrc("Snaga", "claude", "haiku", persona="frontend")
+    anyone = bk.PoolOrc("Mogka", "agy", "")
+    queue = [bk.PoolTask("t1", "add a test", "", persona="tests"), bk.PoolTask("t2", "fix the header", "", wait_for="Snaga"),
+             bk.PoolTask("t3", "more tests", "", persona="tests"), bk.PoolTask("t4", "anything", "")]
+    st = SimpleNamespace(orcs=[tests, front, anyone], queue=queue, asked=[SimpleNamespace(orc="Snaga")])
+    lanes = {l["name"]: l for l in view._lanes(st)}
+    assert lanes["Grub"] == {"name": "Grub", "harness": "claude", "tier": "warrior", "state": "working",
+                             "topic": "tests", "queue": 2}
+    assert (lanes["Snaga"]["state"], lanes["Snaga"]["tier"], lanes["Snaga"]["queue"]) == ("asks", "laborer", 1)
+    assert (lanes["Mogka"]["state"], lanes["Mogka"]["topic"], lanes["Mogka"]["queue"]) == ("resting", "", 0)
+
+
+def test_a_meeting_s_ork_writes_the_document_itself_as_its_answer(pool):
+    # an ork that wrote the brief into a file and answered "what I changed" left the calendar a report, not a brief
+    make, runs, steward, sent, post = pool
+    w, bid = make()
+    w.receive(pipes.Payload(pipes.TEXT, "11:00 1:1 Alex [meet:abc123]\n\nWho: Alex Kim", "drum", "calendar.event_upcoming",
+                            "1:1 Alex", ref="drum:abc123"), "", "")
+    assert _until(lambda: runs.work)
+    prompt = runs.work[0]["prompt"]
+    assert "your answer IS the document" in prompt and "what you changed, what is left" not in prompt

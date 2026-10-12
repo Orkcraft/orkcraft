@@ -17,6 +17,9 @@ writes from the window (`save_draft`); `accept_draft` accepts what the file says
 one file its task committed on its branch can be rejected — put back on the branch as the base has
 it, its content kept aside — and brought back (`reject_branch_file`, `restore_branch_file`); the cart
 is still accepted or sent back as a whole, with the rest of its files.
+
+The files, worktrees and branches it reviews are its orkspace's project's (docs/design/projects.md §8), else the
+town's; what it keeps (the vault, drafts, the 👍 / 👎) stays in the town.
 """
 from __future__ import annotations
 
@@ -59,7 +62,7 @@ class LootWorker(Worker):
 
     @property
     def review(self) -> generated.Review:
-        return generated.Review(self.repo_root, self.state_dir, str(self.config.get("path", "")))
+        return generated.Review(self.project_root, self.state_dir, str(self.config.get("path", "")))
 
     @property
     def queue(self) -> gate.Queue:
@@ -138,9 +141,9 @@ class LootWorker(Worker):
     def _rule_context(self, payload: pipes.Payload) -> gate.Context:
         files: list[str] = []
         wt = gate.worktree_of(payload)
-        if wt and (self.repo_root / wt).is_dir():
+        if wt and (self.project_root / wt).is_dir():
             try:
-                files = [g.path for g in generated.Review(self.repo_root / wt, self.state_dir / "wt").files()]
+                files = [g.path for g in generated.Review(self.project_root / wt, self.state_dir / "wt").files()]
             except (RuntimeError, OSError, ValueError):
                 pass
         if (found := self.branch(payload.trail)) is not None:       # and what it committed on its branch
@@ -150,10 +153,10 @@ class LootWorker(Worker):
     def branch(self, trail: tuple) -> tuple[generated.Branch, list[generated.Generated]] | None:
         """The branch a cart's work was committed on, with its files; None without one (or no git)."""
         h = gate.branch_of(trail)
-        if h is None or not (wt := self.repo_root / h.worktree).is_dir():
+        if h is None or not (wt := self.project_root / h.worktree).is_dir():
             return None
         try:
-            br = generated.Branch(wt, h.branch, h.base or jobs.TaskGit().base_of(self.repo_root))
+            br = generated.Branch(wt, h.branch, h.base or jobs.TaskGit().base_of(self.project_root))
             return br, br.files()
         except (RuntimeError, OSError, ValueError, subprocess.SubprocessError):
             return None

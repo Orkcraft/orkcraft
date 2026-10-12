@@ -46,7 +46,7 @@ button { font: inherit; color: inherit; }
 /* The Warchief's line: the face (the Town Hall), the chips it is about, the field; over it the last of his
    chat, what a command said, the hints or the commands and names as typed. */
 .gui-warchief { flex: 1 1 auto; position: relative; display: flex; flex-direction: column; align-items: center; min-width: 0; }
-.gui-warchief__bar { display: flex; align-items: center; gap: var(--space-2); width: min(760px, 100%); box-sizing: border-box;
+.gui-warchief__bar { display: flex; align-items: center; gap: var(--space-2); width: min(720px, 100%); box-sizing: border-box;
   padding: var(--space-1) var(--space-2); background: var(--panel); border: var(--ok-frame) solid var(--frame);
   border-radius: var(--ok-radius-lg); box-shadow: var(--shadow-window); }
 .gui-warchief.is-focused .gui-warchief__bar { border-color: var(--frame-focus); }
@@ -87,9 +87,11 @@ button { font: inherit; color: inherit; }
   .gui-warchief__speaks { display: none; }
   .gui-warchief__buttons .ok-btn { padding-left: var(--space-2); padding-right: var(--space-2); }
 }
-.gui-warchief__over { position: absolute; bottom: calc(100% + var(--space-2)); width: min(760px, 100%); max-height: 50vh; }
+.gui-warchief__over { position: absolute; bottom: calc(100% + var(--space-2)); width: min(720px, 100%); max-height: 50vh; }
 /* A building just raised, set up in a question or two over the line (js/warchief.js, js/build.js raised). */
 .gui-warchief__setup .ok-win__body { display: grid; gap: var(--space-2); }
+.gui-improve__changes { flex-basis: 100%; margin: 0; padding-left: var(--space-3); display: flex; flex-direction: column; gap: var(--space-1); }
+.gui-warchief__day { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
 .gui-warchief__setup-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .gui-setup__ways { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .gui-warchief__over > .ok-win__frame { max-height: 50vh; display: flex; flex-direction: column; box-sizing: border-box; }
@@ -140,6 +142,17 @@ button { font: inherit; color: inherit; }
 .gui-town__room > .gui-hut.ok-hut[class].is-sized { min-width: 0; max-width: none; }
 .gui-hut.is-sized > .ok-hut__card { box-sizing: border-box; min-height: 0; display: flex; flex-direction: column; }
 .gui-hut.is-sized > .ok-hut__card > .gui-hut__body, .gui-hut.is-sized > .ok-hut__card > .ok-hut__lines { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+/* Its name keeps its height (in Camp the top fence): a tall body is cut at the bottom, never slid up under the name. */
+.gui-hut.is-sized > .ok-hut__card > .gui-hut__title { flex: none; }
+/* Nor is a part of it squeezed to a sliver (a button, a headline): what does not fit under the others is cut. */
+.gui-hut.is-sized > .ok-hut__card > .gui-hut__body > *, .gui-hut.is-sized > .ok-hut__card > .gui-hut__body > .gui-hut__body-in > * { flex-shrink: 0; }
+/* Small, a card keeps every line to one and cuts it with …, never past its edges: rows that wrap (the parts it shows,
+   a head with its counts) stay on one line. */
+.gui-hut.is-size-s > .ok-hut__card :is(p, li, dd, dt, h3, h4, small, .gui-hut__big > small, .ok-check > span) {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-hut.is-size-s > .ok-hut__card :is(.gui-parts, .gui-fhut__head) { flex-wrap: nowrap; overflow: hidden; }
+.gui-hut.is-size-s > .ok-hut__card .ok-check { min-width: 0; flex-shrink: 1; }
+.gui-hut.is-size-s > .ok-hut__card .ok-btn { max-width: 100%; height: 24px; margin-block: 2px; overflow: hidden; }
 /* Larger, a card's lines wrap instead of being cut at the edge. */
 .gui-hut.is-size-m .gui-hut__text, .gui-hut.is-size-l .gui-hut__text { white-space: normal; }
 /* Closed: the name hangs above the card; the card holds only the type's live status (js/hut.js). Every
@@ -201,6 +214,12 @@ button { font: inherit; color: inherit; }
 .gui-hut__mark.ok-tone-error { color: var(--danger); }
 .gui-hut__mark.ok-tone-wait { color: var(--warning); }
 .gui-town__room > .gui-hut.is-peek { z-index: 2; }
+/* The zoom changed (js/zoom.js): the huts glide to their new places down the town, the roads come in again. */
+.gui-town.is-zooming .gui-town__room > .gui-hut { transition: top .25s ease, left .25s ease; }
+.gui-town.is-zooming :is(.gui-roads, .gui-signs, .gui-loose-ends) { animation: gui-zoom-in .32s ease both; }
+@keyframes gui-zoom-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .gui-town.is-zooming .gui-town__room > .gui-hut { transition: none; }
+  .gui-town.is-zooming :is(.gui-roads, .gui-signs, .gui-loose-ends) { animation: none; } }
 .gui-hut__peek { position: absolute; z-index: 2; top: 100%; left: calc(-1 * var(--ok-stroke, 2px)); right: calc(-1 * var(--ok-stroke, 2px));
   background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame); border-top: 0; box-shadow: var(--shadow-window);
   animation: gui-peek .15s ease-out both; }
@@ -243,7 +262,7 @@ button { font: inherit; color: inherit; }
    Task Fields' card it is a row at the top of its yard, as the War Drum's legend: always there, never a tray that
    pops out over the card (the owner's call, 2026-10-09; yards.md §7). */
 .gui-parts { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); padding-bottom: var(--space-1); border-bottom: 1px solid var(--frame); }
-.gui-hut .gui-fhut > .gui-parts { margin-bottom: var(--space-1); }
+.gui-hut .gui-fhut > .gui-parts { grid-column: 1 / -1; margin-bottom: var(--space-1); }
 .gui-town__room > .gui-hut:hover, .gui-town__room > .gui-hut:focus-within { z-index: 2; }
 .gui-parts .ok-check.gui-parts__one { gap: var(--space-1); font-size: 12px; line-height: 18px; white-space: nowrap; cursor: pointer; }
 .gui-parts .ok-check.gui-parts__one i { width: 12px; height: 12px; font-size: 10px; }
@@ -280,6 +299,9 @@ button { font: inherit; color: inherit; }
 .gui-infopage__body { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .gui-infopage__acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
 .gui-thumb { gap: 3px; }
+/* Camp: the green pixel thumb (js/console.js Thumb); Office: the emoji (office.css). */
+.gui-thumb__icon { image-rendering: pixelated; margin: -2px 0; }   /* 20 px as in the bubble, a pixel a CSS pixel */
+.gui-thumb__emoji { display: none; }
 .gui-thumb__n { font-size: .9em; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 .gui-console__sep { padding: var(--space-1) 0 0; }
 .gui-console__row { cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -346,6 +368,10 @@ button { font: inherit; color: inherit; }
 .gui-panel.is-full { width: 100%; }
 .gui-panel > .ok-win__frame { height: 100%; display: flex; flex-direction: column; box-sizing: border-box; }
 .gui-panel__tabs { flex: none; overflow-x: auto; overflow-y: hidden; }
+/* The tabs stand in the panel's title bar, after its name (the ork's badge left for its Info): one row less. */
+.ok-win__bar > .gui-panel__tabs { flex: 0 1 auto; width: auto; min-width: 0; display: flex; align-items: stretch; gap: 2px; margin-left: var(--space-3);
+  border: 0; background: none; padding: 0; scrollbar-width: none; }
+.ok-win__bar > .gui-panel__tabs > .ok-tab { height: auto; padding-top: 2px; padding-bottom: 2px; }
 .gui-panel__tabs > .ok-tab { flex: none; }
 .gui-panel__full { font-size: 14px; }
 /* A setup's ← Back past its first step (js/setup.js): the bar's top right corner, before ⤢ and ×. */
@@ -450,6 +476,8 @@ button { font: inherit; color: inherit; }
 .gui-dialog__body { display: flex; flex-direction: column; gap: var(--space-3); min-height: 0; overflow: auto; margin: 0 calc(-1 * var(--space-2)); padding: 0 var(--space-2); }
 .gui-dialog__body:empty { display: none; }
 .ok-dialog__actions { flex-wrap: wrap; align-items: center; }
+/* The version, always there and quiet: at the left of Town settings' Close, in either look. */
+.gui-settings__version { margin-right: auto; font-variant-numeric: tabular-nums; }
 .gui-dialog__note { flex: 1; color: var(--ink-muted); font-size: 12px; }
 /* A steward's report (js/acts.js ReportView): its findings as a list, each proposal a block with its own
    Apply / Skip on the right; taken ones stay, quieter, with what they did. */
@@ -628,6 +656,12 @@ button { font: inherit; color: inherit; }
   box-shadow: inset 0 0 0 2px var(--ground), 0 0 0 1px var(--bevel-lo); }
 .gui-map__biome.is-on { box-shadow: inset 0 0 0 2px var(--ground), 0 0 0 2px var(--frame-focus); }
 .gui-map__biome-name { margin-left: auto; font: 500 11px/12px "Pixelify Sans", var(--ok-font); color: var(--ink-muted); }
+.gui-map__where { width: 100%; min-width: 0; font-size: 11px; padding: 2px 4px; }
+.gui-history__row { display: flex; align-items: center; gap: var(--space-2); padding: 4px 0; }
+.gui-history__when { flex: none; width: 92px; color: var(--ink-muted); }
+.gui-history__what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.gui-history__ask { display: flex; gap: var(--space-2); }
+.gui-history__tag { font-size: 11px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.04em; }
 /* the call (§2.5): rings from the land's ■, the land flashes; an arrow at the frame's edge out of sight */
 .gui-map__ping { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 5; }
 .gui-map__ping::before { content: ""; position: absolute; outline: 2px solid var(--alert); animation: gui-map-ping .9s steps(6) both;
@@ -651,8 +685,20 @@ button { font: inherit; color: inherit; }
 .gui-sprite__hut { display: flex; flex-direction: column; }
 .gui-sprite__walls { position: relative; }
 .gui-sprite__walls > .ok-sprite { display: block; }
+/* A house at work (docs/design/building-motion.md, realm/motion.py): its still layer, and its moving part over it turned
+   or swung round its pivot in steps, as a sprite's frames are. */
+.gui-work { position: relative; display: inline-block; line-height: 0; }
+.gui-work__still { display: block; }
+.gui-work__part { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-origin: var(--work-x) var(--work-y); }
+.gui-work__part.is-turn { animation: gui-work-turn .8s steps(var(--work-steps, 4)) infinite; }
+.gui-work__part.is-swing { animation: gui-work-swing .9s steps(var(--work-steps, 4)) infinite alternate; }
+@keyframes gui-work-turn { to { transform: rotate(var(--work-deg)); } }
+@keyframes gui-work-swing { to { transform: rotate(var(--work-deg)); } }
+@media (prefers-reduced-motion: reduce) { .gui-work__part { animation: none; } }
+.ux-picture__house.is-unpainted { opacity: .35; }
 .gui-sprite__footing { display: block; background-repeat: repeat-x; background-size: auto 100%; image-rendering: pixelated; }
 .gui-sprite__flag { position: absolute; }
+.gui-sprite__annex.ok-sprite { image-rendering: auto; }   /* shaded as the painted headers (tools/growth_sprites.py): smooth */
 .gui-sprite__flag.is-on-snow { filter: drop-shadow(1px 0 0 var(--bevel-lo)) drop-shadow(-1px 0 0 var(--bevel-lo)); }
 
 /* The building's Info head: its sprite large, its renown and what the next asks (js/console.js). */
@@ -686,16 +732,25 @@ button { font: inherit; color: inherit; }
   flex-direction: column; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--panel);
   box-shadow: 0 0 0 2px var(--frame-focus), var(--shadow-window); color: var(--ink); cursor: auto; }
 [data-look="office"] .gui-portrait__menu { box-shadow: 0 0 0 1px var(--frame), var(--shadow-window); border-radius: var(--radius-lg); }
-.gui-portrait__menu .gui-you { margin-bottom: 0; }
+.gui-portrait__menu .gui-you { margin-bottom: 0; flex-wrap: wrap; }
+.gui-portrait__menu .gui-you__who { flex: 1 1 140px; }
+/* Pair a phone (js/phones.js): the QR code at the right of the head; the menu widens for it, and in a sheet too
+   narrow for head, name and code side by side the code goes under the head. */
+.gui-portrait__menu.is-pairing { width: 440px; }
+.gui-you .gui-you__qr { flex: none; width: 128px; height: auto; }
+.gui-you code.gui-you__qr { width: auto; flex: 1 1 100%; }
+.gui-you__pair { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding-top: var(--space-1); }
 .gui-portrait__menu .gui-portrait__ground { width: 72px; height: 68px; padding-bottom: 8px; flex: none;
   box-shadow: inset 0 -6px 0 var(--land), var(--bevel-sunken); }
 .gui-portrait__row { display: flex; flex-direction: column; gap: var(--space-1); }
-.gui-portrait__menu > p { margin: 0; white-space: normal; }
+.gui-portrait__menu > p { margin: 0; }
+.gui-portrait__menu { white-space: normal; }   /* the HUD (a narrow window) keeps its own on one line */
 .gui-portrait__links { display: flex; gap: var(--space-4); padding-top: var(--space-2); border-top: 1px solid var(--frame); }
 .gui-warchief__mono { display: grid; place-items: center; width: 24px; height: 20px; color: var(--ink-muted); font: 700 18px/1 var(--ok-font); }
 @media (max-width: 640px) {
   .gui-portrait__menu { position: fixed; left: 0; right: 0; top: auto; bottom: 0; width: auto; padding-bottom: var(--space-6);
     max-height: 85vh; overflow-y: auto; }
+  .gui-portrait__menu.is-pairing { width: auto; }
 }
 .gui-you { display: flex; gap: var(--space-3); align-items: center; padding-bottom: var(--space-3);
   border-bottom: 2px solid var(--frame); margin-bottom: var(--space-3); }
@@ -820,32 +875,132 @@ button { font: inherit; color: inherit; }
 /* The hour in the middle of the HUD (js/chrome.js Hour), as an old strategy game's day and night dial: a sun while the
    orks work, a moon in quiet hours, twice an icon's size, hanging from the bar over the town on a dark plate.
    The HUD clips what leaves it, so the dial and its menu stand on the window. Camp draws the sprite, Office the glyph. */
-.gui-hour { position: fixed; top: 1px; left: calc(var(--town-w, 100vw) / 2 - 22px); z-index: 7; }
-.gui-hour__dial { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: var(--ok-stroke, 2px) solid var(--frame);
+.gui-hour { position: fixed; top: 1px; left: calc(var(--town-w, 100vw) / 2 - 15.5px); z-index: 7; }
+.gui-hour__dial { display: grid; place-items: center; width: 31px; height: 31px; padding: 0; border: var(--ok-stroke, 2px) solid var(--frame);
   background: var(--panel-raised); box-shadow: var(--bevel-raised), var(--shadow-window); cursor: pointer; line-height: 0; }
 .gui-hour__dial:hover { background: var(--selection); }
 .gui-hour__dial:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
-.gui-hour__dial > img { width: 32px; height: 32px; image-rendering: pixelated; }
-.gui-hour__glyph { display: none; font-size: 24px; line-height: 1; color: var(--ink-gold); }
+.gui-hour__dial > img { width: 24px; height: 24px; image-rendering: pixelated; }
+.gui-hour__glyph { display: none; font-size: 17px; line-height: 1; color: var(--ink-gold); }
 .gui-hour__dial.is-night .gui-hour__glyph { color: var(--quiet-ink); }
 [data-look="office"] .gui-hour__dial > img { display: none; }
 [data-look="office"] .gui-hour__glyph { display: inline; }
-.gui-hour__menu { position: fixed; top: 52px; left: calc(var(--town-w, 100vw) / 2 - 140px); width: 280px; z-index: 30; display: grid; gap: var(--space-2);
+.gui-hour__menu { position: fixed; top: 39px; left: calc(var(--town-w, 100vw) / 2 - 180px); width: 360px; z-index: 30; display: grid; gap: var(--space-2);
   padding: var(--space-3); white-space: normal; background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame);
   box-shadow: var(--shadow-window); }
 .gui-hour__menu > p { margin: 0; }
 @media (max-width: 640px) { .gui-hour { position: static; } .gui-hour__dial { width: 28px; height: 28px; border: 0; box-shadow: none; }
   .gui-hour__dial > img { width: 16px; height: 16px; } }
 
-/* Build: the ghost of a building placed with the mouse (js/town.js Placing), over the whole town; its pieces are the
-   onboarding's (onboarding.css .gui-onb__ghost). The ghost never takes the pointer, so offsets stay the room's. */
+/* Build: the ghost of a building placed with the mouse (js/town.js Placing), over the whole town: the building itself,
+   1:1, faded. The ghost never takes the pointer, so offsets stay the room's. */
 .gui-town__placing { position: absolute; inset: 0; z-index: 8; cursor: crosshair; }
-.gui-town__placing .gui-onb__ghost { pointer-events: none; }
+.gui-town__ghost { position: absolute; inset: 0; pointer-events: none; opacity: .55; }
+.gui-town__ghost * { pointer-events: none !important; }
+.gui-town__ghost.is-away { visibility: hidden; }
+.gui-town__ghost.is-blocked { opacity: .35; }
 .gui-town__placing-hint { position: fixed; left: 50%; top: calc(var(--bar-hud) + 56px); transform: translateX(-50%); margin: 0;
   padding: var(--space-1) var(--space-3); background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame); pointer-events: none; }
 .gui-onb__ghost.is-bare .gui-onb__ghost-name { margin-top: 2px; }
+/* Build: the building going up (js/town.js `.gui-town__raising`) is the very hut its ghost drew, where the ghost
+   stood, under scaffolding: its house rises inside a dashed gold frame, a hammer at work beside it; nothing in it takes
+   the pointer until it stands. Office has no house to raise: the hut waits faded in a dashed frame. */
+.gui-town__raising { position: absolute; inset: 0; pointer-events: none; }
+.gui-town__raising * { pointer-events: none !important; }
+.gui-town__raising .gui-sprite__walls { position: relative; }
+.gui-town__raising .gui-sprite__walls > img:first-child { animation: gui-onb-rise 1.6s steps(12) both; }
+.gui-town__raising .gui-sprite__walls::after { content: ""; position: absolute; inset: -4px -6px 0; border: 2px dashed var(--frame-focus);
+  background: repeating-linear-gradient(135deg, transparent 0 8px, color-mix(in srgb, var(--frame-focus) 14%, transparent) 8px 11px); }
+.gui-town__raising .gui-sprite__walls::before { content: "⚒"; position: absolute; right: -20px; top: 0; z-index: 1;
+  color: var(--frame-focus); font-size: 13px; line-height: 1; animation: gui-onb-hammer 0.5s steps(2) infinite; }
+[data-look="office"] .gui-town__raising .gui-hut { opacity: .6; outline: 2px dashed var(--frame-focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .gui-town__raising .gui-sprite__walls > img:first-child, .gui-town__raising .gui-sprite__walls::before { animation: none; } }
 
 /* A tier as a person reads it (js/icons.js TierMark): its chevrons, then its word. Office: the word alone. */
 .gui-tier { display: inline-flex; align-items: center; gap: 3px; }
 .gui-tier__mark { image-rendering: pixelated; }
 [data-look="office"] .gui-tier__mark { display: none; }
+
+/* Build: the Warchief's line grown by a row of small icons (js/build.js `BuildRow`, docs/design/warchief-line-and-cards.md
+   §2): what each is for (design-system/sprites/intents/), a thin rule between the catalog's groups, the line over it
+   saying what the icon under the mouse raises. One row; a narrow line scrolls it sideways. */
+.gui-warchief__grown .ok-win__body { gap: 2px; padding-top: var(--space-1); padding-bottom: var(--space-1); }
+.gui-build { display: grid; gap: 2px; min-width: 0; }
+.gui-build__said { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gui-build__row { display: flex; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; gap: var(--space-2) var(--space-3); padding-bottom: 1px; }
+/* A group by what it is for (js/build.js GROUPS): its word over its icons, a rule under the word as wide as the group. */
+.gui-build__group { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.gui-build__group-word { padding-bottom: 2px; border-bottom: 2px solid var(--frame-strong); font: 600 10px/12px var(--ok-font);
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ink-muted); white-space: nowrap; }
+.gui-build__group-tiles { display: flex; gap: 1px; }
+.gui-build__tile { flex: none; display: grid; place-items: center; width: 34px; height: 36px; padding: 0;
+  border: 1px solid transparent; border-radius: var(--radius-sm, 0); background: none; color: var(--ink); cursor: pointer; font: inherit; }
+.gui-build__tile > img { image-rendering: pixelated; }
+.gui-build__tile .gui-sprite img { max-height: 30px; width: auto; image-rendering: pixelated; }
+.gui-build__tile:is(:hover, :focus-visible) { background: var(--selection); border-color: var(--frame); }
+.gui-build__tile.is-yours { border-color: var(--ink-gold); }
+.gui-build__tile.is-first { margin-left: 4px; position: relative; }
+.gui-build__tile.is-first::before { content: ""; position: absolute; left: -3px; top: 6px; bottom: 6px; border-left: 1px solid var(--frame); }
+.gui-build__word { display: none; }                  /* its word: the line over the row, and Office's own */
+.gui-warchief__build.is-on { background: var(--selection); color: var(--ink-gold); box-shadow: inset 0 -2px 0 var(--ink-gold); }
+
+/* What the Warchief says first (js/warchief.js Speaks): a bubble over the line, never a part of it, so nothing in the
+   line moves when a question, a piece of news or the spend comes and goes. */
+.gui-warchief > .gui-warchief__speaks { position: absolute; bottom: calc(100% + var(--space-2)); left: 50%; transform: translateX(-50%);
+  display: inline-flex; align-items: baseline; gap: var(--space-2); max-width: min(560px, 90%); padding: var(--space-1) var(--space-3);
+  background: var(--panel); border: var(--ok-frame, 2px) solid var(--frame); border-radius: var(--ok-radius-lg); box-shadow: var(--shadow-window);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-warchief > .gui-warchief__speaks.ok-tone-fire { border-color: var(--warning); color: var(--warning); }
+@container warchief (max-width: 600px) { .gui-warchief > .gui-warchief__speaks .gui-warchief__long { display: inline; } }
+
+/* Info in two parts (js/console.js, docs/design/yards.md §9): the building — what it does, its settings, its roads — and
+   its ork, headed by its face at full size and why the building has an ork at all. Each part on its own panel. */
+.gui-info-part { display: flex; flex-direction: column; gap: var(--space-2); margin: 0 0 var(--space-4); padding: var(--space-3);
+  border: 1px solid var(--frame); border-radius: var(--ok-radius-md, 4px); background: color-mix(in srgb, var(--ink) 3%, transparent); }
+.gui-info-part.is-ork { border-color: color-mix(in srgb, var(--success, #86c062) 45%, var(--frame)); }
+.gui-info-part__label { margin: 0; font: 600 10px/12px var(--ok-font); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-muted); }
+.gui-info-part > .gui-section { margin-top: 0; }
+.gui-orkcard { display: flex; gap: var(--space-3); align-items: center; }
+.gui-orkcard__face { flex: none; display: grid; place-items: center; width: 84px; height: 72px; background: var(--panel-inset);
+  box-shadow: var(--bevel-sunken); }
+.gui-orkcard__face > img { width: 72px; height: auto; image-rendering: pixelated; }
+.gui-orkcard__who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gui-orkcard__why { margin: 0; white-space: normal; color: var(--ink); }
+.gui-panel .ok-win__bar > .ok-win__title { flex: 0 1 auto; min-width: 4em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* In Camp the Warchief speaks as his orks do (yards.css .gui-out__bubble): a pixel bubble of parchment that pops up
+   over the line, its tail down to his face at the line's left end. Office keeps the plain bubble above. */
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks { left: calc(50% - min(360px, 50%)); transform: none; transform-origin: 24px 100%;
+  bottom: calc(100% + 14px); padding: 2px 6px; margin: 0; border: 8px solid transparent; border-radius: 0; box-shadow: none;
+  background: none; image-rendering: pixelated; overflow: visible; color: var(--ink-on-parchment, #3b2a17);
+  font: 700 14px/18px var(--font-camp);
+  border-image: image-set(url("/ds/sprites/icons/bubble.png") 1x, url("/ds/sprites/icons/bubble@2x.png") 2x) 8 fill / 8px;
+  animation: gui-warchief-pop .22s steps(4, end) both; }
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks::after { content: ""; position: absolute; left: 14px; top: 100%; margin-top: 8px;
+  width: 10px; height: 8px; background: image-set(url("/ds/sprites/icons/bubble-tail.png") 1x, url("/ds/sprites/icons/bubble-tail@2x.png") 2x) 0 0 / 10px 8px; }
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks > .gui-warchief__long,
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks > .gui-link { overflow: hidden; text-overflow: ellipsis; color: inherit; font: inherit; }
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks.ok-tone-fire,
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks.ok-tone-wait { color: var(--ink-on-parchment, #3b2a17); }
+[data-look="camp"] .gui-warchief > .gui-warchief__speaks.ok-tone-fire::before { content: none; }
+@keyframes gui-warchief-pop { from { transform: scale(.6) translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .gui-warchief > .gui-warchief__speaks { animation: none !important; } }
+/* Office: the same bubble, calm — from the line's left end, a small tail down to it, popping in without steps. */
+[data-look="office"] .gui-warchief > .gui-warchief__speaks {
+  left: calc(50% - min(360px, 50%)); transform: none; transform-origin: 24px 100%; bottom: calc(100% + 10px); overflow: visible;
+  animation: gui-warchief-pop .18s ease-out both; }
+[data-look="office"] .gui-warchief > .gui-warchief__speaks::after { content: ""; position: absolute; left: 18px; top: 100%;
+  width: 10px; height: 10px; margin-top: -5px; background: var(--panel); border: inherit; border-width: 0 var(--ok-frame, 2px) var(--ok-frame, 2px) 0;
+  transform: rotate(45deg); }
+.gui-sprite__walls > .ok-sprite.is-painted { image-rendering: auto; }   /* a painted header (tools/painted.py): smooth */
+/* GitHub in the mascot's menu (js/github.js): the code GitHub gave stands out to be typed there. */
+.gui-github p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.gui-github__code { font-family: var(--font-mono, monospace); letter-spacing: 0.08em; font-size: 1.1em; }
+
+/* The steward's AI tool: a short list of the tools on, each on its own icon (js/steward.js ToolPick). */
+.gui-toolpick { position: relative; display: inline-block; }
+.gui-toolpick__list { position: absolute; z-index: 20; left: 0; top: 100%; margin: 2px 0 0; padding: 4px; list-style: none;
+  min-width: 100%; background: var(--panel); border: 1px solid var(--frame); border-radius: 4px; }
+.gui-toolpick__one { display: flex; align-items: center; gap: 6px; width: 100%; padding: 4px 8px; text-align: left;
+  background: none; border: 0; color: var(--ink); cursor: pointer; white-space: nowrap; }
+.gui-toolpick__one:hover, .gui-toolpick__one.is-on { background: var(--selection); }

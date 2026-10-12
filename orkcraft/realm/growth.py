@@ -146,7 +146,7 @@ STAGE_NAMES = {           # a fantasy rank with the job in it: what the stage me
     "gnome": ("A/B Tinkerer", "", "Growth-Hack Artificer", "Grand Tinker of Conversions"),
     "goblin": ("Spreadsheet Scrounger", "", "Pivot-Table Boss", "KPI Tycoon"),
     "knight": ("Bootstrap Squire", "", "Knight of the Seed Round", "Paladin of Product-Market Fit"),
-    "skeleton": ("Inbox Skeleton", "", "Captain of the Skeleton Crew", "Lord of a Thousand Tabs"),
+    "skeleton": ("Inbox Ghost", "", "Captain of the Ghost Crew", "Lord of a Thousand Tabs"),
 }
 STAGE_NEXT = {1: "Rate three buildings in one week", 2: "Bring a building to level II",
               3: "Three buildings at level III, one of them on the clock or unchained", 4: ""}

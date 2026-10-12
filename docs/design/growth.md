@@ -216,7 +216,7 @@ What Info gets:
 ### 7.1 Who
 
 The mascot is **the operator**. The onboarding already gives one per role (onboarding.md §3: Burnout Peon,
-The Jira Lich, Gradient-Sick Elf, Growth-Hack Gnome, Data-Mining Goblin, Indie Knight, Wandering Skeleton). Today it is
+The Jira Lich, Gradient-Sick Elf, Growth-Hack Gnome, Data-Mining Goblin, Indie Knight, Wandering Ghost). Today it is
 only a name. It gets a face, and the face grows.
 
 ### 7.2 Drawn like the landing's classes
@@ -230,14 +230,17 @@ adds its own headgear or prop, so every stage reads as a step up:
 | Software engineer (ork) | a bare head | sweat and tired eyes | a red bandana, war paint | a horned iron helm, gold eyes |
 | QA engineer (ork) | a beetle on the head | a magnifier on the eye | goggles up, the beetle caught | a gold beetle-shell helm |
 | Engineering manager (lich) | a sticky note | a red bow tie | a headset | a high plum collar, gold tie and eyes |
-| Product manager (wraith) | a pale hood | a rolled roadmap | a map pin over the hood | a gold-hemmed hood, the roadmap unrolled |
+| Product manager (mummy) | bandages | a rolled roadmap | a map pin on the head | a gold band and eyes, the roadmap unrolled |
 | Product designer (elf) | a sprout in blonde hair | the gradient rainbow | a ranger's green hood, a pencil | long hair, gold pins and eyes, swatches |
 | Game designer (elf) | auburn hair | a quill | a plum beret | long hair, gold eyes, a d20 |
 | ASO manager (gnome) | a red cap | a keyword tag | brass goggles | a gold band under five rating stars |
 | Marketing (gnome) | a blue cap | its gold star | a megaphone | a gold band, the green arrow of growth |
 | Data analyst (goblin) | a green visor | a miner's lamp | a pickaxe | a top hat, a monocle, a gold tooth |
 | Founder (knight) | a squire's leather coif | a steel helm, a pink plume | a sprout and a gold trim | a white-and-gold helm, a glowing visor |
-| Someone else (skeleton) | a bare skull | a straw hat | a captain's hat, an eye patch | a crest of open tabs, gold eyes |
+| Someone else (ghost) | a bare sheet | a straw hat | a captain's hat, an eye patch | a crest of open tabs, gold eyes |
+
+The heads are drawn again in the UX bench too, from a person's words (improve-buildings.md §6.4): a machine's own
+head is kept beside the design system's and shown before it.
 
 | Stage | Reached when (starting values) |
 |---|---|
@@ -252,12 +255,12 @@ nick from the onboarding, the others are the kin's.
 | Kin (roles) | 1 | 2 | 3 | 4 |
 |---|---|---|---|---|
 | orks (engineers, QA) | Commit Grunt | Burnout Peon · Bug Ork | Hotfix Berserker | Warlord of Prod |
-| undead (managers) | Standup Zombie | The Jira Lich · Roadmap Wraith | Lich of Sprints | Release Night King |
+| undead (managers) | Standup Zombie | The Jira Lich · Roadmap Mummy | Lich of Sprints | Release Night King |
 | elves (designers) | Pixel Sprout | Gradient-Sick Elf · Lore Elf | Ranger of the Grid | High Elf of the Design System |
 | gnomes (ASO, marketing) | A/B Tinkerer | Keyword Gnome · Growth-Hack Gnome | Growth-Hack Artificer | Grand Tinker of Conversions |
 | goblins (analysts) | Spreadsheet Scrounger | Data-Mining Goblin | Pivot-Table Boss | KPI Tycoon |
 | knights (founders) | Bootstrap Squire | Indie Knight | Knight of the Seed Round | Paladin of Product-Market Fit |
-| skeletons (everyone else) | Inbox Skeleton | Wandering Skeleton | Captain of the Skeleton Crew | Lord of a Thousand Tabs |
+| ghosts (everyone else) | Inbox Ghost | Wandering Ghost | Captain of the Ghost Crew | Lord of a Thousand Tabs |
 
 - **The top stage is never a crown.** The crown is the Warchief's (§8). Each role has its own top
   mark: a horned war helm for the engineer, rating stars for the ASO gnome, and so on.

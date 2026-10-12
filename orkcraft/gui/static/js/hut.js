@@ -10,19 +10,24 @@
 // A drag or a stretch by an edge or corner never moves the hut at once: a ghost outline follows the mouse, red
 // where it would stand on another hut, and the hut goes there on the drop only if it is free (js/town.js
 // Footprint). A card stretched larger shows more (docs/design/building-views.md §1a): its size is kept in the
-// Town Scroll (`hut.size`).
+// Town Scroll (`hut.size`). The town's zoom (docs/design/map-view.md) draws it at one of three levels: on the map as a
+// bare building in Camp (its house, its plinth, its name; only a question or what broke over it) and folded in Office,
+// peeking as a folded card does; in the overview its card at its smallest; close up at its medium size, a bare
+// building in a small yard of its own. Its width is the same at the overview and close up: only its height changes.
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { opened, openBuilding } from "./windows.js";
-import { laying, demolishing } from "./build.js";
+import { opened, openBuilding, selected, pickBuilding } from "./windows.js";
+import { laying, demolishing, copying } from "./build.js";
 import { reasons, busy as busyOf, fold } from "./fold.js";
 import { openMenu } from "./menu.js";
 import { mention } from "./warchief.js";
 import { typeModule, runQuick } from "./types.js";
-import { town, say, command } from "./link.js";
+import { town, say, command, toast } from "./link.js";
 import { Outside } from "./visit.js";
+import { openOrders } from "./orders.js";
 import { TypeIcon, HutSprite, OrkHead, Scheme, activeBiome } from "./icons.js";
+import { zoomLevel } from "./zoom.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
 export const CORNER = "town_hall";          // stands in the town's bottom-right corner, as in the TUI: never moved
@@ -41,28 +46,26 @@ export const fenced = (b) => !bareOf(b) && b.id !== CORNER;
 const snap = (v, by) => (by ? Math.max(by, Math.round(v / by) * by) : v);
 
 /** How much a card shows by its size (docs/design/building-views.md §1a): `s` as it comes, `m` stretched, `l` big. */
+// The least size of each: a card shows more as soon as it has the room.
+export const LEVEL_M = { w: 300, h: 170 }, LEVEL_L = { w: 460, h: 320 };
+const LEVEL_S_H = 120;                     // a small card's height: the zoom's overview (docs/design/map-view.md)
 export function levelOf(b, auto = null) {
   const [w, h] = (b && b.size) || (auto && [auto[0], auto[1] || 0]) || [0, 0];
-  return w >= 520 && h >= 400 ? "l" : w >= 360 && h >= 240 ? "m" : "s";
+  return w >= LEVEL_L.w && h >= LEVEL_L.h ? "l" : w >= LEVEL_M.w && h >= LEVEL_M.h ? "m" : "s";
 }
-export const pulling = signal(null);       // {from, x, y, over}: a road being pulled out of a hut, to the pointer; `over` the hut under it
-const WARN_MS = 2000;                      // a drag on a pinned hut turns its pin red this long
-const warned = signal({});                 // building id → true while its pin says it holds the hut
+export const pulling = signal(null);       // {from, sx, sy, x, y, over}: a road being pulled out of a hut from (sx, sy), to the pointer; `over` the hut under it
+const WARN_MS = 4000;                      // a drag on a pinned hut says why once in this long
 const putAway = signal({});                // building id → the peek reasons the person put away (▸ on a peek)
 const dragOver = signal(null);             // the folded hut a drag is held over: it peeks
 // Caught first, let go after the drop reached the card, so the peek holds till the Pit took what fell on it.
 for (const end of ["drop", "dragend"]) window.addEventListener(end, () => setTimeout(() => { dragOver.value = null; }), true);
-const warnings = new Map();                // building id → the timer that lets the pin go back
+const warnings = new Map();                // building id → the timer before it may say so again
 
-/** A drag on a pinned hut: its pin turns red for WARN_MS, so the person sees why it does not move. */
+/** A drag on a pinned hut: a toast says why it does not move (once per WARN_MS). */
 function warnPinned(id) {
-  clearTimeout(warnings.get(id));
-  warned.value = { ...warned.value, [id]: true };
-  warnings.set(id, setTimeout(() => {
-    warnings.delete(id);
-    const { [id]: _, ...rest } = warned.value;
-    warned.value = rest;
-  }, WARN_MS));
+  if (warnings.has(id)) return;
+  warnings.set(id, setTimeout(() => warnings.delete(id), WARN_MS));
+  toast(say("Pinned in place — unpin it from its menu (right click) to move it"), "information");
 }
 
 function togglePin(e, id) {
@@ -71,38 +74,14 @@ function togglePin(e, id) {
 }
 
 /** The pin by a hut's name: on, the hut keeps its place; off, a drag moves it. */
-function PinButton({ b }) {
-  const on = !!b.pinned;
-  const label = on ? say("Unpin to move it") : say("Pin it in place");
-  return html`<button class=${cls("gui-hut__pin", { "is-on": on, "is-warn": !!warned.value[b.id] })} title=${label} aria-label=${label} aria-pressed=${on}
-      onPointerDown=${(e) => e.stopPropagation()} onClick=${(e) => togglePin(e, b.id)}>
-    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
-      <path d="M6 1.5h4M7 1.5v4.5L4.5 9h7L9 6V1.5M8 9v5.5" />
-    </svg></button>`;
-}
-
 const peekReasons = (b) => { const away = putAway.value[b.id] || []; return reasons(b).filter((r) => !away.includes(r)); };
 
-/** ▾ folds an open card, ▸ unfolds a folded one; on a peek ▸ puts it away while the same reasons stand. A
- *  chevron in a 24px box, so it is found and hit in either look. */
-function FoldButton({ b, peek }) {
-  const label = !b.folded ? say("Fold the card") : peek ? say("Put it away") : say("Unfold the card");
-  const press = (e) => {
-    e.stopPropagation();
-    if (peek) putAway.value = { ...putAway.value, [b.id]: reasons(b) };
-    else fold(b);
-  };
-  return html`<button class=${cls("gui-hut__fold", { "is-on": !!b.folded })} title=${label} aria-label=${label} aria-expanded=${!b.folded || peek}
-      onPointerDown=${(e) => e.stopPropagation()} onClick=${press}>
-    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d=${b.folded ? "M6 3.5 10.5 8 6 12.5" : "M3.5 6 8 10.5 12.5 6"} /></svg>
-  </button>`;
-}
-
 /** A folded hut's mark: what its card would have said first — an error, a pause, else its type's own `mark(b)`. */
-export function Mark({ b }) {
+export function Mark({ b, quiet = false }) {
   const mod = b.page ? typeModule(b.type) : null;
   const own = mod && mod.mark ? mod.mark(b) : null;
   const m = b.state === "ERROR" ? { text: "error", tone: "error" } : b.paused ? { text: "paused", tone: "wait" } : own;
+  if (quiet && !(m && m.tone === "error")) return null;      // the map says only what broke
   return m && m.text ? html`<span class=${cls("gui-hut__mark", m.tone && `ok-tone-${m.tone}`)}>${say(String(m.text))}</span>` : null;
 }
 
@@ -110,6 +89,10 @@ export function Mark({ b }) {
 function pull(e, b) {
   pullRoad(e, b.id);
 }
+
+/** Whether a person may lay its roads: not an Improve building's, whose setup lays them or which has none
+ *  (realm/catalog.py `roads`, docs/design/improve-buildings.md §2). */
+export const freeRoads = (b) => !b.roads || b.roads === "free";
 
 /** A road pulled out of building `from` (its handle, or a stub of a way out with no road: `event`, as
  *  `signpost.routed#urgent`). Let go over another hut: a stub's road is laid at once on its event (docs/design/
@@ -126,9 +109,11 @@ export function pullRoad(e, from, event = "") {
   };
   const under = (ev) => {
     const to = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".gui-hut")?.dataset.id;
-    return to && to !== b.id ? to : null;
+    const there = to && town.value.buildings.find((x) => x.id === to);
+    return to && to !== b.id && (!there || freeRoads(there)) ? to : null;
   };
-  const move = (ev) => { pulling.value = { from: b.id, ...at(ev), over: under(ev) }; };
+  const start = at(e);                 // the dashed road leaves from where it was grabbed, not from a corner of the hut
+  const move = (ev) => { pulling.value = { from: b.id, sx: start.x, sy: start.y, ...at(ev), over: under(ev) }; };
   const up = (ev) => {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
@@ -155,16 +140,17 @@ export function buildingMenu(e, b) {
   const mod = b.page ? typeModule(b.type) : null;
   const own = mod && mod.infoActs ? mod.infoActs(b) : [];        // what only its type offers (Import calendar)
   openMenu(e, [
-    { label: "Open", hint: "click", run: () => openBuilding(b.id, "work") },
+    { label: "Open", hint: "double-click", run: () => openBuilding(b.id, "work") },
     { label: "Info", run: () => openBuilding(b.id, "info") },
     ...own.map((a) => ({ label: a.label, run: a.run })),
     "-",
-    { label: "Listen to…", hint: `/road @${name}`, run: () => { laying.value = { from: null, to: b.id, among }; } },
+    freeRoads(b) && { label: "Listen to…", hint: `/road @${name}`, run: () => { laying.value = { from: null, to: b.id, among }; } },
     { label: "Ask the Warchief about it", hint: `@${name}`, run: () => mention(b) },
     b.id !== CORNER && { label: b.pinned ? "Unpin to move it" : "Pin it in place",
       run: () => togglePin({ stopPropagation() {} }, b.id) },
     b.id !== CORNER && { label: b.folded ? "Unfold the card" : "Fold the card", hint: `/${b.folded ? "unfold" : "fold"} @${name}`,
       run: () => fold(b) },
+    b.id !== CORNER && t.orkspaces.length > 1 && { label: "Copy to orkspace…", run: () => { copying.value = b.id; } },
     b.id !== CORNER && "-",
     b.id !== CORNER && { label: "Demolish…", hint: `/demolish @${name}`, danger: true, run: () => { demolishing.value = b.id; } },
   ]);
@@ -200,11 +186,20 @@ function YardName({ b, number }) {
     <span class="no">${number}</span><${TypeIcon} type=${b.type} /><span class="gui-hut__yard-title">${say(b.title)}</span></span>`;
 }
 
-// -- fire: a building whose ork waits for you burns (design-system README: States and motion) --------------
-// Its card is ablaze from the first second (components.css); from FIRE_FROM s flames climb its roof, one more
-// a minute until FIRE_FULL s covers it. Never in quiet hours, nor when the portrait's menu turned them off; under
-// prefers-reduced-motion they stand still (components.css).
-const FIRE_FROM = 60, FIRE_FULL = 300;
+// -- fire: a building that broke burns (docs/design/yards.md §8) ------------------------------------------------
+// A question is not fire: its ork comes out with a `!` and the card glows yellow (yards.css .is-alert); a press on
+// it opens the question. Fire is for what broke — a script's exception, a model call that failed, a source that
+// fails: the card is ablaze at once and flames climb its roof, one more a minute until FIRE_FULL s covers it. Never in
+// quiet hours, nor when the portrait's menu turned them off; under prefers-reduced-motion they stand still.
+const FIRE_FROM = 0, FIRE_FULL = 240;
+
+/** What broke a building, if anything: its worker in ERROR, or its own mark said error (a source failing). */
+export function brokenOf(b) {
+  if (b.state === "ERROR") return "error";
+  const mod = b.page ? typeModule(b.type) : null;
+  const m = mod && mod.mark ? mod.mark(b) : null;
+  return m && m.tone === "error" ? String(m.text || "error") : "";
+}
 const FLAMES = [[50, 46], [24, 26], [76, 30], [38, 4], [62, 8]];        // where each flame stands: % of the roof
 const now = signal(Date.now());
 setInterval(() => { now.value = Date.now(); }, 10_000);
@@ -236,9 +231,36 @@ export function QuickTray({ b }) {
 /** The inside of the card (closed): the type's own `card(b)` (js/types.js), else its status lines. */
 export function Card({ b, level = null }) {
   const mod = b.page ? typeModule(b.type) : null;
-  if (mod && mod.card) return html`<div class="gui-hut__body ok-font-status">${mod.card(b, level || levelOf(b))}</div>`;
+  const at = level || levelOf(b);
+  const body = useRef(null);
+  useLayoutEffect(() => { if (body.current) laidOut(body.current, b.card_doc, at); });
+  if (mod && mod.card) return html`<div ref=${body} class="gui-hut__body ok-font-status">${mod.card(b, at)}</div>`;
   return b.status_plain.length > 0 ? html`<ul class="ok-hut__lines">
     ${b.status_plain.map((line, i) => html`<li key=${i}>${line}</li>`)}</ul>` : null;
+}
+
+const CARD_PARTS = ["big", "text", "foot", "when"];
+
+/** A card laid out by this machine's card document (realm/card_docs.py, the UX bench): at its size, the parts it
+ *  names show in its order with its font and tone roles, the others hide. No document: the card as its code draws it. */
+export function laidOut(el, doc, level) {
+  const parts = doc && doc.sizes && doc.sizes[level] && doc.sizes[level].parts;
+  for (const name of CARD_PARTS) {
+    for (const node of el.querySelectorAll(`.gui-hut__${name}`)) {
+      for (const c of (node.dataset.roles || "").split(" ").filter(Boolean)) node.classList.remove(c);
+      node.dataset.roles = "";
+      node.style.order = "";
+      node.style.display = "";
+      if (!parts) continue;
+      const at = parts.findIndex((p) => p.id === name);
+      if (at < 0) { node.style.display = "none"; continue; }
+      const p = parts[at];
+      const roles = [p.font && `ok-font-${p.font}`, p.tone && `ok-tone-${String(p.tone).replace(/[._]/g, "-")}`].filter(Boolean);
+      roles.forEach((c) => node.classList.add(c));
+      node.dataset.roles = roles.join(" ");
+      node.style.order = String(at);
+    }
+  }
 }
 
 /** The corner a card is stretched by (its edges pull roads, js/hut.js edgeAt): a ghost of the new size follows the
@@ -288,16 +310,43 @@ function Grips({ b, onSized }) {
 // pulled out of it there; it leaves no gate behind, the road keeps its arrow. The corner it stays clear of resizes.
 const EDGE_PX = 12, CORNER_PX = 20;
 
-/** The point on the card's edge the mouse is near, in the card's own px, or null (inside, or at the resizing corner). */
-function edgeAt(card, e) {
+/** A bare building's gate (Camp): along its plinth, and at its house's left side — never over the house or its
+ *  mark (a press there selects it). `b`: the box it stands in, card px, its foot at the plinth's middle. */
+function edgeOf(b, x, y) {
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo + 11), hi - 11);
+  if (y >= b.y1 - 6 && x >= b.x0 - EDGE_PX && x <= b.x1 + 4) return { x: clamp(x, b.x0, b.x1), y: b.y1 };
+  if (x <= b.x0 + 2 && x >= b.x0 - EDGE_PX && y >= b.y0) return { x: b.x0, y: clamp(y, b.y0, b.y1) };
+  return null;
+}
+
+/** The box a bare building's gate stands on, in its card's px: from its house's top to its plinth's middle. */
+function bareBox(card, hut) {
+  const p = hut.querySelector(".gui-hut__plinth"), s = hut.querySelector(".gui-hut__sprite");
+  if (!p) return null;
+  const c = card.getBoundingClientRect(), k = c.width / card.offsetWidth || 1;
+  const pr = p.getBoundingClientRect(), sr = s ? s.getBoundingClientRect() : pr;
+  return { x0: (pr.left - c.left) / k, x1: (pr.right - c.left) / k, y0: (sr.top - c.top) / k, y1: (pr.top + pr.height / 2 - c.top) / k };
+}
+
+// Where the gate stands on each side, in from the card's edge: in Camp a fenced card's on its fence — the side
+// pickets' middle, the bottom row's (tools/fence_sprites.py, 3 px a pixel) — a bare building's on its plinth.
+const FENCE_IN = { left: 7.5, right: 7.5, top: 0, bottom: 10.5 };
+const NO_IN = { left: 0, right: 0, top: 0, bottom: 0 };
+
+/** The point on the card's edge the mouse is near, in the card's own px, or null (inside, or at the resizing corner).
+ *  `inset`: how far in from each edge the gate stands (on the fence, on the plinth). */
+function edgeAt(card, e, inset = NO_IN, box = null) {
   const r = card.getBoundingClientRect(), k = r.width / card.offsetWidth || 1;
   const w = card.offsetWidth, h = card.offsetHeight, x = (e.clientX - r.left) / k, y = (e.clientY - r.top) / k;
+  if (box) return edgeOf(box, x, y);
   const d = { left: x, right: w - x, top: y, bottom: h - y };
   const side = Object.keys(d).reduce((a, k2) => (d[k2] < d[a] ? k2 : a), "left");
-  if (d[side] > EDGE_PX || (w - x < CORNER_PX && h - y < CORNER_PX)) return null;
-  const clamp = (v, hi) => Math.min(Math.max(v, 11), hi - 11);
-  return side === "left" ? { x: 0, y: clamp(y, h) } : side === "right" ? { x: w, y: clamp(y, h) }
-    : side === "top" ? { x: clamp(x, w), y: 0 } : { x: clamp(x, w), y: h };
+  if (d[side] > EDGE_PX + inset[side] || (w - x < CORNER_PX && h - y < CORNER_PX)) return null;
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo + 11), hi - 11);
+  const i = inset;
+  return side === "left" ? { x: i.left, y: clamp(y, i.top, h - i.bottom) }
+    : side === "right" ? { x: w - i.right, y: clamp(y, i.top, h - i.bottom) }
+    : side === "top" ? { x: clamp(x, i.left, w - i.right), y: i.top } : { x: clamp(x, i.left, w - i.right), y: h - i.bottom };
 }
 
 /** `auto`: the [w, h] the town gives a card with no size of its own, out of the free room around it (js/town.js
@@ -309,8 +358,14 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   const nearEdge = (e) => {
     const btn = road.current;
     if (!btn || e.pointerType !== "mouse" || btn.contains(e.target)) return;
-    // never over a control, nor on the title bar: that moves the card (a yard's is its top fence)
-    const at = e.target.closest("button, a, input, select, textarea, .gui-hut__title") ? null : edgeAt(e.currentTarget, e);
+    // never over a control, nor on the title bar: that moves the card (a yard's is its top fence) — but a bare
+    // building is its title bar alone: its gate comes at its sides and on its plinth
+    const hut = ref.current, camp = document.documentElement.dataset.look === "camp";
+    const bare = !!(hut && hut.classList.contains("is-bare"));
+    const inset = !camp || bare ? NO_IN : hut && hut.classList.contains("is-fenced") && !hut.classList.contains("is-folded") ? FENCE_IN : NO_IN;
+    const off = e.target.closest(bare ? "button, a, input, select, textarea" : "button, a, input, select, textarea, .gui-hut__title");
+    const box = camp && bare ? bareBox(e.currentTarget, hut) : null;
+    const at = off ? null : edgeAt(e.currentTarget, e, inset, box);
     btn.classList.toggle("is-at", !!at);
     if (at) { btn.style.left = `${at.x}px`; btn.style.top = `${at.y}px`; }
   };
@@ -331,7 +386,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       const hr = el.getBoundingClientRect(), pr = plinth.getBoundingClientRect(), k = hr.width / w || 1;
       const left = Math.round((pr.left - hr.left) / k), width = Math.round(pr.width / k);
       el.style.setProperty("--house-w", `${left + width}px`);
-      if (!fenced(b)) {
+      if (!el.classList.contains("is-fenced")) {
         top = Math.round((pr.top - hr.top) / k); ch = Math.round(pr.height / k); px = left; pw = width;
       }
     }
@@ -349,12 +404,24 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   }, [b.id]);
   const free = !b.pinned && b.id !== CORNER;   // pinned by the person, or the Hall: never moves
   const busy = busyOf(b);
-  const hot = b.alert && b.alert.waited >= 30;
-  const folded = !!b.folded && b.id !== CORNER;
-  const peek = folded && (peekReasons(b).length > 0 || dragOver.value === b.id);
-  // A drag held over a folded hut peeks it, so a drop target (the Pit) is never a title bar alone.
-  const dragIn = folded ? () => { if (dragOver.value !== b.id) dragOver.value = b.id; } : undefined;
-  const dragOut = folded ? (e) => { if (!e.currentTarget.contains(e.relatedTarget) && dragOver.value === b.id) dragOver.value = null; } : undefined;
+  const broken = brokenOf(b);
+  const hot = !!broken;                      // fire is what broke; a question only glows (yards.css .is-alert)
+  // The zoom's level (docs/design/map-view.md): the map draws it as a bare building in Camp, folded in Office; close up a
+  // bare building stands in a small yard. Its own fold and size stay in the Town Scroll as the person set them.
+  const camp = document.documentElement.dataset.look !== "office";
+  const lvl = b.id === CORNER ? "c" : zoomLevel.value;
+  const far = lvl === "a";
+  const roomy = lvl === "c" && camp && bareOf(b);
+  const bare = (bareOf(b) && !roomy) || (far && camp);
+  const yard = (fenced(b) || roomy) && !bare;
+  const folded = b.id !== CORNER && !(far && camp) && !roomy && (!!b.folded || far);
+  // Its card is not drawn, so it may peek: folded, or a card building drawn bare in the map view. A bare building's
+  // card is never drawn in Camp, map view or not (yards.md §7).
+  const hides = bare && camp ? far && !bareOf(b) : folded;
+  const peek = (hides || folded) && (peekReasons(b).length > 0 || dragOver.value === b.id);
+  // A drag held over a hidden card peeks it, so a drop target (the Pit) is never a title bar or a house alone.
+  const dragIn = hides || folded ? () => { if (dragOver.value !== b.id) dragOver.value = b.id; } : undefined;
+  const dragOut = hides || folded ? (e) => { if (!e.currentTarget.contains(e.relatedTarget) && dragOver.value === b.id) dragOver.value = null; } : undefined;
 
   function down(e) {
     if (e.button !== 0) return;
@@ -379,7 +446,8 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       dragging.value = null;
       if (gone) return;
       if (moved) { if (free) { onMoved(b, spot.x + ev.clientX - start.x, spot.y + ev.clientY - start.y); } }
-      else openBuilding(b.id);
+      else if (b.alert) openOrders(b.alert.id);   // a question: a press opens it at once
+      else pickBuilding(b.id);                  // selected; the selected one again: opened
     };
     el.addEventListener("pointermove", move);
     el.addEventListener("pointerup", up);
@@ -387,10 +455,17 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   }
 
   const x = spot.x, y = spot.y;
-  const own = folded ? null : b.size || auto;
-  const level = levelOf(b, folded ? null : auto);
+  // A card is as wide as its medium size, or as the person stretched it, at the overview and close up: only its height
+  // changes, as tall as what it says but no taller than a small card at the overview and a medium one close up (the UX
+  // bench's sizes, js/buildings/ux_lab.js SIZE_PX). A size the person gave shows close up only.
+  const mine = b.size || auto;
+  const wide = Math.max(mine ? mine[0] : 0, LEVEL_M.w);
+  const tall = lvl === "c" && mine && mine[1] ? Math.max(mine[1], LEVEL_M.h) : null;
+  const own = b.id === CORNER ? mine : folded || bare || roomy ? null : [wide, tall];
+  const cap = b.id === CORNER || !own || tall ? 0 : lvl === "c" ? LEVEL_M.h : LEVEL_S_H;
+  const level = b.id === CORNER ? levelOf(b, auto) : own ? levelOf(null, [wide, tall || cap]) : "s";
   const sized = !!own;
-  const step = stepOf(b);                  // a yard's size, as saved before, is drawn in whole pickets
+  const step = yard && camp ? YARD_STEP : null;   // a yard is drawn in whole pickets
   const w = sized ? snap(own[0], step && step.w) : 0, h = sized && own[1] ? snap(own[1], step && step.h) : 0;
   // The name heads the card: in Camp a bevelled title bar with the garrison's badge under the header
   // sprite, as on a window; in Office a plain line, so a block on the map is one box and its roads
@@ -401,32 +476,32 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       <span class="gui-hut__name">${say(b.title)}</span>
       <${Keeper} garrison=${b.garrison} alert=${b.alert} yard=${!!b.yard} visit=${b.visit || ""} />
       ${b.alert && html`<span class="ok-word gui-hut__ask">?</span>`}
-      ${folded && html`<${Mark} b=${b} />`}
-      ${b.id !== CORNER && html`<${PinButton} b=${b} />`}
-      ${b.id !== CORNER && html`<${FoldButton} b=${b} peek=${peek} />`}</span>`;
+      ${folded && html`<${Mark} b=${b} quiet=${far} />`}
+</span>`;      // pin and fold live in its menu (right click): the card carries no controls of its own
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px` + (sized ? `;width:${w}px` : "")}
-      class=${cls("ok-hut m gui-hut", { "is-selected": opened.value.active === b.id, "is-busy": busy, "is-yard": !!b.yard, "is-fenced": fenced(b), "is-bare": bareOf(b),
-                                        "is-alert": !!b.alert, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
+      class=${cls("ok-hut m gui-hut", { "is-selected": selected.value === b.id, "is-busy": busy, "is-yard": !!b.yard, "is-fenced": yard, "is-bare": bare,
+                                        "is-far": far,
+                                        "is-alert": !!b.alert, "is-broken": !!broken, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id,
                                         "is-fresh": fresh, "is-folded": folded, "is-peek": peek,
-                                        "is-sized": !!sized, [`is-size-${level}`]: !!sized,
+                                        "is-sized": !!sized, [`is-size-${level}`]: !!sized, [`is-renown-${Math.min(Math.max(b.level || 0, 1), 3)}`]: true,
                                         "is-resizing": resizing.value?.id === b.id })}
       onPointerDown=${down} onContextMenu=${(e) => buildingMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}
 >
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
-      level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${b.alert} />
+      level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${broken ? { id: `broken:${b.id}:${broken}`, waited: 0 } : null} />
       <${Doing} b=${b} busy=${busy} />${b.id !== CORNER && html`<${YardName} b=${b} number=${number} />`}
-      ${bareOf(b) && html`<span class="gui-hut__badge"><${Mark} b=${b} /></span>`}
-      <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} selected=${opened.value.active === b.id} /></span></div>
-    <div class="ok-hut__card" style=${h ? `height:${h}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
+      ${bare && html`<span class="gui-hut__badge"><${Mark} b=${b} quiet=${far} /></span>`}
+      <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} selected=${selected.value === b.id} /></span></div>
+    <div class="ok-hut__card" style=${h ? `height:${h}px` : cap ? `max-height:${snap(cap, step && step.h)}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
       ${title}
-      <button ref=${road} class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
+      ${freeRoads(b) && html`<button ref=${road} class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}><img class="ok-sprite" src="/ds/sprites/icons/road-handle.png"
-        srcset="/ds/sprites/icons/road-handle@2x.png 2x" width="22" height="22" alt="" draggable="false" /></button>
-      ${bareOf(b) && document.documentElement.dataset.look !== "office"
-        ? html`<div class="gui-hut__unseen" hidden><${Card} b=${b} /></div>`     // unseen, its card still wires the building (a drop zone)
-        : !folded ? html`<${Card} b=${b} level=${level} />` : peek && html`<div class="gui-hut__peek"><${Card} b=${b} /></div>`}
-      ${!folded && !bareOf(b) && onSized && html`<${Grips} b=${b} onSized=${onSized} />`}
+        srcset="/ds/sprites/icons/road-handle@2x.png 2x" width="22" height="22" alt="" draggable="false" /></button>`}
+      ${peek && hides ? html`<div class="gui-hut__peek"><${Card} b=${b} /></div>`
+        : bare && camp ? html`<div class="gui-hut__unseen" hidden><${Card} b=${b} /></div>`     // unseen, its card still wires the building (a drop zone)
+        : !folded && html`<${Card} b=${b} level=${level} />`}
+      ${lvl === "c" && !folded && !bare && onSized && html`<${Grips} b=${b} onSized=${onSized} />`}
     </div>
   </div>`;
 }

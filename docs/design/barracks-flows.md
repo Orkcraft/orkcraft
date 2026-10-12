@@ -262,9 +262,9 @@ Stages 1–3 are built; stage 4 is not (below, with why). What is left is on the
   call. `Verdict.kind` is kept only when it is one of that source's kinds; anything else is "" and the cart
   takes the source's default. The signal keeps it (`Signal.want`) and `_keep` puts it on the cart.
 - The open question of §13 is answered both ways: one source with a list is opt-in, two sources still work.
-  No window sets a list yet: it is written in the tower's settings (the quick-add's *with these?* offers one
-  kind). Question for the owner: should the quick-add offer *reply, or a code change when it asks for one* for
-  Slack and Discord?
+  The quick-add's *What do you want done with these?* offers it for Slack and Discord as *Reply, or a code change
+  when it asks for one* (`paths.REPLY_OR_CHANGE`, kept as `["reply", "change"]`; the owner's yes, 2026-10-09);
+  a code tracker or mail still offers one kind.
 - Tests: `tests/test_lookout_kind.py` (the choice within the kinds, the unchanged prompt, the setting, the cart).
 
 **A Router rule's kind (§4) — built 2026-10-08** (the night session D3).

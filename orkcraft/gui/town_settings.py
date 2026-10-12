@@ -9,6 +9,7 @@ the model each tier runs on, per tool (`tier_model`; settings.MachineSettings.ti
 the newest of the tier's family, realm/model_families.py).
 Whether the 🌙 Night round looks over the boards at night (`round`: `round_at` in the council's settings),
 what its last night found, and Look now (`round.now`; docs/design/night-round.md).
+Whether every day's model calls are kept for analysis (`logs`: gui/day_logs.py), to download a period as one zip.
 
     host.commands.update(town_settings.commands(host))
 """
@@ -88,6 +89,11 @@ def _round(host) -> dict[str, Any]:
             "said": nightround.said(last[-1] if last else None), "demo": host.town.demo}
 
 
+def _logs(host) -> dict[str, Any] | None:
+    logs = getattr(host, "day_logs", None)
+    return None if logs is None or host.town.demo else logs.state()
+
+
 def read(host) -> dict[str, Any]:
     m = host.town.machine
     return {"autonomy": autonomy.word(m.autonomy), "wait": m.autonomy_wait, "rebuild": m.rebuild_wait,
@@ -96,7 +102,8 @@ def read(host) -> dict[str, Any]:
                         "improves": lv.improves} for lv in autonomy.LEVELS],
             "usage": m.usage, "usage_blocked": usage.blocked(), "fire": m.fire,
             "updates": m.updates, "updates_blocked": updates.blocked() or ("the demo" if host.town.demo else ""),
-            "version": __version__, "round": _round(host), **_tools(m)}
+            "version": __version__, "round": _round(host), "logs": _logs(host),
+            "keep_awake": m.keep_awake, "awake_how": host.awake.how, **_tools(m)}
 
 
 def change(host, args: dict) -> dict[str, Any]:
@@ -139,6 +146,9 @@ def change(host, args: dict) -> dict[str, Any]:
         fastpath.save_settings(host.town.repo_root, {"round_at": fastpath.SETTINGS["round_at"] if args["round"] else ""})
         host.on_change()
         return read(host)
+    if isinstance(args.get("logs"), bool) and getattr(host, "day_logs", None):    # keep every day for analysis
+        host.day_logs.keep(args["logs"])
+        return read(host)
     if isinstance(args.get("fire"), bool):            # the flames over a building that waits: a look, said apart
         m.fire = args["fire"]
         settings.save(m)
@@ -172,6 +182,17 @@ def round_now(host, args: dict) -> dict[str, Any]:
     return {**read(host), "round_said": words}
 
 
+def keep_awake(host, args: dict) -> dict[str, Any]:
+    """Whether the computer stays awake while Orkcraft is open (`on`: true | false), at once (gui/awake.py)."""
+    m = host.town.machine
+    m.keep_awake = args.get("on") is True
+    settings.save(m)
+    if host.awake.running:                      # only while the town is open in its window or the browser
+        host.awake.apply(m.keep_awake)
+    return read(host)
+
+
 def commands(host) -> dict[str, Callable[[dict], Any]]:
     return {"town.settings": lambda a: read(host), "town.settings.set": lambda a: change(host, a),
-            "usage.share": lambda a: share_usage(host, a), "round.now": lambda a: round_now(host, a)}
+            "usage.share": lambda a: share_usage(host, a), "round.now": lambda a: round_now(host, a),
+            "awake.set": lambda a: keep_awake(host, a)}

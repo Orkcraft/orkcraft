@@ -12,7 +12,9 @@ import { Panel, panelShown, panelWidth, opened } from "./js/windows.js";
 import { Jobs } from "./js/acts.js";
 import { Orders } from "./js/orders.js";
 import { VisitDialogs } from "./js/visit.js";
-import { BuildDialog, RoadDialog, RoadBar, DemolishAsked } from "./js/build.js";
+import { RoadDialog, RoadBar, DemolishAsked, CopyAsked } from "./js/build.js";
+import { ProjectAsked } from "./js/project.js";
+import { HistoryAsked } from "./js/history.js";
 import { HALL } from "./js/tent.js";
 import { SettingsDialog, UsageAsk } from "./js/settings.js";
 import { GoogleWizard } from "./js/accounts.js";
@@ -55,14 +57,25 @@ function App() {
     <${VisitDialogs} />
     <${Jobs} />
     <${Overlays} />
-    <${BuildDialog} />
     <${RoadDialog} />
     <${RoadBar} />
     <${DemolishAsked} />
+    <${CopyAsked} />
+    <${ProjectAsked} />
+    <${HistoryAsked} />
     <${Menu} />
     <${Onboarding} />
   </div>`;
 }
+
+// A link to another site opens in the browser, never in the town's own window: a page's Markdown or an ork's text may
+// carry one without target=_blank, and the app's window would leave the town for it.
+document.addEventListener("click", (e) => {
+  const a = e.target instanceof Element && e.target.closest("a[href]");
+  if (!a || e.defaultPrevented || !/^https?:/i.test(a.href) || new URL(a.href).origin === location.origin) return;
+  e.preventDefault();
+  window.open(a.href, "_blank", "noopener");
+});
 
 watchErrors();
 connect();

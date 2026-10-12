@@ -56,7 +56,8 @@ def test_barracks_closed_command_and_full(fake_repo, monkeypatch):
     bid = _raised(host, "barracks", worktrees=False, max_orcs=2)
     b = _card(host, bid)
     assert b["page"] and b["card"] == {"asks": "", "active": 0, "max": 2, "queue": 0, "done": 0, "failed": 0,
-                                       "spent": "$0.00", "paused": False, "working": [], "last": None}
+                                       "spent": "$0.00", "paused": False, "working": [], "last": None,
+                                       "lanes": [], "more": 0}
     assert host.command("info", {"id": bid})["quick"] == []      # its preview draws them
 
     task = host.command("act", {"id": bid, "act": "task", "args": {"title": " Write  the changelog ", "brief": "for v0.2"}})
@@ -110,6 +111,11 @@ def test_an_ork_of_the_barracks_opens_its_terminal(fake_repo, tmp_path, monkeypa
         assert s.env["ORKCRAFT_ORC"] == f"{bid}/grub"
         assert host.command("act", {"id": bid, "act": "terminal", "args": {"ork": "Grub"}}) == key   # the same one
         assert any(x["key"] == key for x in host.snapshot()["sessions"])
+        host.command("term.stop", {"key": key})                   # the ork's CLI ends…
+        assert _until(lambda: not s.running)
+        assert [x["running"] for x in host.snapshot()["sessions"] if x["key"] == key] == [False]
+        again = host.command("act", {"id": bid, "act": "terminal", "args": {"ork": "Grub"}})   # …and its terminal reopens
+        assert again == key and host.sessions.get(key).running and host.sessions.get(key) is not s
     finally:
         host.sessions.close()
 
@@ -127,7 +133,8 @@ class Script:
 
 
 def test_clan_fire_closed_command_and_full(fake_repo, monkeypatch):
-    s = Script({"Planner": ["APPROVE fine", "APPROVE"], "Steward": ["DECISION: ask\nShip on Friday?", "DECISION: approve\nyes", "DECISION: approve\nok"]})
+    s = Script({"Planner": ["CHANGES fine, but when?", "APPROVE"],      # every one approving asks no steward: one asks
+                "Steward": ["DECISION: ask\nShip on Friday?", "DECISION: approve\nyes", "DECISION: approve\nok"]})
     monkeypatch.setattr(CouncilWorker, "runner", staticmethod(s))
     host = _host(fake_repo)
     bid = _raised(host, "council", members=["Planner:claude"], veto=["Planner"], max_cycles=3)
@@ -139,9 +146,9 @@ def test_clan_fire_closed_command_and_full(fake_repo, monkeypatch):
     w = host.town.worker(bid)
     assert _until(lambda: w.current is not None and w.current.outcome == "asked")
     card = _card(host, bid)["card"]
-    assert card["state"] == "asked" and card["cycle"] == 1 and card["max"] == 3 and card["ok"] == 1 and card["no"] == 0
+    assert card["state"] == "asked" and card["cycle"] == 1 and card["max"] == 3 and card["ok"] == 0 and card["no"] == 1
     d = host.detail(bid)["data"]
-    assert d["members"] == [{"role": "Planner", "label": "claude", "tier": "", "veto": True, "verdict": "approve", "says": "fine",
+    assert d["members"] == [{"role": "Planner", "label": "claude", "tier": "", "veto": True, "verdict": "changes", "says": "fine, but when?",
                              "brief": d["members"][0]["brief"], "briefed": False}]
     r = d["current"]
     assert r["title"] == "Launch plan" and r["question"].startswith("Ship on Friday?") and "<h1>Launch plan</h1>" in r["doc_html"]
@@ -196,3 +203,40 @@ def test_closing_the_window_does_not_leave_the_barracks_paused(fake_repo):
     host.command("act", {"id": bid, "act": "pause"})
     host.close()
     assert _host(fake_repo).town.worker(bid).state.paused            # the operator's own ⏸ is kept
+
+
+def test_a_working_ork_is_taken_over_in_a_terminal_and_handed_back_to_review(fake_repo, tmp_path, monkeypatch):
+    """Take over stops the headless run and opens an interactive terminal on its worktree; Hand back sends the
+    task to the steward's review without running the ork again."""
+    cli = tmp_path / "fake-claude"
+    cli.write_text("#!/bin/sh\necho \"hello $*\"\nsleep 30\n", encoding="utf-8")
+    cli.chmod(cli.stat().st_mode | stat.S_IXUSR)
+    monkeypatch.setenv("ORKCRAFT_CLAUDE_BIN", str(cli))
+    runs = []
+
+    def work(harness, prompt, workdir, cancel, model, env, resume):
+        runs.append(prompt)
+        if cancel.wait(10):
+            raise InterruptedError("stopped")
+        return "done", 0.0, 0, "s1"
+
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(work))
+    monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
+    host = _host(fake_repo)
+    bid = _raised(host, "barracks", worktrees=False)
+    w = host.town.worker(bid)
+    task = host.command("act", {"id": bid, "act": "task", "args": {"title": "fix it"}})
+    assert _until(lambda: w.state.orcs and w.state.orcs[0].status == "working")
+    with pytest.raises(CommandError, match="take it over"):
+        host.command("act", {"id": bid, "act": "terminal", "args": {"ork": "Grub"}})
+    try:
+        key = host.command("act", {"id": bid, "act": "take_over", "args": {"ork": "Grub"}})
+        assert key == f"pool:{bid}/grub" and host.sessions.get(key).running
+        assert host.detail(bid)["data"]["orks"][0]["by_hand"]
+        time.sleep(0.3)
+        assert w.state.task(task).status == "working" and w.state.orcs[0].status == "working"   # not failed, not freed
+        assert host.command("act", {"id": bid, "act": "hand_back", "args": {"ork": "Grub"}})
+        assert _until(lambda: w.state.task(task).status in ("done", "failed", "review", "reviewing") or w.state.orcs[0].status == "idle")
+        assert len(runs) == 1 and not w.taken_over("Grub")      # the ork was not run again
+    finally:
+        host.sessions.close()

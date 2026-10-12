@@ -264,3 +264,13 @@ def test_by_purpose_sums_the_last_week_and_its_buildings(tmp_path: Path):
         ("work", 0.7, 15, 2, 0), ("sort", 0.1, 0, 2, 1)]
     assert [b["building"] for b in week[0]["buildings"]] == ["forge", "mill"]
     assert telemetry.by_purpose(tmp_path / "none") == []
+
+
+def test_the_calls_since_a_time_with_no_zone(tmp_path: Path):
+    # the Test bench counts a run's calls from a local time with no zone; the ledger's times carry one
+    (tmp_path / telemetry.CALLS).parent.mkdir(parents=True)
+    old, new = dt.datetime.now().astimezone() - dt.timedelta(hours=1), dt.datetime.now().astimezone()
+    (tmp_path / telemetry.CALLS).write_text("\n".join(json.dumps({"at": t.isoformat(), "tokens": n})
+                                                      for t, n in ((old, 1), (new, 2))), encoding="utf-8")
+    since = dt.datetime.now() - dt.timedelta(minutes=5)
+    assert [c["tokens"] for c in telemetry.calls(tmp_path, since)] == [2]

@@ -2,7 +2,7 @@
 // (js/hut.js) or many at once — Fold the quiet ones and Unfold all on the bare town (js/town.js), `/fold` and
 // `/unfold` in the Warchief's line (js/warchief.js).
 import { command } from "./link.js";
-import { opened } from "./windows.js";
+import { opened, selected } from "./windows.js";
 import { keepTall } from "./parts.js";
 
 export const CORNER = "town_hall";          // the Hall never folds: it is the way to the Warchief
@@ -15,7 +15,7 @@ export function reasons(b) {
 export const busy = (b) => b.garrison.some((o) => o.status === "busy") || b.state === "WORKING";
 
 /** A hut Fold the quiet ones folds: open, not the Hall, nothing on it wants the person, not at work, not open. */
-export const quiet = (b) => b.id !== CORNER && !b.folded && !reasons(b).length && !busy(b) && opened.value.active !== b.id;
+export const quiet = (b) => b.id !== CORNER && !b.folded && !reasons(b).length && !busy(b) && opened.value.active !== b.id && selected.value !== b.id;
 
 /** Folds or unfolds one hut: `value` sets it, else it toggles. */
 export function fold(b, value) {

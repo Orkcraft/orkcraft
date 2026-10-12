@@ -283,7 +283,9 @@ class MineWorker(Worker):
             self._plan(r, cancel)
             self._search(r, cancel)
             self._group(r, cancel)
-            while r["round"] < self.rounds and research.open_groups(r):
+            # Fewer tools than a confirmed finding needs minds: another round of searching could never confirm one,
+            # it would only spend (docs/design/mine.md: with one tool, nothing can be confirmed).
+            while r["round"] < self.rounds and research.open_groups(r) and len(r["tools"]) >= self.min_models:
                 r["round"] += 1
                 self._status(r, "round")
                 if r.get("conflicts") and research.disputes(r) and r["round"] % 2 == 0:

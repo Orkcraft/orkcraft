@@ -6,8 +6,9 @@ A task that arrives is judged before any ork takes it:
     sorted    else the steward's light look (its `triage`, realm/steward.py `WORK`): `trivial` → one light ork at once, no
               review but its tests; `single` → one ork of the tier the sort names, then the review;
               `plan` (stages, parallel parts) → the steward plans it on the goal's tier (its `plan`).
-              A short task with no steps (`plans.clearly_simple`) is never planned: not trivial, it goes
-              to one ork of the tier the building's goal names, reviewed
+              A short task with no steps (`plans.clearly_simple`) is never planned: with a `test_cmd` it
+              is not even sorted — one ork of the goal's tier, its tests the review (trivial); without
+              one, not trivial, it goes to one ork of the tier the building's goal names, reviewed
     planned   the steward answers `SIMPLE` (one ork, as `simple`) or a plan → the task becomes the parent
               of subtasks: each a task here of its own (`parent`, `sub`), with its tier, its persona, the
               files it touches and the parts it waits for. A part starts when what it waits for is
@@ -86,7 +87,12 @@ class PlanMixin:
         if not self.plans_on:
             task.tier = self.goal.simple
             return True
-        self._triage(task, short=plans.clearly_simple(task.title, task.text))
+        short = plans.clearly_simple(task.title, task.text)
+        if short and self.config.get("test_cmd"):         # its tests judge it: no steward call before or after
+            task.kind, task.tier = plans.TRIVIAL, self.goal.simple
+            st.log(bk.Decision(bk.now_iso(), task.id, "plan", why=f"whole, {task.tier}: short, its tests judge it"))
+            return True
+        self._triage(task, short=short)
         return False
 
     def _take(self, task: bk.PoolTask, why: str) -> threading.Event:
@@ -113,7 +119,7 @@ class PlanMixin:
             from orkcraft.core.workers.barracks import RunOutcome
             out, sort = RunOutcome(), None
             try:
-                sort = plans.parse_triage(self._steward(prompt, self.repo_root, cancel, out, "triage"))
+                sort = plans.parse_triage(self._steward(prompt, self.code_root, cancel, out, "triage"))
             except InterruptedError:
                 out.error = "stopped"
             except Exception:  # a steward that cannot sort never stops the task: it is planned
@@ -126,7 +132,7 @@ class PlanMixin:
         st = self.state
         self._cancels.pop(f"plan:{task_id}", None)
         task = st.task(task_id)
-        st.steward_cost = round(st.steward_cost + out.steward_cost, 4)
+        st.steward_spent(out.steward_cost, out.steward_tokens)
         if task is None or task.status != "planning":
             return
         task.cost_usd = round((task.cost_usd or 0.0) + out.steward_cost, 4) or None
@@ -165,11 +171,11 @@ class PlanMixin:
             out = RunOutcome()
             subs, errors, extra = None, [], ({}, [])
             try:
-                text = self._steward(prompt, self.repo_root, cancel, out, "plan")
+                text = self._steward(prompt, self.code_root, cancel, out, "plan")
                 subs, errors = plans.parse(text)
                 if errors:                                    # once more, with what was wrong
                     text = self._steward(prompt + "\n\n## Your last plan did not hold\n\n" + "\n".join(
-                        f"- {e}" for e in errors), self.repo_root, cancel, out, "plan")
+                        f"- {e}" for e in errors), self.code_root, cancel, out, "plan")
                     subs, errors = plans.parse(text)
                 extra = plans.extras(text)
             except InterruptedError:
@@ -185,7 +191,7 @@ class PlanMixin:
         st = self.state
         self._cancels.pop(f"plan:{task_id}", None)
         task = st.task(task_id)
-        st.steward_cost = round(st.steward_cost + out.steward_cost, 4)
+        st.steward_spent(out.steward_cost, out.steward_tokens)
         if task is None or task.status != "planning":
             return
         task.cost_usd = round((task.cost_usd or 0.0) + out.steward_cost, 4) or None
@@ -242,7 +248,7 @@ class PlanMixin:
         st, f, goal, camp = self.state, self.foreman, self.goal, self.quota()
         for s in subs:
             s.tier = plans.shift(s.tier, goal.shift)
-        left = round(f.budget - st.spent, 4) if f.budget else None
+        left = round(f.budget - st.spent, 4) if f.budget and f.priced else None
         tokens_left = camp.left * plans.QUOTA_SHARE if camp is not None else None
         costs, per = plans.tier_costs(st.stats), plans.tier_tokens(st.stats)
         limits = " · ".join(x for x in (f"${left:.2f} left" if left is not None else "",
@@ -257,9 +263,9 @@ class PlanMixin:
             return
         if self.uses_git:
             task.branch = task.branch or bk.task_branch(self.building_id, task)
-            task.base = task.base or self.task_git.base_of(self.repo_root, str(self.config.get("base") or ""))
+            task.base = task.base or self.task_git.base_of(self.code_root, str(self.config.get("base") or ""))
             try:
-                self.task_git.cut(self.repo_root, task.branch, task.base)
+                self.task_git.cut(self.code_root, task.branch, task.base)
             except Exception as e:  # no branch to merge into: the task runs whole
                 self._whole(task, "warrior", f"no branch {task.branch}: {e}")
                 return
@@ -411,7 +417,7 @@ class PlanMixin:
             out = RunOutcome()
             answer = ""
             try:
-                answer = bk.steward_answer_of(self._steward(prompt, self.repo_root, cancel, out, "answer"))
+                answer = bk.steward_answer_of(self._steward(prompt, self.code_root, cancel, out, "answer"))
             except Exception:  # a steward that cannot answer closes the task, never the barracks
                 answer = ""
             self._call(self._decided, task.id, answer, why, out)
@@ -421,7 +427,7 @@ class PlanMixin:
     def _decided(self, task_id: str, answer: str, why: str, out) -> None:
         st = self.state
         self._cancels.pop(f"decide:{task_id}", None)
-        st.steward_cost = round(st.steward_cost + out.steward_cost, 4)
+        st.steward_spent(out.steward_cost, out.steward_tokens)
         task = st.task(task_id)
         if task is None or task.status != "asked":          # the operator answered meanwhile
             return
@@ -455,7 +461,7 @@ class PlanMixin:
         git = self.task_git
         with self._merge_lock:
             try:
-                ok, note = git.merge(self.repo_root, task.base, task.branch, f"Merge part `{task.sub}`: {task.title}")
+                ok, note = git.merge(self.code_root, task.base, task.branch, f"Merge part `{task.sub}`: {task.title}")
             except Exception as e:  # a merge that cannot run is the steward's to report, not a crash
                 ok, note = False, str(e)[:300]
         if not ok:
@@ -494,11 +500,11 @@ class PlanMixin:
             try:
                 diff, tests, commits = "", "", 0
                 if git is not None and parent.branch:
-                    commits, diff = git.diff(self.repo_root, parent.base, parent.branch)
+                    commits, diff = git.diff(self.code_root, parent.base, parent.branch)
                     out.files = bk.changed_files(diff)
                     if cmd and commits:
-                        where = worktrees.worktree_path(self.repo_root, f"pool-{self.building_id}-steward".replace("_", "-"))
-                        passed, tail = git.check(self.repo_root, parent.branch, cmd, cancel, where)
+                        where = worktrees.worktree_path(self.code_root, f"pool-{self.building_id}-steward".replace("_", "-"))
+                        passed, tail = git.check(self.code_root, parent.branch, cmd, cancel, where)
                         if not passed:
                             out.accepted = False
                             out.notes = f"new: the tests of the merged parts fail (`{cmd}`):\n\n```\n{tail.strip()}\n```"
@@ -507,7 +513,7 @@ class PlanMixin:
                 extra, out.clashes, met = self._review_context(parent, out.files, git, parent.branch)
                 verdict = self._steward(plans.final_prompt(self.keeper, self.orders, parent.title, parent.text,
                                                            parent.plan, reports, diff, tests, bk.DIFF_LIMIT, extra),
-                                        self.repo_root, cancel, out, "final")
+                                        self.code_root, cancel, out, "final")
                 out.accepted, out.notes = bk.verdict_of(verdict)
                 out.notes = briefs.strip(out.notes)
                 out.designs = briefs.states(met, out.files, verdict)
@@ -516,7 +522,7 @@ class PlanMixin:
                         f"### {sub}\n\n{rep.strip()[:1500]}" for sub, rep in reports) + \
                         f"\n\n_Planned and reviewed by {self.keeper}: {out.notes or 'accepted'}_" + \
                         (f"\n\n_Design brief:_ `{parent.design}`" if parent.design else "") + self.pr_notes(parent, out)
-                    out.pr, out.pr_note = git.publish(self.repo_root, parent.branch, parent.base, parent.title, body)
+                    out.pr, out.pr_note = git.publish(self.code_root, parent.branch, parent.base, parent.title, body)
             except _Done:
                 pass
             except InterruptedError:
@@ -531,7 +537,7 @@ class PlanMixin:
         st = self.state
         self._cancels.pop(f"final:{parent_id}", None)
         parent = st.task(parent_id)
-        st.steward_cost = round(st.steward_cost + out.steward_cost, 4)
+        st.steward_spent(out.steward_cost, out.steward_tokens)
         if parent is None or parent.status != "reviewing":
             return
         kids = self.children(parent)

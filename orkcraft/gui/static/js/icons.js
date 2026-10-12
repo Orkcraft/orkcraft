@@ -25,6 +25,8 @@ const PATHS = {
   catapult: "M14.5 1.5 1.5 7l5 2.5 2.5 5zM14.5 1.5 6.5 9.5",                                        // send
   town_hall: "M2.5 4h7M12.5 4h1M2.5 12h1M6.5 12h7M9.5 2.5v3M5 10.5v3M2.5 8h4M9.5 8h4M6.5 6.5v3",      // sliders
   workshop: "M2 2.5h12v11H2zM4.5 6l2 2-2 2M8 10.5h3.5",                                              // terminal
+  lab: "M9.8 4.2a.67.67 0 0 0 0 .93l1.07 1.07a.67.67 0 0 0 .93 0l2.51-2.51a4 4 0 0 1-5.29 5.29l-4.61 4.61a1.41 1.41 0 0 1-2-2l4.61-4.61a4 4 0 0 1 5.29-5.29l-2.51 2.51z",   // wrench: the Mechanic's (the gear is Settings')
+  ux_lab: "M6 1.5h4M6.8 1.5v4.8L3 12.6a1.4 1.4 0 0 0 1.2 1.9h7.6a1.4 1.4 0 0 0 1.2-1.9L9.2 6.3V1.5M4.6 10h6.8",   // flask
   custom: "M8 1.5 14 4.5v7L8 14.5 2 11.5v-7zM2 4.5 8 7.5l6-3M8 7.5v7",                                // box
 };
 PATHS.loot_vault = PATHS.loot;
@@ -42,13 +44,16 @@ export const BIOMES = {
   dirt: { ground: "#141210", land: "#3a3326" },
   forest: { ground: "#101a0b", land: "#22341a" },
   ice: { ground: "#070d14", land: "#1c2c3c" },
-  dust: { ground: "#1c160e", land: "#5a462a" },
+  dust: { ground: "#1a1712", land: "#5a462a" },   // a step greyer than the fence's wood, so the two part
   void: { ground: "#0e0c14", land: "#2c263c" },
-  lava: { ground: "#131010", land: "#342c2a" },
+  lava: { ground: "#170f0d", land: "#342c2a" },   // basalt night, a breath of ember in it; the huts ash-grey on it
   meadow: { ground: "#0d1a16", land: "#24443a" },   // the knights' open field: cool spring green, not forest's
 };
 export const BIOME_ORDER = Object.keys(BIOMES);
 const DRAWN_FOR = new Set(["ice", "dust", "void", "lava", "meadow"]);   // header-<biome>.png (tools/growth_sprites.py)
+// Headers kept as they were painted (tools/painted.py): drawn smoothly, not as pixels, their @2x on a retina screen.
+const PAINTED = new Set(["town_hall", "watchtower", "fields", "war_drum", "barracks", "council", "scrolls", "mine",
+  "gramophone", "forge", "loot", "catapult", "lab", "ux_lab", "workshop", "pit", "signpost", "mill", "crag", "horn"]);
 
 function spriteName(type) {
   return type === "loot_vault" ? "loot" : PATHS[type] ? type : "custom";
@@ -61,14 +66,15 @@ export function headerSprite(type, biome = "") {
   return `/ds/sprites/buildings/${name}/${DRAWN_FOR.has(biome) ? `header-${biome}` : "header"}.png`;
 }
 
-// Where the goal flag stands on each roof (docs/design/growth.md §5): [x, y, height] in the header's own
-// pixels (2 screen px each): the pole's foot at (x, y), the sprite `height` tall. Set by hand: the roof's
-// highest point would put it on the Town Hall's horn.
+// Where the goal flag stands on each roof (docs/design/growth.md §5): [x, y, height] in units of 2 screen px over
+// the header: the pole's foot at (x, y), the sprite `height` tall. The top of each sprite's middle third
+// (tools/painted.py's headers are measured on their 1x).
 const FLAG_AT = {
-  barracks: [19, 4, 21], catapult: [13, 1, 18], council: [11, 0, 23], crag: [13, 8, 33], custom: [17, 1, 26],
-  fields: [12, 3, 26], forest: [17, 0, 27], forge: [20, 0, 27], gramophone: [6, 14, 30], horn: [12, 11, 23],
-  lake: [17, 0, 33], loot: [16, 0, 30], mill: [13, 0, 22], mine: [16, 3, 21], pit: [12, 9, 24], scrolls: [16, 0, 30],
-  signpost: [11, 0, 24], town_hall: [19, 1, 31], war_drum: [16, 0, 25], watchtower: [12, 0, 33], workshop: [12, 0, 23],
+  barracks: [19, 2, 34], catapult: [12, 8, 32], council: [28, 1, 33], crag: [17, 0, 38], custom: [17, 1, 26],
+  fields: [16, 0, 33], forest: [17, 0, 27], forge: [24, 0, 40], gramophone: [18, 0, 37], horn: [16, 13, 32],
+  lab: [21, 8, 40], ux_lab: [24, 2, 40], lake: [17, 0, 33], loot: [17, 14, 37], mill: [11, 4, 38], mine: [17, 0, 32], pit: [12, 0, 27],
+  scrolls: [15, 0, 34], signpost: [9, 0, 38], town_hall: [23, 0, 38], war_drum: [9, 3, 40], watchtower: [10, 0, 44],
+  workshop: [25, 1, 32],
 };
 
 const FOOTING_ROWS = { 1: 2, 2: 4, 3: 6 };     // the footing's height in its pixels (2 screen px each), by level
@@ -81,10 +87,13 @@ export function HutSprite({ type, biome, goal, level, className = "", onError })
   const at = FLAG_AT[spriteName(type)];
   const n = Math.min(Math.max(level || 0, 0), 3);
   const annex = goal === "thrift" || goal === "quality" ? goal : "";
+  const src = headerSprite(type, biome);
+  const painted = PAINTED.has(spriteName(type));
   return html`<span class=${`gui-sprite ${className}`} data-goal=${goal || "balance"} data-level=${n}>
     <span class="gui-sprite__hut">
       <span class="gui-sprite__walls">
-        <img class="ok-sprite" src=${headerSprite(type, biome)} alt="" draggable="false" onError=${onError} />
+        <img class=${`ok-sprite${painted ? " is-painted" : ""}`} src=${src} alt="" draggable="false" onError=${onError}
+          srcset=${painted ? `${src} 1x, ${src.replace(/\.png$/, "@2x.png")} 2x` : null} />
         ${n > 0 && at && html`<img class=${`ok-sprite gui-sprite__flag${biome === "ice" ? " is-on-snow" : ""}`}
           src=${`/ds/sprites/flags/level-${n}.png`} alt="" draggable="false"
           style=${`left:${at[0] * 2}px;bottom:${(at[2] - at[1]) * 2}px`} />`}
@@ -93,7 +102,7 @@ export function HutSprite({ type, biome, goal, level, className = "", onError })
         style=${`height:${FOOTING_ROWS[n] * 2}px;background-image:url(/ds/sprites/flags/footing-${n}.png)`}></span>`}
     </span>
     ${annex && html`<img class="ok-sprite gui-sprite__annex" src=${`/ds/sprites/flags/annex-${annex}.png`}
-      alt="" draggable="false" />`}
+      srcset=${`/ds/sprites/flags/annex-${annex}@2x.png 2x`} alt="" draggable="false" />`}
   </span>`;
 }
 

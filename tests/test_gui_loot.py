@@ -261,3 +261,25 @@ def test_a_changed_picture_shows_in_the_window(loot):
     assert act(host, bid, "thumb", path="shot.png").startswith("data:image/png;base64,")
     with pytest.raises(CommandError):
         act(host, bid, "thumb", path="README.md.png")                               # not a changed file
+
+
+def test_loot_reviews_the_files_of_its_orkspaces_project(loot, tmp_path):
+    """docs/design/projects.md §8: in an orkspace with a project, the changed files it reviews are the project's."""
+    import subprocess
+    from orkcraft.realm import projects
+    host, bid, w = loot
+    shop = tmp_path / "shop"
+    shop.mkdir()
+    (shop / "app.py").write_text("print('v1')\n")
+    for args in (["init", "-q"], ["add", "-A"], ["-c", "user.email=t@t", "-c", "user.name=T", "commit", "-qm", "init"]):
+        subprocess.run(["git", *args], cwd=shop, check=True, capture_output=True)
+    oid = host.town.scroll.orkspace_of(bid).id
+    projects.link(host.town.scroll, oid, projects.add(host.town.scroll, "Shop", shop).id)
+    (shop / "login.py").write_text("made by an ork\n")
+    (host.town.repo_root / "src" / "town_only.py").write_text("not the project's\n")
+    w.refresh()
+    paths = {f["path"] for f in host.detail(bid)["data"]["files"]}
+    assert "login.py" in paths and "src/town_only.py" not in paths
+    assert "made by an ork" in act(host, bid, "preview", path="login.py")["text"]
+    act(host, bid, "file_reject", path="login.py")
+    assert not (shop / "login.py").exists()

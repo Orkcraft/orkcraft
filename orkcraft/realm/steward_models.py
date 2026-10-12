@@ -58,7 +58,9 @@ WORK = {"barracks": {"triage": _g("laborer", "laborer", "laborer"), "plan": _g("
         "workshop": {"escalate": _g("warrior", "", "elder")},
         "fields": {"title": _g("laborer", "laborer", "laborer"), "plan": _g("laborer", "laborer", "warrior"),
                    "news": _g("laborer", "laborer", "warrior"), "ideas": _g("laborer", "warrior", "elder")},
-        "watchtower": {"judge": _g("laborer", "warrior", "warrior")},   # the sort reads risk and tone: warrior at most
+        # the sort reads risk and tone, and a light model does it as well: on the bench's five cases the light tier
+        # judged every message right, on agy in a tenth of the time (a heavier one thought for minutes and timed out)
+        "watchtower": {"judge": _g("laborer", "laborer", "warrior")},
         "mill": {"agent": _g("laborer", "", "elder")},
         "council": {"decide": _g("warrior", "", "elder")},
         "gramophone": {"script": _g("laborer", "warrior", "warrior")},

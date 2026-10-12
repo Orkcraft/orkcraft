@@ -4,7 +4,9 @@ sessions service (core/sessions.py), opened on its own worktree."""
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
+from orkcraft.gui import folders
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import barracks as bk
 from orkcraft.realm import catalog, harnesses, lexicon, paths, pipes, tiers
@@ -26,9 +28,27 @@ def _money(x: float) -> str:
     return f"${x:.2f}"
 
 
+LANES_MAX = 6            # the orks its card shows a lane for
+
+
+def _lanes(st) -> list[dict]:
+    """A lane per ork, for its card (the owner's ask: who works on what at a glance): its name, its AI tool and tier,
+    working | resting | asks, its topic — the persona it was hired as, the kind of work it takes for good, never the
+    one request — and how many tasks of that topic wait in the queue (its follow-ups first)."""
+    asking = {t.orc for t in st.asked}
+    out = []
+    for o in st.orcs[:LANES_MAX]:
+        waits = sum(1 for t in st.queue if t.wait_for == o.name
+                    or (not t.wait_for and o.persona and t.persona == o.persona))
+        out.append({"name": o.name, "harness": o.harness, "tier": o.tier or "",
+                    "state": "asks" if o.name in asking else "working" if o.status == "working" else "resting",
+                    "topic": o.persona, "queue": waits})
+    return out
+
+
 def card(w) -> dict:
     """Closed (docs/design/building-views.md): how many orks work of how many, `queue 3`, `✓5 ✗1 · $1.20`,
-    `<keeper> asks`; who works on what (two at most), else the last task that ended."""
+    `<keeper> asks`; a lane per ork (`_lanes`); who works on what (two at most), else the last task that ended."""
     st, f = w.state, w.foreman
     ended = next((t for t in reversed(st.tasks) if t.status in ("done", "failed")), None)
     return {"asks": w.keeper if st.asked else "",
@@ -39,7 +59,8 @@ def card(w) -> dict:
             "working": [{"ork": o.name, "task": t.title, "want": lexicon.want_word(t.want)} for o in st.orcs
                         if o.status == "working"
                         and (t := st.task(o.task)) is not None][:2],
-            "last": {"title": ended.title, "ok": ended.status == "done"} if ended else None}
+            "last": {"title": ended.title, "ok": ended.status == "done"} if ended else None,
+            "lanes": _lanes(st), "more": max(len(st.orcs) - LANES_MAX, 0)}
 
 
 def _tier(o: bk.PoolOrc) -> str:
@@ -121,7 +142,7 @@ def detail(w) -> dict:
                      "task": {"id": now.id, "title": now.title, "status": now.status} if now else None,
                      "done": o.done, "failed": o.failed, "cost": _money(o.cost_usd), "tokens": o.tokens,
                      "worktree": o.worktree, "branch": o.branch, "session": o.session, "asks": o.name in asking,
-                     "recent": list(o.recent), "terminal": _key(w, o.name)})
+                     "recent": list(o.recent), "terminal": _key(w, o.name), "by_hand": w.taken_over(o.name)})
     names = _names(w)
     tasks = [_task(t, True, names) for t in st.queue] + [_task(t, True, names) for t in reversed(st.tasks)]
     return {
@@ -130,6 +151,9 @@ def detail(w) -> dict:
         "providers": [h + (":" + m if m else "") for h, m in f.providers],
         "steward": str(w.config.get("steward") or "main"), "steward_cost": _money(st.steward_cost),
         "test_cmd": str(w.config.get("test_cmd") or ""), "worktrees": w.worktrees,
+        "repo": str(w.code_root), "repo_own": bool(str(w.config.get("repo") or "").strip()),
+        "repo_project": _project_name(w),
+        "recent": folders.recent(getattr(w.town, "machine", None)),
         "rules": [ln for ln in w.orders.splitlines() if ln.strip()],
         "orks": orks,
         "lanes": [{"id": lid, "label": label} for lid, label in LANES],
@@ -228,8 +252,8 @@ def _terminal(w, args: dict) -> str:
     running = sessions.get(key)
     if running is not None and running.running:
         return key
-    if orc.status == "working":
-        raise ActError(f"{orc.name} is working — its terminal opens when it is free")
+    if orc.status == "working" and not w.taken_over(orc.name):
+        raise ActError(f"{orc.name} is working — take it over to type to it")
     cwd = orc.worktree or str(w.repo_root)
     if w.simulated:
         command, harness = [os.environ.get("SHELL") or "/bin/sh"], "shell"
@@ -246,5 +270,84 @@ def _terminal(w, args: dict) -> str:
     return key
 
 
+def _take_over(w, args: dict) -> str:
+    """Take over a working ork: its run stops and its terminal opens on its worktree, on its task. The key."""
+    orc = w.state.orc(text(args, "ork", 100))
+    if orc is None:
+        raise ActError("No such ork in this Barracks")
+    sessions = getattr(w.town, "sessions", None)
+    if sessions is None:
+        raise ActError("Terminals open in the GUI")
+    task = w.state.task(orc.task) if orc.task else None
+    if not w.take_over(orc.name) or task is None:
+        raise ActError(f"{orc.name} is not at work on a task")
+    key = _key(w, orc.name)
+    if sessions.get(key) is not None and sessions.get(key).running:
+        return key
+    note = (f"\n\nThe operator took this task over from a run that was stopped midway: what it did is in the "
+            "worktree (see `git status` and `git diff`). Go on with the task together with the operator, who is "
+            "here and types to you.")
+    cwd = orc.worktree or str(w.code_root)
+    if w.simulated:
+        command, harness = [os.environ.get("SHELL") or "/bin/sh"], "shell"
+    else:
+        harness = past.deploy_harness({"harness": orc.harness})
+        command = past.deploy_command(harness, w._prompt(task, orc, False, False) + note) or past.new_command(harness)
+    try:
+        sessions.open(key, command, harness, f"{orc.name} · {w.title}", cwd=cwd,
+                      env={"ORKCRAFT_ORC": f"{w.building_id}/{orc.name.lower()}"})
+    except OSError as e:
+        raise ActError(f"{orc.name}'s terminal did not open: {e}") from None
+    return key
+
+
+def _hand_back(w, args: dict) -> bool:
+    """The person is done in the terminal: it closes and the task goes to review."""
+    name = text(args, "ork", 100)
+    sessions = getattr(w.town, "sessions", None)
+    if sessions is not None:
+        sessions.stop(_key(w, name))
+    if not w.hand_back(name):
+        raise ActError("Nothing was taken over")
+    return True
+
+
+def _project_name(w) -> str:
+    """The name of its orkspace's project: where its orks work without a folder of its own (docs/design/projects.md)."""
+    scroll = getattr(w.town, "scroll", None)
+    if scroll is None:
+        return ""
+    from orkcraft.realm import projects
+    ork = scroll.orkspace_of(w.building_id)
+    project = projects.project_of(scroll, ork.id if ork else None)
+    return project.name if project is not None and projects.folder_of(project).is_dir() else ""
+
+
+def _repo(w, args: dict) -> str:
+    """The folder of code its orks work in (an existing project, its own git); "" gives it back to the town's own.
+    It takes effect for the next ork it hires: the ones at work keep their worktrees."""
+    path = text(args, "path", 2000).strip()
+    if path:
+        folder = Path(path).expanduser()
+        if not folder.is_dir():
+            raise ActError(f"No folder at {path}")
+        path = str(folder.resolve())
+        if getattr(w.town, "machine", None) is not None:
+            folders.remember(w.town.machine, path)
+    if not w.save_config({"repo": path or None}):
+        raise ActError("Not saved")
+    return str(w.code_root)
+
+
+def _pick(w, args: dict) -> str:
+    """The system's folder dialog (on a thread): a token to ask `picked` with."""
+    return folders.start(text(args, "start", 2000).strip() or str(w.code_root))
+
+
+def _picked(w, args: dict) -> dict:
+    return folders.result(text(args, "token", 40))
+
+
 ACTS = {"task": _new_task, "pause": _pause, "answer": _answer, "add_rule": _add_rule,
-        "diff": _diff, "terminal": _terminal, "wants": _wants, "want_by_source": _want_by_source}
+        "diff": _diff, "terminal": _terminal, "take_over": _take_over, "hand_back": _hand_back, "wants": _wants, "want_by_source": _want_by_source,
+        "repo": _repo, "pick": _pick, "picked": _picked}

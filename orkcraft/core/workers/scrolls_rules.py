@@ -31,13 +31,13 @@ class RulesMixin:
         if not raw:
             return "Which folder?"
         p = Path(raw).expanduser()
-        folder = (p if p.is_absolute() else self.repo_root / p).resolve()
+        folder = (p if p.is_absolute() else self.work_root / p).resolve()
         if not folder.is_dir():
             return f"{raw}: no such folder"
         own = self.wiki_root.resolve()
         if folder == own or own in folder.parents:
             return "That is the wiki's own folder: a wiki is never its own source."
-        repo = self.repo_root.resolve()
+        repo = self.work_root.resolve()
         inside = folder == repo or repo in folder.parents
         spec = "dir:" + (shelves.rel_to(repo, folder) if inside else folder.as_posix())
         sources = list(self.config.get("sources") or [])
@@ -81,7 +81,7 @@ class RulesMixin:
 
     def rules_folders(self) -> list[Path]:
         """Where the blocks go: the project, and the folders outside it the person allowed."""
-        out = [self.repo_root]
+        out = [self.work_root]
         for f in self.config.get("rules_in") or []:
             p = Path(str(f)).expanduser()
             if p.is_absolute() and p.is_dir():
@@ -99,7 +99,7 @@ class RulesMixin:
 
     def write_rules(self) -> list[str]:
         """RULES.md in the wiki's folder, the blocks where the AI tools read them. The files written."""
-        root, repo = self.wiki_root, self.repo_root
+        root, repo = self.wiki_root, self.work_root
         wiki_rel = shelves.rel_to(repo, root)
         try:
             known = wiki.SECTIONS.get(self.topic, wiki.SECTIONS["general"])
@@ -129,7 +129,7 @@ class RulesMixin:
 
     def remove_rules(self) -> list[str]:
         """Take every block of this Wiki out (RULES.md stays in the wiki's folder). The files changed."""
-        repo = self.repo_root
+        repo = self.work_root
         clean = _clean(repo, [wikirules.CLAUDE, wikirules.AGENTS, wikirules.cursor_file(self.building_id).as_posix()])
         changed: list[Path] = []
         served: list[Path] = []
@@ -151,12 +151,12 @@ class RulesMixin:
         out = []
         for folder in self.rules_folders():
             for name in [*wikirules.written(folder, self.building_id), *wikimcp.written(folder, self.building_id)]:
-                out.append(name if folder == self.repo_root else (folder / name).as_posix())
+                out.append(name if folder == self.work_root else (folder / name).as_posix())
         return out
 
     def mcp_command(self) -> list[str]:
         """How an AI tool starts this Wiki's MCP server (docs/design/wiki-mcp.md): this machine's Python."""
-        return [sys.executable, "-m", "orkcraft.wiki_mcp", "--project", str(self.repo_root.resolve()),
+        return [sys.executable, "-m", "orkcraft.wiki_mcp", "--project", str(self.work_root.resolve()),
                 "--wiki", str(self.wiki_root.resolve())]
 
     def _serve(self, folder: Path, tools: list[str]) -> list[Path]:
@@ -167,7 +167,7 @@ class RulesMixin:
 
     def _commit_rules(self, paths: list[str], message: str) -> None:
         if paths and self.config.get("commit", True) is not False and not self.simulated:
-            wiki.commit_files(self.repo_root, paths, message)
+            wiki.commit_files(self.work_root, paths, message)
 
     def rules_view(self) -> dict:
         state = self.rules_state()

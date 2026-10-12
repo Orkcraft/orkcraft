@@ -218,3 +218,47 @@ def test_the_steward_s_work_follows_its_own_tier_and_its_upkeep_does_not():
     steward.set_models(b, {"escalate": "laborer"})
     assert pick("escalate", setting="haiku").by == "picked"
     assert pick("escalate", own="elder") == steward.Pick("opus", "elder", "own")
+
+
+def test_an_empty_steward_answer_is_asked_once_more(tmp_path):
+    # agy ends a turn with no answer when it was denied a command: that is no verdict, never "not accepted"
+    import threading
+    from orkcraft.core.workers.barracks import BarracksWorker, RunOutcome
+    presets = {"a": {"title": "A", "icon": "🛖", "orc": "Peon", "role": "x", "category": "core"}}
+    s = ts.default_scroll(presets, raised=["a"])
+    answers = ["", "ACCEPT", "", ""]
+
+    class Pool:
+        steward_runner = staticmethod(lambda h, p, w, c, m: (answers.pop(0), 0.01))
+        config = {"steward": "claude"}
+        building_id, simulated, TYPE, aim_now = "a", False, "barracks", "balance"
+
+        class town:
+            scroll = s
+    out = RunOutcome()
+    assert BarracksWorker._steward(Pool(), "review it", tmp_path, threading.Event(), out) == "ACCEPT"
+    assert round(out.steward_cost, 2) == 0.02
+    assert BarracksWorker._steward(Pool(), "review it", tmp_path, threading.Event(), out) == "" and answers == []
+
+
+def test_a_meeting_s_brief_is_read_on_the_light_tier_unless_one_is_picked(tmp_path):
+    # flash-high thought 160 s over a 1:1's brief; the light tier caught a missing section in 10 s
+    import threading
+    from orkcraft.core.workers.barracks import BarracksWorker, RunOutcome
+    presets = {"a": {"title": "A", "icon": "🛖", "orc": "Peon", "role": "x", "category": "core"}}
+    s = ts.default_scroll(presets, raised=["a"])
+    s.building("a").garrison.steward = ts.OrcSpec("keeper", "Grunts")
+    seen = []
+
+    class Pool:
+        steward_runner = staticmethod(lambda h, p, w, c, m: seen.append(m) or ("ACCEPT", 0.0))
+        config = {"steward": "claude"}
+        building_id, simulated, TYPE, aim_now = "a", False, "barracks", "balance"
+
+        class town:
+            scroll = s
+    BarracksWorker._steward(Pool(), "review it", tmp_path, threading.Event(), RunOutcome(), light=True)
+    BarracksWorker._steward(Pool(), "review it", tmp_path, threading.Event(), RunOutcome())
+    steward.set_models(s.building("a"), {"review": "elder"})
+    BarracksWorker._steward(Pool(), "review it", tmp_path, threading.Event(), RunOutcome(), light=True)
+    assert seen == ["haiku", "sonnet", "opus"]                     # light; its goal's; the one picked stands

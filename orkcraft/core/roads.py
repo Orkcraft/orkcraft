@@ -12,9 +12,17 @@ from orkcraft.core.town import Town
 from orkcraft.realm import catalog, pipes, road_planner
 
 
-def choices(town: Town, source_id: str, target_id: str) -> list[tuple[str, str | None, str]]:
-    """(event, handler or None, label) the receiver can subscribe to from the source."""
-    if town.scroll is None or source_id == target_id:
+def _layable(town: Town, source_id: str, target_id: str, setup: bool) -> bool:
+    """Neither end is a building whose roads only its setup lays, or none at all (catalog `roads`), unless `setup`
+    lays it (docs/design/improve-buildings.md §2)."""
+    return all(catalog.lays_roads(catalog.type_of(spec).id, setup)
+               for spec in (town.custom_specs.get(source_id), town.custom_specs.get(target_id)) if spec is not None)
+
+
+def choices(town: Town, source_id: str, target_id: str, setup: bool = False) -> list[tuple[str, str | None, str]]:
+    """(event, handler or None, label) the receiver can subscribe to from the source; nothing to or from a building
+    whose roads its setup lays, unless `setup` asks."""
+    if town.scroll is None or source_id == target_id or not _layable(town, source_id, target_id, setup):
         return []
     src, tgt = town.scroll.building(source_id), town.scroll.building(target_id)
     if src is None or tgt is None:
@@ -39,7 +47,7 @@ def choices(town: Town, source_id: str, target_id: str) -> list[tuple[str, str |
 def listenable(town: Town, source_id: str, target_id: str) -> list[tuple[str, str]]:
     """(event, label) a listener with a prompt (Roads v3: a rule makes the handler) can take."""
     src = town.scroll.building(source_id) if town.scroll is not None else None
-    if src is None or source_id == target_id:
+    if src is None or source_id == target_id or not _layable(town, source_id, target_id, False):
         return []
     return [(ev, pipes.label(ev)) for ev in pipes.road_events(source_id, target_id, bool(src.garrison.members),
                                                               handler=True)]
@@ -80,11 +88,15 @@ def contract(town: Town, target_id: str, source_id: str | None = None,
 
 
 def lay(town: Town, target_id: str, source_id: str, event: str, handler: str | None,
-        quiet: bool = False, match: str = "", returns: bool = False) -> scroll.Road | None:
+        quiet: bool = False, match: str = "", returns: bool = False, setup: bool = False) -> scroll.Road | None:
     """A road from `source_id` into `target_id` on `event` (`signpost.routed#<route>`: a road that
     waits for that route; `match`: only what the regex finds in a cart leaves the source; `returns`: it
     brings a result back to where its task came from, and closes no loop).
-    `quiet`: one of many (a town plan) — no toast and no checkpoint of its own."""
+    `quiet`: one of many (a town plan) — no toast and no checkpoint of its own. `setup`: laid by a building's setup,
+    the only way into one whose roads its setup lays (catalog `roads`)."""
+    if town.scroll is not None and not _layable(town, source_id, target_id, setup):
+        town.toast("Its roads are laid only by its setup", title="Roads", severity="warning")
+        return None
     event, _, route = event.partition("#")
     flt = {"route": [route]} if route else {}
     if match:

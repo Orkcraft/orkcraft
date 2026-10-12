@@ -1,6 +1,6 @@
 """Every biome's ground is dark (docs/design/yards.md §3e): darker than a card, so a card reads as a plane on it,
 and dark enough that a card's words read on the ground itself — the cards' background may be left out in Camp
-(Card background: Shade or Ground). A light biome would need a card's panel under its words; none may be added."""
+(Card background: Yard or Ground). A light biome would need a card's panel under its words; none may be added."""
 from __future__ import annotations
 
 import re

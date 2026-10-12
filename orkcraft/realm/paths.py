@@ -66,13 +66,39 @@ SOURCE_DEFAULTS = {"github": pipes.CHANGE, "gitlab": pipes.CHANGE, "jira": pipes
                    "discord": pipes.REPLY}
 
 
+# A chat where people also ask for fixes may take both: a reply, or a code change when the message asks for one —
+# the Lookout picks within the two (§6.1). Kept as the list `["reply", "change"]`, the reply first.
+REPLY_OR_CHANGE = "reply+change"
+BOTH_KINDS = {REPLY_OR_CHANGE: [pipes.REPLY, pipes.CHANGE]}
+CHAT_SOURCES = ("slack", "discord")
+
+
+def source_choices(source: str) -> tuple[str, ...]:
+    """What the quick-add offers for `source`'s carts: the single kinds, and for a chat the reply-or-change too."""
+    return SOURCE_CHOICES + ((REPLY_OR_CHANGE,) if source in CHAT_SOURCES else ())
+
+
+def want_setting(choice: str) -> str | list[str]:
+    """A quick-add choice as the tower's `wants` keeps it: a kind, or a list of kinds."""
+    return list(BOTH_KINDS[choice]) if choice in BOTH_KINDS else choice
+
+
+def choice_of_setting(value) -> str:
+    """A source's `wants` value as the quick-add's choice ("" when it is none it offers)."""
+    if isinstance(value, list):
+        return next((c for c, kinds in BOTH_KINDS.items() if [pipes.want_of(x) for x in value] == kinds), "")
+    return want_of_choice(value)
+
+
 def source_of(service: str) -> str:
     """The signal source a quick-add service listens as: `gmail` is the tower's mail."""
     return "mail" if service == "gmail" else service
 
 
 def want_of_choice(value) -> str:
-    """One of SOURCE_CHOICES, else "" (none: the pool's sort decides)."""
+    """One of SOURCE_CHOICES or REPLY_OR_CHANGE, else "" (none: the pool's sort decides)."""
+    if str(value or "").strip().lower() in BOTH_KINDS:
+        return str(value).strip().lower()
     want = pipes.want_of(value)
     return want if want in SOURCE_CHOICES else ""
 

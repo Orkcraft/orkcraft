@@ -1,0 +1,54 @@
+/* ⚗️ The UX bench's window (js/buildings/ux_lab.js): its settings over the gallery of a building's pictures. */
+.ux-window { display: flex; flex-direction: column; gap: var(--space-4); min-height: 0; }
+.ux-settings { display: flex; flex-direction: column; gap: var(--space-2); }
+.ux-pick { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.ux-pick .gui-build__tile.is-picked { outline: 2px solid var(--frame-focus); outline-offset: 1px; border-radius: 6px; }
+.ux-tool { display: flex; align-items: center; gap: var(--space-2); max-width: 360px; }
+.ux-gallery { display: flex; flex-direction: column; gap: var(--space-3); }
+.ux-gallery__group h3 { margin: 0 0 var(--space-1); }
+.ux-gallery__row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.ux-picture { margin: 0; display: flex; flex-direction: column; align-items: center; gap: var(--space-1); width: 112px; }
+.ux-picture__frame { width: 112px; height: 84px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--frame); border-radius: 6px; overflow: hidden; }
+.ux-picture__office .gui-type-icon { width: 32px; height: 32px; }
+.ux-picture figcaption { text-align: center; }
+.ux-tool > span { white-space: nowrap; }
+.ux-picture__ork img { width: 72px; height: auto; image-rendering: pixelated; }
+button.ux-picture { background: none; border: 0; padding: 0; cursor: pointer; color: inherit; font: inherit; }
+button.ux-picture:hover .ux-picture__frame, button.ux-picture:focus-visible .ux-picture__frame { border-color: var(--frame-focus); }
+.ux-picture__icon { width: 48px; height: 48px; image-rendering: pixelated; }
+.ux-picture__house { max-width: 104px; max-height: 76px; }
+.ux-edit { display: flex; gap: var(--space-4); align-items: flex-start; flex-wrap: wrap; }
+.ux-edit__left { flex: 3 1 320px; display: flex; flex-direction: column; gap: var(--space-2); }
+.ux-edit__right { flex: 2 1 240px; display: flex; flex-direction: column; gap: var(--space-2); }
+.ux-edit__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.ux-edit__picture { position: relative; border: 1px solid var(--frame); border-radius: 6px; cursor: crosshair; user-select: none;
+  min-height: 220px; display: flex; align-items: center; justify-content: center; }
+.ux-edit__picture img { max-width: 100%; max-height: 360px; min-width: 160px; image-rendering: pixelated; pointer-events: none; }
+.ux-edit__region { position: absolute; border: 2px dashed var(--frame-focus); background: color-mix(in srgb, var(--frame-focus) 10%, transparent); pointer-events: none; }
+.ux-wire { display: flex; flex-direction: column; gap: 4px; min-height: 220px; border: 1px solid var(--frame); border-radius: 6px; padding: 4px; }
+.ux-wire.is-small { min-height: 0; width: 104px; height: 76px; border: 0; }
+.ux-wire.is-row, .ux-wire__group.is-row { flex-direction: row; }
+.ux-wire__group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ux-wire__pane { border: 1px dashed var(--frame-strong, var(--frame)); border-radius: 4px; padding: 4px; min-width: 0; min-height: 24px;
+  font-size: 0.8em; overflow: hidden; }
+.ux-wire__pane.is-hidden { opacity: 0.4; }
+.ux-card { position: relative; }
+.ux-card__hut { position: relative !important; left: 0 !important; top: 0 !important; max-width: none !important; pointer-events: auto; }
+.ux-card.is-small { width: 104px; height: 76px; overflow: hidden; }
+.ux-card.is-small .ux-card__hut { transform: scale(var(--ux-scale)); transform-origin: top left; pointer-events: none; }
+.ux-card:not(.is-small) .ux-card__hut { cursor: pointer; }
+.ux-card.is-part-big .gui-hut__big, .ux-card.is-part-text .gui-hut__text, .ux-card.is-part-foot .gui-hut__foot,
+.ux-card.is-part-when .gui-hut__when { outline: 2px dashed var(--frame-focus); outline-offset: 2px; }
+/* The mascots (§6.4): each head on its kin's ground, drawn large and sharp. */
+.ux-picture__ground { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.ux-picture__mascot { width: 48px; height: 44px; image-rendering: pixelated; }
+.ux-edit__picture img.is-mascot { width: min(100%, 264px); height: auto; }
+/* Sent to Orkcraft as a pull request (§6.5): each item ticked, a picture before and after, a text's diff. */
+.ux-send { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.ux-send__items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.ux-send__item { display: flex; align-items: center; gap: var(--space-2); }
+.ux-send__files { display: flex; flex-wrap: wrap; gap: var(--space-2); padding-left: var(--space-4); }
+.ux-send__pair { display: inline-flex; align-items: center; gap: var(--space-1); }
+.ux-send__pair img { max-width: 96px; max-height: 72px; min-width: 32px; image-rendering: pixelated; border: 1px solid var(--frame); border-radius: 4px; }
+.ux-send__diff { max-height: 240px; overflow: auto; white-space: pre-wrap; font-size: 0.85em; margin: 0; }

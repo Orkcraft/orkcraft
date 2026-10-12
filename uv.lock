@@ -381,6 +381,7 @@ dependencies = [
     { name = "jsonschema" },
     { name = "markdown-it-py" },
     { name = "pyte" },
+    { name = "segno" },
     { name = "websockets" },
 ]
 
@@ -425,6 +426,7 @@ requires-dist = [
     { name = "pywebview", marker = "extra == 'gui'", specifier = ">=5.0" },
     { name = "recurring-ical-events", marker = "extra == 'calendar'", specifier = ">=3.3" },
     { name = "recurring-ical-events", marker = "extra == 'dev'", specifier = ">=3.3" },
+    { name = "segno", specifier = ">=1.5" },
     { name = "segno", marker = "extra == 'dev'", specifier = ">=1.5" },
     { name = "segno", marker = "extra == 'gui'", specifier = ">=1.5" },
     { name = "websockets", specifier = ">=13.0" },

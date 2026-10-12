@@ -120,7 +120,9 @@ class You:
         now = dt.datetime.now()
         morning = disturb.morning(m, now)
         role = intents.role(str((m.profile or {}).get("role") or "")).id
-        return {"look": m.look, "mono": MONOGRAMS.get(role, "··"), "role": role if role in MONOGRAMS else "",
+        return {"look": settings.look_now(m, now), "look_choice": m.look,
+                "shift": f"{schedule.fmt(settings.SHIFT[0])}–{schedule.fmt(settings.SHIFT[1])}",
+                "mono": MONOGRAMS.get(role, "··"), "role": role if role in MONOGRAMS else "",
                 "fire": m.fire,
                 "dnd": {"on": disturb.holds(m, now), "choice": disturb.choice(m, now), "label": disturb.label(m, now),
                         "morning": schedule.fmt(morning.hour * 60 + morning.minute)},
@@ -131,7 +133,7 @@ class You:
     def _look(self, args: dict) -> dict[str, Any]:
         look = args.get("look")
         if look not in settings.LOOKS:
-            raise YouError(f"No look {look!r}: camp or office")
+            raise YouError(f"No look {look!r}: camp, office or shift")
         self.machine.look = look
         settings.save(self.machine)
         self.host.on_change()

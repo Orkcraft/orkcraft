@@ -26,7 +26,8 @@ waits `later_minutes`; a related task that comes after it went goes as an additi
 **Context, plan, personal** (realm/cardlore.py keeps them beside the board, never in its file):
 
     context 📜   a new or edited card asks the town's Scroll Dumps (`wikis`, default every one) for the
-                 pages that share its words — no model, nothing leaves the machine; none found, no context
+                 pages that share its words — no model, nothing leaves the machine; none found, no context.
+                 The waiting cards ask together every `CONTEXT_EVERY_S` (core/workers/fields_lore.py)
     plan 🧭      a to-do's steps, asked of its steward (`plan_model`, else its goal's tier: realm/steward.py) only
                  when the person presses Plan, with its context's pages; first it shows what will leave
                  (`plan_preview`), cleaned of e-mails, phones, cards, IBANs and secrets (realm/privacy.py)
@@ -39,6 +40,7 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 
 from orkcraft.core import runners
 from orkcraft.core.workers import Worker
@@ -51,6 +53,8 @@ from orkcraft.realm.tasklist import COLUMNS, LABELS, MINE, NOTE, TASK
 TITLE = "🌾 Task Fields"
 SHORT = {"todo": "To Do", "in_progress": "Doing", "done": "Done"}
 MODES = ("board", "tasks", "notes")
+NAME_QUIET_S = 0.3              # cards written within this of each other are named in one call…
+NAME_BATCH = 10                 # …this many at most
 
 
 class FieldsWorker(NightRound, Settle, CardLore, Worker):
@@ -64,6 +68,11 @@ class FieldsWorker(NightRound, Settle, CardLore, Worker):
         self._last: list[tasklist.Task] | None = None
         self.planning: set[str] = set()          # the to-dos whose plan a model is writing now
         self.plan_error = ""
+        self._naming = threading.Lock()
+        self._unnamed: list[tuple[str, str, str]] = []   # (card id, first words, text) of the cards waiting for a title
+        self._namer = False
+        self._context_due: set[str] = set()          # the cards that wait for their context (`look_up_waiting`)
+        self._context_at = time.time()
 
     def start(self) -> None:
         self.refresh()
@@ -153,6 +162,7 @@ class FieldsWorker(NightRound, Settle, CardLore, Worker):
             self.lore.keep_only({c.id for c in self.cards})
             self.tidy()
             self.release_due()
+            self.look_up_waiting()
         if self._last is None and not (self.state_dir / "seen.json").exists():
             self.mark_seen()                     # the first look: nothing is new yet
         self._last = list(self.cards)
@@ -210,7 +220,7 @@ class FieldsWorker(NightRound, Settle, CardLore, Worker):
         if want is not None:              # before it is announced: what it sends carries it
             self.lore.set_want(card.id, pipes.want_of(want), by_road=True)
         self._sync(seen)                  # first: what the roads bring back about it finds it on the board
-        self.find_context(card.id)
+        self.context_later(card.id)
         if card.kind == TASK:
             self.announce("tasks.created", card, LABELS[card.column])
         elif card.kind == NOTE:
@@ -218,29 +228,61 @@ class FieldsWorker(NightRound, Settle, CardLore, Worker):
         return card
 
     def write(self, text: str, lane: str = "todo", private: bool = False) -> tasklist.Task | None:
-        """A card written as one text (the person's New task / New note). A short line is its own title; a
-        longer text is the card's text, and its steward (its `title`) names it in a few words
-        — off the town's thread, the card added once named. Without a model its first words are its title.
-        The card when it was added at once, None when it waits for its title (or was not added)."""
+        """A card written as one text (the person's New task / New note), on the board at once. A short line is
+        its own title; a longer text is the card's text with its first words for a title, and its steward (its
+        `title`) names it in a few words off the town's thread: the card is renamed once named, unless the
+        person renamed it first or it already went down the roads (what comes back finds it by its id)."""
         text = text.strip()
         if not text:
             return None
         private = private or (lane == MINE and bool(self.config.get("private_todos")))
         if not tasklist.needs_title(text):
             return self._mark(self.add(" ".join(text.split()), lane), private)
+        first = tasklist.short_title(text) or "Note"
+        card = self._mark(self.add(first, lane, text), private)
         runner = None if private else self._title_runner()      # a personal card's text never reaches a model
-        if runner is None:
-            return self._mark(self.add(tasklist.short_title(text) or "Note", lane, text), private)
+        if card is None or runner is None:
+            return card
+        with self._naming:
+            self._unnamed.append((card.id, first, text))
+            if self._namer:                                     # the namer at work takes it with the rest
+                return card
+            self._namer = True
+        threading.Thread(target=self._name_waiting, args=(runner,), daemon=True,
+                         name=f"fields-title-{self.building_id}").start()
+        return card
 
-        def work() -> None:
+    def _name_waiting(self, runner) -> None:
+        """Names the cards that wait for a title, the ones written at once in one call (`NAME_QUIET_S` with nothing
+        new ends a burst), then renames them — off the town's thread."""
+        while True:
+            seen = -1
+            while len(self._unnamed) != seen:
+                seen = len(self._unnamed)
+                time.sleep(NAME_QUIET_S)
+            with self._naming:
+                batch, self._unnamed = self._unnamed[:NAME_BATCH], self._unnamed[NAME_BATCH:]
             try:
-                title = tasklist.parse_title(runner(tasklist.title_prompt(text))[0])
-            except Exception:  # a model that cannot be reached never loses the card: its first words name it
-                title = ""
-            self.town.call(self.add, title or tasklist.short_title(text) or "Note", lane, text)
+                titles = tasklist.parse_titles(runner(tasklist.titles_prompt([t for _, _, t in batch]))[0], len(batch))
+            except Exception:  # a model that cannot be reached leaves the card as it is: its first words name it
+                titles = [""] * len(batch)
+            for (card_id, first, _text), title in zip(batch, titles):
+                if title:
+                    self.town.call(self._named, card_id, first, title)
+            with self._naming:
+                if not self._unnamed:
+                    self._namer = False
+                    return
 
-        threading.Thread(target=work, daemon=True, name=f"fields-title-{self.building_id}").start()
-        return None
+    def _named(self, card_id: str, first: str, title: str) -> None:
+        """The model's title for a card written as one text takes its first words' place, with the colour it
+        picked (else the one the card has)."""
+        card = self.card(card_id)
+        if card is None or tasklist.plain(card.title) != first or self.lore.sent(card_id) or self.lore.into(card_id):
+            return
+        color, name = tasklist.color_of(title) or tasklist.color_of(card.title), tasklist.plain(title).strip()
+        if name:
+            self.edit(card.id, f"{color} {name}" if color else name, card.body)
 
     def _title_runner(self):
         """The steward's model that names a card (its `title`), None when there is none to call: the light model
@@ -337,8 +379,8 @@ class FieldsWorker(NightRound, Settle, CardLore, Worker):
             after = next((c for c in self.cards if c.column == before.column and c.title == title), None)
             if after is not None:
                 self.lore.rename(card_id, after.id)
-                if card_text(after) != card_text(before):
-                    self.find_context(after.id)
+                if card_text(after) != card_text(before) or card_id in self._context_due:
+                    self.context_later(after.id, was=card_id)
         return True
 
     def check(self, card_id: str, done: bool | None = None) -> bool:

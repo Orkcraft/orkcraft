@@ -54,9 +54,20 @@ def current_branch(repo: Path) -> str:
     return _git(repo, "symbolic-ref", "--quiet", "--short", "HEAD").stdout.strip()
 
 
+_SHELL = ("&&", "||", "|", ";", "$(", "`", ">", "<", "*", "~")   # what only a shell reads in a command line
+
+
+def test_argv(cmd: str) -> list[str]:
+    """The operator's test command as a process to start: as words, or through `sh -c` when it needs a shell
+    (`pytest -q && ruff check .`: split into words, `&&` reached pytest as an argument and every run failed)."""
+    if any(mark in cmd for mark in _SHELL):
+        return ["sh", "-c", cmd]
+    return shlex.split(cmd)
+
+
 def run_tests(repo: Path, branch: str, cmd: str, timeout_s: int = TEST_TIMEOUT_S) -> tuple[bool, str]:
     """The test command in a detached worktree of `branch`; (passed, the output's tail)."""
-    argv = shlex.split(cmd)
+    argv = test_argv(cmd.strip()) if cmd.strip() else []
     if not argv:
         return True, ""
     with tempfile.TemporaryDirectory(prefix="orkcraft-forge-") as tmp:

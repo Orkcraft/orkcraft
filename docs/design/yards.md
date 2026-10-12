@@ -103,9 +103,22 @@ Office draws a yard as any card: nothing of this stage is drawn there (`yards.cs
   Text never sits on wood (contrast stays 4.5:1).
 - **Chunky pixels, few of them.** Sprite pixels are 3 CSS px (`image-rendering: pixelated`); a picket
   has an outline, a lit edge, a face and a shade, and nothing more. Detail is what makes a frame shout.
-- **Dark, low-chroma wood** (darkened 2026-10-09, §7): outline `#0b0907`, shade `#1c1814`, wood `#262019`,
-  lit edge `#302820`, highlight `#3a3026` — a step or two above the ground, never orange:
-  five fences on a map must stay quieter than one fire, and gold and fire stay the brightest things on it. Ice and void get their own wood tints, as their stone panels do.
+- **Warm wood under the words** (lifted 2026-10-09 after the dark one read as a dull town, 1.1–1.4:1 to the
+  ground): outline `#1a1813`, shade `#3e3122`, wood `#5a4730`, lit edge `#6b5538`, highlight `#7a6240`, a
+  picket's point `#8a7048` — at most about 3:1 to the ground, under the card's muted words (about 7:1) and
+  its text (about 15:1). Points are wood, never bone: bone is as bright as the text and pulled the eye round
+  every card. One plain rail between the pickets, not two, so the fence reads as one calm line. The yard's
+  inside is a step over the ground (the ink at 6 %, *Card background: Yard*), so inside and outside part. Five fences on a map stay quieter
+  than one fire, and gold and fire stay the brightest things on it. Ice and void get their own wood tints, as their stone panels do.
+- **The orks' fence, sparingly** (2026-10-10): each picket is lashed to its rail with rope, no nails. Its corners
+  are its one ornament: at the top fence's end a **bone tusk curling in over the card** (`tusk-<n>.png`), at the bottom
+  corners a **stout post with an iron head** (`corner-post.png`) — neat and quiet, where tusks out at every corner
+  crowded the card. The building's renown (growth.md §5) shows along the whole fence, so a level reads from across the
+  town (one corner's change did not): II caps every picket with iron, gives the posts a spiked collar and the tusk an
+  iron band; III binds the rail in iron too, grows two small bone horns on each post and sets crossed axes where the top
+  fence meets the house (`axes.png`; `row-<n>`, `side-<n>`, `corner-post-<n>`). The
+  bone is old bone (`#b8ac90`, about 8:1 to the ground): a white one (14:1) measured as bright as the card's text; the
+  iron is as quiet as the wood. A selected yard glows round its tusk and posts (where the corner brackets would be).
 - **It tiles**: a card that is stretched (`hut_size`, building-views.md §1a) repeats its pickets at any
   level. The lower half of the picket row stands over the ground, not the panel, so it reads as a fence.
 - **States ride on the fence.** Selected: the pickets lit `frame-focus`. Fire: the fence takes the
@@ -221,6 +234,8 @@ leaves the title bar on every card, hut and yard; the building says what its ork
 - Under `prefers-reduced-motion`, nothing paces or floats. Office draws none of it: it keeps its words
   (`busy`, `?`, `visiting`) in the title bar.
 - What the head told — its name, its AI tool — is in Info and in the caller's tooltip.
+- **Its marks out on the plinth** (2026-10-10): its tier's chevrons over one shoulder, the AI tool it thinks with, at half size (8 px: a hint, not a badge),
+  (the scheme's first tool's pixel mark, `ToolMark`) over the other; a yard's visiting steward wears its own.
 - Code: `js/hut.js` `Doing`, `js/visit.js` `Outside` and `VisitDialogs`; `yards.css`; `office.css` hides them;
   the sprites `tools/visit_sprites.py`.
 - Later: a building's own "at work" (smoke, sparks) instead of the wheel.
@@ -262,8 +277,10 @@ own needs no card at all.
   picker closes on a press anywhere else or on Escape, and the bubble goes when the building is no longer selected.
 - **The bubble is rounder**: its corners step over four pixels (`tools/visit_sprites.py`), so its sides read round
   and stay pixel.
-- **Cards on the ground by default** (§3e): Card background is *Ground* (the default) or *Panel*; *Shade* is gone, and
-  a browser that kept it draws Ground.
+- **A yard a step over the ground by default** (§3e; the owner's call, 2026-10-09): Card background is *Yard* (the
+  default: inside its fence a card is the ink at 6 % over the town's ground, so it keeps its biome's hue and parts
+  from the outside) or *Ground* (no backdrop, the card on the ground itself). *Panel* and *Shade* are gone; a browser
+  that kept either draws a yard.
 - **A card takes the free room around it** — *off by default since 2026-10-09: it twice drew the town in a loop, and a
   layout that changes with the window costs the person where things are; a browser tries it with localStorage
   `orkcraft.grow` = `1`* (`js/town.js` `grow`): a card with a view and no size of its own grows right
@@ -275,3 +292,27 @@ own needs no card at all.
 - **Buildings drawn at 0.9 of their sprite** (a fenced or bare one; the Town Hall at 0.75).
 - **The parts' checkboxes live in the yard** (Task board: Ork work, My to-dos, Notes): a row at the top of its card,
   as the Calendar's legend, always there — no tray popping out over the card, under the mouse or when selected.
+
+## 8. A question is an ork's; a fire is a building's (built 2026-10-10)
+
+- Only a building with orks asks. Its ork comes out onto the plinth with ❓, the building glows yellow
+  (`--warning`), and a press on the building opens its question in Answers at once (js/hut.js) — no select first.
+- Anything that breaks — an exception in its script, a failed model call, a failed task — is fire: the flames
+  of js/hut.js `Flames` on the building, red ground (`brokenOf`: its state ERROR or its mark's tone error).
+- A yard (its work is code, no ork lives there) never shows an ork outside, selected or asking (js/visit.js):
+  it can only burn, or glow when something it holds waits for the person (a cart for review).
+- Pin and fold are in the building's menu (right click, ⋯), not on its title bar; a drag on a pinned building says
+  why in a toast.
+
+## 9. Info: the building, then its ork (built 2026-10-10)
+
+The Info tab has two parts, each with its own label: **The building** (what it does, its settings, quick actions,
+roads) and **Its ork** (its face at full size, its name, and why an ork is needed here at all —
+`realm/ork_roles.py` `WHY`, one line per type; a yard says no ork lives there). The window's tabs stand in its title
+bar, after the name: no ork head and no tab row above the content.
+
+## 10. The gate on the fence, and on a bare building (built 2026-10-10)
+
+The road gate stands on the fence itself, not on the card's edge: the side pickets' middle (7.5 px in) and the bottom
+row's (10.5 px up) (js/hut.js `FENCE_IN`). A bare building has a gate too: along its plinth and at its house's left
+side, never over the house or its mark, where a press selects it (`edgeOf`).

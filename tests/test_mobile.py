@@ -53,9 +53,13 @@ def test_the_compact_snapshot_is_small_and_names_its_content(fake_repo, isolated
     assert snap["v"] == mobile.API and snap["project"] == full["project"]
     assert len(json.dumps(snap)) < len(json.dumps(full))
     hall = next(b for b in snap["buildings"] if b["id"] == "town_hall")
-    assert set(hall) == {"id", "title", "title_plain", "type", "state", "alert"} and hall["type"] == "town_hall"
+    assert set(hall) == {"id", "title", "title_plain", "type", "state", "alert", "quick"} and hall["type"] == "town_hall"
+    assert [q["id"] for q in hall["quick"]] == ["hall.audit"]           # Build opens a window of the desktop's: not here
     assert {"gold", "gold_level", "quota", "quota_level", "alerts"} <= set(snap["hud"])
-    assert "roads" not in snap and "words" not in snap and "orkspaces" not in snap
+    assert "words" not in snap and "projects" not in snap
+    space = next(o for o in snap["orkspaces"] if o["id"] == snap["active_orkspace"])   # the phone picks one by its own
+    assert set(space) == {"id", "name", "icon", "biome", "buildings", "questions", "working"} and board in space["buildings"]
+    assert all(isinstance(r, list) and len(r) == 2 for r in snap["roads"])   # which feeds which, not what a road carries
     assert host.command("mobile.snapshot", {"since": snap["rev"]}) == {"v": mobile.API, "rev": snap["rev"],
                                                                        "same": True}
     host.command("hut.move", {"id": board, "x": 0.1, "y": 0.1})           # where a hut stands: not a phone's
@@ -178,7 +182,7 @@ def test_the_notifier_says_each_new_question_once_in_one_line(fake_repo):
     assert listener.sent == []                                          # the first look wakes nobody
     n.after(snap(["a", "b"], gold="warn"))
     (msg,) = listener.sent
-    assert [x["line"] for x in msg["news"]] == ["Worker asks: Proceed?", "Spend is near its limit: $4.10 / $5.00"]
+    assert [x["line"] for x in msg["news"]] == ["Grunt asks: Proceed?", "Spend is near its limit: $4.10 / $5.00"]
     n.after(snap(["a", "b"], gold="warn"))
     assert len(listener.sent) == 1
     n.after(None)                                                       # no phone open: the next look is a first look
@@ -201,3 +205,60 @@ def test_the_notifier_says_an_error_by_its_title_only_and_a_session_that_ended(f
     listener.phones = set()
     host.town.toast("again", title="Roads", severity="error")
     assert len(listener.sent) == 2                                      # no phone open: nothing to say it to
+
+
+def test_a_phone_may_write_on_task_fields_and_nothing_else_there(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    fields = buildings.raise_spec(host.town, buildings.type_spec(host.town, "fields")).id
+    may = lambda act: mobile.allowed(host, "act", {"id": fields, "act": act})      # noqa: E731
+    assert may("add")
+    for act in ("move", "edit", "delete", "send", "color", "flip"):
+        assert not may(act), act
+
+
+def test_the_widget_is_task_fields_its_to_dos_notes_lanes_and_where_a_card_goes(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    fields = buildings.raise_spec(host.town, buildings.type_spec(host.town, "fields")).id
+    host.command("act", {"id": fields, "act": "add", "args": {"title": "Buy milk", "lane": "mine"}})
+    w = mobile.compact(host.snapshot())["widget"]
+    assert w["id"] == fields and w["todo_lane"] == "mine" and w["note_lane"]
+    assert "Buy milk" in w["todos"]["top"] and w["todos"]["open"] == 1
+    assert {ln["id"] for ln in w["lanes"]} >= {"todo", "done"}
+    # Where a new task or note goes: the roads that leave the board for it, by the receiving building's title.
+    full = {"buildings": [{"id": "f", "type": "fields", "title": "🌾 Task Fields", "card": {"todos": {"open": 0, "count": 0,
+            "top": []}, "ideas": None, "lanes": [], "todo_lane": "mine", "note_lane": "ideas"}},
+            {"id": "b", "type": "barracks", "title": "🛖 Barracks"}, {"id": "w", "type": "scrolls", "title": "📜 Wiki"}],
+            "roads": [{"from": "f", "to": "b", "event": "tasks.created"}, {"from": "f", "to": "w", "event": "notes.created"},
+                      {"from": "b", "to": "w", "event": "tasks.created"}]}
+    w = mobile.compact(full)["widget"]
+    assert w["sends"]["task"] == [{"id": "b", "title": "🛖 Barracks", "title_plain": "Agent pool"}]
+    assert [x["title"] for x in w["sends"]["note"]] == ["📜 Wiki"]
+    assert mobile.compact({"buildings": [{"id": "p", "type": "pit", "title": "Pit"}]})["widget"] is None
+
+
+def test_the_roads_come_to_a_phone_as_pairs_of_its_buildings_each_once():
+    full = {"buildings": [{"id": "a", "type": "pit", "title": "A"}, {"id": "b", "type": "forge", "title": "B"}],
+            "roads": [{"from": "a", "to": "b", "event": "pit.file"}, {"from": "a", "to": "b", "event": "pit.text"},
+                      {"from": "clock", "to": "b", "event": "tick"}, {"from": "b", "to": "b", "event": "x"}]}
+    assert mobile.compact(full)["roads"] == [["a", "b"]]
+
+
+def test_a_phone_presses_a_buildings_quick_actions_but_never_one_that_reads_the_computer(fake_repo, isolated_layout_file):
+    """A building's quick actions come to the phone as its card has them, each an input the phone may press
+    (`building.input`): one that takes text says so, one that reaches out is asked first, and one that reads the
+    computer (its clipboard, a path) or only opens a window of the desktop's never comes."""
+    host = _host(fake_repo)
+    pit = buildings.raise_spec(host.town, buildings.type_spec(host.town, "pit")).id
+    cat = buildings.raise_spec(host.town, buildings.type_spec(host.town, "catapult")).id
+    host.tick()
+    snap = {b["id"]: b for b in host.command("mobile.snapshot")["buildings"]}
+    assert snap[pit]["quick"] == []                                              # Paste reads the computer's clipboard
+    fire = next(q for q in snap[cat]["quick"] if q["id"] == "catapult.fire")
+    assert fire == {"id": "catapult.fire", "label": "Fire", "takes": "", "ask": True}
+    may = lambda bid, inp: mobile.allowed(host, "building.input", {"id": bid, "input": inp})      # noqa: E731
+    assert may(cat, "catapult.dry_run") and may("town_hall", "hall.audit")
+    assert not may(pit, "pit.paste") and not may("town_hall", "hall.build") and not may("nowhere", "hall.audit")
+    assert not may(cat, "hall.audit")                                           # another building's action
+    assert mobile.guard("building.input", {"id": cat, "input": "catapult.dry_run", "by": "bench"})["by"] == "person"
+    assert mobile.quick([{"id": "pool.task", "label": "New task"}]) == [
+        {"id": "pool.task", "label": "New task", "takes": "text", "ask": False}]

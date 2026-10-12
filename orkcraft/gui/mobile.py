@@ -25,7 +25,7 @@ from typing import Any, Callable
 from orkcraft import __version__
 from orkcraft.gui import markdown
 from orkcraft.gui import places as gui_places
-from orkcraft.realm import lexicon, modes
+from orkcraft.realm import catalog, lexicon, modes
 
 API = 1                  # the mobile API's version: a change that breaks a client raises it
 CONTEXT_LINES = 3        # of a question's screen, the last lines a phone shows
@@ -45,37 +45,67 @@ COMMANDS: dict[str, Any] = {
     "you.dnd": None,             # Do not disturb is the person's, wherever they set it (docs/design/portrait.md §5)
     "you.look": None,
     "audio.fetch": None,         # an Audio briefing's episode, in chunks: the one file a phone reads (audio-briefing.md §8)
-    "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",)},
+    # a building's quick action, as the desktop's card presses it: only one `quick` names (docs/design/mobile.md §10)
+    "building.input": None,
+    # Task Fields: a to-do, a note or a task written on the phone (the widget, docs/design/mobile.md §10)
+    "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",), "fields": ("add",)},
 }
+_BY_BUILDING = {"act", "building.input"}    # the commands `allowed` checks against the building they name
 
 _LEVELS = {"ok": 0, "warn": 1, "over": 2}
 
+# Quick actions a phone never presses: they read the computer (its clipboard, a path on it).
+QUICK_NEVER = frozenset({"pit.paste", "knowledge.add"})
+# Quick actions that reach outside the camp or take work in at once: the phone asks once before it presses them.
+QUICK_ASK = frozenset({"catapult.fire", "forge.merge", "loot.accept_all", "generator.accept_all"})
+
+
+def quick(actions: list[dict]) -> list[dict[str, Any]]:
+    """Of a building's quick actions (its card's, {id, label}), the ones a phone may press: each an input (catalog
+    `QUICK_INPUTS`), never one that only changes what the desktop's window shows or reads the computer. `takes`:
+    "text" when it needs a line of text; `ask`: the phone confirms it first."""
+    out = []
+    for a in actions:
+        how = catalog.QUICK_INPUTS.get(a["id"])
+        if how is None or a["id"] in QUICK_NEVER:
+            continue
+        out.append({"id": a["id"], "label": a["label"], "takes": "text" if how[1] else "", "ask": a["id"] in QUICK_ASK})
+    return out
+
 
 def allowed(host, name: str, args: dict | None = None) -> bool:
-    """Whether a phone may send this command: on the list, and an `act` only one the list names for
-    that building's type. The listener for phones (stage 1) asks it before `host.command`."""
+    """Whether a phone may send this command: on the list, an `act` only one the list names for that
+    building's type, and a `building.input` only one of the building's quick actions `quick` lets a phone
+    press. The listener for phones (stage 1) asks it before `host.command`."""
     if name not in COMMANDS:
         return False
     acts = COMMANDS[name]
-    if acts is None:
+    if name not in _BY_BUILDING:
         return True
     args = args or {}
     bid = str(args.get("id", ""))
     bs = host.town.scroll.building(bid)
     if bs is None or bs.demolished:
         return False
+    if name == "building.input":
+        spec = host.town.spec_of(bid)
+        card = [{"id": a.id, "label": a.label} for a in catalog.quick_actions_of(spec)] if spec else []
+        return str(args.get("input", "")) in {q["id"] for q in quick(card)}
     return str(args.get("act", "")) in acts.get(host.type_of(bid), ())
 
 
 def guard(name: str, args: dict, device: dict | None = None) -> dict:
     """A phone's command as the host gets it, after `allowed`: a drop into The Pit is the phone's own
     text, never read as paths on this machine (a phone names no path, docs/design/mobile.md §7); a place
-    report names the phone it came from, as the listener knows it, whatever the report says."""
+    report names the phone it came from, as the listener knows it, whatever the report says; a quick action
+    is pressed by the person, never by a bench."""
     args = dict(args)
     if name == "place.report":
         args["device"], args["device_id"] = (device or {}).get("name", ""), (device or {}).get("id", "")
     if name == "act" and args.get("act") == "drop":
         args["args"] = {**(args.get("args") if isinstance(args.get("args"), dict) else {}), "paths": False}
+    if name == "building.input":
+        args["by"] = "person"                  # the person, on their phone: never a bench
     return args
 
 
@@ -100,7 +130,52 @@ def _alert(a: dict) -> dict[str, Any]:
 def _building(b: dict) -> dict[str, Any]:
     return {"id": b["id"], "title": b["title"], "title_plain": modes.plain(b["title"]),
             "type": b["type"], "state": b.get("state", ""),
-            "alert": (b.get("alert") or {}).get("id") or None}
+            "alert": (b.get("alert") or {}).get("id") or None,
+            "quick": quick(b.get("quick") or [])}     # the card's own pick (gui/state.py)
+
+
+def _orkspaces(full: dict) -> list[dict[str, Any]]:
+    """The town's orkspaces as a phone picks one: its name, mark, biome (the ground the phone wears), its
+    buildings and how many of its orks ask or work."""
+    return [{"id": o["id"], "name": o["name"], "icon": o.get("icon", ""), "biome": o.get("biome", ""),
+             "buildings": list(o.get("buildings") or []), "questions": o.get("questions", 0),
+             "working": o.get("working", 0)} for o in full.get("orkspaces") or []]
+
+
+def _roads(full: dict) -> list[list[str]]:
+    """The roads between the town's buildings as [from, to] pairs, each once: what the phone groups its grid by
+    and lights on a long press. Not what a road carries (that stays on the desktop)."""
+    ids = {b["id"] for b in full.get("buildings") or []}
+    return [list(pair) for pair in sorted({(r["from"], r["to"]) for r in full.get("roads") or []
+                                           if r.get("from") in ids and r.get("to") in ids and r["from"] != r["to"]})]
+
+
+WIDGET_TOP = 5            # of the widget's to-dos, notes and each lane's cards, the most a phone gets
+
+
+def _widget(full: dict) -> dict[str, Any] | None:
+    """The Task Fields the phone keeps open (the first one on a board with the person's to-dos): its to-dos and
+    notes, the orks' lanes, and where a new note or task goes down the roads (the buildings' titles, as they are
+    and plain), so the
+    phone says what writing one starts. None when the town has no such board."""
+    b = next((b for b in full.get("buildings") or [] if b.get("type") == "fields"
+              and ((b.get("card") or {}).get("todos") is not None or (b.get("card") or {}).get("error"))), None)
+    if b is None:
+        return None
+    c = b["card"]
+    titles = {x["id"]: x.get("title", "") for x in full.get("buildings") or []}
+
+    def goes(prefix: str) -> list[dict[str, str]]:
+        to = sorted({r["to"] for r in full.get("roads") or []
+                     if r.get("from") == b["id"] and str(r.get("event", "")).startswith(prefix) and r.get("to") in titles})
+        return [{"id": t, "title": titles[t], "title_plain": modes.plain(titles[t])} for t in to]
+
+    top = lambda part: {**part, "top": list(part.get("top") or [])[:WIDGET_TOP]} if part else None  # noqa: E731
+    return {"id": b["id"], "error": c.get("error", ""), "todos": top(c.get("todos")), "notes": top(c.get("ideas")),
+            "lanes": [{"id": ln["id"], "label": ln["label"], "count": ln["count"], "top": ln["top"][:WIDGET_TOP]}
+                      for ln in c.get("lanes") or []],
+            "todo_lane": c.get("todo_lane", ""), "note_lane": c.get("note_lane", ""),
+            "sends": {"task": goes("tasks."), "note": goes("notes.")}}
 
 
 def _hud(h: dict) -> dict[str, Any]:
@@ -137,6 +212,10 @@ def compact(full: dict[str, Any]) -> dict[str, Any]:
         "hud": _hud(full.get("hud") or {}),
         "alerts": [_alert(a) for a in full.get("alerts") or []],
         "buildings": [_building(b) for b in full.get("buildings") or []],
+        "orkspaces": _orkspaces(full),
+        "active_orkspace": full.get("active_orkspace", ""),
+        "widget": _widget(full),
+        "roads": _roads(full),
         "sessions_running": sum(1 for s in full.get("sessions") or [] if s.get("running")),
         "episodes": _episodes(full.get("buildings") or []),
     }

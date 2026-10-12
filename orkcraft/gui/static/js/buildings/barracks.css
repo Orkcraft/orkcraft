@@ -89,3 +89,23 @@
 .pool-kinds__take { display: inline-flex; align-items: center; gap: var(--space-1); margin-right: var(--space-3); }
 .pool-kinds__row { display: flex; align-items: center; gap: var(--space-2); }
 .pool-kinds__row select { width: auto; }
+
+/* Its card's lanes (js/buildings/barracks.js Lanes): an ork a row — its head (what it does), its name, its tool and
+   tier, its topic, how many of it wait. */
+.pool-lanes { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 1px; }
+.pool-lane { display: grid; grid-template-columns: auto minmax(0, max-content) auto minmax(0, 1fr) auto; align-items: center;
+  gap: 5px; min-height: 18px; white-space: nowrap; }
+.pool-lane__head { display: grid; width: 40px; justify-items: start; }
+.pool-lane__head img { zoom: calc(2 / 3); }
+.pool-lane__name { overflow: hidden; text-overflow: ellipsis; }
+.pool-lane__how { display: inline-flex; align-items: center; gap: 3px; }
+.pool-lane__how .gui-tier { font-size: 0; gap: 0; }                 /* the chevrons alone: the word is the tooltip's */
+.pool-lane__topic { overflow: hidden; text-overflow: ellipsis; }
+.pool-lane__queue { font-variant-numeric: tabular-nums; }
+.pool-lane.is-asks .pool-lane__name { color: var(--fire, var(--danger)); }
+.pool-lane.is-more { display: block; }
+[data-look="office"] .pool-lane__how .gui-tier { font-size: inherit; }   /* Office draws no chevrons: the word */
+.pool-lane__state { display: none; }
+[data-look="office"] .pool-lane__head { width: auto; }
+[data-look="office"] .pool-lane__state { display: inline; color: var(--ink-muted); }
+[data-look="office"] .pool-lane.is-working .pool-lane__state { color: var(--ink); }

@@ -41,7 +41,8 @@ def detail(w) -> dict:
         "episodes": [_ep(e) for e in w.episodes[:EPISODES]],
         "running": _ep(w.running) if w.running else None,
         "has_key": w.has_key(), "key_where": _key_where(w), "has_input": bool(w.last_input[0]),
-        "settings": {"language": w.lang_setting, "minutes": w.minutes, "voice": w.voice, "cap_usd": w.cap,
+        "settings": {"language": w.lang_setting, "format": w.form, "minutes": w.minutes, "voice": w.voice,
+                     "voice_b": w.voice_b, "cap_usd": w.cap,
                      "keep": w.keep, "tts_model": w.tts_model},
         "per_minute": gm.usd_for(60), "default_key": gm.KEY,
         "spent": round(sum(float(e.get("cost") or 0.0) for e in w.episodes), 4),
@@ -94,8 +95,14 @@ def _settings(w, args: dict) -> bool:
         if lang not in gm.LANGUAGES:
             raise ActError("Language: auto, ru or en")
         changes["language"] = None if lang == "auto" else lang
-    if "voice" in args:
-        changes["voice"] = text(args, "voice", 40).strip() or None
+    if "format" in args:
+        form = text(args, "format", 20)
+        if form not in gm.FORMATS:
+            raise ActError("Format: dialogue or monologue")
+        changes["format"] = None if form == gm.FORMATS[0] else form
+    for key in ("voice", "voice_b"):
+        if key in args:
+            changes[key] = text(args, key, 40).strip() or None
     for key, kind in (("minutes", int), ("cap_usd", float), ("keep", int)):
         if key in args:
             changes[key] = _number(args, key, kind)

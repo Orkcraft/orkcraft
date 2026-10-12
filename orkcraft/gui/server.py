@@ -31,6 +31,12 @@ other than the page makes first (docs/design/mobile.md): what this server speaks
 `GET /api/audio/<building>/<episode>` (the same token) is an Audio briefing's episode, to play (`<audio>`) or,
 with `?dl=1`, to download (docs/design/audio-briefing.md §7): only a finished episode of that building,
 named by its id, never a path.
+
+`GET /api/logs/<building>?day=YYYY-MM-DD` (the same token) is a building's day log as a zip (gui/day_logs.py): every
+model call it made that day and what it decided; today's when no day is named. `GET /api/bench/<test bench>` is a
+Test bench's latest runs of what it tests, as a zip for an analysis (gui/lab_runs.py `pack`); `GET /api/check/latest`
+the last `orkcraft check`, all of it (gui/check_runs.py). `GET /api/analytics?days=7` every building's day logs of
+the last days, with what each day added up to, as one zip (realm/analytics.py).
 """
 from __future__ import annotations
 
@@ -51,7 +57,7 @@ from websockets.http11 import Request, Response
 from orkcraft import __version__
 from orkcraft.core import crashes
 from orkcraft.design import tokens
-from orkcraft.gui import mobile, notify, phones
+from orkcraft.gui import mobile, notify, phones, pwa
 from orkcraft.gui.host import CommandError, Host
 
 STATIC = Path(__file__).with_name("static")
@@ -70,7 +76,13 @@ def _response(status: HTTPStatus, body: bytes, content_type: str = "text/plain; 
 
 
 def resolve(path: str) -> Path | None:
-    """The file a static path names, never one outside its folder."""
+    """The file a static path names, never one outside its folder; a design-system picture this machine has its own
+    of (a UX bench applied it, design/tokens.py `assets_dir`) is that one."""
+    if path.startswith("/ds/sprites/"):
+        own = tokens.assets_dir().resolve()
+        mine = (own / path[len("/ds/"):]).resolve()
+        if mine.is_file() and mine.is_relative_to(own):
+            return mine
     for prefix, root in ROUTES.items():
         if path.startswith(prefix):
             root = root.resolve()
@@ -102,6 +114,8 @@ class Server:
         # The listener for phones (gui/phones.py): on the LAN, TLS, a device token; only while one is paired.
         self.phones = phones.Listener(host)
         host.commands.update(self.phones.commands())
+        self.tail_watch = pwa.TailWatch(self.phones)   # Tailscale that came after the town (gui/pwa.py)
+        host.commands.update(pwa.commands(self.phones))   # the app in a phone's browser: Tailscale's state
         self.notifier = notify.Notifier(host, self.phones)   # what came, to the phones that are open
 
     @property
@@ -137,6 +151,24 @@ class Server:
             if not self._token_ok(request):
                 return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
             return _response(HTTPStatus.OK, json.dumps(self.version()).encode(), "application/json")
+        if parts.path.startswith("/api/logs/"):
+            if not self._token_ok(request):
+                return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
+            day = parse_qs(parts.query).get("day", [""])[0]
+            return self._zip(self.host.day_logs.pack(parts.path.removeprefix("/api/logs/"), day))
+        if parts.path == "/api/analytics":
+            if not self._token_ok(request):
+                return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
+            days = parse_qs(parts.query).get("days", ["7"])[0]
+            return self._zip(self.host.day_logs.pack_period(int(days) if days.isdigit() else 7))
+        if parts.path == "/api/check/latest":
+            if not self._token_ok(request):
+                return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
+            return self._zip(self.host.bench.check.pack())
+        if parts.path.startswith("/api/bench/"):
+            if not self._token_ok(request):
+                return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
+            return self._zip(self.host.bench.lab.pack(parts.path.removeprefix("/api/bench/")))
         if parts.path.startswith("/api/audio/"):
             if not self._token_ok(request):
                 return _response(HTTPStatus.FORBIDDEN, b"Forbidden")
@@ -154,6 +186,16 @@ class Server:
         if kind.startswith("text/") or kind.endswith(("javascript", "json")):
             kind += "; charset=utf-8"
         return _response(HTTPStatus.OK, target.read_bytes(), kind)
+
+    @staticmethod
+    def _zip(packed: tuple[str, bytes] | None) -> Response:
+        """A zip to download (a day log, a Test bench's runs); 404 when there is nothing of that name."""
+        if packed is None:
+            return _response(HTTPStatus.NOT_FOUND, b"Not found")
+        name, data = packed
+        resp = _response(HTTPStatus.OK, data, "application/zip")
+        resp.headers["Content-Disposition"] = f'attachment; filename="{quote(name)}"'
+        return resp
 
     def _audio(self, rest: str, download: bool) -> Response:
         bid, _, eid = rest.partition("/")
@@ -315,6 +357,7 @@ class Server:
             try:
                 self.host.tick()
                 self.phones.tick()
+                self.tail_watch.tick()
             except Exception as e:
                 crashes.capture(e, "clock")
                 self.host.town.toast(f"{type(e).__name__}: {e}", title="Town clock", severity="error")

@@ -72,11 +72,11 @@ def test_a_gnome_s_whole_path(fake_repo: Path, onboard):
     assert classes["aso_manager"]["sprite"] == "aso_manager" and classes["marketing"]["sprite"] == "marketing"
     sprites = Path(__file__).parents[1] / "design-system" / "sprites" / "mascots"
     assert all((sprites / f"{c['sprite']}-1@2x.png").is_file() for c in classes.values())   # each its own head
-    assert classes["marketing"]["biome"] == "lava"
+    assert classes["marketing"]["biome"] == "ice"
     o = host.command("onboarding.role", {"role": "marketing"})
     assert o["step"] == "mcp" and o["kin"] == "gnome" and o["mcp"]["on"] == ["github", "amplitude"]
     o = host.command("onboarding.mcp", {"on": ["amplitude", "nope"], "next": True})
-    assert o["step"] == "town" and o["mcp"]["on"] == ["amplitude"] and o["biome"] == "lava"
+    assert o["step"] == "town" and o["mcp"]["on"] == ["amplitude"] and o["biome"] == "ice"
     towns = {t["id"]: t for t in o["towns"]}
     assert list(towns) == ["content_mill", "campaign_report", "growth_council"]       # its day, its week, its month
     assert [t["rhythm"] for t in towns.values()] == ["Every day", "Every week", "Every month"]
@@ -92,7 +92,7 @@ def test_a_gnome_s_whole_path(fake_repo: Path, onboard):
     assert all(b["state"] == "planned" for b in o["raising"]["buildings"])
     assert [b["hut"] for b in o["raising"]["buildings"]][:2] == [[0.0, 0.0], [0.333, 0.0]]   # spots known first
     space = host.town.scroll.orkspaces[0]
-    assert space.biome == "lava"                                            # the gnomes' ground at once
+    assert space.biome == "ice"                                             # the gnomes' ground at once
 
     host.tick(1000.0 + onboarding.RAISE_STEP_S)                            # one step a tick: the map fills
     assert host.snapshot()["onboarding"]["raising"]["steps"][0]["state"] == "done"

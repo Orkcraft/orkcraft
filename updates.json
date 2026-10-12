@@ -2,6 +2,18 @@
   "about": "The releases of Orkcraft, newest first: what an installed copy reads to update itself (docs/updates.md). A release marked critical installs by itself when the town opens.",
   "releases": [
     {
+      "version": "0.2.8",
+      "date": "2026-10-11",
+      "critical": false,
+      "notes": "The phone app (a web app over Tailscale, paired from the portrait's menu) shows the questions first, as tiles, the longest waiting first; the buildings at work or in trouble as rows and the quiet ones as marks in a grid, ordered by their roads (a long press lights a building's neighbours); the Task board's to-dos and notes, with + To-do, + Note and + Task written from the phone; Ask, Drop and More in a bar at the foot, and Stop all on a hold so a pocket stops nothing. Away from the town it shows the last town it kept, greyed, and acts on none of it; how many orks wait goes on its icon. It uses the desktop's fonts and both looks, offers itself for the Home Screen, says the version, and finds Tailscale that started after the town without a restart. Orks are called by their orkish names and buildings by what they do in either look: the Test bench's ork is the Mechanic, the UX bench's the Alchemist, and both sit on the Review board at night. Branches & PRs, the Review gate and a codebase Wiki work in their orkspace's project, and a guarded town guards its projects too. The Test bench records a case set's MCP servers once and plays them back after; the Improve buildings sign in to GitHub and send a code change as a pull request with its evidence; the UX bench paints pictures again and lays out a card's parts size by size. In the window: a building's title is no longer cut short, the cards stand on the ground and the selected one in its yard with only its fence lit, the ork at a building's door is drawn as finely and lit as its building, and Town settings always shows the version."
+    },
+    {
+      "version": "0.2.7",
+      "date": "2026-10-11",
+      "critical": false,
+      "notes": "Projects: each orkspace works in a folder of its own (a project), picked when you make it on the War Map — the same folder as now, the town's, a new project with git, or a folder you choose; a folder with no git asks before git starts there. A land's menu has Project… and History…: every change of that map, newest first, and Back to this puts the map back as it was. Before and after an ork works in a project, Orkcraft keeps a snapshot of its files without touching your branch, index or git log, so the History can also take the files back (your current files are saved first). A building's menu has Copy to orkspace…. Build is a tray of small icons by what each building is for, with a new Improve group: the Test bench runs a building's cases beside the bare AI tool and says what to change, and proposals are tried on its copy before they are saved; the UX bench looks at a building's window. A click selects a building, a second click opens it. Cards stand in fenced yards that grow with renown. The Gramophone makes a podcast of two hosts in two voices by default. A phone can be paired from the portrait's menu (a prototype web app over Tailscale). Orkcraft keeps the computer awake while it is open; the screen may still turn off. The Agent pool sorts, plans and judges from its steward's prompt, can work in a folder of code of its own and shows its orks in lanes; External listeners judge mail on the light tier and see who wrote it."
+    },
+    {
       "version": "0.2.6",
       "date": "2026-10-09",
       "critical": false,

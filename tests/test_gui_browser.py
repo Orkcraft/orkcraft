@@ -17,6 +17,7 @@ import pytest
 
 playwright = pytest.importorskip("playwright.sync_api")
 
+import orkcraft  # noqa: E402
 from orkcraft.gui import builder  # noqa: E402
 from orkcraft.gui.host import Host  # noqa: E402
 from orkcraft.gui.server import Server  # noqa: E402
@@ -55,7 +56,7 @@ def gui(tmp_path_factory):
     pw = playwright.sync_playwright().start()
     browser = _launch(pw)                       # before XDG_CACHE_HOME moves: Playwright finds its Chromium under it
     mp = pytest.MonkeyPatch()
-    for key, value in {"ORKCRAFT_LAYOUT_FILE": tmp / "layout.json", "ORKCRAFT_SETTINGS_FILE": tmp / "settings.json",
+    for key, value in {"ORKCRAFT_LAYOUT_FILE": tmp / "layout.json", "ORKCRAFT_SETTINGS_FILE": tmp / "settings.json", "ORKCRAFT_LOOK": "camp",
                        "ORKCRAFT_CALENDARS_FILE": tmp / "calendars.json", "XDG_CACHE_HOME": tmp / "cache",
                        "ORKCRAFT_ONBOARDING": "0", "ORKCRAFT_LIMITS": "0", "ORKCRAFT_COUNCIL_LLM": "0",
                        "ORKCRAFT_WIKI_AUTO": "0", "ORKCRAFT_NIGHT_ROUND": "0", "ORKCRAFT_GOOGLE": "1"}.items():
@@ -161,7 +162,7 @@ def _info(pg) -> None:
 
 def _three_ways(pg, bid: str, has_view: bool = True) -> None:
     _closed(pg, bid)
-    _hut(pg, bid).locator(".gui-hut__title").click()   # open: the panel on its Work
+    _hut(pg, bid).locator(".gui-hut__title").dblclick()   # open: a click selects, a second opens its Work
     _panel(pg, "Work" if has_view else "")
     if has_view:                                # its detail came and its panes are laid out
         pg.locator(".gui-panel .gui-win__body.is-view").wait_for(state="visible", timeout=WAIT_MS)
@@ -198,16 +199,22 @@ def _place(pg, before: set) -> str:
     layer = pg.locator(".gui-town__placing")
     layer.wait_for(state="visible", timeout=WAIT_MS)
     box = layer.bounding_box()
-    layer.click(position={"x": min(box["width"] - 40, 700), "y": min(box["height"] - 40, 520)})
-    pg.wait_for_function("n => document.querySelectorAll('.gui-hut, .gui-onb__ghost.is-raising').length > n",
-                         arg=len(before), timeout=WAIT_MS)
+    spots = [(x, y) for y in (520, 360, 680, 200) for x in (700, 500, 900, 300, 1100)]
+    for x, y in spots:                          # a ghost over another hut builds nothing: a free spot (§8)
+        at = {"x": min(box["width"] - 40, x), "y": min(box["height"] - 40, y)}
+        pg.mouse.move(box["x"] + at["x"], box["y"] + at["y"])
+        pg.wait_for_timeout(50)
+        if not pg.locator(".gui-town__ghost.is-blocked").count():
+            break
+    layer.click(position=at)
+    pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length > n", arg=len(before), timeout=WAIT_MS)
     later = pg.locator(".gui-warchief__setup button", has_text="Later")
     try:
         later.wait_for(state="visible", timeout=1500)
         later.click()
     except playwright.TimeoutError:
         pass                                    # a type with no questions: it stands after a moment
-    pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length > n", arg=len(before), timeout=WAIT_MS)
+    pg.wait_for_selector(".gui-town__raising", state="detached", timeout=WAIT_MS)   # it stands: no scaffolding
     return next(i for i in pg.locator(".gui-hut").evaluate_all("els => els.map(e => e.dataset.id)") if i not in before)
 
 
@@ -215,12 +222,12 @@ def _place(pg, before: set) -> str:
 def test_every_type_built_draws_three_ways(page, type_id):
     pg = page
     before = set(pg.locator(".gui-hut").evaluate_all("els => els.map(e => e.dataset.id)"))
-    _line(pg, "/build")                         # the catalog
-    items = pg.locator(".gui-catalog__item")
+    _line(pg, "/build")                         # the tray: an icon for what each is for
+    items = pg.locator(".gui-build .gui-catalog__item")
     items.first.wait_for(state="visible", timeout=WAIT_MS)
-    assert items.count() == len(TYPES)
-    items.nth(TYPES.index(type_id)).click()
-    pg.locator(".gui-modal").wait_for(state="hidden", timeout=WAIT_MS)
+    assert set(items.evaluate_all("els => els.map(e => e.dataset.type)")) == set(TYPES)   # every type, by its icons
+    items.and_(pg.locator(f"[data-type='{type_id}']")).first.click()
+    pg.locator(".gui-build").wait_for(state="hidden", timeout=WAIT_MS)
     bid = _place(pg, before)
     assert not pg.locator(".gui-panel").is_visible()        # Build no longer opens it: it stands, and waits
     _three_ways(pg, bid)
@@ -254,10 +261,11 @@ def test_huts_move_until_the_person_pins_them(page):
                          arg=bid, timeout=WAIT_MS)
     s, c = sprite.bounding_box(), card.bounding_box()           # its building at 0.9, at the card's left
     assert s["width"] < 100 and s["x"] + s["width"] / 2 < c["x"] + c["width"] / 2
-    pin, name = title.locator(".gui-hut__pin").bounding_box(), _name(hut).bounding_box()
-    assert pin["x"] >= name["x"] + name["width"]                  # the pin at the right
+    assert title.locator(".gui-hut__pin, .gui-hut__fold").count() == 0   # pin and fold live in its menu, not its title
     assert "is-free" in hut.get_attribute("class")              # a new hut moves: nothing pins it but the person
-    hut.locator(".gui-hut__pin").click()
+    menu = lambda label: (title.click(button="right"),
+                          pg.locator(".gui-menu__item, [role=menuitem]", has_text=label).first.click())
+    menu("Pin it in place")
     pg.wait_for_function("id => !document.querySelector(`.gui-hut[data-id=\"${id}\"]`).classList.contains('is-free')",
                          arg=bid, timeout=WAIT_MS)
     start = hut.bounding_box()
@@ -266,11 +274,9 @@ def test_huts_move_until_the_person_pins_them(page):
     pg.mouse.move(start["x"] + start["width"] / 2 + 100, start["y"] + start["height"] / 2 + 50, steps=5)
     pg.mouse.up()
     assert hut.bounding_box()["x"] == start["x"]                 # pinned: a drag does nothing
-    assert "is-warn" in hut.locator(".gui-hut__pin").get_attribute("class")    # …and its pin says why, in red
-    pg.wait_for_function("id => !document.querySelector(`.gui-hut[data-id=\"${id}\"] .gui-hut__pin`).classList.contains('is-warn')",
-                         arg=bid, timeout=4_000)                 # for a moment
+    pg.get_by_text("Pinned in place").first.wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    hut.locator(".gui-hut__pin").click()
+    menu("Unpin to move it")
     pg.wait_for_function("id => document.querySelector(`.gui-hut[data-id=\"${id}\"]`).classList.contains('is-free')",
                          arg=bid, timeout=WAIT_MS)
     pg.wait_for_timeout(6_000)
@@ -311,6 +317,110 @@ def test_a_new_orkspace_from_the_fog_takes_the_biome_picked(page):
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('orkspace.remove', { id }))", made["id"])
 
 
+def test_a_new_orkspace_picks_a_folder_and_is_asked_before_git_starts(page, tmp_path):
+    """docs/design/projects.md §4: "Works in: a folder…" raises the land, then its Project dialog; a folder with
+    no git asks once, and "Not now" links it as it is."""
+    pg = page
+    folder = tmp_path / "notes"
+    folder.mkdir()
+    pg.locator(".gui-map__fog").focus()
+    pg.keyboard.press("Enter")
+    pg.locator(".gui-map__new").wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator('.gui-map__new input[aria-label="Orkspace name"]').fill("Notes")
+    pg.locator(".gui-map__where").select_option("folder")
+    pg.locator(".gui-map__where").press("Enter")
+    dialog = pg.locator(".ok-dialog", has_text="Project: Notes")
+    dialog.wait_for(state="visible", timeout=WAIT_MS)
+    dialog.locator('input[aria-label="Folder path"]').fill(str(folder))
+    dialog.locator('input[aria-label="Folder path"]').press("Enter")
+    dialog.get_by_text("This folder has no history").wait_for(state="visible", timeout=WAIT_MS)
+    dialog.get_by_role("button", name="Not now").click()
+    dialog.wait_for(state="hidden", timeout=WAIT_MS)
+    pg.locator(".gui-map__land.is-open", has_text="notes ·").wait_for(state="visible", timeout=WAIT_MS)
+    t = pg.evaluate("() => import('/static/js/link.js').then(({ town }) => town.value)")
+    made = next(o for o in t["orkspaces"] if o["name"] == "Notes")
+    project = next(p for p in t["projects"] if p["id"] == made["project"])
+    assert project["path"] == str(folder.resolve()) and project["git"] is False
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('orkspace.remove', { id }))", made["id"])
+
+
+def test_a_building_is_copied_to_another_orkspace_from_its_menu(page):
+    """docs/design/projects.md §5: the hut's menu → Copy to orkspace… → the map picked; the copy stands there."""
+    pg = page
+    link = "import('/static/js/link.js')"
+    bid = pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'pit' }}))")
+    here = pg.evaluate(f"() => {link}.then(({{ town }}) => town.value.active_orkspace)")
+    shop = pg.evaluate(f"() => {link}.then(m => m.command('orkspace.new', {{ name: 'Copy target', project: 'town' }}))")
+    pg.evaluate(f"id => {link}.then(m => m.command('orkspace.select', {{ id }}))", here)
+    hut = _hut(pg, bid)
+    hut.wait_for(state="visible", timeout=WAIT_MS)
+    hut.click(button="right")
+    pg.get_by_role("menuitem", name="Copy to orkspace…").click()
+    dialog = pg.locator(".ok-dialog", has_text="Copy")
+    dialog.get_by_role("button", name="Copy to Copy target").click()
+    dialog.wait_for(state="hidden", timeout=WAIT_MS)
+    pg.wait_for_function(f"() => {link}.then(({{ town }}) => town.value.orkspaces.find(o => o.name === 'Copy target').buildings.length === 1)",
+                         timeout=WAIT_MS)
+    pg.locator(".ok-toast", has_text="copied to Copy target").first.wait_for(state="visible", timeout=WAIT_MS)
+    copy = pg.evaluate(f"() => {link}.then(({{ town }}) => town.value.orkspaces.find(o => o.name === 'Copy target').buildings[0])")
+    for x in (copy, bid):
+        pg.evaluate(f"id => {link}.then(m => m.command('town.demolish', {{ id }}))", x)
+
+
+def test_a_maps_history_takes_it_back_from_the_war_map(page):
+    """docs/design/projects.md §6: a land's menu → History… lists the map's changes; Back to this, then Go back,
+    and the building raised since comes down."""
+    pg = page
+    link = "import('/static/js/link.js')"
+    shop = pg.evaluate(f"() => {link}.then(m => m.command('orkspace.new', {{ name: 'History map', project: 'town' }}))")
+    bid = pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'pit' }}))")
+    pg.keyboard.press("Escape")
+    pg.locator(f'.gui-map__land[data-id="{shop}"]').click(button="right")
+    pg.get_by_role("menuitem", name="History…").click()
+    dialog = pg.locator(".ok-dialog", has_text="History: History map")
+    dialog.locator(".gui-history__row").nth(1).wait_for(state="visible", timeout=WAIT_MS)
+    assert "now" in dialog.locator(".gui-history__row").first.inner_text()
+    dialog.locator(".gui-history__row").nth(1).get_by_role("button", name="Back to this").click()
+    dialog.get_by_role("button", name="Go back").click()
+    pg.locator(".ok-toast", has_text="is back to").first.wait_for(state="visible", timeout=WAIT_MS)
+    pg.wait_for_function(f"() => {link}.then(({{ town }}) => !town.value.buildings.some(b => b.id === '{bid}'))",
+                         timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+
+
+def test_the_history_takes_the_projects_files_back(page, tmp_path):
+    """docs/design/projects.md §7.3: the files' snapshots are rows of the History; Back to this, Files back."""
+    from orkcraft.realm import snapshots
+    pg = page
+    link = "import('/static/js/link.js')"
+    folder = tmp_path / "shop"
+    folder.mkdir()
+    (folder / "app.py").write_text("print('v1')\n", encoding="utf-8")
+    oid = pg.evaluate(f"() => {link}.then(m => m.command('orkspace.new', {{ name: 'Files map', project: 'town' }}))")
+    pg.evaluate(f"([o, p]) => {link}.then(m => m.command('project.link', {{ orkspace: o, path: p, git: true }}))", [oid, str(folder)])
+    snapshots.take(folder, oid, "before Grom: Login form")
+    pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'pit' }}))")
+    pg.keyboard.press("Escape")
+    (folder / "app.py").write_text("print('broken')\n", encoding="utf-8")
+    snapshots.take(folder, oid, "after Grom: Login form")
+    pg.evaluate(f"() => import('/static/js/history.js').then(m => {{ m.historyFor.value = '{oid}'; }})")
+    dialog = pg.locator(".ok-dialog", has_text="History: Files map")
+    built = dialog.locator(".gui-history__row", has_text="raise pit")
+    built.wait_for(state="visible", timeout=WAIT_MS)
+    built.get_by_role("button", name="Back to this").click()
+    for choice in ("The map", "The files", "Both"):                     # its moment had a snapshot of the files
+        assert built.get_by_role("button", name=choice).is_visible()
+    built.get_by_role("button", name="Cancel").click()
+    row = dialog.locator(".gui-history__row", has_text="before Grom")
+    row.wait_for(state="visible", timeout=WAIT_MS)
+    assert "1 file changed" in dialog.locator(".gui-history__row", has_text="after Grom").inner_text()
+    row.get_by_role("button", name="Back to this").click()
+    row.get_by_role("button", name="Files back").click()
+    pg.locator(".ok-toast", has_text="the files are back").first.wait_for(state="visible", timeout=WAIT_MS)
+    assert (folder / "app.py").read_text(encoding="utf-8") == "print('v1')\n"
+    pg.keyboard.press("Escape")
+
+
 def test_the_lake_window_shows_text_markdown_and_code(page):
     pg = page
     pg.evaluate("""async () => {
@@ -336,7 +446,7 @@ def test_the_lake_window_shows_text_markdown_and_code(page):
     pg.locator(".gui-panel__handle").click()
     lake.wait_for(state="visible", timeout=WAIT_MS)
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'pit' }))")
-    _hut(pg, bid).locator(".gui-hut__title").click()
+    _hut(pg, bid).locator(".gui-hut__title").dblclick()
     _panel(pg, "Work")                                          # a building opened beside the documents
     assert lake.locator(".gui-lake__tabtitle").count() >= 3
     lake.locator(".gui-lake__tabtitle").first.click()
@@ -352,7 +462,7 @@ def test_info_keeps_the_buildings_commands_and_work_takes_a_task_in_place(page):
     pg = page
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'barracks' }))")
     _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
-    _hut(pg, bid).locator(".gui-hut__title").click()
+    _hut(pg, bid).locator(".gui-hut__title").dblclick()
     _panel(pg, "Work")
     panel = pg.locator(".gui-panel")
     box = panel.bounding_box()
@@ -370,7 +480,10 @@ def test_info_keeps_the_buildings_commands_and_work_takes_a_task_in_place(page):
     _info(pg)
     info = panel.locator(".gui-info-tab")
     info.get_by_role("button", name="Good", exact=True).wait_for(state="visible", timeout=WAIT_MS)
-    assert [t.replace("\n", "") for t in info.locator(".gui-thumb").all_inner_texts()] == ["👍0", "👎0"]
+    assert [t.replace("\n", "") for t in info.locator(".gui-thumb").all_inner_texts()] == ["0", "0"]
+    # Camp: the green pixel thumbs of the ork's bubble, not the emoji (Office keeps those)
+    assert [s.rsplit("/", 1)[-1] for s in info.locator(".gui-thumb__icon").evaluate_all("els => els.map(e => e.src)")] \
+        == ["thumb-up.png", "thumb-down.png"]
     assert pg.get_by_role("button", name="Pin", exact=True).count() == 0          # the pin is the hut's own
     assert pg.get_by_role("button", name="Recruit", exact=True).count() == 0
     assert pg.get_by_role("button", name="Add agent", exact=True).count() == 0
@@ -439,6 +552,7 @@ def test_a_drag_moves_a_ghost_and_a_drop_on_another_hut_moves_nothing(page):
     pg.wait_for_function(f"([s]) => {link}.then(m => JSON.stringify(m.town.value.buildings.find(x => x.id === '{a}').hut) !== s)",
                          arg=[json.dumps(hut_before, separators=(",", ":"))], timeout=WAIT_MS)
     pg.evaluate(f"id => {link}.then(m => m.command('building.fold', {{ id, value: false }}))", a)   # a folded card never stretches
+    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('c'))")   # a card is stretched close up (map-view.md)
     _hut(pg, a).locator(".gui-hut__grip.is-se").wait_for(state="attached", timeout=WAIT_MS)
     _hut(pg, a).hover()
     grip = _hut(pg, a).locator(".gui-hut__grip.is-se").bounding_box()
@@ -451,6 +565,7 @@ def test_a_drag_moves_a_ghost_and_a_drop_on_another_hut_moves_nothing(page):
                          timeout=WAIT_MS)
     for bid in (a, b):
         pg.evaluate(f"id => {link}.then(m => m.command('town.demolish', {{ id }}))", bid)
+    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('b'))")
 
 
 def test_the_right_click_gives_a_buildings_menu_and_the_maps(page):
@@ -474,8 +589,9 @@ def test_the_right_click_gives_a_buildings_menu_and_the_maps(page):
     pg.locator(".gui-town").click(button="right", position={"x": 600, "y": 500})
     menu.wait_for(state="visible", timeout=WAIT_MS)
     menu.locator(".gui-menu__item", has_text="Build here").click()
-    pg.locator(".gui-modal .gui-catalog__item").first.wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".gui-build .gui-catalog__item").first.wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
+    pg.locator(".gui-build").wait_for(state="detached", timeout=WAIT_MS)
     _hut(pg, bid).locator(".gui-hut__title").click(button="right")
     menu.locator(".gui-menu__item", has_text="Demolish").click()
     pg.locator(".gui-modal").get_by_role("button", name="Demolish", exact=True).click()
@@ -513,6 +629,65 @@ def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
     pg.locator(".gui-warchief__who", has_text=title).wait_for(state="visible", timeout=WAIT_MS)   # its card: the open one
     _line(pg, "/demolish")                                       # about the building open
     pg.locator(".gui-modal").get_by_role("button", name="Demolish", exact=True).click()
+    _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
+
+
+def test_build_grows_the_line_by_a_row_of_icons_and_a_double_press_builds_at_once(page):
+    """Build (docs/design/warchief-line-and-cards.md §2): the Warchief's line grows a row of small icons of what each is
+    for; its field finds in them by their own word first; a double press raises it at a free spot, no ghost; Escape
+    puts the row away."""
+    pg = page
+    pg.locator(".gui-warchief__build").click()
+    row = pg.locator(".gui-warchief .gui-build")
+    row.locator(".gui-build__tile").first.wait_for(state="visible", timeout=WAIT_MS)
+    assert row.locator(".gui-build__tile[data-intent='incoming'] img").get_attribute("src").endswith("/intents/incoming.png")
+    assert row.locator(".gui-catalog__item").count() == len(TYPES)           # all of them, in one row
+    field = pg.locator(".gui-warchief__input")
+    field.fill("data")                                                       # its own word first
+    assert row.locator(".gui-catalog__item").evaluate_all("els => els.map(e => e.dataset.intent)") == ["transform"]
+    field.fill("mail")                                                       # else its building's words
+    assert row.locator(".gui-catalog__item").evaluate_all("els => els.map(e => e.dataset.intent)") == ["incoming"]
+    field.fill("")
+    before = pg.locator(".gui-hut").count()
+    row.locator(".gui-build__tile[data-intent='tasks']").dblclick()
+    row.wait_for(state="detached", timeout=WAIT_MS)
+    assert pg.locator(".gui-town__placing").count() == 0                     # no ghost: it went up at once
+    pg.wait_for_function("n => document.querySelectorAll('.gui-hut').length > n", arg=before, timeout=WAIT_MS)
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.town.value.buildings.filter(b => b.type === 'fields')"
+                      ".map(b => b.id).pop())")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+    _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
+    pg.locator(".gui-warchief__build").click()
+    row.wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    row.wait_for(state="detached", timeout=WAIT_MS)
+
+
+def test_a_click_selects_a_building_and_open_or_a_second_click_opens_it(page):
+    """docs/design/select-a-building.md §1: a click selects (its card in the line, no window); Open on the card or a
+    second click opens its Work; Escape closes the window, and again lets the building go."""
+    pg = page
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
+    title = _hut(pg, bid).locator(".gui-hut__title")
+    title.click()
+    bar = pg.locator(".gui-warchief__bar")
+    bar.locator(".gui-warchief__open").wait_for(state="visible", timeout=WAIT_MS)
+    assert not pg.locator(".gui-panel").is_visible()                      # selected, nothing opened
+    assert "is-selected" in _hut(pg, bid).get_attribute("class")
+    bar.locator(".gui-warchief__open").click()
+    _panel(pg, "Work")
+    assert bar.locator(".gui-warchief__open").count() == 0                 # open already
+    pg.locator("body").press("Escape")
+    pg.locator(".gui-panel").wait_for(state="hidden", timeout=WAIT_MS)
+    assert "is-selected" in _hut(pg, bid).get_attribute("class")          # the window shut, still selected
+    title.click()                                                          # the selected one again: opened
+    _panel(pg, "Work")
+    pg.locator("body").press("Escape")
+    pg.locator(".gui-panel").wait_for(state="hidden", timeout=WAIT_MS)
+    pg.locator("body").press("Escape")
+    pg.wait_for_function("id => !document.querySelector(`.gui-hut[data-id='${id}']`).classList.contains('is-selected')",
+                         arg=bid, timeout=WAIT_MS)
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
 
 
@@ -634,6 +809,7 @@ def test_a_folder_outside_the_project_is_connected_and_the_rules_shown(page, gui
 def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     pg = page
     link = "import('/static/js/link.js')"
+    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('c'))")   # close up: room for its parts (map-view.md)
     ids = {}
     for t, x, y in (("fields", 0.0, 0.0), ("pit", 0.02, 0.8), ("war_drum", 0.6, 0.0), ("mill", 0.65, 0.8)):
         ids[t] = pg.evaluate(f"t => {link}.then(m => m.command('town.build', {{ type: t }}))", t)
@@ -651,7 +827,7 @@ def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     before = {t: box(t) for t in ids}
     fields, drum = _hut(pg, ids["fields"]), _hut(pg, ids["war_drum"])
     assert fields.locator(".gui-parts").is_visible()                  # a row in its yard, always there (yards.md §7)
-    assert words(fields) == ["Orkwork", "Myto-dos", "Notes"]          # every part shown, in today's words
+    assert words(fields) == ["Myto-dos", "Notes", "Orkwork"]          # every part shown, in today's words, the person's first
     assert words(drum) == ["▪meetings", "↻schedules", "≈limits"]
     fields.locator(".gui-parts__one", has_text="Ork work").click()
     fields.locator(".gui-parts__one", has_text="Notes").click()
@@ -672,6 +848,7 @@ def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     assert abs(box("pit")["y"] - after["pit"]["y"]) <= 2
     for bid in ids.values():
         pg.evaluate(f"id => {link}.then(m => m.command('town.demolish', {{ id }}))", bid)
+    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('b'))")
 
 
 def test_the_stewards_window_lists_the_roads_it_listens_to_with_their_handlers(page):
@@ -689,7 +866,7 @@ def test_the_stewards_window_lists_the_roads_it_listens_to_with_their_handlers(p
     call("roads.lay", {"from": src, "to": dst, "event": by_coder["event"], "handler": by_coder["handler"]})
     _hut(pg, dst).wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    _hut(pg, dst).locator(".gui-hut__title").click()
+    _hut(pg, dst).locator(".gui-hut__title").dblclick()
     _info(pg)
     roster = pg.locator(".gui-steward-part")
     roads = roster.locator(".gui-steward__road")
@@ -737,7 +914,7 @@ def test_the_stewards_road_rules_are_listed_under_it_and_an_agent_is_handed_over
         call("roads.lay", {"from": src, "to": dst, "event": pick["event"], "handler": handler})
     _hut(pg, dst).wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    _hut(pg, dst).locator(".gui-hut__title").click()
+    _hut(pg, dst).locator(".gui-hut__title").dblclick()
     _info(pg)
     rules = pg.locator(".gui-steward__group", has_text="Road rules")
     rules.wait_for(state="visible", timeout=WAIT_MS)
@@ -761,8 +938,8 @@ def test_the_stewards_road_rules_are_listed_under_it_and_an_agent_is_handed_over
 
 
 def test_the_huds_menu_sets_the_towns_autonomy_and_stop_all_stands_in_the_hud(page):
-    """The project's name opens the town's settings: its autonomy and, on the clock, its two waits;
-    Stop all stands where Ready was, and the steward's window keeps no waits of its own."""
+    """The project's name opens the town's settings: its autonomy and, on the clock, its two waits, and the
+    version beside Close; Stop all stands where Ready was, and the steward's window keeps no waits of its own."""
     pg = page
     hud = pg.locator(".gui-hud")
     assert hud.get_by_role("button", name="Stop all", exact=True).count() == 1 and hud.get_by_text("Ready").count() == 0
@@ -771,6 +948,7 @@ def test_the_huds_menu_sets_the_towns_autonomy_and_stop_all_stands_in_the_hud(pa
     hud.locator(".gui-hud__menu").click()
     modal = pg.locator(".gui-modal")
     modal.wait_for(state="visible", timeout=WAIT_MS)
+    assert modal.locator(".gui-settings__version").inner_text() == f"Orkcraft {orkcraft.__version__}"   # always, quiet
     lit = lambda: modal.locator(".gui-steps__one.is-on").all_inner_texts()        # noqa: E731
     assert any("On the clock" in t or "Apply if unanswered" in t for t in lit()) and "7 min" in lit()
     modal.get_by_role("button", name="15 min", exact=True).click()
@@ -798,7 +976,7 @@ def test_listen_asks_in_words_and_lays_the_road_the_steward_offers(page, monkeyp
         {"from": tower, "event": "mail.received", "match": "(?i)unread", "say": "When unread mail comes, a to-do"}]}), 0.01))
     _hut(pg, fields).wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    _hut(pg, fields).locator(".gui-hut__title").click()
+    _hut(pg, fields).locator(".gui-hut__title").dblclick()
     _info(pg)
     pg.locator(".gui-steward-part .gui-steward__group summary button").first.click()    # + Listen
     modal = pg.locator(".gui-modal")
@@ -842,7 +1020,7 @@ def _open_tower_add(pg, bid: str) -> None:
     """A tower stands bare, with no card (docs/design/yards.md §7): a press on it opens its window, which opens on
     the picker while it has no source, else on its feed with + Add source."""
     _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
-    _hut(pg, bid).locator(".gui-hut__title").click()
+    _hut(pg, bid).locator(".gui-hut__title").dblclick()
     pg.locator(".gui-panel .gui-add__tile, .gui-panel .gui-tower__add").first.wait_for(state="visible", timeout=WAIT_MS)
     if not pg.locator(".gui-panel .gui-add__tile").count():
         pg.locator(".gui-panel .gui-tower__add").first.click()
@@ -1145,6 +1323,80 @@ def test_settings_turn_an_ai_tool_on_and_make_it_the_main_one(page):
                 "{ tools: { pi: false }, main_tool: '' }))")
 
 
+def test_improve_offers_the_days_with_logs_and_reads_one(page, gui):
+    """Improve → the days with logs: one read before says what was found, and picking it again costs nothing."""
+    import datetime as dt
+    from orkcraft.realm import call_log, day_review
+    server, _ = gui
+    host = server.host
+    root = host.town.repo_root
+    today = dt.date.today().isoformat()
+    folder = call_log.day_folder(root, today, "town_hall")
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / call_log.LINES).write_text("{}\n")
+    day_review.save(root, day_review.Review(today))                  # read before: nothing worth a look
+    host.day_review._days = (-1e9, [])
+    host.town.call(host.on_change)
+    pg = page
+    pg.wait_for_function("() => import('/static/js/link.js').then(m => (m.town.value.improve || {}).days?.length > 0)",
+                         timeout=WAIT_MS)
+    pg.wait_for_timeout(300)                                         # the line drawn again with its days
+    pg.locator(".gui-warchief__improve").click()
+    pick = pg.locator(".gui-warchief__day").first
+    pick.wait_for(timeout=WAIT_MS)
+    assert "nothing in the logs worth a look" in pick.text_content()
+    pick.get_by_role("button", name="Today").click()
+    pg.wait_for_function("() => document.querySelector('.gui-warchief__said')?.textContent.includes('worth a look')",
+                         timeout=WAIT_MS)
+
+
+def test_a_read_days_changes_say_where_each_can_be_tried(page, gui):
+    """Improve → a read day → Changes: each finding, with Try in its Test bench or why it cannot be tried."""
+    import datetime as dt
+    from orkcraft.realm import call_log, day_review
+    server, _ = gui
+    host = server.host
+    root = host.town.repo_root
+    day = (dt.date.today() - dt.timedelta(days=1)).isoformat()
+    folder = call_log.day_folder(root, day, "town_hall")
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / call_log.LINES).write_text("{}\n")
+    day_review.save(root, day_review.Review(day, hotspots=[{"id": "H1"}], findings=[day_review.Finding(
+        "farseer", "town_hall", "the answer was too long", "read twice", "prompt", "answer in three lines", ["H1"])]))
+    host.day_review._days = (-1e9, [])
+    host.town.call(host.on_change)
+    pg = page
+    pg.wait_for_function("() => import('/static/js/link.js').then(m => (m.town.value.improve || {}).days?.some(d => d.changes))",
+                         timeout=WAIT_MS)
+    pg.wait_for_timeout(300)                                         # the line drawn again with its days
+    pg.locator(".gui-warchief__improve").click()
+    row = pg.locator(".gui-warchief__day", has_text="Yesterday")
+    row.get_by_role("button", name="Changes").click()
+    change = row.locator(".gui-improve__changes li").first
+    change.wait_for(timeout=WAIT_MS)
+    assert "the answer was too long" in change.text_content() and "No Test bench tests it" in change.text_content()
+
+
+def test_settings_keep_logs_for_analysis_and_download_a_period(page):
+    """Settings → Keep logs for analysis: on, the logs stay a month; Download analytics is the period's zip."""
+    pg = page
+    pg.locator(".gui-hud .gui-hud__menu").click()
+    modal = pg.locator(".gui-modal")
+    modal.wait_for(state="visible", timeout=WAIT_MS)
+    modal.get_by_role("group", name="Keep logs for analysis").get_by_role("button", name="On").click()
+    pg.wait_for_function("() => document.querySelector('.gui-modal').textContent.includes('is kept 30 days')",
+                         timeout=WAIT_MS)
+    modal.get_by_role("group", name="Analytics of").get_by_role("button", name="30 days").click()
+    settings = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings'))")
+    assert settings["logs"]["on"] is True
+    link = modal.get_by_role("link", name="Download analytics (.zip)")
+    if link.count():                                              # a day's calls kept: the zip of 30 days
+        assert "/api/analytics?days=30&t=" in link.get_attribute("href")
+    else:
+        assert modal.get_by_role("button", name="Download analytics (.zip)").is_disabled()
+    pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings.set', { logs: false }))")
+
+
 def test_settings_choose_a_tiers_model_and_reset_it(page):
     """Settings → AI tools: each tier of a tool that is on runs on Latest of its family; another model typed is
     kept and said; Reset to latest drops it."""
@@ -1225,7 +1477,8 @@ def test_a_loot_cart_is_edited_in_the_window_and_a_file_of_its_branch_rejected(p
     cart = pipes.Payload(pipes.TEXT, "## Done\n\nthe notes", "camp", "pool.done", "The notes", (hop,), "LB-1")
     town.call(lambda: town.worker(bid).receive(cart, "The notes", cart.value))
     pg.keyboard.press("Escape")
-    _hut(pg, bid).locator(".gui-hut__title").click()
+    _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)     # it asks: a click on it opens its question (yards.md §8)
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id))", bid)
     pg.locator(".gui-panel .gui-panel__full").click()
     pg.locator(".loot-card", has_text="The notes").click()
     files = pg.locator(".loot-detail .ok-file")
@@ -1291,8 +1544,8 @@ def test_a_folded_hut_shows_its_title_peeks_under_a_drag_and_unfolds(page):
     pg.evaluate("() => window.dispatchEvent(new Event('dragend'))")
     peek.wait_for(state="detached", timeout=WAIT_MS)                    # the drag gone, it folds again
     assert pg.locator(".gui-panel").count() == 0
-    hut.hover()
-    hut.locator(".gui-hut__fold").click()                               # ▸ unfolds it for good
+    hut.locator(".gui-hut__title").click(button="right")                 # Unfold in its menu unfolds it for good
+    pg.locator(".gui-menu__item, [role=menuitem]", has_text="Unfold the card").first.click()
     hut.locator(".gui-hut__body").first.wait_for(state="visible", timeout=WAIT_MS)
     shot("fold-3-unfolded")
     assert server_building(pg, forge)["pinned"] is False and pg.locator(".gui-panel").count() == 0
@@ -1331,6 +1584,65 @@ def test_the_bare_map_and_the_warchiefs_line_fold_the_quiet_ones_and_unfold_all(
         call("town.demolish", {"id": bid})
 
 
+def test_the_zoom_draws_the_map_the_overview_and_close_up_and_keeps_a_card_s_width(page):
+    """docs/design/map-view.md: ⌘+ / ⌘−, a pinch, `M` and the bare map's menu move between the map (every building
+    bare, no fence), the overview (a small card) and close up (a medium one, as wide)."""
+    pg = page
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    forge = call("town.build", {"type": "forge"})
+    call("hut.move", {"id": forge, "x": 0.3, "y": 0.05})
+    pg.keyboard.press("Escape")
+    hut = _hut(pg, forge)
+    hut.wait_for(state="visible", timeout=WAIT_MS)
+    far = lambda: pg.locator(f'.gui-hut.is-far[data-id="{forge}"]')
+    small = lambda: pg.locator(f'.gui-hut.is-fenced.is-size-s:not(.is-far)[data-id="{forge}"]')
+    medium = lambda: pg.locator(f'.gui-hut.is-fenced.is-size-m[data-id="{forge}"]')
+    small().wait_for(state="visible", timeout=WAIT_MS)                     # the overview: the default
+    width = hut.bounding_box()["width"]
+    pg.keyboard.press("Control+Equal")
+    medium().wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.locator(".gui-town.is-zoom-c").count() == 1
+    assert hut.bounding_box()["width"] == width                           # close up it grows down, never across
+    pg.keyboard.press("Control+0")
+    small().wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("m")
+    far().wait_for(state="visible", timeout=WAIT_MS)
+    c = hut.get_attribute("class")
+    assert "is-bare" in c and "is-fenced" not in c
+    assert hut.locator(".gui-hut__unseen").count() == 1                    # its card is not drawn, still wired
+    _name(hut).wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.locator(".gui-town.is-map").count() == 1
+    room = pg.locator(".gui-town__room").bounding_box()
+    pg.mouse.click(room["x"] + room["width"] * 0.5, room["y"] + room["height"] * 0.6, button="right")
+    pg.locator(".gui-menu__item", has_text="Zoom in").click()
+    small().wait_for(state="visible", timeout=WAIT_MS)
+    pg.mouse.move(room["x"] + room["width"] * 0.5, room["y"] + room["height"] * 0.6)
+    pg.keyboard.down("Control")
+    pg.mouse.wheel(0, 120)                                                 # a pinch out: the map
+    far().wait_for(state="visible", timeout=WAIT_MS)
+    pg.wait_for_timeout(450)                                               # one level a gesture
+    pg.mouse.wheel(0, -120)                                                # a pinch in: the overview again
+    pg.keyboard.up("Control")
+    small().wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.evaluate("() => localStorage.getItem('orkcraft.zoom')") == "b"
+    call("town.demolish", {"id": forge})
+
+def test_the_ux_bench_shows_a_moving_house_at_work(page):
+    """docs/design/building-motion.md: the mill picked, the UX bench shows its two layers to paint and their preview."""
+    pg = page
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    bench = call("town.build", {"type": "ux_lab"})
+    call("act", {"id": bench, "act": "pick", "args": {"type": "mill"}})
+    pg.keyboard.press("Escape")
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", bench)
+    pg.get_by_text("At work", exact=True).wait_for(state="visible", timeout=WAIT_MS)
+    pg.get_by_text("The moving part", exact=True).click()
+    dialog = pg.locator(".gui-modal")
+    assert "four sails" in dialog.locator("textarea").input_value()          # its brief, ready to paint or change
+    dialog.get_by_role("button", name="Close").click()
+    call("town.demolish", {"id": bench})
+
+
 def test_a_task_that_settles_says_when_it_goes_and_what_joined_it(page, gui):
     """A send_new board holds a new task (⏳ goes at …, Send now); a related one joins it (↳ with …, +1 added) and
     Split off takes it out again; a near one asks Join or Keep apart (docs/design/settle-and-join.md)."""
@@ -1343,7 +1655,7 @@ def test_a_task_that_settles_says_when_it_goes_and_what_joined_it(page, gui):
     w.add("New design for the CSV export: the button on the right", "todo")
     w.add("Fix the login bug", "todo")
     w.add("Login page design", "todo")
-    _hut(pg, bid).locator(".gui-hut__title").click()
+    _hut(pg, bid).locator(".gui-hut__title").dblclick()
     _panel(pg, "Work")
     panel = pg.locator(".gui-panel")
     settling = panel.locator(".fields-settle")
@@ -1489,62 +1801,104 @@ def test_a_narrow_window_shows_the_buildings_as_a_list_of_cards(gui):
     assert not errors, "\n".join(errors)
 
 
-def test_the_portrait_opens_its_menu_switches_the_look_and_holds_the_noise(page):
-    """The person framed over the town's top-left corner (docs/design/portrait.md): its menu heads with You, Camp
-    turns to Office (no sprites, the monogram, the office theme) and back, Do not disturb strikes the horn on its
-    toggle (never a mark on the head), and
-    Fire on the roofs turns off and on there, no longer in Town settings."""
+def test_the_sun_holds_the_look_and_the_noise_and_the_portrait_holds_camps_own(page):
+    """The sun in the middle of the HUD (js/chrome.js Hour) answers "will the town bother me, and how does it look":
+    Do not disturb and the look (Camp, Office, by the shift); the portrait's menu heads with You and keeps what is
+    Camp's own (Fire on the roofs, gone in Office) and pairs a phone, its QR code in the menu; beside the portrait the
+    horn toggles Do not disturb and a toggle the look (docs/design/portrait.md)."""
     pg = page
     assert pg.locator(".gui-hud .gui-portrait").count() == 0              # a wide window: out of the HUD
     portrait = pg.locator(".gui-portrait-slot.is-corner .gui-portrait")
     assert portrait.locator(".gui-mascot").count() == 1 and pg.evaluate("document.documentElement.dataset.look") == "camp"
-    portrait.click()
-    menu = pg.locator(".gui-portrait__menu")
-    menu.wait_for(state="visible", timeout=WAIT_MS)
-    assert menu.locator(".gui-you__deeds").count() == 1
-    menu.get_by_role("button", name="Office", exact=True).click()
+    pg.locator(".gui-hour__dial").click()
+    sun = pg.locator(".gui-hour__menu")
+    sun.wait_for(state="visible", timeout=WAIT_MS)
+    look = sun.get_by_role("group", name="Look", exact=True)
+    assert look.locator(".gui-steps__one").all_inner_texts() == ["By shift", "Camp", "Office"]
+    look.get_by_role("button", name="Office", exact=True).click()
     pg.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
     assert pg.evaluate("document.documentElement.dataset.theme") == "office"
     assert portrait.locator(".gui-portrait__mono").count() == 1 and pg.locator(".gui-warchief__mono").count() == 1
-    assert pg.locator(".gui-warchief__crowned").count() == 0
-    dnd_row = menu.get_by_role("group", name="Do not disturb", exact=True)
+    dnd_row = sun.get_by_role("group", name="Do not disturb", exact=True)
     dnd_row.get_by_role("button", name="On", exact=True).click()
     pg.get_by_role("button", name="Do not disturb", exact=True).and_(pg.locator("[aria-pressed=true]")).wait_for(
         state="visible", timeout=WAIT_MS)
-    assert "🌙" not in portrait.inner_text()
     dnd_row.get_by_role("button", name="Off", exact=True).click()
     pg.locator(".gui-warchief__news").wait_for(state="visible", timeout=WAIT_MS)   # what gathered, said once
     assert "While you were away" in pg.locator(".gui-warchief__news").inner_text()
     pg.locator(".gui-warchief__news").get_by_role("button", name="Seen").click()   # a click away closes the menu
-    menu.wait_for(state="hidden", timeout=WAIT_MS)
-    portrait.click()
-    menu.get_by_role("button", name="Camp", exact=True).click()
+    sun.wait_for(state="hidden", timeout=WAIT_MS)
+    portrait.click()                                                     # Office: no fire on the roofs to set
+    menu = pg.locator(".gui-portrait__menu")
+    menu.wait_for(state="visible", timeout=WAIT_MS)
+    assert menu.get_by_role("group", name="Fire on the roofs").count() == 0 and menu.get_by_role("group", name="Look").count() == 0
+    pg.keyboard.press("Escape")
+    pg.locator(".gui-hour__dial").click()
+    sun.get_by_role("group", name="Look", exact=True).get_by_role("button", name="Camp", exact=True).click()
     pg.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
-    # Fire on the roofs is the person's now, in this menu; Town settings no longer shows it
+    pg.keyboard.press("Escape")
+    portrait.click()
+    assert menu.locator(".gui-you__deeds").count() == 1
     fire = menu.get_by_role("group", name="Fire on the roofs", exact=True)
     fire.get_by_role("button", name="Off", exact=True).click()
     fire.locator("[aria-pressed=true]", has_text="Off").wait_for(state="visible", timeout=WAIT_MS)
     fire.get_by_role("button", name="On", exact=True).click()
-    fire.locator("[aria-pressed=true]", has_text="On").wait_for(state="visible", timeout=WAIT_MS)
     menu.get_by_role("button", name="Town settings…").click()
     pg.get_by_role("dialog", name="Town settings").wait_for(state="visible", timeout=WAIT_MS)
     assert pg.get_by_role("group", name="Fire on the roofs").count() == 0
     pg.keyboard.press("Escape")
     pg.get_by_role("dialog", name="Town settings").wait_for(state="hidden", timeout=WAIT_MS)
-    menu.wait_for(state="hidden", timeout=WAIT_MS)                       # Town settings… closed the menu
-    # its quick toggles beside it: Do not disturb on and off, the look to Office and back, without the menu
-    dnd, look = pg.get_by_role("button", name="Do not disturb", exact=True), pg.get_by_role("button", name="Office look", exact=True)
-    horn = lambda: dnd.locator("img.gui-portrait__horn").get_attribute("src")
-    assert horn() == "/ds/sprites/icons/notify-on.png"                    # Camp: the horn, the town may call
+    # beside the portrait: the horn (Do not disturb on and off) and the look (Camp / Office); no phone
+    assert pg.get_by_role("button", name="Pair a phone", exact=True).count() == 0
+    dnd = pg.get_by_role("button", name="Do not disturb", exact=True)
     dnd.click()
     pg.wait_for_function("() => document.querySelector('.gui-portrait__horn').src.endsWith('notify-off.png')", timeout=WAIT_MS)
-    assert dnd.get_attribute("aria-pressed") == "true" and "🌙" not in portrait.inner_text()   # struck through
     dnd.click()
     pg.wait_for_function("() => document.querySelector('.gui-portrait__horn').src.endsWith('notify-on.png')", timeout=WAIT_MS)
-    look.click()
+    office = pg.get_by_role("button", name="Office look", exact=True)
+    office.click()
     pg.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
-    look.click()
+    office.click()
     pg.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
+    # the phone is paired in the portrait's menu: its QR code shows in the menu itself, no window of its own
+    portrait.click()
+    menu.get_by_role("button", name="Pair a phone", exact=True).click()
+    qr = menu.locator(".gui-you .gui-you__qr")                           # in the top block, at the right of the head
+    qr.wait_for(state="visible", timeout=WAIT_MS)
+    head, code = menu.locator(".gui-you .gui-portrait__ground").bounding_box(), qr.bounding_box()
+    assert code["x"] > head["x"] + head["width"] and code["y"] < head["y"] + head["height"]
+    assert pg.get_by_role("dialog", name="Pair a phone").count() == 0
+    menu.get_by_role("button", name="Cancel", exact=True).click()
+    menu.get_by_role("button", name="Pair a phone", exact=True).wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    menu.wait_for(state="hidden", timeout=WAIT_MS)
+
+
+def test_the_portraits_sheet_on_a_phone_wide_window_pairs_a_phone_too(gui):
+    """Below 640 px the portrait sits in the HUD and its menu is a sheet at the window's foot: You, Phone (the QR
+    code under the head in the sheet) and Town settings… are there too (docs/design/portrait.md)."""
+    server, browser = gui
+    pg = browser.new_page(viewport={"width": 390, "height": 844}, has_touch=True)
+    errors: list[str] = []
+    pg.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+    pg.goto(server.url)
+    pg.locator(".gui-hud .gui-portrait").click()
+    sheet = pg.locator(".gui-portrait__menu")
+    sheet.wait_for(state="visible", timeout=WAIT_MS)
+    box = sheet.bounding_box()
+    assert abs(box["y"] + box["height"] - 844) < 2 and box["width"] >= 389         # at the foot, the window's width
+    assert sheet.locator(".gui-you").count() == 1
+    sheet.get_by_role("button", name="Pair a phone", exact=True).click()
+    qr = sheet.locator(".gui-you .gui-you__qr")
+    qr.wait_for(state="visible", timeout=WAIT_MS)
+    head, code = sheet.locator(".gui-you .gui-portrait__ground").bounding_box(), qr.bounding_box()
+    assert code["y"] >= head["y"] + head["height"]                        # too narrow beside the name: under the head
+    assert sheet.bounding_box()["width"] <= 390
+    qr.scroll_into_view_if_needed()
+    sheet.get_by_role("button", name="Cancel", exact=True).click()
+    assert sheet.get_by_role("button", name="Town settings…").count() == 1
+    pg.close()
+    assert not errors, "\n".join(errors)
 
 
 def test_an_empty_calendar_says_how_to_import_one_in_its_work_and_its_menu(page):
@@ -1554,7 +1908,7 @@ def test_an_empty_calendar_says_how_to_import_one_in_its_work_and_its_menu(page)
     pg = page
     shots = os.environ.get("ORKCRAFT_SHOTS", "")
     drum = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", "war_drum")
-    _hut(pg, drum).locator(".gui-hut__title").click()
+    _hut(pg, drum).locator(".gui-hut__title").dblclick()
     panel = pg.locator(".gui-panel")
     bring = panel.locator(".drum-bring")
     bring.wait_for(state="visible", timeout=WAIT_MS)
@@ -1588,7 +1942,7 @@ def test_import_calendar_takes_a_file_and_a_link_in_steps_over_its_info(page, gu
     monkeypatch.setattr(calendar_imports, "fetch",
                         lambda url: "BEGIN:VCALENDAR\r\n" + event("w@x", "Team sync") + "END:VCALENDAR\r\n")
     drum = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", "war_drum")
-    _hut(pg, drum).locator(".gui-hut__title").click()
+    _hut(pg, drum).locator(".gui-hut__title").dblclick()
     _info(pg)
     panel = pg.locator(".gui-panel")
     panel.get_by_role("button", name="Import calendar", exact=True).click()
@@ -1673,3 +2027,292 @@ def test_a_tool_that_failed_says_so_with_switch_retry_and_details(page, gui, mon
             break
         page.wait_for_timeout(100)
     assert ran == [1]
+
+
+def _lab_on(pg, server, subject_type: str, event: str) -> tuple[str, str]:
+    """A building of `subject_type` and a Test bench with a road from it (`event`), the Test bench's window open on
+    it: (the building's id, the Test bench's id)."""
+    from orkcraft import scroll as ts
+    bid = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", subject_type)
+    lab = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'lab' }))")
+    ts.subscribe(server.host.town.scroll, lab, bid, event)
+    server.host.on_change()
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", lab)
+    pg.locator("details.lab-more > summary").click()                  # the shipped cases are folded under More
+    pg.locator(".gui-bench").wait_for(state="visible", timeout=WAIT_MS)
+    return bid, lab
+
+
+def _lab_off(pg, server, *ids: str) -> None:
+    pg.locator("body").press("Escape")
+    for bid in ids:
+        pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
+def test_the_test_bench_building_tests_the_building_whose_road_comes_in(page, gui, monkeypatch):
+    """docs/design/test-bench.md §2: a road from the Agent pool into the Test bench; its window is the bench of the
+    pool, under More: a kept run side by side with its timeline, the tech reviewers' findings to tick, Make tasks."""
+    import json as _json
+    from orkcraft.realm import bench, bench_review
+    server, _ = gui
+    answer = {"findings": [{"title": "Say what a tier costs", "detail": "The setup names tiers, not prices.",
+                            "severity": "high", "where": "Info"}]}
+    monkeypatch.setattr(bench_review.jobs, "run_read", lambda *a, **kw: (_json.dumps(answer), 0.02, 700, ""))
+    root = server.host.town.repo_root
+    side = bench.Side("building", seconds=95, cost=0.41, tokens=52000, passed=True, files=["src/text.py"], lines=14, orks=2,
+                      steps=[{"t": 2, "who": "steward", "action": "plan", "why": "two parts"},
+                             {"t": 5, "who": "Grub", "action": "hire", "why": "a Novice for part 1"},
+                             {"t": 6, "who": "Mogka", "action": "hire", "why": "a Novice for part 2"},
+                             {"t": 80, "who": "steward", "action": "accept", "why": "tests pass"}])
+    bare = bench.Side("bare", seconds=40, cost=0.12, tokens=18000, passed=False, check_tail="1 failed", files=["src/text.py"], lines=9)
+    bench.Report("20261010-120000-barracks-slugify", "barracks", "slugify", at="2026-10-10T12:00:00",
+                 building=side, bare=bare).save(root / bench.RUNS / "20261010-120000-barracks-slugify")
+    pg = page
+    bid, lab = _lab_on(pg, server, "barracks", "pool.done")
+    dialog = pg.locator(".gui-bench")
+    assert "Agent pool" in dialog.locator(".gui-bench__about").inner_text()
+    pg.wait_for_selector(".gui-bench__table", timeout=WAIT_MS)
+    runs = dialog.locator(".gui-bench__table:not(.gui-bench__against)")
+    assert "passed" in runs.inner_text() and "failed" in runs.inner_text()
+    against = dialog.locator(".gui-bench__against").inner_text()      # the latest run of each case against the bare tool
+    assert "slugify" in against and "+138%" in against and "better" in against
+    case = dialog.locator(".gui-bench__form select").first
+    assert "Every parallel case (5)" in case.inner_text() and "Every case (15)" in case.inner_text()
+    assert dialog.locator(".gui-bench__lane").count() == 3                # the steward and two orks
+    pg.wait_for_selector(".gui-bench__finding", timeout=WAIT_MS)
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        pg.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-tech.png"))
+    assert dialog.locator(".ok-tab").count() == 0                         # no UX or Product tab any more
+    make = dialog.locator(".gui-bench__make .ok-btn.primary")
+    assert make.is_disabled()
+    dialog.locator(".gui-bench__finding .ok-check").first.click()
+    assert make.is_enabled() and "make 1 task" in make.inner_text().lower()
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        pg.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-findings.png"))
+    make.click()
+    pg.wait_for_function("id => import('/static/js/link.js').then(m => m.command('bench.state', { id }))"
+                         ".then(s => true)", arg=bid, timeout=WAIT_MS)
+    tasks = server.host.town.worker(bid).state
+    assert any(t.title.endswith("Say what a tier costs") for t in tasks.tasks + tasks.queue)
+    server.host.town.worker(bid).stop()
+    _lab_off(pg, server, lab, bid)
+
+
+def test_the_test_bench_of_external_listeners_shows_its_checks(page, gui, monkeypatch):
+    """docs/design/test-bench.md §3.5: a building that is not about code shows its checks, the model each side ran
+    on, and what each side missed."""
+    import json as _json
+    from orkcraft.realm import bench, bench_review
+    server, _ = gui
+    monkeypatch.setattr(bench_review.jobs, "run_read", lambda *a, **kw: (_json.dumps({"findings": []}), 0.0, 0, ""))
+    root = server.host.town.repo_root
+    ok = [{"name": f"#{n} kept", "ok": True, "detail": ""} for n in range(1, 9)]
+    side = bench.Side("building", seconds=31, cost=0.03, tokens=6100, passed=False, model="laborer",
+                      checks=ok + [{"name": "#5 You charged me twice!!: importance high", "ok": False, "detail": "said normal"}],
+                      how=["#1: kept · normal · answer person · a bug report"])
+    bare = bench.Side("bare", seconds=12, cost=0.01, tokens=2400, passed=True, model="laborer", checks=ok)
+    bench.Report("20261010-130000-watchtower-feedback-inbox", "watchtower", "feedback-inbox", at="2026-10-10T13:00:00",
+                 building=side, bare=bare).save(root / bench.RUNS / "20261010-130000-watchtower-feedback-inbox")
+    bid, lab = _lab_on(page, server, "watchtower", "mail.received")
+    dialog = page.locator(".gui-bench")
+    table = dialog.locator(".gui-bench__table:not(.gui-bench__against)")
+    table.wait_for(state="visible", timeout=WAIT_MS)
+    text = table.inner_text()
+    assert "8 of 9" in text and "9 of 9" not in text and "8 of 8" in text and "Novice" in text
+    assert "importance high" in dialog.locator(".gui-bench__missed").inner_text()
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        page.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-watchtower.png"))
+    _lab_off(page, server, lab, bid)
+
+
+def test_the_test_benchs_terminal_shows_four_lines_and_copies_them_all(page, gui, monkeypatch):
+    """The run's terminal keeps to its last four lines; Copy takes every line, and Copy for analysis the whole run."""
+    import json as _json
+    from orkcraft.gui import bench as gui_bench
+    from orkcraft.realm import bench, bench_review
+    server, _ = gui
+    monkeypatch.setattr(bench_review.jobs, "run_read", lambda *a, **kw: (_json.dumps({"findings": []}), 0.0, 0, ""))
+    job = gui_bench.Job("run", "fields", "Name four long cards", lines=[f"line {n}" for n in range(1, 11)], done=True)
+    server.host.bench.jobs["fields"] = job
+    root = server.host.town.repo_root
+    bench.Report("20261010-140000-fields-long-cards", "fields", "long-cards", at="2026-10-10T14:00:00",
+                 building=bench.Side("building", seconds=9, passed=True),
+                 bare=bench.Side("bare", seconds=4, passed=False)).save(root / bench.RUNS / "20261010-140000-fields-long-cards")
+    bid, lab = _lab_on(page, server, "fields", "tasks.created")
+    term = page.locator(".gui-bench__term")
+    term.wait_for(state="visible", timeout=WAIT_MS)
+    assert term.inner_text().splitlines() == ["line 7", "line 8", "line 9", "line 10"]
+    box = term.bounding_box()
+    assert box["height"] < 100                                                  # four lines high, not fourteen
+    copied = []
+    page.expose_function("benchCopied", lambda text: copied.append(text))
+    page.evaluate("""() => { const w = navigator.clipboard && navigator.clipboard.writeText;
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText: (t) => { window.benchCopied(t); return Promise.resolve(); } } }); }""")
+    page.locator(".gui-bench__section", has=term).locator(".ok-btn", has_text="Copy").first.click()
+    page.wait_for_function("() => true")
+    page.wait_for_timeout(200)
+    assert copied and copied[-1].splitlines()[1:] == [f"line {n}" for n in range(1, 11)]
+    page.locator(".gui-bench .ok-btn", has_text="Copy for analysis").last.click()
+    page.wait_for_timeout(200)
+    assert copied[-1].startswith("Test bench: long-cards") and "## Bare AI tool" in copied[-1]
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        page.screenshot(path=os.path.join(os.environ["ORKCRAFT_SHOTS"], "bench-terminal.png"))
+    server.host.bench.jobs.pop("fields", None)
+    _lab_off(page, server, lab, bid)
+
+
+def test_the_test_benchs_window_leads_with_its_cases_results_and_recommendations(page, gui):
+    """docs/design/test-bench.md §10, improve-buildings.md §11: environments and cases, Run all cases, the results with
+    Copy for analysis and the zip, the recommendations; the goal, the proposals and the shipped cases under More."""
+    from orkcraft import scroll as ts
+    from orkcraft.realm import bench as rbench
+    from orkcraft.realm import lab_cases
+    pg = page
+    server, _ = gui
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    lab, pool = call("town.build", {"type": "lab"}), call("town.build", {"type": "barracks"})
+    ts.subscribe(server.host.town.scroll, lab, pool, "pool.done")
+    w = server.host.town.worker(lab)
+    w.set_goal("Spend fewer tokens than the bare tool")
+    one, two = lab_cases.new_case("CSV parser", "Write a CSV parser", pool), lab_cases.new_case("Hard topic", "Explain CRDTs", pool)
+    w.add_cases(pool, [one, two])
+    r = rbench.Report(id="r1", type="chain", case=one["id"], tool="main", at="2026-10-10T10:00:00", subject=pool,
+                      building=rbench.Side("building", seconds=50, tokens=600, passed=True),
+                      bare=rbench.Side("bare", seconds=40, tokens=1000, passed=True))
+    r.save(server.host.town.repo_root / rbench.RUNS / r.id)
+    w.reported(pool, r)
+    w.set_proposals(pool, [{"id": "p0", "area": "prompt", "title": "Shorter steward rules", "detail": "Fewer words",
+                            "where": "", "effect": ""}])
+    _hut(pg, lab).wait_for(state="visible", timeout=WAIT_MS)
+    _hut(pg, lab).locator(".gui-hut__title").dblclick()
+    _panel(pg, "Work")
+    panel = pg.locator(".gui-panel")
+    panel.get_by_role("button", name="Run all cases (2)").wait_for(state="visible", timeout=WAIT_MS)
+    assert "Each case runs 3 times" in panel.locator(".lab-run").inner_text()
+    row = panel.locator(".lab-case", has_text="CSV parser")
+    assert "as well as the AI tool alone, 25% slower and 40% fewer tokens" in row.inner_text()   # words, not a table
+    assert "Not tested yet" in panel.locator(".lab-case", has_text="Hard topic").inner_text()
+    results = panel.locator(".lab-results")
+    assert "✓" in results.locator(".lab-story").first.inner_text() and "CSV parser" in results.inner_text()
+    assert "what to change" in results.inner_text().lower() and not results.locator("pre").is_visible()   # the numbers folded
+    results.locator("summary", has_text="Numbers").click()
+    assert "-40% tokens" in results.locator("pre").inner_text()
+    assert results.get_by_role("button", name="Copy for analysis").count() == 1
+    assert "/api/bench/" in results.get_by_role("link", name="Download (.zip)").get_attribute("href")
+    assert results.get_by_role("button", name="Ask the reviewers too").count() == 1
+    assert panel.locator(".lab-check").get_by_role("button", name="Run the check").count() == 1
+    assert not panel.locator(".lab-goal").is_visible() and not panel.locator(".lab-proposal").first.is_visible()
+    panel.locator("details.lab-more > summary").click()                       # More: the goal, the proposals
+    assert panel.locator(".lab-goal textarea").input_value() == "Spend fewer tokens than the bare tool"
+    assert "1 of 1 case ahead on tokens" in panel.locator(".lab-goal").inner_text()
+    panel.locator(".lab-proposal", has_text="Shorter steward rules").wait_for(state="visible", timeout=WAIT_MS)
+    panel.get_by_role("button", name="Add a case", exact=True).click()
+    panel.locator(".lab-add textarea").fill("Research three vector databases")
+    panel.locator(".lab-add").get_by_role("button", name="Add").click()
+    panel.locator(".lab-case", has_text="Research three vector").wait_for(state="visible", timeout=WAIT_MS)
+    assert len(w.cases_of(pool)) == 3
+    if os.environ.get("ORKCRAFT_SHOTS"):
+        panel.screenshot(path=str(Path(os.environ["ORKCRAFT_SHOTS"]) / "lab.png"))
+    for bid in (lab, pool):
+        call("town.demolish", {"id": bid})
+
+
+def test_a_test_bench_is_set_up_by_a_frame_dragged_round_its_buildings(page, gui):
+    """docs/design/improve-buildings.md §5.1: Build → Logic raises a Test bench; the Warchief asks what it tests; a
+    frame dragged round two buildings picks them, and they are tested as one chain, framed on the map."""
+    from orkcraft import scroll as ts
+    pg, (server, _browser) = page, gui
+    build = lambda t: pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", t)
+    board, pool = build("council"), build("barracks")
+    ts.subscribe(server.host.town.scroll, pool, board, "team.approved")
+    for bid, x in ((board, 0.35), (pool, 0.6)):                  # where nothing else stands: the frame takes only them
+        _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
+        pg.evaluate("([id, x]) => import('/static/js/link.js').then(m => m.command('hut.move', { id, x, y: 0.55 }))",
+                    [bid, x])
+    pg.wait_for_timeout(600)
+    pg.locator(".gui-warchief__build").click()
+    pg.locator(".gui-warchief .gui-build__tile[data-intent='logic']").dblclick()
+    setup = pg.locator(".gui-warchief__setup")
+    setup.get_by_text("What should it test?").wait_for(timeout=WAIT_MS)
+    setup.get_by_role("button", name="Frame several on the map").click()
+    pg.locator(".gui-frame-select").wait_for(timeout=WAIT_MS)
+    boxes = [_hut(pg, bid).bounding_box() for bid in (board, pool)]
+    x0, y0 = max(min(b["x"] for b in boxes) - 6, 90), min(b["y"] for b in boxes) - 6
+    x1, y1 = max(b["x"] + b["width"] for b in boxes) + 6, max(b["y"] + b["height"] for b in boxes) + 6
+    pg.mouse.move(x0, y0)                                         # from open ground (the line floats over the foot)
+    pg.mouse.down()
+    pg.mouse.move(x1, y1, steps=8)
+    pg.mouse.up()
+    picked = pg.evaluate("() => import('/static/js/frame.js').then(m => m.framing.value && m.framing.value.ids)")
+    assert set(picked) == {board, pool}, (picked, boxes)
+    setup.get_by_role("button", name="Test them as one chain").click()
+    pg.locator(".gui-test-frame").wait_for(timeout=WAIT_MS)
+    assert "this project" in pg.locator(".gui-test-frame__label").inner_text()
+    lab = next(b["id"] for b in server.host.snapshot()["buildings"] if b["type"] == "lab")
+    assert server.host.town.worker(lab).scheme()["ids"] == [board, pool]
+    for bid in (lab, board, pool):
+        pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
+def test_the_ux_bench_shows_a_buildings_pictures_and_opens_one_to_change(page, gui):
+    """docs/design/improve-buildings.md §6: a UX bench picks the Agent pool from Build's own icons; its gallery shows
+    the Build icon, the houses, the ork, the cards and the window; a picture and a card each open their own dialog."""
+    pg, (server, _browser) = page, gui
+    build = lambda t: pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", t)
+    pool, bench = build("barracks"), build("ux_lab")
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", bench)
+    pg.locator(".ux-pick .gui-build__tile[title='In parallel']").click()
+    gallery = pg.locator(".ux-gallery")
+    gallery.wait_for(timeout=WAIT_MS)
+    assert gallery.locator("button.ux-picture", has_text="Dirt and forest").count() == 1
+    gallery.locator("button.ux-picture", has_text="Dirt and forest").click()
+    assert pg.locator(".ok-dialog").count() == 1 and pg.locator(".ux-edit__picture img").get_attribute("src").startswith("/ds/sprites/buildings/")
+    pg.keyboard.press("Escape")
+    gallery.locator("button.ux-picture", has_text="Medium card").click()
+    pg.locator(".ux-edit .ux-card__hut .gui-hut__big").first.wait_for(timeout=WAIT_MS)
+    assert pg.locator(".ok-dialog").count() == 1                   # the card's own dialog, never a picture's beside it
+    pg.keyboard.press("Escape")
+    for bid in (bench, pool):
+        pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
+def test_what_a_ux_bench_applied_is_sent_from_a_dialog_that_shows_it_first(page, gui, monkeypatch, tmp_path):
+    """docs/design/improve-buildings.md §6.5: once a picture is this machine's own, Send to Orkcraft shows; its dialog
+    shows the picture before and after, ticked, the title and the description, and Send waits for GitHub."""
+    from orkcraft.design import tokens
+    monkeypatch.setenv("ORKCRAFT_ASSETS_DIR", str(tmp_path / "assets"))
+    house = "sprites/buildings/barracks/header-ice.png"
+    own = tokens.assets_dir() / house
+    own.parent.mkdir(parents=True)
+    own.write_bytes((tokens.SYSTEM / "sprites/buildings/barracks/header.png").read_bytes())
+    pg = page
+    bench = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", "ux_lab")
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", bench)
+    pg.locator(".ux-pick .gui-build__tile[title='In parallel']").click()
+    pg.locator(".ux-send button", has_text="Send to Orkcraft").click()
+    dialog = pg.locator(".ok-dialog", has_text="A pull request to Orkcraft")
+    dialog.locator(".ux-send__item").first.wait_for(timeout=WAIT_MS)
+    assert dialog.locator(".ux-send__item input:checked").count() == 1
+    assert dialog.locator(".ux-send__pair img").count() == 2 and "ux bench: 1 picture" in dialog.inner_text().lower()
+    assert dialog.locator("button", has_text="Send").last.is_disabled()          # GitHub is not connected here
+    pg.keyboard.press("Escape")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bench)
+
+
+def test_the_ux_bench_shows_the_mascots_and_opens_one_to_draw_again(page, gui):
+    """docs/design/improve-buildings.md §6.4: the mascots are picked beside the buildings; each role's four stages
+    stand on its kin's ground, and a press opens the dialog that draws the head again as its grid."""
+    pg, (server, _browser) = page, gui
+    bench = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", "ux_lab")
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", bench)
+    pg.locator(".ux-pick .gui-build__tile[title='Mascots']").click()
+    gallery = pg.locator(".ux-gallery")
+    gallery.wait_for(timeout=WAIT_MS)
+    ghost = gallery.locator(".ux-gallery__group", has_text="Wandering Ghost")
+    assert ghost.locator("button.ux-picture").count() == 4
+    ghost.locator("button.ux-picture", has_text="Stage 3").click()
+    assert pg.locator(".ok-dialog").count() == 1
+    assert pg.locator(".ux-edit__picture img.is-mascot").get_attribute("src").startswith("/ds/sprites/mascots/other-3.png")
+    assert pg.locator(".ok-dialog button", has_text="Draw it").count() == 1
+    pg.keyboard.press("Escape")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bench)

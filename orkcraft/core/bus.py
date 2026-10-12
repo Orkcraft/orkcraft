@@ -28,6 +28,8 @@ CART = "cart"        # cart: a cart set off along a road (or was held)
 RUN = "run"          # run, name: a handler or a building's own agent finished
 LOOT = "loot"        # path, source: a report was kept in Loot
 WORKER = "worker"    # building: a building's worker changed its state (its view draws it again)
+INPUT = "input"      # building, input, value, by: one of its inputs was pressed (core/inputs.py), by a person or a bench
+SNAPSHOT = "snapshot"  # orkspace, sha, why: a snapshot of an orkspace's project files (core/timeline.py)
 SESSION = "session"  # key, state ("opened" | "exited" | "forgotten"), code: an ork's CLI session (core/sessions.py)
 TOOL_ERROR = "tool_error"  # harness, tool, kind, title, line, action, detail, switch, hint, main, where, retry: an
                           # AI tool failed (realm/tool_errors.py report); a face shows Switch, Retry and Details

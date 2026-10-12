@@ -130,7 +130,7 @@ as above.
 
 ## 8. The first live check (after the merge)
 
-1. `orkcraft gui` on a project → Settings (the project's name in the HUD) → **Connect Google**.
+1. `orkcraft gui` on a project → Settings (**Menu ▾** in the HUD) → **Connect Google**.
 2. Steps 1–4 in Google Cloud with your personal Gmail; on step 3 press **Publish app** (Audience).
 3. Step 5: **Sign in with Google** → *Google hasn't verified this app* → Advanced → Go to … (unsafe) → leave the
    three ticks → the tab says *Connected*.

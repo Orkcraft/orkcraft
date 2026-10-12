@@ -29,8 +29,9 @@ moved. They send nothing down the roads — they are no work for the orks — un
 (moved into To Do, `tasks.created`). An idea (a note) becomes a task (`t`, *Give it to the orks*) or a
 chore (`m`, *Make it my chore*); `x` ticks a chore off.
 
-In `board` mode the screen has three parts: **Ork work** (the status lanes) on top, **My chores** and
-**Scribbles** (the lanes of notes) under it. The closed card shows all three at a glance and stands
+In `board` mode the screen has three parts: the person's own on top — **My to-dos** and **Notes** (the lanes
+of notes) side by side — and **Ork work** (the status lanes) under them (2026-10-10; the orks' work stood on top
+before). The closed card shows all three at a glance and stands
 larger than other huts (about a fifth of the screen high; 26 × 11 cells in the terminal).
 
 ## 2. Modes instead of more screens
@@ -56,8 +57,15 @@ in another.
 - The footer shows the keys used most — `n` new, `<` `>` move, `e` open, `c` colour, `t` note ⇄
   task; `s` send, `d` delete and `N` a new lane work without taking space there.
 - Opening a card is one text box: the first line is the title, the rest its text.
-- Colour is a coloured square at the start of the title (🟨 🟩 🟦 🟥 🟪). It needs no extra field,
-  reads the same in the file, on GitHub and on the board, and `c` cycles it.
+- Colour is a coloured square at the start of the title (🟨 🟩 🟦 🟥 🟪). It needs no extra field and
+  reads the same in the file, on GitHub and on the board. The model that names a card picks it as it names
+  it (🟥 urgent or broken, 🟨 money or admin, 🟩 people, 🟦 code, 🟪 ideas): the GUI has no Colour button.
+- A card written as a longer text is on the board at once, its first words its title; the model's title
+  replaces them a moment later, unless the person renamed the card first or the task already went to the orks.
+- The closed card has **+ Note** and **+ To-do**. A note is written in the panel on the right, the whole panel
+  its page; a to-do is one line in a small window. The selected card's strip leads with *Give it to the orks*
+  (a note or a to-do becomes a task and goes; a task not gone yet goes) and ends with *Delete* in red; a double
+  click opens the card.
 
 ## 4. The file
 
@@ -137,7 +145,9 @@ file stays the person's to edit by hand, and a hand edit that removes a card rem
 
 - **Context 📜.** A new or edited ticket, to-do or note asks the town's Scroll Dumps (`wikis`, default
   every one) for the pages that share its words (`ScrollsWorker.look_up`: no model, nothing leaves the
-  machine; a word matches by its start, so "банку" finds "банк"). None found, no context and no mark. The
+  machine; a word matches by its start, so "банку" finds "банк"). The cards that wait are looked up together
+  every 15 minutes (`CONTEXT_EVERY_S`), so writing a card never waits for the wikis; a Plan looks its to-do up
+  at once. None found, no context and no mark. The
   card shows `📜 2`; a click lists the pages and opens one in Lake. A page that changed since makes the
   mark pale, and *Look again* asks once more.
 - **Plan 🧭.** Only for a to-do, only when the person presses *Plan*. The first time on a board it shows

@@ -143,3 +143,16 @@ def test_office_names_the_role_its_mark_is_drawn_from(fake_repo):
     assert mobile.compact(host.snapshot())["portrait"]["role"] == p["role"]
     icons = (Path(you.__file__).parent / "static" / "js" / "roles.js").read_text()
     assert all(f"  {r}:" in icons for r in you.MONOGRAMS)          # every role has its mark
+
+
+def test_the_look_by_the_shift_is_office_in_work_hours_and_camp_the_rest(monkeypatch):
+    """The look a machine has by default (docs/design/portrait.md §3): by the shift — Office 09:00–17:00, Camp the
+    rest of the day; Camp or Office picked hold all day."""
+    import datetime as dt
+    monkeypatch.delenv("ORKCRAFT_LOOK")
+    m = settings.MachineSettings()
+    assert m.look == "shift" and settings.MachineSettings.from_dict({}).look == "shift"
+    at = lambda h, mi=0: settings.look_now(m, dt.datetime(2026, 10, 9, h, mi))       # noqa: E731
+    assert (at(8, 59), at(9), at(16, 59), at(17), at(23)) == ("camp", "office", "office", "camp", "camp")
+    m.look = "camp"
+    assert at(12) == "camp"

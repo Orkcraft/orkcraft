@@ -14,7 +14,7 @@ import { Terminal } from "../terminal.js";
 import { openInLake } from "../lake.js";
 import { askKeeper } from "../keeper.js";
 import { usePeek } from "../windows.js";
-import { OrkHead } from "../icons.js";
+import { OrkHead, ToolMark, TierMark } from "../icons.js";
 
 const sheet = new URL("./barracks.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -121,10 +121,28 @@ const keep = (e) => e.stopPropagation();          // a press on the card's contr
 /** Closed: the headline is how many orks work of how many; under it the queue, the tally and the spend, the
  *  steward first when it asks; the foot who works on what. Paused, the headline says so with what waits and
  *  Resume in the foot: a stopped queue is the one thing to fix here. */
+const LANE_STATE = { working: "busy", resting: "idle", asks: "alert" };
+const LANE_WORD = { working: "working", resting: "resting", asks: "asks you" };
+
+/** Its orks, a lane each (the owner's ask): the head says what it does (a gear at work, Zz resting, ! asking), then
+ *  its name, its AI tool and tier, the topic it is hired for, and how many tasks of it wait. */
+function Lanes({ lanes, more }) {
+  return html`<ul class="pool-lanes">${lanes.map((l) => html`<li key=${l.name} class=${cls("pool-lane", `is-${l.state}`)}
+      title=${`${l.name} · ${say(LANE_WORD[l.state])} · ${l.topic ? say(l.topic) : say("any work")}${l.queue ? ` · ${l.queue} ${say("waiting")}` : ""}`}>
+    <span class="pool-lane__head"><${OrkHead} o=${{ name: l.name, status: LANE_STATE[l.state] }} alert=${l.state === "asks"} /><span
+      class="pool-lane__state">${say(LANE_WORD[l.state])}</span></span>
+    <b class="pool-lane__name">${l.name}</b>
+    <span class="pool-lane__how"><${ToolMark} id=${l.harness} />${l.tier && html`<${TierMark} tier=${l.tier} />`}</span>
+    <span class="pool-lane__topic ok-tone-muted">${l.topic ? say(l.topic) : say("any work")}</span>
+    <span class=${cls("pool-lane__queue", { "ok-tone-muted": !l.queue })}>${l.queue ? `▸ ${l.queue}` : ""}</span>
+  </li>`)}${more > 0 && html`<li class="pool-lane is-more ok-tone-muted">+${more}</li>`}</ul>`;
+}
+
 export function card(b) {
   const c = b.card;
   if (!c) return null;
   const working = c.working || [];
+  const lanes = c.lanes || [];
   return html`<div class="gui-hut__body-in">
     ${c.paused
       ? html`<div class="gui-hut__big ok-tone-wait">⚠ ${say("Paused")}<small>${c.queue ? `${c.queue} waiting` : say("nothing waits")}</small></div>`
@@ -133,10 +151,12 @@ export function card(b) {
       <span class=${c.failed ? "ok-tone-error" : ""} title=${c.failed ? say("Failed tasks: open the building to see why") : ""}>✗${c.failed}</span>
       · <b>${c.spent}</b></div>
     ${c.asks && html`<div class="gui-hut__text ok-tone-fire">? ${c.asks} ${say("asks")}</div>`}
+    ${lanes.length > 0 && html`<${Lanes} lanes=${lanes} more=${c.more || 0} />`}
     ${c.paused
       ? html`<div class="gui-hut__foot"><span>${say("Stopped: no task starts")}</span>
           <button class="ok-act gui-hut__act" onPointerDown=${keep}
             onClick=${(e) => { keep(e); act(b.id, "pause").catch(() => {}); }}><span class="ok-act__label">Resume</span></button></div>`
+      : lanes.length > 0 ? null
       : working.length > 0
         ? html`<div class="gui-hut__foot"><span>⚒ <b>${working[0].ork}</b> · ${working[0].want ? `${say(working[0].want)}: ` : ""}${working[0].task}</span>
             ${working.length > 1 && html`<span class="gui-hut__when">+${working.length - 1}</span>`}</div>`
@@ -311,11 +331,21 @@ function Tasks({ id, data }) {
 function OrkTab({ id, o }) {
   const s = sessionOf(o.terminal);
   const open = () => act(id, "terminal", { ork: o.name }).catch(() => {});
-  if (s) return html`<${Terminal} key=${s.key} sessionKey=${s.key} />`;
+  const take = () => act(id, "take_over", { ork: o.name }).catch(() => {});
+  const back = () => act(id, "hand_back", { ork: o.name }).catch(() => {});
+  const handBack = o.by_hand && html`<div class="gui-section"><button class="ok-btn primary" onClick=${back}
+      title=${say("Close the terminal: the steward reviews what is in its worktree")}>${say("Hand back to review")}</button>
+    <span class="ok-tone-muted"> ${say("You took this over: type to it here.")}</span></div>`;
+  if (s && s.running) return html`${handBack}<${Terminal} key=${s.key} sessionKey=${s.key} />`;   // an ended one takes no keys: reopen it
   return html`<div class="gui-section">
-    <p class="ok-tone-muted">${o.status === "working" ? say("It is working now: its terminal opens when it is free.") : say("No terminal open.")}
+    <p class="ok-tone-muted">${s ? say("Its session has ended") + (s.exit_code ? ` · ${s.exit_code}` : "")
+      : o.status === "working" ? say("It is working now: take it over to type to it.") : say("No terminal open.")}
+      ${o.by_hand ? html` <button class="ok-btn" onClick=${open}>${say("Reopen its terminal")}</button>` : null}
+      ${o.status === "working" && !o.by_hand && html` <button class="ok-btn" onClick=${take}
+        title=${say("Stop its run where it is and go on in a terminal on its worktree")}>${say("Take over")}</button>`}
       ${o.status !== "working" && html` <button class="ok-btn" onClick=${open}
         title=${say("Its last session, on its worktree")}>${o.session ? say("Resume its session") : say("Open its terminal")}</button>`}</p>
+    ${handBack}
     ${o.recent.length > 0 && html`<h3 class="ok-font-heading">${say("Its recent work")}</h3>
       <ul class="gui-rows">${o.recent.map((r, i) => html`<li key=${i}>${r}</li>`)}</ul>`}
   </div>`;
@@ -375,6 +405,42 @@ function Kinds({ id, kinds }) {
   </section>`;
 }
 
+/** The folder of code its orks work in (`repo`): the town's own, or a project of yours somewhere else — the system's
+ *  folder dialog, a path pasted, or one of the recent folders. Taken for the next ork it hires. */
+function Folder({ id, data }) {
+  const [typed, setTyped] = useState("");
+  const [waiting, setWaiting] = useState(false);
+  const [hint, setHint] = useState("");
+  const set = (path) => act(id, "repo", { path }).then(() => { setTyped(""); setHint(""); }, () => {});
+  const choose = () => {
+    setWaiting(true); setHint("");
+    act(id, "pick", { start: data.repo }).then((token) => {
+      const poll = () => act(id, "picked", { token }).then((r) => {
+        if (r.state === "open") { setTimeout(poll, 400); return; }
+        setWaiting(false);
+        if (r.state === "done") set(r.path);
+        else if (r.state === "error") setHint(say("No folder dialog here: paste the folder's path."));
+      }, () => setWaiting(false));
+      poll();
+    }, () => setWaiting(false));
+  };
+  const others = (data.recent || []).filter((f) => f !== data.repo).slice(0, 4);
+  return html`<section class="gui-section pool-folder"><h3 class="ok-font-heading">${say("Folder")}</h3>
+    <p class="ok-font-status"><code>${data.repo}</code>${!data.repo_own && html`<span class="ok-tone-muted"> · ${data.repo_project
+      ? `${say("the orkspace's project")}: ${data.repo_project}` : say("the town's own")}</span>`}</p>
+    <p class="ok-font-status ok-tone-muted">${say("Where its orks work: their branches, worktrees, tests and pull requests. A folder with no git gets one when the first ork starts. The next ork it hires takes it.")}</p>
+    <div class="gui-form__row">
+      <button class="ok-btn" disabled=${waiting} onClick=${choose}>${say(waiting ? "Choosing…" : "Choose…")}</button>
+      <input class="ok-input" value=${typed} placeholder=${say("or paste a folder's path")} aria-label=${say("Folder path")}
+        onInput=${(e) => setTyped(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && typed.trim() && set(typed.trim())} />
+      ${data.repo_own && html`<button class="ok-btn" onClick=${() => set("")}>${say(data.repo_project ? "The orkspace's project" : "The town's own")}</button>`}
+    </div>
+    ${hint && html`<p class="ok-font-status ok-tone-wait">${hint}</p>`}
+    ${others.length > 0 && html`<p class="ok-font-status">${say("Recent")}: ${others.map((f, i) => html`${i ? " · " : ""}<button key=${f}
+        class="gui-link" onClick=${() => set(f)}>${f}</button>`)}</p>`}
+  </section>`;
+}
+
 /** Rules, settings and the foreman's decisions: one line until opened — they are read rarely. */
 function Rules({ id, data }) {
   const settings = [["Tests", data.test_cmd || "none — the review reads the diff only"], ["Steward", `${data.steward} · spent ${data.steward_cost}`],
@@ -388,6 +454,7 @@ function Rules({ id, data }) {
       ${data.rules.length ? html`<ul class="gui-rows">${data.rules.map((r, i) => html`<li key=${i}>${r.replace(/^-\s*/, "")}</li>`)}</ul>`
         : html`<p class="ok-tone-muted">None yet — answers you give can become rules.</p>`}</section>
     <${KeeperAsk} id=${id} keeper=${data.keeper} />
+    <${Folder} id=${id} data=${data} />
     <section class="gui-section"><h3 class="ok-font-heading">Settings</h3>
       <ul class="gui-rows">${settings.map(([k, v]) => html`<li key=${k}><span class="ok-tone-muted">${say(k)}</span> · ${v}</li>`)}</ul></section>
     <${Kinds} id=${id} kinds=${data.kinds} />

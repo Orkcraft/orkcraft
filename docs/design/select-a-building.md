@@ -1,6 +1,6 @@
 # Design — a click selects; the steward speaks for its building
 
-Status: proposal 2026-10-09, not built. Asked by the owner ("think through"). Builds on [yards.md](yards.md) §7 (the
+Status: proposal 2026-10-09; §1 (a click selects), §2 (the command card), §7–8 built. Asked by the owner ("think through"). Builds on [yards.md](yards.md) §7 (the
 ork comes out on selection, nothing on hover) and [calm-town.md](calm-town.md) (the Warchief's line at the foot).
 
 ## 1. What changes
@@ -9,7 +9,9 @@ Today a click on a building **opens** it: the panel slides in on the right with 
 "selected but not opened" state, so a person who wants one small thing (run it, rate it, ask its ork) pays for a
 whole window.
 
-Proposed, as an RTS does it:
+Proposed, as an RTS does it — **built 2026-10-09** (`js/windows.js` `selected`, `pickBuilding`): a click selects,
+the selected one clicked again (so a double click) or **Open** on its card in the Warchief's line opens its Work;
+Escape closes the window, and with no window up lets the building go; 1–9 select, the same number again opens:
 
 | gesture | today | proposed |
 |---|---|---|
@@ -90,8 +92,8 @@ smaller button on the dial's right edge, not in the menu.
 
 ## 6. Questions for the owner
 
-1. Second click to open, or right-click to open (and the menu on a long press)? Recommended: second click, right-click
-   keeps the menu with Open first.
+1. ~~Second click to open, or right-click to open?~~ A second click (or Open on the card); right-click keeps the menu
+   (built).
 2. ~~Does the steward take over the Warchief's line, or speak only in its bubble?~~ Takes over (§2, built).
 3. Do not disturb inside the dial's menu, or as a small button on the dial?
 
@@ -116,9 +118,10 @@ Asked by the owner: Build → pick a building → place its ghost → it goes up
 its setup → the scaffolding comes down and it stands.
 
 1. **Pick** in Build (the catalog, as before). The dialog closes; nothing is built yet.
-2. **Place**: the building's ghost follows the mouse (`js/town.js` `Placing`; the onboarding's ghost,
-   `js/onboarding.js` `Ghost`). **A building that has a card shows a card in its ghost; a bare one (no view,
-   js/hut.js `bareOf`) is its house and name alone.** A press builds it there (`town.build` with the spot); Escape
+2. **Place**: the building's ghost follows the mouse (`js/town.js` `Placing`): **the building itself, faded, 1:1** —
+   its house, its fence or plate, its size — so it stands where and as big as the ghost was (since 2026-10-09; before,
+   the onboarding's small ghost). A card that fills with what its building finds (a Task board's tasks) can grow once
+   it stands: the ghost cannot know that yet; its corner stays where the ghost's was. A press builds it there (`town.build` with the spot); Escape
    or a right click lets it go. A spot already given (the map's menu, *Build here*) skips this step.
 3. **Scaffolding**: the building is raised at once, but drawn as scaffolding with its sprite rising
    (`js/build.js` `raised`, `constructing`), sized as a house so it stands where it was placed.

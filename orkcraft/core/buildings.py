@@ -14,7 +14,8 @@ from typing import Any
 from orkcraft import autonomy, scroll
 from orkcraft.core import bus
 from orkcraft.core.town import Town
-from orkcraft.realm import catalog, checkpoint, evolution, feedback, masonry, optimize, pipes, steward, tiers, workshop
+from orkcraft.realm import (catalog, checkpoint, evolution, feedback, masonry, optimize, pipes, regressions, steward,
+                            tiers, type_defaults, workshop)
 from orkcraft.design import ui as design_ui
 from orkcraft.realm.buildings import Building, custom_building
 
@@ -50,7 +51,7 @@ FREEDOM_WORDS = {"chains": "its questions and its changes wait for you",
 # -- raising ---------------------------------------------------------------------------------------
 
 def type_spec(town: Town, type_id: str) -> dict | None:
-    """A camp building's spec from the catalog: the type's defaults and a free id."""
+    """A camp building's spec from the catalog: the type's defaults (realm/type_defaults.py too) and a free id."""
     t = catalog.TYPES.get(type_id)
     if t is None or type_id in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES:
         return None
@@ -58,8 +59,10 @@ def type_spec(town: Town, type_id: str) -> dict | None:
     bid, n = type_id, 1
     while bid in taken:
         bid, n = f"{type_id}_{n}", n + 1
-    return {"id": bid, "type": type_id, "title": t.title, "icon": t.icon, "summary": t.summary[:200],
+    spec = {"id": bid, "type": type_id, "title": t.title, "icon": t.icon, "summary": t.summary[:200],
             "orc": {"name": t.orc, "role": t.preview[:80]}}
+    shipped = type_defaults.config(type_id)       # the settings Orkcraft ships for the type (a Test bench sent them)
+    return {**spec, "config": shipped} if shipped else spec
 
 
 def raise_spec(town: Town, spec: dict, hut: list[float] | None = None, folded: bool | None = None) -> Building | None:
@@ -99,6 +102,73 @@ def demolish(town: Town, building_id: str) -> bool:
     town.publish(bus.ROADS)
     town.save()
     return True
+
+
+def _copy_id(town: Town, building_id: str) -> str:
+    """A free id for a copy: `<id>_2`, `<id>_3`… (`forge_2` copied again gives `forge_3`)."""
+    base = building_id
+    head, _, tail = building_id.rpartition("_")
+    if head and tail.isdigit():
+        base = head
+    taken = town.taken_ids() | masonry.ID_RESERVED
+    n = 2
+    while f"{base}_{n}" in taken:
+        n += 1
+    return f"{base}_{n}"[:64]
+
+
+def _script_prefix(building_id: str) -> str:
+    """How an ork's own script is named after its building (realm/recruiter.py, realm/steward.py)."""
+    return f".orkcraft/scripts/{building_id}-".replace("_", "-")
+
+
+def copy_to(town: Town, building_id: str, orkspace_id: str) -> tuple[str, list[str]]:
+    """A copy of a building in another orkspace (docs/design/projects.md §5): a building of its own with its own
+    id, spec, orks and their instructions, scripts and blueprints (a script copied as it is stays reviewed), roads
+    from the buildings on that map. Its history, renown, level, spend, sessions and what it keeps in `.orkcraft/`
+    stay with the original. Returns (the copy's id, the sources of the roads that stayed behind); one checkpoint.
+    Raises ValueError when it cannot be copied."""
+    import shutil
+    from orkcraft.realm.buildings import TOWN_HALL
+    bs, ork = town.scroll.building(building_id), town.scroll.orkspace(orkspace_id)
+    spec = town.custom_specs.get(building_id)
+    if bs is None or bs.demolished or building_id == TOWN_HALL or spec is None:
+        raise ValueError("That building cannot be copied")
+    if ork is None:
+        raise ValueError(f"No orkspace {orkspace_id!r}")
+    new_id = _copy_id(town, building_id)
+    root = town.repo_root
+    text = json.dumps(spec, ensure_ascii=False)
+    for base in (workshop.SCRIPTS, workshop.BLUEPRINTS):
+        text = text.replace(f"{base.as_posix()}/{building_id}/", f"{base.as_posix()}/{new_id}/")
+    new_spec = json.loads(text)
+    new_spec["id"] = new_id
+    problems = masonry.save_spec(root, new_spec, existing_ids=town.taken_ids())
+    if problems:
+        raise ValueError("\n".join(problems))
+    copied, left = scroll.copy_building(town.scroll, building_id, ork.id, new_id)
+    for base in (workshop.SCRIPTS, workshop.BLUEPRINTS):
+        src = root / base / building_id
+        if src.is_dir() and not (root / base / new_id).exists():
+            shutil.copytree(src, root / base / new_id)
+    old_prefix, new_prefix = _script_prefix(building_id), _script_prefix(new_id)
+    orcs = [o for o in [copied.garrison.steward, *copied.garrison.handlers] if o is not None]
+    for orc in orcs:
+        path = str((orc.script or {}).get("path") or "")
+        if not path.startswith(old_prefix) or not (root / path).is_file():
+            continue                                   # a script it shares, or none: the copy uses the same
+        new_path = new_prefix + path[len(old_prefix):]
+        (root / new_path).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(root / path, root / new_path)
+        orc.script = {**orc.script, "path": new_path}  # the same bytes: its sha and its review stay true
+    town.buildings.append(custom_building(new_spec))
+    town.custom_specs[new_id] = new_spec
+    pipes.set_typed(new_id, catalog.events_of(new_spec), catalog.accepts(new_spec))
+    town.record(new_id, "building_copied", source=bs.title, orkspace=ork.name)
+    town.publish(bus.ROADS)
+    town.save()
+    town.checkpoint("create", new_id, f"copied from {building_id} ({ork.name})")
+    return new_id, left
 
 
 def log_build_request(town: Town, prompt: str, result: Any) -> None:
@@ -229,7 +299,9 @@ def dislike(town: Town, building_id: str, kind: str, note: str) -> None:
     """👎: broken inputs penalise its suppliers upstream, its logic only it."""
     incident = feedback.dislike(town.repo_root, town.scroll, building_id, kind, note)
     who = ", ".join(f"{town.title_of(b)} −{p:g}" for b, p in incident.blamed.items()) or "nobody"
-    town.toast(f"incident saved · {who}", title=f"👎 {town.title_of(building_id)}")
+    case = regressions.from_dislike(town.repo_root, building_id, note, kind, incident.output)
+    town.toast(f"incident saved · {who}" + (" · kept as a test case for the Test bench" if case else ""),
+               title=f"👎 {town.title_of(building_id)}")
     town.publish(bus.HALL)
 
 

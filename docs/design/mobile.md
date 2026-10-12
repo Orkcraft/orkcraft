@@ -4,7 +4,9 @@ Status: a plan, written 2026-10-06; stage 0 of §9 is built (`orkcraft/gui/mobil
 `GET /api/version` in `orkcraft/gui/server.py`, `tests/test_mobile.py`); stage 1 and 2 are built on the
 host's side (the listener `gui/phones.py`, pairing `gui/pairing.py`, the certificate `gui/phone_tls.py`,
 Settings → Phones `gui/static/js/phones.js`, `mobile.chat`, the notifier `gui/notify.py`;
-`tests/test_phones.py`), with `tools/phone.py` as a phone in a terminal; the phone app is not (§8.1).
+`tests/test_phones.py`), with `tools/phone.py` as a phone in a terminal. A first app is a prototype web app
+the listener serves itself over Tailscale (`gui/pwa.py`, `gui/static/pwa/`, `tests/test_pwa.py`; §10); a
+native app is not built (§8.1).
 Builds on the GUI's host and socket ([gui-migration.md](gui-migration.md) §5) and the daemon it
 leads to (§1 there).
 
@@ -125,6 +127,7 @@ are not on it.
 | `act` | `id`, `act`, `args` | as the act; only `pit`: `drop`, `drop_file` and `town_hall`: `ask` | yes |
 | `mobile.chat` | `limit` (at most 20) | the hall's last messages: `who`, `text` (plain), `ts`, `error`, `offer` | new (stage 2) |
 | `place.report` | `id`, `place`, `change`, `at` | `{"outcome"}`: the phone came to a place or left it ([phone-places.md](phone-places.md)); also `POST /api/place` | new (places, stage 1) |
+| `building.input` | `id`, `input`, `value` | as the act: one of the building's quick actions its compact snapshot names (`quick`), pressed by the person (`mobile.guard`) | yes |
 
 The Warchief's answer arrives in the Town Hall's `detail` (`chat`), which the phone listener does
 not send; stage 2 adds `mobile.chat` (the last messages of the hall's chat, Markdown as plain text)
@@ -133,8 +136,9 @@ so the phone reads its answer.
 ### The compact snapshot
 
 `mobile.compact(host.snapshot())`: derived from the page's snapshot, never from the town, so the
-two never disagree. A town of one building is 0.5 KB against the page's 9 KB: no roads, huts, orkspaces, garrisons, cards, the
-Lake's tabs, jobs or the glossary.
+two never disagree. A town of one building is 0.5 KB against the page's 9 KB: no huts, orkspaces, garrisons, cards, the
+Lake's tabs, jobs or the glossary, and of the roads only which building feeds which (`roads`, [from, to] pairs,
+each once: never what a road carries, its rules or its signs).
 
 ```json
 {
@@ -149,6 +153,7 @@ Lake's tabs, jobs or the glossary.
               "advice": null, "waited": 42.0}],
   "buildings": [{"id": "town_hall", "title": "Town Hall", "title_plain": "Control panel",
                  "type": "town_hall", "state": "", "alert": null}],
+  "widget": null, "roads": [["pit", "signpost"], ["signpost", "horn"]],
   "sessions_running": 1
 }
 ```
@@ -242,7 +247,8 @@ on iOS, FCM on Android).
 ## 8. Not decided
 
 1. Native apps (Swift and Kotlin) or one cross-platform app. The protocol does not care; the push
-   extension and the share sheet favour native.
+   extension and the share sheet favour native. Meanwhile a web app over Tailscale stands in (§10): it
+   tells what a phone is used for before an app is written for it.
 2. Who runs the relay: the project (a small service), or only the operator's own tunnel.
 3. Whether the daemon ([gui-migration.md](gui-migration.md) §1) must come first, so a phone can
    reach a town whose window is closed; until then the town is `orkcraft gui --browser` left
@@ -257,3 +263,146 @@ on iOS, FCM on Android).
 | 2 | the rest of v1: drop into The Pit (share sheet, offline queue, the drop's client id), Ask the Warchief with `mobile.chat`, the notifier (`gui/notify.py`) with local notifications while the app is open | done on the host (the client id, `mobile.chat`, the notifier's `news`); the share sheet and the offline queue are the app's |
 | 3 | away from home: the relay (end to end TLS, push through APNs / FCM), or the operator's tunnel; per-kind mute and quiet hours | — |
 | 4 | when the daemon comes: the phone reaches a town with no window open; a town picker for several projects | — |
+
+## 10. The prototype: the town in the phone's browser (PWA)
+
+No app store and no build: the phone listener serves a small web app itself (`gui/pwa.py`, its files in
+`gui/static/pwa/`, plain JavaScript), and the phone adds it to its Home Screen. It does what stage 1 and 2
+give a phone: the glance (spend, quotas, the buildings, what asks first), Answers with the Advisor's
+suggestion, Stop all (two taps), the Warchief and Drop file here (a text, a link or a file up to 5 MB; on
+Android also from the share sheet, through the manifest's `share_target`).
+
+**The screen** (since 2026-10-11, stage 1 of the phone's redesign). A glance reads top down: the resources as
+the desktop's HUD draws them (Quota, Spend while it is shown, and the orks at work as the meat, `2/5`; their
+sprites in Camp, their words in Office), the town's name after them, then Answers with one line over the
+questions ("3 orks wait on you, the longest 7 min."), only while an ork asks, then the buildings. What a phone
+does now and then is a bar at the foot, where the thumb is (`pwa/dock.js`): Ask (the Warchief) and Drop (Drop
+file here) open a sheet from the foot; Stop all, there only while an ork works, stops on a hold of 1.2 s (the
+button fills while it is held; let go early and nothing happens), or a tap opens a sheet whose Stop every ork
+stands up the screen, away from the bar, so two taps in a pocket stop nothing. The look, notices, this phone
+and the version, and Unpair here stand at the page's own foot, under the town. News shows over the bar. Every
+target is at least 44 px, sizes are in rem (iOS's Dynamic Type through `-apple-system-body`), focus is
+outlined, and the system's bar takes the page's ground (`theme-color`).
+
+**The design system** (since 2026-10-11). The page loads the desktop's own `tokens.css` and `components.css`
+(served beside the app, `pwa.STYLES`) and sets `data-theme` as the desktop does: every button is an `ok-btn`
+(`primary`, `danger`), every field an `ok-input`, the look's and the orkspaces' pickers `ok-tabs`, the head an
+`ok-hud` of `ok-res`. `pwa/app.css` only makes them a thumb's size and lays the page out. A window of the town
+(Answers, Task Fields, the buildings: `util.fenced`) stands in Camp as the desktop's does
+([yards.md](yards.md) §3): its name over it, the fence round its yard (pickets, stakes on a rail, the bone tusk,
+the corner posts: `design-system/sprites/fence`, served as `fence/`), glowing while an ork in it asks; in Office
+a plain card. Office in a light phone takes the office theme's roles, light.
+
+**Orkspaces and their ground.** The compact snapshot names the orkspaces (`orkspaces`: name, mark, biome, its
+buildings, how many ask and work; `active_orkspace`). In a town of more than one the buildings' window has
+their tabs: the phone shows the desktop's open one until the person picks another, and the pick is the
+phone's own (`localStorage`, wiped with the pairing): it never moves the desktop's town nor writes the Town
+Scroll. The questions stay the whole town's. In Camp the page stands on the shown orkspace's biome, its colour
+and its glyphs as the desktop's town has them (`pwa/ground.js` keeps `js/icons.js` BIOMES and `js/terrain.js`'s
+glyphs; tests/test_pwa.py checks), and the system's bar takes that colour; Office has no ground.
+
+**Quick actions.** A tap on a building's row or mark opens its sheet, and the sheet has the quick actions its
+card has on the desktop (`mobile.quick`, in the compact snapshot's `quick`), each pressed as an input
+(`building.input` → `core/inputs.py`, as the Test bench presses them): one that takes a line of text (New
+research, Quick note) asks for it there; one that reaches outside the camp or takes work in at once (Fire,
+Merge, Accept all: `mobile.QUICK_ASK`) asks once more; the rest do it on a tap. Never one that reads the
+computer (Paste, Add a folder: `mobile.QUICK_NEVER`) or only opens a window of the desktop's (Build, Open in
+OS: no input). `mobile.allowed` takes only an action the building's card names.
+
+**The town as a home screen** (stage 2, `pwa/town.js`). What asks stands as tiles in Answers, the longest
+waiting first: a building whose ork asks, with its mark, its name, who asks and how long; or an ork's question of
+no building the phone knows, under the ork's name. One tile is open at a time (the longest waiting, until the
+person opens another), and an open tile is the question's last lines and its answers. A question waiting over
+10 minutes says so in the warning's colour. Under them, the buildings in trouble (`ERROR`, `NO WIKI`) and at work
+(`WORKING`, `BUSY`, `PENDING`, `EDITING`) are rows; every other building is a mark with its name in a grid, as
+apps on a phone's home screen. A tap on a row or a mark says what the building is doing; its window opens on the
+computer. The marks are the desktop's: in Camp the type's header sprite (`design/system/sprites/buildings`,
+served as `/app/sprites/<type>.png`), in Office its line icon (`pwa/icons.js` keeps `js/icons.js`'s lines).
+
+**Task Fields kept open** (stage 3, `pwa/fields.js`). The first Task Fields with the person's to-dos stands
+under Answers as a widget (the compact snapshot's `widget`, `mobile._widget`): the open to-dos and the latest
+notes always in view (five each), the orks' lanes folded into one line ("To Do 3 · In Progress 1 · Done 2") a
+tap opens. + To-do, + Note and + Task write a card from the phone (`act` → `fields.add`, the one act of Task
+Fields a phone may send: it moves, edits and deletes nothing). A task or a note goes down the board's roads
+like one written at the desk, so the sheet says where before it is added: "The task goes down the road to
+Agent pool. The work it starts there is paid from Spend.", or that it waits in To Do; a to-do starts nothing.
+The widget's board is not repeated in the grid.
+
+**The roads, without lines** (stage 4, `pwa/links.js`). A phone's grid has no map, so the roads are not
+drawn: they order it. The quiet buildings stand in a block per chain of linked buildings (either way along a
+road), in the order the work flows (sources first; a loop keeps the town's order), with a › before a building
+the one before it sends to; the buildings no road touches come last, in one block. A long press (0.45 s) on a
+mark or a row lights the building's neighbours, dims the rest and says at the foot "Takes from: … · Sends to:
+…"; letting go puts the town back, and opens nothing. A tap's sheet names them too, for a screen reader.
+
+**States** (stage 5).
+- *Away from the town* (§6): the app keeps the last town it saw on the phone (`localStorage`, wiped with the
+  pairing) and, while the town does not answer, shows it greyed with "As of 12:41." before why; the town's parts
+  are `inert`, so nothing in them is acted on. The page's foot, and Unpair here, stay usable. Opened cold with no town in
+  reach, it shows the kept one the same way.
+- *An answer*: the tile says "Answered: Yes. The ork goes on." at once, and the news line "Answered: Yes",
+  till the town's update takes the question away.
+- *How many wait*: on the app's icon where the phone shows a badge (the Badging API of an installed app), and in
+  the page's title, "(3) Orkcraft".
+- *A card's trail*: after a task or a note is written on the phone, the widget keeps for 10 minutes where it
+  went ("It went down the road to Daily Brief.", or that it waits in To Do) and each change of the buildings
+  down the road since ("Daily Brief: at work."). It says what those buildings do, not that it is this card.
+- *A long wait*: a question waiting over 10 minutes is said in the warning's colour (stage 2).
+
+**Both looks** (§4). The app follows the snapshot's `look`: Camp in its palette (`design/system/tokens.css`),
+square corners, the buildings' titles as they are and the ork's mark; Office calm and plain (`title_plain`),
+dark or light as the phone is. Its Look card switches Camp, Office or By the shift with `you.look`, the one
+setting the desktop's toggle sets too. The faces are the desktop's own (`design/system/fonts`, served under `/app/fonts/`), in the same roles:
+Titillium Web and Almendra SC in Camp, Pixelify Sans for the buildings' names, the system's face in Office.
+
+**Only over Tailscale.** A browser cannot pin a certificate, and a service worker or a Home Screen app needs
+one it trusts. The tailnet's `*.ts.net` certificate (`tailscale cert`, phone-places.md §3) is that one, so
+the app is offered only on the tailnet with HTTPS certificates on. The LAN listener serves the same files,
+for a person who accepts the certificate warning on purpose; the desktop offers no link to them.
+
+**Setting up from one QR code.** No link can join a phone to a tailnet: Tailscale's phone apps take no key
+from outside (auth keys are for its command line; on iOS only a managed device logs in by one). So the
+desktop leads the person through it, on the same QR code (`phones.tailnet`, Settings → Phones and the
+portrait's menu), from `tailscale status`:
+
+1. While no phone of the person's is online in the tailnet, the code is Tailscale's download, with the
+   account to log in as (the one this machine is logged in with).
+2. Once one is, the code turns by itself into the app's link, `https://<name>.ts.net:<port>/app/#pair=<code>`.
+   The phone's camera opens it in the browser, and the page pairs at once (`/api/version`, `POST /api/pair`,
+   as any phone) with the phone's kind as its name. The code rides in the fragment, which the browser never
+   sends, and is wiped from the address when the page reads it.
+
+Without Tailscale or its certificate on the computer, the code never shows the `orkcraft://` link (no
+phone opens it until an app takes it): it says what is missing — Tailscale's download, or the tailnet's DNS
+settings, where MagicDNS and HTTPS Certificates are turned on — and Pair a phone again looks for the
+tailnet anew (`pwa.retry_tail`), with no restart of the town. While a phone is paired the town also looks
+by itself once a minute (`pwa.TailWatch`, `tailscale status` and `tailscale cert` on a thread): Tailscale
+that started after the town (a computer just booted or woke) is taken on the port the phones were given,
+so a paired app reconnects without anyone touching the desktop.
+
+**The socket from a browser.** A browser cannot set `Authorization` on a WebSocket, so it names the token as
+a subprotocol: `Sec-WebSocket-Protocol: orkcraft.v1, bearer.<token>`; the listener answers `orkcraft.v1`
+and never echoes the token. Everything after it is the phone's: `mobile.allowed`, the rate limit, Forget.
+
+**Add to the Home Screen.** Until the app runs on its own (`display-mode: standalone`) a banner at the top
+offers it: on Android its Add opens the browser's own install prompt (`beforeinstallprompt`); on iOS, which
+has no such prompt, it says where Safari keeps Add to Home Screen. Not now hides it for 14 days.
+
+**iOS keeps a Home Screen app's storage apart from Safari's.** Paired in Safari, the page names the token
+in its manifest's `start_url` (`manifest.webmanifest?k=<token>`, a token's characters only) and in its own
+fragment, so the app the person adds opens with it once, keeps it and wipes it from its address. The banner does the
+same each time it shows, so the app can be added later too. Until the
+app is added that address holds the phone's key, and the page says so.
+
+**The computer stays awake.** A town asleep answers no phone and its orks stop, so while Orkcraft is open
+the computer does not sleep by itself (`gui/awake.py`; Town settings → Keep the computer awake, on by
+default): `caffeinate -i` on macOS, `systemd-inhibit --what=sleep` on Linux, `SetThreadExecutionState` on
+Windows. The screen still turns off, and a laptop's closed lid still sleeps it; no phone wakes it.
+
+**What it cannot do yet.** No push while it is closed: news comes while it is open (`notify.py`), with a
+system notification when the page is in the background and the person allowed it. iOS has no share
+target for a web app. These two are what §8.1 weighs for a native app; the relay of stage 3 brings
+Web Push too.
+
+Not tried on a real phone yet: the iOS hand-over of the token, and the Android install prompt.
+
