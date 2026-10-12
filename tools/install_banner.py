@@ -3,9 +3,11 @@
     python tools/install_banner.py            # rewrites the banner between its marks in install.sh
 
 `design-system/sprites/orks/warchief.png` is 24×20 in 2×2 pixels: 12×10 of his own. Each of those is
-two columns wide and half a row high (▀ / ▄ with a foreground and a background colour), so he stands
-24 columns by 5 rows with square pixels. The colours are the xterm 256 palette's nearest, which every
-terminal of macOS and Linux draws (Terminal.app has no 24-bit colour). Needs Pillow.
+one column wide and half a row high (▀ / ▄ with a foreground and a background colour) — a square on a
+terminal's cells — so he stands 12 columns by 5 rows. The colours are the xterm 256 palette's nearest,
+which every terminal of macOS and Linux draws (Terminal.app has no 24-bit colour). Beside him go three
+short lines, only when the terminal is wide enough (`banner WIDTH`); in a narrow one he stands alone,
+so nothing wraps under him. Needs Pillow.
 """
 from __future__ import annotations
 
@@ -18,8 +20,8 @@ SPRITE = ROOT / "design-system" / "sprites" / "orks" / "warchief.png"
 SCRIPT = ROOT / "install.sh"
 BEGIN, END = "# -- banner: tools/install_banner.py --", "# -- end of banner --"
 # Beside him, on the rows of his face (the camp's voice: the Warchief speaks first, then the facts).
-WORDS = {1: r"\033[1mOrkcraft\033[0m", 2: r"\033[2mMany coding agents in one project, as a real-time strategy game\033[0m",
-         3: r"\033[2mThe Warchief raises your camp: uv, Python, Orkcraft\033[0m"}
+WORDS = {1: r"\033[1mOrkcraft\033[0m", 2: "The Warchief raises your camp", 3: r"\033[2muv · Python · Orkcraft\033[0m"}
+WIDE = 48            # the columns his words need beside him; below it he stands alone
 
 _LEVELS = (0, 95, 135, 175, 215, 255)
 
@@ -49,13 +51,13 @@ def rows() -> list[str]:
             low = px[x, y + 1] if y + 1 < im.height else (0, 0, 0, 0)
             t, b = (xterm(top[:3]) if top[3] > 127 else None), (xterm(low[:3]) if low[3] > 127 else None)
             if t is None and b is None:
-                cell, style = "  ", None
+                cell, style = " ", None
             elif t is not None and b is not None:
-                cell, style = "▀▀", f"38;5;{t};48;5;{b}"
+                cell, style = "▀", f"38;5;{t};48;5;{b}"
             elif t is not None:
-                cell, style = "▀▀", f"38;5;{t}"
+                cell, style = "▀", f"38;5;{t}"
             else:
-                cell, style = "▄▄", f"38;5;{b}"
+                cell, style = "▄", f"38;5;{b}"
             if style != last:
                 line += r"\033[0m" + (rf"\033[{style}m" if style else "")
                 last = style
@@ -66,11 +68,10 @@ def rows() -> list[str]:
 
 
 def block() -> str:
-    body = rows()
-    lines = [BEGIN, "banner() {"]
-    for i, row in enumerate(body):
-        words = f"   {WORDS[i]}" if i in WORDS else ""
-        lines.append(f"  printf '  {row}{words}\\n'")
+    lines = [BEGIN, "banner() {                                    # $1: the terminal's width in columns"]
+    for i, row in enumerate(rows()):
+        words = f"; [ \"$1\" -ge {WIDE} ] && printf '   {WORDS[i]}'" if i in WORDS else ""
+        lines.append(f"  printf '  {row}'{words}; printf '\\n'")
     lines += ["}", END]
     return "\n".join(lines)
 

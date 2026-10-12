@@ -1,7 +1,8 @@
 #!/bin/sh
 # Orkcraft's installer for macOS and Linux (docs/install.md):
 #
-#   curl -fsSL https://raw.githubusercontent.com/Orkcraft/orkcraft/main/install.sh | sh
+#   curl -fsSL https://orkcraft.dev/install.sh | sh
+#   curl -fsSL https://orkcraft.dev/install/<role>/<look> | sh     # the town opens on that class and look
 #
 # It puts uv in place (when it is not there yet), a Python for Orkcraft, and Orkcraft itself as a uv
 # tool, then looks for the window toolkit and the AI tools. Each step is written to
@@ -26,7 +27,9 @@ LOG="${LOG_DIR}/install.log"
 STEP_OUT="${LOG_DIR}/install.step"
 
 REPORT="${ORKCRAFT_REPORT:-}"
-ROLE=""                                       # --role / --look: as orkcraft.dev asked, handed to the town it opens
+# The class and look picked on orkcraft.dev, handed to the town it opens. The server that hands this file
+# out writes them here (…/install/<role>/<look>, tools/usage-worker/worker.js); --role / --look win.
+ROLE=""
 LOOK=""
 OPEN=1                                        # open the town at the end, when there is a terminal
 USAGE="sh install.sh [--report | --no-report] [--role ROLE] [--look camp|office] [--no-open]"
@@ -51,16 +54,20 @@ mkdir -p "$LOG_DIR" || { echo "orkcraft install: cannot write ${LOG_DIR}" >&2; e
 : > "$LOG"
 
 # -- banner: tools/install_banner.py --
-banner() {
-  printf '        \033[0m\033[38;5;221;48;5;221m▀▀\033[0m\033[38;5;221m▄▄\033[0m\033[38;5;221;48;5;221m▀▀▀▀\033[0m\033[38;5;221m▄▄\033[0m\033[38;5;221;48;5;221m▀▀\033[0m      \033[0m\n'
-  printf '  \033[0m\033[38;5;70m▄▄\033[0m  \033[0m\033[38;5;70m▄▄\033[0m\033[38;5;70;48;5;70m▀▀▀▀▀▀▀▀▀▀▀▀\033[0m\033[38;5;70m▄▄\033[0m  \033[0m\033[38;5;70m▄▄\033[0m   \033[1mOrkcraft\033[0m\n'
-  printf '  \033[0m\033[38;5;70m▀▀\033[0m\033[38;5;70;48;5;70m▀▀▀▀\033[0m\033[38;5;70;48;5;234m▀▀▀▀\033[0m\033[38;5;70;48;5;70m▀▀▀▀\033[0m\033[38;5;70;48;5;234m▀▀▀▀\033[0m\033[38;5;70;48;5;70m▀▀▀▀\033[0m\033[38;5;70m▀▀\033[0m   \033[2mMany coding agents in one project, as a real-time strategy game\033[0m\n'
-  printf '      \033[0m\033[38;5;70;48;5;70m▀▀\033[0m\033[38;5;70;48;5;253m▀▀\033[0m\033[38;5;70;48;5;70m▀▀▀▀▀▀▀▀\033[0m\033[38;5;70;48;5;253m▀▀\033[0m\033[38;5;70;48;5;70m▀▀\033[0m    \033[0m   \033[2mThe Warchief raises your camp: uv, Python, Orkcraft\033[0m\n'
-  printf '      \033[0m\033[38;5;70m▀▀\033[0m\033[38;5;253;48;5;70m▀▀\033[0m\033[38;5;70;48;5;70m▀▀▀▀▀▀▀▀\033[0m\033[38;5;253;48;5;70m▀▀\033[0m\033[38;5;70m▀▀\033[0m    \033[0m\n'
+banner() {                                    # $1: the terminal's width in columns
+  printf '     \033[0m\033[38;5;221;48;5;221m▀\033[0m\033[38;5;221m▄\033[0m\033[38;5;221;48;5;221m▀▀\033[0m\033[38;5;221m▄\033[0m\033[38;5;221;48;5;221m▀\033[0m   \033[0m'; printf '\n'
+  printf '  \033[0m\033[38;5;70m▄\033[0m \033[0m\033[38;5;70m▄\033[0m\033[38;5;70;48;5;70m▀▀▀▀▀▀\033[0m\033[38;5;70m▄\033[0m \033[0m\033[38;5;70m▄\033[0m'; [ "$1" -ge 48 ] && printf '   \033[1mOrkcraft\033[0m'; printf '\n'
+  printf '  \033[0m\033[38;5;70m▀\033[0m\033[38;5;70;48;5;70m▀▀\033[0m\033[38;5;70;48;5;234m▀▀\033[0m\033[38;5;70;48;5;70m▀▀\033[0m\033[38;5;70;48;5;234m▀▀\033[0m\033[38;5;70;48;5;70m▀▀\033[0m\033[38;5;70m▀\033[0m'; [ "$1" -ge 48 ] && printf '   The Warchief raises your camp'; printf '\n'
+  printf '    \033[0m\033[38;5;70;48;5;70m▀\033[0m\033[38;5;70;48;5;253m▀\033[0m\033[38;5;70;48;5;70m▀▀▀▀\033[0m\033[38;5;70;48;5;253m▀\033[0m\033[38;5;70;48;5;70m▀\033[0m  \033[0m'; [ "$1" -ge 48 ] && printf '   \033[2muv · Python · Orkcraft\033[0m'; printf '\n'
+  printf '    \033[0m\033[38;5;70m▀\033[0m\033[38;5;253;48;5;70m▀\033[0m\033[38;5;70;48;5;70m▀▀▀▀\033[0m\033[38;5;253;48;5;70m▀\033[0m\033[38;5;70m▀\033[0m  \033[0m'; printf '\n'
 }
 # -- end of banner --
-if [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != dumb ]; then
-  echo; banner; echo
+# The terminal's width: the Warchief alone when his words would wrap, nothing when he would not fit.
+COLS="$(stty size </dev/tty 2>/dev/null | cut -d' ' -f2)"
+case "$COLS" in ""|*[!0-9]*) COLS="$(tput cols 2>/dev/null || echo 80)" ;; esac
+case "$COLS" in ""|*[!0-9]*) COLS=80 ;; esac
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != dumb ] && [ "$COLS" -ge 16 ]; then
+  echo; banner "$COLS"; echo
 fi
 
 say() { printf '%s\n' "$*"; printf '%s\n' "$*" >> "$LOG"; }

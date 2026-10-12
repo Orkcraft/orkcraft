@@ -179,3 +179,35 @@ def test_a_failed_download_of_uv_fails_its_step_as_a_network_error(tmp_path):
     assert events[1]["events"][0]["props"] == {"step": "uv", "ok": False, "seconds": "<10", "error": "network",
                                                "found": False}
     assert "does not answer" not in done.stdout
+
+
+@pytest.mark.skipif(__import__("shutil").which("node") is None, reason="node is not installed")
+def test_the_proxy_writes_the_pick_into_the_installer_so_the_command_needs_no_options(tmp_path):
+    worker = Path(__file__).resolve().parents[1] / "tools" / "usage-worker" / "worker.js"
+    (tmp_path / "worker.mjs").write_text(worker.read_text(encoding="utf-8"), encoding="utf-8")
+    (tmp_path / "run.mjs").write_text("""
+import worker from "./worker.mjs";
+import { readFileSync } from "node:fs";
+const script = readFileSync(process.argv[2], "utf8");
+globalThis.fetch = async () => new Response(script, { status: 200 });
+const out = {};
+for (const q of ["?role=peon&look=office", "?role=x%22%3B%20rm%20-rf%20~&look=necropolis", ""]) {
+  const res = await worker.fetch(new Request("https://w.example/install.sh" + q), {});
+  out[q] = await res.text();
+}
+console.log(JSON.stringify(out));
+""", encoding="utf-8")
+    got = json.loads(subprocess.run(["node", str(tmp_path / "run.mjs"), str(SCRIPT)], capture_output=True, text=True,
+                                    check=True, timeout=30).stdout)
+    picked = got["?role=peon&look=office"]
+    assert 'ROLE="peon"' in picked and 'LOOK="office"' in picked
+    assert got["?role=x%22%3B%20rm%20-rf%20~&look=necropolis"] == got[""] == SCRIPT.read_text(encoding="utf-8")
+    served = tmp_path / "served.sh"
+    served.write_text(picked, encoding="utf-8")
+    home, fake = tmp_path / "home", tmp_path / "bin"
+    home.mkdir()
+    _bin(fake, "uv", UV)
+    done = subprocess.run(["sh", str(served)], env={"HOME": str(home), "PATH": f"{fake}:/usr/bin:/bin", "CI": "1"},
+                          capture_output=True, text=True, timeout=60, start_new_session=True)
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert "To open it on your pick: orkcraft --role peon --look office" in done.stdout

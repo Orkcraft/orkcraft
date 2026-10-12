@@ -3,18 +3,24 @@
 For macOS and Linux, one line puts everything in place:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Orkcraft/orkcraft/main/install.sh | sh
+curl -fsSL https://orkcraft.dev/install.sh | sh
 ```
 
 [`install.sh`](../install.sh) at the root of the repository is the whole installer: read it before you
-run it. It needs only `sh` and `curl`. In a terminal it opens with the Warchief, drawn from his sprite
-(`tools/install_banner.py`; not with `NO_COLOR` or outside a terminal).
+run it. It needs only `sh` and `curl`. In a terminal it opens with the Warchief, drawn from his sprite in 12×5 cells
+(`tools/install_banner.py`; his words beside him only when the terminal is 48 columns or wider; not
+with `NO_COLOR` or outside a terminal).
 
-At the end it opens the town. orkcraft.dev hands it the class and look picked there:
+At the end it opens the town. orkcraft.dev hands it the class and look picked there, in the address:
 
 ```bash
-curl -fsSL https://orkcraft.dev/install.sh | sh -s -- --role engineer --look camp
+curl -fsSL https://orkcraft.dev/install/engineer/camp | sh
 ```
+
+That address redirects to the usage proxy, which writes the two words into the script's `ROLE=""` and
+`LOOK=""` lines (only words it knows the shape of; anything else leaves them empty). The same file is
+also at `https://raw.githubusercontent.com/Orkcraft/orkcraft/main/install.sh`, with options instead:
+`… | sh -s -- --role engineer --look camp`.
 
 | Option | |
 |---|---|

@@ -47,7 +47,7 @@ brew install orkcraft/orkcraft/orkcraft
 orkcraft --demo        # a sandbox town with simulated data: nothing real is touched, no model is called
 ```
 
-Without Homebrew, on macOS or Linux: `curl -fsSL https://raw.githubusercontent.com/Orkcraft/orkcraft/main/install.sh | sh`
+Without Homebrew, on macOS or Linux: `curl -fsSL https://orkcraft.dev/install.sh | sh`
 (it puts uv, a Python and Orkcraft in place and logs each step; [docs/install.md](docs/install.md)), or
 `pipx install "orkcraft[gui] @ git+https://github.com/Orkcraft/orkcraft"` (Python 3.11+ and git).
 

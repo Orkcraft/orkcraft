@@ -62,16 +62,25 @@ function clean(e, now) {
   return { event: e.event, time, props };
 }
 
-// The installer, as `main` has it: `curl -fsSL https://<this worker>/install.sh | sh`. Cloudflare's own
-// request counts for this path are how many fetched it; nothing about the person is kept or sent.
+// The installer, as `main` has it: `curl -fsSL https://<this worker>/install.sh | sh`. With `?role=…&look=…`
+// (orkcraft.dev/install/<role>/<look> redirects here) the class and look picked on orkcraft.dev are written
+// into it, so the command needs no options. Cloudflare's own request counts for this path are how many
+// fetched it; nothing about the person is kept or sent.
 const INSTALLER = "https://raw.githubusercontent.com/Orkcraft/orkcraft/main/install.sh";
+const PICK = /^[a-z][a-z0-9_-]{0,31}$/;
+const LOOKS = ["camp", "office"];
 
-async function installer() {
+async function installer(url) {
   const res = await fetch(INSTALLER, { cf: { cacheTtl: 300, cacheEverything: true } });
+  const headers = { "Content-Type": "text/x-shellscript; charset=utf-8", "Cache-Control": "public, max-age=300" };
   if (!res.ok) return new Response("echo 'orkcraft: the installer could not be fetched; try again in a minute' >&2; exit 1\n",
-    { status: 502, headers: { "Content-Type": "text/x-shellscript; charset=utf-8" } });
-  return new Response(res.body, { headers: { "Content-Type": "text/x-shellscript; charset=utf-8",
-    "Cache-Control": "public, max-age=300" } });
+    { status: 502, headers });
+  let text = await res.text();
+  const role = url.searchParams.get("role") || "";
+  const look = url.searchParams.get("look") || "";
+  if (PICK.test(role)) text = text.replace(/^ROLE=""$/m, `ROLE="${role}"`);
+  if (LOOKS.includes(look)) text = text.replace(/^LOOK=""$/m, `LOOK="${look}"`);
+  return new Response(text, { headers });
 }
 
 /** A request from the app, checked before anything else: its User-Agent, its size, JSON with an install
@@ -180,7 +189,7 @@ async function crash(request, env, body) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (request.method === "GET" && url.pathname === "/install.sh") return installer();
+    if (request.method === "GET" && url.pathname === "/install.sh") return installer(url);
     if (request.method === "POST" && url.pathname === "/v1/crash") {
       const body = await batch(request, env);
       return body instanceof Response ? body : crash(request, env, body);
