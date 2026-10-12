@@ -1,11 +1,14 @@
-"""A Test bench's code change as a pull request with its evidence (docs/design/improve-buildings.md §4).
+"""A Test bench's changes as a pull request with their evidence (docs/design/improve-buildings.md §4).
 
-What goes: the files the change touched, each as installed and as changed (realm/code_overlay.py), and a body that
+What goes: the files a code change touched, each as installed and as changed (realm/code_overlay.py); the settings and
+prompts tried on the virtual building as the defaults a new building of each type starts with (realm/type_defaults.py,
+`defaults`); and a body that
 says the goal, the scheme, each case set (what its cases do and where, never their inputs: those may be the person's)
 and how the building did against the bare AI tool on the runs made with the change. It may go only when the building
 is ahead on the goal's metric in most of the cases run with it.
 
-    lab_pr.files(state_dir)                          {path: (as installed, as changed)}
+    lab_pr.files(state_dir)                          {path: (as installed, as changed)}: the code change
+    lab_pr.defaults([(type, config, config tried)])  {path: (as installed, as changed)}: the types' defaults
     lab_pr.ready(cases, results, since, metric)      (True, "") or (False, why not)
     lab_pr.body(…)                                   the pull request's description
 """
@@ -15,7 +18,7 @@ import subprocess
 from pathlib import Path
 
 import orkcraft
-from orkcraft.realm import code_overlay
+from orkcraft.realm import code_overlay, type_defaults
 
 TITLE_CHARS = 72
 
@@ -29,6 +32,15 @@ def files(state_dir: Path) -> dict[str, tuple[str, str]]:
         now = top / path
         out[path] = (base, now.read_text(encoding="utf-8") if now.is_file() else "")
     return out
+
+
+def defaults(touched: list[tuple[str, dict, dict]]) -> dict[str, tuple[str, str]]:
+    """Each building's settings as tried — (its type, its config now, its config with the changes) — as its type's
+    shipped defaults: only the keys the changes set, over the defaults the type ships already."""
+    by_type: dict[str, dict] = {}
+    for type_id, before, after in touched:
+        by_type.setdefault(type_id, {}).update(type_defaults.changed(before, after))
+    return {f"orkcraft/design/defaults/{t}.json": type_defaults.text(t, keys) for t, keys in by_type.items() if keys}
 
 
 def with_change(cases: list[dict], results: dict, since: str) -> list[tuple[dict, dict]]:
@@ -89,5 +101,6 @@ def body(goal: str, about: str, why: str, metric: str, sets: list[dict], rows: l
     lines += ["", "Time and tokens: the building against the bare AI tool (−20% is 20% less). Quality: the building's "
               "score minus the bare tool's. The cases' inputs stay on the machine that ran them."]
     if data_changes:
-        lines += ["", "## Settings tried with it", *[f"- {d}" for d in data_changes]]
+        lines += ["", "## Settings and prompts", *[f"- {d}" for d in data_changes], "",
+                  "They go as the defaults a new building of their type starts with (`orkcraft/design/defaults/`)."]
     return "\n".join(lines)
