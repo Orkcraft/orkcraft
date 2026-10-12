@@ -170,7 +170,7 @@ class LabRuns:
         if p["area"] == "roads":
             raise LabError("Roads change on the map and in its setup, not on the virtual building")
         if p["area"] == CODE:
-            self._try_code(w, subject, p)
+            self._try_code(w, subject, p, after)
             return
         bid = self._target(w, subject, p, building)
         spec = w.virtual_spec(subject["id"], bid)
@@ -210,7 +210,7 @@ class LabRuns:
         threading.Thread(target=work, daemon=True, name="lab-try").start()
         w.changed()
 
-    def _try_code(self, w, subject: dict, p: dict) -> None:
+    def _try_code(self, w, subject: dict, p: dict, after=None) -> None:
         """A code proposal: an agent changes the bench's copy of the package; the diff is kept as one change."""
         spec = w.flow_spec(subject)
         files = sorted({f for b in spec["buildings"] for f in bench_review._files(b["type"], code_overlay.package())})
@@ -222,6 +222,8 @@ class LabRuns:
             touched = code_overlay.changed(state_dir)
             if not touched:
                 self.host.town.toast("The agent changed no code", title="Test bench", severity="warning")
+                if after is not None:
+                    after(False)
                 return
             w.state.setdefault("virtual", {}).setdefault(subject["id"], [])
             w.state["virtual"][subject["id"]] = [c for c in w.changes_of(subject["id"]) if c["kind"] != CODE] + [{
@@ -231,6 +233,8 @@ class LabRuns:
                 "diff": code_overlay.diff(state_dir), "at": time.strftime("%Y-%m-%dT%H:%M:%S")}]
             w.keep()
             self.host.town.toast(f"Code changed for the bench's runs: {', '.join(touched[:3])}", title="Test bench")
+            if after is not None:
+                after(True)
 
         try:
             pkg = code_overlay.ensure(state_dir)

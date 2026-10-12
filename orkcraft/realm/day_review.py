@@ -55,6 +55,7 @@ class Finding:
     kind: str
     change: str
     hotspots: list[str] = field(default_factory=list)
+    tried: str = ""                       # when it was handed to a Test bench to try (gui/day_try.py)
 
 
 @dataclass
@@ -147,4 +148,4 @@ def warchief_text(review: Review, titles: dict[str, str]) -> str:
                      f"[{', '.join(f.hotspots)}]")
     return (f"The Mechanic and the Farseer read the logs of {review.day} and found these. Go through them one by one: "
             "for each, offer the change as one I can apply or skip. A code change is not made here: say it, and that "
-            "the Test bench can try it.\n" + "\n".join(lines))
+            "Improve → this day → Try in the Test bench measures it before a pull request.\n" + "\n".join(lines))

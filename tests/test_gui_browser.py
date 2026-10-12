@@ -1350,6 +1350,33 @@ def test_improve_offers_the_days_with_logs_and_reads_one(page, gui):
                          timeout=WAIT_MS)
 
 
+def test_a_read_days_changes_say_where_each_can_be_tried(page, gui):
+    """Improve → a read day → Changes: each finding, with Try in its Test bench or why it cannot be tried."""
+    import datetime as dt
+    from orkcraft.realm import call_log, day_review
+    server, _ = gui
+    host = server.host
+    root = host.town.repo_root
+    day = (dt.date.today() - dt.timedelta(days=1)).isoformat()
+    folder = call_log.day_folder(root, day, "town_hall")
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / call_log.LINES).write_text("{}\n")
+    day_review.save(root, day_review.Review(day, hotspots=[{"id": "H1"}], findings=[day_review.Finding(
+        "farseer", "town_hall", "the answer was too long", "read twice", "prompt", "answer in three lines", ["H1"])]))
+    host.day_review._days = (-1e9, [])
+    host.town.call(host.on_change)
+    pg = page
+    pg.wait_for_function("() => import('/static/js/link.js').then(m => (m.town.value.improve || {}).days?.some(d => d.changes))",
+                         timeout=WAIT_MS)
+    pg.wait_for_timeout(300)                                         # the line drawn again with its days
+    pg.locator(".gui-warchief__improve").click()
+    row = pg.locator(".gui-warchief__day", has_text="Yesterday")
+    row.get_by_role("button", name="Changes").click()
+    change = row.locator(".gui-improve__changes li").first
+    change.wait_for(timeout=WAIT_MS)
+    assert "the answer was too long" in change.text_content() and "No Test bench tests it" in change.text_content()
+
+
 def test_settings_keep_logs_for_analysis_and_download_a_period(page):
     """Settings → Keep logs for analysis: on, the logs stay a month; Download analytics is the period's zip."""
     pg = page

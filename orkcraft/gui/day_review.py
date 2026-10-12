@@ -5,6 +5,8 @@ At night (gui/nightly.py, with the Elders, while the Council's `review_nightly` 
 and the morning says what was found: Improve then goes through it at no cost.
 
     host.day_review.start(day, ask_warchief=True)     host.day_review.state()     .tick(quiet, exhausted, when)
+    improve.findings {day} → its findings and the Test bench each can go to; improve.try {day, n} → tried and
+    measured there (gui/day_try.py)
 """
 from __future__ import annotations
 
@@ -12,14 +14,8 @@ import datetime as dt
 import threading
 import time
 
-from orkcraft.realm import (
-    analytics,
-    builders,
-    call_log,
-    check_history,
-    day_review,
-    fastpath,
-)
+from orkcraft.gui import day_try
+from orkcraft.realm import analytics, builders, call_log, check_history, day_review, fastpath
 from orkcraft.sources import telemetry
 
 DAYS_SHOWN = 14                         # the days Improve offers, newest first
@@ -45,7 +41,7 @@ class DayReview:
         out = []
         for day in analytics.days_kept(self.root)[:DAYS_SHOWN]:
             kept = day_review.load(self.root, day)
-            out.append({"day": day, "read": kept.said if kept else ""})
+            out.append({"day": day, "read": kept.said if kept else "", "changes": len(kept.findings) if kept else 0})
         return out
 
     def state(self) -> dict:
@@ -135,7 +131,23 @@ class DayReview:
     def _night(self, day: str) -> None:
         review = self._read(day, ask_warchief=False)
         if review is not None and review.findings:
-            self.lines.append(f"The Mechanic and the Farseer read {review.said} — Improve goes through them")
+            self.town.call(self._handed, review)
+
+    def _handed(self, review: day_review.Review) -> None:
+        """The night's findings, each to a Test bench that tests its building: the night's improvements try them."""
+        handed = day_try.hand(self.host, review.day)
+        self.lines.append(f"The Mechanic and the Farseer read {review.said}"
+                          + (f"; {handed} went to the Test bench to be tried" if handed else "")
+                          + " — Improve goes through them")
+
+    def commands(self) -> dict:
+        def tried(args: dict) -> dict:
+            try:
+                return {"said": day_try.attempt(self.host, str(args.get("day") or ""), int(args.get("n") or 0))}
+            except (day_try.TryError, ValueError) as e:
+                return {"error": str(e)}
+        return {"improve.findings": lambda a: {"findings": day_try.findings(self.host, str(a.get("day") or ""))},
+                "improve.try": tried}
 
     def morning(self) -> list[str]:
         out, self.lines = self.lines, []

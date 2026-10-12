@@ -112,6 +112,7 @@ class Host:
         self.commands.update(github.commands(self))          # the mascot's menu → GitHub: the Improve app (gui/github.py)
         self.bench = bench.Bench(self)              # the Test bench's runs and reviews, for its building (gui/bench.py)
         self.commands.update(self.bench.commands())
+        self.commands.update(self.day_review.commands())   # Improve: a day's findings tried (gui/day_try.py)
         self.commands.update(mobile.commands(self))   # what a phone reads (gui/mobile.py, docs/design/mobile.md)
         self.growth = growth.Growth(self)           # levels, deeds, the mascot; the War Map's lands (gui/growth.py)
         self.commands.update(self.growth.commands())

@@ -82,8 +82,20 @@ class LabWorker(Worker):
         return dict(self.state["results"].get(subject_id) or {})
 
     def set_proposals(self, subject_id: str, items: list[dict]) -> None:
+        """Its proposals, written again; those a day's logs brought (`from`: gui/day_review.py) stay, first."""
+        kept = [x for x in (self.state["proposals"].get(subject_id) or {}).get("items") or [] if x.get("from")]
+        titles = {x["title"] for x in kept}
         self.state["proposals"][subject_id] = {"at": dt.datetime.now().isoformat(timespec="seconds"),
-                                              "goal": self.state["goal"], "items": items}
+                                              "goal": self.state["goal"],
+                                              "items": kept + [x for x in items if x["title"] not in titles]}
+        self.keep()
+
+    def add_proposal(self, subject_id: str, item: dict) -> None:
+        """One proposal from elsewhere (a day's logs), first; one of the same id is put in its place."""
+        now = self.state["proposals"].get(subject_id) or {"at": dt.datetime.now().isoformat(timespec="seconds"),
+                                                          "goal": self.state["goal"], "items": []}
+        now["items"] = [item] + [x for x in now.get("items") or [] if x["id"] != item["id"]]
+        self.state["proposals"][subject_id] = now
         self.keep()
 
     def entries(self, subject: dict) -> list[dict]:
