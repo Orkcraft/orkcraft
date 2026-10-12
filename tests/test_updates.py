@@ -175,7 +175,8 @@ def test_homebrew_upgrades_with_brew_and_restarts_under_opt(tmp_path, monkeypatc
     monkeypatch.setenv("HOMEBREW_PREFIX", "/home/linuxbrew/.linuxbrew")
     opt = updates.method(pkg, prefix="/home/linuxbrew/.linuxbrew/opt/orkcraft/libexec", which=has)
     assert opt.kind == "brew" and opt.python == "/home/linuxbrew/.linuxbrew/opt/orkcraft/libexec/bin/python"
-    missing = updates.method(pkg, prefix="/opt/homebrew/Cellar/orkcraft/0.2.1/libexec", which=lambda n: None)
+    nowhere = tmp_path / "brew"                         # a Homebrew with no brew in it, whatever this machine has
+    missing = updates.method(pkg, prefix=str(nowhere / "Cellar/orkcraft/0.2.1/libexec"), which=lambda n: None)
     assert not missing.can and "brew upgrade orkcraft/orkcraft/orkcraft" in missing.why
     runs = Runs(version="9.0.0")
     assert updates.install(brew, runs).ok and runs.calls[-1][0] == brew.python   # the new version, read under opt/

@@ -47,7 +47,8 @@ from orkcraft.realm import fastpath, feeds, feeds_agent, halt, inbound, lookout,
 REFRESH_S = 120.0
 CRON_S = 30.0
 DRAIN_S = 0.5
-GATHER_S = 1.5                                          # the Lookout waits this long for the rest of a burst
+GATHER_S = 1.5                                          # the Lookout waits at most this long for the rest of a burst
+QUIET_S = 0.3                                           # …and goes once nothing more came in this long
 KEEP = 200
 READ_KEEP = 1000                                        # read marks remembered
 RAW_KEEP = 20000                                        # a raw webhook's body, as kept
@@ -298,8 +299,8 @@ class WatchtowerWorker(Worker):
         self.changed()
 
     def judge(self, again: bool = False) -> None:
-        """The Lookout's verdict on what waits, a batch at a time, in a thread; a first batch waits `GATHER_S` for
-        the rest of what arrived with it (`again`: the next batch of what already waits, at once)."""
+        """The Lookout's verdict on what waits, a batch at a time, in a thread; a first batch waits for the
+        rest of what arrived with it, till `QUIET_S` passes with nothing new (`GATHER_S` at most) (`again`: the next batch of what already waits, at once)."""
         if self._judging or not self.pending:
             return
         intent, triage = self.intent, self.triage
@@ -318,7 +319,11 @@ class WatchtowerWorker(Worker):
         self._judging = True
         if type(self).judge_runner is None and GATHER_S and not again:   # mail that came at once is one call
             def gather() -> None:
-                time.sleep(GATHER_S)
+                waited, seen = 0.0, -1
+                while waited < GATHER_S and len(self.pending) != seen:      # a burst still coming in
+                    seen = len(self.pending)
+                    time.sleep(QUIET_S)
+                    waited += QUIET_S
                 self.town.call(self._judge_batch, intent, triage, runner)
             self._thread(gather, "watch-gather")
             return

@@ -99,8 +99,10 @@ def test_the_task_board_names_cards_and_plans_with_the_wikis_pages(tmp_path, mon
 
     def fast(prompt, model=None):
         asked.append(prompt)
-        if prompt.startswith("Name this task"):
-            return ("Car insurance renewal" if "insurance" in prompt else "Dishwasher leak"), 0.0
+        if prompt.startswith("Name each of these"):                      # the cards written at once: one call
+            cards = prompt.split("\n[")[1:]
+            return "\n".join(f"{n}. {'Car insurance renewal' if 'insurance' in c else 'Dishwasher leak'}"
+                             for n, c in enumerate(cards, 1)), 0.0
         if "Renew the car insurance" in prompt:
             return "1. Find policy 4471-B\n2. Get two quotes to compare\n3. Call Ann at Northgate", 0.0
         return "1. Find the Currys receipt\n2. Check the warranty\n3. Book the repair", 0.0
@@ -111,6 +113,7 @@ def test_the_task_board_names_cards_and_plans_with_the_wikis_pages(tmp_path, mon
     report, _ = building_bench.run(tmp_path, _case("fields"), bare_runner=bare_runner)
     b = report.building
     assert b.error == "" and b.passed is True, [x for x in b.checks if not x["ok"]]
+    assert sum(p.startswith("Name") for p in asked) == 1
     plan = next(p for p in asked if "Renew the car insurance" in p)
     assert "4471-B" in plan                                                      # the wiki page went with it
     assert any("Car insurance" in h for h in b.how if "context" in h)

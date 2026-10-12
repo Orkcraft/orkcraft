@@ -10,6 +10,7 @@ checked to be a PNG of a sane size, and nothing else in the folder is read.
 """
 from __future__ import annotations
 
+import functools
 import re
 import tempfile
 import threading
@@ -62,7 +63,9 @@ def paint(tool: str, model: str, path: str, reference: bytes, words: str, region
         raise PaintError("The UX bench paints the Build icons, the houses and the orks")
     if len(words.strip()) < 3:
         raise PaintError("Say what to change")
-    run = runner or jobs.run_work
+    # The folder is a throwaway one holding only the reference, so the tool asks nothing there (its sandbox still holds):
+    # agy, headless, refuses every command it would ask about and ends its turn with no picture.
+    run = runner or functools.partial(jobs.run_work, free=True)
     with tempfile.TemporaryDirectory(prefix="orkcraft-paint-") as tmp:
         folder = Path(tmp)
         (folder / "reference.png").write_bytes(reference)

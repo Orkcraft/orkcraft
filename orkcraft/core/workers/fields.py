@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 
 from orkcraft.core import runners
 from orkcraft.core.workers import Worker
@@ -51,6 +52,8 @@ from orkcraft.realm.tasklist import COLUMNS, LABELS, MINE, NOTE, TASK
 TITLE = "🌾 Task Fields"
 SHORT = {"todo": "To Do", "in_progress": "Doing", "done": "Done"}
 MODES = ("board", "tasks", "notes")
+NAME_QUIET_S = 0.3              # cards written within this of each other are named in one call…
+NAME_BATCH = 10                 # …this many at most
 
 
 class FieldsWorker(NightRound, Settle, CardLore, Worker):
@@ -64,6 +67,9 @@ class FieldsWorker(NightRound, Settle, CardLore, Worker):
         self._last: list[tasklist.Task] | None = None
         self.planning: set[str] = set()          # the to-dos whose plan a model is writing now
         self.plan_error = ""
+        self._naming = threading.Lock()
+        self._unnamed: list[tuple[str, str]] = []   # (text, lane) of the cards waiting for their title
+        self._namer = False
 
     def start(self) -> None:
         self.refresh()
@@ -231,16 +237,35 @@ class FieldsWorker(NightRound, Settle, CardLore, Worker):
         runner = None if private else self._title_runner()      # a personal card's text never reaches a model
         if runner is None:
             return self._mark(self.add(tasklist.short_title(text) or "Note", lane, text), private)
-
-        def work() -> None:
-            try:
-                title = tasklist.parse_title(runner(tasklist.title_prompt(text))[0])
-            except Exception:  # a model that cannot be reached never loses the card: its first words name it
-                title = ""
-            self.town.call(self.add, title or tasklist.short_title(text) or "Note", lane, text)
-
-        threading.Thread(target=work, daemon=True, name=f"fields-title-{self.building_id}").start()
+        with self._naming:
+            self._unnamed.append((text, lane))
+            if self._namer:                                     # the namer at work takes it with the rest
+                return None
+            self._namer = True
+        threading.Thread(target=self._name_waiting, args=(runner,), daemon=True,
+                         name=f"fields-title-{self.building_id}").start()
         return None
+
+    def _name_waiting(self, runner) -> None:
+        """Names the cards that wait for a title, the ones written at once in one call (`NAME_QUIET_S` with nothing
+        new ends a burst), then adds them — off the town's thread."""
+        while True:
+            seen = -1
+            while len(self._unnamed) != seen:
+                seen = len(self._unnamed)
+                time.sleep(NAME_QUIET_S)
+            with self._naming:
+                batch, self._unnamed = self._unnamed[:NAME_BATCH], self._unnamed[NAME_BATCH:]
+            try:
+                titles = tasklist.parse_titles(runner(tasklist.titles_prompt([t for t, _ in batch]))[0], len(batch))
+            except Exception:  # a model that cannot be reached never loses a card: its first words name it
+                titles = [""] * len(batch)
+            for (text, lane), title in zip(batch, titles):
+                self.town.call(self.add, title or tasklist.short_title(text) or "Note", lane, text)
+            with self._naming:
+                if not self._unnamed:
+                    self._namer = False
+                    return
 
     def _title_runner(self):
         """The steward's model that names a card (its `title`), None when there is none to call: the light model
