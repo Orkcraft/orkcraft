@@ -996,3 +996,11 @@ button { font: inherit; color: inherit; }
 /* GitHub in the mascot's menu (js/github.js): the code GitHub gave stands out to be typed there. */
 .gui-github p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .gui-github__code { font-family: var(--font-mono, monospace); letter-spacing: 0.08em; font-size: 1.1em; }
+
+/* The steward's AI tool: a short list of the tools on, each on its own icon (js/steward.js ToolPick). */
+.gui-toolpick { position: relative; display: inline-block; }
+.gui-toolpick__list { position: absolute; z-index: 20; left: 0; top: 100%; margin: 2px 0 0; padding: 4px; list-style: none;
+  min-width: 100%; background: var(--panel); border: 1px solid var(--frame); border-radius: 4px; }
+.gui-toolpick__one { display: flex; align-items: center; gap: 6px; width: 100%; padding: 4px 8px; text-align: left;
+  background: none; border: 0; color: var(--ink); cursor: pointer; white-space: nowrap; }
+.gui-toolpick__one:hover, .gui-toolpick__one.is-on { background: var(--selection); }

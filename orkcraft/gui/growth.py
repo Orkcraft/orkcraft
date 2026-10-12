@@ -132,12 +132,12 @@ class Growth:
         first, naming them): they come down with it, as Demolish takes one (their specs and history stay)."""
         town = self.host.town
         ork = self._orkspace(args)
+        if len(town.scroll.orkspaces) == 1:
+            raise GrowthError("the last orkspace cannot be removed")
         standing = ts.standing_in(town.scroll, ork.id)
         if standing and not args.get("demolish"):
             raise GrowthError(f"{ork.name} still holds {len(standing)} building{'s' if len(standing) != 1 else ''}: "
                               + ", ".join(town.title_of(b.id) for b in standing))
-        if len(town.scroll.orkspaces) == 1:
-            raise GrowthError("the last orkspace cannot be removed")
         for b in standing:
             buildings.demolish(town, b.id)
         try:

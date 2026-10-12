@@ -30,7 +30,7 @@ from orkcraft.gui.recruiter import RecruiterMixin
 from orkcraft.gui.road_planner import RoadPlannerMixin
 from orkcraft.gui.steward import StewardMixin
 from orkcraft.gui.views import lake as lake_view
-from orkcraft.realm import catalog, chronicles, feedback, steward, tiers
+from orkcraft.realm import catalog, chronicles, feedback, harnesses, steward, tiers
 from orkcraft.realm.orcs import TRIGGERS, Trigger
 
 IMPROVE_LOOK, IMPROVE_ASK = 60, 8      # Improve reads the last 60 incidents and asks about the newest 8 👎
@@ -187,7 +187,9 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
                                                      "expression": member.trigger.get("expression", "")},
                 "triggers": [[k, name] for k, (_, name) in TRIGGERS.items()],
                 "uses_model": bool(member.uses_model), "steps": steps,
-                "harnesses": list(scroll.HARNESSES), "ready": list(self.harnesses()), "tiers": tier_choices()}
+                "harnesses": list(scroll.HARNESSES), "ready": list(self.harnesses()), "tiers": tier_choices(),
+                "tools": [{"id": h, "title": found.title if (found := harnesses.get(h)) else "Main tool",
+                           "mark": found.mark if found else ""} for h in self.harnesses()]}
 
     def dislike_context(self, args: dict) -> dict:
         last, cascade = core_buildings.dislike_context(self.town, self._spec(args).id)
