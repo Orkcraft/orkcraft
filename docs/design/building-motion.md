@@ -1,6 +1,6 @@
 # Design — buildings at work: the mill turns, the catapult throws
 
-Status: design notes, written 2026-10-12; nothing is built yet. Builds on the painted headers (tools/painted.py,
+Status: design notes, written 2026-10-12; stage 0 is built. Builds on the painted headers (tools/painted.py,
 building-sprites.md), the fire (yards.md §8) and the map view (map-view.md). Wording: ork, orkestration (CLAUDE.md).
 
 | stage | what | state |
