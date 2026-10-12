@@ -22,6 +22,7 @@ import { foldQuiet, unfoldAll, quiet } from "./fold.js";
 import { Ghost, planned as onboardingPlan, risen } from "./onboarding.js";
 import { activeBiome } from "./icons.js";
 import { FrameSelect, Schemes } from "./frame.js";
+import { mapView, setMap, toggleMap } from "./zoom.js";
 
 const room = signal({ w: 1, h: 1, strip: 0 });
 let numbered = [];                         // the huts' ids in the order of the numbers on their names
@@ -423,7 +424,7 @@ function tidy(buildings, roads) {
   for (const [id, [x, y]] of Object.entries(spots)) command("hut.move", { id, x, y }).catch(() => {});
 }
 
-/** The right click on the bare town: Build here, Tidy up, fold or unfold the huts, the town's settings. */
+/** The right click on the bare town: Build here, Tidy up, fold or unfold the huts, the map view, the town's settings. */
 function bareMenu(e, buildings, roads) {
   if (e.target.closest(".gui-hut, .gui-road")) return;
   const r = e.currentTarget.querySelector(".gui-town__room").getBoundingClientRect();
@@ -433,6 +434,7 @@ function bareMenu(e, buildings, roads) {
     buildings.some((b) => b.id !== CORNER && !b.pinned) && { label: "Tidy up", hint: "along the roads", run: () => tidy(buildings, roads) },
     buildings.some(quiet) && { label: "Fold the quiet ones", hint: "/fold", run: () => foldQuiet(buildings) },
     buildings.some((b) => b.folded) && { label: "Unfold all", hint: "/unfold", run: () => unfoldAll(buildings) },
+    { label: mapView.value ? "Leave the map view" : "Map view", hint: "M", run: toggleMap },
     { label: "Settings", run: () => { settingsOpen.value = true; } },
     { label: "Set up again…", hint: "AI tools · class · MCP", run: () => command("onboarding.start").catch(() => {}) },
   ]);
@@ -635,7 +637,8 @@ export function Town({ buildings, roads }) {
   const still = new Set([drag && drag.id, stretch && stretch.id].filter(Boolean));
   const r20 = (v) => Math.round((v || 0) / 20);
   const shape = JSON.stringify([room.value, panelW, buildings.map((b) => [b.id, b.size, b.folded, b.hut])]);
-  const auto = steady(() => grow(buildings, spots, rects, still),
+  // The map view draws no card: none grows till Cards come back (docs/design/map-view.md §4).
+  const auto = mapView.value ? {} : steady(() => grow(buildings, spots, rects, still),
     JSON.stringify([shape, [...still], buildings.map((b) => [r20(spots[b.id].x), r20(spots[b.id].y),
       natural[b.id] ? [r20(natural[b.id].w), r20(natural[b.id].h)] : 0])]), shape);
   for (const b of buildings) {
@@ -653,7 +656,14 @@ export function Town({ buildings, roads }) {
   const grown = stretch && buildings.find((b) => b.id === stretch.id && rects[b.id]);
   const ghost = dragged ? landing(dragged, spots[dragged.id].x + drag.dx, spots[dragged.id].y + drag.dy).ghost
     : grown ? stretched(grown, stretch.w, stretch.h) : null;
-  return html`<main ref=${ref} class="ok-ground gui-town" onClick=${bare} onContextMenu=${(e) => bareMenu(e, buildings, here)}>
+  // A pinch on the town (Ctrl or ⌘ with the wheel, as a trackpad sends it): out is the map view, in is Cards.
+  const pinch = (e) => {
+    if (!(e.ctrlKey || e.metaKey) || Math.abs(e.deltaY) < 4) return;
+    e.preventDefault();
+    setMap(e.deltaY > 0);
+  };
+  return html`<main ref=${ref} class=${cls("ok-ground gui-town", { "is-map": mapView.value })} onClick=${bare}
+      onContextMenu=${(e) => bareMenu(e, buildings, here)} onWheel=${pinch}>
     <div class="gui-town__room" style=${`width:${wide + panelW}px;height:${tall}px`}>
       <${Schemes} buildings=${buildings} rects=${rects} />
       <${Roads} roads=${here} rects=${rects} ports=${ports}

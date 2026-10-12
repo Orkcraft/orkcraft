@@ -178,6 +178,7 @@ TERMS: tuple[Term, ...] = (
     _t("quality_check", "Quality check", "Quality checks"),         # the wiki's lint on a schedule
     _t("agent_rules", "Rules for AI tools"),                        # what every AI tool is told about a wiki (docs/design/wiki-folders-rules.md)
     _t("fold", "Fold"),                                             # a hut shows its title bar only (docs/design/folded-cards.md)
+    _t("map_view", "Map view"),                                     # the town from above, no cards (docs/design/map-view.md)
     # the Mine's research (docs/design/mine.md)
     _t("finding", "Finding", "Findings"),                           # one claim of a report, with its sources
     _t("confirmed", "Confirmed"),                                   # two models, two sites (realm/research.py check)

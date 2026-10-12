@@ -69,3 +69,7 @@ def test_fold_sets_a_value_and_many_fold_in_one_save(fake_repo, isolated_layout_
     assert host.command("town.fold", {"ids": [pool, forge], "value": True}) == 0
     assert host.command("town.fold", {"ids": [pool], "value": False}) == 1
     assert not _hut(host, pool)["folded"] and _hut(host, forge)["folded"]
+
+
+def test_the_map_view_has_its_word():
+    assert lexicon.term("map_view") == "Map view"
