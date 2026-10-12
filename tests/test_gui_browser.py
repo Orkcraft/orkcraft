@@ -552,6 +552,7 @@ def test_a_drag_moves_a_ghost_and_a_drop_on_another_hut_moves_nothing(page):
     pg.wait_for_function(f"([s]) => {link}.then(m => JSON.stringify(m.town.value.buildings.find(x => x.id === '{a}').hut) !== s)",
                          arg=[json.dumps(hut_before, separators=(",", ":"))], timeout=WAIT_MS)
     pg.evaluate(f"id => {link}.then(m => m.command('building.fold', {{ id, value: false }}))", a)   # a folded card never stretches
+    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('c'))")   # a card is stretched close up (map-view.md)
     _hut(pg, a).locator(".gui-hut__grip.is-se").wait_for(state="attached", timeout=WAIT_MS)
     _hut(pg, a).hover()
     grip = _hut(pg, a).locator(".gui-hut__grip.is-se").bounding_box()
@@ -564,6 +565,7 @@ def test_a_drag_moves_a_ghost_and_a_drop_on_another_hut_moves_nothing(page):
                          timeout=WAIT_MS)
     for bid in (a, b):
         pg.evaluate(f"id => {link}.then(m => m.command('town.demolish', {{ id }}))", bid)
+    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('b'))")
 
 
 def test_the_right_click_gives_a_buildings_menu_and_the_maps(page):
@@ -807,6 +809,7 @@ def test_a_folder_outside_the_project_is_connected_and_the_rules_shown(page, gui
 def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     pg = page
     link = "import('/static/js/link.js')"
+    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('c'))")   # close up: room for its parts (map-view.md)
     ids = {}
     for t, x, y in (("fields", 0.0, 0.0), ("pit", 0.02, 0.8), ("war_drum", 0.6, 0.0), ("mill", 0.65, 0.8)):
         ids[t] = pg.evaluate(f"t => {link}.then(m => m.command('town.build', {{ type: t }}))", t)
@@ -845,6 +848,7 @@ def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     assert abs(box("pit")["y"] - after["pit"]["y"]) <= 2
     for bid in ids.values():
         pg.evaluate(f"id => {link}.then(m => m.command('town.demolish', {{ id }}))", bid)
+    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('b'))")
 
 
 def test_the_stewards_window_lists_the_roads_it_listens_to_with_their_handlers(page):
@@ -1506,9 +1510,9 @@ def test_the_bare_map_and_the_warchiefs_line_fold_the_quiet_ones_and_unfold_all(
         call("town.demolish", {"id": bid})
 
 
-def test_the_map_view_draws_every_building_bare_and_brings_its_card_back(page):
-    """docs/design/map-view.md: `M`, a pinch and the bare map's menu draw every building as its house, its plinth, its
-    name and its mark (a yard's building keeps a picket at each end); leaving it brings each card back as it was."""
+def test_the_zoom_draws_the_map_the_overview_and_close_up_and_keeps_a_card_s_width(page):
+    """docs/design/map-view.md: ⌘+ / ⌘−, a pinch, `M` and the bare map's menu move between the map (every building
+    bare, no fence), the overview (a small card) and close up (a medium one, as wide)."""
     pg = page
     call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
     forge = call("town.build", {"type": "forge"})
@@ -1517,29 +1521,37 @@ def test_the_map_view_draws_every_building_bare_and_brings_its_card_back(page):
     hut = _hut(pg, forge)
     hut.wait_for(state="visible", timeout=WAIT_MS)
     far = lambda: pg.locator(f'.gui-hut.is-far[data-id="{forge}"]')
-    cards = lambda: pg.locator(f'.gui-hut.is-fenced:not(.is-far)[data-id="{forge}"]')
-    cards().wait_for(state="visible", timeout=WAIT_MS)
+    small = lambda: pg.locator(f'.gui-hut.is-fenced.is-size-s:not(.is-far)[data-id="{forge}"]')
+    medium = lambda: pg.locator(f'.gui-hut.is-fenced.is-size-m[data-id="{forge}"]')
+    small().wait_for(state="visible", timeout=WAIT_MS)                     # the overview: the default
+    width = hut.bounding_box()["width"]
+    pg.keyboard.press("Control+Equal")
+    medium().wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.locator(".gui-town.is-zoom-c").count() == 1
+    assert hut.bounding_box()["width"] == width                           # close up it grows down, never across
+    pg.keyboard.press("Control+0")
+    small().wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("m")
     far().wait_for(state="visible", timeout=WAIT_MS)
     c = hut.get_attribute("class")
-    assert "is-bare" in c and "is-yard-far" in c and "is-fenced" not in c
+    assert "is-bare" in c and "is-fenced" not in c
     assert hut.locator(".gui-hut__unseen").count() == 1                    # its card is not drawn, still wired
     _name(hut).wait_for(state="visible", timeout=WAIT_MS)
     assert pg.locator(".gui-town.is-map").count() == 1
     room = pg.locator(".gui-town__room").bounding_box()
     pg.mouse.click(room["x"] + room["width"] * 0.5, room["y"] + room["height"] * 0.6, button="right")
-    pg.locator(".gui-menu__item", has_text="Leave the map view").click()
-    cards().wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".gui-menu__item", has_text="Zoom in").click()
+    small().wait_for(state="visible", timeout=WAIT_MS)
     pg.mouse.move(room["x"] + room["width"] * 0.5, room["y"] + room["height"] * 0.6)
     pg.keyboard.down("Control")
-    pg.mouse.wheel(0, 120)                                                 # a pinch out: the map view
+    pg.mouse.wheel(0, 120)                                                 # a pinch out: the map
     far().wait_for(state="visible", timeout=WAIT_MS)
-    pg.mouse.wheel(0, -120)                                                # a pinch in: the cards
+    pg.wait_for_timeout(450)                                               # one level a gesture
+    pg.mouse.wheel(0, -120)                                                # a pinch in: the overview again
     pg.keyboard.up("Control")
-    cards().wait_for(state="visible", timeout=WAIT_MS)
-    assert not pg.evaluate("() => localStorage.getItem('orkcraft.map') === '1'")
+    small().wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.evaluate("() => localStorage.getItem('orkcraft.zoom')") == "b"
     call("town.demolish", {"id": forge})
-
 
 def test_the_ux_bench_shows_a_moving_house_at_work(page):
     """docs/design/building-motion.md: the mill picked, the UX bench shows its two layers to paint and their preview."""
