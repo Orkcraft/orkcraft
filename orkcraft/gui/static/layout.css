@@ -771,6 +771,7 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 
 /* The Warchief's crowned face and what grew, said in his line (js/warchief.js). */
 .gui-warchief__face .gui-warchief__crowned { width: auto; height: 30px; }
+.gui-warchief__face.is-steward .gui-warchief__crowned[height="24"] { height: 24px; }   /* a bare ork (no hat): its 8 rows a 3 px */
 .gui-warchief__news { display: inline-flex; gap: var(--space-2); align-items: baseline; }
 .gui-map__state.ok-tone-wait { color: var(--warning); }   /* a paused building in the open orkspace */
 
