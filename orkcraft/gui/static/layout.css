@@ -328,6 +328,7 @@ button { font: inherit; color: inherit; }
 .gui-steps__one.is-rank { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }   /* a tier: its chevrons before its name */
 .gui-building-part { margin: var(--space-1) 0 var(--space-2); }
 .gui-steps__one > svg { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.gui-steps:has(.gui-toolpick) { overflow: visible; }   /* its list drops below the row: not cut by the frame */
 .gui-steps__one + .gui-steps__one { border-left: 1px solid var(--frame); }
 .gui-steps__one:has(> .gui-toolmark) { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }   /* an AI tool: its mark before its name */
 .gui-steps:has(> .gui-steps__one > .gui-toolmark) { flex-wrap: wrap; max-width: 100%; }
@@ -586,6 +587,7 @@ button { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) { .gui-cart { animation-timing-function: steps(8); } }
 
 /* Camp draws a command as its icon; a command that has none yet says its word instead of an empty tile. */
+a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a button (Today's log): as tall as its neighbours, not underlined */
 [data-theme="camp"] .ok-act:not(:has(img)) { width: auto; min-width: 0; height: auto; min-height: 28px; padding: var(--space-1) var(--space-2); font-size: 13px; line-height: 1.2;
   text-transform: var(--ok-case); letter-spacing: var(--ok-track); }   /* the same type as an ok-btn beside it */
 [data-theme="camp"] .ok-act:not(:has(img)) .ok-act__label { display: inline; }
@@ -968,7 +970,7 @@ button { font: inherit; color: inherit; }
 .gui-orkcard { display: flex; gap: var(--space-3); align-items: center; }
 .gui-orkcard__face { flex: none; display: grid; place-items: center; width: 84px; height: 72px; background: var(--panel-inset);
   box-shadow: var(--bevel-sunken); }
-.gui-orkcard__face > img { width: 72px; height: auto; image-rendering: pixelated; }
+.gui-orkcard__face > img { width: 72px; height: auto; image-rendering: pixelated; }   /* face-*.png: 12 px wide, a pixel 6 CSS pixels (tools/hat_sprites.py) */
 .gui-orkcard__who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .gui-orkcard__why { margin: 0; white-space: normal; color: var(--ink); }
 .gui-panel .ok-win__bar > .ok-win__title { flex: 0 1 auto; min-width: 4em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

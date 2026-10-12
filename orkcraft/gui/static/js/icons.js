@@ -149,11 +149,12 @@ export const HATS = {
 };
 
 /** A building's steward, its head under its role's hat (the bare head for a type with none). */
-export function StewardHead({ type }) {
+export function StewardHead({ type, coarse }) {
   const hat = HATS[type];
-  const name = hat ? `steward-${hat}` : "ork";
-  return html`<img class="ok-sprite gui-warchief__crowned" src=${`/ds/sprites/orks/${name}.png`}
-    srcset=${`/ds/sprites/orks/${name}@2x.png 2x`} width="24" height=${hat ? 20 : 16} alt="" draggable="false" />`;
+  const name = (coarse ? "face-" : "steward-") + (hat || (coarse ? "ork" : ""));
+  const file = hat || coarse ? name : "ork";
+  return html`<img class="ok-sprite gui-warchief__crowned" src=${`/ds/sprites/orks/${file}.png`}
+    srcset=${`/ds/sprites/orks/${file}@2x.png 2x`} width=${coarse ? 72 : 24} height=${coarse ? (hat ? 60 : 48) : hat ? 20 : 16} alt="" draggable="false" />`;
 }
 
 /** The operator's mascot (docs/design/growth.md §7): its role's head at its stage. */

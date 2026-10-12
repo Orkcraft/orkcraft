@@ -6,6 +6,7 @@
 Out come, in `design-system/sprites/orks/` (the GUI serves it at `/ds/sprites/orks/`), at 2× and 4× (`@2x`), Scale2x'd
 and lit there as the ork out of its building is (tools/visit_sprites.py), so the hat is as fine as the head it sits on:
 
+- `face-<role>.png`, `face-ork.png` (12×10, 12×8; flat, a pixel its own): Info's ork at full size, 72 CSS px wide (layout.css).
 - `hat-<role>.png` (12×2, 24×4 drawn): the hat alone, worn by the ork that comes out of its building (js/visit.js);
 - `steward-<role>.png` (12×10, 24×20 drawn): the head under its hat, the steward's face on the Warchief's line when
   its building is selected (js/warchief.js).
@@ -55,6 +56,11 @@ def build(out: pathlib.Path = OUT) -> dict[str, list[str]]:
             fine = shade(scale2x(grid))       # the face lit as the ork out of its door is; a hat has no green: as it is
             grid_image(fine, COLOURS, 1).save(out / f"{name}.png")
             grid_image(scale2x(fine), COLOURS, 1).save(out / f"{name}@2x.png")
+        coarse = f"face-{role}"           # Info's face at full size: its grid's own pixels, not Scale2x'd, flat as the logo's
+        grid_image(face, COLOURS, 1).save(out / f"{coarse}.png")
+        grid_image(face, COLOURS, 2).save(out / f"{coarse}@2x.png")
+    grid_image(GRID, COLOURS, 1).save(out / "face-ork.png")
+    grid_image(GRID, COLOURS, 2).save(out / "face-ork@2x.png")
     return faces
 
 
