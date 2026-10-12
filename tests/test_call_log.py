@@ -160,7 +160,7 @@ def test_the_town_serves_a_buildings_day_and_clears_by_its_dislikes(fake_repo, i
     try:
         jobs.run_work("claude", "hall work", fake_repo, threading.Event(), env={"ORKCRAFT_ORC": "town_hall/Chief"})
         server = Server(host)
-        server.start_thread()
+        thread = server.start_thread()
         try:
             base = f"{server.origin}/api/logs/town_hall"
             with urllib.request.urlopen(f"{base}?t={server.token}", timeout=5) as r:
@@ -172,6 +172,7 @@ def test_the_town_serves_a_buildings_day_and_clears_by_its_dislikes(fake_repo, i
                     urllib.request.urlopen(bad, timeout=5)
         finally:
             server.stop()
+            thread.join(10)                      # it closes the host: not at once with the test
         today = dt.date.today()
         yesterday = (today - dt.timedelta(days=1)).isoformat()
         _day(fake_repo, yesterday, "liked_one")
@@ -197,3 +198,74 @@ def test_a_one_off_answer_is_kept_with_what_it_was_for(tmp_path, monkeypatch):
     assert (line["who"], line["purpose"], line["mode"], line["model"], line["tokens"]) == \
         ("claude -p", "sort", "ask", "haiku", 5000)
     assert call_log.raw(tmp_path / "calls", line)["prompt"] == "sort these letters"
+
+
+# -- the logs kept for analysis, a period as one zip (realm/analytics.py) ------------------------------------------------
+
+def test_kept_for_analysis_every_day_stays_a_month(tmp_path):
+    today = dt.date(2026, 10, 12)
+    kept = [_day(tmp_path, "2026-10-11", "plain"), _day(tmp_path, "2026-09-20", "older")]
+    gone = _day(tmp_path, "2026-09-01", "too_old")
+    assert day_log.clear(tmp_path, today, lambda b, day: False, keep=True) == ["2026-09-01/too_old"]
+    assert all(f.is_dir() for f in kept) and not gone.exists()
+
+
+def test_a_period_is_one_zip_with_each_day_added_up(tmp_path, tool):
+    from orkcraft.realm import analytics
+    call_log.keep_days(tmp_path)
+    jobs.run_work("claude", "fix the tests", tmp_path, threading.Event(), env={"ORKCRAFT_ORC": "pool/Grub"})
+    jobs.run_work("claude", "again", tmp_path, threading.Event(), env={"ORKCRAFT_ORC": "pool/Grub"})
+    today = dt.date.today().isoformat()
+    _day(tmp_path, "2026-01-02", "board")
+    decided = {("pool", today): [{"at": f"{today}T10:00:00", "action": "follow-up", "orc": "Grub", "why": "tests red"}]}
+    disliked = {("pool", today): [{"ts": f"{today}T11:00:00", "note": "too slow"}]}
+    data = analytics.pack(tmp_path, [today, "2026-01-02"], {"pool": "Agent pool"},
+                          lambda b, d: decided.get((b, d), []), lambda b, d: disliked.get((b, d), []))
+    z = zipfile.ZipFile(io.BytesIO(data))
+    names = z.namelist()
+    assert {f"{today}/pool/calls.jsonl", f"{today}/pool/calls/001-Grub.json", f"{today}/pool/decisions.jsonl",
+            f"{today}/pool/dislikes.jsonl", "2026-01-02/board/calls.jsonl", "README.md", "summary.json"} <= set(names)
+    s = json.loads(z.read("summary.json"))
+    [pool] = [r for d in s["days"] for r in d["buildings"] if r["id"] == "pool"]
+    assert (pool["calls"], pool["reworks"], pool["dislikes"], pool["title"]) == (2, 1, 1, "Agent pool")
+    assert s["by_building"]["pool"]["days"] == 1 and s["total"]["calls"] == 3     # the board's one line too
+    readme = z.read("README.md").decode()
+    assert "Agent pool (`pool`, 1 day): 2 calls" in readme and "1 rework, 1 👎" in readme
+    assert "Grub · work: 2 calls" in readme and "decisions: follow-up 1" in readme
+    assert (call_log.day_folder(tmp_path, today, "pool") / day_log.ASKED).exists()
+
+
+def test_the_town_keeps_its_logs_and_serves_a_period(fake_repo, isolated_layout_file, tool):
+    from orkcraft.gui import town_settings
+    from orkcraft.gui.host import Host
+    from orkcraft.gui.server import Server
+    from orkcraft.realm import checkpoint
+    checkpoint.ensure(fake_repo)
+    host = Host(fake_repo, auto_commit=False)
+    try:
+        assert town_settings.read(host)["logs"] == {"on": False, "days": 0, "keep": day_log.KEEP_ANALYSIS}
+        assert town_settings.change(host, {"logs": True})["logs"]["on"] is True and host.day_logs.keeping()
+        server = Server(host)
+        thread = server.start_thread()
+        try:
+            url = f"{server.origin}/api/analytics?days=7&t={server.token}"
+            with pytest.raises(urllib.error.HTTPError):                     # nothing kept yet
+                urllib.request.urlopen(url, timeout=5)
+            jobs.run_work("claude", "hall work", fake_repo, threading.Event(), env={"ORKCRAFT_ORC": "town_hall/Chief"})
+            with urllib.request.urlopen(url, timeout=5) as r:
+                assert "orkcraft-analytics-" in r.headers["Content-Disposition"]
+                z = zipfile.ZipFile(io.BytesIO(r.read()))
+            today = dt.date.today().isoformat()
+            assert f"{today}/town_hall/calls/001-Chief.json" in z.namelist()
+            with pytest.raises(urllib.error.HTTPError):
+                urllib.request.urlopen(f"{server.origin}/api/analytics?days=7&t=nope", timeout=5)
+        finally:
+            server.stop()
+            thread.join(10)                      # it closes the host: not at once with the test
+        yesterday = (dt.date.today() - dt.timedelta(days=1)).isoformat()
+        _day(fake_repo, yesterday, "liked_one")
+        host.day_logs.cleared = ""
+        host.day_logs.tick(dt.date.today())
+        assert call_log.day_folder(fake_repo, yesterday, "liked_one").is_dir()      # kept: the logs are kept
+    finally:
+        host.close()

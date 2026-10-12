@@ -3,11 +3,13 @@ out, how it worked) and what it decided, as one zip.
 
     day_log.days(root, building)                 the days kept for it, newest first
     day_log.pack(root, building, day, extra)     the zip: README.md, calls.jsonl, a calls/ file each, `extra` files
-    day_log.clear(root, today, disliked)         the morning's clearing (below)
+    day_log.clear(root, today, disliked, keep)   the morning's clearing (below)
 
 The calls are written by realm/call_log.py into `.orkcraft/logs/<day>/<building>/`. A day is cleared at the start
 of the next one, building by building, unless its log was asked for (`pack` marks it) or the building got a 👎 that
-day: then it is kept for KEEP_DAYS, for whoever looks into it. No face here: the GUI serves the zip (gui/server.py).
+day: then it is kept for KEEP_DAYS, for whoever looks into it. While the town keeps its logs for analysis (`keep`:
+the Council's `logs_for_analysis`, a switch in Town settings) every day is kept, KEEP_ANALYSIS days, for a period
+to be downloaded at once (realm/analytics.py). No face here: the GUI serves the zip (gui/server.py).
 """
 from __future__ import annotations
 
@@ -23,6 +25,7 @@ from orkcraft.realm import call_log
 
 ASKED = ".asked"                  # in a building's day folder: its log was taken, keep the day
 KEEP_DAYS = 14                    # how long a day that was asked for or disliked is kept
+KEEP_ANALYSIS = 30                # how long every day is kept while the logs are kept for analysis
 
 
 def days(root: Path, building: str) -> list[str]:
@@ -39,9 +42,10 @@ def _day(text: str) -> dt.date | None:
         return None
 
 
-def clear(root: Path, today: dt.date, disliked: Callable[[str, str], bool]) -> list[str]:
+def clear(root: Path, today: dt.date, disliked: Callable[[str, str], bool], keep: bool = False) -> list[str]:
     """Each building's day before `today`: removed unless its log was asked for or `disliked(building, day)`; those
-    stay KEEP_DAYS. What was removed, as `<day>/<building>`."""
+    stay KEEP_DAYS. With `keep` (the logs kept for analysis) every day stays KEEP_ANALYSIS. What was removed, as
+    `<day>/<building>`."""
     gone = []
     folder = root / call_log.DAYS
     for day_dir in sorted(folder.iterdir()) if folder.is_dir() else ():
@@ -49,8 +53,10 @@ def clear(root: Path, today: dt.date, disliked: Callable[[str, str], bool]) -> l
         if day is None or day >= today:
             continue
         for b in [p for p in day_dir.iterdir() if p.is_dir()]:
-            old = (today - day).days > KEEP_DAYS
-            if old or not ((b / ASKED).exists() or disliked(b.name, day_dir.name)):
+            age = (today - day).days
+            if keep and age <= KEEP_ANALYSIS:
+                continue
+            if age > KEEP_DAYS or not ((b / ASKED).exists() or disliked(b.name, day_dir.name)):
                 shutil.rmtree(b, ignore_errors=True)
                 gone.append(f"{day_dir.name}/{b.name}")
         if not any(day_dir.iterdir()):

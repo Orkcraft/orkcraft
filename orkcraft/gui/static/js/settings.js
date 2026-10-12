@@ -7,7 +7,8 @@
 // anonymous usage stats are shared (core/usage.py), which a small dialog of its own asks once; last,
 // which updates install by themselves (gui/updates.py; js/update.js offers the rest); and the phones
 // paired with this machine (js/phones.js). Accounts: a personal Google account for Gmail, the calendar and
-// Drive (js/accounts.js). The 🌙 Night round sits with the town's rules: on or off, Look now.
+// Drive (js/accounts.js). The 🌙 Night round sits with the town's rules: on or off, Look now. Keep logs for
+// analysis: every day's model calls kept, and a period of them downloaded as one zip (/api/analytics).
 import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -95,6 +96,27 @@ function RoundField({ s, set, setS }) {
     ${s.round_said && html`<p class="ok-font-status ok-tone-ok">${say(s.round_said)}</p>`}`;
 }
 
+const TOKEN = new URLSearchParams(location.search).get("t") || "";
+const PERIODS = [[1, "Today"], [7, "7 days"], [30, "30 days"]];
+
+/** Every building's model calls kept by day (gui/day_logs.py): on, nothing is cleared for a month; a period of them,
+ *  with what each day added up to, is one zip to hand to whoever checks the buildings' work. */
+function LogsField({ s, set }) {
+  const [days, setDays] = useState(7);
+  const l = s.logs;
+  if (!l) return null;
+  const href = `/api/analytics?days=${days}&t=${encodeURIComponent(TOKEN)}`;
+  return html`<${Steps} label=${say("Keep logs for analysis")} value=${l.on}
+      items=${[[true, say("On")], [false, say("Off")]]} onPick=${(v) => set({ logs: v })} />
+    <p class="ok-font-status ok-tone-muted">${say(l.on
+      ? `Every model call each building makes is kept ${l.keep} days: what went in, what came out, the time and the tokens. It stays on this computer.`
+      : "A building's day is cleared the next morning, unless you downloaded it or gave it a 👎.")}</p>
+    <${Steps} label=${say("Analytics of")} value=${days} items=${PERIODS.map(([v, t]) => [v, say(t)])} onPick=${setDays} />
+    <p class="ok-font-status">${say(`${l.days} day${l.days === 1 ? "" : "s"} of logs kept`)}</p>
+    <span>${l.days ? html`<a class="ok-btn" href=${href} download>${say("Download analytics (.zip)")}</a>`
+      : html`<button class="ok-btn" disabled>${say("Download analytics (.zip)")}</button>`}</span>`;
+}
+
 /** The AI tools: which are on, and the main one decisions and `main` steps run on. */
 function ToolsField({ s, set }) {
   if (!s.tools) return null;
@@ -170,6 +192,7 @@ export function SettingsDialog() {
         <${Steps} label=${say("A change waits the hours you are around")} value=${s.rebuild}
           items=${s.rebuilds.map((v) => [v, `${v} h`])} onPick=${(v) => set({ rebuild: v })} />`}
       <${RoundField} s=${s} set=${set} setS=${setS} />
+      <${LogsField} s=${s} set=${set} />
       <${ToolsField} s=${s} set=${set} />
       <${AwakeField} s=${s} onPick=${(v) => command("awake.set", { on: v }).then(setS, () => {})} />
       <${UsageField} s=${s} onPick=${(v) => command("usage.share", { share: v }).then(setS, () => {})} />

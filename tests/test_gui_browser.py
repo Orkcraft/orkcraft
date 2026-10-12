@@ -1323,6 +1323,26 @@ def test_settings_turn_an_ai_tool_on_and_make_it_the_main_one(page):
                 "{ tools: { pi: false }, main_tool: '' }))")
 
 
+def test_settings_keep_logs_for_analysis_and_download_a_period(page):
+    """Settings → Keep logs for analysis: on, the logs stay a month; Download analytics is the period's zip."""
+    pg = page
+    pg.locator(".gui-hud .gui-hud__menu").click()
+    modal = pg.locator(".gui-modal")
+    modal.wait_for(state="visible", timeout=WAIT_MS)
+    modal.get_by_role("group", name="Keep logs for analysis").get_by_role("button", name="On").click()
+    pg.wait_for_function("() => document.querySelector('.gui-modal').textContent.includes('is kept 30 days')",
+                         timeout=WAIT_MS)
+    modal.get_by_role("group", name="Analytics of").get_by_role("button", name="30 days").click()
+    settings = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings'))")
+    assert settings["logs"]["on"] is True
+    link = modal.get_by_role("link", name="Download analytics (.zip)")
+    if link.count():                                              # a day's calls kept: the zip of 30 days
+        assert "/api/analytics?days=30&t=" in link.get_attribute("href")
+    else:
+        assert modal.get_by_role("button", name="Download analytics (.zip)").is_disabled()
+    pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings.set', { logs: false }))")
+
+
 def test_settings_choose_a_tiers_model_and_reset_it(page):
     """Settings → AI tools: each tier of a tool that is on runs on Latest of its family; another model typed is
     kept and said; Reset to latest drops it."""
