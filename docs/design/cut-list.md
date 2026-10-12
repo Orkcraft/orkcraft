@@ -78,6 +78,16 @@ The owner: "I will move from Claude Code once Orkcraft's phone app does more." T
   then; its places are still dropped.
 - **The test is the owner's switch.** The README promises the phone again on the day the owner stops opening Claude
   Code's app for this town's work.
-- **To answer first:** the three to five things the owner does in Claude Code's phone app every day (start a session,
-  answer a permission, read a diff, review a pull request, go on with a conversation…). That list is the bar the phone
-  console has to clear, and nothing past it.
+- **The owner's answer: what is done on the phone every day.** Ideas for the product are thrown in, talked through and
+  sent to be built; sometimes a picture is made with Gemini. The gain of doing it in Orkcraft: one place, no switching
+  between sessions, nor between Claude and Gemini. So the bar, and nothing past it:
+
+  | on the phone | made of | priority |
+  |---|---|---|
+  | **1. Drop an idea** in one press, text or voice | the Task board's **Ideas** lane (notes; taken by moving into To Do, [night-round.md](night-round.md)) | P1, with the phone console |
+  | **2. Talk an idea through** with an ork, and come back to the talk later | the console (§7 of [ork-console.md](ork-console.md)) on the Task board's steward; the card is rewritten from the talk | P1 |
+  | **3. Send it to be built and follow it** | Send to ▸ the Agent pool; the ork slots list, ❓ and the waits; pass the result at the Review gate | P1 (the console's parts) |
+  | **4. A picture from words**, on a card, by the Gemini side (agy) | `realm/painter.py` paints only the design system's pictures today; a picture for any card is new | **Later**, unless the owner's switch waits on it |
+
+  Items 1–3 are the switch test: once they work on the phone, the owner stops opening Claude Code's app for this
+  town's ideas, or says what is still missing.
