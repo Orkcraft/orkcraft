@@ -3,7 +3,7 @@
 // orkspaces are the War Map (js/warmap.js). Markup and classes are the design system's (design-system/components.md: Hud, WarMap, Toast).
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls, linked } from "./html.js";
-import { town, online, toasts, command, dismiss, say } from "./link.js";
+import { town, online, toasts, command, dismiss, say, holdToast, copyText } from "./link.js";
 import { settingsOpen } from "./settings.js";
 import { Portrait, Steps } from "./portrait.js";
 import { Scheme } from "./icons.js";
@@ -93,10 +93,13 @@ export function Hud() {
 export function Toasts() {
   return html`<div class="gui-toasts" role="status" aria-live="polite">
     ${toasts.value.map((x) => x.tool ? html`<${ToolToast} key=${x.id} x=${x} />`
-      : html`<div key=${x.id} class=${cls("ok-toast", { [SEVERITY[x.severity] || "is-ok"]: true })}
-        onClick=${() => dismiss(x.id)}>
+      : html`<div key=${x.id} data-toast=${x.id} class=${cls("ok-toast gui-toast", { [SEVERITY[x.severity] || "is-ok"]: true })}
+        onMouseEnter=${() => holdToast(x.id, true)} onMouseLeave=${() => holdToast(x.id, false)}>
       <span class="ok-toast__mark">${MARK[x.severity] || "✓"}</span>
-      <span>${x.title ? html`<b>${x.title}</b> — ` : ""}${linked(x.message)}</span>
+      <span class="gui-toast__text">${x.title ? html`<b>${x.title}</b> — ` : ""}${linked(x.message)}</span>
+      <span class="gui-toast__acts">
+        <button class="gui-toolerr__close" title="Copy" aria-label="Copy" onClick=${() => copyText(`${x.title ? x.title + " — " : ""}${x.message}`)}>⧉</button>
+        <button class="gui-toolerr__close" title="Close" aria-label="Close" onClick=${() => dismiss(x.id)}>×</button></span>
     </div>`)}
   </div>`;
 }
@@ -111,7 +114,7 @@ function ToolToast({ x }) {
   const toggle = (what) => setOpen(open === what ? "" : what);
   const switchTo = (to) => { close(); command("tool_error.switch", { to, retry: t.retry || "" }).catch(() => {}); };
   const retry = () => { close(); command("tool_error.retry", { retry: t.retry }).catch(() => {}); };
-  const copy = () => navigator.clipboard?.writeText(t.detail || "").catch(() => {});
+  const copy = () => copyText(t.detail || "");
   const others = t.switch || [];
   return html`<div class="ok-toast is-error gui-toolerr" role="alert">
     <span class="ok-toast__mark">✗</span>

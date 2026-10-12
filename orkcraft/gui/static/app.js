@@ -3,7 +3,7 @@
 // the HUD, the map, the panel on the right, the War Map of orkspaces at the bottom left and the Warchief's line.
 import { render } from "preact";
 import { html } from "./js/html.js";
-import { town, connect, openLink } from "./js/link.js";
+import { town, connect, openLink, copyText } from "./js/link.js";
 import { Hud, Toasts } from "./js/chrome.js";
 import { WarMap } from "./js/warmap.js";
 import { wearGround } from "./js/terrain.js";
@@ -83,3 +83,12 @@ document.addEventListener("click", (e) => {
 watchErrors();
 connect();
 render(html`<${App} />`, document.getElementById("app"));
+
+// Copy in a window whose shell has no Edit menu (a webview): Ctrl/⌘ + C puts the selected text on the clipboard itself.
+window.addEventListener("keydown", (e) => {
+  if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || (e.key !== "c" && e.key !== "C")) return;
+  const on = document.activeElement;
+  if (on && (on.tagName === "INPUT" || on.tagName === "TEXTAREA" || on.closest?.(".xterm"))) return;   // its own copy
+  const text = window.getSelection ? window.getSelection().toString() : "";
+  if (text) copyText(text);
+});

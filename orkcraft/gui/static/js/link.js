@@ -35,7 +35,31 @@ export function toast(message, severity = "information", title = "", timeout = n
   const id = nextId++;
   toasts.value = [...toasts.value, { id, message, title, severity, tool }].slice(-5);
   const seconds = timeout || TOAST_S[severity] || 5;
-  setTimeout(() => { toasts.value = toasts.value.filter((t) => t.id !== id); }, seconds * 1000);
+  const gone = () => {                       // not while the pointer is on it or its text is being selected: it can be read and copied
+    if (held.has(id) || selectedIn(id)) { setTimeout(gone, 1000); return; }
+    toasts.value = toasts.value.filter((t) => t.id !== id);
+  };
+  setTimeout(gone, seconds * 1000);
+}
+
+const held = new Set();                      // toasts under the pointer
+export function holdToast(id, on) { on ? held.add(id) : held.delete(id); }
+function selectedIn(id) {
+  const s = window.getSelection && window.getSelection();
+  const el = document.querySelector(`[data-toast="${id}"]`);
+  return !!(s && !s.isCollapsed && el && s.anchorNode && el.contains(s.anchorNode));
+}
+
+/** Text to the clipboard: the browser's way, else the old one (a window without the Clipboard API). */
+export function copyText(text) {
+  const old = () => {
+    const t = document.createElement("textarea");
+    t.value = text; t.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(t); t.select();
+    try { document.execCommand("copy"); } catch { /* nothing to do */ }
+    t.remove();
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(old);
+  else old();
 }
 
 export function dismiss(id) {
