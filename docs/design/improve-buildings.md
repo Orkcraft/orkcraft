@@ -478,9 +478,18 @@ evaluation platform") so that neither is heard. Nothing of §12.2 changes: the d
 - **Where it runs:** in the person's town, on their machine and their AI tools, as now. CI at night is Later.
 - **How an app's own model calls are costed:** left open until gate 1 or 2 is met.
 
-**A line not to cross with game developers:** visual regression (screens night to night, the design system's rules
-held) is fine; **redrawing a game's assets from words is not offered to them.** For that audience it is the "AI
-makes the game" story Orkcraft keeps away from ([ork-console.md](ork-console.md); the launch plan of 2026-10-12).
+**Who is offered asset making** (reworked with the owner 2026-10-12). Two audiences, not one:
+
+- **New builders**, many making their first game or app with AI and no artist: icons, illustrations, splash screens,
+  sprites. For them making assets is a plain gain, and not only for games: every app needs an icon and pictures.
+  Asset making **may be advertised to them** (vibe-coding and side-project communities, indie hackers) once it is
+  built ([cut-list.md](cut-list.md) §3b) and the owner has used it on the owner's own game.
+- **The classic game developer community** (r/gamedev and its like, artists): part of it is hostile to generated
+  art. Asset making is **not advertised there**; Orkcraft is shown there as a tool for code and the chores around it.
+
+The main story stays parallel coding agents; assets are a second line ("and the pictures your app needs"), never the
+first. "Many new builders" is a guess until the testers say so: they are asked whether they need icons,
+illustrations or sprites and where they get them today ([first-mission.md](first-mission.md) §5).
 
 **It fits the model of 2026-10-12:** a role is an expertise and its context comes from where it works
 ([town-hall-roles.md](town-hall-roles.md) §2): the Mechanic and the Alchemist on another repository are the same move

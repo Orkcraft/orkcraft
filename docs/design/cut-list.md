@@ -101,9 +101,9 @@ Claude Code's app long answers are hard to read and questions get lost on a smal
   folder, the person's words, a marked region. What is new: any card can hold a picture, shown on the card at once;
   **Edit** marks a region and says what changes, and makes a new version beside the old; **Accept** writes the chosen
   version where the card says, in the person's repository.
-- **Not a contradiction with [improve-buildings.md](improve-buildings.md) §12.4.** That line is about what Orkcraft
-  **offers and advertises** to game developers (no "AI makes your game" in the README or the launch posts). What the
-  product can do for a person who asks for it, the owner first, is another matter.
+- **Who it is advertised to** ([improve-buildings.md](improve-buildings.md) §12.4, reworked 2026-10-12): new builders
+  making games and apps with AI, for whom icons and illustrations are a plain gain, yes, once built; the classic game
+  developer community, no.
 - **The owner's game meets gate 1 of §12.4** for the Alchemist's side: two weeks on the owner's own second project.
 - **Long answers and lost questions** are the console's problem on every screen, not only the phone's:
   [ork-console.md](ork-console.md) §20.

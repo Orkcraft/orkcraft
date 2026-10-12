@@ -66,6 +66,10 @@ To the local event log and, as buckets, to the usage stats ([dogfood-logs.md](do
 | testers who finish quest 2 | ≥ 7 of 10 |
 | testers who start quest 3 in the first session | ≥ 5 of 10 |
 
+One question for every tester after the session, outside the mission: **do you need icons, illustrations or sprites
+for what you build, and where do you get them today?** It tests whether asset making is worth advertising
+([improve-buildings.md](improve-buildings.md) §12.4).
+
 Quest 2 finished but no second session within a week means the first win was not worth coming back for: the quest's
 job is changed, not the game around it.
 
