@@ -82,6 +82,27 @@ it (Claude Code with the folder); next, the Mechanic does them itself on the nig
 
 ## 7. Next
 
-1. A Wiki kit: letters in, the pages that should change and the facts they should hold, checked by words.
-2. A chain case: External listeners → Task board, the whole way a letter takes.
-3. A 👎 becomes a case of its building, kept with the town's own cases.
+The plan (2026-10-11), in layers — evals, not tests: repeats and medians, a baseline (the AI tool alone, and last
+night), checks in code wherever code can tell, a judge only where it cannot:
+
+| Layer | What | Model | When |
+|---|---|---|---|
+| Logic | tests/ | faked | every commit |
+| Recorded answers | a building's whole way on answers recorded once (models and MCP: realm/cassette.py does MCP) | recorded | every commit, free |
+| Evals | `orkcraft check` | the cheap one | every night |
+| Real work | the day logs, 👎, what was sent back | real | always, feeding the evals |
+| Quiet and cost | the quiet town | counted | every night |
+
+In order:
+
+1. **The night check in the Mechanic:** its hour, its budget, scenarios in turn (some each night, all once a week), the
+   history and how tonight stands against last night, and one line in the morning.
+2. **A 👎 becomes a case** of its building, kept with the town's own cases: the evals grow from real failures.
+3. **Recorded answers** for the models too: the free layer on every commit.
+4. **The Alchemist's visual regression:** building windows, screenshot against last night.
+5. **The night improvement (gui/improve_night.py) works on what the check found**, not on proposals at random.
+
+Kits still to write: the Wiki (letters in, the pages that should change and the facts they should hold), a chain
+(External listeners → Task board, the whole way a letter takes).
+
+The same Mechanic and Alchemist on any app's codebase, later: docs/design/improve-buildings.md §12.
