@@ -142,7 +142,7 @@ def detail(w) -> dict:
                      "task": {"id": now.id, "title": now.title, "status": now.status} if now else None,
                      "done": o.done, "failed": o.failed, "cost": _money(o.cost_usd), "tokens": o.tokens,
                      "worktree": o.worktree, "branch": o.branch, "session": o.session, "asks": o.name in asking,
-                     "recent": list(o.recent), "terminal": _key(w, o.name)})
+                     "recent": list(o.recent), "terminal": _key(w, o.name), "by_hand": w.taken_over(o.name)})
     names = _names(w)
     tasks = [_task(t, True, names) for t in st.queue] + [_task(t, True, names) for t in reversed(st.tasks)]
     return {
@@ -252,8 +252,8 @@ def _terminal(w, args: dict) -> str:
     running = sessions.get(key)
     if running is not None and running.running:
         return key
-    if orc.status == "working":
-        raise ActError(f"{orc.name} is working — its terminal opens when it is free")
+    if orc.status == "working" and not w.taken_over(orc.name):
+        raise ActError(f"{orc.name} is working — take it over to type to it")
     cwd = orc.worktree or str(w.repo_root)
     if w.simulated:
         command, harness = [os.environ.get("SHELL") or "/bin/sh"], "shell"
@@ -268,6 +268,48 @@ def _terminal(w, args: dict) -> str:
     except OSError as e:
         raise ActError(f"{orc.name}'s terminal did not open: {e}") from None
     return key
+
+
+def _take_over(w, args: dict) -> str:
+    """Take over a working ork: its run stops and its terminal opens on its worktree, on its task. The key."""
+    orc = w.state.orc(text(args, "ork", 100))
+    if orc is None:
+        raise ActError("No such ork in this Barracks")
+    sessions = getattr(w.town, "sessions", None)
+    if sessions is None:
+        raise ActError("Terminals open in the GUI")
+    task = w.state.task(orc.task) if orc.task else None
+    if not w.take_over(orc.name) or task is None:
+        raise ActError(f"{orc.name} is not at work on a task")
+    key = _key(w, orc.name)
+    if sessions.get(key) is not None and sessions.get(key).running:
+        return key
+    note = (f"\n\nThe operator took this task over from a run that was stopped midway: what it did is in the "
+            "worktree (see `git status` and `git diff`). Go on with the task together with the operator, who is "
+            "here and types to you.")
+    cwd = orc.worktree or str(w.code_root)
+    if w.simulated:
+        command, harness = [os.environ.get("SHELL") or "/bin/sh"], "shell"
+    else:
+        harness = past.deploy_harness({"harness": orc.harness})
+        command = past.deploy_command(harness, w._prompt(task, orc, False, False) + note) or past.new_command(harness)
+    try:
+        sessions.open(key, command, harness, f"{orc.name} · {w.title}", cwd=cwd,
+                      env={"ORKCRAFT_ORC": f"{w.building_id}/{orc.name.lower()}"})
+    except OSError as e:
+        raise ActError(f"{orc.name}'s terminal did not open: {e}") from None
+    return key
+
+
+def _hand_back(w, args: dict) -> bool:
+    """The person is done in the terminal: it closes and the task goes to review."""
+    name = text(args, "ork", 100)
+    sessions = getattr(w.town, "sessions", None)
+    if sessions is not None:
+        sessions.stop(_key(w, name))
+    if not w.hand_back(name):
+        raise ActError("Nothing was taken over")
+    return True
 
 
 def _project_name(w) -> str:
@@ -307,5 +349,5 @@ def _picked(w, args: dict) -> dict:
 
 
 ACTS = {"task": _new_task, "pause": _pause, "answer": _answer, "add_rule": _add_rule,
-        "diff": _diff, "terminal": _terminal, "wants": _wants, "want_by_source": _want_by_source,
+        "diff": _diff, "terminal": _terminal, "take_over": _take_over, "hand_back": _hand_back, "wants": _wants, "want_by_source": _want_by_source,
         "repo": _repo, "pick": _pick, "picked": _picked}

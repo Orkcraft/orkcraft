@@ -203,3 +203,40 @@ def test_closing_the_window_does_not_leave_the_barracks_paused(fake_repo):
     host.command("act", {"id": bid, "act": "pause"})
     host.close()
     assert _host(fake_repo).town.worker(bid).state.paused            # the operator's own ⏸ is kept
+
+
+def test_a_working_ork_is_taken_over_in_a_terminal_and_handed_back_to_review(fake_repo, tmp_path, monkeypatch):
+    """Take over stops the headless run and opens an interactive terminal on its worktree; Hand back sends the
+    task to the steward's review without running the ork again."""
+    cli = tmp_path / "fake-claude"
+    cli.write_text("#!/bin/sh\necho \"hello $*\"\nsleep 30\n", encoding="utf-8")
+    cli.chmod(cli.stat().st_mode | stat.S_IXUSR)
+    monkeypatch.setenv("ORKCRAFT_CLAUDE_BIN", str(cli))
+    runs = []
+
+    def work(harness, prompt, workdir, cancel, model, env, resume):
+        runs.append(prompt)
+        if cancel.wait(10):
+            raise InterruptedError("stopped")
+        return "done", 0.0, 0, "s1"
+
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(work))
+    monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
+    host = _host(fake_repo)
+    bid = _raised(host, "barracks", worktrees=False)
+    w = host.town.worker(bid)
+    task = host.command("act", {"id": bid, "act": "task", "args": {"title": "fix it"}})
+    assert _until(lambda: w.state.orcs and w.state.orcs[0].status == "working")
+    with pytest.raises(CommandError, match="take it over"):
+        host.command("act", {"id": bid, "act": "terminal", "args": {"ork": "Grub"}})
+    try:
+        key = host.command("act", {"id": bid, "act": "take_over", "args": {"ork": "Grub"}})
+        assert key == f"pool:{bid}/grub" and host.sessions.get(key).running
+        assert host.detail(bid)["data"]["orks"][0]["by_hand"]
+        time.sleep(0.3)
+        assert w.state.task(task).status == "working" and w.state.orcs[0].status == "working"   # not failed, not freed
+        assert host.command("act", {"id": bid, "act": "hand_back", "args": {"ork": "Grub"}})
+        assert _until(lambda: w.state.task(task).status in ("done", "failed", "review", "reviewing") or w.state.orcs[0].status == "idle")
+        assert len(runs) == 1 and not w.taken_over("Grub")      # the ork was not run again
+    finally:
+        host.sessions.close()

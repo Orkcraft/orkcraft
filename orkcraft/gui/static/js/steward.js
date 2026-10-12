@@ -20,7 +20,7 @@
 // of Info: what the building is for, apart from who works it.
 //
 // The data is the building's `info` (gui/info.py: steward, listens, others, goal, autonomy).
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say } from "./link.js";
 import { Dialog } from "./dialog.js";
@@ -28,7 +28,7 @@ import { selectOrk } from "./windows.js";
 import { HALL } from "./tent.js";
 import { pickedRoad } from "./build.js";
 import { openInLake } from "./lake.js";
-import { TierMark } from "./icons.js";
+import { TierMark, ToolMark, Scheme } from "./icons.js";
 
 // Chains, a clock, broken chains: drawn, as the pin is (js/hut.js), since ⛓️‍💥 is missing from many fonts.
 const CHAIN = html`<rect x="1" y="5" width="8" height="6" rx="3" /><rect x="7" y="5" width="8" height="6" rx="3" />`;
@@ -120,10 +120,35 @@ function Rank({ b, i, redo, open }) {
         aria-pressed=${s.rank === v} title=${`${say(name)} — ${say(hint)}`} onClick=${() => s.rank !== v && set(v)}>
 <${TierMark} tier=${v} /></button>`)}
   </${Steps}>
-  ${lead && lead.scheme && html`<${Steps} label=${say("AI tool")} title=${say("The AI tool its steward runs on (from its next run)")}>
-    <button class="gui-steps__one gui-steward__tool" title=${say("Change its AI tool and model")}
-      onClick=${() => open("ork-model", lead.ref)}>${lead.scheme} ▾</button>
-  </${Steps}>`}`;
+  ${lead && lead.scheme && html`<${ToolPick} b=${b} lead=${lead} redo=${redo} />`}`;
+}
+
+/** The AI tool its steward runs on: a list of the tools on, on their own icons. Only the tool changes; its
+ *  model is the Tier's (the step keeps the tier it has). */
+function ToolPick({ b, lead, redo }) {
+  const [i, setI] = useState(null);
+  const [shut, setShut] = useState(true);
+  useEffect(() => { command("info", { id: b.id, ork: lead.ref }).then(setI, () => {}); }, [b.id, lead.ref, lead.scheme]);
+  const step = i && i.steps && i.steps.find((x) => x.editable);
+  if (!i || !step || !i.tools || i.tools.length < 1) return html`<${Steps} label=${say("AI tool")}>
+    <span class="gui-steps__one gui-steward__tool"><${Scheme} scheme=${lead.scheme} /></span></${Steps}>`;
+  const now = i.tools.find((t) => t.id === step.harness) || { id: step.harness, title: step.harness, mark: "" };
+  const pick = (t) => {
+    setShut(true);
+    if (t.id === step.harness) return;
+    const steps = i.steps.map((x) => ({ harness: x === step ? t.id : x.harness, tier: x.tier }));
+    command("ork.model", { id: b.id, ork: lead.ref, steps }).then(redo, () => {});
+  };
+  return html`<${Steps} label=${say("AI tool")} title=${say("The AI tool its steward runs on (from its next run)")}>
+    <span class="gui-toolpick">
+      <button class="gui-steps__one gui-steward__tool" aria-haspopup="listbox" aria-expanded=${!shut}
+        onClick=${() => setShut(!shut)} onBlur=${() => setTimeout(() => setShut(true), 150)}>
+        <${ToolMark} id=${now.id} mark=${now.mark} /> ${now.title} ▾</button>
+      ${!shut && html`<ul class="gui-toolpick__list" role="listbox">${i.tools.map((t) => html`<li key=${t.id}>
+        <button role="option" aria-selected=${t.id === step.harness} class=${cls("gui-toolpick__one", { "is-on": t.id === step.harness })}
+          onClick=${() => pick(t)}><${ToolMark} id=${t.id} mark=${t.mark} /> ${t.title}</button></li>`)}</ul>`}
+    </span>
+  </${Steps}>`;
 }
 
 /** The building's own settings, in its part of Info: the goal its retros aim at (three steps), how freely its
