@@ -11,9 +11,13 @@ launch wait on. Answers go under each question, and the doc it changes is update
    builders making their first apps and games with AI; people like the owner who throw in ideas and have them talked
    through and built. The demo GIF, the first mission and the posts can serve one. **Blocks P0.**
    *Default:* developers running several Claude Code or Codex sessions at once.
+  *Answered 2026-10-13:* developers who build their own things after work with AI coding agents and enjoy optimising
+  systems ([audience.md](audience.md)).
 - **Q2.** **A control room for coding agents, or a town that automates a person's work?** The owner uses both (code, and
    mail, meetings, research). The launch tells one story. **Blocks P0.**
    *Default:* the control room; automation is "and more" below the fold.
+  *Answered 2026-10-13:* a control room for the agents that build the person's project; automating the rest of their
+  work is "and more" ([audience.md](audience.md) §3).
 - **Q3.** **Roads in the first fifteen minutes:** are event-driven roads the core, or an advanced layer? Quest 1 shows one.
    *Default:* one road, shown, not built by the person in the first session.
 
