@@ -63,5 +63,6 @@ and the 💡 list; the yard as ground; each biome's palette.
 agent's place, a building of one's own, each offered when its moment comes ([first-mission.md](first-mission.md) §7–8); a cart's price on the roads beyond the waybill; the benches beyond Orkcraft; packs by kind of user; search
 across talks; a light theme.
 
-**No:** a hidden Town Hall feature for the person's own project; the window as a big building; isometry; a painted
+**No:** the town moved to a cloud backend (a mailbox for decisions instead, Later: [cut-list.md](cut-list.md) §3c); a
+native phone app until a measured blocker; a hidden Town Hall feature for the person's own project; the window as a big building; isometry; a painted
 style; the phone's places; Sound alerts as a building.

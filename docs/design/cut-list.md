@@ -111,3 +111,33 @@ Claude Code's app long answers are hard to read and questions get lost on a smal
   one list of recent talks, [ork-console.md](ork-console.md) §21, P1 with the phone.
 - **The phone in Camp, the laptop in Office** (the owner, 2026-10-13): the phone draws in Camp by default and carries
   the 💡 and gate actions beside items 1–4; missions stay on the laptop ([work-and-play.md](work-and-play.md) §4c).
+
+### 3c. The phone with the computer off: a mailbox for decisions, not a town in the cloud (2026-10-13)
+
+The owner: move the town to a simple backend (Firebase or the like), so it can be changed with the computer off; then
+perhaps a native app instead of the PWA.
+
+**Not a town in the cloud:**
+
+1. **It breaks the README's first promise:** local-first, no keys, no accounts, no servers, the person's own login. A
+   backend means accounts, holding other people's data (the town holds prompts, pieces of code, mail), security and
+   privacy; a developer audience trusts it less.
+2. **The work runs on the laptop anyway:** the orks run CLIs in the person's repository. With the laptop off the town
+   cannot *do* anything; it can only *take the person's decisions*.
+3. **Money and upkeep:** one person in alpha should not run a cloud holding users' data.
+
+**What is needed instead: a mailbox for decisions (Later, after the phone works with the laptop on):**
+
+- **The phone shows the town's last snapshot** and gathers the person's decisions: apply a 💡 item, answer a ❓, pass
+  a result at the gate, drop an idea.
+- **The laptop, waking, takes the decisions and applies them;** the truth stays on the laptop.
+- **The relay sees only ciphertext:** a small relay, end-to-end encrypted with the key the phone already gets when it
+  is paired, in the way of the usage stats' Cloudflare Worker (`tools/usage-worker/`): no town on it, only an encrypted
+  queue of short commands and the last snapshot.
+
+The promise holds, and the phone works with the computer off.
+
+**A native app instead of the PWA: No, until a measured blocker.** A native app is store review, a yearly developer
+fee, two platforms or a cross-platform framework, all kept up by one person; the PWA exists and web push works on iOS
+since 16.4. Moved only if push is measured not to arrive, or putting it on the home screen is seen to stop people;
+and then as a wrapper (Capacitor or the like) over the same web code, never a rewrite.
