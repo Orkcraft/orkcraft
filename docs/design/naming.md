@@ -88,3 +88,20 @@ with it.
 second word that is not a competitor's own: **Orcline** (orchestration on a line: the rails, the production line,
 the story's shape), **Orcyard**, **Orcworks**. Checked as §4 says, and Factory.ai's marks looked up before any name with
 "factory" is kept.
+
+## 8. The owner's candidate: OrkWorks Ltd, played as an indie studio (2026-10-13)
+
+**The idea is right:** the name as a small studio's fits how the community is built, as indie games do it
+([decisions-2026-10.md](decisions-2026-10.md) §4.4), and "works" is the workshop and the factory.
+
+**Two changes:**
+
+1. **No "Ltd".** It says a registered limited company; in the UK using "Limited" without being one is an offence, and
+   elsewhere it misleads about who stands behind an open-source project and its licence. The studio's voice goes in
+   the words instead: "OrkWorks — a camp of one", "made in the OrkWorks camp".
+2. **"Ork" or "orc":** **"Ork works"** is close to the wording of the very universe that claims "Ork" (its orks' workshops),
+   so with a k the Games Workshop question grows rather than shrinks. **"Orcworks"** keeps the studio, the factory and
+   the orchestration pun (§7), with none of it. To be checked in the registers and by a web search for both spellings.
+
+**Product view:** **Orcworks** (no Ltd) is a strong candidate beside Orcline: the indie studio and the factory in one
+word. Orcline tells the product's story better; Orcworks tells the maker's. Five developers decide between them.
