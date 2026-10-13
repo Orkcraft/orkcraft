@@ -55,6 +55,29 @@ This is the scene the product is made for. What it asks of the design:
 5. **The terms:** a person's own subscription working on their own project during the day is ordinary use; still,
    never advertised as "agents round the clock" ([decisions-2026-10.md](decisions-2026-10.md) §5).
 
+**Where the town lives during the day** (the owner, 2026-10-13). People from large companies leave the home laptop at
+home, as the owner does, **but turn it off or let it sleep**: today nothing useful happens there without them, since
+their agents stop on the first question. Those working from home often leave it on with agents running in the
+background. So:
+
+- **Two groups of the same audience.** **Remote workers:** the laptop is on already, and the scene works with no change
+  of habit (the commute becomes lunch, or the gap between two calls). **They are the first testers to look for.**
+  **Office workers:** the scene works only if they leave the laptop running, so Orkcraft has to make that worth it and
+  safe.
+- **Why they would leave it on:** the orks no longer stop on the first question (rule 1 above). That is the product's
+  own answer to "nothing happens without me".
+- **"Leaving the camp" is a ritual, as in a strategy game** (P0 before the launch, with "while you were away"). In the
+  morning, one press: "I'm off". The Warchief says what the orks will do until evening, which carts, and the cap
+  ("up to 30 % of the window"), and asks what to take first. While carts are in work and the laptop is on power, the
+  town keeps the Mac from sleeping, and lets it sleep when the work is done or the cap is reached. A closed lid still
+  sleeps; this is said plainly, with "leave the lid open".
+- **The mailbox for decisions** ([cut-list.md](cut-list.md) §3c) helps only to answer, not to work. It stays Later.
+- **The cloud runners** (Claude Code's own sessions in the cloud, and the same at the other makers) solve "the laptop
+  is off", **and they are the platform risk** of [decisions-2026-10.md](decisions-2026-10.md) §4.3: the makers already
+  reach a person's sessions from the phone, the owner says with a weaker interface. Running carts in someone else's
+  cloud from the town breaks local-first and may run into their terms. **Research R8, not a feature;** the story keeps
+  to what the makers will not do: the town, several vendors, the cost per result.
+
 **What it changes:**
 
 - **The story for the article and the launch post opens with this scene.** It is truer than "an evening in the camp":
@@ -65,8 +88,10 @@ This is the scene the product is made for. What it asks of the design:
   - quiet working hours with questions gathered are **P0 before the launch**, with the hours asked in the onboarding;
   - the phone console moves to **the first P1**, ahead of the town's clock;
   - the mailbox for decisions stays **Later**.
+  - "leaving the camp", with the Mac kept awake while carts are in work on power, is **P0 before the launch**.
 - **How it is checked** (§6): for each tester, whether the town is opened on the way home or in the evening, and from
-  which device. If testers do not open it away from the laptop, the phone goes back down.
+  which device; whether they work from home; whether office workers leave the laptop on after "I'm off". If testers do
+  not open it away from the laptop, the phone goes back down.
 
 ## 3. The story
 

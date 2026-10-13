@@ -135,3 +135,9 @@ found. Gathered from the docs of 2026-10-12 and -13.
 - **R7. Hooks in every AI tool:** what Codex and agy offer in place of Claude Code's hooks (before a tool runs, at a
   session's start and end), project-local or global, and how each is taken back ([agy-guard.md](agy-guard.md) for
   agy). Feeds P0 (the Warder and the way to ask in quest 5 and after).
+- **R8. Cloud runners as the town's hands:** can a cart run in a person's own cloud session of their AI tool (Claude
+  Code on the web, Codex cloud) when the laptop is off; which public way exists, what the makers' terms say, what is
+  lost from local-first ([audience.md](audience.md) §2a). Not a feature until answered; the platform risk.
+- **R9. Keeping the Mac awake while carts are in work:** a power assertion (as `caffeinate -i`) only on power and only
+  while work runs; what a closed lid does; how it is shown and taken back ([audience.md](audience.md) §2a). Feeds P0
+  before the launch ("leaving the camp").
