@@ -53,9 +53,18 @@ Toward Warcraft II and Stardew Valley, keeping the pixels ([color-pass.md](color
 ## 4. Switching
 
 - **One key** switches the look, as today in Settings, and the choice is remembered per machine.
-- **Later:** a soft offer at the end of the person's working day ("the day is done; a look at the camp?"). It needs
-  the end of the working day, and today only the quiet hours are known ([town-time.md](town-time.md) §5); so the
-  switch stays by hand until a working-hours answer exists.
+- **Later:** a soft offer at the end of the person's working day ("the day is done; a look at the camp?").
+- **The working hours are asked when they are needed, not in the onboarding** (decided 2026-10-13): before the first
+  quest only the class and the AI tools are asked ([first-mission.md](first-mission.md) §2), and every other question
+  pushes the first win away. They are asked at the first of:
+  1. **Mission 2**, which is about time and the clock's dial: "When is your working day?", 10–19 by default, the quiet
+     hours beside it;
+  2. **the person switching to Camp by hand after hours:** once, "Done at 19:00? I will offer the camp after work",
+     one press to confirm;
+  3. **a guess offered, never made silently:** after a week the town knows the hours the person is around
+     (`realm/awake.py`) and asks "you seem to work 10–19, right?".
+
+  Until they are set there is no offer, only the key.
 - **Mission 1 is played in Camp:** it is the game's first mission.
 
 ## 5. Priorities and how we know
