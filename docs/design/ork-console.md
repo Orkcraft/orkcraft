@@ -280,6 +280,7 @@ to an ork instead of one. To fill in from the code before stage 1:
 | 10 | tier and Autonomy on the ork in settings; a session's 👎 apart from its ork's | §2 | **P1** |
 | 11 | quick actions for every building | §7 | **P1** |
 | 12 | the yard with lines between its orks; forms over every AI tool's questions | §5, §7 | **Later** |
+| 12b | the game's score (wood and limit per accepted result, guarded by quality) and one 💡 list of improvements in the HUD | [the-score.md](the-score.md) | **P1** |
 | 13 | a cart's price and load on the roads | §17 | **Later** |
 | 14 | the phone: the same ork slots list, console and waits, built once for both ([cut-list.md](cut-list.md) §3a) | §7, §8, §19 | **P1**, right after the console |
 | 15 | a hidden Town Hall feature for reviewing the person's own project | §18 | **No** |
