@@ -16,10 +16,10 @@ in minutes, and by its end you know the controls.
 
 ## 2. The rules
 
-1. **Play, don't ask.** Before the first quest, only what cannot be guessed: the AI tools found (confirm with one
-   press). Quiet hours and the look take their defaults, changed later in Settings. Role, industry and the typical
-   day leave the first session.
-2. **A first win within 90 seconds** of opening the town, and free.
+1. **Play, don't ask.** Before the first quest: the class (one screen of chips) and the AI tools found (confirm with
+   one press). Quiet hours and the look take their defaults, changed later in Settings. Industry and the typical day
+   leave the first session.
+2. **A first win within 3 minutes** of opening the town (a question answered), and free.
 3. **A first real result within 5 minutes:** something useful about the person's own repository, read-only, its
    price said before it starts and under $0.05.
 4. **Each quest teaches one control of the main scenario** (a cart on a road, ❓ and the console, parallel orks and
@@ -28,22 +28,35 @@ in minutes, and by its end you know the controls.
 6. **Skippable at every step.** A punk ork (today's path for those who orkestrate already) skips the mission for an
    empty town, as now.
 
-## 3. Mission 1: Raise the camp
+## 3. Mission 1: Raise the camp — the person builds the first town
 
-A quest log in the Warchief's line, one objective at a time, as a strategy game shows its quests. The Warchief's
-lines may joke (CLAUDE.md, the voice); what a quest spends is said plainly.
+Reworked with the owner 2026-10-13. The person is **not given a town to work out**: they **build it, one building a
+quest**, as a strategy game's first mission does ("Boss, we need a quality gate"). Each building is met by building
+it, and shows what it is for at once. A quest log in the Warchief's line, one objective at a time; his lines may joke
+(CLAUDE.md, the voice); what a quest spends is said plainly.
 
-| quest | what happens | teaches | time · cost |
-|---|---|---|---|
-| **1. The first cart** (a drill) | a practice issue comes in through External listeners, rolls along the road to the Task board, then to the Agent pool. Its Grunt asks a scripted question ("bug or feature?"): ❓ on the Grunt, 🔥 on the pool. The person answers in the console; the fire goes out, the card is done | a road and its cart; ❓, the console, answering | ≤ 90 s · free, no model |
-| **2. Real work** | one Grunt does one real, read-only job on the person's repository: with `gh`, **the unread** (open issues and notifications) sorted into Task board cards, each with a line on what it is; without `gh`, the repository's TODO and FIXME made into cards. The price shown before it starts | that the town works on *their* project | ≤ 5 min · ≈ $0.02, light tier |
-| **3. Two at once** (may be put off: "Later") | the person picks two cards; two Grunts take them in parallel, each on its own branch; 🥩 2/8; one asks, the person answers; both diffs reach the Review gate; the person passes one | the main scenario: who works, who waits, stepping in | ≤ 10 min · price shown before it starts |
+**So that building does not push the first win away:**
 
-**Rewards:** a deed for each quest ([growth.md](growth.md): beside today's First town and First road), the mascot's
-next stage when the mission ends, and the Warchief's line saying what was learned. Mission 1 done is the moment the
-testers' fifteen minutes are measured to.
+- **each quest raises one building, and it works at once:** the drill cart travels over what is built so far;
+- **no looking for a place:** the Warchief lights a plot, one press raises the building there; it can be moved later;
+- **each building, raised, says what it does in one line and asks one question at most**
+  ([lighter-buildings.md](lighter-buildings.md) §3).
 
-**Safety:** quest 1 runs no model; quest 2 only reads; quest 3 works on branches, with the Warder on and nothing merged
+| quest | the Warchief | raised | what happens | time · cost |
+|---|---|---|---|---|
+| **1** | "Boss, the work needs somewhere to lie" | Task board | a drill card appears on it (a practice task, called a drill) | ≤ 1 min · free |
+| **2** | "We need hands" | Agent pool, and the road from the board | a Grunt takes the card and asks a scripted question: ❓ on him, 🔥 on the pool; the person answers in the console | ≤ 3 min · free, no model: **the first win** |
+| **3** | "Nothing leaves without a check" | Review gate, and its road | the drill's result reaches the gate; the person passes it and sees its waybill ([cart-waybill.md](cart-waybill.md)) | ≤ 5 min · free |
+| **4** | "Listen to what goes on outside" | External listeners (GitHub) | **real work**, read-only: the person's unread issues and notifications sorted into cards; without `gh`, the repository's TODO and FIXME. The price said before it starts | ≤ 8 min · ≈ $0.02 |
+| **5** (may be put off) | "Two at once" | — | two cards taken by two Grunts in parallel, each on its branch; 🥩 2/8; one asks; both reach the gate | ≤ 15 min · price said first |
+
+**The class stays** (decided 2026-10-13): one screen, the class chosen from its chips. It changes the Warchief's words
+and quest 4's source (a developer: GitHub; a manager: mail, through MCP, [connections.md](connections.md)); the
+buildings and the order are the same for every class. Industry and the typical day leave the first session.
+
+**Rewards:** a deed for each quest ([growth.md](growth.md)), the mascot's next stage when the mission ends.
+
+**Safety:** quests 1–3 run no model; quest 4 only reads; quest 5 works on branches, the Warder on, nothing merged
 without the person.
 
 ## 4. What it changes
@@ -61,21 +74,21 @@ To the local event log and, as buckets, to the usage stats ([dogfood-logs.md](do
 
 | measure | aim |
 |---|---|
-| open to quest 1 done | ≤ 90 s (median of testers) |
-| open to quest 2 done | ≤ 5 min |
-| testers who finish quest 2 | ≥ 7 of 10 |
-| testers who start quest 3 in the first session | ≥ 5 of 10 |
+| open to quest 2 done (the first win) | ≤ 3 min (median of testers) |
+| open to quest 4 done (real work) | ≤ 8 min |
+| testers who finish quest 4 | ≥ 7 of 10 |
+| testers who start quest 5 in the first session | ≥ 5 of 10 |
 
 One question for every tester after the session, outside the mission: **do you need icons, illustrations or sprites
 for what you build, and where do you get them today?** It tests whether asset making is worth advertising
 ([improve-buildings.md](improve-buildings.md) §12.4).
 
-Quest 2 finished but no second session within a week means the first win was not worth coming back for: the quest's
+Quest 4 finished but no second session within a week means the first win was not worth coming back for: the quest's
 job is changed, not the game around it.
 
 ## 6. Open
 
-1. **Quest 2 for a person with no `gh` and no TODOs:** a short map of the repository as a Wiki page, or cards for its
+1. **Quest 4 for a person with no `gh` and no TODOs:** a short map of the repository as a Wiki page, or cards for its
    three largest files? To try with the first testers.
 2. **Quest 1 on a machine with no AI tool yet:** the drill needs none; it may come before the tools are found, as the
    first thing seen.

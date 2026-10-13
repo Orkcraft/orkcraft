@@ -45,10 +45,11 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 4. the 🥩 list with 🔥 · ❓ and Stop all (§8); the console, folded (§7);
 5. the night's work off in a new town; External listeners offer GitHub, a schedule, a webhook, a file ([cut-list.md](cut-list.md));
 6. the colour pass by tokens, forest biome only ([color-pass.md](color-pass.md) §3);
-7. Mission 1, quests 1 and 2 ([first-mission.md](first-mission.md)).
+7. Mission 1, quests 1–3: the person raises the Task board, the Agent pool and the Review gate and meets each
+   ([first-mission.md](first-mission.md) §3).
 
 **P0 before the launch:** the console unfolded; the removals it replaces; the Agent pool's lanes as roles; the local
-event log and its events; quest 3; the onboarding cut; "Warcraft" out of what ships and is posted
+event log and its events; quests 4–5; the onboarding cut; "Warcraft" out of what ships and is posted
 ([open-questions.md](open-questions.md) Q18); the README's first screen without the phone.
 
 **P1, first:** the town's clock and held work ([town-time.md](town-time.md)); a cart's id, its waybill and its origin
