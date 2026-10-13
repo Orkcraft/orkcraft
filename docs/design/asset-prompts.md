@@ -91,3 +91,34 @@ with its hand raised; the palisade only on the camp's outer edge."
 The grey test, squinting, five seconds ([town-readability.md](town-readability.md) §6); one projection and one scale
 across all sheets; the ork's silhouettes told apart at 32 px; the roof's nine pieces really tile. What passes becomes
 the artist's brief; nothing is cut out and shipped.
+
+## Round 1 of the sheets, reviewed (2026-10-13)
+
+The owner made five sheets: the roof and wall kits, the ork's animations, the tower and the gate, the palisade, the
+five facades. **The palette holds** (maroon cloth, warm wood, grey stone, bone tusks, dark outlines) and the camp's
+voice is right. Kept as the brief's direction: **the wall kit** (a true nine-slice: corners, edges, an earth floor),
+**the gatehouse** (tusks, skull, maroon banners, portcullis), **the palisade** with tusks and its gate, the **Task
+board** facade (posts, pinned scrolls, a skull) and the **Agent pool** facade (weapon rack, dummy).
+
+**To fix:**
+
+1. **The ork looks like the big strategy game's grunt:** bulky, muscled, green, a loincloth, tusks under the lip. It
+   is the most recognisable silhouette that game owns, and the riskiest thing on any sheet for the name question
+   ([open-questions.md](open-questions.md) Q18). **Our ork is our own:** smaller and rounder, a big head on a short
+   body (reads at 32 px, cosier), a working camp's clothes (apron, cap, tool belt), a skin hue of its own (olive or
+   moss, not saturated green). The commissioned artist gets this as the first line of the brief.
+2. **The roofs are not nine-slice:** each canvas and hide piece has its own frame on all four sides, so they would
+   show seams. A corner has a border on its two outer sides only, an edge on one, the centre none. Thatch is closer.
+3. **One projection:** the tower is drawn isometric (a diamond footprint), the rest three-quarter top-down. The facades
+   sit on baked-in islands of grass and earth; a facade is an overlay at the foot of the walls, with no ground.
+4. **The shadows are blended into the magenta** and will leave a purple fringe when keyed out. The product draws
+   shadows itself ([town-readability.md](town-readability.md) §2): sheets carry **no shadows**.
+5. **Too fine for the size:** the ork is drawn at about 64 px of detail; at 32 px it will blur. Drawn at the size it
+   is shown.
+6. **The lookout's horn became a metal megaphone,** a modern object in the camp; a bone horn on a stand. The lake's
+   facade has a jetty to no water and no lens.
+7. **The walk turns mid-row** to a profile; one direction per row.
+8. **Not made yet:** the roles, the poses, carts, ground and roads, open ground, crests.
+
+**The changes to the shared head:** "No shadows. Every sprite drawn at its final size, no finer detail than that size
+can hold. One three-quarter top-down projection for everything, never isometric."
