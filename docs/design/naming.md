@@ -70,3 +70,21 @@ Fits the rails and mine carts (color-pass §6d) and keeps the brand's "ork". Wei
 **Product view:** better than Orkcraft (the larger risk goes), not as safe as a name with no "ork". It stands or falls
 on two checks this week: **the lawyer on ORK**, and **five developers asked "what does OrkMine do?"**: if two or more
 say crypto, it is out.
+
+## 7. The owner's candidate: Ork Factory, or Orc Factory, "orchestration factory" (2026-10-13)
+
+| for | against |
+|---|---|
+| **"Orc" for orchestration** is a pun every developer gets: the name explains the product (an orkestration factory) | **"Factory" is taken in this exact category:** Factory (factory.ai), a Sequoia-backed company whose coding agents ("Droids") "plan, write, test and ship code", calls its platform "an agent-native software factory". Same audience, classes 9 and 42: the closest conflict of any candidate. Its registrations not checked |
+| **"Orc" with a c** sidesteps Games Workshop's claimed "Ork" entirely: orc is the common fantasy word | "Factory" is a plain word: weak as a mark, crowded in search ("orc factory" finds game content) |
+| says the factory and the story ([camp-story.md](camp-story.md)) | spelling "Orc" in the name while the interface says "ork" is a mix to resolve (below) |
+
+**What the "orc" spelling would change:** the code already says `orc` (`Orc`, `orc_id`, `realm/orcs.py`); only what a
+person reads says "ork" ([CLAUDE.md](../../CLAUDE.md), Wording). A move to "orc" in the interface is text only and
+removes the Games Workshop question for the words too. It is the owner's call, and CLAUDE.md's Wording section changes
+with it.
+
+**Product view:** **keep the pun, drop "Factory".** "Orc" for orchestration is the best idea for the name so far; a
+second word that is not a competitor's own: **Orcline** (orchestration on a line: the rails, the production line,
+the story's shape), **Orcyard**, **Orcworks**. Checked as §4 says, and Factory.ai's marks looked up before any name with
+"factory" is kept.
