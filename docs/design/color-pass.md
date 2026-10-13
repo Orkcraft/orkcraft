@@ -104,6 +104,47 @@ is still the patch of ground; the fence is a light touch on it, never its frame:
 
 The test does not change: in grey and squinted, the roads are seen before the fence.
 
+### 6a. The card is the building: a roof that lifts as you zoom in (the owner, 2026-10-13)
+
+From a reference of an ork camp drawn top-down (big tent roofs on stone walls, cobbled paths, palisades with tusks):
+**the card is not a yard beside a building, it is the building itself.** From afar it is a roof; zoomed in, the roof
+lifts and the card's content is inside its walls, as building and management games show interiors.
+
+**It answers §6's "No" to "the window as a big building"**, whose reasons were data inside drawn art and art per
+type × size × biome:
+
+- **No data is drawn in the art.** The roof shows only while the card's content is too small to read; once it is
+  readable, the roof is gone and the inside is the UI's own card (its tokens, its text on chips,
+  [town-readability.md](town-readability.md) §2).
+- **The art is a kit, not a picture per building:** a roof of canvas or thatch on poles and a ring of walls are drawn
+  as nine-slice pieces that stretch to the card's three sizes; a material per kind of building; each biome a palette
+  swap (§5). **A building is told by its sign and materials:** a small emblem on the roof and one telling prop at the
+  door (the board's skull, the gate's tusks, the lookout's horn), not by a whole drawing of its own.
+
+**How it behaves:**
+
+| zoom | what is seen |
+|---|---|
+| map | roofs and roads only: the strategy game's camp, the strongest Camp picture |
+| overview (the GIF's) | roofs; **the signals sit on the roof:** ❓ over it, 🔥 as the roof itself burning or smouldering; a small count chip at the door (🥩 2, ❓ 1) |
+| close | the roof fades out over a quarter-second; the walls stay as the card's frame; the inside is the card |
+| hover or select at any zoom | the roof turns half-clear, so a peek needs no zoom |
+
+- **Orks go in through the door** and are seen inside at their work spot; the ork and its cart are next to each other
+  in the card ([town-readability.md](town-readability.md) §5).
+- **Office keeps the same layout:** no roof, walls drawn as the card's plain border. The look changes the drawing,
+  never the place.
+- **The phone in Camp:** mostly roofs; a tap opens the inside.
+- **The fence leaves the cards:** the walls are the frame; a palisade with tusks is only the camp's outer border
+  (as in the reference), never round a card. §6's yard as ground stays as the floor round the walls.
+
+**Priority:** **decided now**, because it changes the artist's brief (§10: a roof and wall kit plus signs and props,
+not five unique buildings), which goes out this week. **Built P0 before the launch for the five core buildings** (the
+GIF's camp at the overview zoom is roofs); the other buildings follow. The current card stays until then.
+
+**Checked:** in grey and squinted at the overview zoom, a roof with ❓ or 🔥 is found first; zooming in, a tester
+never loses which building they are in (the sign and the walls stay through the fade).
+
 ## 7. Pixel art stays; a painted style like Kingdom Rush is No
 
 Asked 2026-10-12: move the look toward Kingdom Rush, or keep the pixels?
@@ -320,7 +361,8 @@ reads generated art as slop, and a developer is quick to see it.
 2. **What ships is made by people:**
    - **a free pack as the base** (ground, paths, trees, fences, props), **CC0 first** (no conditions), CC-BY with its
      credit in `NOTICE`; **no share-alike or GPL art**, so the art's terms never mix with Apache 2.0;
-   - **a pixel artist commissioned for what is Orkcraft's own:** the five core buildings, the orks by role
+   - **a pixel artist commissioned for what is Orkcraft's own:** the roof and wall kit with the five core buildings'
+     signs and props (§6a), the orks by role
      ([ork-icons.md](ork-icons.md)), the carts and their loads ([town-readability.md](town-readability.md)). The
      generated references of §9d are the artist's brief. The artist credited in the README and on the landing page.
 3. **Said plainly:** "hand-made pixel art by ‹artist›" on the landing page: in this category it is a difference.
