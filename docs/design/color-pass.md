@@ -145,6 +145,30 @@ GIF's camp at the overview zoom is roofs); the other buildings follow. The curre
 **Checked:** in grey and squinted at the overview zoom, a roof with ❓ or 🔥 is found first; zooming in, a tester
 never loses which building they are in (the sign and the walls stay through the fade).
 
+### 6b. Two marks per building, and buildings with no roof (the owner, 2026-10-13)
+
+**Two marks, so no building is told by colour alone:**
+
+- **below, at the door:** the facade is each building's own (a gate's tusks and portcullis, a board's posts and
+  pinned scrolls, a pool's weapon rack);
+- **above, a crest:** one object over the roof (a horn, a banner, a totem, a lens, a chimney with smoke). **When the
+  roof lifts, the crest stays and becomes the card's header mark**, so the building is still known inside.
+
+**Not every building has a roof.** The rule is not "a roof" but **a cover**: whatever hides the inside at the far zooms
+and lifts close up. Three kinds, one kit each:
+
+| kind | the cover at far zoom | the frame close up | the crest | for |
+|---|---|---|---|---|
+| **a hall** | a roof (canvas, thatch, hide) | the walls | over the ridge | Agent pool, Research, most buildings |
+| **open ground** | **the scene itself:** the fire with orks sitting round it, the water's surface | a ring of stones, logs to sit on, a low palisade; or the shore | the centrepiece (the fire, the lens over the water) | **Review board** (the clan's fire), **Inspector** (the lake) |
+| **a tower or a gate** | the structure seen from above | its base and yard walls | the top (the lookout's horn, the gatehouse's banner) | **External listeners**, **Review gate** |
+
+- **Open ground keeps its signals:** ❓ over the fire; 🔥 there is the fire flaring red and smoking, distinct from its
+  ordinary flame by colour and motion ([town-readability.md](town-readability.md) §2).
+- **Lifting is the same for all three:** the cover fades, the frame stays, the crest becomes the header.
+- **The artist's brief** (§10) is three kits, not one: a hall, open ground, a tower or gate; each core building gets
+  its facade and its crest.
+
 ## 7. Pixel art stays; a painted style like Kingdom Rush is No
 
 Asked 2026-10-12: move the look toward Kingdom Rush, or keep the pixels?
@@ -361,8 +385,8 @@ reads generated art as slop, and a developer is quick to see it.
 2. **What ships is made by people:**
    - **a free pack as the base** (ground, paths, trees, fences, props), **CC0 first** (no conditions), CC-BY with its
      credit in `NOTICE`; **no share-alike or GPL art**, so the art's terms never mix with Apache 2.0;
-   - **a pixel artist commissioned for what is Orkcraft's own:** the roof and wall kit with the five core buildings'
-     signs and props (§6a), the orks by role
+   - **a pixel artist commissioned for what is Orkcraft's own:** the three cover kits (hall, open ground, tower or
+     gate) with each core building's facade and crest (§6a–6b), the orks by role
      ([ork-icons.md](ork-icons.md)), the carts and their loads ([town-readability.md](town-readability.md)). The
      generated references of §9d are the artist's brief. The artist credited in the README and on the landing page.
 3. **Said plainly:** "hand-made pixel art by ‹artist›" on the landing page: in this category it is a difference.
