@@ -131,14 +131,24 @@ ones before, as a strategy game brings a new kind of unit only when the player i
 | mission | the idea | what is built and done |
 |---|---|---|
 | 1. Raise the camp | carts, ❓, the gate | Task board, Agent pool, Review gate, External listeners (§3) |
+| 1b. Proof before the gate | **a check inside the loop** | a building with a check last: the ork runs the tests (or the linter, or a schema) and reworks by itself until they pass; what reaches the person at the gate is already checked, and the waybill shows each round |
 | 2. A process that comes back | time, a second orkspace | the class's repeating process (§7) |
 | 3. The camp remembers | **a wiki the orks keep and read** | the Wiki gathers notes, decisions and code; the orks read less again, and the 🪵 per result falls ([the-score.md](the-score.md)) |
 | 4. The chieftains' council | **agents that debate** | a Review board: several roles judge the person's document, each verdict down its exit |
 | 5. Cheaper hands | **a script in an agent's place** | the Mason turns an agent's repeated step into a script; the score shows the 🪵 per result drop ([script-first.md](script-first.md)) |
+| 5b. The town learns | **the outer loop: feedback, measured** | the person's 👎 with a note becomes a proposed change (a prompt, a rule, a tier); it is run on the building's cases against the old version on the Test bench; kept on probation only if the numbers say better ([improve-buildings.md](improve-buildings.md), `realm/evolution.py`). The Test bench comes off its freeze here, when its turn comes, not before |
 | 6. A building of one's own | **the building designer** | the Mason and the Alchemist build a building from the person's words; it can be shared |
 
+**Why these two** (the owner's question, 2026-10-13: does the campaign cover the basics of loop engineering?). Taken
+as designing the loops agents work in: an inner loop (a trigger, context, action, a check, a result) and an outer one
+(measure, feedback, improve), with the person, the cost and the view of it all around them. Missions 1–6 covered the
+trigger, the context, the tools and rights, many agents, the person in the loop, the cost and the view; two parts
+were missing: **a check the ork must pass before a person sees the work** (1b), and **the outer loop that turns
+feedback into a measured change** (5b). With them, the campaign walks the whole loop.
+
 **A mission comes when its moment does**, the fixed order kept as a fallback: the orks reading the same files again
-and again offers mission 3; long documents written by hand offer mission 4; the 💡 list finding an agent doing a
+and again offers mission 3; long documents written by hand offer mission 4; results passed at the gate that later fail their tests offer 1b;
+the person's 👎 piling up on one building offers 5b; the 💡 list finding an agent doing a
 script's work offers mission 5. A mission then answers the person's real problem instead of reading as a lesson.
 
 **Held to, as product:**
