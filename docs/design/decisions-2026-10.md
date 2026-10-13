@@ -150,5 +150,6 @@ agy experimental until Google's own words are read.
 3. **Minifantasy's ork at the overview zoom:** do ❓, `!` and a cart's load still read on it
    ([color-pass.md](color-pass.md) §10a).
 4. **The licence on the Orc Kingdom page**, read by the owner; then the letter to the artist.
-5. **The name, before PyPI and the plugin are published:** a register search for ORKCRAFT and ORK in classes 9 and 42,
-   a lawyer's hour if anything is close, a plan B name reserved ([open-questions.md](open-questions.md) Q18).
+5. **The name:** ORKCRAFT is free in the registers, but Microsoft's "-craft" family reaches class 42; nothing locks the
+   name in (PyPI, plugin, Discord, posts) until a lawyer's hour this week; name candidates with neither "ork" nor
+   "-craft" checked in parallel; **decided by Friday 17 October** ([open-questions.md](open-questions.md) Q18).

@@ -132,6 +132,34 @@ launch wait on. Answers go under each question, and the doc it changes is update
   3. **a plan B name chosen and reserved** (domain, GitHub organisation, PyPI); *Default:* keep "Orkcraft" if the
      search finds nothing close in classes 9 and 42; rename before the launch if it does.
 
+  *The search's results, brought by the owner 2026-10-13:* ORKCRAFT not found in USPTO, EUIPO or WIPO; ORK given as
+  Games Workshop's in classes 9, 16, 28, 41; WARCRAFT and STARCRAFT with hundreds of class 9 registrations; MINECRAFT
+  in 9, 41, 42; Microsoft owning all three "-craft" marks. Weighed:
+
+  - **Confirmed by a second search:** ORKCRAFT is free; Microsoft holds WARCRAFT, STARCRAFT and MINECRAFT, **a family
+    of "-CRAFT" marks reaching class 42** (software services). A family of marks widens what a rights holder can argue
+    is confusing: this, more than Games Workshop, is the weight against the name.
+  - **Not confirmed:** a registered ORK word mark. Games Workshop lists "Ork" among its claimed marks (a ™ claim, on
+    its own and fans' lists), but no registration number was found at the USPTO or the EUIPO. The table gives none
+    either. **Asked:** the registration number, or an owner-filtered search in EUIPO eSearch plus and the USPTO's
+    search, before it is counted as a registration.
+  - **Two risks, apart:** the **product's name** (a mark: "Orkcraft") and **the word inside the product** (orks as
+    characters: a common fantasy noun, used descriptively, far lower risk). Renaming the product need not rename the
+    orks.
+
+  **Decided:**
+
+  1. **Nothing that locks the name in is published until this is settled:** no PyPI package, no plugin or marketplace
+     listing, no Discord, no posts under the name ([distribution.md](distribution.md), [launch-prep.md](launch-prep.md)).
+     Building and writing go on.
+  2. **The lawyer's hour this week**, with the table, the Microsoft family and the ORK question in hand.
+  3. **Candidates found now, in parallel:** a name with **neither "ork" nor "-craft"**, keeping the camp and the
+     factory; each checked in the same registers (classes 9 and 42), for a free `.dev` or `.app` domain, a GitHub
+     organisation, a PyPI name and handles. The orks may stay inside the product under any name.
+  4. **Decided by Friday 17 October**, so the marketing on 19 October starts under its final name. *Default if the
+     lawyer sees a real risk, or the hour cannot be had by Friday:* rename now, while it costs an afternoon.
+
+
 - **Q19.** **Buildings from the community:** is a building one folder a person can send as a pull request? Asked at the
     start of the day, not answered. *Default:* not yet; the "Build a building" guide waits for it.
 - **Q20.** **The author's story:** how much of "built with the agents it runs" is to be told, and does anything (an employer,
