@@ -92,3 +92,32 @@ job is changed, not the game around it.
    three largest files? To try with the first testers.
 2. **Quest 1 on a machine with no AI tool yet:** the drill needs none; it may come before the tools are found, as the
    first thing seen.
+
+## 7. Mission 2 and after: a second orkspace for a process that comes back (Later)
+
+The owner, 2026-10-13: some time after Mission 1, a mission to set up a **second orkspace** for a process that repeats
+**weekly or monthly**, for the person's class. It ties three things the docs left for later together:
+
+- **orkspaces** stay hidden "until a person asks for a second town" ([cut-list.md](cut-list.md) §3): Mission 2 is
+  how the second one comes;
+- **recipes** (the Warchief laying a whole set: [ork-console.md](ork-console.md) §18) are what a mission builds;
+- **the town's clock** ([town-time.md](town-time.md)) gets the scenario that teaches it.
+
+**When:** after Mission 1 and a few days of use (the third to the seventh day), the Warchief offers the next mission in
+the morning brief: a new chapter, not an improvement, so not in the 💡 list ([the-score.md](the-score.md)).
+
+**What is built**, one orkspace (F2), by class:
+
+| class | a process that comes back |
+|---|---|
+| a developer | a weekly sweep of dependencies and known vulnerabilities; release notes |
+| a manager | a weekly report; a review of the quarter's goals by a product manager, a product designer and an AI architect (the owner's own case, [ork-console.md](ork-console.md) §18) |
+| a new builder | sorting the week's playtest feedback; the week's batch of assets |
+
+**It teaches:** a schedule on the clock's dial, the Review board and its clan, moving between orkspaces, the score.
+
+**Spend said first:** the repeat's cost is named before it is turned on ("about 2 % of the window a week"); the carts
+the town starts are marked ⏰ ([cart-waybill.md](cart-waybill.md) §2a).
+
+**Later:** after the testers finish Mission 1. A mission is a file, so **missions from the community** stand beside
+buildings from the community ([open-questions.md](open-questions.md) Q19).
