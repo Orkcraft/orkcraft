@@ -228,3 +228,26 @@ five-second test with developers as it is**, and into the artist's brief.
 4. **The palisade is too tall** for a back edge: half its height.
 5. **An ork rides in the third cart:** orks never ride or move carts.
 6. **The hall has no crest.**
+
+## The twist: a Warchief in a tie, workers in work clothes (the owner, 2026-10-13)
+
+**Taken, as the characters' signature.** It is the first audience's own joke ([audience.md](audience.md) §2a): a day
+of other people's merge requests and calls with managers, then the evening's camp. The orks are a small company of
+their own, and it sets them further apart from the big strategy game (Q18).
+
+- **The Warchief:** the horned helmet, and **a tie, loosened**, over the leather: the boss just back from a meeting.
+  (The person is the Warchief's boss; the joke is on meetings, never on the person.)
+- **The workers:** a hard hat made of half a skull or a bone-white helmet, the apron and tool belt they already have;
+  the Grunts on the line in **work vests in a muted orange-brown**, never bright orange or yellow (kept for signals,
+  [town-readability.md](town-readability.md) §2).
+- **The rule for the joke:** **modern things only as deliberate jokes on the characters,** one per role at most (a
+  tie, a hard hat, a clipboard for the Treasurer, a headset for the Lookout); **never in buildings or signals**, where
+  the camp stays a camp (the megaphone stays out).
+- **The voice matches:** the Warchief's lines may joke about meetings and stand-ups; labels and anything about money
+  or safety stay plain (CLAUDE.md, Wording).
+
+**Prompt** (with the round-3 roles sheet attached): "No shadows. The same nine orc roles as the attached sheet, same
+body and style, with small modern work clothes as a joke: the chieftain keeps the horned helmet and wears a loosened
+necktie over his leather vest; the worker wears a bone-white hard hat and a muted brown work vest; the builder a hard
+hat; the treasurer holds a wooden clipboard; the lookout wears a simple headset over the cap; the others unchanged.
+No bright yellow, no bright red, no bright orange. 32 by 32 each, one row."
