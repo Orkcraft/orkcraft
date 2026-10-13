@@ -68,3 +68,24 @@ across talks; a light theme.
 **No:** the town moved to a cloud backend (a mailbox for decisions instead, Later: [cut-list.md](cut-list.md) §3c); a
 native phone app until a measured blocker; a hidden Town Hall feature for the person's own project; the window as a big building; isometry; a painted
 style; the phone's places; Sound alerts as a building.
+
+## 4. The risks the concept does not answer (2026-10-13)
+
+The concept holds together; these four are not about features, and each could undo it.
+
+1. **It has been checked on one person.** The audience, Camp after work, the campaign and the score are a stack of
+   hypotheses, each standing on the one before. **A time box:** the first three testers within two weeks, whatever
+   state the product is in; and the log check of [ork-console.md](ork-console.md) §1a done before that.
+2. **A wrapper over three fast-moving CLIs.** Claude Code, Codex and agy change often (hooks, transcript formats, how
+   limits are read); for one person that is endless upkeep. **Claude Code first, the others best-effort**
+   ([open-questions.md](open-questions.md) Q9), and each adapter checked by tests against named versions, as the Codex
+   limits already are ([codex-limits.md](codex-limits.md)).
+3. **The platforms.** The makers of the AI tools are building their own views of parallel agents; if one shows "who is
+   waiting for you" well, the plain control room loses its worth. The story stands on what they will not do: the town
+   and the game, several vendors at once, local-first, the cost per result, roads between buildings
+   ([audience.md](audience.md) §3).
+4. **The way for the community is undecided**, and community is one of the owner's two goals: whether a building or a
+   mission can be one folder sent as a pull request ([open-questions.md](open-questions.md) Q19).
+
+**One check before the launch:** read the AI tools' terms for subscriptions on automated, background use by agents.
+Nothing is claimed here; the product stands on "your own login", so it is read once.
