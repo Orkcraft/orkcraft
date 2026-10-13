@@ -44,6 +44,20 @@ A small count beside 🪙, top right: `💡 2`. No toast, no sound, never in the
   [cut-list.md](cut-list.md) §2), a connection moved from MCP to a token ([connections.md](connections.md) §3), the
   audit's findings (§3), the night council's proposals for buildings and for the way of working.
 
+### 4a. Beside the result it is about (the owner, 2026-10-13)
+
+The same item also shows **where the person judges the result**: at the Review gate, beside the cart it is about.
+"This cart cost $0.31 (or 2 % of the window), three times its road's usual; a Router before the agent would save
+about 30 %", with **Apply** and **Dismiss**. The rule of [ork-console.md](ork-console.md) §21 again: shown on what it
+is about.
+
+- **One item, two places:** the 💡 list holds every item; a result shows only its own. Applied or dismissed in one
+  place, it is gone from both.
+- **At most one per result**, and only when the result cost clearly more than its road's usual, or a known saving
+  fits it. Never on every result.
+- **Needs each cart's cost**, so the id a cart keeps across its stops ([dogfood-logs.md](dogfood-logs.md) §3, P1)
+  comes first; this follows it, P1.
+
 ## 5. How we know
 
 - From the local event log ([dogfood-logs.md](dogfood-logs.md)): items shown, applied, dismissed; the cost per result
