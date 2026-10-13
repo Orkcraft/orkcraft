@@ -110,6 +110,28 @@ launch wait on. Answers go under each question, and the doc it changes is update
 
   The docs of 2026-10-12 and -13 are already cleaned; the word stays only where it names this task. No trademark filed
   for "Orkcraft".
+  *A second view, brought by the owner 2026-10-13* (an outside opinion, not legal advice), weighed:
+
+  | its point | weighed |
+  |---|---|
+  | "-craft" + orks + a strategy look reads as Warcraft; Blizzard protects a famous mark against dilution; the risk grows with popularity | **agreed:** the likeliest letter, and the reason no Warcraft word or look ships |
+  | the spelling "Ork" with a k is Games Workshop's registered, aggressively defended property | **not confirmed:** a search found many Games Workshop marks (WARHAMMER and others) but **no registration of the word "Ork" alone**; "Ork" is also the ordinary word for orc in German, from Tolkien's translations. Games Workshop's aggressiveness is real; a claim on a common word for developer software is weak. To be checked in the registers, not assumed |
+  | a disclaimer of no affiliation | **yes, small:** one line in the README's and the landing page's footer, not large; it shows good faith and costs nothing |
+  | no Warcraft palette or fonts | **a real gap found:** Camp's UI is gold on dark (`design-system/tokens.json`: `ink-gold`, gold frames, #c9a86a), the closest thing to Warcraft's own interface in the product. **The colour pass (P0 now, [color-pass.md](color-pass.md) §3) moves the frames and labels off gold**, towards the round-2 palette's wood and maroon |
+  | a plan B name, ready | **yes,** and its domain and handles reserved now, cheap |
+
+  **The point that decides the timing:** this week the name gets locked in: PyPI, the Claude Code plugin, the
+  marketplaces, the Discord, the landing page ([distribution.md](distribution.md), [launch-prep.md](launch-prep.md)).
+  **A rename now costs an afternoon; after the launch it costs the stars' links, the marketplace listings and the
+  community's word.** So, **before the PyPI name and the plugin are published (this week):**
+
+  1. **a register search by the owner** (USPTO, EUIPO, WIPO's Global Brand Database) for ORKCRAFT, for ORK alone and
+     for "-CRAFT" marks of Blizzard, in classes 9 (software) and 42 (software services);
+  2. **a one-hour consultation with a trademark lawyer** if anything is found (about $150–500), with the search's
+     results in hand;
+  3. **a plan B name chosen and reserved** (domain, GitHub organisation, PyPI); *Default:* keep "Orkcraft" if the
+     search finds nothing close in classes 9 and 42; rename before the launch if it does.
+
 - **Q19.** **Buildings from the community:** is a building one folder a person can send as a pull request? Asked at the
     start of the day, not answered. *Default:* not yet; the "Build a building" guide waits for it.
 - **Q20.** **The author's story:** how much of "built with the agents it runs" is to be told, and does anything (an employer,

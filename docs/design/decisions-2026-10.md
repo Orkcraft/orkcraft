@@ -137,6 +137,7 @@ agy experimental until Google's own words are read.
 | the first user's day: the commute home, "since your last look", short looks instead of a feed, the town working while away, "leaving the camp"; the first testers among remote workers | [audience.md](audience.md) §2a |
 | the category exists (Pixel Agents ~9.7k stars, 126k installs, 155 in its Discord): demand proven, go fast, learn but differ — "they show your agents, Orkcraft runs the work" | [similar-products.md](similar-products.md) |
 | the doors where the audience installs: PyPI and a Claude Code plugin before the launch, a VS Code and Open VSX extension after the testers | [distribution.md](distribution.md) |
+| the name: Warcraft's look is the likelier risk than Games Workshop's (no "Ork" word mark found); a small disclaimer; Camp's UI off gold; a register search and a plan B before the name is locked in this week | [open-questions.md](open-questions.md) Q18 |
 | the week's goal by 18 October, marketing from 19 October; one home for talk (Discord and Discussions), automated broadcasting through the town's Review gate, communities by hand; the first month measured in people | [launch-prep.md](launch-prep.md) |
 
 ## 7. To test tomorrow (14 October)
@@ -149,3 +150,5 @@ agy experimental until Google's own words are read.
 3. **Minifantasy's ork at the overview zoom:** do ❓, `!` and a cart's load still read on it
    ([color-pass.md](color-pass.md) §10a).
 4. **The licence on the Orc Kingdom page**, read by the owner; then the letter to the artist.
+5. **The name, before PyPI and the plugin are published:** a register search for ORKCRAFT and ORK in classes 9 and 42,
+   a lawyer's hour if anything is close, a plan B name reserved ([open-questions.md](open-questions.md) Q18).
