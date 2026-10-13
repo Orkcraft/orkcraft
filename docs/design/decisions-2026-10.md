@@ -36,6 +36,7 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 | [work-and-play.md](work-and-play.md) | Office at work, Camp as the game after work; one layout, two drawings (numbers ↔ things) |
 | [dogfood-logs.md](dogfood-logs.md) | what is logged; what to switch on before the owner's game; what is missing |
 | [improve-buildings.md](improve-buildings.md) §12.4 | the benches beyond Orkcraft: Later, with a gate; assets offered to new builders, not the classic game dev community |
+| [asset-prompts.md](asset-prompts.md) | prompts for reference sprite sheets: the ork body and roles, carts, ground and roads, the building kits, facades and crests |
 | [naming.md](naming.md) | name candidates should Orkcraft be renamed (Q18): criteria, twelve names, the first three, the checks |
 | [distribution.md](distribution.md) | the doors where the audience installs: PyPI and a Claude Code plugin before the launch, a VS Code and Open VSX extension after the testers; a door, never a second face |
 | [launch-prep.md](launch-prep.md) | the week's goal by 18 October; GitHub, the landing page and the materials prepared for the marketing from 19 October |
@@ -143,7 +144,7 @@ agy experimental until Google's own words are read.
 
 ## 7. To test tomorrow (14 October)
 
-1. **The reference images** of [color-pass.md](color-pass.md) §9d, add **a frame of the card as a building**: one
+1. **The reference sprite sheets** of [asset-prompts.md](asset-prompts.md), and **the reference images** of [color-pass.md](color-pass.md) §9d, add **a frame of the card as a building**: one
    hall, one open ground (the Review board's fire), one gate, each with its facade and crest, at the overview zoom and
    with the cover half-lifted; and **a phone frame** with a card's sheet open.
 2. **Checked on each:** the grey test, squinting, five seconds ("which ork waits for you, which cart is stuck,
