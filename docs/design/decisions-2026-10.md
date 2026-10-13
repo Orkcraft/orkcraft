@@ -156,3 +156,19 @@ agy experimental until Google's own words are read.
 5. **The name:** ORKCRAFT is free in the registers, but Microsoft's "-craft" family reaches class 42; nothing locks the
    name in (PyPI, plugin, Discord, posts) until a lawyer's hour this week; name candidates with neither "ork" nor
    "-craft" checked in parallel; **decided by Friday 17 October** ([open-questions.md](open-questions.md) Q18).
+
+## 8. Development starts here (from 14 October)
+
+Everything the week's code needs is decided; the name waits (nothing that locks it in is built this week). In order:
+
+1. **The owner's log check** of 10–15 sessions ([ork-console.md](ork-console.md) §1a), no code, 1–2 hours: it sizes
+   step 3.
+2. **The small ones, about a day:** Cursor's token reader out or behind an opt-in (§5); "Warcraft" out of the shipped
+   prompts and the design system (Q18 table); the night's work off in a new town and External listeners limited
+   ([cut-list.md](cut-list.md)).
+3. **The way to ask, Claude Code first:** research R2 first (the tool's own question form, an MCP tool, or a block at
+   the run's end), then questions pinned on top ([ork-console.md](ork-console.md) §4, §20).
+4. **One status with the ork's cart named** ([ork-console.md](ork-console.md) §5, §19; [cart-waybill.md](cart-waybill.md) §4).
+
+Then, next week beside the marketing: Mission 1 quests 1–3, the colour pass (Camp's UI off gold, Q18), the console.
+The goal and its dates: [launch-prep.md](launch-prep.md) §1. The critical tests of CLAUDE.md gate each merge.
