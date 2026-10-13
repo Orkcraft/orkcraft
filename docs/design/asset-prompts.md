@@ -122,3 +122,19 @@ board** facade (posts, pinned scrolls, a skull) and the **Agent pool** facade (w
 
 **The changes to the shared head:** "No shadows. Every sprite drawn at its final size, no finer detail than that size
 can hold. One three-quarter top-down projection for everything, never isometric."
+
+## Round 2: the ork of our own, taken (2026-10-13)
+
+The new ork is **taken as the character's direction for the brief:** a small round worker, a big head on a short
+body, a cloth cap, a leather apron and a tool belt, small tusks, olive skin. Nothing in it is the big strategy game's
+grunt; it reads at a glance and is cosy, as the camp is. Notes for the next sheets and the artist:
+
+- **Directions:** every walking row faces the viewer; carts and orks move along roads in four directions, so walking
+  is drawn down, up and to the side (the side mirrored for the other way).
+- **The shadows are still purple-blended:** "no shadows" has to be said at the top of the prompt, not only in the
+  head.
+- **The hammer's swing** changes hands and shows two tools in some frames; the artist animates it, the reference only
+  shows the pose.
+- **Pointed ears and a cap** may read as a goblin; the tusks keep it an ork. Checked with testers at the GIF's zoom.
+- **The face** frowns in most frames; a friendlier resting face for idle and walking suits the camp's voice; the
+  frown kept for a stuck ork.
