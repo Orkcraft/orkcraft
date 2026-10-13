@@ -265,7 +265,7 @@ to an ork instead of one. To fill in from the code before stage 1:
 |---|---|---|---|
 | 0 | the log check | §1a | **P0**, no code; decides how big the ask channel is |
 | 1 | a way to ask and to mark assumptions, Claude Code first; its questions pinned on top of the answer | §4, §20 | **P0** |
-| 2 | one status on the town: ❓ on orks, 🔥 / smouldering on buildings; every wait says why and until when, and a task where it goes next | §5, §19 | **P0** |
+| 2 | one status on the town: ❓ on orks, 🔥 / smouldering on buildings; every wait says why and until when, and a task where it goes next; an ork's status names the cart it works on | §5, §19, [cart-waybill.md](cart-waybill.md) §4 | **P0** |
 | 3 | the ork slots list, 🔥 · ❓ counts, Stop all beside it | §8 | **P0** |
 | 4 | the console, folded and unfolded, for the selected ork | §7 | **P0** |
 | 5 | the removals the console replaces | §10 | **P0**, in the same change as 4 |
@@ -281,7 +281,7 @@ to an ork instead of one. To fill in from the code before stage 1:
 | 11 | quick actions for every building | §7 | **P1** |
 | 12 | the yard with lines between its orks; forms over every AI tool's questions | §5, §7 | **Later** |
 | 12b | the game's score (wood and limit per accepted result, guarded by quality) and one 💡 list of improvements in the HUD | [the-score.md](the-score.md) | **P1** |
-| 13 | a cart's price and load on the roads | §17 | **Later** |
+| 13 | a cart's waybill in the Inspector, opened from anywhere (takes in a cart's price and load) | [cart-waybill.md](cart-waybill.md), §17 | **P1**, after a cart's id across stops |
 | 14 | the phone: the same ork slots list, console and waits, built once for both ([cut-list.md](cut-list.md) §3a) | §7, §8, §19 | **P1**, right after the console |
 | 15 | a hidden Town Hall feature for reviewing the person's own project | §18 | **No** |
 
@@ -384,6 +384,9 @@ A yard has no ork of its own (yards.md). When it fails:
 No new ork. The Mason builds, the Mason repairs.
 
 ## 17. A cart's price and load (Later)
+
+**2026-10-13: taken into the cart's waybill** ([cart-waybill.md](cart-waybill.md) §2), P1. The hints and the outliers
+below stay as written.
 
 A cart gathers spend on its way: one mail from Mail to a sent reply, one task from the board to a pull request. Two
 amounts, shown apart:
