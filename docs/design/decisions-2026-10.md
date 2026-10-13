@@ -51,7 +51,8 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 event log and its events; quest 3; the onboarding cut; "Warcraft" out of what ships and is posted
 ([open-questions.md](open-questions.md) Q18); the README's first screen without the phone.
 
-**P1, first:** the town's clock and held work ([town-time.md](town-time.md)); a cart's id and its waybill; the phone
+**P1, first:** the town's clock and held work ([town-time.md](town-time.md)); a cart's id, its waybill and its origin
+([cart-waybill.md](cart-waybill.md) §2a); the phone
 as the console with assets on cards; Work gone type by type; the Town Hall's roles folded, then ork faces; the score
 and the 💡 list; the yard as ground; each biome's palette.
 

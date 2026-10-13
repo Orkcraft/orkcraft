@@ -43,6 +43,27 @@ the ork slots list. Always the same waybill.
 **In the Inspector**, whose job is reading at length: its window size when wide, the result rendered as the Inspector
 renders diffs and documents.
 
+### 2a. Where a cart came from (the owner, 2026-10-13; P1, with the waybill)
+
+"Who started this" matters as much as "what happened to it", most of all when the town starts work, and spends, by
+itself. Every cart has one origin, shown the same way everywhere:
+
+| origin | mark | from |
+|---|---|---|
+| **a person** | 👤 | a task made by hand, a dropped file, a talk, the Warchief's line |
+| **a meeting** | 📅 | the Calendar |
+| **the town itself** | ⏰ | a schedule, the night council, a held task run at a reset; signed by who started it (the Treasurer, the night council) |
+| **an outside event** | the service's own mark: Slack, mail, Jira, GitHub, Figma… | External listeners |
+| **another cart** | ↳ | follow-up work, "born of 42" (§5) |
+
+- **Shown:** a small mark on the cart on its road; the waybill's first stop, with a link to the original (the Slack
+  thread, the mail, the ticket); the task's card; its row in the ork slots list ("Grunt · Fix the login · from Jira").
+- **The services' marks** drawn in the sprites' one pixel style, by the Alchemist ([ork-icons.md](ork-icons.md) rules:
+  readable at 16 px, in grey).
+- **⏰ "the town itself" is never hidden:** work nobody asked for is seen at once, as the night's work off by default
+  ([cut-list.md](cut-list.md)) and a held task's mark ([town-time.md](town-time.md) §4) already require.
+- **Nearly free:** a cart already carries its `source` (its entry building); External listeners know the service.
+
 ## 3. The Review gate becomes the place of judgement
 
 The result, its price, its one improvement ([the-score.md](the-score.md) §4a) and its waybill meet at the Review
