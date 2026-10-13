@@ -236,3 +236,22 @@ fence ran as a long closed row across the frame, against §6; the paths outweigh
 and orkish (rough lashed logs, hide roofs, palisade spikes, tusks and horns, skulls, crossed axes, red war banners with a
 white tusk mark); the fence only as short runs at a yard's back corners. If it turns grim, the line "Friendly and cosy,
 not menacing: rounded shapes, warm light, a little humour." is added: a cosy orc camp, not a dark fortress.
+
+### 9b. Does the frame speak to the first audience? (2026-10-13)
+
+Half. **It catches:** developers who like pixel strategy and cosy games stop on it; the ❓ reads; carts on paths hint at
+a flow. **It does not explain:** nothing in it says *code*, so the first audience ([audience.md](audience.md)), people
+building their own projects with agents, may take it for one more cosy farming game and scroll on; the carts read as
+decoration, not as a flow of work, and the factory's pleasure is what holds this audience; and a generated look
+(drifting scale, generic detail) is something developers are quick to see.
+
+**Developer tells in the frame, two or three, no more** (the cosiness stays): a scroll marked `</>` or a git branch on a
+cart; a small "tests ✓" bubble over a second ork; a "PR #42" plate at the gate; "⏳ 34 %" in the HUD's corner. **The
+factory:** two or three carts in one chain along one route (board → barracks → gate), so a line of work is seen.
+
+**Checked, not argued:** the frame shown to five developers, "what is this product?". Three or more saying "something
+with agents or code": it lands. "A farming game": the tells are too weak.
+
+**The GIF carries the bridge a single frame cannot:** in ten seconds, the camp → a click on the ❓ → the console with an
+agent's real question about code → the answer → the cart rolls to the gate with its pull request. The bridge between the
+game and the work is the positioning itself.
