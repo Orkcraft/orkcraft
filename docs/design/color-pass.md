@@ -255,3 +255,28 @@ with agents or code": it lands. "A farming game": the tells are too weak.
 **The GIF carries the bridge a single frame cannot:** in ten seconds, the camp → a click on the ❓ → the console with an
 agent's real question about code → the answer → the cart rolls to the gate with its pull request. The bridge between the
 game and the work is the positioning itself.
+
+### 9c. Round 2: the direction is taken (2026-10-13)
+
+The owner prefers round 2's palette and style to round 1. **Kept as the reference frame's direction:**
+
+- **Orkish, not a human village:** logs, hides, tusks, skulls, spikes, red banners with a tusk mark; the five
+  buildings stay apart by material (hide and timber barracks, dark stone gate, grey stone lodge with its lens, a
+  thatched lookout with its horn, a board with a skull).
+- **Signals stay loudest:** the yellow ❓ (about `#fefe08`) and the flame on the gate are the only warm saturated spots
+  besides the banners' red (about `#a32926`).
+- **The palette, sampled:** grass about `#2f9f2f`, the path about `#eba756`. Warm brown wood on a green field reads
+  well in grey.
+
+**To fix in the next frame:**
+
+1. **The grass one step quieter, in two or three tones**, with tufts and small patches of flowers: today it is one flat,
+   very saturated green over large empty areas, louder than the "quiet ground" rule (§1) and behind the GUI's cards it
+   would tire the eye. Same hue, less saturation; the yellow-green corner gradient dropped.
+2. **The fence:** the owner likes it; it may run along the camp's back edge as a border, never between buildings or
+   across a road.
+3. **The developer tells and the chain of carts** of §9b are still missing.
+4. **One projection:** the buildings mix top-down and three-quarter; the sprites keep one angle.
+
+Not started: no sprites until the owner says (§8).
+
