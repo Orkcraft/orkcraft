@@ -87,5 +87,25 @@ The concept holds together; these four are not about features, and each could un
 4. **The way for the community is undecided**, and community is one of the owner's two goals: whether a building or a
    mission can be one folder sent as a pull request ([open-questions.md](open-questions.md) Q19).
 
-**One check before the launch:** read the AI tools' terms for subscriptions on automated, background use by agents.
-Nothing is claimed here; the product stands on "your own login", so it is read once.
+**The owner's answers (2026-10-13):**
+
+1. The risk is known; the design of the system and the product's goal are finished. At worst it is a game for the
+   owner.
+2. The owner keeps three subscriptions (Claude, ChatGPT, Gemini) to keep all three tools working.
+3. The platforms: the story stands on what they will not do.
+4. **The community is built before the launch, as indie games do it:** as close to the people as possible. It is the
+   only way to popularity and recognition. Q19 (a building or a mission as one folder sent as a pull request) is
+   answered before the launch.
+
+## 5. The AI tools' terms, checked 2026-10-13 (not legal advice)
+
+| tool | what was found | what follows |
+|---|---|---|
+| **Claude Code** | Anthropic's [Legal and compliance](https://code.claude.com/docs/en/legal-and-compliance): third parties may not offer Claude.ai login, route requests through a person's subscription, or collect or store session tokens; **a person signing in to the unmodified Claude Code binary with their own subscription is allowed**. Pro and Max limits "assume ordinary, individual usage". Orkcraft runs the person's own `claude`, sign-in is Anthropic's own, limits are read through the CLI; no token handling found in the code | **allowed.** Keep the night's work off by default ([cut-list.md](cut-list.md)); never advertise many agents running round the clock on a subscription |
+| **agy** | Google banned accounts in February 2026 for "use of 3rd party tools or proxies to access Antigravity resources and quotas"; the ban reached Gemini CLI too; a second flag is permanent ([gemini-cli discussion 20632](https://github.com/google-gemini/gemini-cli/discussions/20632)). Piggybacking on its OAuth is forbidden; Orkcraft runs the official `agy`, it does not take its tokens. Secondary sources report Google's FAQ calling the wrapping of agy in third-party apps unsupported on consumer plans, with an API key advised; **not confirmed first-hand** (Google's site was unreachable from here) | **the highest risk, and to the owner's own Google account.** Until the owner reads Google's [FAQ](https://antigravity.google/docs/faq/) and [terms](https://antigravity.google/terms/): agy marked experimental and at the person's own risk, never on by default, with a plain warning of a possible account ban; out of the launch's story; a Gemini API key offered instead |
+| **Codex** | OpenAI documents signing in to the Codex CLI with a ChatGPT plan ([help](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan)); `codex exec` is its own non-interactive mode. No rule found either forbidding or allowing another program to run the person's own CLI | **likely fine, not confirmed:** read OpenAI's current Terms of Use once |
+| **Cursor** (limits only) | `orkcraft/quota/cursor_quota.py` reads Cursor's stored login token from its `auth.json` and calls an undocumented API with it: in spirit what Anthropic and Google forbid | **P0 before the launch:** removed, or kept only behind an explicit opt-in that says what it does |
+
+So: **Claude Code is the main tool** (it matches §4.2's "Claude Code first"); Codex beside it once its terms are read;
+agy experimental until Google's own words are read.
+

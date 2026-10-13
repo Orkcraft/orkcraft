@@ -42,6 +42,9 @@ launch wait on. Answers go under each question, and the doc it changes is update
   ([town-time.md](town-time.md) §3).
 - **Q9.** **Several AI tools:** do agy and Codex really do what Claude Code does in every building, or is Claude Code the lead
    and the others helpers? *Default:* Claude Code leads; the first mission runs on it when it is there.
+  *Answered 2026-10-13:* Claude Code is the main tool; Codex beside it once OpenAI's terms are read; agy experimental,
+  at the person's own risk, until Google's terms are read ([decisions-2026-10.md](decisions-2026-10.md) §5). The owner
+  keeps all three subscriptions to keep the adapters working.
 - **Q10.** **The builder in the first days:** a building made from words can be weak, and a tester's first weak building is
     a bad first impression. *Default:* the builder is offered after Mission 1, not in it.
 
