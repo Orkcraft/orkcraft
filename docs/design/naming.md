@@ -55,3 +55,18 @@ The repository and organisation (GitHub redirects the old links), `pyproject.tom
 landing page and its domain, the logo's wordmark (the Almendra wordmark, color-pass §5), `updates.json` and the
 installer's URLs. **Untouched:** the orks, the town, every code name and setting (CLAUDE.md: code keeps its names), the
 interface's words.
+
+## 6. The owner's candidate: OrkMine (2026-10-13)
+
+Fits the rails and mine carts (color-pass §6d) and keeps the brand's "ork". Weighed against §1:
+
+| for | against |
+|---|---|
+| **drops "-craft"**, the main weight of Q18 (Microsoft's family of marks reaching class 42) | **keeps "ork"**: if Games Workshop's ORK is registered in class 9, the name carries it; the lawyer's hour must clear ORK first |
+| the factory said by the picture: a mine, carts on rails, work brought up | **"mine" reads as crypto mining** to many developers ("an ork mine" ≈ a mining pool): a first impression to test, not to argue |
+| short, said once and spelt right | "Mine" also echoes Minecraft (the same owner as Warcraft), though far less than "-craft" |
+| keeps the continuity: orks, the town, the domain's first letters | "The Mine" was the Research building's old Camp name (`lexicon.py` `was`); harmless, the word today is Research |
+
+**Product view:** better than Orkcraft (the larger risk goes), not as safe as a name with no "ork". It stands or falls
+on two checks this week: **the lawyer on ORK**, and **five developers asked "what does OrkMine do?"**: if two or more
+say crypto, it is out.
