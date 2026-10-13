@@ -39,7 +39,7 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 | [distribution.md](distribution.md) | the doors where the audience installs: PyPI and a Claude Code plugin before the launch, a VS Code and Open VSX extension after the testers; a door, never a second face |
 | [launch-prep.md](launch-prep.md) | the week's goal by 18 October; GitHub, the landing page and the materials prepared for the marketing from 19 October |
 | [similar-products.md](similar-products.md) | the projects that show agents as characters in a game world (Pixel Agents and others): the category's ticket, not our difference; we run the work, they watch sessions |
-| [open-questions.md](open-questions.md) | the owner's open questions (Q1–Q20) and the research to-do (R1–R10) |
+| [open-questions.md](open-questions.md) | the owner's open questions (Q1–Q22) and the research to-do (R1–R10) |
 
 ## 3. The order of work
 
@@ -66,11 +66,14 @@ buildings ([color-pass.md](color-pass.md) §8); the "while you were away" screen
 questions gathered, and "leaving the camp" with the Mac kept awake while carts are in work
 ([audience.md](audience.md) §2a, the commute home; the first testers among remote workers); Orkcraft on PyPI and
 a Claude Code plugin ([distribution.md](distribution.md)); the art the GIF and the landing show made by people (a CC0
-pack and a commissioned pixel artist), generated images only as references ([color-pass.md](color-pass.md) §10).
+pack and a commissioned pixel artist), generated images only as references ([color-pass.md](color-pass.md) §10); **the card is the building** for the five
+core buildings: a cover (roof, open scene, or tower and gate) that lifts close up, a facade and a crest, the signals on
+the cover, a sheet from the bottom on the phone ([color-pass.md](color-pass.md) §6a–6c); outlines, reserved signal
+colours, a cart's load and flag ([town-readability.md](town-readability.md)).
 
 **P1, first:** the phone as the console (the commute home, [audience.md](audience.md) §2a); the town's clock and held work ([town-time.md](town-time.md)); a cart's id, its waybill and its origin
 ([cart-waybill.md](cart-waybill.md) §2a); assets on cards on the phone; Work gone type by type; the Town Hall's roles folded, then ork faces; the score
-and the 💡 list; the yard as ground; each biome's palette.
+and the 💡 list; the yard as ground round the walls; each biome's palette; a VS Code and Open VSX extension ([distribution.md](distribution.md)).
 
 **Later:** the campaign after Mission 1: a process that comes back, the wiki, debating agents, a script in an
 agent's place, a building of one's own, each offered when its moment comes ([first-mission.md](first-mission.md) §7–8); a cart's price on the roads beyond the waybill; the benches beyond Orkcraft; packs by kind of user; search
@@ -121,3 +124,28 @@ The concept holds together; these four are not about features, and each could un
 So: **Claude Code is the main tool** (it matches §4.2's "Claude Code first"); Codex beside it once its terms are read;
 agy experimental until Google's own words are read.
 
+## 6. Decided on 13 October, in short
+
+| decision | where |
+|---|---|
+| Camp's direction: round 2's orkish camp, grass a step quieter in two or three tones, banners maroon, the palisade only on the camp's edge | [color-pass.md](color-pass.md) §9c |
+| the frame must say *code*: two or three developer tells and a visible chain of carts | [color-pass.md](color-pass.md) §9b |
+| carts, orks and their link read on a bright camp: outlines and shadows, yellow and red only for signals, work as motion, words on chips, the link by place and a spotlight | [town-readability.md](town-readability.md) |
+| **the card is the building:** its cover lifts close up; two marks (facade, crest); three kinds (hall, open ground, tower or gate); on the phone a sheet from the bottom | [color-pass.md](color-pass.md) §6a–6c |
+| the art that ships is made by people: a CC0 pack and a commissioned pixel artist under CC-BY 4.0, asked this week; generated art for the testers and the devlog, said so; ≈ $1.5–4k, the launch's minimum ≈ $0.7–1.8k | [color-pass.md](color-pass.md) §10–10b |
+| a pack is chosen by its licence first: Minifantasy's forbids a public repository | [color-pass.md](color-pass.md) §10a |
+| the first user's day: the commute home, "since your last look", short looks instead of a feed, the town working while away, "leaving the camp"; the first testers among remote workers | [audience.md](audience.md) §2a |
+| the category exists (Pixel Agents ~9.7k stars, 126k installs, 155 in its Discord): demand proven, go fast, learn but differ — "they show your agents, Orkcraft runs the work" | [similar-products.md](similar-products.md) |
+| the doors where the audience installs: PyPI and a Claude Code plugin before the launch, a VS Code and Open VSX extension after the testers | [distribution.md](distribution.md) |
+| the week's goal by 18 October, marketing from 19 October; one home for talk (Discord and Discussions), automated broadcasting through the town's Review gate, communities by hand; the first month measured in people | [launch-prep.md](launch-prep.md) |
+
+## 7. To test tomorrow (14 October)
+
+1. **The reference images** of [color-pass.md](color-pass.md) §9d, add **a frame of the card as a building**: one
+   hall, one open ground (the Review board's fire), one gate, each with its facade and crest, at the overview zoom and
+   with the cover half-lifted; and **a phone frame** with a card's sheet open.
+2. **Checked on each:** the grey test, squinting, five seconds ("which ork waits for you, which cart is stuck,
+   which building is which?") ([town-readability.md](town-readability.md) §6).
+3. **Minifantasy's ork at the overview zoom:** do ❓, `!` and a cart's load still read on it
+   ([color-pass.md](color-pass.md) §10a).
+4. **The licence on the Orc Kingdom page**, read by the owner; then the letter to the artist.
