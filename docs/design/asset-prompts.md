@@ -138,3 +138,19 @@ grunt; it reads at a glance and is cosy, as the camp is. Notes for the next shee
 - **Pointed ears and a cap** may read as a goblin; the tusks keep it an ork. Checked with testers at the GIF's zoom.
 - **The face** frowns in most frames; a friendlier resting face for idle and walking suits the camp's voice; the
   frown kept for a stuck ork.
+
+## Round 3: directions and roles (2026-10-13)
+
+**Taken:** the back view, the side walk, the ork pushing a hand cart (the cart reads at once), and the nine roles,
+each told by its silhouette: the chieftain's horned helmet and banner, the worker's axe, the builder's headband and
+block, the seer's hood and staff (the strongest), the warden's helmet and shield, the pathfinder's fur hat, map and
+lantern. The shadows are gone where "no shadows" led the prompt.
+
+**To fix:**
+
+1. **Signal colours in the props:** the warden's bright gold key and the alchemist's red flask use the yellow and red
+   kept for ❓ and errors ([town-readability.md](town-readability.md) §2): brass and muted green or blue instead.
+2. **The alchemist and the mechanic** both wear goggles; one changes (the alchemist a pointed cloth hat, or the
+   mechanic a welder's cap).
+3. **The treasurer** is weak: a ledger only. A coin pouch on the belt and a small abacus or scales.
+4. **Walking towards the viewer** barely moves between frames; the legs and arms must swing as in the side walk.
