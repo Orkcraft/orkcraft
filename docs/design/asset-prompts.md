@@ -154,3 +154,25 @@ lantern. The shadows are gone where "no shadows" led the prompt.
    mechanic a welder's cap).
 3. **The treasurer** is weak: a ledger only. A coin pouch on the belt and a small abacus or scales.
 4. **Walking towards the viewer** barely moves between frames; the legs and arms must swing as in the side walk.
+
+## The camp put together, round 1 (2026-10-13)
+
+**What it proves:** the roof lifted on one building, with orks working at tables inside its walls, reads at once:
+color-pass §6a works as a picture. The open ground (a ring of stones, logs, the fire) and the tusked gate fit the kit.
+
+**Why it is not yet our town:**
+
+1. **A village, not a factory:** nine houses round a square, paths as loose patches of mud. The town is five buildings
+   joined by roads one cart wide, the work going one way along them (board → pool → gate); nothing here shows a flow.
+2. **Isometric** (houses at 45°), against the one three-quarter top-down projection; isometry is a "No"
+   ([decisions-2026-10.md](decisions-2026-10.md) §3).
+3. **Fire everywhere** (both gate towers, two fires, torches): fire is the 🔥 signal; decorative fire empties it. One
+   fire only, the Review board's, calm.
+4. **A skull on every roof:** the crest is each building's own mark (§6b); repeated, it marks nothing.
+5. **Every building drawn as its own picture,** not the roof and wall kit: the brief's cheapness and the community's
+   buildings rest on the kit.
+6. **Missing:** the ❓, the developer's tells, a chain of carts; the orks are the old generic ones, not ours.
+
+**What follows:** an image model composes a village of its own; it does not lay out our town. **The frame is put
+together by hand** from the sheets on a grid (any editor, about half an hour): it also checks the scale, the projection
+and whether the nine-slice pieces join. A tighter prompt is kept as the fallback.
