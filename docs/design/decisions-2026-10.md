@@ -36,13 +36,15 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 | [work-and-play.md](work-and-play.md) | Office at work, Camp as the game after work; one layout, two drawings (numbers ↔ things) |
 | [dogfood-logs.md](dogfood-logs.md) | what is logged; what to switch on before the owner's game; what is missing |
 | [improve-buildings.md](improve-buildings.md) §12.4 | the benches beyond Orkcraft: Later, with a gate; assets offered to new builders, not the classic game dev community |
+| [launch-prep.md](launch-prep.md) | the week's goal by 18 October; GitHub, the landing page and the materials prepared for the marketing from 19 October |
 | [similar-products.md](similar-products.md) | the projects that show agents as characters in a game world (Pixel Agents and others): the category's ticket, not our difference; we run the work, they watch sessions |
 | [open-questions.md](open-questions.md) | the owner's open questions (Q1–Q20) and the research to-do (R1–R9) |
 
 ## 3. The order of work
 
 **The calendar (the owner, 2026-10-13):** until the end of the week of 12 October, the backlog's tasks; from 19 October,
-marketing and community work starts (posts, a devlog, finding testers), in parallel with the work.
+marketing and community work starts (posts, a devlog, finding testers), in parallel with the work. **This week's
+goal** and the preparation started now (materials, the landing page, GitHub for search): [launch-prep.md](launch-prep.md).
 
 **P0 now** (worth having for the first three testers):
 
