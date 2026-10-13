@@ -47,6 +47,7 @@ it, and shows what it is for at once. A quest log in the Warchief's line, one ob
 | **1** | "Boss, the work needs somewhere to lie" | Task board | a drill card appears on it (a practice task, called a drill) | ≤ 1 min · free |
 | **2** | "We need hands" | Agent pool, and the road from the board | a Grunt takes the card and asks a scripted question: ❓ on him, 🔥 on the pool; the person answers in the console | ≤ 3 min · free, no model: **the first win** |
 | **3** | "Nothing leaves without a check" | Review gate, and its road | the drill's result reaches the gate; the person passes it and sees its waybill ([cart-waybill.md](cart-waybill.md)) | ≤ 5 min · free |
+| **3½** | "Boss, in working hours the camp can look like an office" | — | the person presses the key and sees **the same town** in Office (the same carts and orks, as rows and numbers, calm and monochrome), then presses it again and is back in Camp. The Warchief: "By day the office, after work the camp. Switch when you like." A deed, *Two faces* | ≈ 15 s · free |
 | **4** | "Listen to what goes on outside" | External listeners (GitHub) | **real work**, read-only: the person's unread issues and notifications sorted into cards; without `gh`, the repository's TODO and FIXME. The price said before it starts | ≤ 8 min · ≈ $0.02 |
 | **5** (may be put off) | "Two at once" | — | two cards taken by two Grunts in parallel, each on its branch; 🥩 2/8; one asks; both reach the gate | ≤ 15 min · price said first |
 

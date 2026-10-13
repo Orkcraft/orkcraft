@@ -48,6 +48,8 @@ launch wait on. Answers go under each question, and the doc it changes is update
     overview zoom.
 - **Q13.** **Office in the README:** is Office shown beside Camp (a screenshot), or only mentioned? *Default:* one line and
     one small screenshot, for the people who think it is a toy.
+  *Answered 2026-10-13:* yes, both looks side by side, "At work: Office. After work: Camp. The same town."
+  ([work-and-play.md](work-and-play.md) §4b).
 - **Q14.** **The camp's jokes:** the Warchief's lines joke. Does that sit well with a developer who is tired at 2 a.m.? *Default:*
     jokes in growth news and the mission only; never on an error, money or a question.
 

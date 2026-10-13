@@ -67,6 +67,19 @@ Toward Warcraft II and Stardew Valley, keeping the pixels ([color-pass.md](color
   Until they are set there is no offer, only the key.
 - **Mission 1 is played in Camp:** it is the game's first mission.
 
+### 4b. Making the idea known from the first session (decided 2026-10-13)
+
+The risk: a person who sees only the game in the first minutes takes Orkcraft for a toy, not a tool for work, and
+never learns Office exists. Not answered with another onboarding question; shown instead:
+
+1. **In Mission 1, a step of fifteen seconds** between quests 3 and 4 ([first-mission.md](first-mission.md) §3, 3½):
+   the person switches to Office, sees the same town as rows and numbers, switches back; the Warchief says "by day the
+   office, after work the camp". The idea is learned by doing it, with the key. **P0**, part of Mission 1.
+2. **The README and the first screen:** both looks side by side, "At work: Office. After work: Camp. The same town."
+   This answers [open-questions.md](open-questions.md) Q13 (show Office in the README): yes. **P0 before the launch.**
+3. **The product says what it is:** the first window and the README call it a control room for coding agents; the
+   game is a look, not what it is.
+
 ## 4a. No game engine (decided 2026-10-13)
 
 Asked: should Camp move to a game engine? **No.** The town is drawn with Preact and htm over the DOM, SVG and a little
