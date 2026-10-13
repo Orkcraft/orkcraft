@@ -56,9 +56,30 @@ gate: the person judges a result knowing what it cost and how it was made. It is
 - **A cart shows who carries it** (P1): a small head of its ork on the cart while one works on it; the cart's hint
   says the ork and its state.
 
-## 5. Open for engineering
+## 5. A cart's id: one for life, sub-ids when it splits (decided 2026-10-13)
 
-1. Which buildings already give a cart an id it keeps across stops, and which start a new one (the question of
-   [dogfood-logs.md](dogfood-logs.md) §3).
-2. Reading "files read, tools run" out of each AI tool's trail: Claude Code's transcript has them; Codex's and agy's to
-   be checked.
+**What is there** (`realm/pipes.py`): every cart carries `ref`, "the thing worked on, stable across hops and rework
+rounds", and `trail`, its stops (`Hop`: building, ork, kind, tokens, cost, branch, outcome, time, model, decision,
+round). The Review gate already shows the trail with its total (`gui/views/loot.py` `_chain`). So `ref` is the cart's
+id, and half of the waybill exists.
+
+**The owner's rule:** a cart keeps **one id for its whole life**; where its work is split to run side by side (the
+Agent pool's subtasks, the Review board's members), the parts get **sub-ids** under it.
+
+| case | the id | today |
+|---|---|---|
+| **born** at an entry: a listener's signal, a dropped file, a task made by hand, a talk made a card | a new id, minted there | minted only when a building finds none (the Agent pool: `<building>:<task>`); not every entry mints one: **to check** |
+| **passes on** to the next building | the same id | ✓ carried |
+| **comes back** for rework | the same id, round n | ✓ `Hop.round` |
+| **splits and joins**: the pool's subtasks, the board's members | sub-ids `42.1`, `42.2`…; the parent waits; the join carries `42` on, its waybill shows the parts | no sub-ids; a join keeps the **first** cart's `ref` and **drops the others'** (`realm/roads.py`): **a gap** |
+| **splits for good**: a Router sending copies down two roads | sub-ids `42.1`, `42.2`, each on its own way, each knowing its parent | no sub-ids: **a gap** |
+| **many become one**: a steward handling ten carts in one session, a digest | a new id, "made from 42, 43, …"; the session's cost shared evenly (§2 price, [ork-console.md](ork-console.md) §17) | **a gap** |
+| **new work born of a cart**: a follow-up task | a new id, "born of 42": not a part, nothing waits on it | **to check** |
+
+So a cart's ids form a tree, with an occasional merge. The waybill shows a cart's parent, its parts and what it was
+made from, each a link to its own waybill.
+
+## 6. Open for engineering
+
+See the research to-do in [open-questions.md](open-questions.md) §F: which entries mint an id; sub-ids at a split;
+keeping every id at a join; reading files and tools out of each AI tool's trail.

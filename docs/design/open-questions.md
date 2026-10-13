@@ -81,3 +81,21 @@ launch wait on. Answers go under each question, and the doc it changes is update
     start of the day, not answered. *Default:* not yet; the "Build a building" guide waits for it.
 - **Q20.** **The author's story:** how much of "built with the agents it runs" is to be told, and does anything (an employer,
     a contract) limit it? *Default:* told in full in the article.
+
+## F. Research to-do (for engineering, before the P1s they feed)
+
+Not questions for the owner: things to find out in the code and in each AI tool, each a short write-up with what was
+found. Gathered from the docs of 2026-10-12 and -13.
+
+- **R1. How an ork's session runs:** one headless call, or a live terminal; what "open the session" means for
+  `claude`, `codex` and `agy` ([ork-console.md](ork-console.md) §12). Feeds P0 (the console).
+- **R2. A way to ask and to mark assumptions in every AI tool**, also run without a terminal: a tool Orkcraft gives
+  every ork (MCP), the tool's own question form, or a block at the end of the run ([ork-console.md](ork-console.md)
+  §4, §20). Feeds P0.
+- **R3. Files read and tools run, out of each AI tool's trail:** Claude Code's transcript has them; Codex's rollout
+  and agy's brain folder to be checked ([cart-waybill.md](cart-waybill.md) §2). Feeds P1 (the waybill).
+- **R4. A cart's id across its stops:** which entries mint one; sub-ids at a split; every id kept at a join (today
+  only the first); "made from" and "born of" ([cart-waybill.md](cart-waybill.md) §5). Feeds P1.
+- **R5. Each AI tool's limit windows**, where they can be read (Codex's `resetsAt`; Claude Code's and agy's)
+  ([town-time.md](town-time.md) §3). Feeds P1.
+- **R6. The cost of a single run in each AI tool**, for the console's history ([ork-console.md](ork-console.md) §12).
