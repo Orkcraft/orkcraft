@@ -53,7 +53,8 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 **P0 before the launch:** the console unfolded; the removals it replaces; the Agent pool's lanes as roles; the local
 event log and its events; quests 4–5; the onboarding cut; "Warcraft" out of what ships and is posted
 ([open-questions.md](open-questions.md) Q18); the README's first screen without the phone; Camp at the map and overview zooms as a living town with no cards
-([work-and-play.md](work-and-play.md)).
+([work-and-play.md](work-and-play.md)); Camp committed to the game: a reference frame and a new palette for the five core
+buildings ([color-pass.md](color-pass.md) §8).
 
 **P1, first:** the town's clock and held work ([town-time.md](town-time.md)); a cart's id, its waybill and its origin
 ([cart-waybill.md](cart-waybill.md) §2a); the phone

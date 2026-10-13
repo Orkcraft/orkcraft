@@ -1,7 +1,8 @@
 # Design — a colour pass: keep the style, make what matters stand out
 
 Status: proposal 2026-10-12, the owner's question ("is it too pale? brighter colours? is it all one style?"); nothing
-changed. Priority **P0 for the token pass** (§3, the demo GIF is judged on it), **No** for redrawing the sprites.
+changed. Priority **P0 for the token pass** (§3, the demo GIF is judged on it), **No** for redrawing the sprites' shapes (a new
+palette is §8).
 Builds on [gui-design-system.md](gui-design-system.md), `design-system/tokens.json`, [sprites.md](sprites.md),
 [portrait.md](portrait.md) (the looks). Looked at: `docs/img/town.png` (2026-10-11) and the buildings' `header@2x.png`
 side by side.
@@ -125,3 +126,31 @@ Asked 2026-10-12: move the look toward Kingdom Rush, or keep the pixels?
   than its drawing, is why it feels good. With [building-motion.md](building-motion.md); P1.
 - **Warm, saturated accents on a dark ground:** the rule of §2 already.
 - **Big, friendly silhouettes:** the buildings have them.
+
+## 8. Camp commits to being a game (decided 2026-10-13)
+
+The owner: today Camp is not colourful enough for a game and too much of a game for a working tool. The middle is the
+worst place: it neither delights as a game nor convinces as a tool.
+
+The decisions of 12–13 October give the way out: **Office is the working tool** (by day, on the laptop), **Camp is the
+game** (after work, on the phone too) ([work-and-play.md](work-and-play.md)), and the people it is for find
+optimising a pleasure ([audience.md](audience.md)). So Camp no longer has to look serious; Office does that job.
+**Camp goes all the way to the game.**
+
+1. **Brighter and warmer, with a hierarchy.** A cosy farming game is bright and still reads well: the ground bright
+   but even, buildings standing off it by a dark outline and by lightness, and the loudest thing what moves. §2's rule
+   holds with "quiet ground" meaning *even*, no longer *dark and grey*; the grey and squint checks of §3 stay.
+2. **The sprites' palette changes, not their shapes.** The paleness comes first from every building being one green.
+   A palette swap keeps every silhouette and gives materials their colours: wood brown, stone grey, roofs red, blue or
+   thatch, each type its own. This refines §4: **no redraw of shapes; a new palette, yes.**
+3. **Light by the time of day (Later):** a light town by day, a warm dusk in the evening, the moon at night, tied to the
+   clock's sun and moon ([town-time.md](town-time.md) §5).
+4. **One reference frame first, then the sprites:** the frame the GIF will be (Camp, the map zoom, the five core
+   buildings, carts and orks, the evening), in two or three palettes, chosen by a test: five seconds with a tester,
+   "what needs you here?" and "would you like to play this?".
+
+**Priorities:** **P0 before the launch:** the reference frame and the palette swap of the five core buildings in the
+forest biome (it is the GIF). **P1:** the other buildings and biomes ([color-pass.md](color-pass.md) §5, the biomes'
+task). **Later:** light by the time of day.
+
+§3's token pass (P0 now) is not wasted: its ground, signals and roads are the base the brighter palette sits on.
