@@ -176,3 +176,21 @@ color-pass §6a works as a picture. The open ground (a ring of stones, logs, the
 **What follows:** an image model composes a village of its own; it does not lay out our town. **The frame is put
 together by hand** from the sheets on a grid (any editor, about half an hour): it also checks the scale, the projection
 and whether the nine-slice pieces join. A tighter prompt is kept as the fallback.
+
+## The camp put together, round 2: the first frame that is our town (2026-10-13)
+
+**Holds:** five structures in one row, one projection, the palisade only behind; the Agent pool's hall open with our
+orks at tables inside; one calm fire (the Review board); the ❓ on an ork by the hall is the loudest thing in the frame;
+a chain of three carts on a road one cart wide; a different crest on most roofs (lantern, totem, banner, horn); quiet
+ground. **It is good enough for the first five-second test** with developers, as it is.
+
+**For the next round:**
+
+1. **The flow:** each building's door joined to the road by a short path, and the carts moving board → hall → gate,
+   one pulled by an ork, so the line of work is seen, not only a road in front of the camp.
+2. **Two horns** (the gate and the lookout): the gate's crest becomes a skull-and-banner or a portcullis wheel.
+3. **The ground went too dull:** the grass one step back towards round 2's lushness, still in two or three calm tones.
+4. **The developer's tell:** the `</>` on the scroll is not legible; drawn larger, and a small wooden plate at the gate
+   ("PR") as the second tell (§9b).
+5. **Sizes:** the hall dwarfs the board; the core buildings closer in size (the card's three sizes are a choice, not a
+   given).
