@@ -67,6 +67,27 @@ Toward Warcraft II and Stardew Valley, keeping the pixels ([color-pass.md](color
   Until they are set there is no offer, only the key.
 - **Mission 1 is played in Camp:** it is the game's first mission.
 
+## 4a. No game engine (decided 2026-10-13)
+
+Asked: should Camp move to a game engine? **No.** The town is drawn with Preact and htm over the DOM, SVG and a little
+canvas (`gui/static/js`), inside pywebview; that is enough for what Camp needs.
+
+1. **Battery and CPU:** Orkcraft stays open all day. An engine draws sixty frames a second whether anything moves or
+   not; the web animates only what moves and sleeps otherwise. A tool that warms the laptop gets closed.
+2. **One layout, two drawings** (§2): an engine would be a second interface for Camp. Text, forms, the terminal
+   (xterm), copying and accessibility all live in the web.
+3. **Install** is the first risk before the testers: an engine adds a runtime, size and GPU trouble on every system.
+4. **The code and contributors:** Python and Preact today; an engine is a third language and its tools.
+5. **What Camp needs** (tens of sprites, orks and carts on paths, smoke, birds, the mill) is done with CSS sprite
+   animation, SVG paths and a canvas layer for the ground.
+
+**A middle way, only if measured need comes:** a 2D WebGL renderer (PixiJS or the like) for the map layer alone, in
+the same window; cards and the interface stay in the DOM. **Considered only when** a town of 20 buildings, 30 carts
+and 15 walking orks takes longer than 16 ms a frame on a middling laptop, or Camp's animations cost more than 1–2 %
+CPU while idle.
+
+**A rule now:** animations pause when the window is hidden or not in focus, and follow the system's "reduce motion".
+
 ## 5. Priorities and how we know
 
 - **P0 before the launch:** Camp at the map and overview zooms with no cards: the living town. It is the frame of the
