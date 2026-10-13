@@ -30,6 +30,15 @@ risks), [open-questions.md](open-questions.md) Q16 (the hooks).
    from a board), with ~10k stars of reach behind it. AgentVille already has an inbox and orders. **Time matters:**
    beside the platforms of [decisions-2026-10.md](decisions-2026-10.md) §4.3, this is the second pressure, from below.
 
+**Their community, seen 2026-10-13:** Pixel Agents' Discord has **155 members, 25 online**, against ~9.7k stars.
+Stars came from a GIF that spread; a community did not come with them (about 1.6 % of the stars). So:
+
+- **The community place is still open:** no project of the category has a lively one yet. The owner's goal
+  ([decisions-2026-10.md](decisions-2026-10.md) §4.4) is reachable, and it is where Orkcraft can lead, not follow.
+- **Stars are not the measure;** people who come back and talk are ([launch-prep.md](launch-prep.md) §4).
+- **Their Discord is free research:** what its people ask for (more AI tools, handing work on, a board, limits) is
+  what this audience wants next. The owner joins as a user, reads, **never promotes Orkcraft there**.
+
 ## 3. What to take from them
 
 | from | what | where it goes | priority |

@@ -94,3 +94,17 @@ the developer story**, once the GIF's flow works.
    each network's version, the drafts wait at the Review gate, and only what the owner passes goes out (what leaves the
    town goes through the gate, [audience.md](audience.md) §4a). It is the story "built and marketed by the agents it
    runs", told with proof.
+
+## 4. How the first month is measured
+
+Not stars: Pixel Agents has ~9.7k stars and 155 people in its Discord ([similar-products.md](similar-products.md) §2).
+By 19 November:
+
+| measure | aim |
+|---|---|
+| people in the Discord | 50 |
+| of them, active in the last week | 15 |
+| testers who finished Mission 1 | 10 |
+| testers back within 7 days | 5 |
+| stars | counted, not aimed at |
+
