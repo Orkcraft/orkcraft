@@ -280,3 +280,26 @@ The owner prefers round 2's palette and style to round 1. **Kept as the referenc
 
 Not started: no sprites until the owner says (§8).
 
+
+### 9d. The next batch of reference images (2026-10-13)
+
+Made by the owner in an image model while the review waits, each with the round-2 frame attached and opened with "Same
+pixel-art style, palette and three-quarter top-down projection as the attached image". References, not sprites: the
+model keeps no pixel grid, and the text in images is not trusted (in the product every word is on a UI chip,
+[town-readability.md](town-readability.md) §2). In order:
+
+1. **Round 3 of the frame:** §9c's fixes, banners maroon, outlines and shadows, the developer tells of §9b, a chain of
+   three carts, one ❓ and one flame as the only bright yellow.
+2. **The readability stress test:** 8 orks and 10 carts; most working with no badge; one ❓, one red `!`, one ⏳; a pile
+   of four carts; one chip "#42 · Login form". Checked by [town-readability.md](town-readability.md) §6.
+3. **The orks by role:** Warchief, Grunt, Mason, Alchemist, Mechanic, Treasurer, Farseer, Warder, Pathfinder, one
+   size and angle, readable at 32 px ([ork-icons.md](ork-icons.md)).
+4. **One ork's states:** working, asking, error, held for a limit, idle.
+5. **The carts:** loads (code, asset, message, document, ×3) and state flags (none, yellow, ⏳, red, a pile ×4).
+6. **The same town in Office:** flat grey shapes, plain labels, rows of ids, one yellow dot
+   ([work-and-play.md](work-and-play.md)).
+7. **The GIF's storyboard, four frames:** the camp with a ❓ → the console with a question about code → the answer →
+   the cart reaches the gate with its pull request.
+
+If time is left: the camp at night (for the clock and Camp after work), and a phone frame (the camp above, the console
+below; [audience.md](audience.md) §2a).
