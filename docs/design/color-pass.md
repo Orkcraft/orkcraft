@@ -92,7 +92,7 @@ thin lines, while the roads are meant to be the lines that matter.
 
 Checked as §3 is: in grey and squinted, the yard must stand off the ground and the roads must be seen first.
 
-**A fence stays, as decoration, in the way of Stardew Valley** (the owner, 2026-10-12: that look is liked). The yard
+**A fence stays, as decoration, in the way of a cosy farming game** (the owner, 2026-10-12: that look is liked). The yard
 is still the patch of ground; the fence is a light touch on it, never its frame:
 
 - **light, warm wood**, lower in contrast than the roads, never the dark posts of today;
