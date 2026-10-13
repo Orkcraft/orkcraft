@@ -39,6 +39,23 @@ Stars came from a GIF that spread; a community did not come with them (about 1.6
 - **Their Discord is free research:** what its people ask for (more AI tools, handing work on, a board, limits) is
   what this audience wants next. The owner joins as a user, reads, **never promotes Orkcraft there**.
 
+**Their reach, from their README's badges (2026-10-13):** version 1.4.1, **126k installs from the editor
+marketplaces**, 24k npm downloads, 9.7k stars. So:
+
+- **The category's audience is in the hundreds of thousands,** not thousands: over 100k developers wanted to *see*
+  their agents. Installs are not users, but the order of size is the signal.
+- **Most of the reach came through a marketplace,** where developers already are, one click, no terminal. GitHub
+  stars were the smaller channel. Orkcraft's install today is Homebrew or `curl` and Python: more friction, and no
+  marketplace at all.
+- **Install ≫ community** (126k against 155 in the Discord): a marketplace brings people who look once; the
+  community is still built by hand.
+
+**Q22 for the owner: a way in from a marketplace.** Claude Code has plugin marketplaces, the place this audience
+already installs from. A small Orkcraft plugin there (the hooks of Q16, failing open, and one `/orkcraft` command
+that opens the town or offers to install it) would be **an entry, not a second face**: the GUI stays the one face
+(CLAUDE.md). An editor extension of the same kind later. *Default:* considered with Q21 (the first look at running
+sessions), since both are the same way in; P1 after the testers, unless the launch's channels say sooner.
+
 ## 3. What to take from them
 
 | from | what | where it goes | priority |

@@ -119,6 +119,10 @@ launch wait on. Answers go under each question, and the doc it changes is update
     work? *Default:* not in Mission 1; reconsidered if the first win is slower than 3 minutes
     ([similar-products.md](similar-products.md) §5).
 
+- **Q22.** **A way in from a marketplace:** a small Claude Code plugin (hooks, `/orkcraft` to open or install the town)
+    listed where the audience installs from; Pixel Agents' reach came mostly from its marketplace (126k installs).
+    *Default:* with Q21, P1 after the testers ([similar-products.md](similar-products.md) §2).
+
 ## F. Research to-do (for engineering, before the P1s they feed)
 
 Not questions for the owner: things to find out in the code and in each AI tool, each a short write-up with what was
