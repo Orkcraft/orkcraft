@@ -31,6 +31,7 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 | [connections.md](connections.md) | MCP first, a token later, offered with what it saves |
 | [ork-icons.md](ork-icons.md) | an ork's face says its role |
 | [color-pass.md](color-pass.md) | quiet ground, clear buildings, loud signals; the yard as ground with a light fence; pixels stay |
+| [work-and-play.md](work-and-play.md) | Office at work, Camp as the game after work; one layout, two drawings (numbers ↔ things) |
 | [dogfood-logs.md](dogfood-logs.md) | what is logged; what to switch on before the owner's game; what is missing |
 | [improve-buildings.md](improve-buildings.md) §12.4 | the benches beyond Orkcraft: Later, with a gate; assets offered to new builders, not the classic game dev community |
 | [open-questions.md](open-questions.md) | the owner's open questions (Q1–Q20) and the research to-do (R1–R6) |
@@ -50,7 +51,8 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 
 **P0 before the launch:** the console unfolded; the removals it replaces; the Agent pool's lanes as roles; the local
 event log and its events; quests 4–5; the onboarding cut; "Warcraft" out of what ships and is posted
-([open-questions.md](open-questions.md) Q18); the README's first screen without the phone.
+([open-questions.md](open-questions.md) Q18); the README's first screen without the phone; Camp at the map and overview zooms as a living town with no cards
+([work-and-play.md](work-and-play.md)).
 
 **P1, first:** the town's clock and held work ([town-time.md](town-time.md)); a cart's id, its waybill and its origin
 ([cart-waybill.md](cart-waybill.md) §2a); the phone
