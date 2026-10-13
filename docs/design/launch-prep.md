@@ -77,5 +77,20 @@ the developer story**, once the GIF's flow works.
 1. **"Orchestration" in search:** the house rule says "orkestration" in everything a person reads. People search
    "orchestration". *Proposed:* the correct spelling allowed only where a machine reads it (GitHub topics, the
    page's meta description and keywords); everything a person reads keeps "orkestration".
+   *Answered 2026-10-13:* yes.
 2. **Where the community gathers:** Discord, GitHub Discussions, or both? *Default:* GitHub Discussions first (no
    moderation to run, next to the code), Discord when ten people ask for it.
+   *Answered 2026-10-13:* the owner would rather open every channel at once if it can be automated. **Decided: what
+   can be automated is broadcasting; a conversation cannot.** An empty room reads as a dead project, and one author's
+   attention to answer is the limit, not the posting. So:
+
+   | kind | where | how |
+   |---|---|---|
+   | **one home for conversation** | **Discord** (as indie games do it: testers, live talk), and **GitHub Discussions** on for ideas and questions tied to the code | by hand: every message answered within a day |
+   | **broadcast** | X, Bluesky, Mastodon, LinkedIn | **automated:** each devlog post and release written once, mirrored to all; a release also posts to Discord's announcements by a GitHub webhook |
+   | **communities** | Reddit, Hacker News, the Claude Code and side-project communities | **by hand only:** their rules forbid automated posting, and replying is the point |
+
+   **Dogfooding:** the broadcast runs in Orkcraft's own town: a release or a devlog post becomes a cart, an ork drafts
+   each network's version, the drafts wait at the Review gate, and only what the owner passes goes out (what leaves the
+   town goes through the gate, [audience.md](audience.md) §4a). It is the story "built and marketed by the agents it
+   runs", told with proof.
