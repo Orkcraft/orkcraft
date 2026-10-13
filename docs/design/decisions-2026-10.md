@@ -55,11 +55,11 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 event log and its events; quests 4–5; the onboarding cut; "Warcraft" out of what ships and is posted
 ([open-questions.md](open-questions.md) Q18); the README's first screen without the phone; Camp at the map and overview zooms as a living town with no cards
 ([work-and-play.md](work-and-play.md)); Camp committed to the game: a reference frame and a new palette for the five core
-buildings ([color-pass.md](color-pass.md) §8).
+buildings ([color-pass.md](color-pass.md) §8); the "while you were away" screen and quiet working hours with
+questions gathered ([audience.md](audience.md) §2a, the commute home).
 
-**P1, first:** the town's clock and held work ([town-time.md](town-time.md)); a cart's id, its waybill and its origin
-([cart-waybill.md](cart-waybill.md) §2a); the phone
-as the console with assets on cards; Work gone type by type; the Town Hall's roles folded, then ork faces; the score
+**P1, first:** the phone as the console (the commute home, [audience.md](audience.md) §2a); the town's clock and held work ([town-time.md](town-time.md)); a cart's id, its waybill and its origin
+([cart-waybill.md](cart-waybill.md) §2a); assets on cards on the phone; Work gone type by type; the Town Hall's roles folded, then ork faces; the score
 and the 💡 list; the yard as ground; each biome's palette.
 
 **Later:** the campaign after Mission 1: a process that comes back, the wiki, debating agents, a script in an

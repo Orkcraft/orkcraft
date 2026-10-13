@@ -27,6 +27,47 @@ new person sees (the demo GIF, Mission 1, the README, the posts) is made for thi
   skills ([improve-buildings.md](improve-buildings.md) §12.4).
 - **The owner is one of them,** building a game after work with Orkcraft: the founder is the user.
 
+## 2a. The first user's day: the commute home (the owner, 2026-10-13)
+
+> All day they review other people's merge requests and sit in calls with managers. On the metro home they take out
+> the phone **looking forward to it**: they open what is nearly a game and switch into the maker's mood. They see what
+> the orks built without them and what has a problem. At home they open the laptop and go on building their product,
+> for the joy of it.
+
+This is the scene the product is made for. What it asks of the design:
+
+1. **The town works while the person is at work, and does not disturb them.** The working hours set in the onboarding
+   ([work-and-play.md](work-and-play.md) §4) are quiet hours for the person's own project: no pushes, questions
+   gathered. **So an ork must not stand all day on one question:** it assumes, marks the assumption, and goes on where
+   that is safe ([ork-console.md](ork-console.md) §4); it waits only where a wrong guess costs more than a day.
+2. **Opening the phone is the reward, so the first screen is "while you were away"**, in this order:
+   - **what was built:** results at the Review gate, carts that moved, the score's change ([the-score.md](the-score.md));
+   - **the questions,** each answerable with one tap or a line, in under a minute between two stations;
+   - **the problems** (🔥, stuck carts), each with what it waits for;
+   - **what it cost:** the window's % used while away ([town-time.md](town-time.md) §3).
+   Wins first, so the evening starts with joy, not a list of errors. The same screen greets the laptop when it is opened.
+   It is the morning brief ([cut-list.md](cut-list.md)) made for any return, not only the morning.
+3. **Decided on the phone, built at home.** The phone answers, passes or sends back, and drops ideas
+   ([cut-list.md](cut-list.md) §3a). Long reading and the work itself wait for the laptop. Answers given underground,
+   with no signal, are kept and sent when it returns.
+4. **The laptop stays on at home and the phone reaches it over Tailscale** ([mobile.md](mobile.md), already built).
+   With the computer off, the mailbox for decisions ([cut-list.md](cut-list.md) §3c) is the later answer.
+5. **The terms:** a person's own subscription working on their own project during the day is ordinary use; still,
+   never advertised as "agents round the clock" ([decisions-2026-10.md](decisions-2026-10.md) §5).
+
+**What it changes:**
+
+- **The story for the article and the launch post opens with this scene.** It is truer than "an evening in the camp":
+  it names the pain (a day of other people's work) and the pleasure (one's own thing, waiting).
+- **The GIF:** the phone on the way home (built, one ❓ answered) → the laptop at home, the same town in Camp.
+- **Priority:**
+  - "while you were away" is **P0 before the launch**, on the laptop first;
+  - quiet working hours with questions gathered are **P0 before the launch**, with the hours asked in the onboarding;
+  - the phone console moves to **the first P1**, ahead of the town's clock;
+  - the mailbox for decisions stays **Later**.
+- **How it is checked** (§6): for each tester, whether the town is opened on the way home or in the evening, and from
+  which device. If testers do not open it away from the laptop, the phone goes back down.
+
 ## 3. The story
 
 > **Orkcraft: build the factory that builds your side project — your coding agents as a town you grow after work.**
