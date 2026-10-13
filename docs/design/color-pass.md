@@ -153,4 +153,7 @@ optimising a pleasure ([audience.md](audience.md)). So Camp no longer has to loo
 forest biome (it is the GIF). **P1:** the other buildings and biomes ([color-pass.md](color-pass.md) §5, the biomes'
 task). **Later:** light by the time of day.
 
+**Not started yet** (the owner, 2026-10-13): the decision is recorded; no sprite or palette work, not even sketches,
+until the owner starts it, and then with the reference frame first.
+
 §3's token pass (P0 now) is not wasted: its ground, signals and roads are the base the brighter palette sits on.
