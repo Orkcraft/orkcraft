@@ -122,6 +122,9 @@ launch wait on. Answers go under each question, and the doc it changes is update
 - **Q22.** **A way in from a marketplace:** a small Claude Code plugin (hooks, `/orkcraft` to open or install the town)
     listed where the audience installs from; Pixel Agents' reach came mostly from its marketplace (126k installs).
     *Default:* with Q21, P1 after the testers ([similar-products.md](similar-products.md) §2).
+  *Answered 2026-10-13:* yes, through Claude Code's plugins and other marketplaces, VS Code's too. PyPI and the Claude
+  Code plugin P0 before the launch; the VS Code extension (and Open VSX) P1 after the testers
+  ([distribution.md](distribution.md)).
 
 ## F. Research to-do (for engineering, before the P1s they feed)
 
@@ -146,6 +149,9 @@ found. Gathered from the docs of 2026-10-12 and -13.
 - **R8. Cloud runners as the town's hands:** can a cart run in a person's own cloud session of their AI tool (Claude
   Code on the web, Codex cloud) when the laptop is off; which public way exists, what the makers' terms say, what is
   lost from local-first ([audience.md](audience.md) §2a). Not a feature until answered; the platform risk.
-- **R9. Keeping the Mac awake while carts are in work:** a power assertion (as `caffeinate -i`) only on power and only
+- **R9. Keeping the Mac awake while carts are in work** (mostly answered: `gui/awake.py` already holds
+  `caffeinate -i -w` while the town is open; left: holding it only while carts are in work, and saying so): a power assertion (as `caffeinate -i`) only on power and only
   while work runs; what a closed lid does; how it is shown and taken back ([audience.md](audience.md) §2a). Feeds P0
   before the launch ("leaving the camp").
+- **R10. Other AI tools' marketplaces:** which of Codex, Cursor and the rest have a public plugin or extension
+  marketplace, and what their format allows (hooks, a command) ([distribution.md](distribution.md) §3).
