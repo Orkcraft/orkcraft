@@ -472,3 +472,29 @@ testers instead of holding the launch. The launch waits for the art only if the 
 
 **In all ≈ $1,500–4,000**, over three to six weeks. **The launch's minimum** (five buildings, the Grunt animated, a
 cart) **≈ $700–1,800**; the other roles and loads follow.
+
+### 10c. The style is chosen (2026-10-13)
+
+After three rounds of reference sheets ([asset-prompts.md](asset-prompts.md)) the owner finds the style recognisable;
+**it is fixed as Camp's direction and the artist's brief:** a cosy camp of small round working orks (cap, apron, tool
+belt, olive skin, small tusks), roles told by headgear and tool, maroon cloth, warm wood, grey stone, bone tusks, dark
+outlines, three-quarter top-down.
+
+**Why it fits the concept:**
+
+- **Cosy and a factory at once:** workers with tools and carts, not warriors: "they build your project" is in the
+  character itself ([audience.md](audience.md)).
+- **Ours, not the big strategy game's:** no bulky green grunt, no gold-on-blue (Q18).
+- **Readable by design:** silhouettes per role, outlines, the yellow and red kept free for signals
+  ([town-readability.md](town-readability.md)).
+
+**Not yet proven, and the next test decides it:**
+
+1. **In the town, at the GIF's zoom:** one frame put together from the sheets (prompt 5 of
+   [asset-prompts.md](asset-prompts.md)), at the overview zoom and on a phone; the five-second test on three to five
+   developers: "what is this product, who waits for you, which building is which?".
+2. **The developer's tells** (a `</>` scroll on a cart, a chain of carts) seen in that frame (§9b).
+3. **Distinct among cosy pixel packs:** the ork is ownable; what makes the whole unmistakable is the camp's working
+   life (roofs with signals, carts on roads), so it is judged in the town, not sheet by sheet.
+
+Passed, the sheets go to the artist (§10a) as the brief, to be redrawn by hand.
