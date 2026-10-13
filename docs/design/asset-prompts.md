@@ -194,3 +194,16 @@ ground. **It is good enough for the first five-second test** with developers, as
    ("PR") as the second tell (§9b).
 5. **Sizes:** the hall dwarfs the board; the core buildings closer in size (the card's three sizes are a choice, not a
    given).
+
+## Rails and mine carts (color-pass §6d)
+
+**The track set.** "No shadows. A crude orc-built mine-cart track as a 32-pixel autotile set, three-quarter top-down:
+two wooden rails on log ties, a few bone ties; straight horizontal, straight vertical, the four corners, a switch
+splitting into two, a merge of two into one, a crossing, a buffer stop of logs at a dead end. Low contrast: the track
+reads as a line, not a texture."
+
+**The mine carts.** "No shadows. Small wooden mine carts with iron-banded sides for that track, 32 by 24 pixels, in
+side view and in front view. Row 1, the loads: empty; a rolled scroll with a large clear "</>" mark; a crate; a sealed
+letter; a book; three bundles. Row 2: the cart with a small pole flag: none, yellow, an hourglass, red; four carts
+lined up at a buffer stop. Row 3: the orc worker in cap and apron pushing a cart, 6 frames, to the right."
+

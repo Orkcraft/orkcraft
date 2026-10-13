@@ -188,6 +188,34 @@ not. **What changes on the phone:**
 **Checked** on the phone frame of §9d and then on a real phone: from the home screen to answering a ❓ in two taps;
 every building told by its crest and facade at the fitted zoom.
 
+### 6d. Roads drawn as rails, carts as mine carts (the owner, 2026-10-13)
+
+**Decided: yes, in Camp.** Roads are drawn as a crude ork-built rail track (wooden rails, bone or log ties), carts as
+mine carts running on it.
+
+**Why it fits better than a dirt road:**
+
+- **The factory says itself:** a track with carts on it is a production line at a glance, the pleasure the first
+  audience is held by ([audience.md](audience.md)); and it sets the camp apart from the category's offices and
+  villages ([similar-products.md](similar-products.md)).
+- **It is what a road is:** a fixed route between two buildings that work follows by itself. A **switch** is a
+  building's exit choosing a way, a **merge** is a join, a **buffer stop with carts lined up** is a queue (the "pile"
+  of [town-readability.md](town-readability.md) §3).
+- **The direction of the work is seen:** carts move along the track one way; a rework round is a loop back.
+- **It is cheap to draw:** roads already run as orthogonal paths of cells (`gui/static/js/roads.js`), so a track is
+  an autotile set (straight, corner, switch, merge, crossing, buffer stop) laid on the same cells.
+
+**Held to:**
+
+1. **The words stay:** a road is a road, a cart is a cart (CLAUDE.md: a look changes the drawing, never the word).
+   Office keeps its plain lines.
+2. **Quiet track:** rails are a repeated pattern; ties low in contrast, few, so the track reads as a line, not as
+   texture; at the map zoom a simple line in the rails' colour.
+3. **No steam:** carts are pushed by orks or roll by themselves on a slope; no engines, no smoke (smoke and fire stay
+   signals).
+4. **The ork beside its cart** still: an ork pushes the cart it works on ([town-readability.md](town-readability.md)
+   §5).
+
 ## 7. Pixel art stays; a painted style like Kingdom Rush is No
 
 Asked 2026-10-12: move the look toward Kingdom Rush, or keep the pixels?
