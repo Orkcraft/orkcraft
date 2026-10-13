@@ -223,3 +223,16 @@ Pixel art, portrait 9:19 phone screen, a cosy orc camp seen from above at dusk: 
 ```
 Pixel art close-up, top-down, of one building's yard in a cosy orc camp: a patch of trodden earth slightly lighter than the grass around it; on it a wooden notice board with cream papers and a bone skull; a light warm-wood picket fence only along the back of the yard and two short runs at the front corners, open at the front where a sandy path enters with two gate posts. A small wooden cart with crates on the path. Crisp pixels, no anti-aliasing, no text.
 ```
+
+### 9a. Round 1 (2026-10-13): what held, what changes
+
+The reference frame (prompt 1), first try. **Held:** the ❓ and the flame are the loudest things; each building has its
+own materials and reads by its silhouette; carts and orks on the paths give the flow. **Changes asked by the owner:**
+more saturated grass; narrower paths; more **orkish** buildings (tusks, axes and the like). **Seen besides:** the
+buildings read as a human medieval village (a half-timbered cottage, a knight's castle), the main thing to fix; the
+fence ran as a long closed row across the frame, against §6; the paths outweighed the buildings.
+
+**Round 2's prompt** keeps prompt 1 and changes: lush, saturated, even grass; paths one cart wide; every building crude
+and orkish (rough lashed logs, hide roofs, palisade spikes, tusks and horns, skulls, crossed axes, red war banners with a
+white tusk mark); the fence only as short runs at a yard's back corners. If it turns grim, the line "Friendly and cosy,
+not menacing: rounded shapes, warm light, a little humour." is added: a cosy orc camp, not a dark fortress.
