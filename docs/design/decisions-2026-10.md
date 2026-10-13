@@ -57,8 +57,8 @@ event log and its events; quests 4–5; the onboarding cut; "Warcraft" out of wh
 as the console with assets on cards; Work gone type by type; the Town Hall's roles folded, then ork faces; the score
 and the 💡 list; the yard as ground; each biome's palette.
 
-**Later:** Mission 2 and after, a second orkspace for a process that comes back ([first-mission.md](first-mission.md)
-§7); a cart's price on the roads beyond the waybill; the benches beyond Orkcraft; packs by kind of user; search
+**Later:** the campaign after Mission 1: a process that comes back, the wiki, debating agents, a script in an
+agent's place, a building of one's own, each offered when its moment comes ([first-mission.md](first-mission.md) §7–8); a cart's price on the roads beyond the waybill; the benches beyond Orkcraft; packs by kind of user; search
 across talks; a light theme.
 
 **No:** a hidden Town Hall feature for the person's own project; the window as a big building; isometry; a painted

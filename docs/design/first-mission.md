@@ -121,3 +121,32 @@ the town starts are marked ⏰ ([cart-waybill.md](cart-waybill.md) §2a).
 
 **Later:** after the testers finish Mission 1. A mission is a file, so **missions from the community** stand beside
 buildings from the community ([open-questions.md](open-questions.md) Q19).
+
+## 8. The campaign: one concept a mission, up to a building of one's own (Later)
+
+The owner, 2026-10-13: more missions, to bring in the harder ideas step by step, up to making a building of one's own.
+The onboarding becomes a **campaign**: each mission brings **one new idea**, on the person's real work, built on the
+ones before, as a strategy game brings a new kind of unit only when the player is ready.
+
+| mission | the idea | what is built and done |
+|---|---|---|
+| 1. Raise the camp | carts, ❓, the gate | Task board, Agent pool, Review gate, External listeners (§3) |
+| 2. A process that comes back | time, a second orkspace | the class's repeating process (§7) |
+| 3. The camp remembers | **a wiki the orks keep and read** | the Wiki gathers notes, decisions and code; the orks read less again, and the 🪵 per result falls ([the-score.md](the-score.md)) |
+| 4. The chieftains' council | **agents that debate** | a Review board: several roles judge the person's document, each verdict down its exit |
+| 5. Cheaper hands | **a script in an agent's place** | the Mason turns an agent's repeated step into a script; the score shows the 🪵 per result drop ([script-first.md](script-first.md)) |
+| 6. A building of one's own | **the building designer** | the Mason and the Alchemist build a building from the person's words; it can be shared |
+
+**A mission comes when its moment does**, the fixed order kept as a fallback: the orks reading the same files again
+and again offers mission 3; long documents written by hand offer mission 4; the 💡 list finding an agent doing a
+script's work offers mission 5. A mission then answers the person's real problem instead of reading as a lesson.
+
+**Held to, as product:**
+
+1. **Only Mission 1 is built now** (P0); the rest is the campaign's plan, **Later**.
+2. **Missions are content, and content breaks when buildings change:** each mission is a data file, checked by the
+   tests as the Test bench's scenarios are; else half of them break unseen within a month.
+3. **A mission never unfreezes a feature:** the Wiki and the Review board are on the More shelf
+   ([catalog-shelves.md](catalog-shelves.md)); missions 3 and 4 come when those buildings' turn does, not to bring it.
+4. **Each mission:** one idea, fifteen minutes at most, real work on the person's own project, its cost said first, a
+   deed at its end. A mission is a file, so the community can make them ([open-questions.md](open-questions.md) Q19).
