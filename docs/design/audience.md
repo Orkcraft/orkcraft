@@ -78,6 +78,26 @@ background. So:
   cloud from the town breaks local-first and may run into their terms. **Research R8, not a feature;** the story keeps
   to what the makers will not do: the town, several vendors, the cost per result.
 
+**Short looks between work tasks** (the owner's hypothesis, 2026-10-13). To switch attention, developers open a
+social feed. The camp could take that place: the pleasure of making one's own thing, in an interface made for a quick
+switch. If it holds, it is the strongest habit the product can have, a few looks a day rather than one evening.
+
+- **Pulled, never pushed.** Quiet working hours mean the town never calls; the person opening it themselves is fine.
+  The rule stays.
+- **A look is a break, not a second job.** A feed is passive; a list of decisions is work. So the phone opens on **the
+  living camp** (orks moving, carts on the roads: a factory game's and an aquarium's pleasure) with **what changed since
+  the last look** in one line ("since 40 min ago: 2 carts at the gate, 1 ❓"). One tap answers or passes; nothing must
+  be done. A look lasts under a minute and a half.
+- **"While you were away" becomes "since your last look":** the same screen, measured from the last look, not the last
+  day. No new feature; the phone console and that screen are shaped by it.
+- **Honest when nothing changed:** "nothing new since 12:40; the orks are on #42" rather than invented news.
+- **No hooks of a feed:** no endless list, no streaks, no invented notifications, no red dots to clear. The person
+  should leave a look glad, not pulled back. Any spend a tap starts is said on the button.
+- **Checked:** phone looks a day for active testers, their median length, the share with an action; and a question to
+  testers: "did it feel like a break or like work?". Aim: three or more looks a day, median under two minutes, "a
+  break" from most.
+- **A line for the posts, if it holds:** "Open your camp instead of the feed."
+
 **What it changes:**
 
 - **The story for the article and the launch post opens with this scene.** It is truer than "an evening in the camp":
