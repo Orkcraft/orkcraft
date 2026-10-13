@@ -93,6 +93,20 @@ launch wait on. Answers go under each question, and the doc it changes is update
   system ("1990s real-time strategy pixel art", checked on a few renders), and out of the README, the posts and the
   article; the design docs may keep it as history; no trademark filed for "Orkcraft"; a lawyer if money ever comes
   under the name.
+  *Decided 2026-10-13:* **every mention goes from the resources, the code and the prompts.** The task, P0 before the
+  launch, text only (no behaviour changes):
+
+  | where | what |
+  |---|---|
+  | `orkcraft/design/prompts/ork.md` | the shipped prompt: "in the style of Warcraft II (1995)" → "in the style of a 1990s real-time strategy game"; checked on a few renders |
+  | `docs/design/building-prompts.md`, `docs/design/sprites.md`, `docs/design/building-sprites.md` | the prompts written in the docs, the same way |
+  | `design-system/components.css`, `design-system/components.md`, `design-system/tokens.json` | "Warcraft 2" in comments and descriptions → "1990s real-time strategy" |
+  | `orkcraft/gui/static/js/portrait.js` | its first comment |
+  | `docs/reference.md`, `docs/design/gui-design-system.md`, `docs/design/gui-migration.md`, `docs/design/growth.md`, `docs/design/portrait.md` | the mentions in prose |
+  | the README, the posts, the article | never written |
+
+  The docs of 2026-10-12 and -13 are already cleaned; the word stays only where it names this task. No trademark filed
+  for "Orkcraft".
 - **Q19.** **Buildings from the community:** is a building one folder a person can send as a pull request? Asked at the
     start of the day, not answered. *Default:* not yet; the "Build a building" guide waits for it.
 - **Q20.** **The author's story:** how much of "built with the agents it runs" is to be told, and does anything (an employer,

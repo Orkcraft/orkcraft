@@ -17,7 +17,7 @@ two ways of using Orkcraft:
 |---|---|---|
 | when | working hours | after work |
 | what for | a control room: dense, numbers, text, fast | the game: missions, the score, 💡, making the town better |
-| feels like | a tool | Warcraft II's and Stardew Valley's kind of world, in pixels |
+| feels like | a tool | a 1990s real-time strategy game's and a farming game's kind of world, in pixels |
 
 This also settles how dense Camp should be: it can be more game and less diagram, because Office holds the numbers.
 
@@ -42,7 +42,7 @@ This also settles how dense Camp should be: it can be more game and less diagram
 
 ## 3. Camp, more world than diagram
 
-Toward Warcraft II and Stardew Valley, keeping the pixels ([color-pass.md](color-pass.md) §7):
+Toward a 1990s real-time strategy game and a cosy farming game, keeping the pixels ([color-pass.md](color-pass.md) §7):
 
 - **At the map and overview zooms, a world:** textured ground, buildings larger, roads as paths, carts driving and
   orks walking on them, a little life (smoke, birds, the mill turning). **Data cards only at the close zoom or on

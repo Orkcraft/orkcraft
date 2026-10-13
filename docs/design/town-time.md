@@ -52,7 +52,7 @@ slot.
 
 ## 5. The town's time is not a building: the sun and moon dial
 
-Decided 2026-10-12, the owner's idea (Warcraft III's day and night clock). The town's time is the whole town's, like
+Decided 2026-10-12, the owner's idea (the day and night clock of the 1990s–2000s real-time strategy games). The town's time is the whole town's, like
 🪙 and 🥩, so it lives in the HUD, not on the map. The dial in the middle of the HUD (`js/chrome.js` `Hour`) already
 shows the hour as a sun or a moon, and Do not disturb is proposed for it ([select-a-building.md](select-a-building.md)
 §5): one place answers "what will the town do, and when will it bother me".

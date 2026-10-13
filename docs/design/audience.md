@@ -35,7 +35,7 @@ new person sees (the demo GIF, Mission 1, the README, the posts) is made for thi
 automating the rest of a person's work is "and more", below the fold.
 
 Factorio may be named in talk ("like Factorio, but the factory ships your app"), never in the name or the art: the same
-care as for Warcraft ([open-questions.md](open-questions.md) Q18).
+care as in [open-questions.md](open-questions.md) Q18.
 
 ## 4. Later, not first
 
