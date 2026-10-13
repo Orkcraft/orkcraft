@@ -65,7 +65,8 @@ event log and its events; quests 4–5; the onboarding cut; "Warcraft" out of wh
 buildings ([color-pass.md](color-pass.md) §8); the "while you were away" screen, quiet working hours with
 questions gathered, and "leaving the camp" with the Mac kept awake while carts are in work
 ([audience.md](audience.md) §2a, the commute home; the first testers among remote workers); Orkcraft on PyPI and
-a Claude Code plugin ([distribution.md](distribution.md)).
+a Claude Code plugin ([distribution.md](distribution.md)); the art the GIF and the landing show made by people (a CC0
+pack and a commissioned pixel artist), generated images only as references ([color-pass.md](color-pass.md) §10).
 
 **P1, first:** the phone as the console (the commute home, [audience.md](audience.md) §2a); the town's clock and held work ([town-time.md](town-time.md)); a cart's id, its waybill and its origin
 ([cart-waybill.md](cart-waybill.md) §2a); assets on cards on the phone; Work gone type by type; the Town Hall's roles folded, then ork faces; the score

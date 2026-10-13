@@ -303,3 +303,31 @@ model keeps no pixel grid, and the text in images is not trusted (in the product
 
 If time is left: the camp at night (for the clock and Camp after work), and a phone frame (the camp above, the console
 below; [audience.md](audience.md) §2a).
+
+## 10. The art that ships is made by people, not generated (2026-10-13)
+
+**What was seen:** Pixel Agents, the category's leader ([similar-products.md](similar-products.md)), draws with a free
+asset pack, not with generated images. It bears out [open-questions.md](open-questions.md) Q11's worry: this community
+reads generated art as slop, and a developer is quick to see it.
+
+**Today:** Orkcraft's sprites were made with an image generator, then reduced to the pixel grid by hand
+([sprites.md](sprites.md), "how the done sprites were made").
+
+**Decided:**
+
+1. **Generated images stay references:** the palette, the silhouettes, the rules (§9). They are never shipped, nor
+   shown in the README, the landing page or a post as Orkcraft's art.
+2. **What ships is made by people:**
+   - **a free pack as the base** (ground, paths, trees, fences, props), **CC0 first** (no conditions), CC-BY with its
+     credit in `NOTICE`; **no share-alike or GPL art**, so the art's terms never mix with Apache 2.0;
+   - **a pixel artist commissioned for what is Orkcraft's own:** the five core buildings, the orks by role
+     ([ork-icons.md](ork-icons.md)), the carts and their loads ([town-readability.md](town-readability.md)). The
+     generated references of §9d are the artist's brief. The artist credited in the README and on the landing page.
+3. **Said plainly:** "hand-made pixel art by ‹artist›" on the landing page: in this category it is a difference.
+4. **Priority:** **P0 before the launch** for what the GIF, the README and the landing show (the camp at the overview
+   zoom, the five core buildings, a Grunt, a cart); the rest of the sprites follow. Until then the generated sprites
+   stay in the product, and no new art is generated for it.
+
+**For the owner:** a budget and a person for the commission. *Default:* one pixel artist from the indie community, a
+fixed brief (five buildings, nine orks, carts and loads, one palette), the pack chosen together with them so the two
+match.
