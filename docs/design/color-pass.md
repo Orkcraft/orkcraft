@@ -169,3 +169,57 @@ task). **Later:** light by the time of day.
 until the owner starts it, and then with the reference frame first.
 
 §3's token pass (P0 now) is not wasted: its ground, signals and roads are the base the brighter palette sits on.
+
+## 9. Prompts for the owner's experiments (2026-10-13)
+
+Given to the owner to try by hand with an image tool. Rules: **no game titles** in a prompt (Q18; and a title makes a
+model copy); crisp pixels; sprites on a solid `#ff00ff`; each result judged in grey, squinted, and by "what needs you
+here?" in five seconds; results kept out of the repository until the sprite work starts (§8).
+
+**1. The reference frame** (the GIF's), run three times with the last line's palette changed:
+
+```
+Pixel art screenshot of a cosy top-down management game, 16:9, crisp chunky pixels, no anti-aliasing, flat 2D front-facing buildings seen from slightly above, no isometric perspective.
+An orc camp at early evening, warm low sunlight, long soft shadows. Even, bright grass ground with a few darker tufts; sandy dirt paths connect the buildings.
+Five buildings, each with its own materials and a dark 1px outline so it stands off the ground:
+1) a wooden notice board on two posts with cream paper notes pinned on it and a small bone skull on top;
+2) a timber barracks with a red-brown tiled roof, small banners, a training yard;
+3) a stone gate with two short towers, an iron portcullis and blue pennants;
+4) a small stone reading lodge with one big round glass lens window;
+5) a tall wooden lookout tower with a thatched roof and a horn hanging from it.
+Small green-skinned orcs with tusks walk the paths; wooden carts carry crates and papers between buildings.
+One orc stands at the barracks with a bright yellow speech bubble containing "?". One small red-orange flame burns on the gate's tower roof. These two are the brightest, most saturated things in the image; everything else is calmer.
+A light warm-wood picket fence runs along the back of each yard only, open where a path enters.
+No text, no UI, no logos.
+Palette: [A] warm greens, browns, terracotta, cream / [B] cooler: sage, slate stone, blue roofs, cream / [C] autumn: ochre grass, rust roofs, dark timber
+```
+
+**2. A new palette for one building** (the existing sprite attached, e.g. `design-system/sprites/buildings/barracks/header@2x.png`):
+
+```
+Recolour the attached pixel-art building. Keep its silhouette, every pixel's position, its size and its outline exactly; change only the colours.
+Give it materials instead of one green: timber walls in warm browns, a red-brown tiled roof, bone-white horns and trim, iron-grey metal parts, a 1px dark outline round the whole shape.
+Crisp pixels, no anti-aliasing, no new details, no shading style change. Solid flat magenta #ff00ff background.
+```
+
+The materials line per building: Task board `oak board and posts in warm browns, cream papers with tiny dark marks, a
+bone skull`; Review gate `grey stone towers, an iron portcullis, blue pennants, a brass padlock`; External listeners `a
+timber tower, a straw-yellow thatched roof, a brass horn`.
+
+**3. The same town in Office** (beside Camp in the README):
+
+```
+The same five-building camp as the attached image, redrawn as a calm monochrome office dashboard: a dark warm-grey background, each building a simple flat outline icon in one muted tone, paths as thin lines, carts as small rectangles, short labels and numbers beside each building ("To Do 3", "2 at work", "34 % of the window"). One yellow "?" marker and one small red marker are the only colours. 16:9, crisp, no pixel-art texture, no logos.
+```
+
+**4. The camp on a phone in the evening:**
+
+```
+Pixel art, portrait 9:19 phone screen, a cosy orc camp seen from above at dusk: warm lamplight in windows, a moon low in the sky, the same five buildings (notice board, timber barracks with red roof, stone gate with blue pennants, stone lodge with a round lens window, wooden lookout with thatch), sandy paths, a few orcs walking home, one cart arriving at the gate. One yellow "?" bubble above an orc is the brightest thing. Crisp pixels, no text, no UI.
+```
+
+**5. A yard with a light fence** (one building, close):
+
+```
+Pixel art close-up, top-down, of one building's yard in a cosy orc camp: a patch of trodden earth slightly lighter than the grass around it; on it a wooden notice board with cream papers and a bone skull; a light warm-wood picket fence only along the back of the yard and two short runs at the front corners, open at the front where a sandy path enters with two gate posts. A small wooden cart with crates on the path. Crisp pixels, no anti-aliasing, no text.
+```
