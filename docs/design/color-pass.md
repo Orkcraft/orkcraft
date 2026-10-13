@@ -169,6 +169,25 @@ and lifts close up. Three kinds, one kit each:
 - **The artist's brief** (§10) is three kits, not one: a hall, open ground, a tower or gate; each core building gets
   its facade and its crest.
 
+### 6c. On the phone (asked by the owner, 2026-10-13)
+
+The roofs suit the phone better than the cards did: a roof is a picture, and a picture reads small; a card's text does
+not. **What changes on the phone:**
+
+1. **The roofs never lift by zooming.** A card's inside does not fit in a building on a 390-point-wide screen. A tap on
+   a building opens its card as a **sheet from the bottom**, headed by its crest (§6b), over the dimmed camp; a swipe
+   down puts it back. Pinch-zoom only moves round the camp.
+2. **The camera starts where the person is needed:** on the building with a ❓ or a 🔥, with the "since your last
+   look" line above ([audience.md](audience.md) §2a); with nothing waiting, the whole camp, fitted. The camp is laid out
+   for a wide screen; a tall one shows part of it and pans, it is never squeezed.
+3. **Sizes for a finger, apart from the art's:** the pixel art is scaled by whole numbers only (2× or 3×, so it stays
+   sharp); ❓, `!` and the count chips are UI drawn at least 24 points high, with a 44-point tap area, whatever the
+   art's scale.
+4. **The battery:** the camp animates at a low frame rate on the phone and stops when the page is hidden.
+
+**Checked** on the phone frame of §9d and then on a real phone: from the home screen to answering a ❓ in two taps;
+every building told by its crest and facade at the fitted zoom.
+
 ## 7. Pixel art stays; a painted style like Kingdom Rush is No
 
 Asked 2026-10-12: move the look toward Kingdom Rush, or keep the pixels?
