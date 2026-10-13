@@ -362,3 +362,16 @@ person who installs it, which is redistribution; and "a videogame" may not cover
 
 **Readability check of the style before the ask** ([town-readability.md](town-readability.md) §6): the Minifantasy
 ork is very small; at the overview zoom, a ❓, a `!` and a cart's load must still read on it.
+
+### 10b. When: generated art now, made by people before the public launch (2026-10-13)
+
+The owner asked whether to start with a commission or with the generated art. **Both, by stage:**
+
+| stage | art | why |
+|---|---|---|
+| **the first testers** (private, a few people) | the generated sprites as they are | they test the product, not the art; nothing waits on an artist |
+| **the devlog from 19 October** | the generated sprites, **said plainly:** "placeholder art; hand-made art is being drawn", and the artist's progress as posts of its own | honesty disarms "AI slop"; an artist's sketches are among the devlogs people like most |
+| **the public launch** (Show HN, the marketplaces, the landing's GIF) | **made by people**, at least the five core buildings, a Grunt, a cart | the first impression is made once; this community calls generated art out |
+
+**The commission is asked this week,** since an artist's queue and the work take weeks, so it runs beside the
+testers instead of holding the launch. The launch waits for the art only if the art is the last thing missing.
