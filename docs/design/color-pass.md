@@ -211,10 +211,10 @@ mine carts running on it.
    Office keeps its plain lines.
 2. **Quiet track:** rails are a repeated pattern; ties low in contrast, few, so the track reads as a line, not as
    texture; at the map zoom a simple line in the rails' colour.
-3. **No steam:** carts are pushed by orks or roll by themselves on a slope; no engines, no smoke (smoke and fire stay
-   signals).
-4. **The ork beside its cart** still: an ork pushes the cart it works on ([town-readability.md](town-readability.md)
-   §5).
+3. **Carts roll by themselves:** in the product the town routes carts, **orks never move them** (the owner,
+   2026-10-13); the track makes that natural. No engines, no smoke (smoke and fire stay signals).
+4. **Orks work inside buildings:** the cart an ork works on stands at its place inside the building
+   ([town-readability.md](town-readability.md) §5); orks walk only between buildings, never with a cart.
 
 ## 7. Pixel art stays; a painted style like Kingdom Rush is No
 

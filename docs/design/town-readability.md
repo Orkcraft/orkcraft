@@ -54,8 +54,9 @@ The badge stands on a dark chip with an outline, so yellow and red read on green
 
 ## 5. An ork and its cart
 
-1. **Next to each other in the world.** An ork working on a cart stands at it: it pulls it along the road, or works
-   on it in its building's yard. Most of the time the link is seen with no help.
+1. **Next to each other in the world.** Orks never move carts: the town routes a cart along its road by itself
+   (the owner, 2026-10-13). An ork works on a cart **inside its building**: the cart stands at the ork's place at
+   the table, and leaves by the track when the work is done. Most of the time the link is seen with no help.
 2. **A spotlight on hover or select.** Pointing at an ork or a cart draws a short dashed rope between them, lifts
    both, and dims the rest of the camp (about 30 % less saturation). The same works from the 🥩 list: pointing at a
    row lights its ork and cart in the camp.

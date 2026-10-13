@@ -37,7 +37,7 @@ arms crossed (held), sitting and dozing (idle)."
 "Small wooden hand carts, 32 by 24 pixels each, three-quarter view. Row 1, the loads: empty; a rolled scroll tied with
 string; a closed wooden crate; a sealed letter with a wax seal; a thick book; three bundles stacked. Row 2, the same
 cart with a small pole flag: no flag; a yellow flag; an hourglass hung on the pole; a red flag; four carts parked close
-together in a pile. Row 3, the cart pulled by the worker orc, 6 frames walking right."
+together in a pile." (Orks never move carts: see the rails section below.)
 
 ## 3. Ground and roads
 
@@ -187,7 +187,7 @@ ground. **It is good enough for the first five-second test** with developers, as
 **For the next round:**
 
 1. **The flow:** each building's door joined to the road by a short path, and the carts moving board → hall → gate,
-   one pulled by an ork, so the line of work is seen, not only a road in front of the camp.
+   rolling by themselves (orks never move carts), so the line of work is seen, not only a road in front of the camp.
 2. **Two horns** (the gate and the lookout): the gate's crest becomes a skull-and-banner or a portcullis wheel.
 3. **The ground went too dull:** the grass one step back towards round 2's lushness, still in two or three calm tones.
 4. **The developer's tell:** the `</>` on the scroll is not legible; drawn larger, and a small wooden plate at the gate
@@ -205,5 +205,6 @@ reads as a line, not a texture."
 **The mine carts.** "No shadows. Small wooden mine carts with iron-banded sides for that track, 32 by 24 pixels, in
 side view and in front view. Row 1, the loads: empty; a rolled scroll with a large clear "</>" mark; a crate; a sealed
 letter; a book; three bundles. Row 2: the cart with a small pole flag: none, yellow, an hourglass, red; four carts
-lined up at a buffer stop. Row 3: the orc worker in cap and apron pushing a cart, 6 frames, to the right."
+lined up at a buffer stop. Row 3: one cart rolling to the right by itself, 4 frames (wheels turning)." **Orks never
+move carts** (the owner, 2026-10-13): the town routes them; an ork works on a cart at its table inside a building.
 
