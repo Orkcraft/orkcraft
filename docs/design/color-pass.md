@@ -331,3 +331,34 @@ reads generated art as slop, and a developer is quick to see it.
 **For the owner:** a budget and a person for the commission. *Default:* one pixel artist from the indie community, a
 fixed brief (five buildings, nine orks, carts and loads, one palette), the pack chosen together with them so the two
 match.
+
+### 10a. The licence decides before the style (2026-10-13)
+
+The owner's example: [Minifantasy — Orc Kingdom](https://krishna-palacio.itch.io/minifantasy-orc-kingdom) by Krishna
+Palacio (the same author has a *Minifantasy — RTS Orcs* pack). The style fits: tiny orks, crisp at any zoom, one
+palette across a large series. Its page could not be read from here; the series' licence, as found in search
+(sibling packs, and the author's own comments), **not confirmed on this pack's page:**
+
+- use in a game, commercial or not, and edit the assets: allowed, with credit;
+- **redistributing them, altered or not, is forbidden;** the author asks that paid packs **not be put in a public
+  GitHub repository** (a private one is fine; the free packs are fine in public).
+
+**So the pack as bought cannot ship:** Orkcraft's repository is public and its wheel carries every sprite to every
+person who installs it, which is redistribution; and "a videogame" may not cover a developer tool.
+
+**What follows, for any artist or pack:**
+
+1. **The licence is the first thing asked, before the style.** Shipped art must be allowed in a public repository
+   and in the package.
+2. **The commission's art under CC-BY 4.0** (or CC0), with the artist credited. Not only to ship it: **the
+   community's buildings ([open-questions.md](open-questions.md) Q19) need the style's base pieces to be free**, or
+   no one can make a building that matches the town. It costs more than an ordinary commission; it is said in the
+   first message.
+3. **Krishna Palacio is a good first artist to ask:** the style the owner chose, the orks already drawn, a series
+   kept in one palette. The ask: a commission for Orkcraft (five core buildings, nine orks by role, carts and loads,
+   [town-readability.md](town-readability.md)) in the Minifantasy style, under CC-BY 4.0, or a written licence for
+   chosen existing Orc Kingdom and RTS Orcs pieces to ship in an open-source tool's public repository.
+4. **If no licence fits:** a CC0 pack for the ground and props, and another pixel artist on the same terms.
+
+**Readability check of the style before the ask** ([town-readability.md](town-readability.md) §6): the Minifantasy
+ork is very small; at the overview zoom, a ❓, a `!` and a cart's load must still read on it.
