@@ -41,6 +41,9 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 
 ## 3. The order of work
 
+**The calendar (the owner, 2026-10-13):** until the end of the week of 12 October, the backlog's tasks; from 19 October,
+marketing and community work starts (posts, a devlog, finding testers), in parallel with the work.
+
 **P0 now** (worth having for the first three testers):
 
 1. the log check of 10–15 of the owner's sessions, no code ([ork-console.md](ork-console.md) §1a); it sizes item 2;
