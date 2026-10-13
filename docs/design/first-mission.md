@@ -57,6 +57,10 @@ buildings and the order are the same for every class. Industry and the typical d
 
 **Rewards:** a deed for each quest ([growth.md](growth.md)), the mascot's next stage when the mission ends.
 
+**The hooks** (decided 2026-10-13, [open-questions.md](open-questions.md) Q16): asked once **before quest 4**, the first
+real model call, showing line by line what is written into which AI tool's project settings, with how to take it back;
+quest 5 needs the Warder on.
+
 **Safety:** quests 1–3 run no model; quest 4 only reads; quest 5 works on branches, the Warder on, nothing merged
 without the person.
 

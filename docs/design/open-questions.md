@@ -37,6 +37,9 @@ launch wait on. Answers go under each question, and the doc it changes is update
 - **Q8.** **Money or limits in the HUD?** For a person on a subscription the $ are an API-price estimate they never pay; what
    they meet is the limit. **Blocks P0** (the HUD in the GIF). *Default:* on a subscription, the window's % first and $
    on the mouse; on an API key, $.
+  *Answered 2026-10-13:* on a subscription, the % of the window, not $. Which window: **the one that, at today's pace,
+  runs out first** (usually the five-hour one; the weekly one when it is tighter), the other on the mouse
+  ([town-time.md](town-time.md) §3).
 - **Q9.** **Several AI tools:** do agy and Codex really do what Claude Code does in every building, or is Claude Code the lead
    and the others helpers? *Default:* Claude Code leads; the first mission runs on it when it is there.
 - **Q10.** **The builder in the first days:** a building made from words can be weak, and a tester's first weak building is
@@ -61,9 +64,16 @@ launch wait on. Answers go under each question, and the doc it changes is update
 
 - **Q15.** **Which systems are checked on a clean machine:** macOS only, or Linux and Windows too? Asked at the start of the
     day, not answered. **Blocks P0.** *Default:* macOS checked; Linux and Windows "should work", said so.
+  *Answered 2026-10-13:* macOS only for now. The README says so plainly ("checked on macOS; Linux and Windows should
+  work, not yet checked"); the first testers mostly on macOS, one or two on Linux to learn what breaks; the install
+  check in CI on three systems stays in the launch plan.
 - **Q16.** **The hooks in the person's repository:** `orkcraft hooks install` writes into `.claude/settings.json`. Does the
     first mission need them, and is it said plainly before they are written? **Blocks P0.** *Default:* asked once
     before writing, with what is written and how to take it back.
+  *Answered 2026-10-13:* yes, for every AI tool: the Warder, the session log and the way to ask all stand on them.
+  Asked once, **before quest 4** (the first real model call; quests 1–3 run none), showing line by line what is written
+  where; into the project's settings, not the global ones, where the tool allows; reversible (`orkcraft hooks remove`
+  and a button in Settings). Whether Codex and agy take hooks as Claude Code does is research R7.
 - **Q17.** **`.orkcraft/` in the person's repository:** is it added to their `.gitignore` by itself? The logs hold whole
     prompts ([dogfood-logs.md](dogfood-logs.md)). *Default:* yes, by itself, and said so.
 
@@ -105,3 +115,6 @@ found. Gathered from the docs of 2026-10-12 and -13.
 - **R5. Each AI tool's limit windows**, where they can be read (Codex's `resetsAt`; Claude Code's and agy's)
   ([town-time.md](town-time.md) §3). Feeds P1.
 - **R6. The cost of a single run in each AI tool**, for the console's history ([ork-console.md](ork-console.md) §12).
+- **R7. Hooks in every AI tool:** what Codex and agy offer in place of Claude Code's hooks (before a tool runs, at a
+  session's start and end), project-local or global, and how each is taken back ([agy-guard.md](agy-guard.md) for
+  agy). Feeds P0 (the Warder and the way to ask in quest 5 and after).

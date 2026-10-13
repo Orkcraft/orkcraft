@@ -31,6 +31,9 @@ Each AI tool's windows, where it tells them (Codex's `resetsAt`; Claude Code's a
 
 - the estimate of when a window runs out at today's pace, and when it resets, as beats on the strip;
 - a burst of work planned near a reset, or past an estimated run-out, said plainly on the beat.
+- **Which window the HUD shows** (decided 2026-10-13, [open-questions.md](open-questions.md) Q8): on a subscription a
+  % of the window, never $; **the window that, at today's pace, runs out first**: usually the five-hour one, the
+  weekly one when it is the tighter; the other on the mouse.
 
 ## 4. Work that waits for a reset
 
