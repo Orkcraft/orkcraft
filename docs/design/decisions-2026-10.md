@@ -36,6 +36,7 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 | [work-and-play.md](work-and-play.md) | Office at work, Camp as the game after work; one layout, two drawings (numbers ↔ things) |
 | [dogfood-logs.md](dogfood-logs.md) | what is logged; what to switch on before the owner's game; what is missing |
 | [improve-buildings.md](improve-buildings.md) §12.4 | the benches beyond Orkcraft: Later, with a gate; assets offered to new builders, not the classic game dev community |
+| [similar-products.md](similar-products.md) | the projects that show agents as characters in a game world (Pixel Agents and others): the category's ticket, not our difference; we run the work, they watch sessions |
 | [open-questions.md](open-questions.md) | the owner's open questions (Q1–Q20) and the research to-do (R1–R9) |
 
 ## 3. The order of work
@@ -85,7 +86,8 @@ The concept holds together; these four are not about features, and each could un
 3. **The platforms.** The makers of the AI tools are building their own views of parallel agents; if one shows "who is
    waiting for you" well, the plain control room loses its worth. The story stands on what they will not do: the town
    and the game, several vendors at once, local-first, the cost per result, roads between buildings
-   ([audience.md](audience.md) §3).
+   ([audience.md](audience.md) §3). **From below as well:** open-source views of agents as pixel characters, one with
+   ~10k stars, plan to add a game layer and orkestration ([similar-products.md](similar-products.md)).
 4. **The way for the community is undecided**, and community is one of the owner's two goals: whether a building or a
    mission can be one folder sent as a pull request ([open-questions.md](open-questions.md) Q19).
 
