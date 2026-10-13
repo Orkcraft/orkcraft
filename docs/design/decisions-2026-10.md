@@ -32,6 +32,7 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 | [connections.md](connections.md) | MCP first, a token later, offered with what it saves |
 | [ork-icons.md](ork-icons.md) | an ork's face says its role |
 | [color-pass.md](color-pass.md) | quiet ground, clear buildings, loud signals; the yard as ground with a light fence; pixels stay |
+| [town-readability.md](town-readability.md) | carts, orks and their link readable on a bright camp: outlines, reserved signal colours, badges only for exceptions, a spotlight on hover |
 | [work-and-play.md](work-and-play.md) | Office at work, Camp as the game after work; one layout, two drawings (numbers ↔ things) |
 | [dogfood-logs.md](dogfood-logs.md) | what is logged; what to switch on before the owner's game; what is missing |
 | [improve-buildings.md](improve-buildings.md) §12.4 | the benches beyond Orkcraft: Later, with a gate; assets offered to new builders, not the classic game dev community |
