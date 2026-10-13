@@ -149,6 +149,18 @@ optimising a pleasure ([audience.md](audience.md)). So Camp no longer has to loo
    buildings, carts and orks, the evening), in two or three palettes, chosen by a test: five seconds with a tester,
    "what needs you here?" and "would you like to play this?".
 
+**The style's three sources** (the owner, 2026-10-13), named by kind, not by title (the care of
+[open-questions.md](open-questions.md) Q18), each giving one thing, so the mix does not turn to mush:
+
+| source | what is taken |
+|---|---|
+| **a 1990s real-time strategy game** (the base) | big readable silhouettes; materials (wood, stone, bone); the orks' camp; the top-down, slightly tilted view; the HUD's command-panel frames |
+| **a cosy farming game** (the warmth) | daylight, saturation, a little life around, friendly characters, fences and paths, the juice of feedback |
+| **a factory-building game** (the flow) | **the flow read at a glance:** carts with their load seen on the roads, a building's motion saying working or standing, the pleasure of optimising |
+
+**From the factory game, later:** hold a key and Office's numbers appear over the Camp world, let go and the world is
+clean again: a look at the numbers without switching looks ([work-and-play.md](work-and-play.md)). **Later.**
+
 **Priorities:** **P0 before the launch:** the reference frame and the palette swap of the five core buildings in the
 forest biome (it is the GIF). **P1:** the other buildings and biomes ([color-pass.md](color-pass.md) §5, the biomes'
 task). **Later:** light by the time of day.
