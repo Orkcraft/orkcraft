@@ -375,3 +375,15 @@ The owner asked whether to start with a commission or with the generated art. **
 
 **The commission is asked this week,** since an artist's queue and the work take weeks, so it runs beside the
 testers instead of holding the launch. The launch waits for the art only if the art is the last thing missing.
+
+**What it may cost** (typical indie pixel-art rates as known, not a quote; the artist's own price decides):
+
+| piece | typical | Orkcraft's brief |
+|---|---|---|
+| a small animated character (idle, walk, work, 4–6 frames each) | $80–250 | **one ork body animated, nine roles as heads and tools on it:** $300–600 for the body, $20–50 a role → ≈ $500–1,000 instead of ≈ $1,500–2,000 for nine separate |
+| a building, 64–128 px, with a working and an idle state | $80–200 | five core buildings ≈ $400–1,000 |
+| carts, five loads, the state flags | — | ≈ $100–300 |
+| the CC-BY 4.0 licence (the artist gives up selling it as their own pack) | +30–100 % | asked for in the first message |
+
+**In all ≈ $1,500–4,000**, over three to six weeks. **The launch's minimum** (five buildings, the Grunt animated, a
+cart) **≈ $700–1,800**; the other roles and loads follow.
