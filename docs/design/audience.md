@@ -45,6 +45,25 @@ care as in [open-questions.md](open-questions.md) Q18.
 | content creators who are not developers | when installing needs no CLI |
 | the classic game development community | not aimed at |
 
+## 4a. A second job for the same people: the routine of their own life (Later)
+
+The owner, 2026-10-13: the same people automate their personal, not work, routine: replies to mail, registering for
+events, research on personal questions (where to have the dog groomed, which vaccinations a child needs).
+
+- **Second, not first.** One-off personal research is done well already by general assistants and their agent modes;
+  a town adds little there. Orkcraft's edge is where things **repeat and follow rules**: replies by rules, a weekly
+  look for events to register for, a vaccination plan that reminds of its dates. It stays the "and more" of §3, out of
+  the GIF and the first paragraph.
+- **The stakes are higher than in code:**
+  - **whatever leaves the town** (a reply to a person, a registration, a form filled in a browser by the Publisher)
+    cannot be taken back and may carry money: **it passes the Review gate by default**, proposed, not done, until the
+    person allows it for that road in so many words;
+  - **health and law:** sources always, each finding marked confirmed or disputed (the Research building already does
+    this), and said plainly: "not a doctor's advice". Never given as ready advice.
+- **A mission for it, Later:** "The camp at home": mail by rules and one personal errand that comes back; it teaches
+  that what goes out goes through the gate ([first-mission.md](first-mission.md) §8).
+- **The owner uses it so already:** a test of the gate for the outside world on the owner's own life.
+
 ## 5. What it changes
 
 - **Mission 1's classes:** the developer with a side project is the default class; its quest 4 reads the project's

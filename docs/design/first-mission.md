@@ -142,6 +142,7 @@ ones before, as a strategy game brings a new kind of unit only when the player i
 | 4. The chieftains' council | **agents that debate** | a Review board: several roles judge the person's document, each verdict down its exit |
 | 5. Cheaper hands | **a script in an agent's place** | the Mason turns an agent's repeated step into a script; the score shows the 🪵 per result drop ([script-first.md](script-first.md)) |
 | 5b. The town learns | **the outer loop: feedback, measured** | the person's 👎 with a note becomes a proposed change (a prompt, a rule, a tier); it is run on the building's cases against the old version on the Test bench; kept on probation only if the numbers say better ([improve-buildings.md](improve-buildings.md), `realm/evolution.py`). The Test bench comes off its freeze here, when its turn comes, not before |
+| 5c. The camp at home | **what leaves the town goes through the gate** | mail answered by rules and one personal errand that comes back; every reply and registration waits at the Review gate until the person allows that road ([audience.md](audience.md) §4a) |
 | 6. A building of one's own | **the building designer** | the Mason and the Alchemist build a building from the person's words; it can be shared |
 
 **Why these two** (the owner's question, 2026-10-13: does the campaign cover the basics of loop engineering?). Taken
