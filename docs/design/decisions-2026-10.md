@@ -163,6 +163,11 @@ Everything the week's code needs is decided; the name waits (nothing that locks 
 
 1. **The owner's log check** of 10–15 sessions ([ork-console.md](ork-console.md) §1a), no code, 1–2 hours: it sizes
    step 3.
+   **Without the logs** (the owner, 2026-10-13: they may not be at hand): step 3 goes on with the docs' defaults, at its
+   smallest (Claude Code only; a pinned question; an assumption marked in a block at the run's end), and **counts
+   itself**: questions asked, assumptions marked, answers given, runs that stopped on a question, into the local event
+   log ([dogfood-logs.md](dogfood-logs.md)). After a week of the owner's own use, those counts do the log check's job
+   and size what comes next.
 2. **The small ones, about a day:** Cursor's token reader out or behind an opt-in (§5); "Warcraft" out of the shipped
    prompts and the design system (Q18 table); the night's work off in a new town and External listeners limited
    ([cut-list.md](cut-list.md)).
