@@ -80,6 +80,25 @@ never learns Office exists. Not answered with another onboarding question; shown
 3. **The product says what it is:** the first window and the README call it a control room for coding agents; the
    game is a look, not what it is.
 
+### 4c. The device as well as the hour: the laptop in Office, the phone in Camp (2026-10-13)
+
+The owner: the work laptop may stay in Office all day, and the phone is where the camp is made better after work.
+
+- **The look is kept per device** (it is per machine already): on the phone Camp by default, on the laptop the
+  person's choice.
+- **"Making the camp better" on the phone is light, one press each,** and nearly all of it is in the phone's bar
+  already ([cut-list.md](cut-list.md) §3a): apply or dismiss a 💡 item ([the-score.md](the-score.md)); pass results at
+  the gate knowing their price; answer a ❓; drop an idea; make and edit an asset.
+- **Camp on a small screen:** the map zoom, the living town with no cards; a tap on a building opens its card.
+- **Not on the phone:** missions that raise and place buildings by finger. They stay on the laptop; on the phone,
+  **Later**.
+- **A second hypothesis beside §1:** "the hour" and "the device" explain the same behaviour differently. The local
+  event log says which: do people switch looks on the laptop in the evening, or does the evening's play happen on the
+  phone?
+
+**Priority:** inside the phone's P1 ([cut-list.md](cut-list.md) §3a); what it adds is the phone drawing in Camp by
+default, and the 💡 and gate actions on it.
+
 ## 4a. No game engine (decided 2026-10-13)
 
 Asked: should Camp move to a game engine? **No.** The town is drawn with Preact and htm over the DOM, SVG and a little

@@ -109,3 +109,5 @@ Claude Code's app long answers are hard to read and questions get lost on a smal
   [ork-console.md](ork-console.md) §20.
 - **Talks lost across tabs** (the owner forgets where a thing was talked through): a talk belongs to its card, with
   one list of recent talks, [ork-console.md](ork-console.md) §21, P1 with the phone.
+- **The phone in Camp, the laptop in Office** (the owner, 2026-10-13): the phone draws in Camp by default and carries
+  the 💡 and gate actions beside items 1–4; missions stay on the laptop ([work-and-play.md](work-and-play.md) §4c).
