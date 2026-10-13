@@ -208,3 +208,23 @@ letter; a book; three bundles. Row 2: the cart with a small pole flag: none, yel
 lined up at a buffer stop. Row 3: one cart rolling to the right by itself, 4 frames (wheels turning)." **Orks never
 move carts** (the owner, 2026-10-13): the town routes them; an ork works on a cart at its table inside a building.
 
+
+## The camp put together, round 3: rails (2026-10-13)
+
+**The reference frame is reached.** One track with a spur to each building; mine carts on it; the `</>` scroll
+legible and a "PR" plate at the gate (the developer's tells, §9b of color-pass); the ❓ the loudest thing; the open
+hall with orks at work and a cart at its door; a different crest on most buildings; lush, calm grass. **It goes to the
+five-second test with developers as it is**, and into the artist's brief.
+
+**For the brief, not for another round:**
+
+1. **The flow in the layout's order:** left to right as the work goes: External listeners (the lookout) → Task board →
+   Agent pool → Review gate. Today the lookout stands at the far right, after the gate.
+2. **The core five are board, pool, gate, Inspector and listeners** ([catalog-shelves.md](catalog-shelves.md)): the
+   fire ring is the Review board, not core; the Inspector's lake takes its place in the GIF's camp. (The prompt asked
+   for the fire ring; the prompt was wrong.)
+3. **The track is too loud:** heavy ties across the whole width make it the strongest pattern; fewer, lower-contrast
+   ties (color-pass §6d).
+4. **The palisade is too tall** for a back edge: half its height.
+5. **An ork rides in the third cart:** orks never ride or move carts.
+6. **The hall has no crest.**
