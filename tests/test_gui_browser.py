@@ -1412,10 +1412,18 @@ def test_settings_choose_a_tiers_model_and_reset_it(page):
     kept and said; Reset to latest drops it."""
     from orkcraft import settings
     pg = page
-    pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.settings.set', { tools: { agy: true } }))")
     pg.locator(".gui-hud .gui-hud__menu").click()
-    modal = pg.locator(".gui-modal")
+    modal = pg.locator(".gui-modal").first
     modal.wait_for(state="visible", timeout=WAIT_MS)
+    agy = modal.get_by_role("button", name="Antigravity · experimental")       # decisions-2026-10.md §5
+    agy.click()                                                                  # its warning first, in a dialog
+    warning = pg.locator('.ok-dialog[aria-label="Turn on Antigravity?"]')
+    warning.wait_for(state="visible", timeout=WAIT_MS)
+    assert "banned" in warning.inner_text()
+    warning.get_by_role("button", name="Keep it off").click()
+    assert not settings.load().tools["agy"].enabled
+    agy.click()
+    warning.get_by_role("button", name="Turn on Antigravity at my own risk").click()
     pick = modal.get_by_label("Antigravity: the ★★★ Veteran model", exact=True)
     pick.wait_for(timeout=WAIT_MS)
     assert "Latest Gemini Pro High" in pick.locator("option:checked").inner_text()

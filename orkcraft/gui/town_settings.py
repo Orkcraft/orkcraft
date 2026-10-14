@@ -26,7 +26,7 @@ from orkcraft.sources import pricing
 
 def _tools(m) -> dict[str, Any]:
     on = {t for t, c in m.tools.items() if c.enabled}
-    return {"tools": [{"id": h.id, "title": h.title, "mark": h.mark, "on": h.id in on}
+    return {"tools": [{"id": h.id, "title": h.title, "mark": h.mark, "on": h.id in on, "risk": h.experimental}
                       for h in harnesses.REGISTRY.values()],
             "main_tool": m.main_tool, "main_now": builders.main_tool(m), "tier_models": _tier_models(m)}
 
@@ -119,6 +119,9 @@ def change(host, args: dict) -> dict[str, Any]:
     if isinstance(args.get("tools"), dict) or "main_tool" in args:      # the AI tools: said apart
         for t, on in (args.get("tools") or {}).items():
             if t in m.tools and isinstance(on, bool):
+                if on and harnesses.risky(t) and not m.tools[t].enabled and args.get("risk_read") != t:
+                    from orkcraft.gui.host import CommandError
+                    raise CommandError(f"{harnesses.title(t)} is experimental: read its warning first")
                 m.tools[t] = settings.ToolChoice(enabled=on, billing=m.tools[t].billing)
         if "main_tool" in args:
             m.main_tool = args["main_tool"] if args["main_tool"] in harnesses.REGISTRY else ""

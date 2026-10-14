@@ -80,6 +80,9 @@ class Failures:
         town = self.host.town
         m = town.machine
         if to in m.tools and not m.tools[to].enabled:
+            if harnesses.risky(to):                        # never turned on here, past its warning
+                raise CommandError(f"{harnesses.title(to)} is experimental: turn it on in Settings → AI tools, "
+                                   "after its warning")
             m.tools[to] = settings.ToolChoice(enabled=True, billing=m.tools[to].billing)
         m.main_tool = to
         settings.save(m)

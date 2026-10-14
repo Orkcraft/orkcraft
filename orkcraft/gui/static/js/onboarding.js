@@ -131,7 +131,9 @@ function NoTools({ t }) {
 
 function ToolsStep({ o }) {
   const t = o.tools;
+  const [risking, setRisking] = useState(null);       // an experimental tool to turn on: its warning first
   const set = (id, change) => send("onboarding.tools", { tools: { [id]: { ...t.rows.find((r) => r.id === id), ...change } } });
+  const flip = (r) => (!r.enabled && r.risk ? setRisking(r) : set(r.id, { enabled: !r.enabled }));
   const none = t.ready && t.rows.length === 0;
   return html`<section class="gui-onb__card">
     <${Head} o=${o} title=${none ? "No AI tool here yet" : "Your AI tools"}
@@ -143,7 +145,7 @@ function ToolsStep({ o }) {
           <span class="ok-font-label">Status</span><span class="ok-font-label">Paid by</span><span></span></div>
         ${t.rows.map((r) => html`<div key=${r.id} class=${cls("gui-onb__row", { "is-off": !r.enabled })} role="row">
           <label class="ok-check" title=${say(`Orks run on ${r.title}`)}>
-            <input type="checkbox" class="gui-onb__hide" checked=${r.enabled} onChange=${() => set(r.id, { enabled: !r.enabled })} />
+            <input type="checkbox" class="gui-onb__hide" checked=${r.enabled} onChange=${() => flip(r)} />
             <i>${r.enabled ? "✓" : ""}</i></label>
           <span class="gui-onb__tool"><${ToolMark} id=${r.id} mark=${r.mark} />${r.title}
             ${r.version && html`<span class="ok-font-status ok-tone-muted">${r.version}</span>`}</span>
@@ -154,8 +156,13 @@ function ToolsStep({ o }) {
             <option value="subscription">Subscription</option><option value="api">API</option></select>
           <${CheckCell} r=${r} />
           ${r.check && r.check.state === "failed" && html`<${CheckFailed} c=${r.check} />`}
+          ${r.risk && html`<div class="gui-onb__checked ok-font-status ok-tone-wait">⚠ ${say(r.risk)}</div>`}
         </div>`)}
       </div>
+      ${risking && html`<${Dialog} title=${say(`Turn on ${risking.title}?`)} text=${say(risking.risk)} warn onCancel=${() => setRisking(null)}
+        actions=${html`<button class="ok-btn" onClick=${() => setRisking(null)}>${say("Keep it off")}</button>
+          <button class="ok-btn danger" onClick=${() => { set(risking.id, { enabled: true, risk_read: true }); setRisking(null); }}>
+            ${say(`Turn on ${risking.title} at my own risk`)}</button>`} />`}
       <div class="gui-onb__line">
         <span class="ok-font-status ok-tone-muted">${[
           t.others.length ? say(`Also here: ${t.others.map((x) => x.title).join(", ")}. Orks can't run on these yet.`) : "",

@@ -172,8 +172,9 @@ class Onboarding:
     def _detected(self, found: list[tools.ToolStatus], others: list[tools.Other]) -> None:
         self.statuses, self.others = found, others
         kept = self.host.town.machine.tools if self.again else {}    # set up again: what was chosen stays
-        self.picked = {st.id: kept.get(st.id) or settings.ToolChoice(enabled=st.found and st.tool.available,
-                                                                      billing=st.billing)
+        # an experimental tool (agy) is never on by default: the person turns it on after its warning
+        self.picked = {st.id: kept.get(st.id) or settings.ToolChoice(
+                           enabled=st.found and st.tool.available and not harnesses.risky(st.id), billing=st.billing)
                        for st in found}
         self.host.on_change()
 
@@ -204,7 +205,7 @@ class Onboarding:
             h = harnesses.get(st.id)
             rows.append({"id": st.id, "title": st.tool.title, "mark": h.mark if h else "", "version": st.version,
                          "logged_in": st.logged_in, "login": st.tool.login, "enabled": choice.enabled, "billing": choice.billing,
-                         "check": self.checks.get(st.id)})
+                         "check": self.checks.get(st.id), "risk": harnesses.risky(st.id)})
         return rows
 
     @staticmethod
@@ -372,7 +373,10 @@ class Onboarding:
         for tid, c in (args.get("tools") or {}).items():
             if tid in self.picked and isinstance(c, dict):
                 billing = c.get("billing") if c.get("billing") in ("subscription", "api") else self.picked[tid].billing
-                self.picked[tid] = settings.ToolChoice(enabled=bool(c.get("enabled")), billing=billing)
+                on = bool(c.get("enabled"))
+                if on and harnesses.risky(tid) and not self.picked[tid].enabled and c.get("risk_read") is not True:
+                    raise OnboardingError(f"{harnesses.title(tid)} is experimental: read its warning first")
+                self.picked[tid] = settings.ToolChoice(enabled=on, billing=billing)
         if isinstance(args.get("warder"), bool):
             self.warder = args["warder"]
         return self._go(TOOLS) if args.get("next") else self.snapshot()

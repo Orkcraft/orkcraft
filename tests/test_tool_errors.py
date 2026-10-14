@@ -57,6 +57,16 @@ def test_switch_is_offered_only_for_another_installed_tool():
     assert r["hint"] == ""
 
 
+def test_agy_off_is_never_offered_to_switch_to():
+    """decisions-2026-10.md §5: agy is experimental, turned on only past its warning in Settings — never by a
+    Switch on a failure; once on, it is offered like any tool."""
+    e = ToolError("claude", "API Error: 529 Overloaded", 1)
+    r = tool_errors.report(e, ["claude"], "claude", which=_which("claude", "agy", "codex"))
+    assert [o["id"] for o in r["switch"]] == ["codex"]
+    r = tool_errors.report(e, ["claude", "agy"], "claude", which=_which("claude", "agy", "codex"))
+    assert [o["id"] for o in r["switch"]] == ["agy", "codex"]
+
+
 def test_with_no_other_tool_the_toast_says_how_to_get_one():
     e = ToolError("claude", "Invalid API key · Please run /login", 1)
     r = tool_errors.report(e, ["claude"], "claude", which=_which("claude"))

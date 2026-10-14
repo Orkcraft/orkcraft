@@ -119,14 +119,21 @@ function LogsField({ s, set }) {
 
 /** The AI tools: which are on, and the main one decisions and `main` steps run on. */
 function ToolsField({ s, set }) {
+  const [risking, setRisking] = useState(null);       // an experimental tool to turn on: its warning first
   if (!s.tools) return null;
   const on = s.tools.filter((x) => x.on);
   const now = (s.tools.find((x) => x.id === s.main_now) || {}).title || s.main_now;
+  const flip = (x) => (!x.on && x.risk ? setRisking(x) : set({ tools: { [x.id]: !x.on } }));
   return html`<div class="gui-field"><span class="ok-font-label">${say("AI tools")}</span>
       <span class="gui-steps" role="group" aria-label=${say("AI tools")}>
         ${s.tools.map((x) => html`<button key=${x.id} class=${cls("gui-steps__one", { "is-on": x.on })} aria-pressed=${x.on}
-            onClick=${() => set({ tools: { [x.id]: !x.on } })}><${ToolMark} id=${x.id} mark=${x.mark} /> ${x.title}</button>`)}
+            onClick=${() => flip(x)}><${ToolMark} id=${x.id} mark=${x.mark} /> ${x.title}${x.risk ? ` · ${say("experimental")}` : ""}</button>`)}
       </span></div>
+    ${s.tools.filter((x) => x.risk).map((x) => html`<p key=${x.id} class="ok-font-status ok-tone-wait">⚠ ${x.title}: ${say(x.risk)}</p>`)}
+    ${risking && html`<${Dialog} title=${say(`Turn on ${risking.title}?`)} text=${say(risking.risk)} warn onCancel=${() => setRisking(null)}
+      actions=${html`<button class="ok-btn" onClick=${() => setRisking(null)}>${say("Keep it off")}</button>
+        <button class="ok-btn danger" onClick=${() => { set({ tools: { [risking.id]: true }, risk_read: risking.id }); setRisking(null); }}>
+          ${say(`Turn on ${risking.title} at my own risk`)}</button>`} />`}
     <${Steps} label=${say("Main tool")} value=${s.main_tool}
       items=${[["", say("First one on")], ...on.map((x) => [x.id, html`<${ToolMark} id=${x.id} mark=${x.mark} /> ${x.title}`])]}
       onPick=${(v) => set({ main_tool: v })} />

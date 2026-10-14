@@ -991,7 +991,7 @@ def test_settings_choose_the_model_of_each_tier_and_it_wins(fake_repo, isolated_
     from orkcraft import settings
     from orkcraft.realm import harnesses
     host = _host(fake_repo)
-    host.command("town.settings.set", {"tools": {"claude": True, "agy": True}})
+    host.command("town.settings.set", {"tools": {"claude": True, "agy": True}, "risk_read": "agy"})
     rows = {t["id"]: t for t in host.command("town.settings", {})["tier_models"]}
     elder = rows["agy"]["tiers"][0]
     assert (elder["tier"], elder["chosen"], elder["now"]) == ("elder", "", "Latest Gemini Pro High")
@@ -1025,6 +1025,23 @@ def test_settings_turn_the_ai_tools_on_and_choose_the_main_one(fake_repo, isolat
     assert s["main_tool"] == ""                                              # only a tool of the registry
     s = host.command("town.settings.set", {"tools": {"pi": False}, "main_tool": "pi"})
     assert s["main_tool"] == "pi" and s["main_now"] != "pi"                  # chosen, but off: the first one on
+
+
+def test_settings_turn_agy_on_only_past_its_warning(fake_repo, isolated_layout_file):
+    """decisions-2026-10.md §5: agy is experimental, at the person's own risk (Google has banned accounts for its
+    use through other programs): Settings shows the warning, and turns it on only when it was read."""
+    from orkcraft import settings
+    from orkcraft.gui.host import CommandError
+    host = _host(fake_repo)
+    tools = {t["id"]: t for t in host.command("town.settings", {})["tools"]}
+    assert not tools["agy"]["on"] and "banned" in tools["agy"]["risk"] and tools["claude"]["risk"] == ""
+    with pytest.raises(CommandError, match="experimental"):
+        host.command("town.settings.set", {"tools": {"agy": True}})
+    assert not settings.load().tools["agy"].enabled
+    s = host.command("town.settings.set", {"tools": {"agy": True}, "risk_read": "agy"})
+    assert {t["id"]: t for t in s["tools"]}["agy"]["on"] and settings.load().tools["agy"].enabled
+    host.command("town.settings.set", {"tools": {"agy": False}})                # off: no warning to read
+    assert not settings.load().tools["agy"].enabled
 
 
 def test_the_spend_window_shows_the_week_by_purpose(fake_repo, isolated_layout_file):

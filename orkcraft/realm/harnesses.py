@@ -201,6 +201,9 @@ class Harness:
     models_cmd: Callable[["Harness"], list[list[str]]] | None = None
     parse_models: Callable[[str], list[str]] | None = None
     extra: dict = field(default_factory=dict)
+    # Experimental, at the person's own risk: never on by default; this warning is read before it is turned on
+    # (onboarding, Settings → AI tools). "" for a tool that is not.
+    experimental: str = ""
 
     @property
     def bin(self) -> str:
@@ -521,7 +524,11 @@ register(Harness(
     # `--print` denies every terminal command it would ask about and ends the turn with no answer (1.3.3), so a
     # task whose ork runs its tests first comes back empty. Unchained, it asks nothing; `--sandbox` still holds.
     free_args=("--dangerously-skip-permissions",),
-    resume_cmd=lambda h, sid: [h.bin, "--conversation", sid]))
+    resume_cmd=lambda h, sid: [h.bin, "--conversation", sid],
+    # docs/design/decisions-2026-10.md §5: Google banned accounts in February 2026 for using Antigravity through
+    # third-party tools; a second flag is permanent.
+    experimental="Experimental, at your own risk. Google has banned Google accounts for using Antigravity "
+                 "through other programs, like this one. Turning it on may get your Google account banned."))
 register(Harness(
     "codex", "Codex", "codex", "npm i -g @openai/codex", "codex login",
     {"elder": "gpt-astra", "warrior": "gpt-sol", "laborer": "gpt-luna"},
@@ -584,6 +591,12 @@ def need(harness_id: str) -> Harness:
     if h is None:
         raise RuntimeError(f"harness {harness_id!r} is not one of {', '.join(REGISTRY)}")
     return h
+
+
+def risky(harness_id: str) -> str:
+    """The warning of an experimental tool, read before it is turned on; "" for any other."""
+    h = REGISTRY.get(harness_id)
+    return h.experimental if h else ""
 
 
 def title(harness_id: str) -> str:

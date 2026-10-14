@@ -4,6 +4,11 @@ Orkline leads six AI tools: **Claude Code**, **Antigravity (agy)**, **Codex**, *
 **pi** and **Cursor** (`cursor-agent`). Nothing outside `orkcraft/realm/harnesses.py` names how one
 is called: every ork, building and decision goes through that registry.
 
+**agy is experimental** (`Harness.experimental`, [decisions-2026-10.md](decisions-2026-10.md) §5): Google has
+banned accounts for using Antigravity through third-party tools. It is never on by default: the onboarding finds it
+and leaves it off, Settings → AI tools and the onboarding show the warning and turn it on only after a dialog that
+repeats it, and a failed tool's Switch never offers it while it is off.
+
 ## 1. The registry
 
 `harnesses.REGISTRY` holds one `Harness` per tool, in the order a main tool is picked when none is

@@ -97,9 +97,11 @@ def installed(harness_id: str, which: Callable[[str], str | None] | None = None)
 def others(failed: str, enabled: Iterable[str], which: Callable[[str], str | None] | None = None,
            broken: Iterable[str] = ()) -> list[dict]:
     """The tools to switch to: installed here, not the one that failed nor one that failed to start or
-    sign in (`broken`); the ones turned on in Settings first, in the registry's order."""
+    sign in (`broken`), nor an experimental one that is off (agy: on only past its warning, in Settings); the
+    ones turned on in Settings first, in the registry's order."""
     on, broken, which = set(enabled), set(broken) | {failed}, which or shutil.which
-    found = [h for h in harnesses.REGISTRY.values() if h.id not in broken and which(h.bin)]
+    found = [h for h in harnesses.REGISTRY.values()
+             if h.id not in broken and (h.id in on or not h.experimental) and which(h.bin)]
     found.sort(key=lambda h: h.id not in on)
     return [{"id": h.id, "title": h.title, "mark": h.mark, "on": h.id in on} for h in found]
 

@@ -256,13 +256,34 @@ def test_the_guard_step_says_agy_is_unguarded_until_checked_live(fake_repo: Path
     agy = tools.ToolStatus(by_id["agy"], found=True, path="/usr/bin/agy", version="1.2.17", logged_in=True)
     monkeypatch.setattr(tools, "detect", lambda *a, **k: [*_statuses()[:1], agy])
     host = _host(fake_repo)
-    line = host.snapshot()["onboarding"]["tools"]["warder_agy"]
+    assert host.snapshot()["onboarding"]["tools"]["warder_agy"] == ""          # found, but off: experimental
+    o = host.command("onboarding.tools", {"tools": {"agy": {"enabled": True, "risk_read": True, "billing": "subscription"}}})
+    line = o["tools"]["warder_agy"]
     assert "does not guard agy yet" in line and "--sandbox" in line          # agy's hook is not checked on a live agy
     o = host.command("onboarding.tools", {"tools": {"agy": {"enabled": False, "billing": "subscription"}}})
     assert o["tools"]["warder_agy"] == ""                                     # agy not chosen: nothing to say
     host.town.machine.agy_warder_checked = True
-    o = host.command("onboarding.tools", {"tools": {"agy": {"enabled": True, "billing": "subscription"}}})
+    o = host.command("onboarding.tools", {"tools": {"agy": {"enabled": True, "risk_read": True, "billing": "subscription"}}})
     assert "guards agy too" in o["tools"]["warder_agy"]
+
+
+def test_agy_found_is_off_until_its_warning_is_read(fake_repo: Path, onboard, monkeypatch):
+    """decisions-2026-10.md §5: agy is experimental, never on by default; Google has banned accounts for its use
+    through other programs. The onboarding offers it off, with the warning; on only past it."""
+    from orkcraft.gui.host import CommandError
+    by_id = {t.id: t for t in tools.TOOLS}
+    agy = tools.ToolStatus(by_id["agy"], found=True, path="/usr/bin/agy", version="1.2.17", logged_in=True)
+    monkeypatch.setattr(tools, "detect", lambda *a, **k: [*_statuses()[:1], agy])
+    host = _host(fake_repo)
+    rows = {r["id"]: r for r in host.snapshot()["onboarding"]["tools"]["rows"]}
+    assert rows["claude"]["enabled"] and rows["claude"]["risk"] == ""
+    assert not rows["agy"]["enabled"] and "banned" in rows["agy"]["risk"] and "own risk" in rows["agy"]["risk"]
+    with pytest.raises(CommandError, match="experimental"):
+        host.command("onboarding.tools", {"tools": {"agy": {"enabled": True, "billing": "subscription"}}})
+    o = host.command("onboarding.tools", {"tools": {"agy": {"enabled": True, "risk_read": True, "billing": "subscription"}}})
+    assert {r["id"]: r for r in o["tools"]["rows"]}["agy"]["enabled"]
+    o = host.command("onboarding.tools", {"tools": {"agy": {"enabled": True, "billing": "api"}}})   # on already
+    assert {r["id"]: r for r in o["tools"]["rows"]}["agy"]["billing"] == "api"
 
 
 def _until(host: Host, done, what: str) -> dict:
