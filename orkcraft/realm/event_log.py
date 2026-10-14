@@ -39,8 +39,13 @@ WAIT_SKIPPED = "wait_skipped"     # building, task, wait, waited_s
 QUEST_STARTED = "quest_started"   # quest
 QUEST_DONE = "quest_done"         # quest, seconds
 QUEST_SKIPPED = "quest_skipped"   # quest
+# "Since your last look" (audience.md §2a): what the town made while the person was away, and their looks.
+BUILT = "result_built"            # building, kind ("passed" | "launched" | "done"), title, ref
+CART_MOVED = "cart_moved"         # source, target, title: a cart delivered along a road
+LOOKED = "look"                   # started, seconds: the GUI in front of the person (looks a day, their length)
 
-EVENTS = (ASKED, ASSUMED, ANSWERED, STOPPED, WAIT_SKIPPED, QUEST_STARTED, QUEST_DONE, QUEST_SKIPPED)
+EVENTS = (ASKED, ASSUMED, ANSWERED, STOPPED, WAIT_SKIPPED, QUEST_STARTED, QUEST_DONE, QUEST_SKIPPED,
+          BUILT, CART_MOVED, LOOKED)
 
 _LOCK = threading.Lock()
 
