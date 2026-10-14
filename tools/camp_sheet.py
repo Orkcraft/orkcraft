@@ -409,6 +409,21 @@ def load_only(loaded: np.ndarray, empty: np.ndarray, rim: int) -> np.ndarray:
     return trim(out)
 
 
+def grass_keyed(img: np.ndarray, margin: int = 12) -> np.ndarray:
+    """Transparent where green clearly leads red and blue (grass baked into a tile), so only the bed, the ties and
+    the rails stay; a lone opaque pixel left in the grass goes too."""
+    rgb = img[..., :3].astype(int)
+    grass = (rgb[..., 1] > rgb[..., 0] + margin) & (rgb[..., 1] > rgb[..., 2] + margin)
+    out = img.copy()
+    out[grass] = 0
+    keep = out[..., 3] > 0
+    p = np.pad(keep, 1)
+    near = sum(p[1 + dy:1 + dy + keep.shape[0], 1 + dx:1 + dx + keep.shape[1]]
+               for dy in (-1, 0, 1) for dx in (-1, 0, 1) if dy or dx)
+    out[keep & (near < 2)] = 0
+    return out
+
+
 def _cut(img: np.ndarray, cut: list) -> np.ndarray:
     """A repeat unit of w × h out of a longer piece: centred across, from the bottom (a row of posts) or the middle."""
     w, h, where = cut
@@ -428,6 +443,8 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
         for item in group["items"]:
             img = sheet.tile(_extract(sheet, item), w, h)
             img[..., 3] = 255
+            if group.get("key_grass"):                           # the tile's grass: the ground layer draws its own
+                img = grass_keyed(img)
             _write(recolour(img, pal), item["file"], group, rows, problems, (w, h), 1)
         return
     w, h = group["size"]

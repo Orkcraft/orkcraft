@@ -98,7 +98,7 @@
    "file": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
    "groups": [
     {
-     "kind": "tiles", "size": [32, 32], "anchor": "top-left",
+     "kind": "tiles", "size": [32, 32], "anchor": "top-left", "key_grass": true,
      "items": [
       {"file": "track/straight-h.png", "at": [0.125, 0.163]},
       {"file": "track/straight-v.png", "at": [0.375, 0.163]},
