@@ -511,3 +511,14 @@ them, which replaces the lower lane. The two lines make **a loop**: the track co
 switch on the left into the two lines, and they merge on the right before the catapult. Carts for a lower building
 run on the second line and stop at its path; orks still never push or ride carts. More than ten buildings: another
 row, another line, joined the same way. Needs all four curves of c2 and its switch and merge.
+
+## 12. The ork, decided again: the capped ork of 0.3 (2026-10-14, evening)
+
+The owner, looking at all the ork sheets side by side: **the main ork is the capped one of the 0.3 sheets** — cloth
+cap, leather apron over a shirt, tool belt — whose roles hold big props in different poses with a colour of their own
+(the Warchief's axe, the Lookout's spyglass, the Seer's glowing orb, the Warder's shield with a lock, the Treasurer's
+scales, the Alchemist's flask, the Pathfinder's map and lantern, the painter's brush, the clipboard): references
+`0.3/roles-2.jpg` and the roles already cut in `design-system/sprites/camp/orks/roles/`. It replaces o1/o2's bald ork
+(§10). The owner's own `o3-states-r1.jpg` and `o5-inside-r1.jpg` are drawn with this ork and become its states and
+its inside poses; GEN's o3 #3 and o5 #1 (bald) step back. Missing for it: the ork stepping out of a door (o1 had it) —
+one sheet, generated with `roles-2.jpg` attached.
