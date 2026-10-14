@@ -29,7 +29,7 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import (accounts, awake, bench, builder, console, day_logs, day_review, failures, fixes, github, growth, history, mobile, nightly, onboarding, projects,
+from orkcraft.gui import (accounts, awake, away, bench, builder, console, day_logs, day_review, failures, fixes, github, growth, history, mobile, nightly, onboarding, projects,
                           state, town_settings, updates, views, you)
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
@@ -126,6 +126,8 @@ class Host:
         self.awake = awake.Awake()                  # the computer kept from sleeping while it runs (gui/awake.py)
         self.you = you.You(self)                    # the portrait's menu: the look, Do not disturb (gui/you.py)
         self.commands.update(self.you.commands())
+        self.away = away.Away(self)                 # "I'm off": a day away, the computer kept awake while carts work (gui/away.py)
+        self.commands.update(self.away.commands())
         # Anonymous usage stats, only when the operator said yes (core/usage.py, docs/usage-stats.md)
         self.usage = usage.Usage(self.town.machine, face="gui", demo=demo)
         # Crash reports, with the same answer (core/crashes.py, docs/crash-reports.md); the window's own errors too
@@ -162,6 +164,7 @@ class Host:
         snap["lake"] = lake_view.summary(self.town.lake)   # the Lake window's tabs (gui/views/lake.py)
         snap["growth"] = self.growth.snapshot()            # the news and the operator's mascot (gui/growth.py)
         snap["portrait"] = self.you.snapshot()             # the look, Do not disturb, what gathered (gui/you.py)
+        snap["portrait"]["away"] = self.away.snapshot()    # a day away from the camp, while it lasts (gui/away.py)
         snap["usage_ask"] = self.usage.should_ask()        # the one question about usage stats (js/settings.js)
         snap["update"] = self.updates.snapshot()           # a newer Orkline, if one is out (js/update.js)
         snap["improve"] = self.day_review.state()          # the days Improve can read, and the one read now
@@ -271,6 +274,7 @@ class Host:
         self._wakes(now)
         self.growth.tick(now)
         self.you.tick()
+        self.away.tick(now)
         self.usage.tick(now)
         self.updates.tick(now)
         self.onboarding.tick(now)

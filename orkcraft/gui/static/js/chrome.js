@@ -6,6 +6,7 @@ import { html, cls, linked } from "./html.js";
 import { town, online, toasts, command, dismiss, say, holdToast, copyText } from "./link.js";
 import { settingsOpen } from "./settings.js";
 import { Portrait, Steps } from "./portrait.js";
+import { WorkHours, Leave } from "./day.js";
 import { Scheme } from "./icons.js";
 import { opened, panelShown, panelWidth } from "./windows.js";
 import { narrow } from "./pocket.js";
@@ -63,7 +64,9 @@ function Hour({ hud, p }) {
           : "Do not disturb holds sounds, pushes and the Warchief's news; the orks keep working.")}</p>
         <${Steps} label="Look" value=${p.look_choice || p.look} onPick=${(v) => command("you.look", { look: v }).catch(() => {})}
           items=${[["shift", "By shift"], ["camp", "Camp"], ["office", "Office"]]} />
-        <p class="ok-font-status ok-tone-muted">${say(`By shift: Office ${p.shift || "09:00–17:00"}, Camp the rest of the day.`)}</p>`}
+        <p class="ok-font-status ok-tone-muted">${say(`By shift: Office ${p.shift || "09:00–17:00"}, Camp the rest of the day.`)}</p>
+        <${WorkHours} p=${p} />
+        <${Leave} p=${p} onDone=${() => setOpen(false)} />`}
     </div>`}
   </span>`;
 }

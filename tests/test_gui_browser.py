@@ -1819,6 +1819,35 @@ def test_a_narrow_window_shows_the_buildings_as_a_list_of_cards(gui):
     assert not errors, "\n".join(errors)
 
 
+def test_the_sun_sets_the_working_hours_and_leaves_the_camp(page):
+    """The sun's menu keeps the person's day (js/day.js): the working hours, on with a start and an end, and "I'm off",
+    which shows the Warchief's line about the day away and the lid, then the day away with I'm back
+    (docs/design/audience.md §2a)."""
+    pg = page
+    pg.locator(".gui-hour__dial").click()
+    sun = pg.locator(".gui-hour__menu")
+    sun.wait_for(state="visible", timeout=WAIT_MS)
+    hours = sun.get_by_role("group", name="Working hours", exact=True)
+    hours.get_by_role("button", name="On", exact=True).click()
+    sun.get_by_label("Working hours start").wait_for(state="visible", timeout=WAIT_MS)
+    assert sun.get_by_label("Working hours end").input_value() == "19:00"
+    sun.get_by_role("button", name="I'm off…", exact=True).click()
+    plan = sun.get_by_role("group", name="Leaving the camp")
+    plan.wait_for(state="visible", timeout=WAIT_MS)
+    assert "Warchief:" in plan.inner_text() and "leave the lid open" in plan.inner_text()
+    plan.get_by_role("button", name="I'm off", exact=True).click()
+    sun.wait_for(state="hidden", timeout=WAIT_MS)
+    pg.locator(".gui-hour__dial").click()
+    sun.get_by_role("button", name="I'm back", exact=True).click()
+    pg.locator(".gui-warchief__news", has_text="Welcome back").wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".gui-warchief__news").get_by_role("button", name="Seen").click()
+    pg.locator(".gui-hour__dial").click()
+    sun.wait_for(state="visible", timeout=WAIT_MS)
+    sun.get_by_role("group", name="Working hours", exact=True).get_by_role("button", name="Off", exact=True).click()
+    sun.get_by_label("Working hours start").wait_for(state="hidden", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+
+
 def test_the_sun_holds_the_look_and_the_noise_and_the_portrait_holds_camps_own(page):
     """The sun in the middle of the HUD (js/chrome.js Hour) answers "will the town bother me, and how does it look":
     Do not disturb and the look (Camp, Office, by the shift); the portrait's menu heads with You and keeps what is

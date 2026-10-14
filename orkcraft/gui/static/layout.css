@@ -913,6 +913,13 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
   padding: var(--space-3); white-space: normal; background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame);
   box-shadow: var(--shadow-window); }
 .gui-hour__menu > p { margin: 0; }
+/* The person's day in the sun's menu (js/day.js): the working hours, "I'm off" and the day away. */
+.gui-day { display: grid; gap: var(--space-1); }
+.gui-day > p { margin: 0; }
+.gui-day__hours { display: flex; align-items: center; gap: var(--space-1); }
+.gui-day__hours > .ok-input { width: 7.5em; }
+.gui-day__carts { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; max-height: 10em; overflow: auto; }
+.gui-day__acts { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 @media (max-width: 640px) { .gui-hour { position: static; } .gui-hour__dial { width: 28px; height: 28px; border: 0; box-shadow: none; }
   .gui-hour__dial > img { width: 16px; height: 16px; } }
 

@@ -1,5 +1,5 @@
-"""The computer kept awake while Orkline is open (gui/awake.py): each system's own way, against idle sleep
-only, ended with the town, and the machine's setting in Town settings."""
+"""The computer kept awake while carts are in work and it is on power (gui/awake.py, gui/away.py): each system's
+own way, against idle sleep only, ended with the town, and the machine's setting in Town settings."""
 from __future__ import annotations
 
 import subprocess
@@ -73,10 +73,14 @@ def test_town_settings_turns_it_off_and_on_at_once_while_the_town_is_open(fake_r
     host = Host(fake_repo, auto_commit=False)
     made, popen = _fake()
     host.awake = awake.Awake("darwin", popen, _which("caffeinate"))
-    assert host.command("town.settings")["keep_awake"] is True
+    host.away.power = lambda: True
+    assert host.command("town.settings")["keep_awake"] is True and host.command("town.settings")["awake_can"]
     r = host.command("awake.set", {"on": False})                                    # not open (a test): kept only
     assert r["keep_awake"] is False and not made
     host.awake.running = True
+    r = host.command("awake.set", {"on": True})
+    assert r["awake_how"] == "" and not made                                         # no cart in work: it may sleep
+    host.away.service.busy = lambda: True                                           # a cart in work, on power
     r = host.command("awake.set", {"on": True})
     assert r["keep_awake"] is True and r["awake_how"] == "caffeinate" and len(made) == 1
     r = host.command("awake.set", {"on": False})

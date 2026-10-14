@@ -103,7 +103,7 @@ def read(host) -> dict[str, Any]:
             "usage": m.usage, "usage_blocked": usage.blocked(), "fire": m.fire,
             "updates": m.updates, "updates_blocked": updates.blocked() or ("the demo" if host.town.demo else ""),
             "version": __version__, "round": _round(host), "logs": _logs(host),
-            "keep_awake": m.keep_awake, "awake_how": host.awake.how, **_tools(m)}
+            "keep_awake": m.keep_awake, "awake_how": host.awake.how, "awake_can": host.awake.can(), **_tools(m)}
 
 
 def change(host, args: dict) -> dict[str, Any]:
@@ -186,12 +186,12 @@ def round_now(host, args: dict) -> dict[str, Any]:
 
 
 def keep_awake(host, args: dict) -> dict[str, Any]:
-    """Whether the computer stays awake while Orkline is open (`on`: true | false), at once (gui/awake.py)."""
+    """Whether the computer stays awake while carts are in work and it is on power (`on`: true | false), at once
+    (gui/away.py `keep_awake`, gui/awake.py)."""
     m = host.town.machine
     m.keep_awake = args.get("on") is True
     settings.save(m)
-    if host.awake.running:                      # only while the town is open in its window or the browser
-        host.awake.apply(m.keep_awake)
+    host.away.keep_awake()                      # only while the town is open in its window or the browser
     return read(host)
 
 

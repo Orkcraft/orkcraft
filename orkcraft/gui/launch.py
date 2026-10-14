@@ -24,8 +24,8 @@ def run(repo_root: Path | None = None, auto_commit: bool | None = None, layout_f
     host = Host(repo_root, auto_commit, layout_file, demo=demo)
     server = Server(host, port)
     thread = server.start_thread()
-    host.awake.running = True                    # the screen may turn off; the computer does not sleep (gui/awake.py)
-    host.awake.apply(host.town.machine.keep_awake)
+    host.awake.running = True                    # while carts work on power the computer does not sleep (gui/away.py)
+    host.away.keep_awake()
     done = lambda: updates.RESTART if host.updates.restart_wanted else 0   # noqa: E731
     if not browser and not _toolkit():
         sys.stderr.write("orkline: no window here (GTK or Qt for Python is not installed); opening the browser\n")
