@@ -327,3 +327,8 @@ in to the launch, in one frame.
 **Notes on the batch:** the ground tiles carry a thin dark border each (cut inside it to tile); the catapult is drawn
 in side view, a step off the three-quarter projection (acceptable for one machine, the artist evens it); the palisade
 gaps join the track with a curve, good for a way in on the back edge; the hall furniture reads well at a quarter size.
+
+**A second catapult** (2026-10-14): richer (a skull on the front, tusks, its own buffer stop, a clear launch in four
+frames), but **isometric, its track running diagonally**: it cannot join the camp's orthogonal track and breaks the one
+projection. Kept as the design to keep (skull, tusks, buffer stop), redrawn in the camp's view with the track coming
+in straight from the left; until then the side-view catapult is the one in the concept frame.
