@@ -191,6 +191,16 @@ function Want({ t }) {
   return html`${say(t.want)}${t.want_note ? ` · ${say(t.want_note)}` : ""}`;
 }
 
+/** Why a task waits, until when, and the way past it (ork-console.md §19): the line, and its button. An answer's
+ *  way past is the answer card above it, so it gets none here. */
+function WaitLine({ id, w }) {
+  if (!w) return null;
+  const skip = w.skip;
+  const go = () => (skip.act === "open" ? setIn(chosen, id, skip.args.task) : act(id, skip.act, skip.args).catch(() => {}));
+  return html`<p class="ok-detail__meta">⏳ ${w.line}
+    ${skip && skip.label !== "Answer" && html` <button class="ok-btn" onClick=${go}>${skip.act === "open" ? `${skip.label} →` : say(skip.label)}</button>`}</p>`;
+}
+
 /** A task as a card: who and how it is on top, its title, its branch and cost under it. */
 function TaskCard({ id, t, n }) {
   const working = t.status === "working" || t.status === "planned";
@@ -199,8 +209,9 @@ function TaskCard({ id, t, n }) {
     <span class=${`pool-card__state ${STATE_TONE[t.status] || ""}`}>
       ${t.ork ? html`<${Head} ork=${t.ork} asks=${t.asks} working=${working} /><span class="pool-card__who">${t.ork}</span> · ` : ""}
       ${t.status === "done" ? "✓ " : t.status === "failed" ? "✗ " : ""}${say(WORD[t.status] || t.status)}${n ? ` #${n}` : ""}
-      ${!t.ork && t.wait_for ? ` · ${say("waits for")} ${t.wait_for}` : ""}</span>
+</span>
     <span class="pool-card__title">${t.title}</span>
+    ${t.wait && html`<span class="pool-card__want ok-tone-muted">⏳ ${t.wait.line}</span>`}
     ${t.want && html`<span class="pool-card__want ok-tone-muted"><${Want} t=${t} /></span>`}
     ${(t.overlaps.length > 0 || t.against.length > 0) && html`<span class="pool-card__warn ok-tone-wait">
       ${t.held ? `⏸ ${say("waits for")} “${t.overlaps[0] ? t.overlaps[0].title : ""}”`
@@ -281,6 +292,7 @@ function TaskDetail({ id, data, t }) {
          t.reworks ? `${t.reworks} rework${t.reworks > 1 ? "s" : ""}` : "", t.warm ? say("resumed its session") : "",
          t.scope === "local" ? say("local, no pull request") : "", t.wait_for ? `${say("waits for")} ${t.wait_for}` : ""]
         .filter(Boolean).map((x) => ` · ${x}`)}</p>
+    <${WaitLine} id=${id} w=${t.wait} />
     ${t.asks && html`<${AnswerHere} key=${t.id} id=${id} data=${data} t=${t} />`}
     <div class="ok-detail__actions">
       ${t.branch && html`<button class="ok-btn" onClick=${diff}>Diff in Inspector</button>`}
@@ -346,6 +358,7 @@ function OrkTab({ id, o }) {
     <span class="ok-tone-muted"> ${say("You took this over: type to it here.")}</span></div>`;
   if (s && s.running) return html`${handBack}<${Terminal} key=${s.key} sessionKey=${s.key} />`;   // an ended one takes no keys: reopen it
   return html`<div class="gui-section">
+    ${o.one_status && html`<p class="ok-detail__meta" title=${o.one_status.word}>${o.one_status.mark} ${o.one_status.line}</p>`}
     <p class="ok-tone-muted">${s ? say("Its session has ended") + (s.exit_code ? ` · ${s.exit_code}` : "")
       : o.status === "working" ? say("It is working now: take it over to type to it.") : say("No terminal open.")}
       ${o.by_hand ? html` <button class="ok-btn" onClick=${open}>${say("Reopen its terminal")}</button>` : null}

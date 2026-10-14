@@ -101,6 +101,12 @@ def _kinds(w, names: dict[str, str]) -> dict:
             "table": rows}
 
 
+def _wait(w, t: bk.PoolTask) -> dict | None:
+    """Why it waits, until when, and the way past it (ork-console.md §19); None when it does not wait."""
+    got = w.task_wait(t) if hasattr(w, "task_wait") else None
+    return got.as_dict() if got is not None else None
+
+
 def _task(t: bk.PoolTask, full: bool = False, names: dict[str, str] | None = None) -> dict:
     row = {"id": t.id, "title": t.title, "status": t.status, "lane": LANE_OF.get(t.status, "queue"), "ork": t.orc,
            "wait_for": t.wait_for, "branch": t.branch, "reworks": max(t.attempts - 1, 0), "warm": t.warm,
@@ -143,9 +149,11 @@ def detail(w) -> dict:
                      "task": {"id": now.id, "title": now.title, "status": now.status} if now else None,
                      "done": o.done, "failed": o.failed, "cost": _money(o.cost_usd), "tokens": o.tokens,
                      "worktree": o.worktree, "branch": o.branch, "session": o.session, "asks": o.name in asking,
+                     "one_status": w.ork_status(o).as_dict(),
                      "recent": list(o.recent), "terminal": _key(w, o.name), "by_hand": w.taken_over(o.name)})
     names = _names(w)
-    tasks = [_task(t, True, names) for t in st.queue] + [_task(t, True, names) for t in reversed(st.tasks)]
+    row = lambda t: {**_task(t, True, names), "wait": _wait(w, t)}        # noqa: E731
+    tasks = [row(t) for t in st.queue] + [row(t) for t in reversed(st.tasks)]
     return {
         "keeper": w.keeper, "paused": st.paused, "max": f.max_orcs, "spent": _money(st.spent),
         "budget": _money(f.budget) if f.budget else "", "max_reworks": f.max_reworks,
@@ -159,7 +167,8 @@ def detail(w) -> dict:
         "orks": orks,
         "lanes": [{"id": lid, "label": label} for lid, label in LANES],
         "tasks": tasks,
-        "asked": [_task(t, True, names) for t in st.asked],
+        "asked": [row(t) for t in st.asked],
+        "state": w.building_status(),
         "decisions": [{"at": d.at[11:16], "action": d.action, "ork": d.orc, "why": d.why} for d in st.decisions(30)],
         "areas": _areas(w),
         "kinds": _kinds(w, names),

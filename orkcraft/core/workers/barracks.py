@@ -55,6 +55,7 @@ from orkcraft.core.workers.barracks_claims import ClaimsMixin
 from orkcraft.core.workers.barracks_paths import PathsMixin
 from orkcraft.core.workers.barracks_plan import PlanMixin
 from orkcraft.core.workers.barracks_review import ReviewMixin
+from orkcraft.core.workers.barracks_status import StatusMixin
 from orkcraft.realm import barracks as bk
 from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, settle, steward, tiers
 from orkcraft.sources import telemetry
@@ -142,7 +143,7 @@ def take_back(town, source_id: str, payload: pipes.Payload) -> str:
     return ""
 
 
-class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin, Worker):
+class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin, StatusMixin, Worker):
     TYPE = "barracks"
     TAKES_REWORK = True
     APPROVAL = gate.APPROVAL      # the hop's outcome on a draft that waits for the operator (a Loot always holds it)
