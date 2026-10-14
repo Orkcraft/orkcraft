@@ -20,7 +20,8 @@ A model that cannot be reached never blocks: the review falls back to the rules.
 
 Every review is appended to `.orkcraft/council/reviews.jsonl`; the settings live in
 `.orkcraft/council/settings.json` (`fast_llm`, `fast_model`, `weekly_model`, `weekly_at`, `optimize_at`,
-the Night round's `round_at`, and the Elders' `elders_per_night` / `elders_context`).
+the Night round's `round_at`, and the Elders' `elders_per_night` / `elders_context`). A new town has the
+night's work off (`NIGHT_OFF`).
 """
 from __future__ import annotations
 
@@ -46,6 +47,11 @@ SETTINGS = {"fast_llm": True, "fast_model": "haiku", "weekly_model": "opus", "we
             "check_nightly": True, "check_per_night": 2,   # the Mechanic's night check (gui/night_check.py)
             "logs_for_analysis": False,         # every day's model calls kept, not cleared (realm/day_log.py)
             "review_nightly": True}             # the Mechanic and the Farseer read the day at night (gui/day_review.py)
+# The night's work, off in a new town (docs/design/cut-list.md §2): no money spent nor limit used overnight that
+# the person never asked for. Written once when a town is founded; a town that already exists keeps its own.
+# The Elders' `elders_*` stay: they only answer permission questions, under Autonomy.
+NIGHT_OFF = {"round_at": "", "optimize_at": "", "weekly_at": "", "improve_per_night_usd": 0.0,
+             "check_nightly": False, "review_nightly": False}
 SUBJECT_LIMIT = 6000
 
 # (id, icon, name, duty, the councillor's fixed prompt)
@@ -200,6 +206,14 @@ def save_settings(repo_root: Path, values: dict) -> dict:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
     return data
+
+
+def night_off_for_new_town(repo_root: Path) -> bool:
+    """A town being founded: the night's work written as off. False (nothing written) when settings exist."""
+    if (repo_root / COUNCIL_DIR / "settings.json").exists():
+        return False
+    save_settings(repo_root, NIGHT_OFF)
+    return True
 
 
 def light_runner(repo_root: Path) -> Runner | None:

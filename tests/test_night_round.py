@@ -15,6 +15,8 @@ from orkcraft.core.workers import scrolls
 from orkcraft.gui.host import Host
 from orkcraft.realm import checkpoint, fastpath, growth, nightround, tasklist, weekly
 
+pytestmark = pytest.mark.usefixtures("night_on")     # the night's work, on as a person turns it on
+
 
 # -- the rules, alone -----------------------------------------------------------------------------------
 

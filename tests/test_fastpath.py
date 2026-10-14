@@ -106,3 +106,23 @@ def test_the_chief_warns_of_a_mill_with_more_than_one_agent_step(tmp_path: Path)
     two = dict(MILL, config={"steps": ["agent: tidy it", "script: make || agent: do it"]})
     assert ("chief", "warn") not in _bad(fp.rules(fp.Subject("building", "mymill", one), tmp_path))
     assert ("chief", "warn") in _bad(fp.rules(fp.Subject("building", "mymill", two), tmp_path))
+
+
+def test_a_new_town_has_the_nights_work_off_and_an_old_one_keeps_its_own(fake_repo: Path, tmp_path: Path):
+    """cut-list.md §2: no money spent nor limit used overnight that a new person never asked for."""
+    from orkcraft.core.town import Town
+    town = Town(fake_repo)
+    assert town.first_run
+    s = fp.settings(fake_repo)
+    assert s["round_at"] == s["optimize_at"] == s["weekly_at"] == ""
+    assert s["improve_per_night_usd"] == 0.0 and not s["check_nightly"] and not s["review_nightly"]
+    assert s["elders_per_night"] == fp.SETTINGS["elders_per_night"]      # the Elders only answer, under Autonomy
+    fp.save_settings(fake_repo, {"check_nightly": True})                 # turned on later: it stays on
+    assert not fp.night_off_for_new_town(fake_repo) and fp.settings(fake_repo)["check_nightly"]
+
+    old = tmp_path / "old"                                                # a town that exists: nothing written
+    old.mkdir()
+    (old / ".orkcraft.json").write_text("{}", encoding="utf-8")
+    assert not Town(old, layout_file=old / ".orkcraft.json").first_run
+    assert not (old / fp.COUNCIL_DIR / "settings.json").exists()
+    assert fp.settings(old)["check_nightly"] and fp.settings(old)["round_at"] == fp.SETTINGS["round_at"]

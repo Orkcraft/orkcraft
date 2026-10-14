@@ -8,6 +8,8 @@ import pytest
 from orkcraft.gui.host import Host
 from orkcraft.realm import check, check_history, checkpoint, fastpath
 
+pytestmark = pytest.mark.usefixtures("night_on")     # the night's work, on as a person turns it on
+
 
 def _data(green: bool, **cases) -> dict:
     return {"green": green, "idle": {"calls": 0},

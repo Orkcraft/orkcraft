@@ -25,6 +25,14 @@ def fake_repo(tmp_path: Path) -> Path:
     return repo
 
 
+@pytest.fixture
+def night_on(fake_repo: Path) -> Path:
+    """`fake_repo` as a town that kept the night's work on (a new town has it off: cut-list.md §2)."""
+    from orkcraft.realm import fastpath
+    fastpath.save_settings(fake_repo, {})
+    return fake_repo
+
+
 _quiet_path: list[str] = []
 
 

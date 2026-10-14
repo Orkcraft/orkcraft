@@ -12,7 +12,7 @@ from typing import Any, Callable
 from orkcraft import scroll, settings
 from orkcraft.config import Config, find_project_root
 from orkcraft.core import bus as b, delivery
-from orkcraft.realm import builders, catalog, checkpoint, chronicles, masonry, pipes, tool_errors
+from orkcraft.realm import builders, catalog, checkpoint, chronicles, fastpath, masonry, pipes, tool_errors
 from orkcraft.realm.buildings import BUILTIN_SPECS, TOWN_HALL, Building, custom_building, presets, registry
 from orkcraft.sources import telemetry
 
@@ -66,6 +66,8 @@ class Town:
             legacy = [target_layout.with_name(".orcraft.json")] if target_layout.name == ".orkcraft.json" else []
             self.first_run = not demo and not target_layout.exists() and not any(p.exists() for p in legacy)
             self.scroll, self.scroll_problems = scroll.load(target_layout, preset_specs, legacy=legacy)
+            if self.first_run:                            # a new town: the night's work off (cut-list.md §2)
+                fastpath.night_off_for_new_town(self.repo_root)
         scroll.ensure_presets(self.scroll, preset_specs)
         hall = self.scroll.building(TOWN_HALL)
         if hall is not None:

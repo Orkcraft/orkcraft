@@ -13,6 +13,8 @@ from orkcraft.gui import improve_night, lab_runs
 from orkcraft.realm import card_docs, evolution
 from tests.test_gui_bench import _raised, _road, _until, asked, host  # noqa: F401  (fixtures)
 
+pytestmark = pytest.mark.usefixtures("night_on")     # the night's work, on as a person turns it on
+
 
 def test_better_is_the_goals_metric_moved_with_no_loss_of_quality():
     before = {"tokens": -0.10, "time": 0.0, "quality": 0.5}

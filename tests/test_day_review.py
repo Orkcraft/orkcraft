@@ -11,6 +11,8 @@ import pytest
 from orkcraft.design import agents
 from orkcraft.realm import call_log, day_review, fastpath, hotspots
 
+pytestmark = pytest.mark.usefixtures("night_on")     # the night's work, on as a person turns it on
+
 TODAY = dt.date.today().isoformat()
 TITLES = {"pool": "Agent pool", "tower": "External listeners"}
 
