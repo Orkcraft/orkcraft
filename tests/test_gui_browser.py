@@ -371,6 +371,8 @@ def test_a_building_is_copied_to_another_orkspace_from_its_menu(page):
     here = pg.evaluate(f"() => {link}.then(({{ town }}) => town.value.active_orkspace)")
     shop = pg.evaluate(f"() => {link}.then(m => m.command('orkspace.new', {{ name: 'Copy target', project: 'town' }}))")
     pg.evaluate(f"id => {link}.then(m => m.command('orkspace.select', {{ id }}))", here)
+    pg.wait_for_function(f"([s, h]) => {link}.then(({{ town }}) => town.value.active_orkspace === h && town.value.orkspaces.some(o => o.id === s))",
+                         arg=[shop, here], timeout=WAIT_MS)              # the menu offers the copy once the snapshot has the map
     hut = _hut(pg, bid)
     hut.wait_for(state="visible", timeout=WAIT_MS)
     hut.click(button="right")
@@ -573,6 +575,7 @@ def test_a_drag_moves_a_ghost_and_a_drop_on_another_hut_moves_nothing(page):
                          arg=[json.dumps(hut_before, separators=(",", ":"))], timeout=WAIT_MS)
     pg.evaluate(f"id => {link}.then(m => m.command('building.fold', {{ id, value: false }}))", a)   # a folded card never stretches
     pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('c'))")   # a card is stretched close up (map-view.md)
+    pg.wait_for_function("() => import('/static/js/zoom.js').then(m => !m.zooming.value)", timeout=WAIT_MS)   # huts glide there
     _hut(pg, a).locator(".gui-hut__grip.is-se").wait_for(state="attached", timeout=WAIT_MS)
     _hut(pg, a).hover()
     grip = _hut(pg, a).locator(".gui-hut__grip.is-se").bounding_box()

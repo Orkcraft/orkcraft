@@ -136,7 +136,8 @@ def test_the_town_holds_new_work_when_the_window_is_nearly_spent(fake_repo, monk
     assert _until(lambda: (r := _row(host, bid)) is not None and r["state"] == status.HELD)
     row = _row(host, bid)
     assert not calls and row["wait"]["until"] == reset.timestamp() and row["wait"]["in_s"] <= 2400
-    assert row["wait"]["line"] == (f"held by the Treasurer until the {reset:%H:%M} reset: "
+    when = f"{reset:%H:%M}" if reset.date() == dt.date.today() else f"{reset:%b} {reset.day}, {reset:%H:%M}"   # after 23:20
+    assert row["wait"]["line"] == (f"held by the Treasurer until the {when} reset: "
                                    "Claude Code's window is nearly spent")
     host.command("act", {"id": bid, "act": "run_anyway", "args": {"task": task}})   # the window still read as spent
     assert _until(lambda: w.state.task(task).status == "done") and len(calls) == 1
