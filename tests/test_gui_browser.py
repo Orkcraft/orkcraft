@@ -2533,11 +2533,11 @@ def test_mission_1_asks_for_the_hooks_once_before_quest_4_showing_what_is_writte
     pg.wait_for_function("() => !document.querySelector('.gui-warchief__setup')", timeout=WAIT_MS)
 
 
-def test_a_core_building_is_its_cover_and_lifted_close_up(gui, page):
+def test_a_core_building_is_its_cover_lifted_close_up_and_a_sheet_on_the_phone(gui, page):
     """docs/design/color-pass.md §6a–6c, design-system-v2.md §4a (C3): in the overview the Agent pool is its cover —
     a roof, its facade at the door, its crest above, its name on a chip; the mouse on it makes the roof half-clear;
     close up the roof fades, the walls stay as the card's frame and the crest is the title's mark. Office draws the
-    same box with no cover."""
+    same box with no cover. On the phone its cover stands at the top and a tap opens its card as a sheet."""
     server, browser = gui
     pg = page
     call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
@@ -2570,4 +2570,20 @@ def test_a_core_building_is_its_cover_and_lifted_close_up(gui, page):
     call("you.look", {"look": "camp"})
     pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('b'))")
 
+    phone = browser.new_page(viewport={"width": 390, "height": 844}, has_touch=True)
+    errors: list[str] = []
+    phone.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+    phone.goto(server.url)
+    tap = phone.locator(f'.gui-strip [data-sheet-tap][title="Agent pool"]').first
+    tap.wait_for(state="visible", timeout=WAIT_MS)
+    tap.tap()
+    sheet = phone.locator(".gui-sheet")
+    sheet.wait_for(state="visible", timeout=WAIT_MS)
+    assert "Agent pool" in sheet.locator(".gui-sheet__name").inner_text()
+    assert sheet.locator(".gui-sheet__head .gui-crest").count() == 1
+    assert sheet.locator(".gui-sheet__acts .ok-btn.primary").inner_text().strip().lower() == "open"
+    phone.keyboard.press("Escape")
+    sheet.wait_for(state="detached", timeout=WAIT_MS)
+    phone.close()
+    assert not errors, errors
     call("town.demolish", {"id": bid})

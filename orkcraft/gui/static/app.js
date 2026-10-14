@@ -25,6 +25,7 @@ import { WarchiefLine } from "./js/warchief.js";
 import { OrkConsole } from "./js/slots.js";
 import { Overlays } from "./js/types.js";
 import { Pocket, narrow } from "./js/pocket.js";
+import { CoverSheet } from "./js/sheet.js";
 import { Portrait } from "./js/portrait.js";
 import { watchErrors } from "./js/crashes.js";
 import { CommentLayer, FixesDialog } from "./js/fixes.js";
@@ -52,6 +53,7 @@ function App() {
     ${!narrow.value && html`<${Portrait} corner=${true} />`}
     <${Panel} />
     <${Toasts} />
+    ${narrow.value && html`<${CoverSheet} buildings=${buildings} />`}
     <${SettingsDialog} />
     <${GoogleWizard} />
     <${UsageAsk} />

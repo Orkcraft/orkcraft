@@ -166,5 +166,35 @@
 [data-look="office"] .gui-hut.is-walled > .ok-hut__card { box-sizing: border-box; }
 .gui-hut.is-walled.is-far .gui-cover__name { top: calc(100% + 3px); height: 18px; padding: 0 4px; font-size: 11px; }
 
+/* -- the phone (js/sheet.js; color-pass.md §6c): the core buildings as covers at the top, a tap opens a sheet ------- */
+.gui-strip { display: flex; gap: var(--space-3); overflow-x: auto; padding: var(--space-3) 2px var(--space-2); margin: 0 calc(-1 * var(--space-3));
+  padding-inline: var(--space-3); scrollbar-width: none; }
+.gui-strip__one { position: relative; flex: none; width: 132px; height: 92px; padding: 0; border: 0; background: none; cursor: pointer; }
+.gui-strip__one:focus-visible { outline: var(--ok-stroke, 2px) solid var(--frame-focus); outline-offset: 2px; }
+.gui-strip__one > .gui-cover { display: block; position: absolute; inset: 24px 0 22px; pointer-events: none; }
+.gui-strip__one .gui-crest { transform: scale(.5); transform-origin: bottom center; margin: 0 -8px; }
+.gui-strip__one .gui-cover__top { transform: translate(-50%, -60%); }
+.gui-strip__one .gui-cover__ask { width: 24px; height: 24px; margin-bottom: 4px; }
+.gui-strip__one .gui-cover__name { top: calc(100% + 3px); height: 18px; padding: 0 4px; font-size: 11px; }
+.gui-strip__plain { display: flex; align-items: center; justify-content: center; height: 100%; box-sizing: border-box; padding: 0 var(--space-2);
+  background: var(--panel); border: 1px solid var(--frame); border-radius: var(--ok-radius-md); font: 600 13px/16px var(--ok-font); color: var(--ink); }
+.gui-strip__one.is-alert .gui-strip__plain { border-color: var(--signal-ask); }
+
+.gui-sheet { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; justify-content: flex-end; }
+.gui-sheet__dim { position: absolute; inset: 0; background: color-mix(in srgb, var(--art-outline) 55%, transparent); }
+.gui-sheet__panel.ok-hut, [data-theme] .gui-sheet__panel.ok-hut[class] { position: relative; display: flex; flex-direction: column; width: auto; max-width: none;
+  max-height: 85vh; background: var(--panel); border-top: var(--ok-frame, 2px) solid var(--frame); border-radius: var(--ok-radius-lg) var(--ok-radius-lg) 0 0;
+  box-shadow: var(--shadow-window); animation: gui-sheet-up .2s ease-out; padding-bottom: env(safe-area-inset-bottom); }
+.gui-sheet__head { display: flex; align-items: flex-end; gap: var(--space-2); padding: var(--space-4) var(--space-3) var(--space-2); touch-action: none; }
+.gui-sheet__grip { position: absolute; left: 50%; top: 6px; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: var(--frame); }
+.gui-sheet__name { flex: 1 1 auto; margin: 0; font: 400 20px/24px var(--ok-head); color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-sheet__close { flex: none; min-width: 44px; min-height: 44px; }
+.gui-sheet__body { flex: 1 1 auto; overflow: auto; padding: 0 var(--space-3); border-top: 1px solid var(--frame); }
+.gui-sheet__acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-3); }
+.gui-sheet__acts > .ok-btn.primary { margin-left: auto; min-height: 44px; }
+.gui-sheet__acts .gui-hut__quick { position: static; display: flex; gap: var(--space-2); opacity: 1; transform: none; }
+[data-look="camp"] .gui-sheet__panel { border-image: none; box-shadow: 0 0 0 1px var(--art-outline), var(--shadow-window); }
+@keyframes gui-sheet-up { from { transform: translateY(40px); opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { .gui-sheet__panel { animation: none !important; } }
 .gui-cover__facade.is-art { height: 48px; }
 .gui-hut.is-lifted .gui-cover__facade.is-art { width: 48px; height: 24px; }

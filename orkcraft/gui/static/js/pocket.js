@@ -1,6 +1,7 @@
 // The town in a narrow window (a phone, docs/design/mobile.md §1: a glance, a tap, back in the pocket): no map,
 // no roads — the buildings as a list of their cards, closed to one line each, what wants the person first.
-// A tap opens a card in place (its live status and its quick actions); Open takes the whole building. A swipe
+// A tap opens a card in place (its live status and its quick actions); Open takes the whole building. A core building
+// (js/cover.js) stands as its cover at the top, and its card opens as a sheet from the bottom (js/sheet.js). A swipe
 // to the left lays the card's quick actions over its line. The chips at the top jump to what asks and what
 // works; the quiet buildings fold under one line until the person opens them.
 import { signal } from "@preact/signals";
@@ -13,6 +14,8 @@ import { runQuick } from "./types.js";
 import { TypeIcon, OrkHead } from "./icons.js";
 import { say, town } from "./link.js";
 import { openOrders } from "./orders.js";
+import { coverOf } from "./cover.js";
+import { CampStrip, sheetOf } from "./sheet.js";
 
 const WIDTH = "(max-width: 640px)";
 const query = typeof matchMedia === "function" ? matchMedia(WIDTH) : null;
@@ -107,7 +110,12 @@ function Row({ b, number }) {
   const open = unfolded.value === b.id;
   const lead = b.garrison.find((o) => o.lead) || b.garrison[0];
   const busy = busyOf(b);
-  const toggle = () => { swiped.value = null; if (!open) counted(b.id); unfolded.value = open ? null : b.id; };
+  const toggle = () => {
+    swiped.value = null;
+    if (!open) counted(b.id);
+    if (coverOf(b)) { sheetOf.value = b.id; return; }          // a core building's card is a sheet
+    unfolded.value = open ? null : b.id;
+  };
   const finger = useSwipe(b, toggle);
   const dx = sliding.value && sliding.value.id === b.id ? sliding.value.dx : 0;
   const keys = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } };
@@ -137,6 +145,7 @@ function jump(list) {
   if (!list.length) return;
   const id = list[0].b.id;
   swiped.value = null;
+  if (coverOf(list[0].b)) { sheetOf.value = id; return; }
   unfolded.value = id;
   requestAnimationFrame(() => {
     const el = document.getElementById(`pocket-${id}`);
@@ -166,6 +175,7 @@ export function Pocket({ buildings }) {
         onClick=${() => (asks.length ? jump(asks) : openOrders())}>❓ ${say("Asks you")} ${waiting}</button>
       <button class="ok-btn gui-pocket__chip" disabled=${!working.length} onClick=${() => jump(working)}>⚙ ${say("At work")} ${working.length}</button>
     </nav>
+    <${CampStrip} buildings=${buildings} />
     ${asks.length > 0 && html`<section class="gui-pocket__group">${head("Asks you", asks, "ok-tone-wait")}${rows(asks)}</section>`}
     ${working.length > 0 && html`<section class="gui-pocket__group">${head("At work", working, "ok-tone-muted")}${rows(working)}</section>`}
     ${usual.length > 0 && html`<section class="gui-pocket__group">${head("Usually open", usual, "ok-tone-muted")}${rows(usual)}</section>`}
