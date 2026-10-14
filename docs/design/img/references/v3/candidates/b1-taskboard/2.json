@@ -1,0 +1,36 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "sheet": "b1-taskboard",
+ "file": "2.jpg",
+ "image": [
+  2400,
+  1792
+ ],
+ "pitch": 8.99,
+ "art_px": 226,
+ "art_range": [
+  48,
+  260
+ ],
+ "grid": [
+  266,
+  198
+ ],
+ "pieces": 1,
+ "expected": 1,
+ "sizes": [
+  [
+   226,
+   178
+  ]
+ ],
+ "degrid": false,
+ "signal_px": 0,
+ "signal_pct": 0.0,
+ "cast_px": 33,
+ "cast_pct": 0.11,
+ "ok": true,
+ "issues": []
+}

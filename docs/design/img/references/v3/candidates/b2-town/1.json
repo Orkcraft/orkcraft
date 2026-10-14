@@ -1,0 +1,92 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "I have generated the pixel-art sprite sheet according to your detailed specifications, including the exact palette and perspective.\n\nI noticed that your prompt specified the building heights (e.g., 96-128 px), but also stated to draw them at their final size without exceeding that detail limit. To ensure the sprites matched the style and complexity of the reference material (like the stone tower a",
+ "sheet": "b2-town",
+ "file": "1.jpg",
+ "image": [
+  2752,
+  1536
+ ],
+ "pitch": 5.73,
+ "art_px": 47,
+ "art_range": [
+  48,
+  260
+ ],
+ "grid": [
+  480,
+  268
+ ],
+ "pieces": 14,
+ "expected": 6,
+ "sizes": [
+  [
+   159,
+   108
+  ],
+  [
+   38,
+   38
+  ],
+  [
+   39,
+   35
+  ],
+  [
+   49,
+   21
+  ],
+  [
+   40,
+   45
+  ],
+  [
+   42,
+   16
+  ],
+  [
+   5,
+   7
+  ],
+  [
+   39,
+   36
+  ],
+  [
+   34,
+   34
+  ],
+  [
+   65,
+   116
+  ],
+  [
+   148,
+   105
+  ],
+  [
+   79,
+   97
+  ],
+  [
+   92,
+   109
+  ],
+  [
+   92,
+   109
+  ]
+ ],
+ "degrid": false,
+ "signal_px": 0,
+ "signal_pct": 0.0,
+ "cast_px": 577,
+ "cast_pct": 1.02,
+ "ok": false,
+ "issues": [
+  "14 pieces found, 6 expected",
+  "pieces about 47 art px, the taken sheets' 48–260: another pixel size",
+  "magenta cast on 1.0 % of the art"
+ ]
+}

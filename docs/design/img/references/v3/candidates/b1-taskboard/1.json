@@ -1,0 +1,39 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "sheet": "b1-taskboard",
+ "file": "1.jpg",
+ "image": [
+  2400,
+  1792
+ ],
+ "pitch": 6.0,
+ "art_px": 398,
+ "art_range": [
+  48,
+  260
+ ],
+ "grid": [
+  399,
+  298
+ ],
+ "pieces": 1,
+ "expected": 1,
+ "sizes": [
+  [
+   398,
+   292
+  ]
+ ],
+ "degrid": false,
+ "signal_px": 5168,
+ "signal_pct": 6.12,
+ "cast_px": 6,
+ "cast_pct": 0.01,
+ "ok": false,
+ "issues": [
+  "5168 px in a signal's hue",
+  "pieces about 398 art px, the taken sheets' 48–260: another pixel size"
+ ]
+}

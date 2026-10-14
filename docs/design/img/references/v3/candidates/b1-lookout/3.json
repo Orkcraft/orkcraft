@@ -1,0 +1,45 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "sheet": "b1-lookout",
+ "file": "3.jpg",
+ "image": [
+  2048,
+  2048
+ ],
+ "pitch": 10.24,
+ "ref_pitch": 4.17,
+ "grid": [
+  199,
+  199
+ ],
+ "pieces": 2,
+ "expected": 1,
+ "sizes": [
+  [
+   18,
+   34
+  ],
+  [
+   132,
+   188
+  ]
+ ],
+ "degrid": false,
+ "signal_px": 1348,
+ "signal_pct": 11.8,
+ "cast_px": 5,
+ "cast_pct": 0.04,
+ "ok": false,
+ "issues": [
+  "2 pieces found, 1 expected",
+  "1348 px in a signal's hue"
+ ],
+ "art_px": 111,
+ "art_range": [
+  48,
+  260
+ ],
+ "note": "the API sent a JPEG; first kept as a PNG, re-encoded at quality 95"
+}

@@ -160,9 +160,16 @@ def test_the_v3_preview_awaits_every_sprite_the_v3_sheets_are_cut_into():
     root = Path(__file__).resolve().parent.parent
     spec = json.loads((root / "tools" / "camp_sheets_v3.json").read_text(encoding="utf-8"))
     preview = (root / "design-system" / "previews" / "CampKitV3.html").read_text(encoding="utf-8")
-    files = [item["file"] for sh in spec["sheets"] if not sh.get("standin") for g in sh.get("groups", [])
-             for item in g["items"]]
+    files = [item["file"] for sh in spec["sheets"] if not sh.get("standin") and not sh.get("over")
+             for g in sh.get("groups", []) for item in g["items"]]
     assert files and len(files) == len(set(files))
+    by_name = {sh["name"]: sh for sh in spec["sheets"]}
+    for sh in spec["sheets"]:                           # a one-building sheet overrides a piece of a sheet before it
+        if sh.get("over"):
+            over = by_name[sh["over"]]
+            assert spec["sheets"].index(over) < spec["sheets"].index(sh), sh["name"]
+            mine = {item["file"] for g in sh["groups"] for item in g["items"]}
+            assert mine <= {item["file"] for g in over["groups"] for item in g["items"]}, sh["name"]
     for f in files:
         assert f'"{f}"' in preview, f
     assert spec["out"] == "design-system/sprites/v3" and spec["root"] == "docs/design/img/references/v3"

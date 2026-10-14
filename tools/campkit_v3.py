@@ -20,6 +20,8 @@ def build() -> pathlib.Path:
     for sh in spec["sheets"]:
         for g in sh.get("groups", []):
             for item in g["items"]:
+                if sh.get("over"):                  # a one-building sheet: the overridden sheet already lists it
+                    continue
                 w, h = item.get("size", g["size"])
                 expected.append([sh["file"], item["file"], w, h, len(item.get("frames", [item]))])
     rows = json.loads(MANIFEST.read_text(encoding="utf-8"))["sprites"] if MANIFEST.exists() else []

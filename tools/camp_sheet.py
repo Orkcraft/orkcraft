@@ -1021,7 +1021,10 @@ def main() -> None:
             for key in ("native", "keep_colours"):              # v3: set once for the whole spec
                 group.setdefault(key, spec.get(key, False))
             cut_group(sheet, group, rows, problems)
-    rows += [r for r in old if r["source"] not in done]
+    # a one-building sheet (`over`, listed after the sheet it overrides) replaces that sheet's sprite of the same name
+    rows = list({r["file"]: r for r in rows}.values())
+    cut = {r["file"] for r in rows}
+    rows += [r for r in old if r["source"] not in done and r["file"] not in cut]
     rows.sort(key=lambda r: r["file"])
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text(json.dumps({"note": spec.get("manifest_note") or (

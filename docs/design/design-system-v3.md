@@ -417,6 +417,24 @@ cannot be averaged away. The Agent pool went from 6 530 colours to 24, its floor
 PNG is best (a JPEG's noise blurs the key and the colours); a sheet saved as `.jpg` or `.jpeg` under the same name is
 found as well.
 
+**One-building sheets** (`over`): `b1-catapult.png` (v3-prompts §8, the catapult alone in side view against a low log
+wall, four frames; frame 0 is the building), `b1-lookout.png` (the tower built into a low log wall, §7.3) and
+`b1-taskboard.png` (the Task board at core size, 160–192 wide, §9) are their own sheets in `tools/camp_sheets_v3.json`,
+listed after B1 with `"over": "b1-core"`: once one is there, its sprite replaces B1's of the same name
+(`buildings/catapult.png`, `watchtower.png`, `fields.png`); until then B1's stays. The preview lists each sprite once.
+
+**Generated, then picked** (`tools/gen_sheets.py`, internal, never shipped): the sheets come from the Gemini API's
+image model with the key in `GEMINI_API_KEY`, never the `agy` CLI or a Google login (decisions-2026-10.md §5). Each
+prompt is v3-prompts §3's head, the sheet's prompt and the reviews' lines (front-on, no frames, no smoke or glow, no
+ground, F1's colours, no signal hues; the same orc on an ork sheet); F1 is always attached, with b1-core for buildings,
+o1 and o2 for orks, c2 for the track. Candidates go to `img/references/v3/candidates/<sheet>/<n>.jpg` (the model sends
+JPEG, whatever the prompt asks; the API has no PNG option) with a report of the cutter's own checks — pieces found
+against expected, the art pixel, the pieces' size in art px against the taken sheets', signal-hue pixels, the magenta
+cast — and [candidates/index.html](img/references/v3/candidates/index.html) shows them side by side. Only
+`python tools/gen_sheets.py --pick <sheet> <n>` writes a cut sheet's name, then runs `camp_sheet.py --v3`.
+`c2-curves` (the four curves, the merge and the crossing apart) is generated but not yet in the cut spec: once picked,
+its pieces are mapped into c2's track set.
+
 ## 9. What the owner generates next
 
 In this order, each with **F1 attached** and the line of v3-prompts §6, with the measured values: "keep exactly the

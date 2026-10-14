@@ -1,0 +1,69 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "sheet": "b1-catapult",
+ "file": "1.jpg",
+ "image": [
+  2752,
+  1536
+ ],
+ "pitch": 5.73,
+ "ref_pitch": 4.17,
+ "grid": [
+  480,
+  267
+ ],
+ "pieces": 8,
+ "expected": 4,
+ "sizes": [
+  [
+   25,
+   23
+  ],
+  [
+   117,
+   100
+  ],
+  [
+   83,
+   80
+  ],
+  [
+   214,
+   109
+  ],
+  [
+   23,
+   22
+  ],
+  [
+   35,
+   21
+  ],
+  [
+   216,
+   100
+  ],
+  [
+   210,
+   94
+  ]
+ ],
+ "degrid": false,
+ "signal_px": 0,
+ "signal_pct": 0.0,
+ "cast_px": 603,
+ "cast_pct": 1.62,
+ "ok": false,
+ "issues": [
+  "8 pieces found, 4 expected",
+  "magenta cast on 1.6 % of the art"
+ ],
+ "art_px": 100,
+ "art_range": [
+  48,
+  260
+ ],
+ "note": "the API sent a JPEG; first kept as a PNG, re-encoded at quality 95"
+}
