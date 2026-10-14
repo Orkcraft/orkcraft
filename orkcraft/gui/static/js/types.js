@@ -16,6 +16,8 @@
 //                    opening it grows its card in place (js/windows.js); on the phone its panel shows that card
 //   grown = {w, h}   the size its card grows to when opened, when the large size (js/hut.js LEVEL_L) is too small
 //   settings(id, d)  its own settings drawn in its Info, from its state `d` (what its Work held)
+//   inside(b)        its room, when it has one: in Camp the second click enters it as a screen of its own, its Info
+//                    beside it (js/inside.js, decisions-2026-10.md §13.2); else its large card as above
 //
 // A type that exports none of them still draws: its status lines in Work, its Info.
 import { signal } from "@preact/signals";

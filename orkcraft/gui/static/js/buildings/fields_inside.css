@@ -1,0 +1,88 @@
+/* The dispatcher's booth from inside (fields_inside.js): CSS stand-ins in v3's palette until u6-inside and u6-cards
+   are cut. Each piece is one class — the wall (.fields-in__wall), a board (.fields-in__board), its plaque, a sheet
+   (.is-sheet), a slab (.is-slab), a pin, a flag, the floor — so a sprite replaces it by its background alone. */
+.fields-in { position: relative; min-height: 100%; display: flex; flex-direction: column; box-sizing: border-box;
+  color: var(--parchment-ink); font: var(--type-camp-body); }
+
+/* the booth's back wall: planks of wood, a beam at the top */
+.fields-in__wall { flex: 1; padding: calc(var(--space-4) * 4) var(--space-4) var(--space-4);   /* clear of the portrait */
+  background: linear-gradient(var(--art-wood-deep) 0 14px, var(--art-outline) 14px 16px, transparent 16px),
+    repeating-linear-gradient(90deg, var(--art-wood-dark) 0 46px, var(--art-wood-deep) 46px 48px); }
+.fields-in__wall > .fields-sel { margin-bottom: var(--space-3); background: var(--parchment); color: var(--parchment-ink);
+  border: 3px solid var(--walnut); box-shadow: 0 0 0 1px var(--art-outline); }
+
+.fields-in__boards { display: grid; grid-template-columns: repeat(var(--boards, 3), minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
+
+/* a board: a wooden frame round a cork-light field, a plaque with its word and count */
+.fields-in__board { display: flex; flex-direction: column; min-height: 320px; padding: 10px; box-sizing: border-box;
+  background: color-mix(in srgb, var(--art-wood-light) 55%, var(--art-bone)); border: 8px solid var(--art-wood);
+  box-shadow: inset 0 0 0 2px var(--art-wood-dark), 0 0 0 2px var(--art-outline), 0 6px 0 color-mix(in srgb, var(--art-outline) 50%, transparent); }
+.fields-in__board.gui-drop { box-shadow: inset 0 0 0 3px var(--accent-teal), 0 0 0 3px var(--accent-teal); }
+.fields-in__plaque { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -4px -2px 10px; padding: 4px 10px;
+  background: var(--walnut); color: var(--parchment); font: var(--type-camp-heading); border-bottom: 3px solid var(--accent-teal); }
+.fields-in__plaque b { font: var(--type-camp-number); color: var(--parchment); min-width: 1.6em; text-align: center; padding: 0 4px;
+  background: var(--accent-teal); }
+.fields-in__cards { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.fields-in__empty { margin: var(--space-3) 0; text-align: center; font: var(--type-camp-caption);
+  color: color-mix(in srgb, var(--parchment-ink) 60%, transparent); }
+.fields-in__add { align-self: flex-start; margin-top: 10px; padding: 4px 10px; cursor: pointer; font: var(--type-camp-label);
+  color: var(--parchment); background: var(--accent-teal); border: 2px solid var(--walnut); }
+.fields-in__add:hover, .fields-in__add:focus-visible { background: color-mix(in srgb, var(--accent-teal) 80%, var(--parchment)); }
+
+/* a card pinned: a parchment sheet (a task, a note) or a light stone slab (my to-do) */
+.fields-in__card { position: relative; display: flex; align-items: flex-start; gap: 6px; padding: 14px 12px 10px; min-height: 56px;
+  box-sizing: border-box; cursor: grab; transform: rotate(calc(var(--tilt, 0) * 0.6deg)); font: var(--type-camp-label);
+  box-shadow: 0 0 0 2px var(--art-outline), 3px 4px 0 color-mix(in srgb, var(--art-outline) 45%, transparent); }
+.fields-in__card.is-sheet { background: var(--parchment); color: var(--parchment-ink);
+  background-image: linear-gradient(transparent 0 calc(100% - 6px), color-mix(in srgb, var(--art-bone) 70%, var(--walnut)) calc(100% - 6px)); }
+.fields-in__card.is-slab { background: color-mix(in srgb, var(--art-stone) 55%, var(--parchment)); color: var(--parchment-ink);
+  border-bottom: 5px solid var(--art-stone-dark); }
+.fields-in__card.is-selected { box-shadow: 0 0 0 3px var(--accent-teal), 3px 4px 0 color-mix(in srgb, var(--art-outline) 45%, transparent); }
+.fields-in__card.is-done .fields-in__title { color: color-mix(in srgb, var(--parchment-ink) 65%, transparent); }
+.fields-in__card:active { cursor: grabbing; }
+.fields-in__title { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.fields-in__card .fields-marks { flex: none; }
+.fields-in__pin { position: absolute; top: -5px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%;
+  background: var(--accent-teal); box-shadow: 0 0 0 2px var(--art-outline), inset -2px -2px 0 color-mix(in srgb, var(--accent-teal) 60%, var(--art-outline)); }
+
+/* the cloth flag on a pole: lowered, half up, raised; a to-do's is its checkbox */
+.fields-in__flag { position: relative; flex: none; width: 22px; height: 30px; padding: 0; border: 0; background: none; }
+button.fields-in__flag { cursor: pointer; }
+.fields-in__flag::before { content: ""; position: absolute; left: 3px; top: 0; bottom: 0; width: 3px; background: var(--art-wood-deep); }
+.fields-in__flag i { position: absolute; left: 6px; width: 15px; height: 10px; background: var(--art-cloth);
+  box-shadow: 0 0 0 1px var(--art-outline); transition: top 150ms steps(3); }
+.fields-in__flag.is-down i { top: 19px; height: 9px; width: 9px; }
+.fields-in__flag.is-half i { top: 10px; }
+.fields-in__flag.is-up i { top: 0; }
+button.fields-in__flag:hover i, button.fields-in__flag:focus-visible i { background: color-mix(in srgb, var(--art-cloth) 75%, var(--parchment)); }
+
+/* the notes' shelf under the boards */
+.fields-in__shelf { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3); margin-top: var(--space-4); }
+.fields-in__shelf .fields-in__board { min-height: 0; flex: 1 1 220px; }
+.fields-in__shelf .fields-in__cards { flex-direction: row; flex-wrap: wrap; }
+.fields-in__shelf .fields-in__card { flex: 0 1 180px; }
+
+/* the floor the orks walk: planks, the orks over it with their bubble and name */
+.fields-in__floor { position: sticky; bottom: 0; height: 120px; flex: none; z-index: 1;
+  background: linear-gradient(var(--art-outline) 0 3px, transparent 3px),
+    repeating-linear-gradient(0deg, var(--art-wood-deep) 0 18px, var(--art-wood-dark) 18px 20px); }
+.fields-in__ork { position: absolute; bottom: 14px; display: flex; flex-direction: column; align-items: center; transform: translateX(-50%);
+  transition: left 2.4s linear; pointer-events: auto; }
+.fields-in__body { display: block; width: calc(var(--w, 32px) * 2); height: calc(var(--h, 40px) * 2); image-rendering: pixelated;
+  background-repeat: no-repeat; background-size: calc(var(--w) * var(--frames) * 2) calc(var(--h) * 2);
+  animation: fields-in-frames 0.8s steps(var(--frames, 4)) infinite; }
+.fields-in__ork.is-left .fields-in__body { transform: scaleX(-1); }
+.fields-in__body.is-stand-in { width: 44px; height: 60px; animation: none; border-radius: 22px 22px 6px 6px;
+  background: var(--art-skin); box-shadow: inset 0 -22px 0 var(--art-wood-dark), 0 0 0 2px var(--art-outline); }
+@keyframes fields-in-frames { from { background-position: 0 0; } to { background-position: calc(var(--w) * var(--frames) * -2) 0; } }
+.fields-in__bubble { margin-bottom: 4px; padding: 3px 8px; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: var(--parchment); color: var(--parchment-ink); font: var(--type-camp-caption); border: 2px solid var(--walnut);
+  border-radius: 10px; box-shadow: 0 0 0 1px var(--art-outline); }
+.fields-in__name { margin-top: 2px; padding: 0 6px; font: var(--type-camp-caption); color: var(--chip-ink); background: var(--chip); }
+.fields-in__ork.is-steward .fields-in__name { box-shadow: inset 0 -2px 0 var(--accent-teal); }
+.fields-in__opening { padding: var(--space-4); color: var(--parchment); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fields-in__ork { transition: none; }
+  .fields-in__body { animation: none; }
+}

@@ -1,0 +1,43 @@
+/* The inside of a building (js/inside.js, decisions-2026-10.md §13.2): a screen of its own in the town's place —
+   the room on the left (~60 %), its settings on the right (~40 %) as a merchant's window (cream parchment, a walnut
+   frame, teal accents), Exit at the top right. Tokens only (design-system/tokens.css); yellow and red stay signals. */
+.gui-inside { grid-area: town; position: relative; z-index: 6; min-height: 0; display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr); background: var(--art-wood-deep); }
+
+.gui-inside__room { min-width: 0; min-height: 0; overflow: auto; }
+
+.gui-inside__shop { min-height: 0; display: flex; padding: var(--space-3); padding-top: calc(var(--space-4) * 2 + 8px);
+  background: linear-gradient(90deg, var(--art-outline) 0 4px, var(--art-wood-deep) 4px); }
+.gui-inside__shop-frame { flex: 1; min-height: 0; display: flex; flex-direction: column; box-sizing: border-box;
+  background: var(--parchment); border: 6px solid var(--walnut);
+  box-shadow: inset 0 0 0 2px var(--accent-teal), inset 0 0 0 5px var(--parchment), inset 0 0 0 6px var(--art-wood-light),
+    0 0 0 2px var(--art-outline), 6px 6px 0 color-mix(in srgb, var(--art-outline) 60%, transparent); }
+.gui-inside__shop-title { display: flex; align-items: baseline; gap: var(--space-2); margin: 0; padding: 8px 16px;
+  background: var(--walnut); color: var(--parchment); font: var(--type-camp-heading); border-bottom: 3px solid var(--accent-teal); }
+.gui-inside__shop-title small { font: var(--type-camp-label); color: color-mix(in srgb, var(--parchment) 75%, var(--accent-teal)); }
+
+/* The Info's own parts on parchment: its words dark, its frames walnut, its buttons teal. */
+.gui-inside__shop-body { flex: 1; min-height: 0; overflow: auto; color: var(--parchment-ink); font: var(--type-camp-body);
+  --ink: var(--parchment-ink); --ink-muted: color-mix(in srgb, var(--parchment-ink) 70%, var(--parchment));
+  --ink-comment: color-mix(in srgb, var(--parchment-ink) 55%, var(--parchment)); --ink-gold: var(--accent-teal);
+  --panel: var(--parchment); --panel-inset: color-mix(in srgb, var(--parchment) 85%, var(--art-wood-light));
+  --panel-raised: color-mix(in srgb, var(--parchment) 90%, var(--walnut)); --banner: var(--walnut);
+  --frame: color-mix(in srgb, var(--walnut) 45%, var(--parchment)); --frame-strong: var(--walnut); --hut-frame: var(--walnut);
+  --selection: color-mix(in srgb, var(--accent-teal) 25%, var(--parchment)); --frame-focus: var(--accent-teal);
+  --action: var(--accent-teal); --on-action: var(--parchment); --bevel-hi: var(--parchment); --bevel-lo: var(--walnut);
+  --bevel-raised: inset 1px 1px 0 var(--parchment), inset -1px -1px 0 var(--walnut);
+  --bevel-sunken: inset 1px 1px 0 var(--walnut), inset -1px -1px 0 var(--parchment); }
+.gui-inside__shop-body > .ok-win__body { background: transparent; }
+.gui-inside__shop-body .ok-btn { background: var(--parchment); color: var(--parchment-ink); border-color: var(--walnut); }
+.gui-inside__shop-body .ok-btn.primary { background: var(--accent-teal); color: var(--parchment); }
+.gui-inside__shop-body .ok-input { background: color-mix(in srgb, var(--parchment) 70%, var(--art-bone)); color: var(--parchment-ink);
+  border-color: var(--walnut); }
+
+.gui-inside__exit { position: absolute; top: var(--space-3); right: var(--space-3); z-index: 2; min-width: 96px;
+  font: var(--type-camp-heading); background: var(--walnut); color: var(--parchment); border: 3px solid var(--accent-teal);
+  box-shadow: 0 0 0 2px var(--art-outline); }
+.gui-inside__exit:hover, .gui-inside__exit:focus-visible { background: var(--accent-teal); }
+
+@media (max-width: 900px) {
+  .gui-inside { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 3fr) minmax(0, 2fr); }
+}

@@ -109,3 +109,32 @@ loading: every setting stays in the building's config as before, and its old UI 
 keeps its Work as it is until its large card can hold its everyday job (§2: never all at once). With A5 the five core
 types of the demo and the testers' first fifteen minutes (§4) are done: the Agent pool, External listeners, the Review
 gate and the Task board without Work, the Inspector reading in its window.
+
+## 8. The inside of a building (I2, built for the Task board)
+
+[decisions-2026-10.md](decisions-2026-10.md) §13.2 replaces §7's large card **for the view** with the building's
+inside, the Task board first; the removals of §7 stand.
+
+- **Entered** by the second click on a building in Camp (I1's steward and its Enter call the same
+  `openBuilding`, `js/windows.js`): a type whose module draws a room (`inside(b)`, `js/types.js`) is entered as **a
+  screen of its own** (`js/inside.js`) in the town's place; every other type keeps its large card. **Exit** stands
+  at the top right; **Esc** goes back too, the building still selected.
+- **Left (~60 %), the room** (`js/buildings/fields_inside.js`): the dispatcher's booth from inside, scrolled when large.
+  Three boards on its back wall — **To do, Doing, Done** (a lane the person named keeps its name) — the orks' tasks
+  pinned as **parchment sheets**, the person's own to-dos as **light stone slabs** standing on To do while open, on
+  Done once ticked off. A card's flag is a small cloth flag: lowered on To do, half up on Doing, raised on Done; a
+  to-do's flag is its checkbox (a press ticks it off or puts it back). The notes' lanes stand on a shelf under the
+  boards. A card dragged to another board does what moving it does on the card (`move`); a to-do dragged onto Done
+  is ticked off, back onto To do put back. A click selects a card (its acts over the boards, as on the card), a
+  double click opens it. The **Taskmaster** and the orks at work walk between the boards in the inside poses (carry
+  between boards; pin, lens, quill at one), a bubble over each: the Taskmaster's what it asks or how many orders wait,
+  an ork's its Doing card in two or three words.
+- **Right (~40 %), its settings**: the building's Info as it is today (`InfoTab`, js/console.js), the same settings,
+  on a merchant's window — cream parchment in a walnut frame with teal accents (`inside.css`), in plain words.
+- **Art:** the orks are v3's sprites; the booth's wall, the boards, the cards, the pins and the flags are CSS stand-ins
+  in v3's tokens until u6-inside, u6-cards and u2-panels are cut. Each piece is one element with its own class
+  (`.fields-in__wall`, `__board`, `__plaque`, `__card.is-sheet` / `.is-slab`, `__pin`, `__flag`, `__floor`), so a
+  sprite drops in by CSS alone. Yellow and red stay for signals.
+- **Office keeps the large card** (it draws no rooms, and a look changes only how things are drawn), and so does the
+  phone's sheet. Tested in `tests/test_gui_camp_browser.py` (enter, the boards and a card, a card moved, a to-do
+  ticked, Exit, Esc); screenshots in [img/i2/](img/i2/).

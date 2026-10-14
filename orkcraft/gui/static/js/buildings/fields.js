@@ -9,7 +9,8 @@
 // all three parts at a glance; a checkbox over them hides any one (js/parts.js). It has no Work window
 // (docs/design/lighter-buildings.md §2): opened, its card grows in place to the whole board, where a card is opened
 // and edited (its windows ask over the town, never inside the card); New note writes on the card; when new tasks go
-// and New note folder are its Info's. The worker writes the board file (core/workers/fields.py).
+// and New note folder are its Info's. In Camp it is entered instead: its inside, the dispatcher's booth
+// (fields_inside.js, js/inside.js). The worker writes the board file (core/workers/fields.py).
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
@@ -20,9 +21,10 @@ import { PartToggles, shown, hidden } from "../parts.js";
 import { usePeek, showOnCard } from "../windows.js";
 
 export const grown = { w: 760, h: 520 };   // the whole of it needs the room
+export { Room as inside } from "./fields_inside.js";   // entered in Camp: the dispatcher's booth from inside (I2)
 export const work = false;         // no Work window: its large card and its Info (lighter-buildings.md §2)
 
-const selected = signal({});       // building id → card id
+export const selected = signal({});       // building id → card id
 const dialogs = signal({});        // building id → the board's window up: {card} | {lane} | {remove} | {folder} | {context|plan|join|news} | {preview, of}
 const asking = signal(null);       // {id, lane, kind}: a New task / note / chore asked from its Info's quick actions
 const writing = signal(null);      // {id, lane}: a new note written in the panel on the right, the whole of it
@@ -52,7 +54,7 @@ function useDrop(id, laneId) {
   }];
 }
 
-const dragCard = (cardId) => (e) => { e.dataTransfer.setData("text/x-ork-card", cardId); e.dataTransfer.effectAllowed = "move"; };
+export const dragCard = (cardId) => (e) => { e.dataTransfer.setData("text/x-ork-card", cardId); e.dataTransfer.effectAllowed = "move"; };
 
 /** A card is written as one text: a short line is its title; a longer text is its text, and a light model
  *  names it in a few words (the card shows up once named). An open card keeps its title. */
@@ -134,11 +136,11 @@ function Confirm({ title, text, yes, onYes, onClose }) {
 const WANTS = [["change", "Code change"], ["reply", "Reply"], ["doc", "Document"]];
 const WANT_MARK = { reply: "✉", doc: "📄" };
 
-const pick = (id, cardId) => { selected.value = { ...selected.value, [id]: cardId }; };
+export const pick = (id, cardId) => { selected.value = { ...selected.value, [id]: cardId }; };
 
 /** A card's small marks: 🌙 what the Night round found, 🔒 personal, 📜 its context (pale when a page changed
  *  since), 🧭 its plan (… while it is written). A click on 🌙, 📜 or 🧭 opens it; the card stays as it is. */
-function Marks({ card, onMark }) {
+export function Marks({ card, onMark }) {
   const n = (card.pages || []).length;
   const plan = (card.plan || []).length > 0;
   const kind = card.kind === "task" && WANT_MARK[card.want];       // a task that is not a code change says so
@@ -240,7 +242,7 @@ function FolderDialog({ id, onClose }) {
 }
 
 /** The lanes of notes; a board with none yet shows an empty Ideas lane (its first note makes it). */
-function noteLanes(data) {
+export function noteLanes(data) {
   const notes = data.lanes.filter((ln) => ln.kind === "note");
   return notes.length ? notes : [{ id: "ideas", label: "Ideas", kind: "note", cards: [] }];
 }
@@ -258,7 +260,7 @@ function giveToOrks(id, sel, sendsItself) {
 /** The selected card in a strip: its title, where it goes next (the orks, a note, my to-dos), what it keeps
  *  beside it; Delete in red at the end; × lets it go. A double click opens the card; its colour is the
  *  model's, picked as it names the card (core/workers/fields.py). */
-function Acts({ id, sel, lanes, setDialog, onPlan, wiki, sendsItself }) {
+export function Acts({ id, sel, lanes, setDialog, onPlan, wiki, sendsItself }) {
   const a = (label, onClick, extra) => html`<button class=${cls("ok-act", extra)} onClick=${onClick}><span class="ok-act__label">${label}</span></button>`;
   const give = sel.kind !== "task" || (!sel.sent && !sel.goes && !sel.into && sel.column !== "done");
   return html`<div class="fields-sel" role="toolbar" aria-label=${say("The selected card")}>
@@ -409,10 +411,10 @@ export function settings(id, data) {
         ${say("New note folder")}</button></div></section>`;
 }
 
-const setDialog = (id, d) => { dialogs.value = { ...dialogs.value, [id]: d }; };
+export const setDialog = (id, d) => { dialogs.value = { ...dialogs.value, [id]: d }; };
 
 /** Plan: what leaves is shown first, unless the person said once not to ask on this board. */
-function planCard(id, card) {
+export function planCard(id, card) {
   return act(id, "plan_preview", { card: card.id }).then((preview) => {
     if (!preview) return;
     if (preview.allowed && !preview.asked) act(id, "plan", { card: card.id }).then(() => setDialog(id, { plan: card.id }), () => {});
@@ -421,7 +423,7 @@ function planCard(id, card) {
 }
 
 /** Every card of the board, each with the lane it stands in. */
-function allCards(data) {
+export function allCards(data) {
   return (data.lanes || []).flatMap((ln) => ln.cards.map((c) => ({ ...c, column: ln.id })))
     .concat(data.todos ? data.todos.cards.map((c) => ({ ...c, column: data.todos.id })) : []);
 }

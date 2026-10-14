@@ -217,8 +217,72 @@ def test_the_mouse_brings_the_steward_out_a_click_grows_its_scroll_and_a_second_
     box = grown.bounding_box()
     assert box["y"] >= 0                                                     # inside the window
     house.click()                                                            # the second click enters it
-    pg.locator(f'.gui-camp__card[data-id="{board}"], .gui-panel').first.wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(f'.gui-inside[data-id="{board}"]').wait_for(state="visible", timeout=WAIT_MS)   # the Task board: its inside
     pg.keyboard.press("Escape")
+    house.wait_for(state="visible", timeout=WAIT_MS)
+    _call(pg, "town.demolish", {"id": board})
+
+
+def test_the_task_board_is_entered_its_cards_move_between_boards_and_exit_goes_back(camp_look, gui):
+    """decisions-2026-10.md §13.2 (I2): the second click enters the Task board — the dispatcher's booth from inside,
+    three boards (To do, Doing, Done) with its cards pinned, the Taskmaster walking with its bubble, its settings on
+    the right in plain words; a card dragged to another board moves there; a to-do's flag ticks it off; Exit and Esc
+    go back to the camp. Office keeps the card."""
+    import os
+    from pathlib import Path
+    server, _ = gui
+    pg = camp_look
+    _clear(pg)
+    board = _call(pg, "town.build", {"type": "fields"})
+    pg.keyboard.press("Escape")
+    w = server.host.town.worker(board)
+    task = w.add("Fix the login form", "todo")
+    w.add("Write the release notes", "in_progress")
+    mine = w.todos[0].id if w.todos else w.add("Call the printer", w.todo_lane().id).id
+    house = _building(pg, board)
+    house.wait_for(state="visible", timeout=WAIT_MS)
+    house.click()
+    house.click()                                                            # the second click enters it
+    room = pg.locator(f'.gui-inside[data-id="{board}"]')
+    room.wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.locator(".gui-camp").count() == 0                              # a screen of its own
+    room.locator(".fields-in__plaque").first.wait_for(state="visible", timeout=WAIT_MS)
+    plaques = room.locator(".fields-in__plaque span").all_inner_texts()
+    assert plaques[:3] == ["To do", "Doing", "Done"]
+    todo = room.locator('.fields-in__board[data-lane="todo"]')
+    sheet = todo.locator(f'.fields-in__card.is-sheet[data-card="{task.id}"]')
+    sheet.wait_for(state="visible", timeout=WAIT_MS)
+    assert "Fix the login form" in sheet.inner_text()
+    assert room.locator(".fields-in__ork.is-steward").count() == 1
+    assert "Taskmaster" in room.locator(".fields-in__ork.is-steward").inner_text()
+    assert room.locator(".fields-in__ork.is-steward .fields-in__bubble").inner_text().strip()
+    shop = room.locator(".gui-inside__shop")
+    assert "Settings" in shop.inner_text() and "Task board" in shop.inner_text()
+    exit_ = room.get_by_role("button", name="Exit")
+    box, frame = exit_.bounding_box(), room.bounding_box()
+    assert box["x"] + box["width"] > frame["x"] + frame["width"] - 40 and box["y"] < frame["y"] + 40   # top right
+    shots = os.environ.get("ORKCRAFT_SHOTS")
+    if shots:
+        pg.wait_for_timeout(600)
+        pg.screenshot(path=str(Path(shots) / "i2-task-board-inside.png"))
+    # a card dragged to Doing moves there, as moving a card does
+    sheet.drag_to(room.locator('.fields-in__board[data-lane="in_progress"]'))
+    room.locator(f'.fields-in__board[data-lane="in_progress"] [data-card="{task.id}"]').wait_for(state="visible", timeout=WAIT_MS)
+    assert w.card(task.id).column == "in_progress"
+    # a to-do's flag ticks it off: it goes to Done, its flag raised
+    slab = room.locator(f'.fields-in__card.is-slab[data-card="{mine}"]')
+    if slab.count():
+        slab.get_by_role("button", name="Tick it off").click()
+        room.locator(f'.fields-in__board[data-lane="done"] [data-card="{mine}"] .fields-in__flag.is-up').wait_for(timeout=WAIT_MS)
+    if shots:
+        pg.screenshot(path=str(Path(shots) / "i2-card-moved-to-do-ticked.png"))
+    exit_.click()                                                            # Exit: back to the camp
+    house.wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.locator(".gui-inside").count() == 0
+    house.click()                                                            # selected still: entered again
+    room.wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")                                              # Esc: back too
+    house.wait_for(state="visible", timeout=WAIT_MS)
     _call(pg, "town.demolish", {"id": board})
 
 

@@ -88,8 +88,26 @@ export function showOnCard(id) {
 // A grown card goes back as soon as its building is not the selected one.
 effect(() => { if (grownCard.value && selected.value !== grownCard.value) grownCard.value = null; });
 
+// The building entered (decisions-2026-10.md §13.2, js/inside.js): in Camp, a type whose module draws its inside
+// (`inside(b)`, js/types.js; the Task board for now) is entered as a screen of its own instead of its large card.
+// Office keeps the card (it draws no rooms), and the phone its sheet.
+export const inside = signal(null);
+const hasInside = (b) => { const mod = b && b.page ? typeModule(b.type) : null; return !!(mod && mod.inside); };
+
+/** Exit: back to the camp, the building still selected. */
+export function leaveInside() {
+  inside.value = null;
+}
+
 export function openBuilding(id, tab) {
   const b = town.value && town.value.buildings.find((x) => x.id === id);
+  if ((!tab || tab === "work") && hasInside(b) && !narrow.value && document.documentElement.dataset.look === "camp") {
+    selected.value = id;
+    closeBuilding();
+    grownCard.value = null;
+    inside.value = id;
+    return;
+  }
   if ((!tab || tab === "work") && workless(b) && !narrow.value) {
     if (showOnCard(id)) return;              // grown in place; opened again, its Info
     tab = "info";
@@ -152,7 +170,8 @@ function stepBack() {
 window.addEventListener("keydown", (e) => {
   if (e.key !== "Escape" || document.querySelector(".gui-modal, .gui-menu")) return;
   if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable], .gui-term")) return;
-  if (panelShown()) stepBack();
+  if (inside.value) leaveInside();
+  else if (panelShown()) stepBack();
   else if (selected.value) letGo();
 });
 

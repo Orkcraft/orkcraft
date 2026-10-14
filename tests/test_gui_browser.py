@@ -1761,11 +1761,11 @@ def test_the_night_round_marks_a_card_says_it_in_the_morning_and_sits_in_setting
     line = pg.locator(".gui-warchief__news").filter(has_text="Night round: 1 card has news")
     line.wait_for(state="visible", timeout=WAIT_MS)
     line.get_by_role("button", name="🌙 Night round: 1 card has news, 1 cleanup idea").click()
-    panel = pg.locator(f'[data-id="{bid}"] .fields-large')                # the board, its card grown in place
-    moon = panel.locator(".ok-card", has_text="Fix the export form dates").get_by_role(
+    panel = pg.locator(f'.gui-inside[data-id="{bid}"]')                   # in Camp: the board entered (I2)
+    moon = panel.locator(".fields-in__card", has_text="Fix the export form dates").get_by_role(
         "button", name="What's new: the Night round found something for it")
     moon.wait_for(state="visible", timeout=WAIT_MS)
-    assert panel.locator(".ok-card", has_text="Test the date check").locator(".fields-mark", has_text="🌙").count() == 1
+    assert panel.locator(".fields-in__card", has_text="Test the date check").locator(".fields-mark", has_text="🌙").count() == 1
     moon.click()
     modal = pg.locator(".gui-modal")
     modal.filter(has_text="What's new · Fix the export form dates").wait_for(state="visible", timeout=WAIT_MS)

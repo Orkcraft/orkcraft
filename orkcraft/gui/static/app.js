@@ -9,7 +9,8 @@ import { WarMap } from "./js/warmap.js";
 import { wearGround } from "./js/terrain.js";
 import { Town } from "./js/town.js";
 import { CampTown } from "./js/camp/town.js";
-import { Panel, panelShown, panelWidth, opened } from "./js/windows.js";
+import { Panel, panelShown, panelWidth, opened, inside } from "./js/windows.js";
+import { Inside } from "./js/inside.js";
 import { Jobs } from "./js/acts.js";
 import { Orders } from "./js/orders.js";
 import { VisitDialogs } from "./js/visit.js";
@@ -50,6 +51,7 @@ function App() {
   return html`<div class="gui">
     <${Hud} />
     ${narrow.value ? html`<${Pocket} buildings=${buildings} />`
+      : look === "camp" && inside.value ? html`<${Inside} />`
       : look === "camp" ? html`<${CampTown} buildings=${buildings} roads=${t.roads} />`
       : html`<${Town} buildings=${buildings} roads=${t.roads} />`}
     <div class="gui-foot" style=${`margin-right:${panelShown() && !opened.value.full ? panelWidth.value : 0}px`}>
