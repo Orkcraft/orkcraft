@@ -492,8 +492,9 @@ async function track() {
   };
   // a line of track per row, joined in a loop (v3-prompts §11): the way in comes down from outside the wall at the
   // tower's foot and splits on the left into line 1 (the upper row) and line 2 (the lower row); they merge on the right
-  // and line 2 runs on to the catapult's buffer stop. c2 has no junction with exits north, east and south yet: its
-  // north T turned a quarter clockwise stands in for it (a flat track from above reads the same turned).
+  // and line 2 runs on to the catapult's buffer stop. c2-more's junction with exits north, east and south (t-e,
+  // round 8) does not fit the line yet — its straight sits off the column and its branch stops short of the tile's
+  // edge — so c2's north T turned a quarter clockwise still stands in (a flat track from above reads the same turned).
   for (let y = LINE_Y - Math.ceil((LINE_Y + OY) / T) * T; y < LINE_Y; y += T) await tile("straight-v", COL_L, y, true);
   await tile("t-n", COL_L, LINE_Y, false, 90);                     // the split: in from the north, out east and south
   for (let y = LINE_Y + T; y < LINE2_Y; y += T) await tile("straight-v", COL_L, y, true);
@@ -572,11 +573,13 @@ async function decor() {
 // a run of g3's rounded logs from x0 to x1 (units), its foot on the wall's line; an end post at each end
 let EDGE = null;
 async function loadEdge() {
-  const names = ["palisade-h", "palisade-end-w", "palisade-end-e"];
+  const names = ["palisade-h", "palisade-end-w", "palisade-end-e"], side = ["palisade-v", "palisade-corner-ne", "palisade-post"];
   const got = await Promise.all(names.map((n) => probe(`${V3}edge/${n}.png`)));
   EDGE = got.every(Boolean) ? Object.fromEntries(names.map((n, i) => [n, got[i]])) : null;
+  const more = await Promise.all(side.map((n) => probe(`${V3}edge/${n}.png`)));     // g3-sides: the right wall and its corner
+  if (EDGE && more.every(Boolean)) side.forEach((n, i) => { EDGE[n] = more[i]; here.add(`edge/${n}.png`); });
 }
-function palisade(x0, x1, y) {
+function palisade(x0, x1, y, corner = false) {
   if (!EDGE) return el("v3-at v3-palisade", x0, y, x1 - x0, 32);
   const s = sc("edge/palisade-h.png"), h = EDGE["palisade-h"].naturalHeight * s, foot = (y + 32) * K;
   const run = document.createElement("div");
@@ -584,18 +587,40 @@ function palisade(x0, x1, y) {
   run.style.cssText = `left:${x0 * K}px;top:${foot - h}px;width:${(x1 - x0) * K}px;height:${h}px;`
     + `background:url(${EDGE["palisade-h"].src}) 0 0 / ${EDGE["palisade-h"].naturalWidth * s}px ${h}px repeat-x`;
   world.appendChild(run);
-  for (const [n, x] of [["palisade-end-w", x0 * K], ["palisade-end-e", x1 * K - EDGE["palisade-end-e"].naturalWidth * s]]) {
+  const east = corner && EDGE["palisade-corner-ne"] ? "palisade-corner-ne" : "palisade-end-e";
+  for (const [n, x] of [["palisade-end-w", x0 * K], [east, x1 * K - EDGE[east].naturalWidth * sc(`edge/${east}.png`)]]) {
     const im = document.createElement("img"), e = EDGE[n];
     im.className = "v3-img"; im.src = e.src;
-    im.style.cssText = `left:${x}px;top:${foot - e.naturalHeight * s}px;width:${e.naturalWidth * s}px;height:${e.naturalHeight * s}px`;
+    const es = sc(`edge/${n}.png`);
+    im.style.cssText = `left:${x}px;top:${foot - e.naturalHeight * es}px;width:${e.naturalWidth * es}px;height:${e.naturalHeight * es}px`;
     world.appendChild(im);
   }
 }
 
-// the side wall: g3 drew no corner or side pieces (front-on, a wall going away is not seen), so — a stand-in — the
-// end posts stand in a column down the right edge, the back wall's own end post the corner where the two runs meet
+// the side wall: g3-sides' column of log tops running down from the back wall's north-east corner, a post at its foot.
+// Before g3-sides is cut — a stand-in — the end posts stand in a column down the right edge.
 function palisadeDown(x, y0, y1) {
   if (!EDGE) return el("v3-at v3-palisade is-v", x, y0 + 32, 16, y1 - y0 - 32);
+  if (EDGE["palisade-v"]) {
+    const v = EDGE["palisade-v"], s = sc("edge/palisade-v.png"), w = v.naturalWidth * s, vh = v.naturalHeight * s;
+    const right = (x + 16) * K, top = (y0 + 32) * K, p = EDGE["palisade-post"], ps = sc("edge/palisade-post.png");
+    const ph = p.naturalHeight * ps, bottom = y1 * K - ph;
+    // stacked, not tiled: the column has 7 empty rows above its first log and a 3-row tail below its last, so the
+    // copies stand 110 art px apart and each one's tail tucks under the next one's first log
+    const step = (v.naturalHeight - 10) * s;
+    for (let y = top - 7 * s; y < bottom; y += step) {
+      const c = document.createElement("img");
+      c.className = "v3-img"; c.src = v.src;
+      c.style.cssText = `left:${right - w}px;top:${y}px;width:${w}px;height:${Math.min(vh, bottom - y)}px;`
+        + `object-fit:cover;object-position:top`;
+      world.appendChild(c);
+    }
+    const im = document.createElement("img");
+    im.className = "v3-img"; im.src = p.src;
+    im.style.cssText = `left:${right - (w + p.naturalWidth * ps) / 2}px;top:${bottom - 12 * ps}px;width:${p.naturalWidth * ps}px;height:${ph}px`;
+    world.appendChild(im);
+    return;
+  }
   const e = EDGE["palisade-end-w"], s = sc("edge/palisade-end-w.png"), w = e.naturalWidth * s, h = e.naturalHeight * s;
   const step = Math.round(h * 0.45);
   for (let y = (y0 + 32) * K - h + step; y <= y1 * K - h; y += step) {
@@ -616,7 +641,7 @@ function paths() {
   // the low palisade: along the top (a gap where the track comes in at the tower's foot) and down the right side
   // the low palisade (g3): along the back, open where the track comes in under the lookout, and down the right side
   palisade(OX - 40, COL_L, 0);
-  palisade(COL_L + TU, WALL_X + 16, 0);
+  palisade(COL_L + TU, WALL_X + 16, 0, true);
   palisadeDown(WALL_X, 0, LINE2_Y + 80);
 }
 

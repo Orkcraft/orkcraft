@@ -184,8 +184,16 @@ south-east curve and a larger one, a south-west, a north-east, a switch, a cross
 `tile_from` (its rails 41 art px apart against the set's 32 → ×0.78, the 64-px tile) and its three curves replace c2's;
 they join the straights. It has **no north-west curve and no junction north–east–south**, so the loop's split stays the
 stand-in (c2's north T turned a quarter). **g3** drew no corners or side pieces (front-on, a wall going away is not
-seen): the back wall is its straight run with end posts; down the right edge — a stand-in — its end posts stand in a
-column, meeting the back wall at its end post.
+seen): the back wall is its straight run with end posts.
+
+**Round 8, the sides:** **g3-sides #1** gives the right wall: the back run ends in `palisade-corner-ne` (one log dropping
+where the wall turns), `palisade-v` (a column of log tops, 40 × 120) runs down the right edge, stacked 110 art px apart
+so its 7 empty rows above and 3-row tail below tuck under the next copy, and `palisade-post` stands at its foot. The
+other corners (nw, sw, se) are cut for a wall that closes the camp; the preview's camp is open at the front and on
+the left. **c2-more #1** gives `track/corner-nw` and `track/t-e`, fitted with `tile_from` at ×0.727 (rails 44 art px
+apart against 32); neither is placed yet. t-e's straight sits off the tile's middle column and its branch stops short
+of the east edge, so at the split it breaks the line and the turned north T stays. corner-nw is clipped at the top,
+and the loop has no north-west turn to use it. Both need a redraw at the set's gauge (v3-prompts §11).
 
 **The ork is the capped ork of 0.3** (v3-prompts §12; o1/o2's bald ork is `retired`, its sprites gone with it, the
 door frames and the prospector among them). Cut the v3 way from the 0.3 sheets: walking down, up and to the side (6
