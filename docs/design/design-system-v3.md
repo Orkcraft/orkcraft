@@ -178,7 +178,7 @@ cells, the nearest clean rule) it comes out 44–47 px. The asking ork in the pr
 
 **The zoom steps keep whole device pixels** (buildings / orks and track): on density 2, **×1.5 / ×1** (default),
 ×3 / ×2 (close), and ×1 / ×1 (an overview: whole, the orks a little large); on density 1, **×2 / ×1** (default) and
-×1 / ×1. The wheel steps through them, **drag pans**; the default view is centred on the work (the back wall to line 2),
+×1 / ×1. The wheel steps through them (or `#zoom=0` · `1` · `2` in the page's address), **drag pans**; the default view is centred on the work (the back wall to line 2),
 the lookout and the catapult at the ends reached by dragging or by the overview. **The loop is compact:** line 2 sits as
 close under line 1 as the lower row allows, a whole number of track tiles below it (computed from the tile at each
 step).
