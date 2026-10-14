@@ -180,7 +180,8 @@ def test_the_v3_preview_awaits_every_sprite_the_v3_sheets_are_cut_into():
             for item in g["items"]:
                 w, h = item.get("size", g["size"])
                 assert w % 8 == 0 and h % 8 == 0, item["file"]
-                assert "order" in item or all("order" in f for f in item.get("frames", [])), item["file"]
+                named = lambda x: any(k in x for k in ("order", "at", "box"))          # noqa: E731
+                assert named(item) or (item.get("frames") and all(named(f) for f in item["frames"])), item["file"]
 
 
 def test_a_drawn_grid_round_the_cells_is_dropped_before_the_pieces_are_found(tmp_path):

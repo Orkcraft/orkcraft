@@ -187,6 +187,17 @@ stand-in (c2's north T turned a quarter). **g3** drew no corners or side pieces 
 seen): the back wall is its straight run with end posts; down the right edge — a stand-in — its end posts stand in a
 column, meeting the back wall at its end post.
 
+**The ork is the capped ork of 0.3** (v3-prompts §12; o1/o2's bald ork is `retired`, its sprites gone with it, the
+door frames and the prospector among them). Cut the v3 way from the 0.3 sheets: walking down, up and to the side (6
+frames each), idle 4, work 6, sit 2 (`ork-body-a`, `-b`); fifteen roles by their props — warchief, grunt, mason,
+mechanic, seer, quartermaster, pathfinder from the 0.3 sheet (`ork-roles-a`), taskmaster, lookout, loader, farseer,
+warder, artisan, treasurer, alchemist from `roles-2` (`ork-roles-b`, drawn 1.4× and read at `merge: 1.5`) —
+[side by side](img/v3-preview/ork-roles.png); its states from the owner's `o3-states-r1` (×1) and its inside poses from
+`o5-inside-r1` (`merge: 1.5`; piece 18 of the pinning row, two frames touching, left out). Heights at ×1: body 46–51,
+roles 46–53, states 38–40, inside 40 — **0.16–0.22 of the unit, about F1's 0.19**; the sheets differ by 1.2–1.4×,
+which no whole merge closes, so each is read at the nearest. **Awaited for this ork:** stepping out of a door (one
+sheet, with `roles-2.jpg` attached); there is no prospector among its roles.
+
 **The zoom steps keep whole device pixels** (buildings / orks and track): on density 2, **×1.5 / ×1** (default),
 ×3 / ×2 (close), and ×1 / ×1 (an overview: whole, the orks a little large); on density 1, **×2 / ×1** (default) and
 ×1 / ×1. The wheel steps through them (or `#zoom=0` · `1` · `2` in the page's address), **drag pans**; the default view is centred on the work (the back wall to line 2),

@@ -492,64 +492,53 @@
    "wood_pull": true
   },
   {
-   "name": "o1-body",
-   "file": "o1-body.png",
-   "about": "§3b.1 the ork's body, 32 × 32, rows: idle 4, walk down 6, walk up 6, walk right 6, work 6, out of a door 4",
-   "degrid": true,
+   "name": "ork-body-a",
+   "file": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
+   "root": "docs/design/img/references/0.3",
+   "about": "the capped ork of 0.3 (v3-prompts §12): walking down, up and to the side, 6 frames each; cut the v3 way at its own pixel",
    "groups": [
     {
-     "size": [
-      32,
-      32
-     ],
      "anchor": "feet",
      "fps": 8,
-     "tones": [
-      "#8fb052",
-      "#5a7a34",
-      "#3e5a26",
-      "#6a5240",
-      "#4a3a30",
-      "#8a7a64"
-     ],
      "items": [
-      {
-       "file": "orks/body/idle.png",
-       "frames": [
-        {
-         "order": 0
-        },
-        {
-         "order": 1
-        },
-        {
-         "order": 2
-        },
-        {
-         "order": 3
-        }
-       ]
-      },
       {
        "file": "orks/body/walk-down.png",
        "frames": [
         {
-         "order": 4
+         "at": [
+          0.058,
+          0.105
+         ]
         },
         {
-         "order": 5
+         "at": [
+          0.178,
+          0.105
+         ]
         },
         {
-         "order": 6
+         "at": [
+          0.309,
+          0.105
+         ]
         },
         {
-         "order": 7
+         "at": [
+          0.439,
+          0.105
+         ]
         },
         {
-         "order": 8
+         "at": [
+          0.558,
+          0.105
+         ]
         },
         {
-         "order": 9
+         "at": [
+          0.686,
+          0.105
+         ]
         }
        ]
       },
@@ -557,22 +546,40 @@
        "file": "orks/body/walk-up.png",
        "frames": [
         {
-         "order": 10
+         "at": [
+          0.058,
+          0.3
+         ]
         },
         {
-         "order": 11
+         "at": [
+          0.178,
+          0.3
+         ]
         },
         {
-         "order": 12
+         "at": [
+          0.311,
+          0.3
+         ]
         },
         {
-         "order": 13
+         "at": [
+          0.441,
+          0.3
+         ]
         },
         {
-         "order": 14
+         "at": [
+          0.56,
+          0.3
+         ]
         },
         {
-         "order": 15
+         "at": [
+          0.688,
+          0.3
+         ]
         }
        ]
       },
@@ -580,155 +587,338 @@
        "file": "orks/body/walk-side.png",
        "frames": [
         {
-         "order": 16
+         "at": [
+          0.057,
+          0.491
+         ]
         },
         {
-         "order": 17
+         "at": [
+          0.177,
+          0.491
+         ]
         },
         {
-         "order": 18
+         "at": [
+          0.31,
+          0.491
+         ]
         },
         {
-         "order": 19
+         "at": [
+          0.442,
+          0.491
+         ]
         },
         {
-         "order": 20
+         "at": [
+          0.558,
+          0.491
+         ]
         },
         {
-         "order": 21
+         "at": [
+          0.688,
+          0.491
+         ]
         }
        ]
-      },
+      }
+     ],
+     "size": [
+      48,
+      56
+     ]
+    }
+   ]
+  },
+  {
+   "name": "ork-body-b",
+   "file": "Gemini_Generated_Image_4xw8i84xw8i84xw8.jpeg",
+   "root": "docs/design/img/references/0.3",
+   "about": "the capped ork of 0.3: idle 4, work 6, sit 2. The door-step animation is awaited (o1's was the bald ork's)",
+   "groups": [
+    {
+     "anchor": "feet",
+     "fps": 8,
+     "items": [
+      {
+       "file": "orks/body/idle.png",
+       "frames": [
+        {
+         "at": [
+          0.068,
+          0.106
+         ]
+        },
+        {
+         "at": [
+          0.212,
+          0.106
+         ]
+        },
+        {
+         "at": [
+          0.355,
+          0.106
+         ]
+        },
+        {
+         "at": [
+          0.497,
+          0.106
+         ]
+        }
+       ]
+      }
+     ],
+     "size": [
+      48,
+      56
+     ]
+    },
+    {
+     "anchor": "feet",
+     "fps": 8,
+     "items": [
       {
        "file": "orks/body/work.png",
        "frames": [
         {
-         "order": 22
+         "at": [
+          0.069,
+          0.512
+         ]
         },
         {
-         "order": 23
+         "at": [
+          0.211,
+          0.512
+         ]
         },
         {
-         "order": 24
+         "at": [
+          0.362,
+          0.515
+         ]
         },
         {
-         "order": 25
+         "at": [
+          0.506,
+          0.513
+         ]
         },
         {
-         "order": 26
+         "at": [
+          0.65,
+          0.505
+         ]
         },
         {
-         "order": 27
+         "at": [
+          0.792,
+          0.512
+         ]
         }
        ]
       },
       {
-       "file": "orks/body/door.png",
+       "file": "orks/body/sit.png",
        "frames": [
         {
-         "order": 28
+         "at": [
+          0.073,
+          0.899
+         ]
         },
         {
-         "order": 29
-        },
-        {
-         "order": 30
-        },
-        {
-         "order": 31
+         "at": [
+          0.216,
+          0.899
+         ]
         }
        ]
       }
+     ],
+     "size": [
+      48,
+      56
      ]
     }
-   ],
-   "target": {
-    "h": 56
-   }
+   ]
   },
   {
-   "name": "o2-roles",
-   "file": "o2-roles.png",
-   "about": "§3b.2 the roles on the o1/o2 ork (round 5): row 1 the eleven variants in the prompt's order without the pathfinder, row 2 the same again with the pathfinder (map and lantern) at 19",
-   "degrid": true,
+   "name": "ork-roles-a",
+   "file": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
+   "root": "docs/design/img/references/0.3",
+   "about": "the capped ork's roles from the 0.3 sheet: warchief, grunt, mason, mechanic, seer, quartermaster, pathfinder",
    "groups": [
     {
-     "size": [
-      32,
-      32
-     ],
-     "anchor": "feet",
+     "anchor": "bottom-centre",
      "slots": [
       "role"
-     ],
-     "tones": [
-      "#8fb052",
-      "#5a7a34",
-      "#3e5a26",
-      "#6a5240",
-      "#4a3a30",
-      "#8a7a64"
      ],
      "items": [
       {
        "file": "orks/roles/warchief.png",
-       "order": 0
+       "at": [
+        0.049,
+        0.89
+       ]
       },
       {
        "file": "orks/roles/grunt.png",
-       "order": 1
+       "at": [
+        0.177,
+        0.895
+       ]
       },
       {
-       "file": "orks/roles/taskmaster.png",
-       "order": 2
-      },
-      {
-       "file": "orks/roles/seer.png",
-       "order": 3
-      },
-      {
-       "file": "orks/roles/lookout.png",
-       "order": 4
+       "file": "orks/roles/mason.png",
+       "at": [
+        0.286,
+        0.895
+       ]
       },
       {
        "file": "orks/roles/mechanic.png",
-       "order": 5
+       "at": [
+        0.523,
+        0.895
+       ]
       },
       {
-       "file": "orks/roles/alchemist.png",
-       "order": 6
+       "file": "orks/roles/seer.png",
+       "at": [
+        0.742,
+        0.893
+       ]
       },
       {
-       "file": "orks/roles/treasurer.png",
-       "order": 7
-      },
-      {
-       "file": "orks/roles/warder.png",
-       "order": 8
+       "file": "orks/roles/quartermaster.png",
+       "at": [
+        0.841,
+        0.891
+       ]
       },
       {
        "file": "orks/roles/pathfinder.png",
-       "order": 19
+       "at": [
+        0.947,
+        0.895
+       ]
+      }
+     ],
+     "size": [
+      48,
+      56
+     ]
+    }
+   ]
+  },
+  {
+   "name": "ork-roles-b",
+   "file": "roles-2.jpg",
+   "root": "docs/design/img/references/0.3",
+   "about": "the capped ork's roles from 0.3/roles-2: taskmaster, lookout, loader, farseer, warder, artisan, treasurer, alchemist; drawn 1.4× the body's ork, read at `merge: 1.5`",
+   "groups": [
+    {
+     "anchor": "bottom-centre",
+     "slots": [
+      "role"
+     ],
+     "items": [
+      {
+       "file": "orks/roles/taskmaster.png",
+       "at": [
+        0.07,
+        0.5
+       ]
       },
       {
-       "file": "orks/roles/prospector.png",
-       "order": 9
+       "file": "orks/roles/lookout.png",
+       "at": [
+        0.208,
+        0.5
+       ]
       },
       {
        "file": "orks/roles/loader.png",
-       "order": 10
+       "at": [
+        0.341,
+        0.5
+       ]
+      },
+      {
+       "file": "orks/roles/farseer.png",
+       "at": [
+        0.467,
+        0.5
+       ]
+      },
+      {
+       "file": "orks/roles/warder.png",
+       "at": [
+        0.592,
+        0.5
+       ]
+      },
+      {
+       "file": "orks/roles/artisan.png",
+       "at": [
+        0.716,
+        0.5
+       ]
+      },
+      {
+       "file": "orks/roles/treasurer.png",
+       "at": [
+        0.845,
+        0.5
+       ]
+      },
+      {
+       "file": "orks/roles/alchemist.png",
+       "at": [
+        0.954,
+        0.5
+       ]
       }
-     ]
+     ],
+     "size": [
+      48,
+      56
+     ],
+     "merge": 1.5
     }
-   ],
+   ]
+  },
+  {
+   "name": "o1-body",
+   "file": "o1-body.png",
+   "about": "§3b.1 the ork's body, 32 × 32, rows: idle 4, walk down 6, walk up 6, walk right 6, work 6, out of a door 4 — set aside (v3-prompts §12): the main ork is the capped ork of 0.3",
+   "degrid": true,
+   "groups": [],
    "target": {
     "h": 56
-   }
+   },
+   "retired": true
+  },
+  {
+   "name": "o2-roles",
+   "file": "o2-roles.png",
+   "about": "§3b.2 the roles on the o1/o2 ork (round 5): row 1 the eleven variants in the prompt's order without the pathfinder, row 2 the same again with the pathfinder (map and lantern) at 19 — set aside (v3-prompts §12): the main ork is the capped ork of 0.3",
+   "degrid": true,
+   "groups": [],
+   "target": {
+    "h": 56
+   },
+   "retired": true
   },
   {
    "name": "o3-states",
-   "file": "o3-states.png",
-   "about": "§3b.3 the five state poses, 32 × 32",
+   "file": "o3-states-r1.png",
+   "about": "§3b.3 the five state poses of the capped ork (the owner's own o3-states-r1, v3-prompts §12): working, asks, stuck, held, doze; shown at ×1 (its ork about 41 px against the body's 46–51)",
    "degrid": true,
    "groups": [
     {
@@ -769,8 +959,7 @@
        "file": "orks/states/doze.png",
        "order": 4
       }
-     ],
-     "merge": 2
+     ]
     }
    ]
   },
@@ -914,8 +1103,8 @@
   },
   {
    "name": "o5-inside",
-   "file": "o5-inside.png",
-   "about": "§3b.5 the worker inside a building (I2): carrying a slab 6, a magnifying glass 4, a quill at a lectern 4, pinning a parchment 4",
+   "file": "o5-inside-r1.png",
+   "about": "§3b.5 the capped ork inside a building (the owner's o5-inside-r1, v3-prompts §12): carrying a slab 6, a magnifying glass 4, a quill at a lectern 4 of 5, pinning a sheet 4 (piece 18, two frames drawn touching, left out); read at `merge: 1.5` (its ork drawn 1.2× the body's)",
    "degrid": true,
    "groups": [
     {
@@ -995,9 +1184,6 @@
        "file": "orks/inside/pin.png",
        "frames": [
         {
-         "order": 14
-        },
-        {
          "order": 15
         },
         {
@@ -1005,6 +1191,9 @@
         },
         {
          "order": 17
+        },
+        {
+         "order": 19
         }
        ]
       }
