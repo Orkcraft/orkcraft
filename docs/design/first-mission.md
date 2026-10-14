@@ -189,3 +189,15 @@ script's work offers mission 5. A mission then answers the person's real problem
 4. **The campaign's next mission is 1b, Proof before the gate** (a check inside the loop): the most useful to a
    developer, and it raises the quality the score guards. Then Mission 2, a process that comes back.
 Built with I1 (items 1–3); 1b after the inventory.
+
+**Built 2026-10-14 (M1), items 1–3.** Quest 1's Task board stands as the dispatcher's booth with the drill cart on its
+siding (Camp v3 draws it from the board's To Do). Quest 3's press, once the drill waits on the weighbridge with the
+barrier down, is **Lift the barrier** (`mission.raise` on quest 3, `core/mission.py` `_lift`): the person's pass. The
+drill goes on no road and teaches the pool nothing, so nothing leaves the town even when the gate has a road out.
+**The finale** (`finale` in the quest log's snapshot for 14 s, `js/camp/carts.js` `Finale`): the drill rolls off the
+weighbridge along the line, "Drill · free" above it; the Publisher launches it if the town has one, else it leaves at
+the line's buffer stop; the view follows the gate, then the drill. **Rewards** (`realm/growth.py`): a deed per quest
+(`quest.<id>`, listed only once earned); **Mission 1 done** (the last quest done, or the mission left after quest 4:
+quest 5 may be put off; `mission_done` in `.orkcraft/mission.json`) is the campaign's first chapter
+(`growth.chapters`), which INV's paths read: the deed *Mission 1*, the portrait's stage 2, and the item `first-cart`
+(`realm/items.py`, `.orkcraft/items.json`). Screenshots: [img/m1/](img/m1/).

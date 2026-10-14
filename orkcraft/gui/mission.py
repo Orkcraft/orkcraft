@@ -2,7 +2,7 @@
 Warchief's line shows the quest under way, its one press and the way out (js/mission.js).
 
     face = MissionFace(host)
-    host.commands.update(face.commands())    # mission.raise · .leave · .seen · .hooks
+    host.commands.update(face.commands())    # mission.raise (quest 3: lifts the barrier) · .leave · .seen · .hooks
     face.snapshot()                          # the snapshot's `mission`, None when there is none
     face.tick()                              # from the host's clock: a quest done moves the log on
 """
@@ -71,4 +71,7 @@ class MissionFace:
         except (OSError, ValueError):
             return
         if moved:
+            growth = getattr(self.host, "growth", None)
+            if growth is not None:
+                growth.soon()                    # a quest's deed, Mission 1's stage and item: looked at next tick
             self.host.on_change()

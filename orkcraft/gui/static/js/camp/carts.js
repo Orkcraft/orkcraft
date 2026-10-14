@@ -93,7 +93,9 @@ function Standing({ list, p, L }) {
   const lead = list.find((c) => c.state === loud) || list[0];
   const pile = list.length > SHOWN;
   const pileS = sizeOf("carts/pile.png");
-  return html`<div class=${cls("gui-camp__stand", `is-${loud}`)} data-id=${p.id} style=${`left:${at.x}px;top:${at.y}px`}>
+  // on the Review gate's weighbridge it stands in front of the gate's own sprite (a building's z: 10 + its feet / 8)
+  const z = p.type === "loot" && p.spur ? `;z-index:${12 + Math.round(p.feet / 8)}` : "";
+  return html`<div class=${cls("gui-camp__stand", `is-${loud}`)} data-id=${p.id} style=${`left:${at.x}px;top:${at.y}px${z}`}>
     ${pile && pileS ? html`<img class="gui-camp__px" src=${`${V3}carts/pile.png`} alt="" style=${`left:${-pileS[0] * B / 2}px;top:${-pileS[1] * B}px;width:${pileS[0] * B}px;height:${pileS[1] * B}px`} />`
       : list.slice(0, SHOWN).map((c, i) => html`<div key=${c.id} class="gui-camp__cart" data-load=${loadOf(c)} style=${`left:${i * at.dx}px;top:0`}
           role="button" title=${say(chipOf(c))} aria-label=${say(`${chipOf(c)}: its history`)}
@@ -168,5 +170,35 @@ export function CampCarts({ L, roads, carts = [], travel = 0, avg = null }) {
     ${rolling.filter((x) => x.out).map(({ c, dur, out }) => html`<${Launch} key=${`fly-${c.id}`} c=${c} p=${L.buildings[out]}
       at=${launchAt(c, dur)} avg=${avg} B=${B} />`)}
     ${[...standing].map(([id, list]) => html`<${Standing} key=${id} list=${list} p=${L.buildings[id]} L=${L} />`)}
+  </div>`;
+}
+
+const finaleAt = new Map();              // a finale's id → its animation-delay, fixed when first seen (as `started`)
+
+/** Mission 1's finale (first-mission.md §9.2): the drill cart the person passed rolls off the Review gate's weighbridge
+ *  along the line, "Drill · free" above it where a launched cart shows its cost; the Publisher launches it if the town
+ *  has one, else it leaves along the line at its buffer stop. Drawn only: a drill goes on no road, nothing leaves. */
+export function Finale({ L, f }) {
+  const B = L.step.b, g = L.buildings[f.gate], out = f.out && L.buildings[f.out];
+  const way = g && (out ? L.route(f.gate, f.out) : L.routeOut(f.gate));
+  if (!way || way.length < 1) return null;
+  const feet = L.T * 0.3;
+  const pts = [[g.cx, Math.round(g.y + g.h * 0.69 - feet)], ...way].map(([x, y]) => [Math.round(x), Math.round(y + feet)]);
+  const dur = tripOf(L, pts);
+  if (!finaleAt.has(f.id)) finaleAt.set(f.id, -Math.min(f.age || 0, 30));
+  const delay = finaleAt.get(f.id);
+  const d = `M ${pts.map((p) => p.join(" ")).join(" L ")}`;
+  const title = say(`${f.chip}: a drill, nothing left the town`);
+  return html`<div class="gui-camp__finale" data-out=${out ? "publisher" : "line"}>
+    <div class="gui-camp__cart is-rolling is-drill" title=${title} aria-label=${title}
+        style=${`offset-path:path("${d}");animation-duration:${dur}s;animation-delay:${delay}s`}>
+      <${Bin} c=${{ load: "doc" }} B=${B} />
+      <span class="gui-camp__launch-chip is-drill" style=${`top:${-48 * B - 30}px`}>${say(f.chip)}</span>
+    </div>
+    ${out && html`<div class="gui-camp__launch is-drill" style=${`left:${out.x + out.w * 0.3}px;top:${out.y + out.h * 0.15}px;`
+      + `animation-delay:${(dur + delay).toFixed(2)}s;--fly-x:${260 * B}px;--fly-y:${-170 * B}px`}>
+      <img class="gui-camp__px" src=${`${V3}carts/doc.png`} alt="" style=${`left:-${20 * B}px;top:-${24 * B}px;width:${40 * B}px;height:${48 * B}px`} />
+      <span class="gui-camp__launch-chip">${say(f.chip)}</span>
+    </div>`}
   </div>`;
 }

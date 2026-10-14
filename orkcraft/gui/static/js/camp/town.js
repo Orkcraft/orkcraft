@@ -16,7 +16,7 @@ import { zoomLevel, zoomBy, LEVELS } from "../zoom.js";
 import { bareMenu, setNumbered } from "../town.js";
 import { lay, stepsFor, DEFAULT_STEP, SIDING_SHOWN, PATH_W } from "./layout.js";
 import { V3, kit, loadKit, sizeOf } from "./sprites.js";
-import { CampCarts, arriving } from "./carts.js";
+import { CampCarts, Finale, arriving } from "./carts.js";
 import { hovered, StewardOut } from "./steward.js";
 import { Stewards } from "./orks.js";
 import { Badge } from "./signals.js";
@@ -303,10 +303,16 @@ export function CampTown({ buildings, roads }) {
   const L = k ? laid.L : null;
   const panelW = panelShown() && !opened.value.full ? panelWidth.value : 0;
 
-  // the default view: the work in the middle of the part of the window the panel leaves; then the drag's offset
+  // the default view: the work in the middle of the part of the window the panel leaves; then the drag's offset.
+  // Mission 1 (js/mission.js): the view follows the drill at the Review gate's barrier, then from the gate to where it
+  // leaves (the finale, js/camp/carts.js), above the quest log
+  const m = snapshot.value && snapshot.value.mission, finale = m && m.finale;
+  const fg = L && finale && L.buildings[finale.gate], fo = fg && (L.buildings[finale.out] ? L.buildings[finale.out].stop : L.buffer);
+  const lift = L && !fg && m && m.quest === "gate" && m.press && L.buildings[m.built];
+  const focus = fg ? { x: (fg.cx + fo.x) / 2, y: (fg.y + fo.y) / 2 } : lift ? { x: lift.cx, y: lift.y + lift.h / 2 } : null;
   const seen = Math.max(view.w - panelW, 320);
-  const ox = L ? Math.round(seen / 2 - (L.work.x + L.work.w / 2) + pan.value.x) : 0;
-  const oy = L ? Math.round(view.h / 2 - (L.work.y + L.work.h / 2) + pan.value.y) : 0;
+  const ox = !L ? 0 : Math.round(seen / 2 - (focus ? focus.x : L.work.x + L.work.w / 2) + pan.value.x);
+  const oy = !L ? 0 : Math.round((focus ? view.h * 0.4 - focus.y : view.h / 2 - (L.work.y + L.work.h / 2)) + pan.value.y);
 
   const down = (e) => {
     if (e.button !== 0 || placing.value) return;
@@ -347,7 +353,7 @@ export function CampTown({ buildings, roads }) {
   const grown = grownCard.value && buildings.find((b) => b.id === grownCard.value);
   return html`<main ref=${ref} class=${cls("gui-town gui-camp", { "is-panning": panned, "is-overview": zoomLevel.value === "a" })} data-step=${L ? `${step.b}/${step.s}` : ""}
       onPointerDown=${down} onWheel=${wheel} onClick=${bare} onContextMenu=${(e) => { if (!e.target.closest(".gui-camp__building")) bareMenu(e, buildings, here, null); }}>
-    ${L && html`<div class="gui-camp__world" style=${`width:${L.w}px;height:${L.h}px;transform:translate(${ox}px,${oy}px)`}>
+    ${L && html`<div class=${cls("gui-camp__world", { "is-following": !!focus })} style=${`width:${L.w}px;height:${L.h}px;transform:translate(${ox}px,${oy}px)`}>
       <${Decals} L=${L} />
       <${Paths} L=${L} />
       <${Track} L=${L} />
@@ -363,6 +369,7 @@ export function CampTown({ buildings, roads }) {
       <${CampCarts} L=${L} roads=${here} carts=${carts} travel=${travel} avg=${averagePerResult(snapshot.value && snapshot.value.score)} />
       <${Stewards} L=${L} buildings=${buildings} roads=${here} out=${outId} soon=${arriving(L, here, carts, travel)}
         onOrk=${onOrk} onBubble=${onBubble} />
+      ${finale && html`<div class="gui-camp__layer is-carts"><${Finale} key=${finale.id} L=${L} f=${finale} /></div>`}
       ${outB && html`<${StewardOut} b=${outB} p=${L.buildings[outB.id]} L=${L} grown=${selected.value === outB.id} onOrk=${onOrk} onBubble=${onBubble}
         seen=${{ left: -ox, top: -oy + 8, right: -ox + seen }} />`}
       ${placing.value && html`<${Placing} p=${placing.value} L=${L} />`}

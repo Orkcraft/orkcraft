@@ -9,7 +9,7 @@ import pytest
 from orkcraft.core.mission import Mission
 from orkcraft.core.workers.barracks import BarracksWorker
 from orkcraft.gui.host import Host
-from orkcraft.realm import checkpoint, event_log, jobs, mission, mission_work
+from orkcraft.realm import checkpoint, event_log, growth, items, jobs, mission, mission_work
 from tests.pool_fakes import FakeGit, Steward
 
 
@@ -44,7 +44,7 @@ def test_the_camp_is_raised_quest_by_quest_with_a_drill_and_no_model(fake_repo: 
 
     board = m.raise_it()                                                     # quest 1: a drill card on the board
     card = town.worker(board).card(m.state["card"])
-    assert card.title.startswith("Drill") and "drill" in card.body.lower()
+    assert card.title.startswith("Drill") and "drill" in card.body.lower() and card.column == "todo"   # on the siding
     assert m.raise_it() == ""                                                # raised once
     assert m.tick() and m.view()["quest"] == "pool"
 
@@ -64,8 +64,19 @@ def test_the_camp_is_raised_quest_by_quest_with_a_drill_and_no_model(fake_repo: 
     assert _until(lambda: g.queue.by_ref(m.state["ref"]) is not None)
     item = g.queue.by_ref(m.state["ref"])
     assert "Drill" in (item.title or item.value) and not m.tick()
-    host.command("act", {"id": gate, "act": "accept", "args": {"item": item.id}})
+    assert m.view()["press"] == mission.LIFT
+    s = m.state
+    s.pop("held", None)                                                      # lifted before a tick saw it waiting
+    m._save(s)
+    emitted = []
+    monkeypatch.setattr(type(g), "emit", lambda self, *a, **k: emitted.append(a) or True)
+    assert host.command("mission.raise", {}) == gate                         # the barrier lifted: the person's pass
+    assert emitted == [] and g.queue.by_ref(m.state["ref"]) is None          # on no road: nothing leaves the town
+    monkeypatch.undo()
     assert _until(m.tick) and m.view()["quest"] == "office"
+    f = m.view()["finale"]                                                   # the drill rolls on, free
+    assert (f["gate"], f["out"], f["chip"]) == (gate, "", mission.FINALE_CHIP) and 0 <= f["age"] < mission.FINALE_S
+    assert host.snapshot()["mission"]["finale"]["gate"] == gate
 
     host.command("you.look", {"look": "office"})                             # quest 3½: Office, then Camp
     assert not m.tick()
@@ -90,6 +101,13 @@ def test_the_camp_is_raised_quest_by_quest_with_a_drill_and_no_model(fake_repo: 
     assert [c.title for c in b.cards if c.column == "todo" and c.id != m.state["card"]] == [i.title for i in found]
     assert not b.config.get("send_new")                                      # they wait on the board until sent
 
+    machine = town.machine                                                   # a deed per quest so far, no stage yet
+    machine.growth = {"stage": 1, "deeds": {}}
+    growth.settle(town.scroll, fake_repo, machine)
+    assert {"quest.board", "quest.pool", "quest.gate", "quest.office", "quest.listen"} <= set(machine.growth["deeds"])
+    assert "mission" not in machine.growth["deeds"] and machine.growth["stage"] == 1
+    assert items.settle(town.scroll, fake_repo, machine) == []                # no item before the mission is done
+
     v = m.view()                                                             # quest 5: its price first
     assert v["press"] == "Send two cards" and "$2.00" in v["cost"] and "Claude Code" in v["cost"]
     runs = []
@@ -103,6 +121,11 @@ def test_the_camp_is_raised_quest_by_quest_with_a_drill_and_no_model(fake_repo: 
     assert len(runs) == 2 and "budget_usd" not in w.config                    # the mission's budget ends with it
     assert all(g.queue.by_ref(ref) is not None for ref in m.state["two"])  # both wait for the person
     assert m.view() == {"finished": True, "says": mission.DONE_SAYS}
+    fresh = growth.settle(town.scroll, fake_repo, machine)                   # Mission 1 done: stage 2, the first item
+    assert machine.growth["stage"] == 2 and {"quest.two", "mission"} <= set(machine.growth["deeds"])
+    assert any(n.kind == "stage" for n in fresh)
+    assert "first-cart" in items.settle(town.scroll, fake_repo, machine)
+    assert items.earned(fake_repo)["first-cart"]["at"] and items.settle(town.scroll, fake_repo, machine) == []   # once
     m.seen_end()
     assert m.view() is None
 
@@ -125,6 +148,33 @@ def test_the_mission_is_left_at_any_quest_and_the_town_stays(fake_repo: Path, no
     assert [(e["event"], e.get("quest")) for e in event_log.read(fake_repo) if e["event"] == "quest_skipped"] \
         == [("quest_skipped", "pool")]
     assert m.raise_it() == "" and not m.tick()
+    assert "mission_done" not in m.state                                     # left early: Mission 1 is not done
+    host.close()
+
+
+def test_mission_1_is_done_when_left_at_quest_5_and_the_finale_goes_to_the_publisher(fake_repo: Path, no_model):
+    """Quest 5 may be put off (§3): left there, Mission 1 counts done. The finale's cart is launched by the town's
+    Publisher when it has one."""
+    checkpoint.ensure(fake_repo)
+    host = Host(fake_repo, auto_commit=False)
+    m = Mission(host.town)
+    m.begin()
+    out = host.command("town.build", {"type": "catapult"})
+    s = m.state
+    s.update({"quest": "gate", "done": ["board", "pool"], "built": {"gate": out}})
+    m._save(s)
+    m._reached = lambda s, q: True                                           # the gate passed (the flow's own test above)
+    assert m.tick() and m.state["finale"]["out"] == out
+    m._reached = lambda s, q: q != "two"
+    while m.tick():
+        pass
+    assert m.view()["quest"] == "two" and "mission_done" not in m.state
+    m.leave()
+    assert m.state["mission_done"] and "two" in m.state["skipped"]
+    machine = host.town.machine
+    machine.growth = {"stage": 1, "deeds": {}}
+    growth.settle(host.town.scroll, fake_repo, machine)
+    assert machine.growth["stage"] == 2 and "first-cart" in items.settle(host.town.scroll, fake_repo, machine)
     host.close()
 
 

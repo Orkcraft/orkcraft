@@ -141,6 +141,17 @@ DEEDS: tuple[Deed, ...] = (
     Deed("mission", "🛒", "Mission 1", "Finish Mission 1: raise the camp"),
     Deed("lean", "🪵", "A lean week", "Spend less wood per accepted result than the week before, nothing sent back more"),
 )
+# Mission 1's quests (first-mission.md §3): a deed for each one done. Listed only once earned: a person who skipped
+# the mission is owed none of them.
+MISSION_DEEDS: tuple[Deed, ...] = (
+    Deed("quest.board", "📋", "Work has a place", "Mission 1, quest 1"),
+    Deed("quest.pool", "🙋", "First answer", "Mission 1, quest 2"),
+    Deed("quest.gate", "🚧", "First pass", "Mission 1, quest 3"),
+    Deed("quest.office", "🎭", "Two faces", "Mission 1, quest 3½"),
+    Deed("quest.listen", "👂", "Ears outside", "Mission 1, quest 4"),
+    Deed("quest.two", "⚔️", "Two at once", "Mission 1, quest 5"),
+)
+ALL_DEEDS = DEEDS + MISSION_DEEDS
 
 # The mascot's stages by kin (realm/intents.py `Role.mascot`); stage 2 is the role's own nick.
 STAGE_NAMES = {           # a fantasy rank with the job in it: what the stage means, said with a grin
@@ -212,6 +223,7 @@ def deeds_done(scroll, root: Path, machine, changes: list[evolution.Change] | No
         done.add("mature")
     if any(b.autonomy == "free" for b in standing):
         done.add("trusted")
+    done |= {f"quest.{q}" for q in mission.load(root).get("done") or [] if q in mission.IDS}
     facts = facts if facts is not None else read_facts(root, now)
     if facts.get("chapters"):
         done.add("mission")
@@ -235,7 +247,8 @@ def chapters(root: Path) -> int:
         n = int(state.get("chapters") or 0)
     except (TypeError, ValueError):
         n = 0
-    return max(n, 1 if state.get("finished") else 0)
+    # Mission 1 is done when its last quest is, or when it is left after quest 4 (quest 5 may be put off, §3)
+    return max(n, 1 if state.get("finished") or state.get("mission_done") else 0)
 
 
 def lean_now(root: Path, now: dt.datetime) -> tuple[dict, int]:
@@ -386,7 +399,7 @@ def settle(scroll, root: Path, machine, now: dt.datetime | None = None) -> list[
     deeds = dict(grown.get("deeds") or {})
     facts = read_facts(root, now)
     done = deeds_done(scroll, root, machine, changes, now, facts)
-    for d in DEEDS:
+    for d in ALL_DEEDS:
         if d.id not in deeds and d.id in done:
             deeds[d.id] = now.date().isoformat()
             if not first:

@@ -193,3 +193,15 @@ console.log(JSON.stringify({
 """, tmp_path)
     assert out == {"onBuilding": False, "besideBuilding": False, "onTrack": False, "onPath": False, "onHome": False,
                    "onWall": False, "grass": True, "onItem": False, "snapped": True}
+
+
+def test_mission_1s_finale_leaves_along_the_line_to_its_buffer_stop(tmp_path):
+    """first-mission.md §9.2: with no Publisher, the passed drill rolls from the Review gate to the line's buffer stop."""
+    out = _run("""
+const B = [["board", "fields"], ["pool", "barracks"], ["gate", "loot"]].map(([id, type]) => ({ id, type }));
+const R = [["board", "pool"], ["pool", "gate"]].map(([from, to], i) => ({ id: "r" + i, from, to }));
+const L = C.lay(B, R, { b: 1.5, s: 1 }, size);
+console.log(JSON.stringify({ pts: L.routeOut("gate"), gate: [L.buildings.gate.stop.x, L.buildings.gate.stop.y],
+                             buffer: [L.buffer.x, L.buffer.y], none: L.routeOut("nowhere") }));
+""", tmp_path)
+    assert out["pts"][0] == out["gate"] and out["pts"][-1] == out["buffer"] and out["none"] is None

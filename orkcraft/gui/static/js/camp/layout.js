@@ -220,6 +220,7 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   const cells = new Map();
   for (const t of out.tiles) if (!t.siding) cells.set(`${t.x},${t.y}`, { ...t, exits: exitsOf(t.name, t.rot) });
   out.route = (fromId, toId) => route(out, cells, fromId, toId);
+  out.routeOut = (fromId) => route(out, cells, fromId, { stop: buffer });   // to the line's buffer stop, where it leaves
   return out;
 }
 
@@ -236,10 +237,11 @@ function decorAround(out, B) {
   return list;
 }
 
-/** A road's way for its carts: from its source's stop to its building's stop along the track, as points (the polyline
- *  through the tiles' middles, straight runs one segment). Null when either end is not on the town. */
+/** A road's way for its carts: from its source's stop to its building's stop (or to `toId` a place: `{ stop }`) along
+ *  the track, as points (the polyline through the tiles' middles, straight runs one segment). Null when either end is
+ *  not on the town. */
 function route(out, cells, fromId, toId) {
-  const a = out.buildings[fromId], z = out.buildings[toId];
+  const a = out.buildings[fromId], z = typeof toId === "string" ? out.buildings[toId] : toId;
   if (!a || !z) return null;
   const T = out.T;
   const cellOf = (p) => {

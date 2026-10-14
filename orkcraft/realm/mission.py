@@ -8,7 +8,8 @@ the roads and watches each quest's goal; the GUI draws the quest log in the Warc
     mission.save(root, state)
 
 Quests 1 to 3½ run no model and spend nothing: the drill is a practice task, called a drill on its card and in the
-Warchief's words (§2 rule 5). Quests 4 and 5 (real work) are not here yet.
+Warchief's words (§2 rule 5). Quests 4 and 5 are real work (core/mission.py). A deed for each quest and Mission 1's
+stage and first item: realm/growth.py.
 """
 from __future__ import annotations
 
@@ -32,12 +33,12 @@ class Quest:
 
 
 QUESTS = (
-    Quest("board", "Boss, the work needs somewhere to lie.", "Set up the Task board: a drill card waits on it.",
-          "fields", "Set up the Task board"),
+    Quest("board", "Boss, the work needs somewhere to lie.", "Set up the Task board: a drill cart waits on its "
+          "siding.", "fields", "Set up the Task board"),
     Quest("pool", "We need hands.", "Set up the Agent pool. An ork takes the drill and asks you one question: "
           "answer it in the console.", "barracks", "Set up the Agent pool"),
-    Quest("gate", "Nothing leaves without a check.", "Set up the Review gate. The drill's result waits there: "
-          "pass it.", "loot", "Set up the Review gate"),
+    Quest("gate", "Nothing leaves without a check.", "Set up the Review gate. The drill's cart stops at its barrier: "
+          "lift it to pass the cart.", "loot", "Set up the Review gate"),
     Quest("office", "Boss, in working hours the camp can look like an office.",
           "Switch to the Office look and back to Camp: the same town, the same carts and orks."),
     Quest("listen", "Listen to what goes on outside.", "Set up External listeners on GitHub: your notifications "
@@ -48,6 +49,14 @@ QUESTS = (
 )
 IDS = tuple(q.id for q in QUESTS)
 DONE_SAYS = "The camp stands and works. The rest is yours: send cards, answer the orks, pass what is good."
+LIFT = "Lift the barrier"          # quest 3's press once the drill waits at the gate: the person's pass
+# The finale after quest 3 (first-mission.md §9.2): the passed drill cart rolls on and is launched, or leaves along the
+# line; a drill, so nothing leaves the town and it costs nothing.
+FINALE_S = 14.0
+FINALE_SAYS = "The barrier is up: the drill cart rolls on. A drill, so nothing left the town."
+FINALE_CHIP = "Drill · free"
+# Mission 1 done (the quests up to 4; quest 5 may be put off, §3): the portrait's stage 2 opens by it (v3-prompts.md
+# §14), and the first item is earned, for the inventory to read (realm/growth.py `ITEMS`).
 # Quest 5 is real work: its price is said before the press (core/mission.py `two_cost`).
 TWO_BUDGET_USD = 2.0
 TWO_COST = ("Real work on {tool}: two runs, each on its own branch, with the Security reviewer on. No new run "

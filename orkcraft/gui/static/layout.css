@@ -421,6 +421,8 @@ body { user-select: text; -webkit-user-select: text; }
 
 .gui-toasts { position: fixed; right: var(--space-4); bottom: calc(56px + var(--space-4)); z-index: 10;
   display: flex; flex-direction: column; gap: var(--space-2); max-width: 420px; }
+/* a quest log or a building's setup in the Warchief's line: the toasts stand above it, never over its press */
+body:has(.gui-warchief__setup) .gui-toasts { bottom: calc(56px + 50vh + var(--space-6, 24px)); }
 .gui-toasts .ok-toast { cursor: default; user-select: text; -webkit-user-select: text; }
 .gui-toast__text { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; cursor: text; }
 .gui-toast__acts { flex: none; display: inline-flex; gap: 2px; align-self: flex-start; }
@@ -766,7 +768,8 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
   border-radius: var(--radius-full); background: var(--alert); cursor: pointer; }
 .gui-portrait__menu { position: fixed; left: var(--space-2); top: calc(var(--bar-hud) + 8px); z-index: 60; width: 340px; display: flex;
   flex-direction: column; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--panel);
-  box-shadow: 0 0 0 2px var(--frame-focus), var(--shadow-window); color: var(--ink); cursor: auto; }
+  box-shadow: 0 0 0 2px var(--frame-focus), var(--shadow-window); color: var(--ink); cursor: auto;
+  max-height: calc(100vh - var(--bar-hud) - 80px); overflow-y: auto; box-sizing: border-box; }   /* never past the window */
 [data-look="office"] .gui-portrait__menu { box-shadow: 0 0 0 1px var(--frame), var(--shadow-window); border-radius: var(--radius-lg); }
 .gui-portrait__menu .gui-you { margin-bottom: 0; flex-wrap: wrap; }
 .gui-portrait__menu .gui-you__who { flex: 1 1 140px; }

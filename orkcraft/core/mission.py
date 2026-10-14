@@ -3,7 +3,8 @@ its road, and is done when its goal holds — looked at on every tick, so it not
 
     m = Mission(town)
     m.begin()        # quest 1 now (the onboarding's "Raise the camp yourself")
-    m.raise_it()     # the quest's one press: its building on its plot, its road, its drill
+    m.raise_it()     # the quest's one press: its building on its plot, its road, its drill (quest 3, once the
+                     # drill waits at the gate: the barrier lifted, then the finale: first-mission.md §9)
     m.tick()         # True when the mission moved on (a quest done)
     m.leave()        # skipped: the quest under way counted as skipped, the town stays as it stands
     m.view()         # what the quest log draws, None when no mission is under way
@@ -79,6 +80,8 @@ class Mission:
         q = s.get("quest", "")
         s["on"], s["quest"] = False, ""
         s.setdefault("skipped", []).append(q)
+        if "listen" in (s.get("done") or []):                 # quest 5 may be put off: Mission 1 is done
+            s.setdefault("mission_done", _now().isoformat(timespec="seconds"))
         self._save(s)
         self._record(event_log.QUEST_SKIPPED, quest=q)
         self._end_drill(s, keep=True)
@@ -91,6 +94,8 @@ class Mission:
         q = mission.quest(s.get("quest", "")) if s.get("on") else None
         if q is not None and q.id == "two":
             return self._send_two(s)
+        if q is not None and q.id == "gate" and (s.get("built") or {}).get("gate"):
+            return self._lift(s)
         if q is None or not q.raises or (s.get("built") or {}).get(q.id) or self._asks_hooks(s, q.id):
             return ""
         spec = buildings.type_spec(self.town, q.raises)
@@ -243,6 +248,46 @@ class Mission:
         if task is not None and task.status == "done":       # it ended before the gate stood: sent again, now
             self.town.worker(pool).emit("pool.done", mission.DRILL_DONE, mission.DRILL_TITLE, ref=s.get("ref", ""))
 
+    # -- quest 3's pass: the barrier lifted, and the finale (first-mission.md §9) ----------------------
+
+    def _gate(self, s: dict):
+        gate = (s.get("built") or {}).get("gate", "")
+        return self.town.worker(gate) if gate and self.town.scroll.building(gate) is not None else None
+
+    def _held(self, s: dict):
+        """The drill's cart waiting at the gate's barrier, None when it is not there."""
+        w = self._gate(s)
+        return w.queue.by_ref(s.get("ref", "")) if w is not None and s.get("ref") else None
+
+    def _lift(self, s: dict) -> str:
+        """The person's pass: the barrier lifted for the drill. It goes on no road (a drill: nothing leaves the town,
+        and the pool is taught nothing by it); the finale draws it rolling on. The gate's id, "" when nothing waits."""
+        item, w = self._held(s), self._gate(s)
+        if item is None or w is None:
+            return ""
+        s["held"] = True                          # it was there, though no tick saw it yet: quest 3 is done
+        self._save(s)
+        w.queue.accept(item)
+        w.refresh()
+        return w.building_id
+
+    def _out(self) -> str:
+        """The town's Publisher, where the finale's cart is launched; "" when it has none (it leaves along the line)."""
+        return next((b.id for b in self.town.scroll.buildings
+                     if not b.demolished and buildings.ui_type(self.town, b.id) == "catapult"), "")
+
+    def _finale(self, s: dict) -> dict | None:
+        f = s.get("finale") or {}
+        try:
+            age = (_now() - dt.datetime.fromisoformat(f["at"])).total_seconds()
+        except (KeyError, TypeError, ValueError):
+            return None
+        if not 0 <= age < mission.FINALE_S or self.town.scroll.building(f.get("gate", "")) is None:
+            return None
+        out = f.get("out", "")
+        return {"id": f["at"], "gate": f["gate"], "out": out if self.town.scroll.building(out) is not None else "",
+                "age": round(age, 2), "chip": mission.FINALE_CHIP, "says": mission.FINALE_SAYS}
+
     # -- the goals ------------------------------------------------------------------------------------
 
     def _drill_task(self, s: dict):
@@ -311,6 +356,9 @@ class Mission:
         s.setdefault("done", []).append(q)
         self._record(event_log.QUEST_DONE, quest=q, seconds=seconds)
         nxt = mission.after(q)
+        if q == "gate":                                          # the passed drill rolls on (the finale)
+            s["finale"] = {"at": _now().isoformat(timespec="milliseconds"),
+                           "gate": (s.get("built") or {}).get("gate", ""), "out": self._out()}
         if q == "pool" or not nxt:
             self._end_drill(s, keep=q == "pool")
         if nxt:
@@ -318,6 +366,7 @@ class Mission:
         else:
             s["on"], s["quest"] = False, ""
             s["finished"] = True
+            s.setdefault("mission_done", _now().isoformat(timespec="seconds"))
         self._save(s)
         return True
 
@@ -351,7 +400,9 @@ class Mission:
         built = (s.get("built") or {}).get(q.id, "")
         out = {"quest": q.id, "n": LABELS.get(q.id, ""), "of": LABELS[mission.IDS[-1]], "says": q.says,
                "goal": q.goal, "cost": q.cost, "press": "" if built else q.press, "built": built,
-               "done": list(s.get("done") or []), "hooks": None, "needs": ""}
+               "done": list(s.get("done") or []), "hooks": None, "needs": "", "finale": self._finale(s)}
+        if q.id == "gate" and built and self._held(s) is not None:
+            out["press"] = mission.LIFT
         if self._asks_hooks(s, q.id):
             out["hooks"], out["press"] = self._hooks_view(), ""
         if q.id == "listen" and s.get("looking"):

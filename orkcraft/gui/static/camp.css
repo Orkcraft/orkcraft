@@ -146,6 +146,11 @@
   60% { visibility: visible; transform: translate(calc(var(--fly-x) * .6), var(--fly-y)); opacity: 1; }
   100% { visibility: visible; transform: translate(var(--fly-x), calc(var(--fly-y) * .4)); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .gui-camp__launch { animation-duration: .01s; } }
+/* Mission 1's finale: the passed drill rolls on with its chip above it (js/camp/carts.js Finale) */
+.gui-camp__world.is-following { transition: transform .6s ease-out; }
+@media (prefers-reduced-motion: reduce) { .gui-camp__world.is-following { transition: none; } }
+.gui-camp__finale .gui-camp__cart.is-drill { z-index: 1400; pointer-events: none; }
+.gui-camp__launch-chip.is-drill { left: 0; transform: translateX(-50%); }
 .gui-camp__steward { left: 340px; right: auto; }
 .gui-camp__steward p { margin: 6px 0; }
 .gui-camp .gui-empty { pointer-events: none; }                      /* never over Build's rows */

@@ -100,7 +100,7 @@ class Growth:
                 "name": growth.stage_name(profile, stage),
                 "role": role.title, "next": growth.STAGE_NEXT.get(stage, ""),
                 "deeds": [{"id": d.id, "icon": d.icon, "title": d.title, "hint": d.hint, "done": done.get(d.id, "")}
-                          for d in growth.DEEDS]}
+                          for d in growth.DEEDS + tuple(x for x in growth.MISSION_DEEDS if x.id in done)]}
 
     def items(self) -> dict[str, Any]:
         """The inventory (what the person may place) and what stands on the open orkspace's grass."""
