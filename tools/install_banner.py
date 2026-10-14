@@ -22,7 +22,7 @@ SPRITE = ROOT / "design-system" / "sprites" / "orks" / "warchief.png"
 SCRIPT = ROOT / "install.sh"
 BEGIN, END = "# -- banner: tools/install_banner.py --", "# -- end of banner --"
 # Beside him, on the rows of his face (the camp's voice: the Warchief speaks first, then the facts).
-WORDS = {1: r"\033[1mOrkcraft\033[0m", 2: "The Warchief raises your camp", 3: r"\033[2muv · Python · Orkcraft\033[0m"}
+WORDS = {1: r"\033[1mOrkline\033[0m", 2: "The Warchief raises your camp", 3: r"\033[2muv · Python · Orkline\033[0m"}
 WIDE = 48            # the columns his words need beside him; below it he stands alone
 ROWS = (0, 3, 5, 7, 9)   # of his ten: the crown's points, the ears, the eyes, the tusks, the chin
 

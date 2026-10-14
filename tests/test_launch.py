@@ -29,7 +29,7 @@ def test_a_window_toolkit_that_cannot_start_falls_back_to_the_browser(fake_repo,
     assert launch.run(fake_repo, auto_commit=False) == 0
     assert opened == [servers[0].url]
     out = capsys.readouterr()
-    assert "no window here" in out.err and "Orkcraft is at" in out.out
+    assert "no window here" in out.err and "Orkline is at" in out.out
 
 
 def test_linux_without_gtk_or_qt_opens_the_browser_without_asking_pywebview(monkeypatch):

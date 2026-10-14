@@ -47,20 +47,20 @@ def run(root: Path, args: argparse.Namespace, tier_words: dict[str, str]) -> int
         if value is not None:
             budget[key] = value
     if not 1 <= int(budget["repeat"]) <= bench.REPEAT_MAX:
-        sys.stderr.write(f"orkcraft error: --repeat is 1 to {bench.REPEAT_MAX}\n")
+        sys.stderr.write(f"orkline error: --repeat is 1 to {bench.REPEAT_MAX}\n")
         return 2
     tier = tier_words.get(str(budget["tier"]).lower(), str(budget["tier"]).lower())
     if tier and tier not in tier_words.values():
-        sys.stderr.write("orkcraft error: --tier is novice, seasoned or veteran\n")
+        sys.stderr.write("orkline error: --tier is novice, seasoned or veteran\n")
         return 2
     known = [s.id for s in check.SCENARIOS]
     if any(s not in known for s in args.scenario):
-        sys.stderr.write(f"orkcraft error: the scenarios are {', '.join(known)}\n")
+        sys.stderr.write(f"orkline error: the scenarios are {', '.join(known)}\n")
         return 2
     tool = str(budget["tool"] or "main")
     scenarios = check.picked(args.scenario) if args.only != "idle" else []
     runs = sum(len(s.cases) for s in scenarios if s.type and s.type != check.LOOK) * int(budget["repeat"])
-    print(f"Orkcraft check: {runs} runs on {tool}{' (' + budget['tier'] + ')' if budget['tier'] else ''}, each "
+    print(f"Orkline check: {runs} runs on {tool}{' (' + budget['tier'] + ')' if budget['tier'] else ''}, each "
           f"building run stopped at ${budget['max_spend']:.2f}; the bare tool's answers already kept are not asked again"
           + ("" if args.only == "scenarios" else f"; then a quiet demo town ticked for {budget['idle_hours']} hours "
                                                   "with its model calls counted (none is made)") + ".", flush=True)
@@ -203,10 +203,10 @@ def _export_calls(src: Path, dst: Path, lines: list[dict] | None = None, prefix:
 
 def readme(series: str, green: bool, report: str) -> str:
     """What the folder holds and how to work through it: the brief an agent reads before anything else."""
-    return f"""# Orkcraft check {series}: {'GREEN' if green else 'RED'}
+    return f"""# Orkline check {series}: {'GREEN' if green else 'RED'}
 
 This folder is everything one `orkcraft check` saw. It is made to be read by an agent (Claude Code, overnight) that
-finds why a line is red or costly and changes Orkcraft so the next check is better.
+finds why a line is red or costly and changes Orkline so the next check is better.
 
 ## What is where
 
@@ -275,7 +275,7 @@ def replay(root: Path, stamp: str, scenarios: list[str] | None = None) -> int:
     except (OSError, ValueError):
         data = {}
     if not data:
-        sys.stderr.write(f"orkcraft error: no check {stamp!r} to play back (.orkcraft/check/<stamp>/results.json)\n")
+        sys.stderr.write(f"orkline error: no check {stamp!r} to play back (.orkcraft/check/<stamp>/results.json)\n")
         return 2
     series = dt.datetime.now().strftime("%Y%m%d-%H%M%S") + "-replay"
     rows, same_all = [], True

@@ -1,12 +1,12 @@
 #!/bin/sh
-# Orkcraft's installer for macOS and Linux (docs/install.md):
+# Orkline's installer for macOS and Linux (docs/install.md):
 #
 #   curl -fsSL https://orkcraft.dev/install.sh | sh
 #   curl -fsSL https://orkcraft.dev/install/<role>/<look> | sh     # the town opens on that class and look
 #
-# It puts uv in place (when it is not there yet), a Python for Orkcraft, and Orkcraft itself as a uv
+# It puts uv in place (when it is not there yet), a Python for Orkline, and Orkline itself as a uv
 # tool, then looks for the window toolkit and the AI tools. Each step is written to
-# ~/.orkcraft/install.log. If you say yes, each step's outcome goes to Orkcraft's usage proxy as well:
+# ~/.orkcraft/install.log. If you say yes, each step's outcome goes to Orkline's usage proxy as well:
 # which step, whether it worked, how long it took (a bucket) and, when it failed, the kind of error
 # (a word from a closed list). Never a path, a name, an error's text or your IP address.
 #
@@ -39,26 +39,26 @@ while [ $# -gt 0 ]; do
     --no-report) REPORT=0 ;;
     --no-open) OPEN=0 ;;
     --role|--look)
-      [ $# -ge 2 ] || { echo "orkcraft install: $1 needs a value" >&2; exit 2; }
-      case "$2" in *[!a-z0-9_-]*|"") echo "orkcraft install: $1 takes a word such as engineer or camp" >&2; exit 2 ;; esac
+      [ $# -ge 2 ] || { echo "orkline install: $1 needs a value" >&2; exit 2; }
+      case "$2" in *[!a-z0-9_-]*|"") echo "orkline install: $1 takes a word such as engineer or camp" >&2; exit 2 ;; esac
       if [ "$1" = --role ]; then ROLE="$2"; else LOOK="$2"; fi
       shift ;;
     -h|--help) echo "${USAGE}"; echo "${REPO}/blob/main/docs/install.md"; exit 0 ;;
-    *) echo "orkcraft install: unknown option $1 (${USAGE})" >&2; exit 2 ;;
+    *) echo "orkline install: unknown option $1 (${USAGE})" >&2; exit 2 ;;
   esac
   shift
 done
-case "$LOOK" in ""|camp|office) ;; *) echo "orkcraft install: --look is camp or office" >&2; exit 2 ;; esac
+case "$LOOK" in ""|camp|office) ;; *) echo "orkline install: --look is camp or office" >&2; exit 2 ;; esac
 
-mkdir -p "$LOG_DIR" || { echo "orkcraft install: cannot write ${LOG_DIR}" >&2; exit 1; }
+mkdir -p "$LOG_DIR" || { echo "orkline install: cannot write ${LOG_DIR}" >&2; exit 1; }
 : > "$LOG"
 
 # -- banner: tools/install_banner.py --
 banner() {                                    # $1: the terminal's width in columns
   printf '     \033[0m\033[48;5;221m \033[0m \033[0m\033[48;5;221m  \033[0m \033[0m\033[48;5;221m \033[0m   \033[0m'; printf '\n'
-  printf '  \033[0m\033[48;5;70m \033[0m \033[0m\033[48;5;70m        \033[0m \033[0m\033[48;5;70m \033[0m'; [ "$1" -ge 48 ] && printf '   \033[1mOrkcraft\033[0m'; printf '\n'
+  printf '  \033[0m\033[48;5;70m \033[0m \033[0m\033[48;5;70m        \033[0m \033[0m\033[48;5;70m \033[0m'; [ "$1" -ge 48 ] && printf '   \033[1mOrkline\033[0m'; printf '\n'
   printf '   \033[0m\033[48;5;70m  \033[0m\033[48;5;234m  \033[0m\033[48;5;70m  \033[0m\033[48;5;234m  \033[0m\033[48;5;70m  \033[0m \033[0m'; [ "$1" -ge 48 ] && printf '   The Warchief raises your camp'; printf '\n'
-  printf '    \033[0m\033[48;5;70m \033[0m\033[48;5;253m \033[0m\033[48;5;70m    \033[0m\033[48;5;253m \033[0m\033[48;5;70m \033[0m  \033[0m'; [ "$1" -ge 48 ] && printf '   \033[2muv · Python · Orkcraft\033[0m'; printf '\n'
+  printf '    \033[0m\033[48;5;70m \033[0m\033[48;5;253m \033[0m\033[48;5;70m    \033[0m\033[48;5;253m \033[0m\033[48;5;70m \033[0m  \033[0m'; [ "$1" -ge 48 ] && printf '   \033[2muv · Python · Orkline\033[0m'; printf '\n'
   printf '     \033[0m\033[48;5;70m      \033[0m   \033[0m'; printf '\n'
 }
 # -- end of banner --
@@ -157,7 +157,7 @@ fail() {                                      # fail STEP: say what broke and ho
   FAILED="$1"
   finish false
   say ""
-  say "Orkcraft did not install: the ${1} step failed. What it said is in ${LOG}."
+  say "Orkline did not install: the ${1} step failed. What it said is in ${LOG}."
   say "Tell us, with that file attached: ${REPO}/issues/new?title=Install%20failed%3A%20${1}%20(${OS}%20${ARCH})"
   exit 1
 }
@@ -180,7 +180,7 @@ step() {                                      # step NAME EXTRA_PROPS COMMAND…
 
 # -- the steps ---------------------------------------------------------------------------------
 
-say "Orkcraft installer (${OS} ${ARCH}); the log: ${LOG}"
+say "Orkline installer (${OS} ${ARCH}); the log: ${LOG}"
 if [ "$OS" = unknown ]; then
   say "This installer is for macOS and Linux. On Windows: pipx install \"orkcraft[gui] @ git+${REPO}\""
   exit 1
@@ -209,7 +209,7 @@ else
   uv_works || { say "uv was put in ~/.local/bin but does not answer"; fail uv; }
 fi
 
-say "Python ${PYTHON}: making sure there is one for Orkcraft…"
+say "Python ${PYTHON}: making sure there is one for Orkline…"
 step python '' uv python install "$PYTHON" || fail python
 
 # A git checkout when git works (so `uv tool upgrade` follows main), else GitHub's archive of main.
@@ -223,7 +223,7 @@ if [ -n "${ORKCRAFT_INSTALL_FROM:-}" ]; then   # a checkout of its own (CI tests
   SOURCE=local; SPEC="orkcraft[gui] @ file://$(cd "$ORKCRAFT_INSTALL_FROM" && pwd)"
 elif [ "$SOURCE" = git ]; then SPEC="orkcraft[gui] @ git+${REPO}"
 else SPEC="orkcraft[gui] @ ${REPO}/archive/refs/heads/main.tar.gz"; fi
-say "Orkcraft: installing from ${SOURCE}…"
+say "Orkline: installing from ${SOURCE}…"
 step package ", \"source\": \"${SOURCE}\"" uv tool install --force --python "$PYTHON" "$SPEC" || fail package
 
 uv tool update-shell >> "$LOG" 2>&1 || true   # ~/.local/bin on the PATH of new terminals
@@ -248,7 +248,7 @@ for t in claude codex agy; do
 done
 event install_step "\"step\": \"agents\", \"ok\": true, \"seconds\": \"<10\", \"tools\": [${TOOLS}]"
 if [ -n "$TOOLS" ]; then say "AI tools found: $(echo "$TOOLS" | tr -d '"')"
-else say "No AI tool found yet (claude, codex or agy): Orkcraft says how to add one when it opens."; fi
+else say "No AI tool found yet (claude, codex or agy): Orkline says how to add one when it opens."; fi
 
 # One answer for both: what was said here is the app's answer too, with the same install id.
 if [ "$ASKED" = 1 ]; then
@@ -258,7 +258,7 @@ fi
 
 finish true
 say ""
-say "Orkcraft is installed. Next time: open a new terminal, go to a project and run: orkcraft"
+say "Orkline is installed. Next time: open a new terminal, go to a project and run: orkline"
 
 # The town opens now, on the class and look picked on orkcraft.dev, when there is a terminal to hold it.
 if [ "$OPEN" = 1 ] && [ -t 1 ] && (: </dev/tty) 2>/dev/null; then
@@ -268,5 +268,5 @@ if [ "$OPEN" = 1 ] && [ -t 1 ] && (: </dev/tty) 2>/dev/null; then
   say "Opening the town…"
   exec "$ORKCRAFT" "$@" </dev/tty
 elif [ -n "$ROLE$LOOK" ]; then
-  say "To open it on your pick: orkcraft${ROLE:+ --role $ROLE}${LOOK:+ --look $LOOK}"
+  say "To open it on your pick: orkline${ROLE:+ --role $ROLE}${LOOK:+ --look $LOOK}"
 fi

@@ -151,7 +151,7 @@ def test_the_script_is_plain_posix_sh():
 def test_a_pick_from_orkcraft_dev_is_said_back_when_the_town_cannot_open_here(tmp_path):
     done, events, home = _run(tmp_path, "--no-report", "--role", "engineer", "--look", "office")
     assert done.returncode == 0, done.stdout + done.stderr
-    assert "To open it on your pick: orkcraft --role engineer --look office" in done.stdout
+    assert "To open it on your pick: orkline --role engineer --look office" in done.stdout
     assert "\x1b[" not in done.stdout                  # no terminal: no Warchief in colour, no escapes in the log
 
 
@@ -210,4 +210,4 @@ console.log(JSON.stringify(out));
     done = subprocess.run(["sh", str(served)], env={"HOME": str(home), "PATH": f"{fake}:/usr/bin:/bin", "CI": "1"},
                           capture_output=True, text=True, timeout=60, start_new_session=True)
     assert done.returncode == 0, done.stdout + done.stderr
-    assert "To open it on your pick: orkcraft --role peon --look office" in done.stdout
+    assert "To open it on your pick: orkline --role peon --look office" in done.stdout

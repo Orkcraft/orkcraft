@@ -1,4 +1,4 @@
-"""Command-line interface for orkcraft: the town in its window (the default) and the headless subcommands.
+"""Command-line interface for Orkline: the town in its window (the default) and the headless subcommands.
 The terminal UI is gone (docs/design/calm-town.md §9); `orkcraft tui` only says so."""
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from orkcraft import __version__
 from orkcraft.config import NOT_A_PROJECT_HINT, default_town_root, find_project_root
 
 
-TUI_GONE = ("orkcraft: the terminal UI was removed; the town lives in its window now: run orkcraft "
-            "(orkcraft gui --browser opens it in the browser)\n")
+TUI_GONE = ("orkline: the terminal UI was removed; the town lives in its window now: run orkline "
+            "(orkline gui --browser opens it in the browser)\n")
 
 
 def _gui(quiet: bool = False):
@@ -22,7 +22,7 @@ def _gui(quiet: bool = False):
         from orkcraft.gui import launch
     except ImportError as e:
         if not quiet:
-            sys.stderr.write(f"orkcraft error: the town's window needs {e.name}: pip install 'orkcraft[gui]'\n")
+            sys.stderr.write(f"orkline error: the town's window needs {e.name}: pip install 'orkcraft[gui]'\n")
         return None
     return launch
 
@@ -57,7 +57,7 @@ def _usage(action: str, install_id: str | None = None) -> int:
     from orkcraft.core import usage
     machine = settings.load()
     if install_id is not None and not usage.ID.fullmatch(install_id):
-        print("orkcraft usage: --id must be 32 hex digits", file=sys.stderr)
+        print("orkline usage: --id must be 32 hex digits", file=sys.stderr)
         return 2
     if action != "status":
         usage.share(machine, action == "on", install_id)
@@ -110,29 +110,29 @@ def _update(action: str | None) -> int:
     try:
         found = updates.offer(updates.check(force=True, timeout=15.0).manifest)
     except Exception as e:
-        sys.stderr.write(f"orkcraft error: the list of updates cannot be read ({e})\n")
+        sys.stderr.write(f"orkline error: the list of updates cannot be read ({e})\n")
         return 1
     way = updates.method()
     if found is None:
-        print(f"orkcraft {__version__} is the latest")
+        print(f"Orkline {__version__} is the latest")
         return 0
-    print(f"orkcraft {found.version} is out{' — a critical update' if found.critical else ''} "
+    print(f"Orkline {found.version} is out{' — a critical update' if found.critical else ''} "
           f"(you have {__version__})")
     for line in found.notes:
         print(f"  {line}")
     if action == "check":
-        print(f"install it: orkcraft update ({way.describe()})" if way.can else way.why)
+        print(f"install it: orkline update ({way.describe()})" if way.can else way.why)
         return 0
     if not way.can:
-        sys.stderr.write(f"orkcraft error: {way.why}\n")
+        sys.stderr.write(f"orkline error: {way.why}\n")
         return 1
     print(f"installing ({way.describe()})…")
     result = updates.install(way)
     updates.remember(result, found.version)
     if not result.ok:
-        sys.stderr.write(f"orkcraft error: the update did not install:\n{result.output}\n")
+        sys.stderr.write(f"orkline error: the update did not install:\n{result.output}\n")
         return 1
-    print(f"installed orkcraft {result.version or found.version}; open the town again to run it")
+    print(f"installed Orkline {result.version or found.version}; open the town again to run it")
     return 0
 
 
@@ -149,7 +149,7 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
     from orkcraft.core import bench as building_bench
     from orkcraft.realm import bench, lexicon
     if args.type not in building_bench.TYPES:
-        sys.stderr.write(f"orkcraft error: the Test bench runs {', '.join(building_bench.TYPES)} so far\n")
+        sys.stderr.write(f"orkline error: the Test bench runs {', '.join(building_bench.TYPES)} so far\n")
         return 2
     cases = bench.cases(root, args.type)
     if args.cases_file:                                     # a Test bench building's own cases (realm/lab_cases.py)
@@ -165,20 +165,20 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
             print(f"{r.id}: " + " · ".join(f"{s.name} {bench.verdict(s)}, {s.seconds:.0f} s, ${s.cost:.2f}" for s in sides))
         return 0
     if args.level and args.level not in bench.LEVELS:
-        sys.stderr.write(f"orkcraft error: --level is {', '.join(bench.LEVELS)}\n")
+        sys.stderr.write(f"orkline error: --level is {', '.join(bench.LEVELS)}\n")
         return 2
     picked = bench.series(cases, args.case, args.level)
     if not picked:
         known = ", ".join(c.id for c in cases) or "none"
-        sys.stderr.write(f"orkcraft error: no case {args.case or args.level!r}; the {args.type} cases: {known}\n")
+        sys.stderr.write(f"orkline error: no case {args.case or args.level!r}; the {args.type} cases: {known}\n")
         return 2
     tier = TIER_WORDS.get(args.tier.lower(), args.tier.lower())
     if tier and tier not in TIER_WORDS.values():
-        sys.stderr.write("orkcraft error: --tier is novice, seasoned or veteran\n")
+        sys.stderr.write("orkline error: --tier is novice, seasoned or veteran\n")
         return 2
     max_spend = bench.DEFAULT_MAX_SPEND if args.max_spend is None else args.max_spend
     if not 1 <= args.repeat <= bench.REPEAT_MAX:
-        sys.stderr.write(f"orkcraft error: --repeat is 1 to {bench.REPEAT_MAX}\n")
+        sys.stderr.write(f"orkline error: --repeat is 1 to {bench.REPEAT_MAX}\n")
         return 2
     sides = (args.only,) if args.only else ("building", "bare")
     word = "chain" if args.type == "chain" else lexicon.term(args.type)
@@ -202,7 +202,7 @@ def _bench(root: Path, args: argparse.Namespace) -> int:
                                                     chain=chain, bare_tool=args.bare_tool, bare_tier=bare_tier,
                                                     fresh=args.fresh, attempt=attempt, series=series)
             except (ValueError, RuntimeError, OSError) as e:      # a chain file that does not read is a ValueError
-                sys.stderr.write(f"orkcraft error: {e}\n")
+                sys.stderr.write(f"orkline error: {e}\n")
                 return 1
             reports.append(report)
             print()
@@ -234,17 +234,23 @@ def _mcp_cassette(args: argparse.Namespace) -> int:
         return 0
     launch = mcp.launch(args.server, repo=args.repo)
     if launch is None:
-        sys.stderr.write(f"orkcraft error: no local MCP server {args.server!r} to record\n")
+        sys.stderr.write(f"orkline error: no local MCP server {args.server!r} to record\n")
         return 2
     return cassette.record(tape, [launch.command, *launch.args], {**os.environ, **dict(launch.env)}, sys.stdin, sys.stdout)
 
 
+def _prog() -> str:
+    """The command as typed: `orkline`, or `orkcraft`, the same command kept for every machine installed before."""
+    name = Path(sys.argv[0]).name
+    return name if name in ("orkline", "orkcraft") else "orkline"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="orkcraft",
+        prog=_prog(),
         description="Many coding agents in one project, as a real-time strategy game",
     )
-    parser.add_argument("--version", action="version", version=f"orkcraft {__version__}")
+    parser.add_argument("--version", action="version", version=f"Orkline {__version__}")
     parser.add_argument("--repo", type=Path, default=None, help="Path to project root")
     parser.add_argument("--no-commit", action="store_true", help="Disable §10 per-action git commits")
     parser.add_argument("--layout", type=Path, default=None,
@@ -348,7 +354,7 @@ def main(argv: list[str] | None = None) -> int:
         role_id = intents.role_id_of(args.role)
         if role_id is None:
             known = ", ".join([*intents.CLASSES, *(r.id for r in intents.ROLES)])
-            sys.stderr.write(f"orkcraft error: no role {args.role!r}; one of: {known}\n")
+            sys.stderr.write(f"orkline error: no role {args.role!r}; one of: {known}\n")
             return 2
         machine_settings.preset_role(role_id, kin=intents.class_kin(args.role))   # gnome: the GUI asks which gnome
 
@@ -361,7 +367,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             root = find_project_root(args.repo)
         except FileNotFoundError as e:
-            sys.stderr.write(f"orkcraft error: {e}\n{NOT_A_PROJECT_HINT}\n")
+            sys.stderr.write(f"orkline error: {e}\n{NOT_A_PROJECT_HINT}\n")
             return 1
         try:
             if args.action == "install":
@@ -377,7 +383,7 @@ def main(argv: list[str] | None = None) -> int:
                 for folder in hooks_install.project_folders(root):
                     paths += hooks_install.uninstall_all(folder, agy_global=False)
         except ValueError as e:
-            sys.stderr.write(f"orkcraft error: {e}\n")
+            sys.stderr.write(f"orkline error: {e}\n")
             return 1
         for path in paths:
             print(f"{args.action}ed: {path}")
@@ -405,7 +411,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             root = find_project_root(args.repo)
         except FileNotFoundError as e:
-            sys.stderr.write(f"orkcraft error: {e}\n{NOT_A_PROJECT_HINT}\n")
+            sys.stderr.write(f"orkline error: {e}\n{NOT_A_PROJECT_HINT}\n")
             return 1
         print(calibrate.render(calibrate.report(root, args.days)))
         return 0
@@ -417,7 +423,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             root = find_project_root(args.repo)
         except FileNotFoundError as e:
-            sys.stderr.write(f"orkcraft error: {e}\n{NOT_A_PROJECT_HINT}\n")
+            sys.stderr.write(f"orkline error: {e}\n{NOT_A_PROJECT_HINT}\n")
             return 1
         return _bench(root, args)
 
@@ -425,7 +431,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             root = find_project_root(args.repo)
         except FileNotFoundError as e:
-            sys.stderr.write(f"orkcraft error: {e}\n{NOT_A_PROJECT_HINT}\n")
+            sys.stderr.write(f"orkline error: {e}\n{NOT_A_PROJECT_HINT}\n")
             return 1
         from orkcraft import check_cli
         return check_cli.run(root, args, TIER_WORDS)
@@ -444,7 +450,7 @@ def main(argv: list[str] | None = None) -> int:
             root = demo.build(Path(args.demo) if args.demo else demo.default_dir(args.demo_set),
                               reset=args.demo_reset, set_name=args.demo_set)
         except ValueError as e:
-            sys.stderr.write(f"orkcraft error: {e}\n")
+            sys.stderr.write(f"orkline error: {e}\n")
             return 1
         launch = _gui()
         if launch is None:
@@ -455,12 +461,12 @@ def main(argv: list[str] | None = None) -> int:
         repo_root = find_project_root(args.repo)
     except FileNotFoundError as e:
         if args.repo is not None:          # a project was named: it has to be one
-            sys.stderr.write(f"orkcraft error: {e}\n")
+            sys.stderr.write(f"orkline error: {e}\n")
             return 1
         repo_root = default_town_root()    # opened outside any project (often ~ right after install)
         repo_root.mkdir(parents=True, exist_ok=True)
-        sys.stderr.write(f"orkcraft: no project here, so the town is in {repo_root}. "
-                         "To open a project's town: cd <project> && orkcraft, or orkcraft --repo <project>.\n")
+        sys.stderr.write(f"orkline: no project here, so the town is in {repo_root}. "
+                         "To open a project's town: cd <project> && orkline, or orkline --repo <project>.\n")
 
     launch = _gui()
     if launch is None:

@@ -15,7 +15,7 @@ from orkcraft.gui import folders
 from orkcraft.gui.host import Host
 from orkcraft.gui.server import Server
 
-TITLE = "Orkcraft"
+TITLE = "Orkline"
 SIZE = (1440, 900)
 
 
@@ -28,7 +28,7 @@ def run(repo_root: Path | None = None, auto_commit: bool | None = None, layout_f
     host.awake.apply(host.town.machine.keep_awake)
     done = lambda: updates.RESTART if host.updates.restart_wanted else 0   # noqa: E731
     if not browser and not _toolkit():
-        sys.stderr.write("orkcraft: no window here (GTK or Qt for Python is not installed); opening the browser\n")
+        sys.stderr.write("orkline: no window here (GTK or Qt for Python is not installed); opening the browser\n")
         browser = True
     if not browser:
         try:
@@ -45,7 +45,7 @@ def run(repo_root: Path | None = None, auto_commit: bool | None = None, layout_f
     try:
         webview.start()
     except Exception as e:                       # pywebview is there, a toolkit for it is not (Linux without GTK or Qt)
-        sys.stderr.write(f"orkcraft: no window here ({e}); opening the browser\n")
+        sys.stderr.write(f"orkline: no window here ({e}); opening the browser\n")
         return _in_browser(host, server, thread, done)
     except BaseException:
         _stop(host, server, thread)
@@ -65,7 +65,7 @@ def _toolkit() -> bool:
 
 def _in_browser(host: Host, server: Server, thread, done) -> int:
     host.updates.quit = server.stop
-    print(f"Orkcraft is at {server.url} — Ctrl+C stops it")
+    print(f"Orkline is at {server.url} — Ctrl+C stops it")
     webbrowser.open(server.url)
     try:
         thread.join()

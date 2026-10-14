@@ -42,7 +42,7 @@ def default_town_root() -> Path:
     return Path.home() / "Orkcraft"
 
 
-NOT_A_PROJECT_HINT = "Run it inside your project (cd <project> && orkcraft ...) or pass --repo <project>."
+NOT_A_PROJECT_HINT = "Run it inside your project (cd <project> && orkline ...) or pass --repo <project>."
 
 
 @dataclass

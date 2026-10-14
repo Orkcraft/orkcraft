@@ -1,4 +1,4 @@
-"""Updates (docs/updates.md): Orkcraft looks for a newer version of itself and installs it.
+"""Updates (docs/updates.md): Orkline looks for a newer version of itself and installs it.
 
 The list of releases is `updates.json` at the root of the repository, read from its `main` branch.
 A release marked `critical` (a security fix, a bug that loses work) installs by itself when the
@@ -405,7 +405,7 @@ def at_launch(argv: list[str], policy: str, say: Callable[[str], None] | None = 
     """Before the town loads: the list read again when it is old, and an update the policy says is due
     installed, then the process restarts on it. Returns what is newer and was not installed (for the
     window to offer). Nothing here stops the town from opening: a failure is said and the town opens."""
-    say = say or (lambda text: sys.stderr.write(f"orkcraft: {text}\n"))
+    say = say or (lambda text: sys.stderr.write(f"orkline: {text}\n"))
     if blocked() or os.environ.get(UPDATED_ENV):
         return None
     now = time.time() if now is None else now
