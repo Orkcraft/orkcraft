@@ -417,3 +417,16 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
   - c9f90bf: three tests that read too early or at the wrong hour.
 
   The full run is not green yet; I1 is capturing the remaining tracebacks. The quest-log overlap is next after that.
+- **23:42.** **I1's stabilisation (S9) is done.** The full suite plus the browser tests passed 4 full runs in a row
+  (2149 passed), with nothing skipped or quarantined.
+  - Product fixes among the root causes:
+    - the phone's outbox could send a command twice;
+    - `openBuilding` raced the building type's module loading;
+    - the bench feed dropped its last decision;
+    - the portrait menu overflowed the screen.
+  - The rest were tests that read too early or mixed clocks.
+  - `test_bench_sets.py` needs pytest in the `python` on PATH. That is the environment, not a bug.
+  - One failure in `test_clan_fire_closed_command_and_full` is not reproduced yet; I1 will root-cause it if it
+    returns.
+  - Phone screenshots are in `img/i1/phone-390-*`, `phone-430-*`.
+  - Last item for I1 tonight: the quest log covering the camp's bottom line.
