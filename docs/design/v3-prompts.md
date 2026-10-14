@@ -560,3 +560,9 @@ a lich's crypt, an elf's tree house, a gnome's burrow, a knight's tent, a ruin f
 goblin's shack, by kin. The gate's barrier already says "waiting for you"; a click on the home opens "since your last
 look", the profile and settings. The full-body class figures (GEN's k1) serve the onboarding's class cards and the
 portrait's heads. Stage 4's gold eyes become a teal glow (yellow is the question's).
+
+**The portrait's growth is tied to the score (the owner, 2026-10-14).** The stages of [growth.md](growth.md) §7 stay,
+and two of them also open by the game's goal ([the-score.md](the-score.md)): **stage 3** also by a **lean week** — the
+town's cost per accepted result down from the week before with the quality guard steady (👎 and reworks per result not
+up); **stage 4** also by **a month of it** (four lean weeks in five). A stage, once reached, stays. The deed is named in
+the Warchief's line when it lands ("Lich of Sprints: a week at 12 % less per result, nothing sent back more").
