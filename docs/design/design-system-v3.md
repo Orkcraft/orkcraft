@@ -130,13 +130,14 @@ each sprite's `pitch` and `show`; the preview reads them.
 |---|---|---|---|---|---|
 | B1–B3 buildings | 4.17 | 72–192 wide | core about 190 | ×1 | 192 · 288 (Agent pool) |
 | o1, o2 orks | 5.00, 5.15 | frames about 32–54 × 46–57 | 48–64 tall | ×1 | about 54 · 81 |
-| c1 carts | 8.33 | about 38–41 wide | about 64 | ×2 | 76–82 · 114–123 |
+| c1 carts | 8.33 | about 36 × 31–43 | about an ork's height, as in F1 | ×1 | 36 · 54 wide |
 | c2 track | 6.24 | tile 64 (4 tie spacings of 15 → 60, ×1.07) | 48–64 | ×1 | 64 · 96 |
 | g1 ground | 7.19 | tiles 45; earth fill 32, rims 40 × 17–18 | — | ×1 | 32 · 48 (fill) |
 | g2 decor | 6.31 | 18–47 | — | ×1 | trees about 45 · 68 |
 | u1 bubble and scroll (I1) | 8.39 | bubble pieces 22–24, scroll sheets 29–42, banner 236 × 38 | about 40 | ×2 | for I1 |
 
-**Carts against orks** (round 6, at ×2 as decided): an ork is drawn 44 px tall (o1's idle; the roles 40–43); a cart is
+**Carts against orks** (round 6; since then shown at ×1, the PM's decision: the 64-px target was wrong — a cart about
+an ork's height, as in F1). The numbers at ×2 that led to it: an ork is drawn 44 px tall (o1's idle; the roles 40–43); a cart is
 36 art px wide, so 72 px at ×2. The empty cart stands 62 px, the loaded ones 70 (letter) to 86 (scroll, crate): the
 load rises to about twice the ork's height (×1.5: 93–129 against 66). At ×1 a cart would be 36 × 31–43, as tall as an
 ork, but under the 64-px target.
@@ -276,7 +277,7 @@ Toggles: *Grey test*, *Show v3 slots* (each sprite's slot, dashed, with its size
 
 Screenshots at 1440 × 900 on a density-2 screen (×1.5, round 5): [the town](img/v3-preview/v3-town.png),
 [in grey](img/v3-preview/v3-town-grey.png), [with the slots](img/v3-preview/v3-town-slots.png); at density 1 (×1):
-[the town](img/v3-preview/v3-town-dpr1.png); the labels sit just under each building's foot (round 6); before the first sheet: [round 1](img/v3-preview/v3-town-round1.png).
+[the town](img/v3-preview/v3-town-dpr1.png); the labels sit just under each building's foot, the top row's on its facade so they clear the track (round 6); before the first sheet: [round 1](img/v3-preview/v3-town-round1.png).
 The preview is written by `tools/campkit_v3.py` from `tools/campkit_v3.html` (`--v3` runs it after cutting).
 
 ## 8. The sheets: names, sizes, one command

@@ -429,7 +429,7 @@ async function scene() {
   paths();
   await track();
   for (const b of BUILDINGS) await building(b);
-  for (const [, name, [x, y, w, h], , , kind] of BUILDINGS) nameChip(name, x + w / 2, y + h + 2);   // just under the foot
+  for (const [, name, [x, y, w, h], , , kind] of BUILDINGS) nameChip(name, x + w / 2, kind === "line" ? y + h / 2 : y + h + 2);   // the top row on its facade, the rest under the foot
   // carts: two rolling, one stopped at the Task board's path, one held at the gate with the yellow flag and its chip
   await cart(OX + 96, "code", { roll: 240, dur: 14 });
   await cart(OX + 96, "message", { roll: 240, dur: 14, delay: -7 });

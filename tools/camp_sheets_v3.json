@@ -1011,9 +1011,7 @@
     }
    ],
    "degrid": true,
-   "target": {
-    "w": 64
-   }
+   "show": 1
   },
   {
    "name": "c2-track",
