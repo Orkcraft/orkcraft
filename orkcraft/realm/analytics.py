@@ -8,10 +8,12 @@ to, as one zip — to hand to someone (or an agent) who checks how the buildings
 The zip: `README.md` (what is where, how to read it, the period added up), `summary.json` (the same, for a script),
 and `<day>/<building>/` with `calls.jsonl`, `calls/<n>-<who>.json` (each call in full: prompt, output, errors, the
 tool's trail), `decisions.jsonl` (an Agent pool's steward: hires, reworks, waits) and `dislikes.jsonl` (the 👎 that
-day on that building, with what the person said). No face here: the GUI serves it (gui/server.py `/api/analytics`).
+day on that building, with what the person said); `events.jsonl` holds the period's lines of the local event log
+(realm/event_log.py: questions asked and answered, assumptions marked, waits skipped, quests). No face here: the GUI serves it (gui/server.py `/api/analytics`).
 """
 from __future__ import annotations
 
+import datetime as dt
 import io
 import json
 import zipfile
@@ -19,7 +21,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Callable
 
-from orkcraft.realm import call_log, day_log
+from orkcraft.realm import call_log, day_log, event_log
 
 REWORKS = ("follow-up", "reuse", "retier")      # a steward's decisions that send work back or again
 
@@ -63,6 +65,11 @@ def summary(root: Path, days: list[str], titles: dict[str, str],
                                                               for b, c in per.items()}}
 
 
+def _after(day: str) -> str:
+    """The day after `day` (ISO), where a period that ends on `day` stops."""
+    return (day_log._day(day) + dt.timedelta(days=1)).isoformat() if day_log._day(day) else day
+
+
 def _row(r: dict) -> str:
     return (f"{r['calls']} call{'' if r['calls'] == 1 else 's'}, {r['seconds']:.0f} s, {r['tokens']:,} tokens"
             + (f", ${r['cost']:.2f}" if r.get("cost") else "") + (f", {r['failed']} failed" if r.get("failed") else "")
@@ -79,7 +86,8 @@ def readme(s: dict) -> str:
            "the tool's usage), `calls/<n>-<who>.json` (the call itself: `prompt` what went in, `stdout` what came out,",
            "`stderr`, `trail` how it worked when the AI tool keeps a session), `decisions.jsonl` (an Agent pool's",
            "steward: whom it hired, what it sent back, what waited) and `dislikes.jsonl` (the 👎, with what was said).",
-           "`summary.json` is this page for a script.", "",
+           "`events.jsonl` (when there is one) is the local event log of the period: questions the orks asked and",
+           "the answers, assumptions they marked, waits skipped, quests. `summary.json` is this page for a script.", "",
            "How to read it: start with the buildings and days that cost the most or got a 👎; in their `calls.jsonl`",
            "find the costly calls, then read those calls in full — is the same context sent again, a model higher",
            "than the job needs, work sent back that a clearer first prompt would have done right?", "",
@@ -122,4 +130,6 @@ def pack(root: Path, days: list[str], titles: dict[str, str],
                     z.writestr(f"{base}/dislikes.jsonl", jsonl(rows))
                 if folder.is_dir():
                     (folder / day_log.ASKED).touch()
+        if days and (events := event_log.read(root, min(days), _after(max(days)))):
+            z.writestr("events.jsonl", jsonl(events))
     return buf.getvalue()

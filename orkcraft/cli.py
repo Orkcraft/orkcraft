@@ -74,6 +74,22 @@ def _usage(action: str, install_id: str | None = None) -> int:
     return 0
 
 
+def _usage_local(root, days: int) -> int:
+    """`orkcraft usage local`: the counts of the town's own event log (realm/event_log.py), which never leaves
+    the machine — what a week of the way to ask came to (docs/design/decisions-2026-10.md §8)."""
+    import datetime as dt
+    from orkcraft.realm import event_log
+    since = (dt.date.today() - dt.timedelta(days=max(days, 1) - 1)).isoformat()
+    s = event_log.summary(root, since)
+    print(f"local event log: {event_log.path(root)} (kept on this machine, never sent)")
+    print(f"since {since}:")
+    for event, n in s["counts"].items():
+        print(f"  {event.replace('_', ' ')}: {n}")
+    if s["answer_wait_median_s"] is not None:
+        print(f"  median wait for your answer: {s['answer_wait_median_s'] / 60:.0f} min")
+    return 0
+
+
 def _update(action: str | None) -> int:
     """`orkcraft update [check|auto|critical|ask]` (core/updates.py, docs/updates.md)."""
     from orkcraft import settings
@@ -267,7 +283,9 @@ def main(argv: list[str] | None = None) -> int:
     hermes_global.add_argument("--no-hermes-global", dest="hermes_global", action="store_false",
                                help="Leave ~/.hermes/config.yaml alone, without asking")
     usage_p = subparsers.add_parser("usage", help="Anonymous usage stats: share them, stop, or see what is set")
-    usage_p.add_argument("action", choices=("on", "off", "status"))
+    usage_p.add_argument("action", choices=("on", "off", "status", "local"),
+                         help="local: what this town's own event log counted (never sent)")
+    usage_p.add_argument("--days", type=int, default=7, help="With local: the last N days (default 7)")
     usage_p.add_argument("--id", dest="install_id", default=None, metavar="HEX",
                          help="With on: the install id the installer drew (32 hex digits)")
     fb_p = subparsers.add_parser("feedback", help="What the operator's quiet feedback weighs: calibrate the weights")
@@ -370,6 +388,14 @@ def main(argv: list[str] | None = None) -> int:
         if not paths:
             print("nothing to uninstall")
         return 0
+
+    if args.subcommand == "usage" and args.action == "local":
+        try:
+            root = find_project_root(args.repo)
+        except FileNotFoundError as e:
+            sys.stderr.write(f"orkcraft error: {e}\n{NOT_A_PROJECT_HINT}\n")
+            return 1
+        return _usage_local(root, args.days)
 
     if args.subcommand == "usage":
         return _usage(args.action, args.install_id)
