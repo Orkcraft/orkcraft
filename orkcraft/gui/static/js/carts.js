@@ -3,7 +3,7 @@
 // (`travel`, else a short trip); a filtered one turns back at the source. Orks never move carts: the town routes them.
 // A cart that stopped stands at its road's buffer stop, its flag saying why: yellow, it waits for the person (its chip
 // `#42 · title` always shown); ⏳, held; red, stuck. Several there are a pile with a ×N chip, never a line of carts.
-// Camp draws a mine cart with its load on top (code, an asset, a message, a doc, a bundle); Office a gold stack
+// Camp draws a mine cart with its load on top (code, an asset, a message, a doc, a bundle) from the v2 sprites; Office a gold stack
 // moving and a square in its state's colour standing; the map zoom a dot. The words are the same in both.
 import { html, cls } from "./html.js";
 import { say } from "./link.js";
@@ -33,38 +33,23 @@ export function chipOf(c) {
   return [c.ref, title].filter(Boolean).join(" · ");
 }
 
-// The load, drawn small in the world's tokens over the bin (a placeholder until design-system/sprites/camp/carts/
-// loads/ land): a scroll with </>, a crate, a sealed letter, a book, three sacks.
-const LOADS = {
-  code: html`<rect x="5" y="0" width="10" height="7" rx="1" class="is-bone" />
-    <path d="M8 2 L6.5 3.5 L8 5 M12 2 L13.5 3.5 L12 5 M10.8 1.6 L9.2 5.4" class="is-ink" />`,
-  asset: html`<rect x="6" y="0" width="8" height="7" class="is-wood" /><path d="M6 0 L14 7 M14 0 L6 7" class="is-ink" />`,
-  message: html`<rect x="5" y="1" width="10" height="6" class="is-bone" /><path d="M5 1 L10 4.5 L15 1" class="is-ink" />
-    <circle cx="10" cy="4.5" r="1.3" class="is-cloth" />`,
-  doc: html`<rect x="6" y="0" width="8" height="7" rx="0.5" class="is-cloth" /><rect x="7" y="5.5" width="7" height="1.5" class="is-bone" />`,
-  bundle: html`<circle cx="7" cy="5" r="2.5" class="is-wood-light" /><circle cx="13" cy="5" r="2.5" class="is-wood-light" />
-    <circle cx="10" cy="2.5" r="2.5" class="is-wood-light" />`,
-};
+// Camp's mine cart from the v2 sprites (design-system/sprites/camp/carts/, placeholders the artist's replace in place):
+// the bin from the side, its four rolling frames while it moves, the load over the bin (its foot behind the rim) and the
+// flag on its pole at the back left. Drawn at half their art size while the track runs on the planner's 8 px cells.
+const SPRITES = "/ds/sprites/camp/carts";
 
-/** The mine cart (20 × 18): the load over an iron-banded bin on two wheels, the flag's pole at the back left. */
-function MineCart({ load, state }) {
-  return html`<svg class="gui-minecart" viewBox="0 0 20 18" width="20" height="18" data-load=${load} data-state=${state}>
-    <ellipse cx="10" cy="17" rx="8" ry="1.2" class="gui-minecart__shadow" />
-    ${state !== "moving" && state !== "back" && html`<g class="gui-minecart__flag">
-      <rect x="1" y="0" width="1" height="11" class="is-pole" />
-      ${state === "held" ? html`<path d="M2.5 1 H7 L5.6 3.2 L7 5.4 H2.5 L3.9 3.2 Z" class="is-held" />`
-        : html`<rect x="2" y="0.5" width="6" height="4" class=${state === "ask" ? "is-ask" : "is-fire"} />`}
-    </g>`}
-    <g transform="translate(0 2)">${LOADS[load] || LOADS.asset}</g>
-    <path d="M2 8 H18 L16.5 14 H3.5 Z" class="gui-minecart__bin" />
-    <rect x="2.6" y="10" width="14.8" height="1.2" class="gui-minecart__band" />
-    <circle cx="6" cy="15" r="1.8" class="gui-minecart__wheel" /><circle cx="14" cy="15" r="1.8" class="gui-minecart__wheel" />
-  </svg>`;
+function MineCart({ load, state, rolling }) {
+  const flag = { ask: "ask", held: "held", stuck: "fire" }[state];
+  return html`<span class=${cls("gui-minecart", { "is-rolling": rolling })} data-load=${load} data-state=${state}>
+    ${flag && html`<span class="gui-minecart__flag" style=${`background-image: url(${SPRITES}/flags/${flag}.png)`}></span>`}
+    <span class="gui-minecart__load" style=${`background-image: url(${SPRITES}/loads/${load}.png)`}></span>
+    <span class="gui-minecart__bin"></span>
+  </span>`;
 }
 
 /** One cart as either look draws it: Camp's mine cart, Office's gold (moving) or square (standing), the map's dot. */
-function Cart({ c }) {
-  return html`<${MineCart} load=${c.load || "asset"} state=${c.state || "moving"} />
+function Cart({ c, rolling = false }) {
+  return html`<${MineCart} load=${c.load || "asset"} state=${c.state || "moving"} rolling=${rolling} />
     <img class="gui-cart__gold" src="/ds/sprites/icons/res-gold.png" srcset="/ds/sprites/icons/res-gold@2x.png 2x" width="8" height="8" alt="" />
     <span class="gui-cart__square"></span>`;
 }
@@ -115,7 +100,7 @@ export function Carts({ paths, carts, travel, roads = [], asking = new Set() }) 
       const named = !!active && (ends[c.road] || []).includes(active);
       return html`<div key=${c.id} class=${cls("gui-cart is-rolling", { "is-back": back, "is-held": c.status === "held", "is-error": c.status === "error" })}
           style=${`offset-path: path("${d}"); animation-duration: ${back ? SHORT_TRIP_S : trip}s; animation-delay: ${delayOf(c)}`}>
-        <${Cart} c=${c} />
+        <${Cart} c=${c} rolling=${true} />
         ${c.title && !back && named && html`<span class="gui-cart__label">${say(c.title)}</span>`}
       </div>`;
     })}
