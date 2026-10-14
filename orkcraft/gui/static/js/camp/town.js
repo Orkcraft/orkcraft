@@ -14,7 +14,7 @@ import { openOrders } from "../orders.js";
 import { placing, constructing, raised } from "../build.js";
 import { zoomLevel, zoomBy, LEVELS } from "../zoom.js";
 import { bareMenu, setNumbered } from "../town.js";
-import { lay, stepsFor, DEFAULT_STEP, SIDING_SHOWN } from "./layout.js";
+import { lay, stepsFor, DEFAULT_STEP, SIDING_SHOWN, PATH_W } from "./layout.js";
 import { V3, kit, loadKit, sizeOf } from "./sprites.js";
 import { CampCarts, arriving } from "./carts.js";
 import { hovered, StewardOut } from "./steward.js";
@@ -121,6 +121,13 @@ function Palisade({ L }) {
   return html`<div class="gui-camp__layer is-wall">${out}</div>`;
 }
 
+/** Where a building's name stands, clear of its door and its steward: on the facade's top in the upper row (and the
+ *  wall's two), under its foot left of its path in a lower row. In the building's own box. */
+function nameAt(p, B) {
+  if (p.wall || p.row === 0) return { cl: "is-top", style: `left:${p.w / 2}px;top:${Math.round(p.h * 0.14)}px` };
+  return { cl: "is-under", style: `left:${p.cx - p.x - (PATH_W / 2 + 4) * B}px;top:${p.h + 6 * B}px` };
+}
+
 /** One building: its v3 sprite (a block in v3's colours until its sheet is cut), its name under its foot. */
 function Building({ b, at, number, raising }) {
   const L = at.L, p = at.p, B = L.step.b;
@@ -143,7 +150,7 @@ function Building({ b, at, number, raising }) {
       onPointerLeave=${() => { if (hovered.value === b.id) hovered.value = null; }}
       onKeyDown=${(e) => { if (e.key === "Enter") click(e); }}>
     ${body}
-    <span class="gui-camp__name is-name" style=${`left:${p.w / 2}px;top:${p.wall === "in" ? p.h - 40 * B : p.h - (p.spur ? 64 : 4) * B}px`}>${say(b.title)}</span>
+    <span class=${cls("gui-camp__name is-name", nameAt(p, B).cl)} style=${nameAt(p, B).style}>${say(b.title)}</span>
   </div>`;
   const sig = (signal || b.alert) && html`<${Badge} kind=${b.alert ? "ask" : signal} x=${p.cx} y=${p.y + 4 * B}
     title=${b.alert ? say(`${b.title} asks: ${b.alert.title}`) : say(`${b.title}: ${broken || (b.signal && b.signal.line) || ""}`)}
@@ -289,7 +296,7 @@ export function CampTown({ buildings, roads }) {
   const outId = L && [selected.value, hovered.value].find((id) => id && L.buildings[id] && going[id] === undefined && buildings.some((b) => b.id === id));
   const outB = outId && buildings.find((b) => b.id === outId);
   const grown = grownCard.value && buildings.find((b) => b.id === grownCard.value);
-  return html`<main ref=${ref} class=${cls("gui-town gui-camp", { "is-panning": panned })} data-step=${L ? `${step.b}/${step.s}` : ""}
+  return html`<main ref=${ref} class=${cls("gui-town gui-camp", { "is-panning": panned, "is-overview": zoomLevel.value === "a" })} data-step=${L ? `${step.b}/${step.s}` : ""}
       onPointerDown=${down} onWheel=${wheel} onClick=${bare} onContextMenu=${(e) => { if (!e.target.closest(".gui-camp__building")) bareMenu(e, buildings, here, null); }}>
     ${L && html`<div class="gui-camp__world" style=${`width:${L.w}px;height:${L.h}px;transform:translate(${ox}px,${oy}px)`}>
       <${Decals} L=${L} />

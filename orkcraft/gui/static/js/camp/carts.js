@@ -3,6 +3,7 @@
 // takes; it never leaves the lines. A cart that stopped stands at its building's stop (on the Review gate's weighbridge,
 // its barrier down), its flag saying why: yellow, it waits for the person (its chip `#42 · title` always shown); ⏳,
 // held; red, stuck. More than three there are a pile with a ×N chip.
+import { useEffect, useRef } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { say } from "../link.js";
 import { chipOf } from "../carts.js";
@@ -44,13 +45,36 @@ function Bin({ c, B }) {
 /** The yellow flag of a cart waiting for the person: outlined, a darker lower band (§5). */
 const Flag = ({ B }) => html`<span class="gui-camp__flag" style=${`left:${-18 * B}px;top:${-44 * B - 44}px`}></span>`;
 
+/** Which way the cart faces along its route: east (1) or west (−1) on each straight run, keeping its last facing up
+ *  and down the columns — c1 draws carts from the side only (its three-quarter rolling row is not cut), so on a
+ *  column it rolls side on. [[offset 0..1, facing], …] where the facing changes. */
+export function facings(pts) {
+  const total = lengthOf(pts) || 1, out = [];
+  let at = 0, face = 1;
+  for (let i = 1; i < pts.length; i++) {
+    const dx = pts[i][0] - pts[i - 1][0];
+    if (dx) face = dx < 0 ? -1 : 1;
+    if (!out.length || out[out.length - 1][1] !== face) out.push([at / total, face]);
+    at += Math.hypot(dx, pts[i][1] - pts[i - 1][1]);
+  }
+  return out.length ? out : [[0, 1]];
+}
+
 function Rolling({ c, pts, dur, B }) {
   const d = `M ${pts.map((p) => p.join(" ")).join(" L ")}`;
-  const back = pts[pts.length - 1][0] < pts[0][0];
-  return html`<div class=${cls("gui-camp__cart is-rolling", { "is-west": back })} data-load=${loadOf(c)} data-road=${c.road}
+  const turns = facings(pts), bin = useRef(null), delay = delayOf(c);
+  useEffect(() => {
+    const el = bin.current && bin.current.querySelector("img");
+    if (!el || turns.length < 2 || !el.animate) return undefined;
+    const frames = turns.map(([offset, f]) => ({ offset, transform: `scaleX(${f})`, easing: "step-end" }));
+    const a = el.animate([...frames, { offset: 1, transform: `scaleX(${turns[turns.length - 1][1]})` }],
+      { duration: dur * 1000, delay: delay * 1000, fill: "both" });
+    return () => a.cancel();
+  }, [d, dur]);
+  return html`<div ref=${bin} class=${cls("gui-camp__cart is-rolling", { "is-west": turns[0][1] < 0 })} data-load=${loadOf(c)} data-road=${c.road}
       title=${say(chipOf(c))} role="button" aria-label=${say(`${chipOf(c)}: its history`)}
       onClick=${(e) => { e.stopPropagation(); waybillOf.value = { cart: c.id }; }}
-      style=${`offset-path:path("${d}");animation-duration:${dur}s;animation-delay:${delayOf(c)}s`}>
+      style=${`offset-path:path("${d}");animation-duration:${dur}s;animation-delay:${delay}s`}>
     <${Bin} c=${c} B=${B} />
   </div>`;
 }

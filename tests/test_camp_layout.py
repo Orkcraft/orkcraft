@@ -130,3 +130,17 @@ console.log(JSON.stringify({ gap: thrift.buildings.b.x - plain.buildings.b.x, g:
 """, tmp_path)
     assert out["gap"] == 64 + 2                                               # the lean-to's width and a step
     assert out["g"] == {"level": 2, "annex": "growth/annex-thrift.png"} and out["none"] == {"level": 0, "annex": ""}
+
+
+def test_a_cart_faces_along_each_straight_run_and_keeps_it_on_a_column(tmp_path):
+    script = tmp_path / "f.mjs"
+    carts = (Path(__file__).resolve().parents[1] / "orkcraft" / "gui" / "static" / "js" / "camp" / "carts.js")
+    # carts.js imports the page's modules: test its pure helper by its source alone
+    src = carts.read_text(encoding="utf-8")
+    body = src[src.index("export function facings"):src.index("function Rolling")]
+    script.write_text(f'import {{ lengthOf }} from "{LAYOUT.as_uri()}";\n{body}\n'
+                      'console.log(JSON.stringify([facings([[0,0],[100,0],[100,100],[0,100]]), facings([[0,0],[0,50],[50,50]])]));',
+                      encoding="utf-8")
+    out = json.loads(subprocess.run(["node", str(script)], capture_output=True, text=True, check=True, timeout=30).stdout)
+    assert out[0] == [[0, 1], [2 / 3, -1]]                  # east, down the column still east, then west
+    assert out[1] == [[0, 1]]                                # down first: as it comes, then east
