@@ -61,9 +61,10 @@ def test_a_picture_is_painted_reset_and_applied_on_this_machine(fake_repo, isola
         return "rounder roof", None, None, ""
 
     monkeypatch.setattr(jobs, "run_work", work)
+    # agy is off (experimental, decisions-2026-10.md §5): the main tool paints
     act("paint", path=HOUSE, words="make it cuter", region={"x": 0.1, "y": 0.1, "w": 0.3, "h": 0.3})
     assert _until(lambda: act("draft", path=HOUSE)["src"].startswith("data:image/png;base64,"))
-    assert asked[0][0] == "agy" and asked[0][2] == painter.PNG and "Change ONLY the region" in asked[0][1]
+    assert asked[0][0] == "claude" and asked[0][2] == painter.PNG and "Change ONLY the region" in asked[0][1]
     act("apply", path=HOUSE)
     own = tokens.assets_dir() / HOUSE
     assert own.read_bytes() == PNG and (tokens.assets_dir() / "sprites/buildings/barracks/header@2x.png").is_file()
