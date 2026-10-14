@@ -169,3 +169,27 @@ console.log(JSON.stringify({ home: L.home, gate: L.buildings.gate, bench: L.buil
     assert h["feet"] < out["line"] and out["line"] - h["feet"] <= 4  # just above line 1
     assert out["none"] is None                                       # no kin known: no home
     assert out["alone"]["row"] == 0 and out["alone"]["feet"] < out["first"]   # no gate: at the first row's end
+
+
+GRASS = ROOT / "orkcraft" / "gui" / "static" / "js" / "camp" / "grass.js"
+
+
+def test_an_item_fits_on_grass_only_never_on_track_paths_or_against_a_building(tmp_path):
+    """v3-prompts §14 rule 1 (js/camp/grass.js): cells of 16 art px from the camp's corner; a box on a building (or
+    one cell from it), a path, a track tile or the palisade does not fit; one in the open grass does; nor on another."""
+    out = _run(TOWN + f'import * as G from "{GRASS.as_uri()}";\n' + """
+const L = C.lay(B, R, { b: 1.5, s: 1 }, size, () => false, "homes/orc.png");
+const walls = G.blockers(L), sz = [40, 48];
+const cellOf = (x, y) => G.cellAt(L, x, y);
+const at = (x, y) => { const c = cellOf(x, y); return G.fits(L, G.boxAt(L, sz, c.gx, c.gy), walls); };
+const pool = L.buildings.pool, t = L.tiles.find((x) => x.name === "straight-h"), p = L.paths[0];
+const below = { x: pool.cx, y: L.lines[L.lines.length - 1] + L.T + 140 };
+const c = cellOf(below.x, below.y), box = G.boxAt(L, sz, c.gx, c.gy);
+console.log(JSON.stringify({
+  onBuilding: at(pool.cx, pool.feet - 4), besideBuilding: at(pool.x + pool.w + 8, pool.feet),
+  onTrack: at(t.x + L.T / 2, t.y + L.T), onPath: at(p.x + p.w / 2, p.y + p.h), onHome: at(L.home.cx, L.home.feet),
+  onWall: at(L.wall.left + 200, L.wall.y), grass: at(below.x, below.y), onItem: G.fits(L, box, walls, [box]),
+  snapped: (box.y + box.h - G.grid(L).y) % G.grid(L).c === 0 }));
+""", tmp_path)
+    assert out == {"onBuilding": False, "besideBuilding": False, "onTrack": False, "onPath": False, "onHome": False,
+                   "onWall": False, "grass": True, "onItem": False, "snapped": True}

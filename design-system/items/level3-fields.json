@@ -1,0 +1,9 @@
+{
+ "id": "level3-fields",
+ "name": "Old semaphore",
+ "sprite": "sprites/v3/growth/banner-3.png",
+ "by": "level",
+ "type": "fields",
+ "why": "A building at III",
+ "stand_in": true
+}

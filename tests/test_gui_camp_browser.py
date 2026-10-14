@@ -375,3 +375,58 @@ def test_the_persons_home_stands_by_the_review_gate_and_opens_their_own(camp_loo
     pg.locator(".gui-portrait__menu").wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
     _call(pg, "town.demolish", {"id": gate})
+
+
+def test_an_item_dragged_from_the_inventory_snaps_to_the_grass_and_stays_after_a_reload(camp_look, gui):
+    """v3-prompts §14: the inventory lists the starter set; an item dragged onto the camp shows the grid where it fits,
+    snaps to a cell on grass (never on track, paths or against a building), is kept in the town file, and still
+    stands after a reload; dragged back to the panel it is put away. Office draws no items."""
+    server, _ = gui
+    pg = camp_look
+    _clear(pg)
+    pool = _call(pg, "town.build", {"type": "barracks"})
+    pg.keyboard.press("Escape")
+    _building(pg, pool).wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.locator(".gui-items").count() == 0                         # closed: nothing nags
+    pg.get_by_role("button", name="Items", exact=True).click()
+    row = pg.locator('.gui-items__row[data-item="tree"]')
+    row.wait_for(state="visible", timeout=WAIT_MS)
+    b, r = _building(pg, pool).bounding_box(), row.bounding_box()
+    pg.mouse.move(r["x"] + 20, r["y"] + 20)
+    pg.mouse.down()
+    pg.mouse.move(b["x"] + b["width"] / 2, b["y"] + b["height"] / 2, steps=4)   # over the building: no fit
+    assert pg.locator(".gui-items__grid").count() == 1                         # the grid shows while dragging
+    assert pg.locator(".gui-items__ghost.is-ok").count() == 0
+    target = (b["x"] + b["width"] / 2, b["y"] + b["height"] + 180)             # the grass below the line
+    pg.mouse.move(*target, steps=6)
+    pg.locator(".gui-items__ghost.is-ok").wait_for(state="visible", timeout=WAIT_MS)
+    pg.mouse.up()
+    placed = pg.locator('.gui-items__placed[data-item="tree"]')
+    placed.wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.locator(".gui-items__grid").count() == 0
+    kept = [p for p in server.host.town.scroll.items if p["item"] == "tree"]
+    assert len(kept) == 1
+    import json
+    saved = json.loads(server.host.town.config.layout_file.read_text(encoding="utf-8"))   # the town file
+    assert any(p["item"] == "tree" for p in saved.get("items", []))
+    pg.reload()
+    placed.wait_for(state="visible", timeout=WAIT_MS)                          # still there
+    box = placed.bounding_box()
+    assert abs(box["y"] + box["height"] - target[1]) <= 32                   # its feet in the cell it was dropped on
+    _call(pg, "you.look", {"look": "office"})                                  # Office draws no items
+    pg.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
+    assert pg.locator(".gui-items__placed").count() == 0 and pg.get_by_role("button", name="Items", exact=True).count() == 0
+    _call(pg, "you.look", {"look": "camp"})
+    placed.wait_for(state="visible", timeout=WAIT_MS)
+    pg.get_by_role("button", name="Items", exact=True).click()
+    panel = pg.locator(".gui-items")
+    panel.wait_for(state="visible", timeout=WAIT_MS)
+    p = panel.bounding_box()
+    pg.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+    pg.mouse.down()
+    pg.mouse.move(p["x"] + p["width"] / 2, p["y"] + p["height"] / 2, steps=6)
+    pg.mouse.up()
+    placed.wait_for(state="detached", timeout=WAIT_MS)                         # put back in the inventory
+    assert not [x for x in server.host.town.scroll.items if x["item"] == "tree"]
+    pg.get_by_role("button", name="Items", exact=True).click()
+    _call(pg, "town.demolish", {"id": pool})

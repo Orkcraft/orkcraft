@@ -1,0 +1,8 @@
+{
+ "id": "lean-week",
+ "name": "Log-pile monument",
+ "sprite": "items/lean-week.png",
+ "by": "lean_week",
+ "why": "The first lean week: less wood per result, nothing sent back more",
+ "stand_in": true
+}

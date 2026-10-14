@@ -1,0 +1,10 @@
+{
+ "id": "class-gnome",
+ "name": "Signpost of growth",
+ "sprite": "sprites/v3/decor/reeds-tall.png",
+ "by": "stage",
+ "stage": 2,
+ "kin": "gnome",
+ "why": "Your portrait's second stage",
+ "stand_in": true
+}

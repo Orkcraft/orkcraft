@@ -1,0 +1,10 @@
+{
+ "id": "class-skeleton",
+ "name": "Lantern post",
+ "sprite": "sprites/v3/decor/pebbles.png",
+ "by": "stage",
+ "stage": 2,
+ "kin": "skeleton",
+ "why": "Your portrait's second stage",
+ "stand_in": true
+}

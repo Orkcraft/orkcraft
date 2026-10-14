@@ -1,0 +1,10 @@
+{
+ "id": "class-goblin",
+ "name": "Chest of crystals",
+ "sprite": "sprites/v3/decor/mushrooms-teal.png",
+ "by": "stage",
+ "stage": 2,
+ "kin": "goblin",
+ "why": "Your portrait's second stage",
+ "stand_in": true
+}

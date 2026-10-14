@@ -125,6 +125,39 @@
       },
       "description": "The folders orkspaces work in (docs/design/projects.md §3)."
     },
+    "items": {
+      "description": "Items the person placed on Camp's grass (docs/design/v3-prompts.md §14, realm/items.py): each a copy of an item file, at a cell of 16 art px from the camp's corner (the back wall's left end), in one orkspace.",
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "item",
+          "orkspace",
+          "x",
+          "y"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "item": {
+            "type": "string"
+          },
+          "orkspace": {
+            "type": "string"
+          },
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "integer"
+          }
+        }
+      }
+    },
     "orkspaces": {
       "type": "array",
       "minItems": 1,

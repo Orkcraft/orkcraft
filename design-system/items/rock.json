@@ -1,0 +1,7 @@
+{
+ "id": "rock",
+ "name": "Rock",
+ "sprite": "sprites/v3/decor/rock.png",
+ "by": "start",
+ "why": "Yours from the start"
+}

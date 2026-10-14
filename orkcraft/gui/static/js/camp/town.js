@@ -27,6 +27,7 @@ import { StewardConsole, stewardOf, openStewardConsole } from "./stewardconsole.
 import { portraitOpen } from "../portrait.js";
 import { settingsOpen } from "../settings.js";
 import { openMenu } from "../menu.js";
+import { Placed, Inventory } from "./items.js";
 
 /** The ork a click on a building's steward means: the one stopped or asking, else at work, else its first; its
  *  console's key (core/slots.py rows: a roster ork's ref, a pool's `<building>/<name>`); null with none to show. */
@@ -351,6 +352,7 @@ export function CampTown({ buildings, roads }) {
       <${Paths} L=${L} />
       <${Track} L=${L} />
       <${Palisade} L=${L} />
+      <${Placed} L=${L} items=${you && snapshot.value.growth.items} />
       <div class="gui-camp__layer is-buildings">
         ${buildings.map((b, i) => L.buildings[b.id] && html`<${Building} key=${b.id} b=${b} at=${{ L, p: L.buildings[b.id] }} number=${i + 1}
           raising=${going[b.id] !== undefined} />`)}
@@ -368,6 +370,7 @@ export function CampTown({ buildings, roads }) {
     </div>`}
     <${Waybill} />
     <${StewardConsole} />
+    ${L && you && html`<${Inventory} items=${snapshot.value.growth.items} />`}
     ${placing.value && html`<p class="gui-town__placing-hint ok-font-status">${say(`Build ${placing.value.title}: press a row · it takes the row's next place on the line · Esc cancels`)}</p>`}
     ${!buildings.length && html`<p class="gui-empty ok-font-body ok-tone-muted">${say("No buildings in this orkspace yet.")}</p>`}
   </main>`;

@@ -1,0 +1,8 @@
+{
+ "id": "lean-month",
+ "name": "Thrift trophy",
+ "sprite": "sprites/v3/growth/annex-thrift.png",
+ "by": "lean_month",
+ "why": "The first lean month: four lean weeks in five",
+ "stand_in": true
+}

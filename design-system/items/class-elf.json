@@ -1,0 +1,10 @@
+{
+ "id": "class-elf",
+ "name": "Painter's easel",
+ "sprite": "sprites/v3/decor/brush.png",
+ "by": "stage",
+ "stage": 2,
+ "kin": "elf",
+ "why": "Your portrait's second stage",
+ "stand_in": true
+}

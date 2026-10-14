@@ -301,6 +301,7 @@ class TownScroll:
     preferences: dict = field(default_factory=_default_preferences)
     meta: dict = field(default_factory=lambda: {"project_name": "orkcraft", "tagline": "Work vs Humans"})
     version: str = VERSION
+    items: list[dict] = field(default_factory=list)   # placed on Camp's grass: {id, item, orkspace, x, y} (realm/items.py)
 
     def building(self, building_id: str) -> BuildingSpec | None:
         return next((b for b in self.buildings if b.id == building_id), None)
@@ -360,6 +361,7 @@ class TownScroll:
             "preferences": dict(self.preferences),
             "active_orkspace_id": self.active_orkspace_id,
             **({"projects": [asdict(p) for p in self.projects]} if self.projects else {}),
+            **({"items": [dict(i) for i in self.items]} if self.items else {}),
             "orkspaces": orkspaces,
             "buildings": buildings,
         }
@@ -407,6 +409,10 @@ class TownScroll:
             meta={k: v for k, v in (data.get("meta") or {}).items() if k != "updated_at"} or
                  {"project_name": "orkcraft", "tagline": "Work vs Humans"},
             version=data.get("version", VERSION),
+            items=[{"id": str(i["id"]), "item": str(i["item"]), "orkspace": str(i["orkspace"]), "x": int(i["x"]),
+                    "y": int(i["y"])} for i in data.get("items") or []
+                   if isinstance(i, dict) and all(k in i for k in ("id", "item", "orkspace"))
+                   and isinstance(i.get("x"), int) and isinstance(i.get("y"), int)],
         )
 
 

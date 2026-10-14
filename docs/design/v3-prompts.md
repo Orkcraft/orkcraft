@@ -600,6 +600,30 @@ places them where they like. Each item says what it was earned for ("Earned: the
 **Cost:** the inventory panel, drag onto the grass with grid snap, saved in the town file — 2–3 days; 20–30 items via
 GEN. Order: the score and the stages first (they give the items), then the inventory.
 
+**Built (INV, the night of 14 October):**
+
+- **The stages** open by any of their paths (`realm/growth.py` `stage_paths`; growth.md §7.2): the chapters from the
+  mission's state, the lean weeks from `score.lean_weeks`. Stage 4's eyes glow teal.
+- **The portrait** is the class figure's head (§13; portrait.md, As built). **The home** stands east of the Review
+  gate and opens since your last look, You and Town settings (design-system-v3.md §4.13).
+- **Items are files:** `design-system/items/<id>.json` (id, name, sprite under `/ds/`, `by`: start · mission ·
+  lean_week · lean_month · stage · level, why) — 22 so far: eight of g2's decor from the start (placed as often as
+  liked), and, earned once each: *The first cart* (Mission 1; a cart on a plinth, `tools/item_sprites.py`), the
+  *Log-pile monument* (the first lean week, on a plinth), the *Thrift trophy* (the first lean month; the Thrift annex
+  stands in), a class item per kin at the portrait's stage 2, and at III the Review gate's *Statue of scales*, the
+  Task board's *Old semaphore*, the Agent pool's *Anvil*, a *Pennant* for any other. **Every earned item's sprite is
+  a stand-in** until GEN draws it (`stand_in: true`).
+- **Earned** quietly as the growth settles (`realm/items.py` `settle`, in `.orkcraft/items.json`; Mission 1 may also
+  call `items.earn(root, "first-cart", why)`); **placed** in the town file (`scroll.items`: id, item, orkspace, a cell
+  of 16 art px from the camp's corner), through `items.place` · `items.move` · `items.remove`.
+- **The panel** (`js/camp/items.js`): an *Items* button under the portrait in Camp, no count; each row says why the
+  item is here ("Earned: Mission 1 finished, 14 October"). Dragged, the grid shows the cells where it fits
+  (`js/camp/grass.js`: never on track, paths, stops, the palisade, the wilderness's own decor, another item, or within
+  a cell of a building or the home); a placed one drags to move, or back to the panel (or its right click) to put it
+  away. Drawn under the buildings' layer, so ❓, `!`, carts and flags stand over it; Office draws none.
+- **Not yet:** the second chapter's sundial (Mission 2 is not built); a placed item whose cell a new building later
+  takes stays in the file but may stand against it until moved.
+
 ## 15. GEN's rounds 9–10, overnight (2026-10-14, night)
 
 **Cut (the owner's picks, confirmed in the GEN session):** st-dispatch #2 (the Task board as a dispatcher's booth,

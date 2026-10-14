@@ -212,7 +212,7 @@ def deeds_done(scroll, root: Path, machine, changes: list[evolution.Change] | No
         done.add("mature")
     if any(b.autonomy == "free" for b in standing):
         done.add("trusted")
-    facts = facts if facts is not None else _facts(root, now)
+    facts = facts if facts is not None else read_facts(root, now)
     if facts.get("chapters"):
         done.add("mission")
     if facts.get("lean"):
@@ -220,7 +220,7 @@ def deeds_done(scroll, root: Path, machine, changes: list[evolution.Change] | No
     return done
 
 
-def _facts(root: Path, now: dt.datetime) -> dict:
+def read_facts(root: Path, now: dt.datetime) -> dict:
     """What the stages read beyond the scroll: the campaign's chapters and the score's lean weeks."""
     week, lean = lean_now(root, now)
     return {"chapters": chapters(root), "lean": bool(week["lean"]), "lean_weeks": lean,
@@ -384,7 +384,7 @@ def settle(scroll, root: Path, machine, now: dt.datetime | None = None) -> list[
     grown = dict(getattr(machine, "growth", None) or {})
     first = not grown                    # the first look on this machine: what is done already is not news
     deeds = dict(grown.get("deeds") or {})
-    facts = _facts(root, now)
+    facts = read_facts(root, now)
     done = deeds_done(scroll, root, machine, changes, now, facts)
     for d in DEEDS:
         if d.id not in deeds and d.id in done:
