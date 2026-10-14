@@ -95,12 +95,21 @@
 .pool-lanes { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 1px; }
 .pool-lane { display: grid; grid-template-columns: auto minmax(0, max-content) auto minmax(0, 1fr) auto; align-items: center;
   gap: 5px; min-height: 18px; white-space: nowrap; }
+.pool-lane__chips { display: inline-flex; gap: 2px; overflow: hidden; }
+.pool-chip { font: inherit; line-height: 1; padding: 1px 3px; border: var(--ok-stroke) solid var(--frame);
+  border-radius: 3px; background: transparent; color: inherit; cursor: pointer; }
+.pool-chip.is-asks { border-color: var(--alert); }
+.pool-chip.is-more { border: 0; cursor: default; }
+.pool-chip__word { display: none; }
+[data-look="office"] .pool-chip__mark { display: none; }
+[data-look="office"] .pool-chip__word { display: inline; }
+[data-look="office"] .pool-chip.is-resting { display: none; }          /* the role's own word says Resting */
 .pool-lane__head { display: grid; width: 40px; justify-items: start; }
 .pool-lane__head img { zoom: calc(2 / 3); }
-.pool-lane__name { overflow: hidden; text-overflow: ellipsis; }
+.pool-lane__name { overflow: hidden; text-overflow: ellipsis; font: inherit; font-weight: bold; padding: 0; border: 0;
+  background: transparent; color: inherit; cursor: pointer; text-align: left; }
 .pool-lane__how { display: inline-flex; align-items: center; gap: 3px; }
 .pool-lane__how .gui-tier { font-size: 0; gap: 0; }                 /* the chevrons alone: the word is the tooltip's */
-.pool-lane__topic { overflow: hidden; text-overflow: ellipsis; }
 .pool-lane__queue { font-variant-numeric: tabular-nums; }
 .pool-lane.is-asks .pool-lane__name { color: var(--fire, var(--danger)); }
 .pool-lane.is-more { display: block; }

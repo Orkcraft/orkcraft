@@ -13,8 +13,8 @@ import { Dialog } from "../dialog.js";
 import { Terminal } from "../terminal.js";
 import { openInLake } from "../lake.js";
 import { askKeeper } from "../keeper.js";
-import { usePeek } from "../windows.js";
-import { OrkHead, ToolMark, TierMark } from "../icons.js";
+import { usePeek, openBuilding } from "../windows.js";
+import { OrkHead, TierMark } from "../icons.js";
 
 const sheet = new URL("./barracks.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -122,19 +122,35 @@ const keep = (e) => e.stopPropagation();          // a press on the card's contr
  *  steward first when it asks; the foot who works on what. Paused, the headline says so with what waits and
  *  Resume in the foot: a stopped queue is the one thing to fix here. */
 const LANE_STATE = { working: "busy", resting: "idle", asks: "alert" };
-const LANE_WORD = { working: "working", resting: "resting", asks: "asks you" };
 
-/** Its orks, a lane each (the owner's ask): the head says what it does (a gear at work, Zz resting, ! asking), then
- *  its name, its AI tool and tier, the topic it is hired for, and how many tasks of it wait. */
-function Lanes({ lanes, more }) {
-  return html`<ul class="pool-lanes">${lanes.map((l) => html`<li key=${l.name} class=${cls("pool-lane", `is-${l.state}`)}
-      title=${`${l.name} · ${say(LANE_WORD[l.state])} · ${l.topic ? say(l.topic) : say("any work")}${l.queue ? ` · ${l.queue} ${say("waiting")}` : ""}`}>
-    <span class="pool-lane__head"><${OrkHead} o=${{ name: l.name, status: LANE_STATE[l.state] }} alert=${l.state === "asks"} /><span
-      class="pool-lane__state">${say(LANE_WORD[l.state])}</span></span>
-    <b class="pool-lane__name">${l.name}</b>
-    <span class="pool-lane__how"><${ToolMark} id=${l.harness} />${l.tier && html`<${TierMark} tier=${l.tier} />`}</span>
-    <span class="pool-lane__topic ok-tone-muted">${l.topic ? say(l.topic) : say("any work")}</span>
-    <span class=${cls("pool-lane__queue", { "ok-tone-muted": !l.queue })}>${l.queue ? `▸ ${l.queue}` : ""}</span>
+/** A press on a role's name or on one of its sessions opens the pool on that session's tab (its terminal, its
+ *  recent work); the rest of the lane is the hut's, to select or drag it. When the console is there
+ *  (ork-console.md §14), here is where it opens instead. */
+function openSession(e, id, name) {
+  keep(e);
+  setIn(tabs, id, `ork:${name}`);
+  setIn(folded, id, false);
+  setIn(chosen, id, "");
+  openBuilding(id);
+}
+
+/** Its roles, a lane each (docs/design/pool-roles.md): an ork is a role — "Grunt · tests" — and the orks hired as it
+ *  are its sessions, a chip each in the one status (❓ asks, 💭 at work, Zz resting; Office says the word), the asking
+ *  one first. Then its tier when its sessions share one, how many are at work, and how many tasks of it wait. */
+function Lanes({ id, lanes, more }) {
+  return html`<ul class="pool-lanes">${lanes.map((l) => html`<li key=${l.role} class=${cls("pool-lane", `is-${l.state}`)}
+      title=${`${say(l.name)} · ${say(l.word)} · ${l.at_work} ${say("at work")}${l.queue ? ` · ${l.queue} ${say("waiting")}` : ""}`}>
+    <span class="pool-lane__head"><${OrkHead} o=${{ name: l.ork, status: LANE_STATE[l.state] }} alert=${l.state === "asks"} /><span
+      class="pool-lane__state">${say(l.word)}</span></span>
+    <button type="button" class="pool-lane__name" onPointerDown=${keep} onClick=${(e) => openSession(e, id, l.first)}>${say(l.name)}</button>
+    <span class="pool-lane__how">${l.tier && html`<${TierMark} tier=${l.tier} />`}</span>
+    <span class="pool-lane__chips">${l.sessions.map((s) => html`<button key=${s.name} type="button"
+        class=${cls("pool-chip", `is-${s.state}`)} data-ork=${s.name} title=${`${s.line} · ${s.harness}`} aria-label=${s.line}
+        onPointerDown=${keep} onClick=${(e) => openSession(e, id, s.name)}>
+      <span class="pool-chip__mark">${s.mark}</span><span class="pool-chip__word">${say(s.word)}</span></button>`)}${l.more > 0
+      && html`<span class="pool-chip is-more ok-tone-muted">+${l.more}</span>`}</span>
+    <span class=${cls("pool-lane__queue", { "ok-tone-muted": !l.at_work && !l.queue })}>${l.at_work || l.queue
+      ? `${l.at_work} ${say("at work")} · ${l.queue} ${say("waiting")}` : "—"}</span>
   </li>`)}${more > 0 && html`<li class="pool-lane is-more ok-tone-muted">+${more}</li>`}</ul>`;
 }
 
@@ -151,7 +167,7 @@ export function card(b) {
       <span class=${c.failed ? "ok-tone-error" : ""} title=${c.failed ? say("Failed tasks: open the building to see why") : ""}>✗${c.failed}</span>
       · <b>${c.spent}</b></div>
     ${c.asks && html`<div class="gui-hut__text ok-tone-fire">? ${c.asks} ${say("asks")}</div>`}
-    ${lanes.length > 0 && html`<${Lanes} lanes=${lanes} more=${c.more || 0} />`}
+    ${lanes.length > 0 && html`<${Lanes} id=${b.id} lanes=${lanes} more=${c.more || 0} />`}
     ${c.paused
       ? html`<div class="gui-hut__foot"><span>${say("Stopped: no task starts")}</span>
           <button class="ok-act gui-hut__act" onPointerDown=${keep}
@@ -386,9 +402,9 @@ function Orks({ id, data }) {
     <nav class="pool-orks__bar" role="tablist" aria-label=${say("Orks")}>
       ${data.orks.map((o) => html`<button key=${o.name} role="tab" aria-selected=${o === ork && !fold}
           class=${cls("ok-tab", { "is-active": o === ork && !fold })} onClick=${() => pick(o)}
-          title=${o.asks ? say("asks you") : o.status === "working" ? say("at work") : say("resting")}>
+          title=${`${o.role ? `${say(o.role)} · ` : ""}${o.asks ? say("asks you") : o.status === "working" ? say("at work") : say("resting")}`}>
         <${Head} ork=${o.name} asks=${o.asks} working=${o.status === "working"} />${o.name}</button>`)}
-      <span class="pool-orks__about ok-font-status">${ork.label}${ork.tier ? ` · ${ork.tier}` : ""} · ✓${ork.done} ✗${ork.failed} · ${ork.cost}${ork.tokens ? ` · ${Math.round(ork.tokens / 1000)}k` : ""}</span>
+      <span class="pool-orks__about ok-font-status">${ork.role ? `${say(ork.role)} · ` : ""}${ork.label}${ork.tier ? ` · ${ork.tier}` : ""} · ✓${ork.done} ✗${ork.failed} · ${ork.cost}${ork.tokens ? ` · ${Math.round(ork.tokens / 1000)}k` : ""}</span>
       <button class="ok-btn" aria-label=${fold ? say("Show the terminal") : say("Fold the terminal")} title=${fold ? say("Show the terminal") : say("Fold the terminal")}
         onClick=${() => setIn(folded, id, !fold)}>${fold ? "▴" : "▾"}</button>
     </nav>

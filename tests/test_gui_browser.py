@@ -2359,3 +2359,34 @@ def test_comment_mode_sends_what_was_pressed_to_the_alchemist(page, gui):
     assert "The Warchief's face could say what it does" in page.inner_text(".gui-fixes")
     page.keyboard.press("Escape")
     server.host.fixes.store.drop_comment(c.id)
+
+
+def test_the_agent_pool_s_lanes_are_roles_and_a_session_s_chip_opens_its_tab(gui, page):
+    """docs/design/pool-roles.md: the pool's card draws a lane per role — "Grunt · tests" — with its orks as session
+    chips in the one status, the asking one first; a press on a chip opens the pool on that ork's tab."""
+    from orkcraft.realm import barracks as bk
+    server, _ = gui
+    pg = page
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'barracks' }))")
+    w = server.host.town.worker(bid)
+    w.state.orcs = [bk.PoolOrc("Grub", "claude", "sonnet", persona="tests"),
+                    bk.PoolOrc("Thrak", "claude", "sonnet", persona="tests"), bk.PoolOrc("Snaga", "claude", "haiku")]
+    w.state.save()
+    pg.evaluate("([id, x, y]) => import('/static/js/link.js').then(m => m.command('hut.move', { id, x, y }))", [bid, 0.3, 0.3])
+    lanes = _hut(pg, bid).locator(".pool-lane:not(.is-more)")
+    lanes.first.wait_for(state="visible", timeout=WAIT_MS)
+    pg.wait_for_function(f"() => document.querySelectorAll('.gui-hut[data-id=\"{bid}\"] .pool-lane:not(.is-more)').length === 2",
+                         timeout=WAIT_MS)
+    assert [n.strip() for n in lanes.locator(".pool-lane__name").all_inner_texts()] == ["Grunt · tests", "Grunt · any work"]
+    chips = lanes.first.locator(".pool-chip[data-ork]")
+    assert [c.get_attribute("data-ork") for c in chips.all()] == ["Grub", "Thrak"]
+    assert chips.first.locator(".pool-chip__mark").inner_text() == "Zz"
+    chips.nth(1).click()
+    tab = pg.locator(".gui-panel .pool-orks__bar .ok-tab.is-active")
+    tab.wait_for(state="visible", timeout=WAIT_MS)
+    assert tab.inner_text().strip().lower() == "thrak" and "Grunt · tests" in (tab.get_attribute("title") or "")
+    pg.keyboard.press("Escape")
+    lanes.nth(1).locator(".pool-lane__name").click()               # the role: its first session
+    pg.wait_for_function("() => (document.querySelector('.gui-panel .pool-orks__bar .ok-tab.is-active') || {}).textContent"
+                         "?.trim().toLowerCase() === 'snaga'", timeout=WAIT_MS)
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
