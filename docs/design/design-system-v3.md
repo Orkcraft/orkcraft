@@ -142,8 +142,11 @@ an ork's height, as in F1). The numbers at ×2 that led to it: an ork is drawn 4
 load rises to about twice the ork's height (×1.5: 93–129 against 66). At ×1 a cart would be 36 × 31–43, as tall as an
 ork, but under the 64-px target.
 
-**The window: 1440 × 900.** A 36 px HUD, then the world, 1440 × 864. At ×1.5 the packed camp (496 × 264 layout units of
-2 px) is about 1490 × 790 px: it fills the window, its two outer walls just past the edges.
+**The window: 1440 × 900.** A 36 px HUD, then the world, 1440 × 864. With a line per row the loop must hold the lower
+row (five buildings, about 408 units of 2 px), so the camp is 664 × 308 units: about 1330 × 620 px at ×1, which fits,
+and about 1990 × 920 px at ×1.5, which does not — at the default ×1.5 the window shows the camp's middle (both lines
+and all eight inner buildings) and the lookout and the catapult at its two ends are just outside; the wheel's ×1 shows
+the whole camp. Either the camera pans (drag, I1), or the lower row is drawn narrower.
 
 | piece | as drawn on B1–B3 (art px = screen px) | the plan (token) |
 |---|---|---|
@@ -177,13 +180,16 @@ a larger scale, which v3 does not use. To get F1's fill, the sheets must draw th
 
 ## 4. Layout rules (decided the night of 14 October)
 
-1. **One main track line** runs left to right in the work's order. **No rail spurs:** each building is joined to the
-   line by a **dirt path** (`world-earth`, 32 px wide, a `world-grass-dark` rim) from its door.
-   **A lane per row of buildings** (the owner, v3-prompts §8): buildings face the viewer, so a row's doors open
-   downwards. The row above the line has the track's verge as its lane (a short path from each door); each row below
-   has **its own lane under its doors**, joined to the main line by short paths between buildings. **Carts run on the
-   main line only; lanes are for orks.** More than ten buildings: another row and lane below, the same way.
-2. **Carts stop opposite a path.** The stop is where a path (or a lane's joining path) meets the line; the line's last cell is the buffer stop at
+1. **A line of track per row of buildings, joined in a loop** (the owner, v3-prompts §11). The way in comes down from
+   outside the wall at the lookout's foot and **splits on the left** into line 1, under the upper row's doors, and
+   line 2, under the lower row's; the two **merge on the right**, and line 2 runs on to the catapult's buffer stop.
+   **No rail spurs:** each building is joined to its own line by a short **dirt path** (earth with grass rims, 32 px
+   wide) from its door to its stop. **Carts run on the lines only, orks on the paths.** An eleventh building starts
+   another row with its own line, joined into the loop the same way. (This replaces round 4's lane per row.) c2 has no
+   junction with exits north, east and south yet: in the preview its north T turned a quarter clockwise stands in (a
+   flat track seen from above reads the same turned); the merge on the right is c2's own north T, the turns its
+   north-east and south-west curves, so the loop needs no north-west curve.
+2. **Carts stop opposite a path.** The stop is where a building's path meets its line; the line's last cell is the buffer stop at
    the catapult.
 3. **The keeper waits at the stop.** A building that takes work from the line (Task board, Agent pool, Review gate,
    Inspector) has its keeper at the end of its path; where the keeper stands says its state (v3-prompts §5): at the

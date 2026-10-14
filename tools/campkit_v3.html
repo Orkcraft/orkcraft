@@ -195,28 +195,29 @@ async function pick(cands) {
 // F1's density (round 4): two rows close to the line, about one path's width between buildings; the camp is as wide
 // as its buildings at ×1 and stands in the middle of the window, wilderness round it. Numbers in layout units (2 px).
 const OX = 40;                          // the camp's left edge in its own frame (#world is placed to centre the camp)
-const CAMP_W = 496, CAMP_H = 264;       // the camp's extent in units, the walls and the lane's chips included
+const CAMP_W = 664, CAMP_H = 308;       // the camp's extent in units, the walls and the chips included
 let OY = 0;                             // the wilderness above the back wall, in units (set by placeCamp)
 function placeCamp() {
   const left = Math.round((1440 - CAMP_W * K) / 2), top = Math.round((864 - CAMP_H * K) / 2);
   world.style.left = left + "px"; world.style.top = top + "px";
   OY = top / K;
 }
-const LINE_Y = 128;                     // the main line's tile row (32 tall)
-const LANE_Y = 232;                     // the lower row's lane, under its doors
-const WALL_X = OX + 440;                // the right wall, the catapult against it
+const LINE_Y = 128;                     // line 1's tile row (32 tall), under the upper row's doors
+const LINE2_Y = 256;                    // line 2's, under the lower row's doors (a line of track per row, v3-prompts §11)
+const COL_L = OX + 56, COL_R = OX + 480; // the loop's two columns: the split on the left, the merge on the right
+const WALL_X = OX + 608;                // the right wall, the catapult against it at line 2's end
 const BUILDINGS = [
-  // type, name, box [x, y(top), w, h] (the cut sprite's size), v2 stand-in, block look, path: "line" | "lane" | …
+  // type, name, box [x, y(top), w, h] (the cut sprite's size), v2 stand-in, block look, its line: 1 | 2 | "wall" | "end"
   ["watchtower", "External listeners", [OX + 12, 0, 40, 64], "covers/tower/lookout.png", { roof: "var(--art-bone)" }, "wall"],
-  ["fields", "Task board", [OX + 100, 76, 44, 36], "facades/fields.png", { roof: "var(--art-wood-light)" }, "line"],
-  ["barracks", "Agent pool", [OX + 160, 48, 96, 64], "facades/barracks.png", { roof: "var(--art-cloth)" }, "line"],
-  ["loot_vault", "Review gate", [OX + 272, 56, 80, 56], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, "line"],
-  ["catapult", "Publisher", [OX + 376, 104, 64, 56], null, { machine: true, roof: "var(--art-wood)" }, "end"],
-  ["lake", "Inspector", [OX + 16, 180, 64, 52], "covers/open/pond.png", { water: true }, "lane"],
-  ["mine", "Research", [OX + 96, 168, 48, 64], null, { stone: true, roof: "var(--art-bone)" }, "lane"],
-  ["lab", "Test bench", [OX + 160, 180, 76, 52], null, { roof: "var(--art-wood-light)" }, "lane"],
-  ["town_hall", "Town Hall", [OX + 252, 168, 92, 64], null, { roof: "var(--art-cloth-plum)" }, "lane"],
-  ["ux_lab", "UX bench", [OX + 360, 176, 64, 56], null, { roof: "var(--art-cloth)" }, "lane"],
+  ["fields", "Task board", [OX + 132, 76, 44, 36], "facades/fields.png", { roof: "var(--art-wood-light)" }, 1],
+  ["barracks", "Agent pool", [OX + 208, 48, 96, 64], "facades/barracks.png", { roof: "var(--art-cloth)" }, 1],
+  ["loot_vault", "Review gate", [OX + 344, 56, 80, 56], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, 1],
+  ["catapult", "Publisher", [OX + 544, 232, 64, 56], null, { machine: true, roof: "var(--art-wood)" }, "end"],
+  ["lake", "Inspector", [OX + 96, 188, 64, 52], "covers/open/pond.png", { water: true }, 2],
+  ["mine", "Research", [OX + 168, 176, 48, 64], null, { stone: true, roof: "var(--art-bone)" }, 2],
+  ["lab", "Test bench", [OX + 224, 188, 76, 52], null, { roof: "var(--art-wood-light)" }, 2],
+  ["town_hall", "Town Hall", [OX + 308, 176, 92, 64], null, { roof: "var(--art-cloth-plum)" }, 2],
+  ["ux_lab", "UX bench", [OX + 408, 184, 64, 56], null, { roof: "var(--art-cloth)" }, 2],
 ];
 
 function block(box, look) {
@@ -260,24 +261,31 @@ async function track() {
     { src: `${CAMP}track/${name}.png`, scale: K, v2: true }];
   const probe0 = await pick(cands("straight-h"));
   const T = probe0 ? probe0.img.naturalWidth * probe0.scale / K : 32;            // the tile in layout units
-  const tile = async (name, x, y, v) => {
+  const tile = async (name, x, y, v, rot = 0) => {
     const got = await pick(cands(name));
     if (got) {
       if (!got.v2) here.add(`track/${name}.png`);
       const img = document.createElement("img");
       img.className = "v3-img"; img.src = got.src;
-      img.style.cssText = `left:${x * K}px;top:${y * K}px;width:${T * K}px;height:${T * K}px`;
+      img.style.cssText = `left:${x * K}px;top:${y * K}px;width:${T * K}px;height:${T * K}px` + (rot ? `;transform:rotate(${rot}deg)` : "");
       world.appendChild(img);
     } else el("v3-at v3-rails" + (v ? " is-v" : ""), x, y, T, T);
   };
-  const cx = OX + 72 - T / 2, cy = LINE_Y + 16 - T / 2;       // the column's and the row's centres stay put
-  // the way in: from outside the wall at the tower's foot, down to the line, then left to right to the catapult
-  for (let y = cy - Math.ceil((cy + OY) / T) * T; y < cy; y += T) await tile("straight-v", cx, y, true);
-  await tile("corner-ne", cx, cy);
-  const end = OX + 376;                                      // the catapult's left edge: the buffer stop before it
-  let x = cx + T;
-  for (; x + 2 * T <= end; x += T) await tile("straight-h", x, cy);
-  await tile("stop-e", x, cy);
+  // a line of track per row, joined in a loop (v3-prompts §11): the way in comes down from outside the wall at the
+  // tower's foot and splits on the left into line 1 (the upper row) and line 2 (the lower row); they merge on the right
+  // and line 2 runs on to the catapult's buffer stop. c2 has no junction with exits north, east and south yet: its
+  // north T turned a quarter clockwise stands in for it (a flat track from above reads the same turned).
+  for (let y = LINE_Y - Math.ceil((LINE_Y + OY) / T) * T; y < LINE_Y; y += T) await tile("straight-v", COL_L, y, true);
+  await tile("t-n", COL_L, LINE_Y, false, 90);                     // the split: in from the north, out east and south
+  for (let y = LINE_Y + T; y < LINE2_Y; y += T) await tile("straight-v", COL_L, y, true);
+  await tile("corner-ne", COL_L, LINE2_Y);
+  for (const ly of [LINE_Y, LINE2_Y]) for (let x = COL_L + T; x < COL_R; x += T) await tile("straight-h", x, ly);
+  await tile("corner-sw", COL_R, LINE_Y);                          // line 1 turns down on the right…
+  for (let y = LINE_Y + T; y < LINE2_Y; y += T) await tile("straight-v", COL_R, y, true);
+  await tile("t-n", COL_R, LINE2_Y);                               // …and merges into line 2
+  let x = COL_R + T;
+  for (; x + 2 * T <= OX + 544; x += T) await tile("straight-h", x, LINE2_Y);
+  await tile("stop-e", x, LINE2_Y);
 }
 
 // the ground (g1): the grass is the token; a path is the earth fill with the grass rim of an edge tile along each of
@@ -329,8 +337,8 @@ function decals() {
 }
 // g2's decor, a little, only in the wilderness round the camp (never in the work area)
 const DECOR = [["tree", -6, 36], ["pine", 4, 92], ["bush", -12, 150], ["rock", 2, 214], ["mushrooms-teal", 14, 246],
-  ["pine", 524, 70], ["tree", 534, 130], ["logpile", 528, 196], ["reeds", 524, 250], ["stump", 150, -24], ["bush-small", 260, -30],
-  ["boulder", 380, -28], ["pebbles", 90, 282], ["log-mossy", 230, 290], ["mushrooms-white", 330, 284], ["rocks", 430, 288]];
+  ["pine", 688, 70], ["tree", 698, 130], ["logpile", 692, 196], ["reeds", 688, 260], ["stump", 150, -24], ["bush-small", 300, -30],
+  ["boulder", 520, -28], ["pebbles", 90, 318], ["log-mossy", 260, 326], ["mushrooms-white", 420, 320], ["rocks", 600, 326]];
 async function decor() {
   for (const [n, x, y] of DECOR) {
     const img = await probe(`${V3}decor/${n}.png`);
@@ -343,20 +351,16 @@ async function decor() {
 }
 
 function paths() {
-  // the top row: a path from each door down to the line (open to the grass on its two sides)
-  for (const [, , [x, y, w, h], , , kind] of BUILDINGS) {
-    if (kind === "line") earthPath(x + w / 2 - 8, y + h - 4, 16, LINE_Y - (y + h) + 4, "we");
+  // each row's doors: a short path down to the stop on its own line (open to the grass on its two sides); carts run on
+  // the lines, orks on the paths. An eleventh building starts another row with its own line, the same way.
+  for (const [, , [x, y, w, h], , , line] of BUILDINGS) {
+    if (line === 1) earthPath(x + w / 2 - 8, y + h - 4, 16, LINE_Y - (y + h) + 4, "we");
+    if (line === 2) earthPath(x + w / 2 - 8, y + h - 4, 16, LINE2_Y - (y + h) + 4, "we");
   }
-  // a lane per row of buildings (the owner's answer, v3-prompts §8): the upper row's lane is the track's verge; the
-  // lower row's runs under its doors, joined to the line by short paths between buildings, each joint a stop.
-  // Carts stay on the line; lanes are for orks. An eleventh building starts another row and lane below, the same way.
-  const joints = [OX + 80, OX + 236, OX + 344];
-  earthPath(OX + 8, LANE_Y, 424, 16, "nswe", joints.map((x) => [x, x + 16]));
-  for (const x of joints) earthPath(x, LINE_Y + 32, 16, LANE_Y - LINE_Y - 32, "we");
   // the low palisade: along the top (a gap where the track comes in at the tower's foot) and down the right side
   el("v3-at v3-palisade", OX - 40, 0, 96, 32);
   el("v3-at v3-palisade", OX + 88, 0, WALL_X + 16 - OX - 88, 32);
-  el("v3-at v3-palisade is-v", WALL_X, 32, 16, LANE_Y + 24);
+  el("v3-at v3-palisade is-v", WALL_X, 32, 16, LINE2_Y + 48);
 }
 
 async function ork(cx, feetY, opts = {}) {
@@ -390,9 +394,9 @@ function badge(kind, cx, topArt) {
   world.appendChild(b);
 }
 
-async function cart(x, load, opts = {}) {
+async function cart(x, load, opts = {}, line = LINE_Y) {
   // feet on the line's lower rail; v3: one sprite with its load, as the sheet draws it, at ×1; v2: bin 48×40 and load at ×1
-  const feet = LINE_Y + 26;
+  const feet = line + 26;
   const wrap = document.createElement("div");
   wrap.className = "v3-at" + (opts.roll ? " v3-roll" : "");
   wrap.style.cssText = `left:${x * K}px;top:0;width:0;height:0;` + (opts.roll ? `--run:${opts.roll * K}px;--steps:${opts.roll};--dur:${opts.dur || 16}s;animation-delay:${opts.delay || 0}s` : "");
@@ -429,20 +433,22 @@ async function scene() {
   paths();
   await track();
   for (const b of BUILDINGS) await building(b);
-  for (const [, name, [x, y, w, h], , , kind] of BUILDINGS) nameChip(name, x + w / 2, kind === "line" ? y + h / 2 : y + h + 2);   // the top row on its facade, the rest under the foot
-  // carts: two rolling, one stopped at the Task board's path, one held at the gate with the yellow flag and its chip
-  await cart(OX + 96, "code", { roll: 240, dur: 14 });
-  await cart(OX + 96, "message", { roll: 240, dur: 14, delay: -7 });
-  await cart(OX + 116, "asset");
-  await cart(OX + 304, "code", { flag: "#42 · Fix login bug" });
-  // the keepers wait at the stops (Task board, Agent pool, Review gate, Inspector); one lifts the load off at the gate;
-  // one asks at the Agent pool's door; one works in the lane
-  await ork(OX + 136, LINE_Y - 2);
-  await ork(OX + 224, LINE_Y - 2);
-  await ork(OX + 320, LINE_Y - 2, { anim: "work" });
-  await ork(OX + 96, LINE_Y + 50);
-  await ork(OX + 190, 112, { badge: "ask" });
-  await ork(OX + 300, LANE_Y + 14, { anim: "work", flip: true });
+  for (const [, name, [x, y, w, h], , , line] of BUILDINGS) nameChip(name, x + w / 2, line === "wall" || line === "end" ? y + h + 2 : y + h / 2);   // on the facade, clear of the lines
+  // carts: two rolling on line 1, one stopped at the Task board, one held at the gate with the yellow flag and its chip;
+  // on line 2 one rolling and one stopped at the Test bench
+  await cart(COL_L + 40, "code", { roll: 360, dur: 18 });
+  await cart(COL_L + 40, "message", { roll: 360, dur: 18, delay: -9 });
+  await cart(OX + 154, "asset");
+  await cart(OX + 384, "code", { flag: "#42 · Fix login bug" });
+  await cart(COL_L + 40, "doc", { roll: 400, dur: 22, delay: -5 }, LINE2_Y);
+  await cart(OX + 262, "bundle", {}, LINE2_Y);
+  // the keepers wait at the stops; one lifts the load off at the gate; one asks at the Agent pool's door
+  await ork(OX + 172, LINE_Y - 2);
+  await ork(OX + 272, LINE_Y - 2);
+  await ork(OX + 404, LINE_Y - 2, { anim: "work" });
+  await ork(OX + 146, LINE2_Y - 2);
+  await ork(OX + 238, 112, { badge: "ask" });
+  await ork(OX + 284, LINE2_Y - 2, { anim: "work", flip: true });
   report();
 }
 
