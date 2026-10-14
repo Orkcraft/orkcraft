@@ -229,3 +229,28 @@ Phase 2 on `main`: A4, A6, W1, W2, W3, D3, D4, design-system v2 with the artist'
 0.3 sheets moved out of the package and cut into placeholder sprites by the v2 pipeline (and `alert` re-pointed to
 the question's yellow). Next after them: C5 the catapult, D5 the GIF, B8 quests 4–5.
 
+
+## 12. Where things stand (14 October, evening): the handoff
+
+**Built and on `main` today:** the rename to Orkline; B1–B8 (Cursor's token reader out, night off, listeners limited,
+agy experimental, the onboarding cut, Mission 1 quests 1–5 with the hooks asked once); A0–A6 (event log, the way to
+ask, one status, the 🥩 list and Stop all, the console unfolded and Work removed from the core buildings, the pool's
+lanes as roles); W1–W3 (since your last look, quiet hours, leaving the camp); C1–C4 (Camp off gold, readability and
+motion tokens, the card as a building for the five core buildings, rails and mine carts on a 32 px grid); the design
+system v2 and the artist's brief; placeholder sprites cut from the owner's sheets; ork faces by role; the phone as the
+console; D1+D2 built, not published; D3 README and GitHub profile; D4 landing draft; the marketing materials
+(`docs/marketing/`).
+
+**Known gaps, seen on the demo's screenshots:** the other buildings still in the old style beside the new covers;
+Camp's ground dark instead of v2's mid-value forest; the Agent pool's canvas cover reads as a red block; the open 🥩
+list draws under the cards (A5); three browser tests red since the morning (test stabilisation paused on its branch);
+three face pairs to redraw (Quartermaster/Warder, Treasurer/Mechanic, Loader/Pathfinder); the per-ork `!` and ⏳
+states (session running).
+
+**Waiting on the owner:** the GitHub organisation renamed to `orkline` and the update URLs switched with a release;
+orkline.dev serving `install.sh` and `updates.json`; the PyPI name and trusted publisher (`docs/distribution-howto.md`);
+the five-second test on developers; the letter to the artist; Google's and OpenAI's terms; Discord and the first
+devlog post from 19 October; the release 0.3.0 "Orkline".
+
+**Next, by the backlog:** C5 the catapult and the ways in; the old buildings onto the v2 kit; the ground; D5 the GIF;
+then the first three testers.
