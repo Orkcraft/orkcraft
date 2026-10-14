@@ -38,6 +38,7 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 | [improve-buildings.md](improve-buildings.md) §12.4 | the benches beyond Orkcraft: Later, with a gate; assets offered to new builders, not the classic game dev community |
 | [backlog.md](backlog.md) | **the development backlog to the launch**: items with ids, lanes that run in parallel, dependencies, days |
 | [camp-story.md](camp-story.md) | the camp's story: work comes in at the ways in, is refined on the line, and is catapulted over the wall; the GIF ends on a launch; "launched" in the score |
+| [v3-prompts.md](v3-prompts.md) | **v3**: prompts for the reference frames (town, a building clicked, an ork clicked, the Task board inside, a cart's history) and every asset to replace (§13) |
 | [asset-prompts.md](asset-prompts.md) | prompts for reference sprite sheets: the ork body and roles, carts, ground and roads, the building kits, facades and crests |
 | [design-system-v2.md](design-system-v2.md) | **the design system for the new Camp**: the grid and scale ladder, one projection, the layers, the cover kits, track, carts and orks with their slots, signals and chips, the world palette as tokens, the sprite pipeline; its open questions; and [artist-brief.md](artist-brief.md), the commissioned artist's brief made from it |
 | [naming.md](naming.md) | name candidates should Orkcraft be renamed (Q18): criteria, twelve names, the first three, the checks |
@@ -311,3 +312,20 @@ care still holds: nothing in the art imitates the big strategy game.
 
 Then: the GIF (D5) on V3's art, without the catapult; the first three testers. **No** new features until their
 feedback, besides these.
+
+**The owner's answers to the review (14 October, night):**
+
+1. **No testers until the owner finds the product ready.** The owner builds Orkline for themselves whatever testers
+   would say; §4.1's time box is dropped. The hypothesis kept: **the product is first about its look** — it must
+   switch a person from work mode to play mode at once.
+2. The owner has not been satisfied with the look; it is brought to a finished state before anything else is shown.
+3. **The name Orkline is final.**
+4. Q19 (a building as one folder sent as a pull request): **after the testers.**
+5. **The score is raised to P0**, at its smallest: the cost of an accepted result on the Review gate, with better or
+   worse than last week.
+6. The inside of a building: **the Task board only**; the others stay as they are until the owner has felt it.
+7. **V3's reference frame first**, approved by the owner; I1 and I2 are built on it, not drawn twice.
+8. The owner generates the images; the sessions write the prompts, the tokens and the cutting.
+9. S9 and E1 wait; the new look comes first.
+
+The prompts for the frames and for every asset to replace: [v3-prompts.md](v3-prompts.md).
