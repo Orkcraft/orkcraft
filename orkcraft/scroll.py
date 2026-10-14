@@ -19,8 +19,10 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import os
 import re
 import shutil
+import threading
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
@@ -559,9 +561,13 @@ def save(path: Path, scroll: TownScroll) -> list[str]:
     if problems:
         return problems
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    tmp.replace(path)
+    # a temporary file of its own: the clock's thread and the face's may save at once (each rename is whole)
+    tmp = path.with_suffix(f"{path.suffix}.{os.getpid()}-{threading.get_ident()}.tmp")
+    try:
+        tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        tmp.replace(path)
+    finally:
+        tmp.unlink(missing_ok=True)
     return []
 
 
