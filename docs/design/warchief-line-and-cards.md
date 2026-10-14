@@ -88,6 +88,8 @@ saying what it does (a gear at work, Zz resting, `!` asking; Office says it in a
 its **topic** (the persona it was hired as — tests, frontend — the kind of work it takes for good, never the one
 request; "any work" without one) and how many tasks of that topic wait (its follow-ups too), six lanes at most
 (`gui/views/barracks.py` `_lanes`). Later: an ork that keeps a module for good (tests, FE) and new tasks sent by topic.
+**Since A6 (2026-10-14) a lane is a role, not an ork** ([pool-roles.md](pool-roles.md)): "Grunt · tests", the orks
+hired as it its sessions, a chip each in the one status.
 
 ## 5. Info stays a window of its own, its settings in it (built)
 
