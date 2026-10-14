@@ -79,11 +79,11 @@
   {"name": "b1-catapult", "file": "b1-catapult.png", "over": "b1-core", "show": 1,
    "about": "v3-prompts §8: the Publisher alone, in side view against a low log wall, four frames (rest, pulled back, mid-throw, the scroll away); frame 0 replaces B1's catapult",
    "groups": [{"size": [160, 128], "anchor": "feet", "slots": ["door", "signal", "count"],
-               "items": [{"file": "buildings/catapult.png", "order": 0, "size": [160, 128]}]}]},
+               "items": [{"file": "buildings/catapult.png", "order": 1, "size": [160, 128]}]}]},
   {"name": "b1-lookout", "file": "b1-lookout.png", "over": "b1-core", "show": 1,
    "about": "v3-prompts §7.3: the lookout built into a low log wall, the track's gate at its foot; replaces B1's",
    "groups": [{"size": [128, 160], "anchor": "feet", "slots": ["door", "signal", "count"],
-               "items": [{"file": "buildings/watchtower.png", "order": 0, "size": [128, 160]}]}]},
+               "items": [{"file": "buildings/watchtower.png", "order": 1, "size": [128, 160]}]}]},
   {"name": "b1-taskboard", "file": "b1-taskboard.png", "over": "b1-core", "show": 1,
    "about": "v3-prompts §9: the Task board at core size (160–192 wide); replaces B1's",
    "groups": [{"size": [176, 128], "anchor": "feet", "slots": ["door", "signal", "count"],
@@ -91,6 +91,7 @@
   {
    "name": "b2-town",
    "file": "b2-town.png",
+   "close": 4,
    "about": "sheet B2: the town and its work",
    "groups": [
     {
@@ -131,7 +132,7 @@
       },
       {
        "file": "buildings/scrolls.png",
-       "order": 3,
+       "order": 4,
        "size": [
         96,
         96
@@ -201,7 +202,7 @@
       },
       {
        "file": "buildings/pit.png",
-       "order": 4,
+       "order": 3,
        "size": [
         64,
         64
@@ -263,7 +264,7 @@
       },
       {
        "file": "buildings/forest.png",
-       "order": 2,
+       "order": 3,
        "size": [
         96,
         96
@@ -271,7 +272,7 @@
       },
       {
        "file": "buildings/gramophone.png",
-       "order": 3,
+       "order": 5,
        "size": [
         80,
         80
@@ -279,7 +280,7 @@
       },
       {
        "file": "buildings/horn.png",
-       "order": 4,
+       "order": 6,
        "size": [
         64,
         80
@@ -287,7 +288,7 @@
       },
       {
        "file": "buildings/custom.png",
-       "order": 5,
+       "order": 8,
        "size": [
         80,
         80
@@ -1296,7 +1297,7 @@
   {
    "name": "g3-palisade",
    "file": "g3-palisade.png",
-   "about": "§3d.3 the low palisade of rounded logs, 32-px pieces: straight, two corners, two ends, the gap the track runs through",
+   "about": "§3d.3 the low palisade of rounded logs, 32-px pieces: straight, two ends, the gap the track runs through (gen_sheets #1 drew no corners: front-on, a corner is not seen; they wait)",
    "groups": [
     {
      "size": [
@@ -1314,24 +1315,8 @@
        ]
       },
       {
-       "file": "edge/palisade-corner-nw.png",
-       "order": 1,
-       "size": [
-        32,
-        40
-       ]
-      },
-      {
-       "file": "edge/palisade-corner-ne.png",
-       "order": 2,
-       "size": [
-        32,
-        40
-       ]
-      },
-      {
        "file": "edge/palisade-end-w.png",
-       "order": 3,
+       "order": 2,
        "size": [
         32,
         32
@@ -1339,7 +1324,7 @@
       },
       {
        "file": "edge/palisade-end-e.png",
-       "order": 4,
+       "order": 3,
        "size": [
         32,
         32
@@ -1347,7 +1332,7 @@
       },
       {
        "file": "edge/palisade-gap.png",
-       "order": 5,
+       "order": 1,
        "size": [
         32,
         32

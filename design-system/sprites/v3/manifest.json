@@ -29,19 +29,19 @@
   {
    "file": "buildings/catapult.png",
    "size": [
-    128,
-    112
+    152,
+    96
    ],
    "frame": [
-    128,
-    112
+    152,
+    96
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "b1-core.png",
+   "source": "b1-catapult.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
@@ -54,15 +54,15 @@
   {
    "file": "buildings/council.png",
    "size": [
-    136,
+    128,
     96
    ],
    "frame": [
-    136,
+    128,
     96
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
@@ -77,21 +77,96 @@
    ]
   },
   {
-   "file": "buildings/fields.png",
+   "file": "buildings/crag.png",
    "size": [
-    88,
-    72
+    96,
+    104
    ],
    "frame": [
-    88,
-    72
+    96,
+    104
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "b1-core.png",
+   "source": "b4-others.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/custom.png",
+   "size": [
+    120,
+    120
+   ],
+   "frame": [
+    120,
+    120
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b4-others.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/fields.png",
+   "size": [
+    400,
+    296
+   ],
+   "frame": [
+    400,
+    296
+   ],
+   "frames": 1,
+   "pitch": 6.0,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b1-taskboard.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/forest.png",
+   "size": [
+    128,
+    120
+   ],
+   "frame": [
+    128,
+    120
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b4-others.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
@@ -104,15 +179,15 @@
   {
    "file": "buildings/forge.png",
    "size": [
-    128,
+    168,
     120
    ],
    "frame": [
-    128,
+    168,
     120
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
@@ -127,17 +202,67 @@
    ]
   },
   {
-   "file": "buildings/lab.png",
+   "file": "buildings/gramophone.png",
    "size": [
-    152,
+    104,
     104
    ],
    "frame": [
-    152,
+    104,
     104
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b4-others.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/horn.png",
+   "size": [
+    64,
+    104
+   ],
+   "frame": [
+    64,
+    104
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b4-others.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/lab.png",
+   "size": [
+    96,
+    112
+   ],
+   "frame": [
+    96,
+    112
+   ],
+   "frames": 1,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
@@ -187,7 +312,7 @@
     120
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
@@ -230,14 +355,14 @@
    "file": "buildings/mill.png",
    "size": [
     112,
-    120
+    112
    ],
    "frame": [
     112,
-    120
+    112
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
@@ -254,15 +379,15 @@
   {
    "file": "buildings/mine.png",
    "size": [
-    96,
-    128
+    64,
+    120
    ],
    "frame": [
-    96,
-    128
+    64,
+    120
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
@@ -279,15 +404,15 @@
   {
    "file": "buildings/pit.png",
    "size": [
-    104,
-    120
+    56,
+    96
    ],
    "frame": [
-    104,
-    120
+    56,
+    96
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
@@ -304,15 +429,15 @@
   {
    "file": "buildings/scrolls.png",
    "size": [
-    128,
-    120
+    80,
+    96
    ],
    "frame": [
-    128,
-    120
+    80,
+    96
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
@@ -329,15 +454,15 @@
   {
    "file": "buildings/signpost.png",
    "size": [
-    72,
-    112
+    88,
+    104
    ],
    "frame": [
-    72,
-    112
+    88,
+    104
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
@@ -354,15 +479,15 @@
   {
    "file": "buildings/town_hall.png",
    "size": [
-    184,
-    128
+    160,
+    112
    ],
    "frame": [
-    184,
-    128
+    160,
+    112
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
@@ -379,15 +504,15 @@
   {
    "file": "buildings/ux_lab.png",
    "size": [
-    128,
+    96,
     112
    ],
    "frame": [
-    128,
+    96,
     112
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
@@ -402,21 +527,46 @@
    ]
   },
   {
-   "file": "buildings/watchtower.png",
+   "file": "buildings/war_drum.png",
    "size": [
-    80,
-    128
+    72,
+    104
    ],
    "frame": [
-    80,
-    128
+    72,
+    104
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "b1-core.png",
+   "source": "b4-others.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/watchtower.png",
+   "size": [
+    136,
+    192
+   ],
+   "frame": [
+    136,
+    192
+   ],
+   "frames": 1,
+   "pitch": 10.24,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b1-lookout.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
@@ -429,15 +579,15 @@
   {
    "file": "buildings/workshop.png",
    "size": [
-    104,
-    104
+    96,
+    88
    ],
    "frame": [
-    104,
-    104
+    96,
+    88
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
@@ -1048,6 +1198,86 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "edge/palisade-end-e.png",
+   "size": [
+    24,
+    56
+   ],
+   "frame": [
+    24,
+    56
+   ],
+   "frames": 1,
+   "pitch": 11.57,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g3-palisade.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "edge/palisade-end-w.png",
+   "size": [
+    24,
+    56
+   ],
+   "frame": [
+    24,
+    56
+   ],
+   "frames": 1,
+   "pitch": 11.57,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g3-palisade.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "edge/palisade-gap.png",
+   "size": [
+    112,
+    56
+   ],
+   "frame": [
+    112,
+    56
+   ],
+   "frames": 1,
+   "pitch": 11.57,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g3-palisade.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "edge/palisade-h.png",
+   "size": [
+    80,
+    48
+   ],
+   "frame": [
+    80,
+    48
+   ],
+   "frames": 1,
+   "pitch": 11.57,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g3-palisade.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
    "file": "ground/corner-ne.png",
    "size": [
     43,
@@ -1408,6 +1638,122 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o1-body.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8,
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ]
+  },
+  {
+   "file": "orks/inside/carry.png",
+   "size": [
+    384,
+    72
+   ],
+   "frame": [
+    64,
+    72
+   ],
+   "frames": 6,
+   "pitch": 6.0,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o5-inside.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8,
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ]
+  },
+  {
+   "file": "orks/inside/lens.png",
+   "size": [
+    256,
+    72
+   ],
+   "frame": [
+    64,
+    72
+   ],
+   "frames": 4,
+   "pitch": 6.0,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o5-inside.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8,
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ]
+  },
+  {
+   "file": "orks/inside/pin.png",
+   "size": [
+    352,
+    72
+   ],
+   "frame": [
+    88,
+    72
+   ],
+   "frames": 4,
+   "pitch": 6.0,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o5-inside.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8,
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ]
+  },
+  {
+   "file": "orks/inside/quill.png",
+   "size": [
+    224,
+    72
+   ],
+   "frame": [
+    56,
+    72
+   ],
+   "frames": 4,
+   "pitch": 6.0,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o5-inside.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
@@ -1791,6 +2137,161 @@
    ],
    "slots": [
     "role"
+   ]
+  },
+  {
+   "file": "orks/states/asks.png",
+   "size": [
+    64,
+    96
+   ],
+   "frame": [
+    64,
+    96
+   ],
+   "frames": 1,
+   "pitch": 9.82,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o3-states.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "state"
+   ]
+  },
+  {
+   "file": "orks/states/doze.png",
+   "size": [
+    64,
+    96
+   ],
+   "frame": [
+    64,
+    96
+   ],
+   "frames": 1,
+   "pitch": 9.82,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o3-states.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "state"
+   ]
+  },
+  {
+   "file": "orks/states/held.png",
+   "size": [
+    56,
+    96
+   ],
+   "frame": [
+    56,
+    96
+   ],
+   "frames": 1,
+   "pitch": 9.82,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o3-states.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "state"
+   ]
+  },
+  {
+   "file": "orks/states/stuck.png",
+   "size": [
+    56,
+    88
+   ],
+   "frame": [
+    56,
+    88
+   ],
+   "frames": 1,
+   "pitch": 9.82,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o3-states.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "state"
+   ]
+  },
+  {
+   "file": "orks/states/working.png",
+   "size": [
+    72,
+    104
+   ],
+   "frame": [
+    72,
+    104
+   ],
+   "frames": 1,
+   "pitch": 9.82,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o3-states.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "state"
    ]
   },
   {

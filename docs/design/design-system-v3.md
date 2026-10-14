@@ -435,6 +435,17 @@ cast — and [candidates/index.html](img/references/v3/candidates/index.html) sh
 `c2-curves` (the four curves, the merge and the crossing apart) is generated but not yet in the cut spec: once picked,
 its pieces are mapped into c2's track set.
 
+**Round 7, picked from gen_sheets** (the owner, through the PM session): b1-lookout #3, b1-catapult #3, b1-taskboard #1,
+b2-town #1, b3-plumbing #1, b4-others #3, o3-states #3, o5-inside #1, g3-palisade #1, c2-curves #1, saved under their
+cut names and cut. Mapped by order: the lookout is piece 1 (0 is a smoke puff), the catapult frame 0 is piece 1 (the
+log stack beside it, the scrolls and the other frames are not cut); B2 with `close` 4 so the fire ring's stones are one
+piece, its second Town Hall (3) not used; B3's second chute (4) not used; B4's sundial (2), sign board (4) and second
+horn (7) not used; g3 drew no corners (a corner is not seen front-on): `palisade-h` 0, `gap` 1, `end-w` 2, `end-e` 3,
+the corners wait. Left to fix: the Task board is drawn 400 × 296 (about twice the Agent pool) and, with the lookout,
+has orange wood (the signal check); o3 and o5 are drawn at about twice o1's art pixel; c2-curves is not mapped yet.
+A single-frame sprite whose feet are off its middle (the forge's anvil) is centred on its box when centring on its
+feet would cut a side off.
+
 ## 9. What the owner generates next
 
 In this order, each with **F1 attached** and the line of v3-prompts §6, with the measured values: "keep exactly the

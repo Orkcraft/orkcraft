@@ -817,7 +817,10 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
             iw, ih = item.get("size", (w, h))
             if img.shape[1] > iw or img.shape[0] > ih:
                 problems.append(f"{item['file']}: {img.shape[1]} × {img.shape[0]} cropped to its slot {iw} × {ih}")
-            frame = pad(img, iw, ih, item.get("anchor", anchor), feet_x(img))
+            cx = feet_x(img)
+            if group.get("native") and len(bs) == 1 and abs(iw / 2 - cx) > (iw - img.shape[1]) / 2 + 0.5:
+                cx = None                       # centred on its feet it would lose a side (a forge's anvil at its foot)
+            frame = pad(img, iw, ih, item.get("anchor", anchor), cx)
             for fx0, fy0, fx1, fy1 in item.get("clear", []):        # a smudge of the sheet touching the sprite
                 frame[int(fy0 * ih):int(fy1 * ih), int(fx0 * iw):int(fx1 * iw)] = 0
             frames.append(frame)
