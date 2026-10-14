@@ -82,3 +82,13 @@ Warchief's line, the mascot) still uses the old head under six hats chosen by **
    Crag Carver, Scroll Scrapper, Grot Pointa, Chieftain, Peon) keep a plain head until their building's turn (P1),
    never a borrowed role's face.
 4. The commissioned artist redraws all of them from these references ([artist-brief.md](artist-brief.md)).
+
+**The second roles sheet** (2026-10-14, `docs/design/img/references/0.3/roles-2.jpg`), left to right: Taskmaster
+(cap, pencil, clipboard), Lookout (fur hood, spyglass), Loader (leather cap, scroll, lantern), Farseer (dark pointed
+hood with a bone charm, a glowing orb), Warder (iron helmet, a shield with a lock), Artisan (straw hat, brush),
+Treasurer (coin-stamped cap, round spectacles, scales, pouch), Alchemist (pointed cloth hat, green flasks).
+
+**Two pairs to watch at 16 px:** the **Warder** and the **Quartermaster** both wear an iron helmet with a shield (the
+lock against the key); the **Farseer's** pointed hood and the **Alchemist's** pointed hat share a silhouette (dark
+against brown). Told apart by colour today; rule 3 asks for the grey test. If they fail it, the Quartermaster takes
+a ledger and a stamp instead of the helmet, and the Alchemist a round hat.
