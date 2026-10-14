@@ -147,7 +147,7 @@ class OrkStatus:
     def as_dict(self, look: str = "camp", now: float | None = None) -> dict:
         return {"name": self.name, "state": self.state, "mark": self.mark(look), "word": self.mark("office"),
                 "attention": self.attention, "building": self.building, "what": self.what, "cart": self.cart,
-                "cart_id": self.cart_id, "assumptions": self.assumptions, "line": self.line(),
+                "cart_id": self.cart_id, "assumptions": self.assumptions, "doing": self.doing(), "line": self.line(),
                 "wait": self.wait.as_dict(now) if self.wait else None}
 
 

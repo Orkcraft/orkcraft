@@ -1,5 +1,5 @@
 // The chrome around the town (docs/design/calm-town.md §1): the HUD (the portrait, js/portrait.js; the project's name opens the town's
-// settings, js/settings.js; Halt All; the treasury; the orks' questions are the Warchief's line's, js/warchief.js) and the toasts. The
+// settings, js/settings.js; 🥩 and Stop all, js/slots.js; the treasury; the orks' questions are the Warchief's line's, js/warchief.js) and the toasts. The
 // orkspaces are the War Map (js/warmap.js). Markup and classes are the design system's (design-system/components.md: Hud, WarMap, Toast).
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls, linked } from "./html.js";
@@ -9,6 +9,7 @@ import { Portrait, Steps } from "./portrait.js";
 import { Scheme } from "./icons.js";
 import { opened, panelShown, panelWidth } from "./windows.js";
 import { narrow } from "./pocket.js";
+import { SlotsHud } from "./slots.js";
 
 const LEVEL = { warn: "is-warn", over: "is-over" };
 const MARK = { information: "✓", warning: "⚠", error: "✗" };
@@ -76,16 +77,12 @@ export function Hud() {
     <span class="ok-hud__brand">Orkline</span>
     <button class="gui-hud__project gui-hud__menu" title=${`${t.project}${t.demo ? " (demo)" : ""} — ${say("town settings: how freely the orks decide, how long they wait")}`}
       onClick=${() => { settingsOpen.value = true; }}>${say("Menu")}${t.demo ? " · demo" : ""} ▾</button>
-    ${online.value
-      ? html`<button class="gui-hud__stop" title=${say("Stop every ork at work")} onClick=${() => command("halt")}>Stop all</button>`
-      : html`<span class="ok-hud__halt">Disconnected — reconnecting</span>`}
     <span class="ok-hud__spacer"></span>
     <${Hour} hud=${hud} p=${t.portrait} />
     ${hud.quota && html`<${Resource} icon="quota" word=${words.quota} value=${hud.quota} level=${hud.quota_level} />`}
     ${hud.show_gold && html`<${Resource} icon="gold" word=${words.gold} value=${hud.gold} level=${hud.gold_level} />`}
     <${Resource} icon="lumber" word=${words.lumber} value=${hud.lumber} level=${hud.lumber_level} />
-    <${Resource} icon="meat" word=${words.supply} value=${`${hud.agents_working}/${hud.agents}`}
-      level=${hud.supply >= hud.supply_max ? "over" : "ok"} />
+    <${SlotsHud} word=${words.supply} online=${online.value} />
   </header>`;
 }
 

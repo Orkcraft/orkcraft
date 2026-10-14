@@ -19,7 +19,7 @@ from typing import Any
 
 from orkcraft import schedule, settings
 from orkcraft.env import getenv
-from orkcraft.core import runners
+from orkcraft.core import runners, slots
 from orkcraft.core import treasury as tr
 from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
@@ -303,6 +303,7 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "carts": carts(town),
         "travel": float(getattr(town, "cart_travel_s", 0.0) or 0.0),
         "hud": hud(town, muster, treasury, limits),
+        "slots": slots.summary(town, muster),     # 🥩 the orks at work or asking, one row each (core/slots.py)
         "sessions": sessions(live),
         "alerts": alerts(town, muster, night),
         "motions": motion.ready(),               # the houses that move at work (docs/design/building-motion.md)

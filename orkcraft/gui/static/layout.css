@@ -1055,3 +1055,27 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
   word-break: break-word; font: 12px/17px var(--font-mono); color: var(--ink); background: var(--panel);
   box-shadow: var(--bevel-sunken); }
 .gui-fixes__pr { display: flex; flex-direction: column; gap: var(--space-1); }
+
+/* 🥩 The ork slots and the folded console (js/slots.js, docs/design/ork-console.md §7–§8): layout only, in the
+   design system's tokens; the marks carry the state, never a colour alone. */
+.gui-slots { position: relative; display: inline-flex; align-items: center; gap: var(--space-2); }
+.gui-slots__open { border: 1px solid transparent; background: none; color: inherit; font: inherit; cursor: pointer; padding: 1px var(--space-1); }
+.gui-slots__open:hover { border-color: var(--frame); }
+.gui-slots__list { position: absolute; top: 100%; right: 0; margin-top: var(--space-2); width: min(560px, calc(100vw - 32px)); z-index: 30;
+  max-height: 60vh; overflow: auto; padding: var(--space-3); background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame);
+  box-shadow: var(--shadow-window); white-space: normal; }
+.gui-slots__head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+.gui-slots__rows { margin: 0; padding: 0; list-style: none; }
+.gui-slots__row { display: flex; align-items: center; gap: var(--space-2); }
+.gui-slots__pick { flex: 1; display: grid; grid-template-columns: 1.5em auto 1fr auto auto; gap: var(--space-2); align-items: baseline;
+  min-width: 0; padding: var(--space-1); border: 1px solid transparent; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.gui-slots__pick:hover { border-color: var(--frame); }
+.gui-slots__doing { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-slots__num { font-variant-numeric: tabular-nums; }
+.gui-slots__stop { min-width: 2em; }
+.gui-orkconsole { align-self: flex-end; display: grid; gap: var(--space-2); width: min(420px, 40vw); padding: var(--space-2) var(--space-3);
+  background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame); box-shadow: var(--shadow-window); }
+.gui-orkconsole > p { margin: 0; }
+.gui-orkconsole__head { display: flex; align-items: baseline; gap: var(--space-2); }
+.gui-orkconsole__line { flex: 1; min-width: 0; }
+@media (max-width: 640px) { .gui-orkconsole { width: auto; flex: 1; } }

@@ -354,10 +354,17 @@ def _pick(w, args: dict) -> str:
     return folders.start(text(args, "start", 2000).strip() or str(w.code_root))
 
 
+def _stop_ork(w, args: dict) -> bool:
+    """⏹ from the 🥩 list: one ork stops where it is."""
+    if not w.stop_ork(text(args, "ork", 100)):
+        raise ActError("That ork is not at work")
+    return True
+
+
 def _picked(w, args: dict) -> dict:
     return folders.result(text(args, "token", 40))
 
 
 ACTS = {"task": _new_task, "pause": _pause, "answer": _answer, "add_rule": _add_rule,
-        "diff": _diff, "terminal": _terminal, "take_over": _take_over, "hand_back": _hand_back, "wants": _wants, "want_by_source": _want_by_source,
+        "diff": _diff, "terminal": _terminal, "take_over": _take_over, "hand_back": _hand_back, "stop_ork": _stop_ork, "wants": _wants, "want_by_source": _want_by_source,
         "repo": _repo, "pick": _pick, "picked": _picked}

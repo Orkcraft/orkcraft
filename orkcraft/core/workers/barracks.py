@@ -421,6 +421,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
             st.queue.remove(task)
         task.status, task.orc, task.wait_for = "working", orc.name, ""
         task.attempts += 1
+        self.started(orc.name)
         if task not in st.tasks:
             st.tasks.append(task)
         foreman = self.foreman
@@ -435,6 +436,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
         self.refresh_overlaps(task)
         related = follow or foreman.related(task, orc)
         task.warm = related and foreman.can_resume(orc)
+        cancel = threading.Event()               # before it is seen working: Stop and Take over find its run at once
+        self._cancels[orc.name] = cancel
         orc.status, orc.task = "working", task.id
         if (task.key or task.id) not in orc.keys:     # a rework of a task without a ticket comes back by its id
             orc.keys.append(task.key or task.id)
@@ -446,8 +449,6 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
         rework = f" [rework {task.attempts - 1}]" if task.feedback else ""
         self.emit("pool.assigned", f"{orc.name} ({orc.label}) ← {task.title}" + (" [follow-up]" if follow else "")
                   + rework + (" ♻" if task.warm else ""), task.title, ref=task.ref, want=task.want)
-        cancel = threading.Event()
-        self._cancels[orc.name] = cancel
         workdir = Path(orc.worktree) if orc.worktree else repo
         prompt = self._prompt(task, orc, follow, related)
         resume = orc.session if task.warm else ""

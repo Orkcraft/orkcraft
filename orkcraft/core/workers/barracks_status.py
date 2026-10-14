@@ -109,3 +109,45 @@ class StatusMixin:
         working = any(o.status == "working" for o in st.orcs)
         blocking = bool(st.asked) and not working and not st.queue
         return status.building_state(working, asks_blocking=blocking, stopped=st.paused)
+
+    # -- the 🥩 list (ork-console.md §8): one row per ork at work or asking ----------------------------------
+
+    def started(self, orc_name: str) -> None:
+        """An ork's run began now: the 🥩 list says how long it has been at it."""
+        if not hasattr(self, "_since"):
+            self._since = {}
+        self._since[orc_name] = time.time()
+
+    def ork_slots(self, now: float | None = None) -> list[dict]:
+        """Each ork at work or asking, as the 🥩 list's row: its one status, how long, its spend, its tool, the way
+        to stop it softly and the way to answer it."""
+        now = time.time() if now is None else now
+        since = getattr(self, "_since", {})
+        rows = []
+        for orc in self.state.orcs:
+            s = self.ork_status(orc, now)
+            if s.state not in (status.THINKING, status.TOOL, status.ASKS):
+                continue
+            task = self.state.task(s.cart_id) if s.cart_id else None
+            row = {**s.as_dict(now=now), "key": f"{self.building_id}/{orc.name.lower()}", "building_id": self.building_id,
+                   "since_s": round(now - since[orc.name]) if s.state != status.ASKS and orc.name in since else
+                   (round(now - task.waits_since) if task is not None and task.waits_since else None),
+                   "spend": round((task.cost_usd or 0.0), 2) if task is not None else 0.0,
+                   "tool": orc.harness, "stop": None, "answer": None}
+            if s.state == status.ASKS and task is not None:
+                row["answer"] = {"kind": "pool", "building": self.building_id, "task": task.id,
+                                 "question": task.question, "questions": list(task.questions)}
+            else:
+                row["stop"] = {"command": "act", "args": {"id": self.building_id, "act": "stop_ork",
+                                                          "args": {"ork": orc.name}}}
+            rows.append(row)
+        return rows
+
+    def stop_ork(self, orc_name: str) -> bool:
+        """⏹ One ork stops where it is (its task ends as stopped, as Stop does for them all). False when it was not
+        at work."""
+        cancel = self._cancels.get(orc_name)
+        if cancel is None or cancel.is_set():
+            return False
+        cancel.set()
+        return True
