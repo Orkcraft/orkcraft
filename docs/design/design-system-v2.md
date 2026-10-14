@@ -64,7 +64,8 @@ building on top**: a 2:1 header sprite as a finial on a bevelled card, roads as 
 8. **The signal colours disagree.** Today `alert` (orange `#ff8c1a`) means "a question waits" and `warning` (yellow)
    means a held cart. The new rule ([town-readability.md](town-readability.md) §2–4) is **yellow = a question,
    red = an error or 🔥, ⏳ = held**. v2 adds the signal tokens for the new components; re-pointing today's `alert`
-   changes today's Camp and is the owner's call (§12, Q2).
+   changes today's Camp and is the owner's call (§12, Q2). *Done (answer 2):* `alert` is `signal-ask`'s yellow in
+   every theme.
 9. **Display type.** color-pass §5 decided Pixelify Sans for every display text and Almendra SC for the wordmark only;
    the tokens still set `camp-title` and `camp-heading` in Almendra (§12, Q3).
 10. **Stale text:** design-system.md still speaks of the terminal face (removed, calm-town.md §9).

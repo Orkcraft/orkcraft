@@ -200,7 +200,7 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 [data-look="camp"] .gui-hut:is(.is-fenced, .is-bare) .gui-hut__yard-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 [data-look="camp"] .gui-hut:is(.is-fenced, .is-bare).is-selected .gui-hut__yard-name { color: var(--ink-gold); }
 [data-look="camp"] .gui-hut:is(.is-fenced, .is-bare).is-alert .gui-hut__yard-name { color: var(--warning); }
-[data-look="camp"] .gui-hut:is(.is-fenced, .is-bare).is-broken .gui-hut__yard-name { color: var(--alert); }
+[data-look="camp"] .gui-hut:is(.is-fenced, .is-bare).is-broken .gui-hut__yard-name { color: var(--alert-hot); }   /* an error is red; `alert` is the question's yellow */
 
 /* Folded: its name, its building and the top fence alone. */
 [data-look="camp"] .gui-hut.is-fenced.is-folded .ok-hut__card { border-color: transparent; background: none; box-shadow: none; }

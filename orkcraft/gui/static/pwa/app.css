@@ -16,7 +16,7 @@
     --canvas: #f4f4f4; --terrain: #f4f4f4; --panel: #ffffff; --panel-inset: #f0f0f0; --panel-raised: #f7f7f7;
     --bevel-hi: #e6e6e6; --bevel-lo: #d6d6d6; --selection: #e6eefb; --frame: #d6d6d6; --frame-strong: #bdbdbd;
     --ink: #1f1f1f; --ink-muted: #5c5c5c; --ink-comment: #8a8a8a; --ink-gold: #8a5a00;
-    --action: #3f7a1f; --on-action: #ffffff; --success: #3f7a1f; --warning: #8a5a00; --alert: #b45309; --danger: #b42318;
+    --action: #3f7a1f; --on-action: #ffffff; --success: #3f7a1f; --warning: #8a5a00; --alert: #a16207; --danger: #b42318;
     --bevel-sunken: inset 0 0 0 1px #d6d6d6; --shadow-window: 0 6px 20px rgba(0, 0, 0, 0.15);
     color-scheme: light;
   }

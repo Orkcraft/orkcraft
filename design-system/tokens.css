@@ -20,7 +20,7 @@
   --ink-gold: #e3bf9a;
   --action: #5d9e3b;
   --on-action: #0c0a06;
-  --alert: #ff8c1a;
+  --alert: #facc15;
   --alert-hot: #e8411c;
   --fire-glow: #ffc04d;
   --fire-ember: #b31b0f;
@@ -94,7 +94,7 @@
   --bevel-sunken: inset 2px 2px 0 #050403, inset -2px -2px 0 #7a6240;
   --card-edge: inset 1px 1px 0 rgba(255, 226, 170, 0.12);
   --shadow-window: 0 0 0 2px #050403, 4px 4px 0 #000000;
-  --glow-fire: 0 0 0 2px #ff8c1a, 0 0 18px #ff8c1a;
+  --glow-fire: 0 0 0 2px #facc15, 0 0 18px #facc15;
 }
 
 [data-theme="camp-ice"] {
@@ -117,7 +117,7 @@
   --ink-gold: #e3bf9a;
   --action: #5d9e3b;
   --on-action: #0c0a06;
-  --alert: #ff8c1a;
+  --alert: #facc15;
   --alert-hot: #e8411c;
   --fire-glow: #ffc04d;
   --fire-ember: #b31b0f;
@@ -191,7 +191,7 @@
   --bevel-sunken: inset 2px 2px 0 #020508, inset -2px -2px 0 #4a6884;
   --card-edge: inset 1px 1px 0 rgba(190, 220, 255, 0.10);
   --shadow-window: 0 0 0 2px #020508, 4px 4px 0 #000000;
-  --glow-fire: 0 0 0 2px #ff8c1a, 0 0 18px #ff8c1a;
+  --glow-fire: 0 0 0 2px #facc15, 0 0 18px #facc15;
 }
 
 [data-theme="camp-void"] {
@@ -214,7 +214,7 @@
   --ink-gold: #e3bf9a;
   --action: #5d9e3b;
   --on-action: #0c0a06;
-  --alert: #ff8c1a;
+  --alert: #facc15;
   --alert-hot: #e8411c;
   --fire-glow: #ffc04d;
   --fire-ember: #b31b0f;
@@ -288,7 +288,7 @@
   --bevel-sunken: inset 2px 2px 0 #000000, inset -2px -2px 0 #5a5040;
   --card-edge: inset 1px 1px 0 rgba(255, 240, 210, 0.08);
   --shadow-window: 0 0 0 2px #000000, 4px 4px 0 #000000;
-  --glow-fire: 0 0 0 2px #ff8c1a, 0 0 18px #ff8c1a;
+  --glow-fire: 0 0 0 2px #facc15, 0 0 18px #facc15;
 }
 
 [data-theme="office"] {
@@ -311,7 +311,7 @@
   --ink-gold: #e8b94a;
   --action: #6aa84f;
   --on-action: #0f0d09;
-  --alert: #ff9a3c;
+  --alert: #f0d050;
   --alert-hot: #f0603c;
   --fire-glow: #ffc04d;
   --fire-ember: #c0392b;
@@ -385,7 +385,7 @@
   --bevel-sunken: inset 0 0 0 1px #3a3427;
   --card-edge: 0 0 0 0 transparent;
   --shadow-window: 0 6px 20px rgba(0, 0, 0, 0.45);
-  --glow-fire: 0 0 0 1px #f0603c;
+  --glow-fire: 0 0 0 1px #f0d050;
 }
 
 :root {

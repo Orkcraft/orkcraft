@@ -253,7 +253,7 @@ A building as it stands on the town map, collapsed. In Camp it is a card with th
 - A status dot on the right: grey when idle, `alert-hot` when waiting.
 - Busy is a 2px `meter` strip sweeping along the card's foot (still under `prefers-reduced-motion`), never `frame-focus`: that colour is selection only.
 - Text actions.
-- A waiting card turns its outline (2px) and name red-orange and adds `?`.
+- A waiting card turns its outline (2px) and name the question's yellow (`alert`) and adds `?`.
 - With a building selected, every hut that is neither it nor at the other end of one of its roads dims to 40%. A waiting hut never dims.
 
 ## Input
@@ -405,7 +405,7 @@ A piece of the map: real building sprites on their cards, on the Camp ground, be
 - Town Hall (L) **selected**: a bone frame, corner brackets and a glow behind the hall.
 - War Drum (L) **busy**.
 - Tally Crag (M).
-- Lake of Insight (L) **waiting for an answer**: an orange frame and halo, an orange glow behind the pier, and a flame on its roof.
+- Lake of Insight (L) **waiting for an answer**: a yellow frame and halo (`alert`), a yellow glow behind the pier, and a flame on its roof.
 - File Forest (L).
 - The Forge, Task Fields and Barracks **busy**, Clan Fire and Watchtower (all M).
 - The Catapult, Loot Vault, Workshop, Scroll Dump, Custom and Signpost (all S).
@@ -426,7 +426,7 @@ The list of orkspaces (F1–F8) with their biome and a marker for waiting questi
 
 **Camp**
 - A `frame-focus` (bone) rule on top, an Almendra header in `ink-gold` and items in a sunken well.
-- The selected row sits on `selection`. An alert row is `alert` orange and ends with the waiting ork (`orks/ork-waiting.png`).
+- The selected row sits on `selection`. An alert row is `alert` yellow (the question's) and ends with the waiting ork (`orks/ork-waiting.png`).
 
 **Office**
 - A VS Code sidebar section: an 11px uppercase header and 24px rows with a hover wash.
@@ -457,6 +457,6 @@ An opened building. In Camp it is a wide banner sprite over a title bar and a pa
 
 **Office (VS Code)**
 - The banner is hidden.
-- The window is a 1px frame with `radius-lg`, a 35px tab bar, focus as a 1px `frame-focus` outline, and a red-orange frame and title while waiting.
+- The window is a 1px frame with `radius-lg`, a 35px tab bar, focus as a 1px `frame-focus` outline, and a yellow frame and title (`alert`) while waiting.
 
 **Behaviour.** A window has no close button: closing is Demolish (`X`). Double-clicking the bar maximizes the window.

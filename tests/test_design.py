@@ -118,6 +118,17 @@ def test_a_waiting_carts_chip_names_it_by_a_short_ref():
     assert cart_ref("spec:a-very-long-reference-name") == ""
 
 
+def test_a_question_is_yellow_everywhere():
+    """design-system-v2.md §12 answer 2: `alert` (a question waiting, the `fire` tone) is the question's yellow,
+    `signal-ask`, in every theme; red stays for an error or 🔥 (`alert-hot`, `signal-fire`); it reads on the panels."""
+    toks = {t["name"]: t["value"] for t in tokens.system()["color"]["tokens"]}
+    assert toks["alert"] == toks["signal-ask"]
+    assert toks["alert-hot"] == toks["signal-fire"]
+    for theme, value in toks["alert"].items():
+        for ground in ("panel", "canvas", "panel-raised"):
+            assert _contrast(value, toks[ground][theme]) >= 4.5, (theme, ground)
+
+
 def test_generated_reference_sheets_stay_out_of_the_package():
     """docs/design/design-system-v2.md §12 answer 1, color-pass.md §10: the generated reference sheets live in
     docs/design/img/references/ (the docs do not ship); nothing under design-system/, which the wheel carries, is one."""
