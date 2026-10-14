@@ -489,3 +489,15 @@ manifest's rows (sizes, anchors, frames); under CC-BY 4.0.
    Keep all six, or fewer for the launch?
 8. **Footprints by size.** The core five are proposed L (Agent pool), M (Task board, Inspector, External listeners)
    and S (Review gate, Publisher); round 2 of the frame asked the core buildings to be closer in size. Same, or all M?
+
+### Answers (the owner, 2026-10-14)
+
+1. **Yes:** the 0.3 reference sheets move to `docs/design/img/references/0.3/` (not shipped); paths updated.
+2. **Re-point now:** a question is yellow everywhere at once (`alert` re-pointed to the question's yellow; red only
+   for an error or 🔥; ⏳ for held). One meaning of the main signal, even during the move.
+3. **Pixelify Sans for Camp's titles with C3,** so the look changes once.
+4. **The ork 32 × 48.**
+5. **Half-size copies for the map zoom for now;** the artist's small covers only if the five-second test asks.
+6. **Motion tokens in C2.**
+7. **Forest only for the launch;** the other five biomes stay in the code, not offered (P1).
+8. **Agent pool L; Task board, Review gate, Inspector, External listeners M; Publisher S.**

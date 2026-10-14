@@ -221,3 +221,11 @@ has two failures that predate phase 1 or are order-dependent (given to lane B).
 Nine sessions in all with design-system v2. Waiting: B7 Mission 1 (after A4), C3 the card as a building (after
 design-system v2), C4 rails, D1 PyPI and D2 the plugin (after the domain and the PyPI name).
 
+## 11. Phase 3 started (14 October, afternoon)
+
+Phase 2 on `main`: A4, A6, W1, W2, W3, D3, D4, design-system v2 with the artist's brief. Still running: C2, lane B
+(B6, then B7 Mission 1). The owner answered design-system v2's eight questions ([design-system-v2.md](design-system-v2.md)
+§12). New sessions: **C3** the card as a building, **C4** rails and mine carts, **A5** the console unfolded, **S** the
+0.3 sheets moved out of the package and cut into placeholder sprites by the v2 pipeline (and `alert` re-pointed to
+the question's yellow). Next after them: C5 the catapult, D5 the GIF, B8 quests 4–5.
+
