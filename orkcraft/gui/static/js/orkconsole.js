@@ -19,14 +19,18 @@ import { town, command, act, say } from "./link.js";
 import { openBuilding } from "./windows.js";
 import { openInLake } from "./lake.js";
 import { Terminal } from "./terminal.js";
+import { useWaybill, WaybillBody, tokensWord } from "./camp/waybill.js";
 
 export const consoleOrk = signal(null);       // the key of the ork whose console is shown
 export const unfolded = signal(false);        // true: the console unfolded (depth 3), else folded (depth 2)
 // What a console's cart link asks a building's card to show (§21): {building, id}. A type's card reads it.
 export const shownCart = signal(null);
+export const consoleTab = signal("now");     // the unfolded console's tab: now | history | tokens | task (I1)
+const TABS = [["now", "Now"], ["history", "History"], ["tokens", "Tokens"], ["task", "Task"]];
 
 /** Show the console of the ork `key` ("<building>/<ork>"), folded unless `open`. */
 export function showConsole(key, open = false) {
+  if (consoleOrk.value !== key) consoleTab.value = "now";
   consoleOrk.value = key;
   if (open) unfolded.value = true;
 }
@@ -144,6 +148,25 @@ function History({ d, building }) {
   </section>`;
 }
 
+/** What its runs spent: its totals, then each run's tokens and spend; a number no run recorded says so. */
+function Tokens({ d }) {
+  const t = d.totals, none = html`<span class="ok-tone-muted">${say("not recorded")}</span>`;
+  return html`<section aria-label=${say("Its tokens")}>
+    <p class="ok-font-status">${say("In all")}: ${t && t.tokens ? `${tokensWord(t.tokens)} ${say("tokens")}` : none}
+      · ${t && t.cost ? money(t.cost) : none}</p>
+    ${d.history.length ? html`<table class="gui-orkconsole__tokens"><tbody>${d.history.map((r) => html`<tr key=${r.id}>
+      <td>${r.title}</td><td>${r.tokens ? tokensWord(r.tokens) : none}</td><td>${r.cost ? money(r.cost) : none}</td></tr>`)}</tbody></table>`
+      : html`<p class="ok-tone-muted">${say("No runs yet.")}</p>`}
+  </section>`;
+}
+
+/** The task it works on, as its waybill: where it stopped, the tokens, the time. */
+function Task({ building, cart }) {
+  const d = useWaybill(cart ? { building, task: cart.id } : null);
+  if (!cart) return html`<p class="ok-tone-muted">${say("No task now.")}</p>`;
+  return html`<section aria-label=${say("Its task")}><p class="gui-orkconsole__cart">«${cart.title}»</p><${WaybillBody} d=${d} /></section>`;
+}
+
 /** The unfolded console's body (§7, depth 3), under the folded console's head. */
 export function Unfolded({ orkKey, r }) {
   const d = useConsole(orkKey, true);
@@ -156,7 +179,14 @@ export function Unfolded({ orkKey, r }) {
   const asks = r && r.answer && r.answer.kind === "pool" ? r.answer : a && (a.questions.length || a.question || a.draft)
     ? { ...a, task: cart && cart.id } : null;
   const go = (name) => act(building, name, { task: cart.id }).catch(() => {});
-  return html`<div class="gui-orkconsole__body">
+  const tab = consoleTab.value;
+  const tabs = html`<nav class="ok-tabs gui-orkconsole__tabs" role="tablist" aria-label=${say("Its console")}>${TABS.map(([id, word]) =>
+    html`<button key=${id} type="button" role="tab" aria-selected=${tab === id} class=${cls("ok-tab", { "is-active": tab === id })}
+      onClick=${() => { consoleTab.value = id; }}>${say(word)}</button>`)}</nav>`;
+  if (tab === "history") return html`<div class="gui-orkconsole__body">${tabs}<${History} d=${d} building=${building} /></div>`;
+  if (tab === "tokens") return html`<div class="gui-orkconsole__body">${tabs}<${Tokens} d=${d} /></div>`;
+  if (tab === "task") return html`<div class="gui-orkconsole__body">${tabs}<${Task} building=${building} cart=${cart} /></div>`;
+  return html`<div class="gui-orkconsole__body">${tabs}
     ${d.sessions.length > 1 && html`<nav class="gui-orkconsole__sessions" aria-label=${say(`${d.role}: its sessions`)}>
       <span class="ok-tone-muted">${say(d.role)}</span>
       ${d.sessions.map((s) => html`<button key=${s.key} class=${cls("pool-chip", `is-${s.state}`, { "is-this": s.this })}
@@ -175,6 +205,5 @@ export function Unfolded({ orkKey, r }) {
       <button class="ok-btn" title=${say("Closed as dropped: it does not run again")} onClick=${() => go("drop")}>${say("Drop")}</button></div>`}
     ${a && html`<${Answer} building=${building} cart=${cart} a=${a} />`}
     ${d.terminal && html`<${TerminalPart} building=${building} ork=${ork} t=${d.terminal} />`}
-    <${History} d=${d} building=${building} />
   </div>`;
 }

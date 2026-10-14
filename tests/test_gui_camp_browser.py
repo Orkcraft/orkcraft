@@ -87,6 +87,22 @@ def test_a_stopped_cart_stands_at_its_stop_with_its_flag_and_chip(camp_look, gui
     # it stands on b's line, under b, never on a path
     s, h = stand.bounding_box(), _building(pg, b).bounding_box()
     assert abs((s["x"]) - (h["x"] + h["width"] / 2)) < 4 and s["y"] > h["y"] + h["height"]
+    # a cart pressed: the task's history (its stops, tokens, time; nothing recorded is said so)
+    stand.locator(".gui-camp__cart img").first.click()
+    bill = pg.locator(".gui-camp__waybill")
+    bill.wait_for(state="visible", timeout=WAIT_MS)
+    assert "Fix the login form" in bill.inner_text() and "Now:" in bill.inner_text()
+    assert "not recorded" in bill.inner_text()
+    pg.keyboard.press("Escape")
+    bill.wait_for(state="detached", timeout=WAIT_MS)
+    # its steward pressed: its terminal at the foot, unfolded, with its tabs
+    pg.locator('.gui-camp__layer.is-orks .gui-camp__ork').first.evaluate("e => e.click()")
+    console = pg.locator(".gui-orkconsole.is-unfolded")
+    console.wait_for(state="visible", timeout=WAIT_MS)
+    tabs = console.locator(".ok-tab")
+    if tabs.count():                                         # an ork the town knows: Now, History, Tokens, Task
+        assert tabs.all_inner_texts() == ["Now", "History", "Tokens", "Task"]
+    pg.locator(".gui-orkconsole").get_by_role("button", name="Close").click()
     server.host.town.roads.carts.clear()
     for bid in (a, b):
         _call(pg, "town.demolish", {"id": bid})

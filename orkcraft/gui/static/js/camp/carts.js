@@ -9,6 +9,7 @@ import { chipOf } from "../carts.js";
 import { lengthOf } from "./layout.js";
 import { V3, sizeOf } from "./sprites.js";
 import { Badge } from "./signals.js";
+import { waybillOf } from "./waybill.js";
 
 const started = new Map();               // cart id → its animation-delay, fixed when first seen
 const LOUD = ["ask", "stuck", "held"];   // a pile's flag: its loudest cart's
@@ -38,7 +39,8 @@ function Rolling({ c, pts, dur, B }) {
   const d = `M ${pts.map((p) => p.join(" ")).join(" L ")}`;
   const back = pts[pts.length - 1][0] < pts[0][0];
   return html`<div class=${cls("gui-camp__cart is-rolling", { "is-west": back })} data-load=${loadOf(c)} data-road=${c.road}
-      title=${say(chipOf(c))}
+      title=${say(chipOf(c))} role="button" aria-label=${say(`${chipOf(c)}: its history`)}
+      onClick=${(e) => { e.stopPropagation(); waybillOf.value = { cart: c.id }; }}
       style=${`offset-path:path("${d}");animation-duration:${dur}s;animation-delay:${delayOf(c)}s`}>
     <${Bin} c=${c} B=${B} />
   </div>`;
@@ -60,7 +62,9 @@ function Standing({ list, p, L }) {
   const pileS = sizeOf("carts/pile.png");
   return html`<div class=${cls("gui-camp__stand", `is-${loud}`)} data-id=${p.id} style=${`left:${at.x}px;top:${at.y}px`}>
     ${pile && pileS ? html`<img class="gui-camp__px" src=${`${V3}carts/pile.png`} alt="" style=${`left:${-pileS[0] * B / 2}px;top:${-pileS[1] * B}px;width:${pileS[0] * B}px;height:${pileS[1] * B}px`} />`
-      : list.slice(0, SHOWN).map((c, i) => html`<div key=${c.id} class="gui-camp__cart" data-load=${loadOf(c)} style=${`left:${i * at.dx}px;top:0`}><${Bin} c=${c} B=${B} /></div>`)}
+      : list.slice(0, SHOWN).map((c, i) => html`<div key=${c.id} class="gui-camp__cart" data-load=${loadOf(c)} style=${`left:${i * at.dx}px;top:0`}
+          role="button" title=${say(chipOf(c))} aria-label=${say(`${chipOf(c)}: its history`)}
+          onClick=${(e) => { e.stopPropagation(); waybillOf.value = { cart: c.id }; }}><${Bin} c=${c} B=${B} /></div>`)}
     ${loud === "ask" && html`<${Flag} B=${B} />`}
     ${(loud === "held" || loud === "stuck") && html`<${Badge} kind=${loud === "held" ? "held" : "fire"} x=${0} y=${-56 * B - 36}
       title=${say(loud === "held" ? "Held: waits for a limit to reset" : "Stuck on an error")} />`}

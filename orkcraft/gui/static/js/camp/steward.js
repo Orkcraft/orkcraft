@@ -58,17 +58,18 @@ export function Bubble({ x, y, text, onClick = null }) {
 
 /** The steward stepping out of its door (o6-door, four frames, shown at one device pixel an art pixel where the screen
  *  is dense enough; else its role ork beside the door). */
-function OutOfDoor({ b, p, S }) {
+function OutOfDoor({ b, p, S, onOrk }) {
+  const click = onOrk ? (e) => { e.stopPropagation(); onOrk(b); } : undefined;
   const dense = (window.devicePixelRatio || 1) >= 2, door = sizeOf("orks/body/door.png");
   if (dense && door) {
     const k = S / 2, w = door[0] * k, h = door[1] * k;
-    return html`<span class="gui-camp__door" data-id=${b.id} style=${`left:${p.door.x - w / 2}px;top:${p.feet - h}px;width:${w}px;height:${h}px;`
+    return html`<span class="gui-camp__door" data-id=${b.id} role="button" title=${say(`${b.ork_name}: its terminal`)} onClick=${click} style=${`left:${p.door.x - w / 2}px;top:${p.feet - h}px;width:${w}px;height:${h}px;`
       + `background-image:url(${V3}orks/body/door.png);background-size:${w * 4}px ${h}px;--w:${w}px`}></span>`;
   }
   const file = orkSprite(b.ork_name), s = sizeOf(file);
   if (!s) return null;
   const w = s[0] * S, h = s[1] * S;
-  return html`<span class="gui-camp__ork is-out" style=${`left:${p.door.x - w / 2}px;top:${p.feet - h}px;width:${w}px;height:${h}px;`
+  return html`<span class="gui-camp__ork is-out" role="button" title=${say(`${b.ork_name}: its terminal`)} onClick=${click} style=${`left:${p.door.x - w / 2}px;top:${p.feet - h}px;width:${w}px;height:${h}px;`
     + `background:url(${V3 + file}) 0 0 / auto ${h}px no-repeat`}></span>`;
 }
 
@@ -101,12 +102,13 @@ function Scroll({ b, p, grown, seen }) {
 
 /** The steward out, its bubble, and the scroll, for the building under the mouse or the selected one. `seen`: the part
  *  of the world in the window, {left, top, right} in its own px. */
-export function StewardOut({ b, p, L, grown, seen }) {
+export function StewardOut({ b, p, L, grown, seen, onOrk = null, onBubble = null }) {
   const S = L.step.s, B = L.step.b;
   const head = p.feet - 64 * S;
   return html`<div class="gui-camp__layer is-out">
-    <${OutOfDoor} b=${b} p=${p} S=${S} />
-    ${!grown && html`<${Bubble} x=${p.door.x + 6 * B} y=${head - 4} text=${thought(b)} />`}
+    <${OutOfDoor} b=${b} p=${p} S=${S} onOrk=${onOrk} />
+    ${!grown && html`<${Bubble} x=${p.door.x + 6 * B} y=${head - 4} text=${thought(b)}
+      onClick=${onBubble ? () => onBubble(b) : null} />`}
     <${Scroll} b=${b} p=${p} grown=${grown} seen=${seen} />
   </div>`;
 }

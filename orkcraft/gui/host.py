@@ -30,7 +30,7 @@ from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
 from orkcraft.gui import (accounts, awake, away, bench, builder, console, day_logs, day_review, failures, fixes, github, growth, history, mission, mobile, nightly, onboarding, projects,
-                          state, town_settings, updates, views, you)
+                          state, town_settings, updates, views, waybill, you)
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
 from orkcraft.realm import biomes, catalog, elders, fastpath, halt, modes
@@ -84,6 +84,9 @@ class Host:
             "halt": self._halt,
             "act": self._act,
             "ork.console": lambda a: slots.console(self.town, self.muster, self._word(a, "key")),   # §7, unfolded
+            # a cart's way so far (docs/design/cart-waybill.md §2): by its id on a road, or a building's newest
+            "cart.waybill": lambda a: waybill.waybill(self.town, str(a.get("cart") or ""),
+                                                     str(a.get("building") or ""), str(a.get("task") or "")),
             "sessions.new": lambda a: self._session_call(self.sessions.new, self._word(a, "harness")),
             "sessions.resume": lambda a: self._session_call(self.sessions.resume, self._word(a, "key")),
             "sessions.deploy": self._deploy,

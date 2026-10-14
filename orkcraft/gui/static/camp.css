@@ -106,3 +106,18 @@
 @keyframes gui-camp-lift { from, to { visibility: visible; } }
 @keyframes gui-camp-frames6 { to { background-position-x: calc(var(--w) * -6); } }
 @media (prefers-reduced-motion: reduce) { .gui-camp__door, .gui-camp__ork.is-out { animation: none; } }
+
+/* a cart and an ork are pressed: a cart opens the task's history, an ork its terminal (js/camp/waybill.js) */
+.gui-camp__layer.is-carts .gui-camp__cart, .gui-camp__door { pointer-events: auto; cursor: pointer; }
+.gui-camp__cart > img { pointer-events: auto; }
+.gui-camp__ork[role="button"] { cursor: pointer; }
+.gui-camp__waybill { position: absolute; right: 24px; bottom: 120px; z-index: 3000; width: min(560px, calc(100% - 48px)); max-height: 60%;
+  overflow: auto; box-sizing: border-box; padding: 12px 16px; background: var(--parchment); color: var(--parchment-ink);
+  border: 4px solid var(--walnut); box-shadow: inset 0 0 0 1px var(--art-wood-light), 0 0 0 1px var(--art-outline); font: var(--type-camp-body);
+  cursor: default; user-select: text; }
+.gui-camp__waybill-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: var(--type-camp-heading); }
+.gui-camp__waybill-stops { width: 100%; border-collapse: collapse; font: var(--type-camp-caption); margin: 8px 0; }
+.gui-camp__waybill-stops th { text-align: left; font: var(--type-camp-label); border-bottom: 2px solid var(--walnut); padding: 2px 6px; }
+.gui-camp__waybill-stops td { padding: 3px 6px; border-bottom: 1px solid color-mix(in srgb, var(--walnut) 25%, transparent); }
+.gui-camp__waybill-stops tr.is-now td { font: var(--type-camp-label); }
+.gui-camp__waybill-sum { margin: 0; font: var(--type-camp-label); }

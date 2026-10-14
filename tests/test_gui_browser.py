@@ -2491,7 +2491,11 @@ def test_the_agent_pool_s_lanes_are_roles_and_a_session_s_chip_opens_it(gui, cam
     chips.nth(1).click()                                                                 # resting: its console, unfolded
     pg.locator(".gui-orkconsole.is-unfolded", has_text="Not at work now").wait_for(timeout=WAIT_MS)
     pg.locator(".gui-orkconsole.is-unfolded", has_text="Open its terminal").wait_for(timeout=WAIT_MS)
+    pg.locator(".gui-orkconsole.is-unfolded .ok-tab", has_text="History").click()       # its tabs: Now, History, Tokens, Task
     assert "No runs yet." in pg.inner_text(".gui-orkconsole.is-unfolded")
+    pg.locator(".gui-orkconsole.is-unfolded .ok-tab", has_text="Tokens").click()
+    assert "not recorded" in pg.inner_text(".gui-orkconsole.is-unfolded")             # nothing guessed
+    pg.locator(".gui-orkconsole.is-unfolded .ok-tab", has_text="Now").click()
     lanes.nth(1).locator(".pool-lane__name").click()                                     # the role: its first session
     pg.locator(".gui-orkconsole[aria-label=\"snaga's console\"]").wait_for(timeout=WAIT_MS)
     pg.get_by_role("button", name="Close").last.click()

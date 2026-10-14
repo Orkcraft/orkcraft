@@ -291,7 +291,9 @@ def carts(town: Town, now: float | None = None, muster: Muster | None = None) ->
             title = subject(title)                   # the Inbox's card says who sent it and where from
         elif c.payload.mode == "pool.done":
             title = outcome(c.payload.value) or title  # done work reads as what came of it
+        tokens, cost = pipes.trail_totals(c.payload.trail or ())     # what its way spent so far (None: not recorded)
         out.append({"id": f"{key}@{c.at:.3f}", "road": key, "status": c.status, "title": modes.strip_emoji(title)[:80],
+                    "tokens": tokens, "cost": cost,
                     "age": round(age, 2), "load": load_of(c.payload, source_type), "ref": short_ref(ref),
                     "state": state, "stands": stands})
     out.reverse()

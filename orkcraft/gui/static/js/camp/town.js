@@ -21,6 +21,20 @@ import { hovered, StewardOut } from "./steward.js";
 import { Stewards } from "./orks.js";
 import { Badge } from "./signals.js";
 import { typeModule } from "../types.js";
+import { showConsole } from "../orkconsole.js";
+import { Waybill, waybillOf } from "./waybill.js";
+
+/** The ork a click on a building's steward means: the one stopped or asking, else at work, else its first; its
+ *  console's key (core/slots.py rows: a roster ork's ref, a pool's `<building>/<name>`). */
+function orkKey(b) {
+  if (b.signal && b.signal.key) return b.signal.key;
+  const g = b.garrison || [];
+  const o = g.find((x) => x.status === "asking") || g.find((x) => x.status === "busy") || g[0];
+  if (o) return o.ref || `${b.id}/${String(o.name).toLowerCase()}`;
+  return `${b.id}/${String(b.ork_name || "steward").toLowerCase()}`;
+}
+const onOrk = (b) => showConsole(orkKey(b), true);          // its terminal, at the town's foot
+const onBubble = (b) => { waybillOf.value = { building: b.id }; };   // the task's history
 
 const pan = signal({ x: 0, y: 0 });        // the drag's offset from the default view, CSS px
 let panned = false;                        // the last press dragged the town: its click selects nothing
@@ -259,11 +273,13 @@ export function CampTown({ buildings, roads }) {
       </div>
       <${Siding} L=${L} buildings=${buildings} />
       <${CampCarts} L=${L} roads=${here} carts=${carts} travel=${travel} />
-      <${Stewards} L=${L} buildings=${buildings} roads=${here} out=${outId} soon=${arriving(L, here, carts, travel)} />
-      ${outB && html`<${StewardOut} b=${outB} p=${L.buildings[outB.id]} L=${L} grown=${selected.value === outB.id}
+      <${Stewards} L=${L} buildings=${buildings} roads=${here} out=${outId} soon=${arriving(L, here, carts, travel)}
+        onOrk=${onOrk} onBubble=${onBubble} />
+      ${outB && html`<${StewardOut} b=${outB} p=${L.buildings[outB.id]} L=${L} grown=${selected.value === outB.id} onOrk=${onOrk} onBubble=${onBubble}
         seen=${{ left: -ox, top: -oy + 8, right: -ox + seen }} />`}
       ${grown && L.buildings[grown.id] && html`<${GrownCard} b=${grown} p=${L.buildings[grown.id]} L=${L} />`}
     </div>`}
+    <${Waybill} />
     ${placing.value && html`<${Placing} p=${placing.value} />`}
     ${!buildings.length && html`<p class="gui-empty ok-font-body ok-tone-muted">${say("No buildings in this orkspace yet.")}</p>`}
   </main>`;
