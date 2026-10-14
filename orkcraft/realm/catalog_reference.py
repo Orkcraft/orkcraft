@@ -348,7 +348,7 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
     },
     "ux_lab": {
         "target": "the type of building whose look it works on, by its id: barracks, watchtower, fields…",
-        "image_tool": "the AI tool that paints its pictures: agy (the default), or another the machine has",
+        "image_tool": "the AI tool that paints its pictures: agy when it is on (experimental), else the main tool, or another the machine has",
     },
     "lab": {
         "max_spend": "the most the building's side of one case may spend, in USD, 0.1–50 (default 2)",

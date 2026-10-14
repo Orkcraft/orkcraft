@@ -27,7 +27,7 @@ def add_parser(subparsers) -> None:
     p.add_argument("--scenario", action="append", default=[],
                    help="Only this scenario (mail, todos, board, pictures, wiki); may be given more than once")
     p.add_argument("--only", choices=("scenarios", "idle"), default=None, help="Only the scenarios, or only idle")
-    p.add_argument("--tool", default=None, help="The AI tool both sides run on (default: the budget's, agy)")
+    p.add_argument("--tool", default=None, help="The AI tool both sides run on (default: the budget's, the main tool)")
     p.add_argument("--tier", default=None, help="novice, seasoned or veteran (default: the budget's, novice)")
     p.add_argument("--repeat", type=int, default=None, help="Runs of each case (default: the budget's, 3)")
     p.add_argument("--max-spend", type=float, default=None, help="$ one run of a building may spend (default: 2)")
@@ -58,6 +58,9 @@ def run(root: Path, args: argparse.Namespace, tier_words: dict[str, str]) -> int
         sys.stderr.write(f"orkline error: the scenarios are {', '.join(known)}\n")
         return 2
     tool = str(budget["tool"] or "main")
+    if tool == "main":                                  # the machine's main tool, by name: every path below takes one
+        from orkcraft.realm import builders
+        tool = builders.main_tool()
     scenarios = check.picked(args.scenario) if args.only != "idle" else []
     runs = sum(len(s.cases) for s in scenarios if s.type and s.type != check.LOOK) * int(budget["repeat"])
     print(f"Orkline check: {runs} runs on {tool}{' (' + budget['tier'] + ')' if budget['tier'] else ''}, each "

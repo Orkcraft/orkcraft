@@ -52,7 +52,8 @@ SCENARIOS: tuple[Scenario, ...] = (
 )
 
 DEFAULTS = {
-    "tool": "agy",               # the AI tool both sides run on: the cheap one by default (asked 2026-10-11)
+    "tool": "main",              # the AI tool both sides run on: the main one (Claude Code unless another is chosen);
+                                 # never agy unless named (experimental: decisions-2026-10.md §5)
     "tier": "novice",            # …on its lightest model
     "repeat": 3,                 # runs of each case: the verdict reads medians
     "pass_share": 2 / 3,         # of its runs the building must pass its check in

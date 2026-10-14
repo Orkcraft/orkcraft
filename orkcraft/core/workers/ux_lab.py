@@ -1,7 +1,7 @@
 """⚗️ The UX bench's work (docs/design/improve-buildings.md §6): the look of one type of building.
 
 Its settings say which type (`target`, picked from a list laid out as Build is, never from the map: a look is a
-type's, not one building's) and which AI tool paints (`image_tool`, agy by default). It lays no road and takes none
+type's, not one building's) and which AI tool paints (`image_tool`; agy when it is on, else the main tool). It lays no road and takes none
 (catalog `roads = "none"`). The gallery of the type's pictures is the view's (gui/views/ux_lab.py).
 
 A picture painted again (realm/painter.py) is a **draft** beside the building until **Apply** puts it in this
@@ -20,9 +20,10 @@ from pathlib import Path
 
 from orkcraft.core.workers import Worker
 from orkcraft.design import agents, mascots, tokens
-from orkcraft.realm import catalog, motion, painter
+from orkcraft.realm import builders, catalog, motion, painter
 
-IMAGE_TOOL = "agy"            # paints unless its settings name another (asked 2026-10-11)
+IMAGE_TOOL = "agy"            # paints when it is on and the settings name no other (asked 2026-10-11); off, the main
+                              # tool does: agy is experimental, on only past its warning (decisions-2026-10.md §5)
 SHIPPED = "shipped"           # a draft that is the design system's own picture again (Reset)
 MASCOTS = "mascots"           # a target that is no building: the operator's mascots (§6.4)
 
@@ -38,7 +39,12 @@ class UxLabWorker(Worker):
 
     @property
     def image_tool(self) -> str:
-        return str(self.config.get("image_tool") or IMAGE_TOOL)
+        named = str(self.config.get("image_tool") or "")
+        if named:
+            return named
+        machine = getattr(self.town, "machine", None)
+        on = machine is not None and IMAGE_TOOL in machine.tools and machine.tools[IMAGE_TOOL].enabled
+        return IMAGE_TOOL if on else builders.main_tool(machine)
 
     def pick(self, type_id: str) -> bool:
         """Work on `type_id`'s look (or the mascots'); False for a type the catalog has not (or itself)."""

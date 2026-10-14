@@ -203,7 +203,8 @@ Asked by the owner: what the Mechanic finds better should reach every new buildi
 
 - **Which building:** picked from a list laid out as Build is (its groups, its icons), not from the map: a look is a
   type's, not one building's.
-- **Image tool:** the AI tool and model that paints (default agy, with Gemini's images); any other tool the machine
+- **Image tool:** the AI tool and model that paints (agy, with Gemini's images, when the person turned it on; else
+  the main tool: agy is experimental, [decisions-2026-10.md](decisions-2026-10.md) §5); any other tool the machine
   has is offered.
 
 ### 6.2 Work (stage 6, built 2026-10-11)
@@ -373,7 +374,7 @@ ledger (`.orkcraft/spend/calls.jsonl`, by `purpose`) so the saving is a number, 
 
 - The Mechanic is the Test bench grown, not a second building (asked 2026-10-11).
 - Data changes are kept locally; code changes only through a pull request (asked 2026-10-11).
-- The Alchemist paints with agy by default (asked 2026-10-11).
+- The Alchemist paints with agy by default (asked 2026-10-11) when agy is on; off, with the main tool (2026-10-14).
 - The Alchemist starts with pictures and the Work window; cards follow once they are UI documents (asked 2026-10-11).
 - GitHub through a GitHub App with the device flow, in the mascot's menu (asked 2026-10-11). The app is `orkcraft-improve`
   (github.com/apps/orkcraft-improve), its client id `Iv23ligmdXetPjrWsh4J` (not a secret: the device flow needs no client secret, and none ships). It asks for

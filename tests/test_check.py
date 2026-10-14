@@ -63,7 +63,7 @@ def test_the_shipped_cases_of_every_scenario_are_there(tmp_path):
                 assert (tokens.SYSTEM / case["path"]).is_file(), case
             else:
                 assert bench.case(tmp_path, s.type, cid) is not None, (s.id, cid)
-    assert check.DEFAULTS["tool"] == "agy" and check.DEFAULTS["tier"] == "novice"        # the cheap one
+    assert check.DEFAULTS["tool"] == "main" and check.DEFAULTS["tier"] == "novice"       # never agy unless named
 
 
 def test_cli_runs_each_case_its_times_keeps_the_report_and_says_red_or_green(fake_repo, capsys, monkeypatch):
@@ -81,7 +81,7 @@ def test_cli_runs_each_case_its_times_keeps_the_report_and_says_red_or_green(fak
     assert [c[:3] for c in calls[:2]] == [("watchtower", "customer-orders", 0), ("watchtower", "customer-orders", 1)]
     assert len(calls) == 6 and len({c[3] for c in calls}) == 1
     out = capsys.readouterr().out
-    assert "**GREEN**" in out and "0 model calls in 8.0 hours" in out and "on agy (novice)" in out
+    assert "**GREEN**" in out and "0 model calls in 8.0 hours" in out and "on claude (novice)" in out   # the main tool, never agy unless named
     from orkcraft import check_cli
     folder = check_cli.latest(fake_repo)
     assert "**GREEN**" in (folder / "report.md").read_text() and "How to work through it" in (folder / "README.md").read_text()

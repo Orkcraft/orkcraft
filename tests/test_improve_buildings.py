@@ -65,7 +65,11 @@ def test_the_ux_bench_picks_a_building_and_its_image_tool(fake_repo, isolated_la
     host = _host(fake_repo)
     bench = _raised(host, "ux_lab")
     d = host.detail(bench)["data"]
-    assert d["target"] == "" and d["image_tool"] == "agy" and d["tools"][0]["id"] == "agy"
+    assert d["target"] == "" and d["image_tool"] == "claude" and d["tools"][0]["id"] == "claude"   # agy off: the main
+    from orkcraft import settings                                    # agy turned on (past its warning): it paints
+    host.town.machine.tools["agy"] = settings.ToolChoice(enabled=True)
+    d = host.detail(bench)["data"]
+    assert d["image_tool"] == "agy" and d["tools"][0]["id"] == "agy"
     _act(host, bench, "pick", type="barracks")
     d = host.detail(bench)["data"]
     assert d["target"] == "barracks" and d["title"] == "Barracks" and "dirt" in d["biomes"] and "ice" in d["biomes"]
