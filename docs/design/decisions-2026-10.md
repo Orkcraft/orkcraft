@@ -384,3 +384,12 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
   gap), name chips clear of doors and stewards, a steward console for buildings without orks, Office's pool card fixed,
   Camp's Build… into a row. INV step 1 on `main` (ae0b77e): portrait stages by missions, lean weeks and levels; teal eyes
   at stage 4. Next for I1: the phone on Camp v3, then stabilisation (the full suite and browser tests green).
+- **22:15.** **INV done** (cba3d44): an item whose cell a new building or a moved row takes goes back to the inventory
+  quietly; the one line about it waits in the Items panel only. **I1's phone on `main`** (8338919): Camp v3 on the phone
+  with the desktop's layout and sprites, touch pan and pinch by whole steps. **M1 done** (2714b7d): the drill on the
+  dispatcher's siding, "Lift the barrier" as quest 3's press, the finale (the passed drill rolls off the weighbridge —
+  the Publisher launches it if there is one, else it leaves at the buffer stop; "nothing left the town"), six quest
+  deeds, `mission_done` opening stage 2 and the first-cart item. Fixes on the way: the quest-3 race (the flaky browser
+  test), the cart on any Review gate's weighbridge drawn under the gate, toasts over the quest log's press, the portrait
+  menu now scrolls (`test_the_sun_holds…` green). Screens: `img/m1/`. Open, sent to I1: the quest log panel covers the
+  camp's bottom line; M1 centres the view at 40% as a stopgap.
