@@ -4,6 +4,7 @@ before, and the quality that guards it: the 👎 and the send-backs per result, 
 reads as a win.
 
     score.town(root)        {"results", "tokens", "cost", "trend", "dislikes", "reworks", "guard", "lean", …}
+    score.lean_weeks(root)  [True, False, …]   the last five weeks, newest first: was each lean against the one before
 
 Read from what the town already writes on this machine: the local event log's `result_built` lines (each carries
 the tokens and spend its cart's trail recorded when it landed, realm/event_log.py) and the feedback log's incidents
@@ -60,14 +61,9 @@ def compare(now: dict, before: dict) -> dict[str, Any]:
     return {"trend": trend, "guard": guard, "lean": trend is not None and trend < 0 and guard == "steady"}
 
 
-def town(root: Path | None, now: dt.datetime | None = None, rows: list[dict] | None = None) -> dict[str, Any]:
-    """The town's score now: this week's numbers, the last week's, the trend and the guard (all None-safe). `rows`:
-    result lines given instead of the log's (the demo's, which writes none)."""
-    now = now or dt.datetime.now().astimezone()
-    empty = {"results": 0, "tokens": None, "cost": None, "recorded": 0, "dislikes": None, "reworks": None}
-    if root is None and rows is None:
-        return {**empty, "before": dict(empty), "trend": None, "guard": None, "lean": False}
-    since = (now - 2 * WEEK).date().isoformat()
+def _weeks(root: Path | None, now: dt.datetime, n: int, rows: list[dict] | None = None) -> list[dict]:
+    """The last `n` weeks ending now, newest first."""
+    since = (now - n * WEEK).date().isoformat()
     lines = rows if rows is not None else event_log.read(Path(root), since=since)
     rows = [r for r in lines if r.get("event") == event_log.BUILT and r.get("kind") in ACCEPTED]
     incs = [vars(i) for i in feedback.incidents(Path(root), limit=2000)] if root is not None else []
@@ -75,8 +71,30 @@ def town(root: Path | None, now: dt.datetime | None = None, rows: list[dict] | N
     def within(t: dt.datetime | None, a: dt.datetime, b: dt.datetime) -> bool:
         return t is not None and a < t <= b
 
-    this = week([r for r in rows if within(_when(r.get("at")), now - WEEK, now)],
-                [i for i in incs if within(_when(i.get("ts")), now - WEEK, now)])
-    last = week([r for r in rows if within(_when(r.get("at")), now - 2 * WEEK, now - WEEK)],
-                [i for i in incs if within(_when(i.get("ts")), now - 2 * WEEK, now - WEEK)])
+    out = []
+    for k in range(n):
+        a, b = now - (k + 1) * WEEK, now - k * WEEK
+        out.append(week([r for r in rows if within(_when(r.get("at")), a, b)],
+                        [i for i in incs if within(_when(i.get("ts")), a, b)]))
+    return out
+
+
+def town(root: Path | None, now: dt.datetime | None = None, rows: list[dict] | None = None) -> dict[str, Any]:
+    """The town's score now: this week's numbers, the last week's, the trend and the guard (all None-safe). `rows`:
+    result lines given instead of the log's (the demo's, which writes none)."""
+    now = now or dt.datetime.now().astimezone()
+    empty = {"results": 0, "tokens": None, "cost": None, "recorded": 0, "dislikes": None, "reworks": None}
+    if root is None and rows is None:
+        return {**empty, "before": dict(empty), "trend": None, "guard": None, "lean": False}
+    this, last = _weeks(root, now, 2, rows)
     return {**this, "before": last, **compare(this, last)}
+
+
+def lean_weeks(root: Path | None, now: dt.datetime | None = None, n: int = 5) -> list[dict]:
+    """The last `n` weeks, newest first, each compared with the week before it: {"lean", "trend", "guard"}. A lean
+    month (growth.md, v3-prompts.md §13) is four lean weeks in five."""
+    now = now or dt.datetime.now().astimezone()
+    if root is None:
+        return [{"lean": False, "trend": None, "guard": None} for _ in range(n)]
+    ws = _weeks(root, now, n + 1)
+    return [compare(ws[k], ws[k + 1]) for k in range(n)]

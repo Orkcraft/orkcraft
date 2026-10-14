@@ -6,7 +6,9 @@ never drops (kept in the Town Scroll, `buildings[].level`). The goal (🪙 ⚖�
 direction: the shape of its flag.
 
 The operator grows too, per machine (`settings.growth`): **deeds** (what the camp learned to do: the
-first road, the first change of the orks kept…) and the **stage** of their mascot (1–4), never lost.
+first road, the first change of the orks kept…) and the **stage** of their mascot (1–4), never lost. A stage
+opens by any of its paths (v3-prompts.md §14): the campaign's missions, the score's lean weeks
+(`realm/score.py`), or the buildings' levels; the Warchief's line names the deed that opened it.
 
 What grew is **news**, said once by the Warchief's line: a level reached, a stage, a deed, and the
 loop closed on a review ("your 👎 on Brief → the orks changed it → 4 👍 since"). The news waits in
@@ -28,7 +30,7 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from orkcraft.realm import evolution, feedback, intents
+from orkcraft.realm import evolution, feedback, intents, mission, score
 
 STATE = Path(".orkcraft") / "growth.json"
 ROMAN = {0: "", 1: "I", 2: "II", 3: "III"}
@@ -136,6 +138,8 @@ DEEDS: tuple[Deed, ...] = (
     Deed("mature", "🚩", "Mature", "Bring a building to level III"),
     Deed("trusted", "⛓️‍💥", "Trusted", "Unchain a building"),
     Deed("night", "🌙", "A night's work", "Let the orks change a building in quiet hours, and keep it"),
+    Deed("mission", "🛒", "Mission 1", "Finish Mission 1: raise the camp"),
+    Deed("lean", "🪵", "A lean week", "Spend less wood per accepted result than the week before, nothing sent back more"),
 )
 
 # The mascot's stages by kin (realm/intents.py `Role.mascot`); stage 2 is the role's own nick.
@@ -148,8 +152,10 @@ STAGE_NAMES = {           # a fantasy rank with the job in it: what the stage me
     "knight": ("Bootstrap Squire", "", "Knight of the Seed Round", "Paladin of Product-Market Fit"),
     "skeleton": ("Inbox Ghost", "", "Captain of the Ghost Crew", "Lord of a Thousand Tabs"),
 }
-STAGE_NEXT = {1: "Rate three buildings in one week", 2: "Bring a building to level II",
-              3: "Three buildings at level III, one of them on the clock or unchained", 4: ""}
+STAGE_NEXT = {1: "Finish Mission 1, or rate three buildings in one week",
+              2: "A lean week (less wood per accepted result, nothing sent back more), or a building at level II",
+              3: "A lean month (four lean weeks in five), or three buildings at level III", 4: ""}
+LEAN_MONTH = 4           # lean weeks in the last five that make a lean month
 
 
 def kin_of(profile: dict) -> str:
@@ -182,15 +188,9 @@ def _quiet(machine, ts: str) -> bool:
     return span.contains(minute) if span is not None else minute < 7 * 60
 
 
-def _free(bs, machine) -> bool:
-    if bs.autonomy:
-        return bs.autonomy in ("clock", "free")
-    return int(getattr(machine, "autonomy", 0) or 0) >= 1
-
-
 def deeds_done(scroll, root: Path, machine, changes: list[evolution.Change] | None = None,
-               now: dt.datetime | None = None) -> set[str]:
-    """The deeds this camp shows done now."""
+               now: dt.datetime | None = None, facts: dict | None = None) -> set[str]:
+    """The deeds this camp shows done now (`facts`: the chapters and the lean week, read by `settle`)."""
     now = now or dt.datetime.now()
     changes = evolution.load(root) if changes is None else changes
     standing = [b for b in scroll.buildings if not b.demolished]
@@ -212,21 +212,76 @@ def deeds_done(scroll, root: Path, machine, changes: list[evolution.Change] | No
         done.add("mature")
     if any(b.autonomy == "free" for b in standing):
         done.add("trusted")
+    facts = facts if facts is not None else _facts(root, now)
+    if facts.get("chapters"):
+        done.add("mission")
+    if facts.get("lean"):
+        done.add("lean")
     return done
 
 
-def stage_of(scroll, deeds: dict, machine) -> int:
-    """The stage the camp shows now (§7.2): 1 always; 2 a week of ratings; 3 a building at II; 4 three at
-    III, one of them deciding by itself."""
+def _facts(root: Path, now: dt.datetime) -> dict:
+    """What the stages read beyond the scroll: the campaign's chapters and the score's lean weeks."""
+    week, lean = lean_now(root, now)
+    return {"chapters": chapters(root), "lean": bool(week["lean"]), "lean_weeks": lean,
+            "lean_why": _lean_why(week)}
+
+
+def chapters(root: Path) -> int:
+    """The campaign's chapters finished in this camp: Mission 1 is the first; a later mission writes `chapters`
+    into the mission's state (first-mission.md §7, not built yet)."""
+    state = mission.load(root)
+    try:
+        n = int(state.get("chapters") or 0)
+    except (TypeError, ValueError):
+        n = 0
+    return max(n, 1 if state.get("finished") else 0)
+
+
+def lean_now(root: Path, now: dt.datetime) -> tuple[dict, int]:
+    """This week's comparison with the last, and how many of the last five weeks were lean."""
+    weeks = score.lean_weeks(root, now if now.tzinfo else now.astimezone())
+    return weeks[0], sum(1 for w in weeks if w["lean"])
+
+
+def _lean_why(week: dict) -> str:
+    trend = week.get("trend")
+    less = f" at {round(-trend * 100)} % less per result" if isinstance(trend, (int, float)) and trend < 0 else ""
+    return f"a week{less}, nothing sent back more"
+
+
+def stage_paths(scroll, deeds: dict, facts: dict | None = None) -> dict[int, str]:
+    """The stages the camp opens now, each with the deed that opened it, in words (v3-prompts.md §14): 2 — Mission 1
+    done, or 3+ buildings rated in a week; 3 — the campaign's second chapter, a lean week, or a building at II;
+    4 — the third chapter, a lean month (four lean weeks in five), or three buildings at III. `facts`: {"chapters",
+    "lean", "lean_weeks", "lean_why"}, read by `settle`."""
+    facts = facts or {}
     standing = [b for b in scroll.buildings if not b.demolished]
-    three = [b for b in standing if (b.level or 0) >= 3]
-    if len(three) >= 3 and any(_free(b, machine) for b in three):
-        return 4
-    if any((b.level or 0) >= 2 for b in standing):
-        return 3
-    if "week" in deeds:
-        return 2
-    return 1
+    chapters = int(facts.get("chapters") or (1 if "mission" in deeds else 0))
+    out = {1: ""}
+    if chapters >= 1:
+        out[2] = "Mission 1 done, the camp stands"
+    elif "week" in deeds:
+        out[2] = "three buildings rated in one week"
+    two = next((b for b in standing if (b.level or 0) >= 2), None)
+    if chapters >= 2:
+        out[3] = "the campaign's second chapter done"
+    elif facts.get("lean"):
+        out[3] = facts.get("lean_why") or _lean_why({})
+    elif two is not None:
+        out[3] = f"{two.title} grew to II"
+    if chapters >= 3:
+        out[4] = "the campaign's third chapter done"
+    elif int(facts.get("lean_weeks") or 0) >= LEAN_MONTH:
+        out[4] = "a lean month: four lean weeks in five"
+    elif sum(1 for b in standing if (b.level or 0) >= 3) >= 3:
+        out[4] = "three buildings at III"
+    return out
+
+
+def stage_of(scroll, deeds: dict, machine=None, facts: dict | None = None) -> int:
+    """The highest stage the camp opens now (any of its paths; `stage_paths`)."""
+    return max(stage_paths(scroll, deeds, facts))
 
 
 # -- the loop closed on a review ----------------------------------------------------------------------
@@ -329,15 +384,19 @@ def settle(scroll, root: Path, machine, now: dt.datetime | None = None) -> list[
     grown = dict(getattr(machine, "growth", None) or {})
     first = not grown                    # the first look on this machine: what is done already is not news
     deeds = dict(grown.get("deeds") or {})
-    done = deeds_done(scroll, root, machine, changes, now)
+    facts = _facts(root, now)
+    done = deeds_done(scroll, root, machine, changes, now, facts)
     for d in DEEDS:
         if d.id not in deeds and d.id in done:
             deeds[d.id] = now.date().isoformat()
             if not first:
                 fresh.append(News("deed", f"A deed: {d.title}", "", d.icon))
-    stage = max(int(grown.get("stage") or 1), stage_of(scroll, deeds, machine))
-    if stage > int(grown.get("stage") or 1) and not first:
-        fresh.append(News("stage", f"Your mascot grew: {stage_name(getattr(machine, 'profile', {}), stage)}", "", "⭐"))
+    paths = stage_paths(scroll, deeds, facts)
+    was = int(grown.get("stage") or 1)
+    stage = max(was, max(paths))                    # once reached, a stage stays
+    if stage > was and not first:
+        name = stage_name(getattr(machine, "profile", {}), stage)
+        fresh.append(News("stage", f"{name}: {paths[stage]}", "", "⭐"))
     if fresh or deeds != grown.get("deeds") or stage != grown.get("stage"):
         machine.growth = {**grown, "stage": stage, "deeds": deeds}
     data = _load(root)

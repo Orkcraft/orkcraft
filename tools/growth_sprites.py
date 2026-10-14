@@ -82,6 +82,7 @@ PALETTE = {
     "u": "#b9ab8a",                                   # mummy's bandage shade
     "s": "#fffbe6",                                   # lamp light
     "z": "#3b8f8f",                                   # visor green
+    "E": "#4fd1c5",                                   # stage 4's eyes: a teal glow (yellow is the question's)
 }
 
 BASES = {
@@ -328,6 +329,12 @@ def mascot_grid(role: str, stage: int) -> list[str]:
                 if ch == ".":
                     continue
                 grid[y][x] = "." if ch == "_" else ch
+    if stage == 4:                                   # the eyes glow teal, never gold (v3-prompts.md §13)
+        eyes = [y for y, r in enumerate(BASES[base]) if "K" in r][:2 if base == "ghost" else 1]
+        for y in eyes:
+            for x, ch in enumerate(grid[y]):
+                if ch in "YG" and BASES[base][y][x] == "K":
+                    grid[y][x] = "E"
     return ["".join(r) for r in grid]
 
 STAGES = (1, 2, 3, 4)

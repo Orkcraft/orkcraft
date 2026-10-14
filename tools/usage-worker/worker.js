@@ -16,7 +16,7 @@ const MINUTES = ["<5", "5-30", "30-120", "120+"];
 const TOOLS = ["claude", "agy", "codex", "hermes", "pi", "cursor"];
 const TYPES = ["pit", "watchtower", "signpost", "mill", "horn", "fields", "barracks", "council", "war_drum",
   "forest", "scrolls", "mine", "gramophone", "lab", "ux_lab", "lake", "forge", "loot", "crag", "catapult", "town_hall", "workshop", "custom"];
-const DEEDS = ["town", "road", "reference", "week", "learned", "mature", "trusted", "night"];
+const DEEDS = ["town", "road", "reference", "week", "learned", "mature", "trusted", "night", "mission", "lean"];
 // The installer's (install.sh, docs/install.md): its steps, a time bucket, the kind of error.
 const STEPS = ["uv", "python", "package", "version", "window", "agents"];
 const SECONDS = ["<10", "10-60", "60-300", "300+"];

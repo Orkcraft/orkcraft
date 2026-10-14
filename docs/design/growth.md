@@ -35,7 +35,8 @@ the plain wording a former Office mode had; it is gone.
   and before the spend: a click opens the building's Info (a level, a loop) or Settings (a stage, a deed),
   ✕ marks it seen. At most one loop a day.
 - **The stage marks** are shared by the kins: a dark-green band (2), ivory horns (3), and at 4 the eyes
-  glow gold and a gold gem sits on the band. Never a crown.
+  glow teal (they were gold; yellow is the question's colour, v3-prompts.md §13) and a gold gem sits on the band.
+  Never a crown.
 - **Stored** per machine as `settings.growth`: `{"stage": 1–4, "deeds": {id: date}}`.
 
 ## 1. Why
@@ -242,12 +243,17 @@ adds its own headgear or prop, so every stage reads as a step up:
 The heads are drawn again in the UX bench too, from a person's words (improve-buildings.md §6.4): a machine's own
 head is kept beside the design system's and shown before it.
 
-| Stage | Reached when (starting values) |
+| Stage | Reached by any of its paths (v3-prompts.md §14; built 2026-10-14) |
 |---|---|
 | 1 | the first town is raised |
-| 2 | 3+ buildings rated in one week |
-| 3 | a building reaches level II |
-| 4 | three buildings at III, one of them on the clock or unchained |
+| 2 | Mission 1 finished · or 3+ buildings rated in one week |
+| 3 | the campaign's second chapter · or a lean week ([the-score.md](the-score.md): less wood per accepted result than the week before, 👎 and send-backs per result not up) · or a building at level II |
+| 4 | the third chapter · or a lean month (four lean weeks in five) · or three buildings at III |
+
+A stage once reached stays; the Warchief's line names the deed that opened it ("Lich of Sprints: a week at 12 % less
+per result, nothing sent back more"). The campaign's chapters are read from the mission's state
+(`.orkcraft/mission.json`: `finished` is the first; a later mission writes `chapters`); the lean weeks from
+`score.lean_weeks` (`realm/score.py`). Two deeds came with it: 🛒 Mission 1 and 🪵 A lean week.
 
 The names (`realm/growth.py` `STAGE_NAMES`): a fantasy rank with the job in it. Stage 2 is the role's own
 nick from the onboarding, the others are the kin's.

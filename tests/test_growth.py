@@ -115,11 +115,11 @@ def test_the_mascot_stage_follows_the_camp_and_is_named_by_kin_and_role(tmp_path
     assert growth.stage_of(town, {"week": "2026-10-01"}, machine) == 2
     town.building("brief").level = 2
     assert growth.stage_of(town, {}, machine) == 3
-    for b in ("brief", "forge", "pit"):
+    for b in ("brief", "forge"):
         town.building(b).level = 3
-    assert growth.stage_of(town, {}, machine) == 3          # three at III, none deciding by itself
-    town.building("forge").autonomy = "free"
-    assert growth.stage_of(town, {}, machine) == 4
+    assert growth.stage_of(town, {}, machine) == 3          # two at III
+    town.building("pit").level = 3
+    assert growth.stage_of(town, {}, machine) == 4          # three at III (v3-prompts.md §14)
     assert growth.kin_of(machine.profile) == "lich"
     assert [growth.stage_name(machine.profile, s) for s in (1, 2, 3, 4)] == [
         "Standup Zombie", "The Jira Lich", "Lich of Sprints", "Release Night King"]
@@ -204,3 +204,63 @@ def test_every_role_has_its_own_mascot_at_every_stage():
             assert png.is_file() and (sprites / f"{role.id}-{stage}@2x.png").is_file(), png.name
             seen.add(png.read_bytes())
     assert len(seen) == 4 * len(intents.ROLES)
+
+
+def test_each_stage_opens_by_any_of_its_paths_missions_the_score_or_the_levels():
+    town = _town("brief", "forge", "pit")
+    paths = lambda deeds={}, **facts: growth.stage_paths(town, deeds, facts)
+    assert max(paths()) == 1
+    assert paths(chapters=1)[2] == "Mission 1 done, the camp stands"
+    assert paths({"week": "2026-10-01"})[2] == "three buildings rated in one week"
+    assert max(paths(chapters=1)) == 2
+    lean = paths(lean=True, lean_why="a week at 12 % less per result, nothing sent back more")
+    assert max(lean) == 3 and lean[3] == "a week at 12 % less per result, nothing sent back more"
+    assert paths(chapters=2)[3] == "the campaign's second chapter done"
+    assert max(paths(lean_weeks=3)) == 1 and paths(lean_weeks=4)[4] == "a lean month: four lean weeks in five"
+    assert paths(chapters=3)[4] == "the campaign's third chapter done"
+    town.building("forge").level = 2
+    assert paths()[3] == "Forge grew to II"
+
+
+def _result(root: Path, days_ago: float, tokens: int) -> None:
+    from orkcraft.realm import event_log
+    event_log.record(root, event_log.BUILT, at=dt.datetime.now().astimezone() - dt.timedelta(days=days_ago),
+                     building="gate", kind="passed", title="x", ref="1", tokens=tokens)
+
+
+def test_mission_one_done_opens_stage_two_and_the_warchief_names_it(tmp_path: Path):
+    from orkcraft.realm import mission
+    town = _town("brief")
+    machine = settings.MachineSettings()
+    machine.profile = {"role": "eng_manager"}
+    machine.growth = {"stage": 1, "deeds": {}}
+    mission.save(tmp_path, {"on": False, "finished": True})
+    fresh = growth.settle(town, tmp_path, machine)
+    assert machine.growth["stage"] == 2 and "mission" in machine.growth["deeds"]
+    assert "The Jira Lich: Mission 1 done, the camp stands" in [n.text for n in fresh if n.kind == "stage"]
+
+
+def test_a_lean_week_opens_stage_three_and_a_stage_once_reached_stays(tmp_path: Path):
+    town = _town("brief")
+    machine = settings.MachineSettings()
+    machine.profile = {"role": "eng_manager"}
+    machine.growth = {"stage": 1, "deeds": {}}
+    for d in (9, 10):
+        _result(tmp_path, d, 1000)
+    for d in (1, 2):
+        _result(tmp_path, d, 880)                              # 12 % less per result, nothing sent back
+    fresh = growth.settle(town, tmp_path, machine)
+    assert machine.growth["stage"] == 3 and "lean" in machine.growth["deeds"]
+    assert "Lich of Sprints: a week at 12 % less per result, nothing sent back more" in [n.text for n in fresh]
+    later = dt.datetime.now() + dt.timedelta(days=30)          # the lean week long gone: the stage stays
+    growth.settle(town, tmp_path, machine, now=later)
+    assert machine.growth["stage"] == 3
+
+
+def test_four_lean_weeks_in_five_are_a_lean_month(tmp_path: Path):
+    for week, tokens in enumerate((1000, 900, 950, 800, 700, 600)):   # oldest first; one week fatter than before
+        _result(tmp_path, (5 - week) * 7 + 3, tokens)
+    weeks = __import__("orkcraft.realm.score", fromlist=["score"]).lean_weeks(tmp_path)
+    assert [w["lean"] for w in weeks] == [True, True, True, False, True]
+    week, lean = growth.lean_now(tmp_path, dt.datetime.now())
+    assert lean == 4 and growth.stage_of(_town(), {}, None, {"lean_weeks": lean}) == 4
