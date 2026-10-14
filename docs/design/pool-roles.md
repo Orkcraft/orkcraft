@@ -30,10 +30,11 @@ Grunt · any work    Zz           —
    draws no chip for a resting session: the role's own word says it.
 4. **Order.** Roles in the order they were first hired (a lane does not jump); in a role the asking session first,
    then the ones at work, then the resting ones (§14: "the asking one first").
-5. **What a click does, until the console (A4) is there.** A chip opens the pool on that session's tab (its
-   terminal, its recent work); the role's name opens it on its first session. The rest of the lane stays the hut's,
-   to select or drag it. The window's ork tabs say the role each is a session of. When the console lands, both open
-   it instead (§14), and `openSession` in `js/buildings/barracks.js` is the one place to change.
+5. **What a click does.** A chip of a session at work or asking opens its console (A4's, folded, `js/slots.js`); a
+   resting one opens the pool on that session's tab (its terminal, its recent work), as the console has no row for
+   a resting ork yet. The role's name opens its first session the same way. The rest of the lane stays the hut's,
+   to select or drag it. The window's ork tabs say the role each is a session of. `openSession` in
+   `js/buildings/barracks.js` is the one place to change when the console opens on a role (§14).
 6. **How many.** Six roles at most, `+N` for the rest; a role draws six chips at most, `+N` for the rest.
 7. **The tier on a role** is its sessions' when they share one; mixed, the lane shows none (each chip's tooltip
    has its own). The AI tool is a session's, never the role's (§2), so it moved from the lane to the chip's tooltip.

@@ -15,6 +15,7 @@ import { openInLake } from "../lake.js";
 import { askKeeper } from "../keeper.js";
 import { usePeek, openBuilding } from "../windows.js";
 import { OrkHead, TierMark } from "../icons.js";
+import { consoleOrk } from "../slots.js";
 
 const sheet = new URL("./barracks.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -123,12 +124,17 @@ const keep = (e) => e.stopPropagation();          // a press on the card's contr
  *  Resume in the foot: a stopped queue is the one thing to fix here. */
 const LANE_STATE = { working: "busy", resting: "idle", asks: "alert" };
 
-/** A press on a role's name or on one of its sessions opens the pool on that session's tab (its terminal, its
- *  recent work); the rest of the lane is the hut's, to select or drag it. When the console is there
- *  (ork-console.md §14), here is where it opens instead. */
-function openSession(e, id, name) {
+/** A press on a role's name or on one of its sessions (ork-console.md §14): a session at work or asking opens its
+ *  console (js/slots.js, the key core/slots.py gives a pool's ork); a resting one opens the pool on its tab (its
+ *  terminal, its recent work). The role opens its first session, the asking one first. The rest of the lane is the
+ *  hut's, to select or drag it. */
+function openSession(e, id, s) {
   keep(e);
-  setIn(tabs, id, `ork:${name}`);
+  if (s.state !== "resting" && s.state !== "stopped") {
+    consoleOrk.value = `${id}/${s.name.toLowerCase()}`;
+    return;
+  }
+  setIn(tabs, id, `ork:${s.name}`);
   setIn(folded, id, false);
   setIn(chosen, id, "");
   openBuilding(id);
@@ -142,11 +148,11 @@ function Lanes({ id, lanes, more }) {
       title=${`${say(l.name)} · ${say(l.word)} · ${l.at_work} ${say("at work")}${l.queue ? ` · ${l.queue} ${say("waiting")}` : ""}`}>
     <span class="pool-lane__head"><${OrkHead} o=${{ name: l.ork, status: LANE_STATE[l.state] }} alert=${l.state === "asks"} /><span
       class="pool-lane__state">${say(l.word)}</span></span>
-    <button type="button" class="pool-lane__name" onPointerDown=${keep} onClick=${(e) => openSession(e, id, l.first)}>${say(l.name)}</button>
+    <button type="button" class="pool-lane__name" onPointerDown=${keep} onClick=${(e) => openSession(e, id, l.sessions[0])}>${say(l.name)}</button>
     <span class="pool-lane__how">${l.tier && html`<${TierMark} tier=${l.tier} />`}</span>
     <span class="pool-lane__chips">${l.sessions.map((s) => html`<button key=${s.name} type="button"
-        class=${cls("pool-chip", `is-${s.state}`)} data-ork=${s.name} title=${`${s.line} · ${s.harness}`} aria-label=${s.line}
-        onPointerDown=${keep} onClick=${(e) => openSession(e, id, s.name)}>
+        class=${cls("pool-chip", `is-${s.state}`)} data-ork=${s.name} title=${`${say(s.line)} · ${s.harness}`} aria-label=${say(s.line)}
+        onPointerDown=${keep} onClick=${(e) => openSession(e, id, s)}>
       <span class="pool-chip__mark">${s.mark}</span><span class="pool-chip__word">${say(s.word)}</span></button>`)}${l.more > 0
       && html`<span class="pool-chip is-more ok-tone-muted">+${l.more}</span>`}</span>
     <span class=${cls("pool-lane__queue", { "ok-tone-muted": !l.at_work && !l.queue })}>${l.at_work || l.queue
