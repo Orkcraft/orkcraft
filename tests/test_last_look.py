@@ -171,3 +171,22 @@ def test_the_view_says_its_parts_in_order_wins_first():
         assert words in src
     for hook in ("streak", "unread", "badge"):        # no feed hooks (audience.md §2a)
         assert hook not in src.lower()
+
+
+def test_the_person_asks_for_it_from_their_home_and_gets_the_last_looks_digest(fake_repo, isolated_layout_file):
+    """A click on the person's home in Camp (design-system-v3.md §4.13): the digest on demand, even after a short step
+    away the town would not greet; honest when nothing changed."""
+    from orkcraft.gui.host import Host
+    host = Host(fake_repo, auto_commit=False)
+    host.command("look.show")                                   # no look yet: since now, nothing new
+    assert host.snapshot()["last_look"]["empty"] is True
+    host.command("look.done")
+    before = dt.datetime.now().astimezone() - dt.timedelta(minutes=5)
+    last_look.save(fake_repo, last_look.Look(last_look.iso(before), last_look.iso(before)))
+    host.close()
+    host = Host(fake_repo, auto_commit=False)
+    event_log.record(fake_repo, event_log.BUILT, building="pool", kind="done", title="Fix the login")
+    assert host.command("look.beat") is False                   # a short step away: no greeting by itself
+    host.command("look.show")
+    assert host.snapshot()["last_look"]["built"]["items"][0]["line"] == "Done: «Fix the login»"
+    host.close()

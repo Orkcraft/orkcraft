@@ -18,6 +18,13 @@ you, and whether it may disturb you.
 
 ## As built
 
+- **The face in v3 (INV, 2026-10-14):** in Camp the portrait is the person's class figure of v3
+  (`sprites/v3/people/<role id>.png`, GEN's k1), cut to a 40-px square round its head by `tools/people_heads.py`
+  (`people/heads/`; the gnomes' tall caps set by hand): at its own pixel in the corner, 24 px in the HUD, twice its
+  pixel in the menu. **The stage** is told by the existing marks round it until v3 stage art exists: a dark-green
+  band (2), ivory horns at the frame's top corners (3), a teal gem on the band and a teal glow (4; never gold, the
+  question's colour), and the Roman numeral as before. The onboarding's class cards still draw the 12 × 11 heads, and
+  a head a UX bench redrew shows there only. Screenshots: `docs/design/img/inv/`.
 - **The portrait** stands out of the HUD in a wide window: framed (a bevel and 4 px of padding) over the
   town's top-left corner, the head at 3× (40 × 36), its marks inside its corners, and beside it two quick
   toggles: Do not disturb (on / off) and the look (Camp / Office). Do not disturb's toggle wears a speaking

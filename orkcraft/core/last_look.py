@@ -63,6 +63,7 @@ class LastLook:
         self.root = _root(town)
         self.look = last_look.load(self.root)
         self.greetings: dict[str, dict[str, Any]] = {}  # face → since, the log's lines then, used, seen
+        self.before: dict[str, Any] | None = None       # the last look that ended: since, used, seen
 
     @property
     def greeting(self) -> dict[str, Any] | None:
@@ -148,6 +149,7 @@ class LastLook:
         look, ended = last_look.beat(self.look, now)
         greets = False
         if ended is not None:
+            self.before = {"since": ended.end, "used": dict(ended.used), "seen": list(ended.seen)}
             event_log.record(self.root, event_log.LOOKED, started=ended.start, seconds=last_look.seconds(ended))
             if last_look.away_s(ended, now) >= last_look.AWAY_S:
                 self.greetings[face] = {"since": ended.end, "rows": event_log.read(self.root, ended.end) if self.root else [],
@@ -173,6 +175,14 @@ class LastLook:
             if b is None or b.demolished:
                 item["building"] = ""
         return d
+
+    def show(self, face: str = "gui") -> None:
+        """Asked for (the person's home in Camp): the digest since the last look ended, else since this one began —
+        honest when nothing changed."""
+        start = self.look.start if self.look else last_look.iso(dt.datetime.now())
+        b = self.before or {"since": start, "used": self.used_now(), "seen": []}
+        self.greetings[face] = {**b, "rows": event_log.read(self.root, b["since"]) if self.root else []}
+        self.town.publish(bus.LOOK, greets=True, face=face)
 
     def done(self, face: str = "gui") -> None:
         if self.greetings.pop(face, None) is not None:

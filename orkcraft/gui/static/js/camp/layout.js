@@ -95,8 +95,10 @@ export function exitsOf(name, rot = 0) {
 }
 
 /** The town laid out at one zoom step. `size(file)`: a v3 sprite's [w, h] in art px, or null when it is not cut.
- *  `waiting(b)`: a cart waits at it for the person (the Review gate's barrier is down). */
-export function lay(buildings, roads, step, size, waiting = () => false) {
+ *  `waiting(b)`: a cart waits at it for the person (the Review gate's barrier is down). `home`: the person's home
+ *  (`homes/<kin>.png`), east of the Review gate on its row, its feet just above the line, no path (§4.13); with no
+ *  gate, at the first row's end. */
+export function lay(buildings, roads, step, size, waiting = () => false, home = "") {
   const B = step.b, S = step.s, T = TILE * S;
   const dims = (b) => {
     const file = spriteOf(b, waiting(b));
@@ -115,13 +117,21 @@ export function lay(buildings, roads, step, size, waiting = () => false) {
   const top = M + Math.max(td ? td.h - WALL_H * B : 0, 0);              // room above the wall for the tower
   const campX = M, wallY = top + WALL_H * B;                            // the back wall's foot
   const colL = campX + Math.max(Math.round((td ? td.w / 2 : 48 * B) - T / 2), 24 * B);   // the way in, down to the lines
-  const out = { step, T, buildings: {}, tiles: [], paths: [], sidings: [], decor: [], lines: [] };
+  const out = { step, T, buildings: {}, tiles: [], paths: [], sidings: [], decor: [], lines: [], home: null };
+  const homeS = home ? size(home) : null;
+  const homeRow = homeS ? Math.max(0, rows.findIndex((row) => row.some((b) => b.type === "loot"))) : -1;
+  const putHome = (x, lineTop, r) => {
+    const w = homeS[0] * B, h = homeS[1] * B, feet = lineTop - 2 * B;
+    out.home = { file: home, x: Math.round(x), y: Math.round(feet - h), w, h, feet, row: r, cx: Math.round(x + w / 2) };
+    return w + GAP * B;
+  };
 
   // the rows, top to bottom: each row stands on its line, the next line whole tiles under the last (the columns tile)
   let lineTop = 0, right = colL + 3 * T;
   rows.forEach((row, r) => {
     const ds = row.map((b) => ({ b, d: dims(b), spur: SPUR.has(b.type) }));
-    const band = Math.max(64 * B, ...ds.map(({ d, spur }) => (spur ? d.h - T / 4 : d.h + PATH_L * B)));
+    const band = Math.max(64 * B, ...ds.map(({ d, spur }) => (spur ? d.h - T / 4 : d.h + PATH_L * B)),
+                          r === homeRow ? homeS[1] * B + 2 * B : 0);
     if (r === 0) lineTop = Math.max(wallY - 24 * B + band, wallY + T);
     else {
       const prev = out.lines[r - 1];
@@ -147,7 +157,9 @@ export function lay(buildings, roads, step, size, waiting = () => false) {
         out.sidings.push({ id: b.id, x: sx, y: sy, tiles: SIDING_TILES, stand: { x: sx + T * 0.6, y: sy + T * 0.8, dx: T * 0.62 } });
         x += SIDING_TILES * T + GAP * B / 2;
       }
+      if (b.type === "loot" && r === homeRow && !out.home) x += putHome(x, lineTop, r);
     }
+    if (r === homeRow && !out.home) x += putHome(x, lineTop, r);
     right = Math.max(right, x - GAP * B);
   });
   const last = out.lines.length - 1, multi = out.lines.length > 1;

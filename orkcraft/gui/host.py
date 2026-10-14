@@ -151,6 +151,7 @@ class Host:
                                             lambda: treasury.subscriptions(self.town.machine))
         self.commands["look.beat"] = lambda a: self.last_look.beat()
         self.commands["look.done"] = lambda a: self.last_look.done()
+        self.commands["look.show"] = lambda a: self.last_look.show()       # asked for: the person's home in Camp
         lake_view.attach(self.town)                # Lake is the town's window: old Lake buildings leave the map
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:

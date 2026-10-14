@@ -357,6 +357,10 @@ a larger scale, which v3 does not use. To get F1's fill, the sheets must draw th
     Thrift annex.
 13. **The person's home stands beside the Review gate**, east of it on the upper row, its feet just above line 1
     (no path: carts do not stop there): the person is the one who approves at the gate. One home per kin (k2).
+    **Built (INV):** `layout.js` `lay(…, home)` puts `homes/<kin>.png` east of the gate on the gate's row (with no
+    gate, at the first row's end), the row as tall as it needs; `js/camp/town.js` `Home` draws it, and a click opens
+    the town's menu with *Since your last look* (`look.show`: the digest since the last look ended, on demand),
+    *You: profile and deeds* (the portrait's menu) and *Town settings…*.
 
 ### 4b. A real town on these rules (I1, built)
 

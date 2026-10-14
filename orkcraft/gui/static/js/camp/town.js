@@ -24,6 +24,9 @@ import { typeModule } from "../types.js";
 import { showConsole } from "../orkconsole.js";
 import { Waybill, waybillOf } from "./waybill.js";
 import { StewardConsole, stewardOf, openStewardConsole } from "./stewardconsole.js";
+import { portraitOpen } from "../portrait.js";
+import { settingsOpen } from "../settings.js";
+import { openMenu } from "../menu.js";
 
 /** The ork a click on a building's steward means: the one stopped or asking, else at work, else its first; its
  *  console's key (core/slots.py rows: a roster ork's ref, a pool's `<building>/<name>`); null with none to show. */
@@ -185,6 +188,27 @@ function Growth({ L, buildings }) {
   return html`<div class="gui-camp__layer is-growth">${out}</div>`;
 }
 
+/** The person's home beside the Review gate (design-system-v3.md §4.13, v3-prompts §13): their kin's house; a click
+ *  opens what is the person's own — since your last look, their profile and deeds, the town's settings. */
+function Home({ L, you }) {
+  const h = L.home;
+  if (!h) return null;
+  const open = (e) => {
+    e.stopPropagation();
+    if (panned) return;
+    openMenu(e, [
+      { label: "Since your last look", run: () => command("look.show").catch(() => {}) },
+      { label: "You: profile and deeds", run: () => { portraitOpen.value = true; } },
+      { label: "Town settings…", run: () => { settingsOpen.value = true; } },
+    ]);
+  };
+  return html`<div class="gui-camp__home" data-kin=${you.kin} style=${`left:${h.x}px;top:${h.y}px;width:${h.w}px;height:${h.h}px;z-index:${10 + Math.round(h.feet / 8)}`}
+      role="button" tabindex="0" aria-label=${say("Your home")} title=${say(`Your home · ${you.name}`)}
+      onClick=${open} onContextMenu=${open} onKeyDown=${(e) => { if (e.key === "Enter") open(e); }}>
+    ${img(h.file, 0, 0, h.w, h.h, "", "gui-camp__px gui-camp__sprite")}
+  </div>`;
+}
+
 /** The Task board's siding: the carts waiting to go (its To Do lane: the orks' backlog, not the person's own
  *  to-dos), at most five and "+N" for the rest. */
 function Siding({ L, buildings }) {
@@ -271,8 +295,10 @@ export function CampTown({ buildings, roads }) {
   const here = roads.filter((r) => shown.has(r.from) && shown.has(r.to));
   setNumbered(buildings.map((b) => b.id));
   for (const b of buildings) typeModule(b.type, b.page);   // each type's page code (its large card, its small windows)
-  const key = JSON.stringify([!!k, step, buildings.map((b) => [b.id, b.type, b.hut, b.goal, b.level, b.type === "loot" && !!b.alert]), here.map((r) => [r.from, r.to])]);
-  if (k && key !== laid.key) laid = { key, L: lay(buildings, here, step, sizeOf, (b) => !!b.alert) };
+  const you = snapshot.value && snapshot.value.growth && snapshot.value.growth.you;
+  const home = you && you.kin ? `homes/${you.kin}.png` : "";
+  const key = JSON.stringify([!!k, step, home, buildings.map((b) => [b.id, b.type, b.hut, b.goal, b.level, b.type === "loot" && !!b.alert]), here.map((r) => [r.from, r.to])]);
+  if (k && key !== laid.key) laid = { key, L: lay(buildings, here, step, sizeOf, (b) => !!b.alert, home) };
   const L = k ? laid.L : null;
   const panelW = panelShown() && !opened.value.full ? panelWidth.value : 0;
 
@@ -309,7 +335,9 @@ export function CampTown({ buildings, roads }) {
     zoomBy(e.deltaY < 0 ? 1 : -1);
     if (zoomLevel.value !== before) pan.value = { x: 0, y: 0 };
   };
-  const bare = (e) => { if (!panned && !e.target.closest(".gui-camp__building, .gui-camp__card")) { closeBuilding(); letGo(); } };
+  const bare = (e) => {
+    if (!panned && !e.target.closest(".gui-camp__building, .gui-camp__card, .gui-camp__home")) { closeBuilding(); letGo(); }
+  };
   const going = constructing.value;
   const carts = (snapshot.value && snapshot.value.carts) || [], travel = (snapshot.value && snapshot.value.travel) || 0;
   // the steward out of its door: the selected building's (its scroll grown), else the one under the mouse
@@ -326,6 +354,7 @@ export function CampTown({ buildings, roads }) {
       <div class="gui-camp__layer is-buildings">
         ${buildings.map((b, i) => L.buildings[b.id] && html`<${Building} key=${b.id} b=${b} at=${{ L, p: L.buildings[b.id] }} number=${i + 1}
           raising=${going[b.id] !== undefined} />`)}
+        ${you && html`<${Home} L=${L} you=${you} />`}
       </div>
       <${Growth} L=${L} buildings=${buildings} />
       <${Siding} L=${L} buildings=${buildings} />

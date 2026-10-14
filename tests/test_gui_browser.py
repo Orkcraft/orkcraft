@@ -1904,7 +1904,11 @@ def test_the_sun_holds_the_look_and_the_noise_and_the_portrait_holds_camps_own(c
     pg = camp_look
     assert pg.locator(".gui-hud .gui-portrait").count() == 0              # a wide window: out of the HUD
     portrait = pg.locator(".gui-portrait-slot.is-corner .gui-portrait")
-    assert portrait.locator(".gui-mascot").count() == 1 and pg.evaluate("document.documentElement.dataset.look") == "camp"
+    head = portrait.locator(".gui-portrait__person")                    # the class figure of v3: its head in the corner
+    assert head.count() == 1 and pg.evaluate("document.documentElement.dataset.look") == "camp"
+    assert "/ds/sprites/v3/people/heads/" in head.get_attribute("src")
+    pg.wait_for_function("() => document.querySelector('.gui-portrait-slot.is-corner .gui-portrait__person').naturalWidth === 40",
+                         timeout=WAIT_MS)
     pg.locator(".gui-hour__dial").click()
     sun = pg.locator(".gui-hour__menu")
     sun.wait_for(state="visible", timeout=WAIT_MS)
@@ -1934,6 +1938,7 @@ def test_the_sun_holds_the_look_and_the_noise_and_the_portrait_holds_camps_own(c
     pg.keyboard.press("Escape")
     portrait.click()
     assert menu.locator(".gui-you__deeds").count() == 1
+    assert "/ds/sprites/v3/people/heads/" in menu.locator(".gui-portrait__ground.is-full .gui-portrait__person").get_attribute("src")
     fire = menu.get_by_role("group", name="Fire on the roofs", exact=True)
     fire.get_by_role("button", name="Off", exact=True).click()
     fire.locator("[aria-pressed=true]", has_text="Off").wait_for(state="visible", timeout=WAIT_MS)

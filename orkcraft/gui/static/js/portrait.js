@@ -12,7 +12,7 @@ import { signal } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town } from "./link.js";
-import { MascotHead, BIOMES } from "./icons.js";
+import { BIOMES } from "./icons.js";
 import { terrainUrl } from "./terrain.js";
 import { openOrders } from "./orders.js";
 import { settingsOpen } from "./settings.js";
@@ -46,11 +46,16 @@ function ground(home) {
   return `--ground:${b.ground};--land:${b.land};--glyphs:${url ? `url("${url}")` : "none"}`;
 }
 
-/** The head: the mascot in Camp, the monogram in Office. */
+/** The head: in Camp the person's class figure of v3 (design-system/sprites/v3/people/<role id>.png; v3-prompts.md §13),
+ *  its head (people/heads/, cut by tools/people_heads.py) at its own pixel in the corner, twice it in the menu; the stage as the
+ *  existing marks round it until v3 stage art exists (a band at 2, horns at 3, a gem and a teal glow at 4: layout.css).
+ *  The monogram in Office. */
 function Face({ y, p, size }) {
   if (p.look === "office") return html`<span class=${cls("gui-portrait__mono", { "is-big": size > 3 })} title=${p.mono}>
     <${RoleIcon} role=${p.role || ""} mono=${p.mono} size=${size > 3 ? 28 : size > 2 ? 20 : 14} /></span>`;
-  return html`<span class="gui-portrait__ground" style=${ground(y.home)}><${MascotHead} sprite=${y.sprite} stage=${y.stage} size=${size} /></span>`;
+  const src = `/ds/sprites/v3/people/heads/${y.sprite}.png`;
+  return html`<span class=${cls("gui-portrait__ground is-v3", { "is-full": size > 3 })} data-stage=${y.stage} style=${ground(y.home)}>
+    <img class="gui-portrait__person" src=${src} alt="" draggable="false" /></span>`;
 }
 
 export function Steps({ label, items, value, onPick }) {

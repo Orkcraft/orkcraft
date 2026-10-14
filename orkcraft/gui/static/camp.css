@@ -29,6 +29,11 @@
   repeating-linear-gradient(90deg, var(--art-wood) 0 14px, var(--art-wood-dark) 14px 16px) 0 0/100% 100%); }
 .gui-camp__block-door { position: absolute; bottom: 0; left: calc(50% - 16px); width: 32px; height: 40%; background: var(--art-wood-deep);
   border: 2px solid var(--art-outline); border-bottom: 0; box-sizing: border-box; }
+/* the person's home beside the Review gate (§4.13): a click opens their own — since your last look, You, settings */
+.gui-camp__home { position: absolute; cursor: pointer; outline: none; }
+.gui-camp__home .gui-camp__sprite { left: 0; top: 0; }
+.gui-camp__home:is(:hover, :focus-visible) .gui-camp__sprite { filter: drop-shadow(0 0 0 var(--chip-ink)) drop-shadow(2px 0 0 var(--chip-ink))
+  drop-shadow(-2px 0 0 var(--chip-ink)) drop-shadow(0 2px 0 var(--chip-ink)) drop-shadow(0 -2px 0 var(--chip-ink)); }
 .gui-town__raising .gui-camp__building { opacity: .6; outline: 2px dashed var(--chip-ink); outline-offset: 2px; }
 
 /* layers 8–9: chips and signals (UI, CSS px at every zoom) */

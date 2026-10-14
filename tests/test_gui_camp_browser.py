@@ -346,3 +346,32 @@ def test_a_buildings_renown_and_goal_show_on_it(camp_look, gui):
                          ".sort().join() === 'annex-quality.png,banner-3.png,footing-3.png'", arg=forge, timeout=WAIT_MS)
     assert "Renown III" in (marks.first.get_attribute("title") or "") + (marks.nth(1).get_attribute("title") or "")
     _call(pg, "town.demolish", {"id": forge})
+
+
+def test_the_persons_home_stands_by_the_review_gate_and_opens_their_own(camp_look):
+    """design-system-v3.md §4.13, v3-prompts §13: the person's home (their kin's) east of the Review gate; a click opens
+    since your last look, their profile and deeds, the town's settings."""
+    pg = camp_look
+    _clear(pg)
+    gate = _call(pg, "town.build", {"type": "loot"})
+    pg.keyboard.press("Escape")
+    _building(pg, gate).wait_for(state="visible", timeout=WAIT_MS)
+    home = pg.locator(".gui-camp__home")
+    home.wait_for(state="visible", timeout=WAIT_MS)
+    kin = home.get_attribute("data-kin")
+    assert home.locator("img").get_attribute("src").endswith(f"/ds/sprites/v3/homes/{kin}.png")
+    g, h = _building(pg, gate).bounding_box(), home.bounding_box()
+    assert g["x"] + g["width"] <= h["x"] + 1 and abs((g["y"] + g["height"]) - (h["y"] + h["height"])) < g["height"]
+    home.click()
+    menu = pg.locator(".gui-menu")
+    assert menu.locator(".gui-menu__item").all_inner_texts() == ["Since your last look", "You: profile and deeds",
+                                                                 "Town settings…"]
+    menu.get_by_text("Since your last look").click()
+    pg.locator(".gui-lastlook").wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".gui-lastlook").get_by_role("button", name="Back to the camp").click()
+    pg.locator(".gui-lastlook").wait_for(state="hidden", timeout=WAIT_MS)
+    home.click()
+    menu.get_by_text("You: profile and deeds").click()
+    pg.locator(".gui-portrait__menu").wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    _call(pg, "town.demolish", {"id": gate})
