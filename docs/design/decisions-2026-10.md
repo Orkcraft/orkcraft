@@ -411,3 +411,9 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
     full-suite runs before it merges the fixes.
   - Everyone else is idle by design: INV and M1 are done, I2 waits for art, GEN waits for the owner's yes, V3 is done.
   - Nothing new is handed out: building 1b waits until the owner has played Mission 1.
+- **23:36.** Check-in. I1 keeps stabilising and is not blocked. On `main` since the last check-in:
+  - 06bd05c: a bench feed that dropped its last decision;
+  - f6904e0: tests that raced their worker threads;
+  - c9f90bf: three tests that read too early or at the wrong hour.
+
+  The full run is not green yet; I1 is capturing the remaining tracebacks. The quest-log overlap is next after that.
