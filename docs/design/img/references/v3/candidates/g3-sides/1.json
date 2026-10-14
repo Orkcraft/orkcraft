@@ -1,0 +1,71 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "prompt": "No shadows. Pixel-art sprite sheet in exactly the style and palette of the attached image. Crisp hard pixels on a strict grid, no anti-aliasing, no blur, no gradients, each sprite with a dark 1-pixel outline, drawn at its final size with no finer detail than that size can hold. One three-quarter top-down projection, never isometric. Sprites in a neat grid with even spacing on a flat solid #FF00FF magenta background, nothing touching, no ground under them, no text unless asked. Bright yellow and bright red appear nowhere.\n\nThe same low palisade of rounded logs as the attached sheet g3-palisade, the same log size and the same pixel size, six pieces in one row: a vertical run (the wall going down the right edge of the camp, seen front-on: a column of log tops one behind the other); the four outer corners (north-west, north-east, south-west, south-east), each where a horizontal run meets a vertical one; an end post. No track, no gate.\n\nNo frames, no boxes, no grid lines, no borders between sprites; each sprite floats alone on the magenta.\n\nNo shadows, no smoke, no glow.\n\nKeep exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #7cbd40), the paths warm sand (about #e4b469); warm honey wood, light cool stone, teal and plum cloth, cream bone.\n\nNo yellow, no orange and no red anywhere: those colours are reserved for the product's signals. The wood a muted honey brown, never orange.\n\nOutput the sheet as a PNG image.\n\nAttached, in order: f1-town, g3-palisade. F1 is the approved frame: its style and colours rule.",
+ "sheet": "g3-sides",
+ "file": "1.jpg",
+ "image": [
+  3168,
+  1344
+ ],
+ "pitch": 11.62,
+ "art_px": 56,
+ "art_range": [
+  20,
+  96
+ ],
+ "grid": [
+  271,
+  115
+ ],
+ "pieces": 9,
+ "expected": 6,
+ "sizes": [
+  [
+   35,
+   114
+  ],
+  [
+   35,
+   54
+  ],
+  [
+   55,
+   56
+  ],
+  [
+   69,
+   56
+  ],
+  [
+   69,
+   54
+  ],
+  [
+   56,
+   54
+  ],
+  [
+   56,
+   54
+  ],
+  [
+   12,
+   51
+  ],
+  [
+   12,
+   54
+  ]
+ ],
+ "degrid": false,
+ "signal_px": 0,
+ "signal_pct": 0.0,
+ "cast_px": 75,
+ "cast_pct": 0.39,
+ "ok": false,
+ "issues": [
+  "9 pieces found, 6 expected"
+ ]
+}

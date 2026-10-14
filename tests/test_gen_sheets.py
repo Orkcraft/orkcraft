@@ -151,3 +151,9 @@ def test_a_dropped_connection_is_retried(gs, monkeypatch):
         return _Answer(200, {"candidates": [{"content": {"parts": [
             {"inlineData": {"mimeType": "image/png", "data": "aGk="}}]}}]})
     assert gs.Client("m", 3, 0, opener=opener, sleep=lambda s: None).generate({})[1] == "image/png"
+
+
+def test_a_redrawn_sheet_is_picked_onto_the_sheet_it_redraws(gs):
+    assert gs.cut_name("b1-taskboard-s") == "b1-taskboard.png"          # --pick replaces the Task board
+    assert gs.cut_name("b2-town") == "b2-town.png"
+    assert "b1-taskboard.jpg" in gs.refs_for("b1-taskboard-s") and "g3-palisade.jpg" in gs.refs_for("g3-sides")

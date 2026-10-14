@@ -86,7 +86,8 @@ SIGNALS = "Bright yellow and bright red appear ONLY on the signal markers asked 
 
 # the reference images, by name (a JPEG or a PNG under REFS)
 REF = {"f1": "f1-town.jpg", "b1": "b1-core.jpg", "o1": "o1-body.jpg", "o2": "o2-roles.jpg", "c1": "c1-carts.jpg",
-       "c2": "c2-track.jpg", "g2": "g2-decor.jpg"}
+       "c2": "c2-track.jpg", "g2": "g2-decor.jpg",
+       "g3": "g3-palisade.jpg", "tb": "b1-taskboard.jpg"}       # the owner's picks of round 7
 
 # the sheets: kind (building, ork, track, edge, signals), the prompt (v3-prompts §3, as the reviews redid it), the
 # pieces the cutter should find, the image's aspect, and the cut name `--pick` copies it to
@@ -171,6 +172,34 @@ SHEETS: dict[str, dict] = {
                   "left; an end post on the right; a gap where a track passes. No track drawn, no rail fence: only "
                   "the palisade of rounded logs, the same logs as the attached decor sheet.",
         "about": "v3-prompts §3d.3 redone (§11): no smoke, no track",
+    },
+    "g3-sides": {
+        "kind": "edge", "expect": 6, "aspect": "21:9", "refs": ["g3"],
+        "prompt": "The same low palisade of rounded logs as the attached sheet g3-palisade, the same log size and the "
+                  "same pixel size, six pieces in one row: a vertical run (the wall going down the right edge of the "
+                  "camp, seen front-on: a column of log tops one behind the other); the four outer corners "
+                  "(north-west, north-east, south-west, south-east), each where a horizontal run meets a vertical "
+                  "one; an end post. No track, no gate.",
+        "about": "the palisade's missing pieces (round 7): the side wall, the four corners, an end post",
+    },
+    "c2-more": {
+        "kind": "track", "expect": 6, "aspect": "3:2",
+        "prompt": "Track tiles that match the attached track sheet c2 exactly: the same rail gauge and the same tie "
+                  "spacing as its straight pieces. The last curves came with the rails 41 px apart where c2's are 32: "
+                  "keep the rails exactly as far apart as on the attached straights. Six pieces in a row with "
+                  "magenta round each: a curve joining the top and the left sides (north–west); a T-junction with "
+                  "exits north, east and south; then the four curves again: north–east, east–south, south–west, "
+                  "west–north. Every tile the same square size as c2's, the rails crossing each edge at its middle.",
+        "about": "c2's north-west curve, the T with exits N/E/S, the curves again at c2's gauge (round 7)",
+    },
+    "b1-taskboard-s": {
+        "kind": "building", "expect": 1, "aspect": "4:3", "refs": ["tb"], "cut": "b1-taskboard.png",
+        "prompt": "Task board: the attached task board b1-taskboard, the same design (shingle roof on posts, scrolls "
+                  "and stone slabs pinned with bone pins, the door-sized gap below), redrawn smaller: about 0.8 of "
+                  "the width of the work hall with the teal roof in the attached sheet b1-core, at exactly the same "
+                  "pixel size as that work hall. The wood a muted honey brown, as in b1-core. One picture, alone on "
+                  "the magenta.",
+        "about": "the picked Task board at 0.8 of the work hall (round 7); --pick replaces b1-taskboard",
     },
     "c2-curves": {
         "kind": "track", "expect": 6, "aspect": "3:2",
@@ -527,7 +556,8 @@ the command under it.</p>
 
 
 def cut_name(name: str) -> str:
-    return _spec_sheet(name).get("file") or f"{name}.png"
+    """The sheet's name under docs/design/img/references/v3/: its own, or the one it redraws (`cut`)."""
+    return SHEETS.get(name, {}).get("cut") or _spec_sheet(name).get("file") or f"{name}.png"
 
 
 def pick(name: str, n: int, run=subprocess.run) -> pathlib.Path:
