@@ -319,3 +319,29 @@ the ❓ ork at the hall's door; nine orks instead of twenty; fewer crates.
 the title still copied. **An image model redraws a picture, it does not move buildings in it** (as round 1 of
 asset-prompts already found). So the layout is not iterated in whole frames any more: the sheets are generated one
 building at a time, and the frame is put together from them on the grid — by hand, or by the V3 session's preview.
+
+## 7. Round 3: sheets B1–B3, cut into the v3 preview (2026-10-14)
+
+`img/references/v3/b1-core.jpg`, `b2-town.jpg`, `b3-plumbing.jpg`; cut by `tools/camp_sheet.py --v3` (18 sprites;
+B2 and B3 each drew one extra piece — a stray stone, a second workbench — so their orders were moved, not the names).
+The preview with them: [img/v3-preview/v3-town-round1.png](img/v3-preview/v3-town-round1.png).
+
+**Taken:** the Task board, the Agent pool's teal hall, the **Review gate** (rough stone, bone tusks, plum banners,
+the "PR" plate, no crenellations — the castle is gone), the Inspector's pond and lens, the Review board's fire ring,
+the lookout's hide roof and horn. The art pixel is regular (about 4.2 image px), so the cut is clean.
+
+**To redo:**
+
+1. **The projection is mixed.** B1 is drawn front-on (the front wall parallel to the screen's bottom edge), as F1;
+   **B2 and B3 are isometric** (buildings turned 45°): Town Hall, Research, Wiki, Test bench, UX bench, Router, Mill,
+   Script, Drop file here, output, Branches & PRs. Side by side in the preview it is the first thing seen. Add to the
+   head of every sheet: **"Every building faces the viewer: its front wall parallel to the bottom edge of the image,
+   the door in the middle of the front, seen slightly from above, exactly like the task board in the attached
+   sheet. Never turned at an angle, never isometric."** and attach `b1-core.jpg` beside F1.
+2. **The catapult** is diagonal with its own diagonal rails: redrawn front-on, the track coming in straight from the
+   left, against a low log wall.
+3. **The lookout** is not yet in the wall: its legs in a low log wall with a gap at its foot.
+4. **Research** is a crenellated tower again (a castle cue): a round timber-and-stone tower, no crenellations.
+5. **The UX bench** has a yellow-orange banner: no yellow or orange, ever (signals).
+6. **The ground is one flat colour** until g1 (grass tiles) comes; and the palisade is v2's until g3.
+7. Sheets as **PNG** when the tool allows (a JPEG's noise blurs the key).

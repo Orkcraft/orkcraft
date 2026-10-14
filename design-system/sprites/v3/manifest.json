@@ -1,4 +1,419 @@
 {
  "note": "v3 sprites cut from the owner's generated sheets by tools/camp_sheet.py --v3 (docs/design/design-system-v3.md §8). Generated art, kept until the product proves itself (docs/design/decisions-2026-10.md §13.4).",
- "sprites": []
+ "sprites": [
+  {
+   "file": "buildings/barracks.png",
+   "size": [
+    128,
+    112
+   ],
+   "frame": [
+    128,
+    112
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b1-core.png",
+   "scale": 1.492,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/catapult.png",
+   "size": [
+    128,
+    112
+   ],
+   "frame": [
+    128,
+    112
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b1-core.png",
+   "scale": 1.492,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/council.png",
+   "size": [
+    112,
+    96
+   ],
+   "frame": [
+    112,
+    96
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b2-town.png",
+   "scale": 1.552,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/fields.png",
+   "size": [
+    128,
+    96
+   ],
+   "frame": [
+    128,
+    96
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b1-core.png",
+   "scale": 1.492,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/forge.png",
+   "size": [
+    96,
+    96
+   ],
+   "frame": [
+    96,
+    96
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b3-plumbing.png",
+   "scale": 1.812,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/lab.png",
+   "size": [
+    96,
+    96
+   ],
+   "frame": [
+    96,
+    96
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b2-town.png",
+   "scale": 1.552,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/lake.png",
+   "size": [
+    112,
+    96
+   ],
+   "frame": [
+    112,
+    96
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b1-core.png",
+   "scale": 1.492,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/loot.png",
+   "size": [
+    96,
+    80
+   ],
+   "frame": [
+    96,
+    80
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b3-plumbing.png",
+   "scale": 1.812,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/loot_vault.png",
+   "size": [
+    128,
+    112
+   ],
+   "frame": [
+    128,
+    112
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b1-core.png",
+   "scale": 1.492,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/mill.png",
+   "size": [
+    96,
+    96
+   ],
+   "frame": [
+    96,
+    96
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b3-plumbing.png",
+   "scale": 1.812,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/mine.png",
+   "size": [
+    96,
+    128
+   ],
+   "frame": [
+    96,
+    128
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b2-town.png",
+   "scale": 1.552,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/pit.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b3-plumbing.png",
+   "scale": 1.812,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/scrolls.png",
+   "size": [
+    96,
+    96
+   ],
+   "frame": [
+    96,
+    96
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b2-town.png",
+   "scale": 1.552,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/signpost.png",
+   "size": [
+    64,
+    80
+   ],
+   "frame": [
+    64,
+    80
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b3-plumbing.png",
+   "scale": 1.812,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/town_hall.png",
+   "size": [
+    128,
+    128
+   ],
+   "frame": [
+    128,
+    128
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b2-town.png",
+   "scale": 1.552,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/ux_lab.png",
+   "size": [
+    96,
+    96
+   ],
+   "frame": [
+    96,
+    96
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b2-town.png",
+   "scale": 1.552,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/watchtower.png",
+   "size": [
+    96,
+    128
+   ],
+   "frame": [
+    96,
+    128
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b1-core.png",
+   "scale": 1.492,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
+   "file": "buildings/workshop.png",
+   "size": [
+    80,
+    80
+   ],
+   "frame": [
+    80,
+    80
+   ],
+   "frames": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "b3-plumbing.png",
+   "scale": 1.812,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  }
+ ]
 }

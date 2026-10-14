@@ -124,7 +124,7 @@
       },
       {
        "file": "buildings/lab.png",
-       "order": 4,
+       "order": 5,
        "size": [
         96,
         96
@@ -132,7 +132,7 @@
       },
       {
        "file": "buildings/ux_lab.png",
-       "order": 5,
+       "order": 6,
        "size": [
         96,
         96
@@ -185,7 +185,7 @@
       },
       {
        "file": "buildings/pit.png",
-       "order": 3,
+       "order": 4,
        "size": [
         64,
         64
@@ -193,7 +193,7 @@
       },
       {
        "file": "buildings/loot.png",
-       "order": 4,
+       "order": 5,
        "size": [
         96,
         80
@@ -201,7 +201,7 @@
       },
       {
        "file": "buildings/forge.png",
-       "order": 5,
+       "order": 6,
        "size": [
         96,
         96
