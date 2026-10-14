@@ -65,10 +65,13 @@ def test_barracks_closed_command_and_full(fake_repo, monkeypatch):
     assert _until(lambda: w.state.asked)
     card = _card(host, bid)["card"]
     assert card["asks"] == w.keeper and card["active"] == 0
+    (lane,) = card["lanes"]                     # an ork is a role, its runs sessions (docs/design/pool-roles.md)
+    assert (lane["name"], lane["state"], lane["first"]) == ("Grunt · any work", "asks", "Grub")
+    assert lane["sessions"][0]["mark"] == "❓" and "Write the changelog" in lane["sessions"][0]["line"]
     d = host.detail(bid)["data"]
     asked = d["asked"][0]
     assert asked["id"] == task and asked["lane"] == "review" and "which database?" in asked["question"]
-    assert d["orks"][0]["name"] == "Grub" and d["orks"][0]["asks"] and d["orks"][0]["terminal"] == f"pool:{bid}/grub"
+    assert d["orks"][0]["name"] == "Grub" and d["orks"][0]["role"] == "Grunt · any work" and d["orks"][0]["asks"] and d["orks"][0]["terminal"] == f"pool:{bid}/grub"
     assert [ln["id"] for ln in d["lanes"]] == ["queue", "work", "review", "done", "failed"]
 
     rule = host.command("act", {"id": bid, "act": "answer", "args": {"text": "Postgres"}})

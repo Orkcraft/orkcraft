@@ -291,23 +291,64 @@ def test_the_pool_works_in_a_folder_of_its_own_and_gives_it_back(fake_repo, tmp_
     assert act("repo", {"path": ""}) == str(fake_repo)
 
 
-def test_its_card_has_a_lane_per_ork_with_its_topic_and_what_of_it_waits():
-    """The owner's ask: the card says who works on what — an ork a lane, its tool and tier, working, resting or
-    asking, its topic (the persona it is hired as) and the tasks of that topic in the queue, its follow-ups too."""
+def test_its_card_has_a_lane_per_role_its_orks_sessions_under_it():
+    """An ork is a role, its runs are sessions (docs/design/pool-roles.md, ork-console.md §14): a lane per persona the
+    pool hired as — "Grunt · tests", "Grunt · any work" — its orks chips in the one status, the asking one first; the
+    role says its most urgent session's state, its tier when they share one, how many are at work, what of it waits."""
     from types import SimpleNamespace
     from orkcraft.gui.views import barracks as view
     from orkcraft.realm import barracks as bk
-    tests = bk.PoolOrc("Grub", "claude", "sonnet", status="working", persona="tests")
-    front = bk.PoolOrc("Snaga", "claude", "haiku", persona="frontend")
-    anyone = bk.PoolOrc("Mogka", "agy", "")
+    grub = bk.PoolOrc("Grub", "claude", "sonnet", status="working", persona="tests")
+    thrak = bk.PoolOrc("Thrak", "claude", "sonnet", persona="tests")
+    ugluk = bk.PoolOrc("Ugluk", "codex", "", status="working", persona="tests")
+    snaga = bk.PoolOrc("Snaga", "claude", "haiku", persona="frontend")
+    mogka = bk.PoolOrc("Mogka", "agy", "")
     queue = [bk.PoolTask("t1", "add a test", "", persona="tests"), bk.PoolTask("t2", "fix the header", "", wait_for="Snaga"),
              bk.PoolTask("t3", "more tests", "", persona="tests"), bk.PoolTask("t4", "anything", "")]
-    st = SimpleNamespace(orcs=[tests, front, anyone], queue=queue, asked=[SimpleNamespace(orc="Snaga")])
-    lanes = {l["name"]: l for l in view._lanes(st)}
-    assert lanes["Grub"] == {"name": "Grub", "harness": "claude", "tier": "warrior", "state": "working",
-                             "topic": "tests", "queue": 2}
-    assert (lanes["Snaga"]["state"], lanes["Snaga"]["tier"], lanes["Snaga"]["queue"]) == ("asks", "laborer", 1)
-    assert (lanes["Mogka"]["state"], lanes["Mogka"]["topic"], lanes["Mogka"]["queue"]) == ("resting", "", 0)
+    st = SimpleNamespace(orcs=[grub, snaga, thrak, mogka, ugluk], queue=queue, asked=[SimpleNamespace(orc="Thrak")])
+    lanes, more = view._lanes(st)
+    assert more == 0 and [ln["name"] for ln in lanes] == ["Grunt · tests", "Grunt · frontend", "Grunt · any work"]
+    tests, front, anyone = lanes
+    assert [s["name"] for s in tests["sessions"]] == ["Thrak", "Grub", "Ugluk"]          # the asking one first
+    assert [s["mark"] for s in tests["sessions"]] == ["❓", "💭", "💭"]
+    assert (tests["state"], tests["mark"], tests["word"], tests["first"]) == ("asks", "❓", "Asks", "Thrak")
+    assert (tests["at_work"], tests["queue"], tests["tier"], tests["ork"]) == (3, 2, "", "Grunt")   # mixed tiers: none
+    assert (front["state"], front["tier"], front["queue"], front["at_work"]) == ("resting", "laborer", 1, 0)
+    assert front["sessions"][0]["word"] == "Resting" and front["sessions"][0]["harness"] == "claude"
+    assert (anyone["role"], anyone["topic"], anyone["queue"], anyone["mark"]) == ("", "", 0, "Zz")
+
+
+def test_its_lanes_take_the_one_status_of_the_worker_and_stop_at_six_roles():
+    from types import SimpleNamespace
+    from orkcraft.gui.views import barracks as view
+    from orkcraft.realm import barracks as bk
+    from orkcraft.realm import status
+    orcs = [bk.PoolOrc(f"O{i}", "claude", "", persona=f"p{i}") for i in range(8)]
+    st = SimpleNamespace(orcs=orcs, queue=[], asked=[])
+    lanes, more = view._lanes(st, lambda o: status.OrkStatus(o.name, status.TOOL, "Agent pool", "pytest", "Fix it"))
+    assert len(lanes) == view.LANES_MAX and more == 2
+    chip = lanes[0]["sessions"][0]
+    assert (chip["mark"], chip["word"], chip["cart"]) == ("🔧", "Running", "Fix it")
+    assert chip["line"] == "O0 · Agent pool · running pytest · on «Fix it»" and lanes[0]["state"] == "working"
+    many = SimpleNamespace(orcs=[bk.PoolOrc(f"O{i}", "claude", "") for i in range(9)], queue=[], asked=[])
+    (lane,), _ = view._lanes(many)
+    assert len(lane["sessions"]) == view.CHIPS_MAX and lane["more"] == 3 and lane["name"] == "Grunt · any work"
+
+
+def test_a_pool_saved_before_roles_loads_its_orks_as_sessions_of_their_roles(tmp_path):
+    """A saved pool keeps loading: an ork written before personas (no `persona`) is a session of "any work"."""
+    import json
+    from orkcraft.gui.views import barracks as view
+    from orkcraft.realm import barracks as bk
+    old = {"orcs": [{"name": "Grub", "harness": "claude", "model": "sonnet", "done": 3},
+                    {"name": "Mogka", "harness": "claude", "model": "sonnet", "persona": "tests"}],
+           "queue": [], "tasks": [], "paused": False}
+    (tmp_path / "barracks.json").write_text(json.dumps(old), encoding="utf-8")
+    st = bk.Barracks(tmp_path)
+    st.load()
+    lanes, _ = view._lanes(st)
+    assert [(ln["name"], [s["name"] for s in ln["sessions"]]) for ln in lanes] == [
+        ("Grunt · any work", ["Grub"]), ("Grunt · tests", ["Mogka"])]
 
 
 def test_a_meeting_s_ork_writes_the_document_itself_as_its_answer(pool):

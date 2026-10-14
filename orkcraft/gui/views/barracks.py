@@ -9,7 +9,7 @@ from pathlib import Path
 from orkcraft.gui import folders
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import catalog, harnesses, lexicon, paths, pipes, tiers
+from orkcraft.realm import catalog, harnesses, lexicon, paths, pipes, status, tiers
 from orkcraft.sources import sessions as past
 
 OWN_QUICK = True              # its quick actions are in its preview (js/buildings/), not the generic buttons
@@ -28,28 +28,61 @@ def _money(x: float) -> str:
     return f"${x:.2f}"
 
 
-LANES_MAX = 6            # the orks its card shows a lane for
+LANES_MAX = 6            # the roles its card shows a lane for
+CHIPS_MAX = 6            # the sessions a lane shows a chip for
+ROLE_ORDER = {status.ASKS: 0, status.ERROR: 1, status.THINKING: 2, status.TOOL: 2, status.READY: 3}
 
 
-def _lanes(st) -> list[dict]:
-    """A lane per ork, for its card (the owner's ask: who works on what at a glance): its name, its AI tool and tier,
-    working | resting | asks, its topic — the persona it was hired as, the kind of work it takes for good, never the
-    one request — and how many tasks of that topic wait in the queue (its follow-ups first)."""
-    asking = {t.orc for t in st.asked}
+def _own_status(st, o: bk.PoolOrc) -> status.OrkStatus:
+    """An ork's one status from the pool's state alone (no worker at hand): asks, at work or resting."""
+    if any(t.orc == o.name for t in st.asked):
+        return status.OrkStatus(o.name, status.ASKS)
+    return status.OrkStatus(o.name, status.THINKING if o.status == "working" else status.RESTING)
+
+
+def _lanes(st, status_of=None) -> tuple[list[dict], int]:
+    """A lane per role, for its card (docs/design/pool-roles.md, ork-console.md §14): an ork is a role — the
+    persona it is hired as, "any work" without one — and the orks hired as it are its sessions, a chip each in the
+    one status (realm/status.py), the asking one first. The role says its most urgent session's state, its tier
+    when its sessions share one, how many of them are at work and how many tasks of its topic wait (its sessions'
+    follow-ups too). Roles in the order they were first hired, six at most; with how many more there are."""
+    status_of = status_of or (lambda o: _own_status(st, o))
+    roles: dict[str, list[bk.PoolOrc]] = {}
+    for o in st.orcs:
+        roles.setdefault(o.persona or "", []).append(o)
+    grunt = lexicon.term("orc.barracks")
     out = []
-    for o in st.orcs[:LANES_MAX]:
-        waits = sum(1 for t in st.queue if t.wait_for == o.name
-                    or (not t.wait_for and o.persona and t.persona == o.persona))
-        out.append({"name": o.name, "harness": o.harness, "tier": o.tier or "",
-                    "state": "asks" if o.name in asking else "working" if o.status == "working" else "resting",
-                    "topic": o.persona, "queue": waits})
-    return out
+    for topic, orcs in list(roles.items())[:LANES_MAX]:
+        now = [(o, status_of(o)) for o in orcs]
+        now.sort(key=lambda x: ROLE_ORDER.get(x[1].state, 9))          # stable: hire order within a state
+        names = {o.name for o in orcs}
+        waits = sum(1 for t in st.queue if t.wait_for in names or (not t.wait_for and topic and t.persona == topic))
+        tiers_ = {o.tier or "" for o in orcs}
+        head = now[0][1].state if now[0][1].state != status.READY else status.RESTING
+        at_work = sum(1 for _, s in now if s.state != status.RESTING)
+        out.append({"role": topic, "ork": grunt, "name": _role_name(orcs[0]), "topic": topic,
+                    "tier": tiers_.pop() if len(tiers_) == 1 else "",
+                    "state": "asks" if head == status.ASKS else "resting" if head == status.RESTING else "working",
+                    "mark": status.OrkStatus(grunt, head).mark("camp"), "word": status.OrkStatus(grunt, head).mark("office"),
+                    "at_work": at_work, "queue": waits, "first": now[0][0].name,
+                    "sessions": [{"name": o.name, "harness": o.harness, "tier": o.tier or "", "state": s.state,
+                                  "mark": s.mark("camp"), "word": s.mark("office"), "line": s.line(),
+                                  "cart": s.cart} for o, s in now[:CHIPS_MAX]],
+                    "more": max(len(now) - CHIPS_MAX, 0)})
+    return out, max(len(roles) - LANES_MAX, 0)
+
+
+def _role_name(o: bk.PoolOrc) -> str:
+    """The role an ork is a session of: "Grunt · tests", "Grunt · any work"."""
+    return f"{lexicon.term('orc.barracks')} · {o.persona or 'any work'}"
 
 
 def card(w) -> dict:
     """Closed (docs/design/building-views.md): how many orks work of how many, `queue 3`, `✓5 ✗1 · $1.20`,
-    `<keeper> asks`; a lane per ork (`_lanes`); who works on what (two at most), else the last task that ended."""
+    `<keeper> asks`; a lane per role, its sessions as chips (`_lanes`); who works on what (two at most), else the
+    last task that ended."""
     st, f = w.state, w.foreman
+    lanes, more = _lanes(st, getattr(w, "ork_status", None))
     ended = next((t for t in reversed(st.tasks) if t.status in ("done", "failed")), None)
     return {"asks": w.keeper if st.asked else "",
             "active": sum(1 for o in st.orcs if o.status == "working"), "max": f.max_orcs, "queue": len(st.queue),
@@ -60,7 +93,7 @@ def card(w) -> dict:
                         if o.status == "working"
                         and (t := st.task(o.task)) is not None][:2],
             "last": {"title": ended.title, "ok": ended.status == "done"} if ended else None,
-            "lanes": _lanes(st), "more": max(len(st.orcs) - LANES_MAX, 0)}
+            "lanes": lanes, "more": more}
 
 
 def _tier(o: bk.PoolOrc) -> str:
@@ -145,7 +178,7 @@ def detail(w) -> dict:
     orks = []
     for o in st.orcs:
         now = st.task(o.task) if o.task else None
-        orks.append({"name": o.name, "label": o.label, "tier": _tier(o), "status": o.status,
+        orks.append({"name": o.name, "role": _role_name(o), "label": o.label, "tier": _tier(o), "status": o.status,
                      "task": {"id": now.id, "title": now.title, "status": now.status} if now else None,
                      "done": o.done, "failed": o.failed, "cost": _money(o.cost_usd), "tokens": o.tokens,
                      "worktree": o.worktree, "branch": o.branch, "session": o.session, "asks": o.name in asking,
