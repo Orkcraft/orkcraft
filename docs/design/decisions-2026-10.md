@@ -358,3 +358,7 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
   Camp lays the same buildings on the v3 rows and loop, **taking its rows and order from the Office positions** (by y
   into rows, by x within a row; the work's order only for buildings never placed); the lookout and the catapult stay
   pinned to the walls. Nothing is dragged in Camp itself.
+- **21:06 check-in.** The owner topped up the Gemini credits; GEN's fourth run made 7 images. GEN stopped on a question
+  for the owner; the PM session answered it (homes #1, track pieces #2, as GEN recommended). V3: the stations, the
+  Prospector, the classes and the growth marks are in the preview (2a81827, aa4dff7). **I1 steps 1 and 2 are on `main`**:
+  the real Camp drawn in v3 (807c4fe) and the steward, bubble, scroll and quick actions (a6f1a72); step 3 under way.
