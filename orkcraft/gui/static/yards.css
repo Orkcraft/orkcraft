@@ -10,15 +10,30 @@
 [data-look="camp"] .gui-hut__keeper,
 [data-look="camp"] .gui-hut__ask { display: none; }
 
-/* Over the roof's right edge: Zz while its orks sleep, a wheel while they work (the right half of the ork's
-   state sprites, js/icons.js OrkHead). */
+/* Over the roof's right edge, while its orks work: a wheel turning (the right half of the ork's busy sprite,
+   js/icons.js OrkHead). Resting orks get no badge: the roof is a little dimmed (layout.css), so normal work is motion
+   and only exceptions are badges (docs/design/town-readability.md §2.3). Outlined, so it reads on any ground. */
 .gui-hut__doing { position: absolute; right: -12px; top: -6px; width: 16px; height: 16px; pointer-events: none;
-  image-rendering: pixelated; background: image-set(url("/ds/sprites/orks/ork-idle.png") 1x, url("/ds/sprites/orks/ork-idle@2x.png") 2x)
-  -24px 0 / 40px 16px no-repeat; animation: gui-doze 2.4s ease-in-out infinite; }
-.gui-hut__doing.is-busy { background-image: image-set(url("/ds/sprites/orks/ork-busy.png") 1x, url("/ds/sprites/orks/ork-busy@2x.png") 2x);
-  animation: gui-work .5s steps(2) infinite; }
-@keyframes gui-doze { 50% { transform: translateY(-3px); opacity: .55; } }
+  image-rendering: pixelated; background: image-set(url("/ds/sprites/orks/ork-busy.png") 1x, url("/ds/sprites/orks/ork-busy@2x.png") 2x)
+  -24px 0 / 40px 16px no-repeat; animation: gui-work .5s steps(2) infinite; filter: var(--unit-outline); }
 @keyframes gui-work { 50% { transform: translateY(-1px); } }
+
+/* A unit on the map (an ork, a cart, a badge) has a one-pixel dark outline and stands on a small dark shadow, as cosy
+   farming games draw them: separated from the ground by value, not colour, so it reads in grey (§2.1). */
+.gui-town { --unit-outline: drop-shadow(1px 0 0 var(--art-outline)) drop-shadow(-1px 0 0 var(--art-outline))
+  drop-shadow(0 1px 0 var(--art-outline)) drop-shadow(0 -1px 0 var(--art-outline));
+  /* a chip (design-system-v2.md §5): its 1 px art-outline border, and a wood ring inside it while the ground is the
+     colour pass's dark earth, as dark as the chip */
+  --chip-edge: inset 0 0 0 1px var(--wood), 0 0 0 1px var(--art-outline); }
+
+/* A cart that waits for the person, always shown by its building's door (js/hut.js Waiting): the cart, a yellow ? and
+   `#ref · title`, words on a dark chip in the chip type style, never on the ground (§2.4, §3; design-system-v2.md §5). */
+.gui-hut__waiting { position: absolute; left: calc(100% + 6px); top: 4px; z-index: 3; display: inline-flex; align-items: center; gap: 4px;
+  box-sizing: border-box; height: 20px; max-width: 28ch; padding: 0 6px; white-space: nowrap; overflow: hidden; pointer-events: none;
+  font: 600 12px/16px var(--ok-font); background: var(--chip); color: var(--chip-ink); box-shadow: var(--chip-edge); }
+.gui-hut__waiting img { flex: none; image-rendering: auto; }
+.gui-hut__waiting b { color: var(--signal-ask); font-weight: 700; }
+.gui-hut__waiting-ref { color: var(--ink-muted); }
 
 /* The ork out of its building (js/visit.js), its head alone, a third of the house's height: on the plinth's left end. It walks out of the door
    facing left, two steps, and back in facing right; out, it faces you, its bubble over its head. */
@@ -26,8 +41,11 @@
   background: none; line-height: 0; }
 button.gui-out { cursor: pointer; }
 button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 1px; }
-.gui-out__ork { display: block; width: 24px; height: 18px; image-rendering: pixelated;
+.gui-out__ork { display: block; width: 24px; height: 18px; image-rendering: pixelated; filter: var(--unit-outline);
   background: image-set(url("/ds/sprites/orks/ork-stand.png") 1x, url("/ds/sprites/orks/ork-stand@2x.png") 2x) 0 0 / 24px 18px no-repeat; }
+/* its shadow on the ground, under its feet */
+.gui-out::before { content: ""; position: absolute; left: 3px; right: 3px; bottom: -3px; height: 5px; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--art-outline) 60%, transparent), transparent); }
 /* Its tier's chevrons on its shoulder: how seasoned the mind at work is, seen without opening anything. */
 .gui-out__rank { position: absolute; right: -10px; top: -10px; width: 16px; height: 16px; image-rendering: pixelated; pointer-events: none; }
 /* Its AI tool over its other shoulder (js/visit.js): the tool's pixel mark, as on the steward's line in Info. */
@@ -70,13 +88,20 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 /* A card's name stands over its building, where the bubble would go: there the bubble rises over the name, its tail
    reaching down to the ork, so it never covers the name nor leaves the town at its left edge. */
 [data-look="camp"] .gui-hut:is(.is-fenced, .is-bare) .gui-out__bubble { bottom: calc(100% + 24px); }
-.gui-out__bubble.is-ask { padding: 0 3px; font: 700 14px/16px var(--font-camp); color: var(--alert); }
+/* An ork that asks: a yellow ? on a dark chip with an outline, the loudest thing in the camp; yellow is kept for it
+   (town-readability.md §2.2, §4). Not the parchment bubble: yellow would not read on it. */
+.gui-out__bubble.is-ask { left: 2px; box-sizing: border-box; width: 20px; height: 20px; justify-content: center; padding: 0; margin: 0;
+  border: 0; border-image: none; font: 700 14px/16px var(--font-camp); color: var(--signal-ask); background: var(--chip);
+  box-shadow: var(--chip-edge);
+  animation: gui-ask 1.2s ease-in-out infinite; }
+.gui-out__bubble.is-ask::after { display: none; }
+@keyframes gui-ask { 50% { transform: translateY(-2px); } }
 .gui-out__act { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 2px;
   border: 0; background: none; cursor: pointer; line-height: 0; }
 .gui-out__act:hover { background: rgb(0 0 0 / .12); }
 .gui-out__act:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: -2px; }
 .gui-out__act.is-on { background: rgb(0 0 0 / .18); }
-@media (prefers-reduced-motion: reduce) { .gui-hut__doing, .gui-out, .gui-out__ork, .gui-out__hat, .gui-out__act { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .gui-hut__doing, .gui-out, .gui-out__ork, .gui-out__hat, .gui-out__act, .gui-out__bubble { animation: none !important; } }
 
 /* -- the plinth every building stands on (§3f) ----------------------------------------------------------------- */
 /* A paved slab in the road's tan under its sprite, a little wider: its roads meet it (js/hut.js measure, js/town.js

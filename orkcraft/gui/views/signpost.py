@@ -6,8 +6,9 @@ from __future__ import annotations
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import lexicon, modes, signpost
 
-# The design system's marks (design-system/tokens.json, `--mark-*`), one per road out, in this order.
-MARKS = ("blue", "green", "purple", "yellow", "red")
+# The design system's marks (design-system/tokens.json, `--mark-*`), one per road out, in this order. Yellow and red are
+# kept for signals on the map, a question and an error (docs/design/town-readability.md §2.2), so roads never wear them.
+MARKS = ("blue", "green", "purple")
 
 
 def _roads(w) -> list[dict]:

@@ -68,6 +68,16 @@ def _card(type_id: str, worker) -> Any:
         return None
 
 
+def cart_ref(alert_id: str) -> str:
+    """The short ref a waiting cart's chip shows (docs/design/town-readability.md §3, `#42 · Login form`): the last part
+    of its question's id when that is a short key (`view:outputs:review:16307ea4` → `16307ea4`); "" for none (a
+    terminal's prompt is not a cart)."""
+    if alert_id.startswith("term:"):
+        return ""
+    last = alert_id.rsplit(":", 1)[-1]
+    return last if 0 < len(last) <= 8 and last.replace("-", "").replace("_", "").isalnum() else ""
+
+
 def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
     out = []
     for bs in town.scroll.buildings:
@@ -95,7 +105,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "garrison": [_ork(o, steward_models.tier_for(bs, "listen") or steward_models.level_of(bs))
                          for o in garrison if o.kind != "steward"],
             "rules": [{"ref": o.ref, "name": o.name, "status": o.status} for o in garrison if o.kind == "steward"],
-            "alert": {"id": asking.alert.id, "title": asking.alert.title,
+            "alert": {"id": asking.alert.id, "title": asking.alert.title, "ref": cart_ref(asking.alert.id),
                       "waited": round(time.monotonic() - since, 1) if since else 0.0} if asking else None,
             "has_worker": worker is not None,
             # its work is code: no ork lives in it, one visits (docs/design/yards.md §2); `visit` is the host's

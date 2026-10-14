@@ -3,7 +3,7 @@
 // left, two steps), turns to you and speaks in a pixel bubble: 👎 and a gear, its settings (the building's Info,
 // at its steward: its tier and AI tool) — a 👎 is what teaches it; 👍 stays in the building's Info (js/console.js).
 // The mouse over a building brings nobody out. The building no longer selected, it waits a moment and walks back in (facing right). An ork that asks comes out by itself and waits there,
-// a `!` in its bubble: a press answers it (js/orders.js). An ork come to a yard for a wake stands there while it is.
+// a yellow ? on a dark chip over its head (docs/design/town-readability.md §4): a press answers it (js/orders.js). An ork come to a yard for a wake stands there while it is.
 // A yard's 👍 / 👎 rate the building (its steward wakes on a 👎), a hut's its lead ork's work. Office draws none of
 // it (office.css): its 👍 / 👎 and models are in the building's Info (js/console.js).
 import { signal } from "@preact/signals";
@@ -88,7 +88,7 @@ export function Outside({ b, selected }) {
     alt="" title=${say(TIER_WORD[o.rank || o.tier])} draggable="false" />`}${harness && html`<span class="gui-out__tool"
     title=${`${say("AI tool")}: ${thinker.scheme}`}><${ToolMark} mark=${harness} /></span>`}`;
   const bubble = place !== "out" ? null
-    : asking ? html`<span class="gui-out__bubble is-ask" aria-hidden="true">!</span>`
+    : asking ? html`<span class="gui-out__bubble is-ask" aria-hidden="true">?</span>`
     : rates && selected ? html`<span class="gui-out__bubble" role="group" aria-label=${`${who}: ${say("rate its work")}`}
         onPointerDown=${stop} onClick=${stop}>
           <button class="gui-out__act" onClick=${dislike}

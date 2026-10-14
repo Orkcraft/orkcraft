@@ -125,6 +125,7 @@ def test_the_signpost_counts_per_road_out_in_its_colour_and_tests_a_text(fake_re
     counts = {r["label"]: (r["count"], r["color"]) for r in card["roads"]}
     assert counts["bugs"][0] == 2 and counts["links"][0] == 1 and counts["no rule"][0] == 0
     assert len({col for _, col in counts.values()}) == 3                       # a colour per road
+    assert not {col for _, col in counts.values()} & {"yellow", "red"}       # kept for the map's signals
     assert card["total"] == 4 and card["last"]["route"] == "rest" and card["last"]["title"] == "hello"
     assert set(card["tints"]) == {r["key"] for r in card["roads"]}           # the town paints their starts
     roads = {r["id"] for r in host.snapshot()["roads"]}

@@ -101,6 +101,23 @@ def test_the_new_camps_world_keeps_outlines_chips_and_signals_readable():
         assert not loud, f"{name} {value}: a signal's yellow or red in the art"
 
 
+def test_a_chip_stands_off_todays_dark_ground_by_its_wood_edge():
+    """The town's ground is still the colour pass's dark earth (docs/design/color-pass.md §3) until v2's world layer
+    lands, and there `chip` and `art-outline` are as dark as the ground: the chips (yards.css, layout.css) carry a 1 px
+    `wood` ring inside their `art-outline` border, so they stand off it; the ❓ reads on the chip."""
+    camp = {t["name"]: t["value"]["camp"] for t in tokens.system()["color"]["tokens"]}
+    assert _contrast(camp["wood"], camp["chip"]) >= 3 and _contrast(camp["wood"], camp["canvas"]) >= 3
+    assert _contrast(camp["signal-ask"], camp["chip"]) >= 4.5 and _contrast(camp["chip-ink"], camp["chip"]) >= 4.5
+
+
+def test_a_waiting_carts_chip_names_it_by_a_short_ref():
+    from orkcraft.gui.state import cart_ref
+    assert cart_ref("view:outputs:review:16307ea4") == "16307ea4"
+    assert cart_ref("view:pool:t42") == "t42"
+    assert cart_ref("term:claude-1234-abcdef") == ""                      # a terminal's prompt is not a cart
+    assert cart_ref("spec:a-very-long-reference-name") == ""
+
+
 @pytest.mark.parametrize("type_id", sorted(catalog.TYPES))
 def test_every_type_has_a_contract_and_its_default_passes(type_id):
     c = ui.contract(type_id)

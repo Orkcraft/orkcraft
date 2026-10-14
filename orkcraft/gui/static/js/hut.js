@@ -170,14 +170,28 @@ function Keeper({ garrison, alert, yard, visit }) {
 }
 
 // -- its orks, seen from outside (docs/design/yards.md §4) -----------------------------------------------------
-// In Camp the head left the title bar: a building says what its orks do over its roof — Zz while they sleep, a
-// wheel while they work. A yard shows nothing: no ork lives in it. Its ork comes out onto the plinth under the
-// mouse, or by itself to ask (js/visit.js). Office keeps its words (office.css).
+// In Camp the head left the title bar: a building says what its orks do over its roof — a wheel turning while they
+// work, nothing while they rest (the roof a little dimmed): normal work is motion, only exceptions are badges
+// (docs/design/town-readability.md §2.3). A yard shows nothing: no ork lives in it. Its ork comes out onto the plinth
+// under the mouse, or by itself to ask (js/visit.js). Office keeps its words (office.css).
 
 function Doing({ b, busy }) {
-  if (b.yard || b.alert || !b.garrison.length) return null;
-  return html`<i class=${cls("gui-hut__doing", busy ? "is-busy" : "is-idle")} aria-hidden="true"
-    title=${say(busy ? "at work" : "idle")}></i>`;
+  if (b.yard || b.alert || !b.garrison.length || !busy) return null;
+  return html`<i class="gui-hut__doing is-busy" aria-hidden="true" title=${say("at work")}></i>`;
+}
+
+// A cart that waits for the person always shows its chip, so a question never hides behind a hover
+// (town-readability.md §3): `#ref · title`, the title cut at about 20 characters, on a dark chip by the building's
+// door. A press on the building opens the question (Hut's `up`). Camp only; Office says it on the card.
+const CHIP_TITLE = 20;
+
+function Waiting({ alert }) {
+  if (!alert) return null;
+  const words = (alert.title || "").replace(/\s+/g, " ").trim();
+  const title = words.length > CHIP_TITLE ? `${words.slice(0, CHIP_TITLE - 1).trimEnd()}…` : words;
+  return html`<span class="gui-hut__waiting" title=${words}><img class="ok-sprite" src="/ds/sprites/icons/res-gold.png"
+    srcset="/ds/sprites/icons/res-gold@2x.png 2x" width="8" height="8" alt="" draggable="false" /><b aria-hidden="true">?</b>${alert.ref
+    ? html`<span class="gui-hut__waiting-ref">#${alert.ref}</span> · ` : ""}${title}</span>`;
 }
 
 /** A fenced card's name, or a bare building's, stands over its building, on the ground, with no plate (Camp). */
@@ -491,7 +505,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
     <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
       busy=${busy && !((town.value && town.value.hud) || {}).quiet}
       level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${broken ? { id: `broken:${b.id}:${broken}`, waited: 0 } : null} />
-      <${Doing} b=${b} busy=${busy} />${b.id !== CORNER && html`<${YardName} b=${b} number=${number} />`}
+      <${Doing} b=${b} busy=${busy} /><${Waiting} alert=${b.alert} />${b.id !== CORNER && html`<${YardName} b=${b} number=${number} />`}
       ${bare && html`<span class="gui-hut__badge"><${Mark} b=${b} quiet=${far} /></span>`}
       <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} selected=${selected.value === b.id} /></span></div>
     <div class="ok-hut__card" style=${h ? `height:${h}px` : cap ? `max-height:${snap(cap, step && step.h)}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>

@@ -280,19 +280,24 @@ function delayOf(c) {
   return started.get(c.id);
 }
 
-function Carts({ paths, carts, travel }) {
+// A moving cart's title shows on a dark chip only on the selected building's roads (docs/design/town-readability.md
+// §3: titles are never on for every cart); a stuck one flickers red, a held one glows.
+function Carts({ paths, carts, travel, roads = [] }) {
   const byRoad = Object.fromEntries(paths.map((p) => [p.id, p]));
+  const ends = Object.fromEntries(roads.map((r) => [r.id, [r.from, r.to]]));
+  const active = selected.value;
   const trip = travel > 0 ? travel : SHORT_TRIP_S;
   return html`<div class="gui-carts" aria-hidden="true">
     ${carts.filter((c) => byRoad[c.road] && c.age < trip + 1).map((c) => {
       const p = byRoad[c.road];
       const d = "M" + p.points.map((q) => q.join(" ")).join(" L");
       const back = c.status === "filtered";
-      return html`<div key=${c.id} class=${cls("gui-cart", { "is-back": back, "is-held": c.status === "held" || c.status === "error" })}
+      const named = !!active && (ends[c.road] || []).includes(active);
+      return html`<div key=${c.id} class=${cls("gui-cart", { "is-back": back, "is-held": c.status === "held", "is-error": c.status === "error" })}
           style=${`offset-path: path("${d}"); animation-duration: ${back ? SHORT_TRIP_S : trip}s; animation-delay: ${delayOf(c)}`}>
         <img class="gui-cart__gold" src="/ds/sprites/icons/res-gold.png" srcset="/ds/sprites/icons/res-gold@2x.png 2x"
           width="8" height="8" alt="" />
-        ${c.title && !back && html`<span class="gui-cart__label ok-font-status">${say(c.title)}</span>`}
+        ${c.title && !back && named && html`<span class="gui-cart__label">${say(c.title)}</span>`}
       </div>`;
     })}
   </div>`;
@@ -695,7 +700,7 @@ export function Town({ buildings, roads }) {
       ${ghost && html`<${Footprint} g=${ghost} />`}
       <${Signs} paths=${paths} roads=${here} />
       <${LooseEnds} buildings=${buildings} rects=${rects} />
-      <${Carts} paths=${paths} carts=${(snap && snap.carts) || []} travel=${(snap && snap.travel) || 0} />
+      <${Carts} paths=${paths} carts=${(snap && snap.carts) || []} travel=${(snap && snap.travel) || 0} roads=${here} />
       ${placing.value && html`<${Placing} p=${placing.value} rects=${rects} />`}
       <${FrameSelect} rects=${rects} />
     </div>

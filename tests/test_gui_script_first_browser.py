@@ -6,6 +6,7 @@ Skipped where Playwright or Chromium is missing; `-m browser` runs these alone."
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path
 
 import pytest
@@ -136,13 +137,17 @@ def test_a_yard_is_fenced_and_one_that_asks_glows_and_opens_its_question(demo_pa
     pg.mouse.move(1, 500)
     assert calendar.locator(".gui-out").count() == 0                      # nobody asks, no mouse: nobody out
     assert not calendar.locator(".gui-hut__name").is_visible()            # the name left the title bar
-    assert pg.locator('.gui-hut[data-id="todo"] .gui-hut__doing').is_visible()   # a hut: Zz or a wheel on its roof
+    todo = pg.locator('.gui-hut[data-id="todo"]')
+    assert todo.locator(".gui-hut__doing").count() == (1 if "is-busy" in todo.get_attribute("class") else 0)   # a wheel while
+    # its orks work; resting is no badge (docs/design/town-readability.md §2.3)
     assert calendar.locator(".gui-hut__doing").count() == 0               # a yard: nobody lives in it
 
     _call(pg, "orkspace.select", {"id": "agent_yard"})
     gate = pg.locator('.gui-hut.is-alert[data-id="outputs"]')            # the Review gate asks
     gate.wait_for(state="visible", timeout=WAIT_MS)
     assert gate.locator(".gui-out").count() == 0                          # a yard: no ork comes out
+    chip = gate.locator(".gui-hut__waiting")                              # its waiting cart's chip, always shown
+    assert chip.is_visible() and re.search(r"#\w+\s*· 3 carts wait for re…", chip.inner_text())   # `#ref · title`, cut
     gate.locator(".gui-hut__sprite").click()
     dialog = pg.locator(".ok-dialog", has_text="Awaiting an answer")
     dialog.wait_for(state="visible", timeout=WAIT_MS)
