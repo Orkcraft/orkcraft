@@ -108,6 +108,7 @@ def test_an_episode_is_scripted_spoken_kept_and_sent_on(fake_repo, monkeypatch, 
     assert gemini.calls[0][1]["generationConfig"]["speechConfig"]["voiceConfig"]["prebuiltVoiceConfig"]["voiceName"] == "Charon"
     assert "[email-1]" not in gemini.calls[0][1]["contents"][0]["parts"][0]["text"]
     assert w.file_of(eid).read_bytes()[:4] == b"RIFF"
+    assert _wait(lambda: sent)                       # sent on after its status is set, on the worker's thread
     assert sent[-1][0] == "gramophone.done" and sent[-1][2].startswith("День · ")
     assert w.transcript(eid).startswith("# День\n\nИтоги дня.")
 
