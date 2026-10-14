@@ -2584,11 +2584,13 @@ def test_office_s_medium_agent_pool_card_keeps_its_session_chips_clear_to_press(
                                  question="pytest or unittest?", persona="tests", waits_since=time.time())]
     w.state.save()
     pg.evaluate("([id, x, y]) => import('/static/js/link.js').then(m => m.command('hut.move', { id, x, y }))", [bid, 0.3, 0.3])
-    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('c'))")
-    chip = _hut(pg, bid).locator(".pool-lane .pool-chip[data-ork='Thrak']")
-    chip.wait_for(state="visible", timeout=WAIT_MS)
-    chip.click()                                                        # nothing intercepts it
-    pg.locator(".gui-orkconsole", has_text="Thrak").wait_for(state="visible", timeout=WAIT_MS)
-    pg.get_by_role("button", name="Close").last.click()
-    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('b'))")
-    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+    try:
+        pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('c'))")
+        chip = _hut(pg, bid).locator(".pool-lane .pool-chip[data-ork='Thrak']")
+        chip.wait_for(state="visible", timeout=WAIT_MS)
+        chip.click()                                                    # nothing intercepts it
+        pg.locator(".gui-orkconsole", has_text="Thrak").wait_for(state="visible", timeout=WAIT_MS)
+        pg.get_by_role("button", name="Close").last.click()
+    finally:                                                            # its asking ork never stays for the next test
+        pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('b'))")
+        pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
