@@ -95,7 +95,7 @@ on; with none on it is Claude Code, as before there was a choice (`builders.main
 - Limits: not read. Cursor has no public API for the plan's use; reading the CLI's stored sign-in token
   to call its private one was removed (2026-10-14, [decisions-2026-10.md](decisions-2026-10.md) §5). ⏳
   shows a plain row pointing to Cursor's dashboard.
-- Login: `CURSOR_API_KEY`, or the CLI's own sign-in (Orkcraft never reads its token).
+- Login: `CURSOR_API_KEY`, or the CLI's own sign-in (Orkline never reads its token).
 - Onboarding: the CLI found, the editor is not named again; only the editor here, it says to install
   the CLI (`cursor-agent`) to run orks on it.
 
