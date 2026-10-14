@@ -1,5 +1,6 @@
-"""The onboarding in the window (docs/design/gui-onboarding.md): your AI tools, who you are, the tools the
-orks may use, your first town, and the town going up while you watch.
+"""The onboarding in the window (docs/design/gui-onboarding.md): your AI tools, who you are, your first town, and
+the town going up while you watch. Quiet hours and the look take their defaults, the MCP servers found are all on
+(Set up again chooses them): the first session asks no more (docs/design/first-mission.md §2).
 
 A project with no town yet opens on it. Each step is skipped when its answer is already known: the class
 the landing page gave (`orkcraft --role`), a class with one role, a machine with no MCP server. Nothing is
@@ -19,7 +20,7 @@ from dataclasses import replace
 from typing import Any, Callable
 from urllib.parse import urlencode
 
-from orkcraft import schedule, settings, tools
+from orkcraft import settings, tools
 from orkcraft.core import buildings, roads, runners
 from orkcraft.env import getenv
 from orkcraft.realm import (biomes, builders, checkpoint, harnesses, intents, interview, mcp, tool_errors, town_builder,
@@ -183,7 +184,9 @@ class Onboarding:
         out = [TOOLS]
         if not self.role_given:
             out.append(WHO)
-        if self.servers:
+        # The first session asks the class and confirms the AI tools, nothing more (first-mission.md §2): the MCP
+        # servers found are all on (`_look`), chosen again only in Set up again.
+        if self.servers and self.again:
             out.append(MCP)
         if not self.again:
             out.append(TOWN)
@@ -288,7 +291,6 @@ class Onboarding:
         if not self.active:
             return None
         steps = self.steps()
-        machine = self.host.town.machine
         return {
             "step": self.step, "steps": steps,
             "n": steps.index(self.step) if self.step in steps else len(steps) - 1,
@@ -304,7 +306,7 @@ class Onboarding:
             "towns": self._towns(), "survey": self._survey() if self.step == SURVEY else None,
             "planner": self._planner_runner() is not None,
             "tool_titles": {t.id: t.title for t in tools.TOOLS},
-            "again": self.again, "quiet": bool(machine.quiet),
+            "again": self.again,
             "raising": self.raising,
         }
 
@@ -316,7 +318,7 @@ class Onboarding:
                 "onboarding.role": self.set_role, "onboarding.mcp": self.set_mcp,
                 "onboarding.town": self.set_town, "onboarding.survey": self.set_survey,
                 "onboarding.back": self.back, "onboarding.skip": self.skip, "onboarding.close": self.close,
-                "onboarding.start": self.start, "onboarding.cancel": self.cancel, "onboarding.quiet": self.set_quiet}
+                "onboarding.start": self.start, "onboarding.cancel": self.cancel}
 
     def _warder_agy(self) -> str:
         """What the guard step says about agy when agy is chosen: unguarded until its hook was checked live."""
@@ -341,14 +343,6 @@ class Onboarding:
         if self.again:
             self.active = self.again = False
             self.host.on_change()
-
-    def set_quiet(self, args: dict) -> dict | None:
-        """The Autonomy card's quiet hours: 23:00–08:00 on, or off (the hours themselves: Settings)."""
-        m = self.host.town.machine
-        m.quiet = (m.quiet or schedule.DEFAULT_QUIET) if args.get("on") else None
-        settings.save(m)
-        self.host.on_change()
-        return self.snapshot()
 
     def _live(self) -> None:
         if not self.active or self.step == RAISING:

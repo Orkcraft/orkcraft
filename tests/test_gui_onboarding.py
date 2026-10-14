@@ -58,7 +58,7 @@ def test_a_gnome_s_whole_path(fake_repo: Path, onboard):
     host = _host(fake_repo)
     o = host.snapshot()["onboarding"]
     json.dumps(o)                                                         # it crosses the socket as it is
-    assert o["step"] == "tools" and o["steps"] == ["tools", "who", "mcp", "town"]
+    assert o["step"] == "tools" and o["steps"] == ["tools", "who", "town"]      # the class and the tools: no more
     assert [r["id"] for r in o["tools"]["rows"]] == ["claude", "codex"]   # only what is installed
     assert o["tools"]["missing"] == ["Antigravity"] and o["tools"]["others"] == []
     # Cursor's editor without cursor-agent: the CLI is what the orks run on, not "can't run on these yet"
@@ -73,9 +73,9 @@ def test_a_gnome_s_whole_path(fake_repo: Path, onboard):
     sprites = Path(__file__).parents[1] / "design-system" / "sprites" / "mascots"
     assert all((sprites / f"{c['sprite']}-1@2x.png").is_file() for c in classes.values())   # each its own head
     assert classes["marketing"]["biome"] == "ice"
-    o = host.command("onboarding.role", {"role": "marketing"})
-    assert o["step"] == "mcp" and o["kin"] == "gnome" and o["mcp"]["on"] == ["github", "amplitude"]
-    o = host.command("onboarding.mcp", {"on": ["amplitude", "nope"], "next": True})
+    o = host.command("onboarding.role", {"role": "marketing"})                # the MCP servers found: all on, unasked
+    assert o["step"] == "town" and o["kin"] == "gnome" and o["mcp"]["on"] == ["github", "amplitude"]
+    o = host.command("onboarding.mcp", {"on": ["amplitude", "nope"]})          # still sent by an older page: kept
     assert o["step"] == "town" and o["mcp"]["on"] == ["amplitude"] and o["biome"] == "ice"
     towns = {t["id"]: t for t in o["towns"]}
     assert list(towns) == ["content_mill", "campaign_report", "growth_council"]       # its day, its week, its month
@@ -113,18 +113,18 @@ def test_the_landing_page_s_class_skips_who_you_are(fake_repo: Path, onboard):
     settings.preset_role("marketing")
     host = _host(fake_repo)
     o = host.snapshot()["onboarding"]
-    assert o["steps"] == ["tools", "mcp", "town"] and o["nick"] == "Growth-Hack Gnome"
+    assert o["steps"] == ["tools", "town"] and o["nick"] == "Growth-Hack Gnome"
 
 
 def test_the_landing_page_s_gnome_shows_only_the_two_gnomes(fake_repo: Path, onboard):
     settings.preset_role("marketing", kin="gnome")                        # orkcraft --role gnome
     host = _host(fake_repo)
     o = host.snapshot()["onboarding"]
-    assert o["steps"] == ["tools", "who", "mcp", "town"] and o["only_kin"] == "gnome" and o["role"] == ""
+    assert o["steps"] == ["tools", "who", "town"] and o["only_kin"] == "gnome" and o["role"] == ""
     assert [c["id"] for c in o["classes"]] == ["aso_manager", "marketing"] and o["kin_word"] == "gnomes"
     host.command("onboarding.tools", {"next": True})
     o = host.command("onboarding.role", {"role": "aso_manager"})
-    assert o["step"] == "mcp" and o["nick"] == "Keyword Gnome"
+    assert o["step"] == "town" and o["nick"] == "Keyword Gnome"
 
 
 def test_a_known_machine_is_not_asked_again(fake_repo: Path, onboard):
@@ -186,11 +186,14 @@ def test_doesn_t_fit_one_question_and_the_planner(fake_repo: Path, onboard, monk
     assert town_presets.pending_order(fake_repo) is None                     # the order was answered
 
 
-def test_quiet_hours_on_the_autonomy_card(fake_repo: Path, onboard):
+def test_quiet_hours_take_their_default_in_the_first_session(fake_repo: Path, onboard):
+    """first-mission.md §2: the first session asks the class and confirms the tools; quiet hours are Settings'."""
     host = _host(fake_repo)
+    assert "quiet" not in host.snapshot()["onboarding"]
+    with pytest.raises(CommandError):
+        host.command("onboarding.quiet", {"on": True})
     host.command("onboarding.skip", {})
-    assert host.command("onboarding.quiet", {"on": True})["quiet"] and settings.load().quiet is not None
-    assert not host.command("onboarding.quiet", {"on": False})["quiet"] and settings.load().quiet is None
+    assert settings.load().quiet is None
 
 
 def test_set_up_again_from_the_map(fake_repo: Path, onboard, monkeypatch):

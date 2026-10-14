@@ -1,6 +1,6 @@
 // The onboarding (gui/onboarding.py, docs/design/gui-onboarding.md): a project with no town yet opens on it.
-// Your AI tools → who you are (every class at once, only when the landing page did not say) → the MCP servers the orks may use
-// (only when some are connected) → your first town, drawn → the town going up on the map, with the Autonomy
+// Your AI tools → who you are (every class at once, only when the landing page did not say) → your first town, drawn
+// (the MCP servers the orks may use: only in Set up again, when some are connected) → the town going up on the map, with the Autonomy
 // card in a corner. Every answer goes to the host at once; the host decides the next step and the page draws
 // what the snapshot's `onboarding` says. The card over the map offers Connect Google (js/accounts.js) only with ORKCRAFT_GOOGLE=1.
 import { signal } from "@preact/signals";
@@ -392,8 +392,8 @@ function SurveyStep({ o }) {
 }
 
 // -- 5 · Setting up the town: one card over the map ------------------------------------------------------
-// How the building goes, how free the orks are, quiet hours and the usage question: one card, so the town
-// stays in view beside it. Each choice applies at once; Open the town closes it when the town stands.
+// How the building goes, how free the orks are and the usage question: one card, so the town stays in view beside
+// it (quiet hours take their default, changed in Settings: first-mission.md §2). Each choice applies at once; Open the town closes it when the town stands.
 
 const MARK = { done: "✓", now: "⚒", next: "·", failed: "✗" };
 
@@ -453,9 +453,6 @@ function Freedom({ o }) {
         <span class="ok-font-body"><b>${say(lv.title)}</b></span>${s.autonomy === lv.id
           && html`<span class="ok-font-status ok-tone-muted">${say(lv.questions)}</span>`}</button>`)}
     </div>
-    <label class="ok-check">
-      <input type="checkbox" class="gui-onb__hide" checked=${o.quiet} onChange=${() => send("onboarding.quiet", { on: !o.quiet })} />
-      <i>${o.quiet ? "✓" : ""}</i><span>🌙 Quiet hours 23:00–08:00: no alerts, questions wait</span></label>
   </div>`;
 }
 

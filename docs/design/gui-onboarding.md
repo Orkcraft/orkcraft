@@ -8,10 +8,15 @@ does (`realm/lexicon.py`): Town planner, External listeners, Agent pool, Output,
 
 ## 1. The steps
 
+**Cut 2026-10-14** ([first-mission.md](first-mission.md) §2, B6): the first session asks the class and confirms
+the AI tools found. The MCP servers found are all on, chosen again only in Set up again; quiet hours and the look
+take their defaults (Settings changes them); industry and the typical day are not asked. The town step stays
+until Mission 1 replaces it (B7).
+
 ```
 1 Your AI tools                 always · + Request a tool
 2 Who are you?                  without --role: all 11 classes in two rows; --role gnome: the 2 gnomes
-3 Tools the orks can use        only when an MCP server is connected to an AI tool
+3 Tools the orks can use        Set up again only, when an MCP server is connected (first session: all on)
 4 Your first town               the class's towns, drawn · Use this town · Doesn't fit · Empty town
   4b What should your town do?  only on "Doesn't fit": one sentence (3 examples) · what it uses, prefilled
 5 Setting up the town           over the map: the steps live, the Autonomy card in a corner
@@ -20,8 +25,8 @@ does (`realm/lexicon.py`): Town planner, External listeners, Agent pool, Output,
 | Who | Screens |
 |---|---|
 | a Growth-Hack Gnome from orkcraft.dev (`--role marketing`), no MCP | 1 · 4 · 5 |
-| a gnome from orkcraft.dev (`--role gnome`) | 1 · 2 (the two gnomes only) · (3) · 4 · 5 |
-| a gnome with no `--role`, MCP connected | 1 · 2 · 3 · 4 · 5 |
+| a gnome from orkcraft.dev (`--role gnome`) | 1 · 2 (the two gnomes only) · 4 · 5 |
+| a gnome with no `--role`, MCP connected | 1 · 2 · 4 · 5 (the servers found all on) |
 | "Doesn't fit" | … 4 · 4b · 5 (the planner draws the town first) |
 | Skip, from any step but the first | an empty town; the tools found stay on; no Security reviewer |
 
@@ -158,7 +163,7 @@ step a tick (`RAISE_STEP_S`, the host's clock), so each one appears in front of 
   - **How it goes:** a bar of the steps done and the one going on now (⚒); *All steps* opens the list with ✓
     done, ⚒ now, · next, ✗ failed. While the planner draws: "The town planner is drawing your town…".
   - **How free are your orks?** The three levels (`town.settings`, `town.settings.set`, as Settings uses
-    them); the chosen one says what it means. Quiet hours 23:00–08:00 on or off (`onboarding.quiet`).
+    them); the chosen one says what it means.
   - **Share anonymous usage stats**, when it was never answered: off unless ticked, sent with **Open the
     town** (`usage.share`). The usage dialog (js/settings.js `UsageAsk`) waits while the onboarding is on.
   - **Open the town** closes the onboarding once the town stands. Every choice applies at once and changes
@@ -179,8 +184,8 @@ step a tick (`RAISE_STEP_S`, the host's clock), so each one appears in front of 
 - **Your Google account** on the same card: **Connect Google** opens the wizard of Settings → Accounts
   (docs/design/google-account.md): Gmail for External listeners, the calendar for the Calendar, Drive for the Wiki.
   Nothing waits on it; Later is closing the wizard.
-- **Quiet hours** on the Autonomy card: 23:00–08:00 on or off (`onboarding.quiet`; the hours themselves in
-  Settings).
+- **Quiet hours** take their default (off), changed in Settings: the first session asks the class and confirms the
+  AI tools, no more ([first-mission.md](first-mission.md) §2, 2026-10-14).
 - **The class's ground at once:** the first orkspace takes the class's biome when the town is chosen
   (`biomes.home_of`), so the plan is drawn on it.
 
@@ -198,7 +203,7 @@ on, else the first on). The Security reviewer is installed when any AI tool is o
 
 The host turns it on for a first run (`Town.first_run`: no layout for the project yet), unless
 `ORKCRAFT_ONBOARDING=0` or the demo. Commands: `onboarding.tools` · `.check` · `.detect` · `.request` · `.role` · `.mcp` ·
-`.town` · `.survey` · `.back` · `.skip` · `.close` · `.quiet` · `.start` · `.cancel`.
+`.town` · `.survey` · `.back` · `.skip` · `.close` · `.start` · `.cancel`.
 
 **Set up again** (the bare map's right-click menu, `onboarding.start`): your AI tools, who you are (every class)
 and the MCP servers once more, on a town that stands, never the town step. What was chosen before is kept on
