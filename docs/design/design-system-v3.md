@@ -116,12 +116,25 @@ screen's pixel, and **a slot is what the sheet draws**, rounded up to the grid o
 prompts ask for and the layout reserves. Ground and track tiles and the layout cell follow the same rule (the cell
 16, a tile 32 art px as drawn).
 
-**The ladder** (whole numbers only, as in v2 §2.3): **town ×1** (the default, the frame's), **close ×2**, **map ½**
-from the pipeline's half-size copies (`map` on a group of `tools/camp_sheets_v3.json`, made when the map zoom is
-built; the one derived set). On a fractional `devicePixelRatio` the camera picks the nearest whole device scale, as
-before. The inside of a building is its own screen (I2), at ×1.
+**The zoom** (the owner, v3-prompts §10): **×1.5 by default on a screen of density 2 or more** (one art pixel = 3 × 3
+device pixels, sharp), so the town fills the window as F1 does; **×1 by default at density 1** (×1.5 cannot be sharp
+there). **The wheel zooms ×1 · ×1.5 · ×2**, snapping, each step whole in device pixels (at density 1: ×1 · ×2). The map
+is ½ from the pipeline's half-size copies (`map` on a group, made when the map zoom is built).
 
-**The window: 1440 × 900.** A 36 px HUD, then the world, 1440 × 864.
+**Each sheet at its own pixel, shown at a whole multiple.** The sheets come at different pixel sizes, so a sprite is
+cut at its sheet's own pitch and shown at the whole multiple (`show`: ×1, ×2) that brings it nearest its target size;
+on screen it is `show × zoom` CSS px per art px. Pixels of two sizes side by side are accepted. The manifest records
+each sprite's `pitch` and `show`; the preview reads them.
+
+| sheet | pitch (image px per art px) | drawn (art px) | target at ×1 | `show` | on screen at ×1 · ×1.5 |
+|---|---|---|---|---|---|
+| B1–B3 buildings | 4.17 | 72–192 wide | core about 190 | ×1 | 192 · 288 (Agent pool) |
+| o1, o2 orks | 5.00, 5.15 | frames about 32–54 × 46–57 | 48–64 tall | ×1 | about 54 · 81 |
+| c1 carts | 8.33 | about 38–41 wide | about 64 | ×2 | 76–82 · 114–123 |
+| c2 track | 6.24 | tile 64 (4 tie spacings of 15 → 60, ×1.07) | 48–64 | ×1 | 64 · 96 |
+
+**The window: 1440 × 900.** A 36 px HUD, then the world, 1440 × 864. At ×1.5 the packed camp (496 × 264 layout units of
+2 px) is about 1490 × 790 px: it fills the window, its two outer walls just past the edges.
 
 | piece | as drawn on B1–B3 (art px = screen px) | the plan (token) |
 |---|---|---|
@@ -253,9 +266,10 @@ Each piece is drawn from **the v3 sprite** in `design-system/sprites/v3/` once i
 placeholder** (darker, and drawn at ×1 where its art pixel is finer than v3's), else **a block in v3's tokens**.
 Toggles: *Grey test*, *Show v3 slots* (each sprite's slot, dashed, with its size), *Building names*, *Blocks only*.
 
-Screenshots of the preview after B1–B3, re-cut at their own pixel (round 3): [the town](img/v3-preview/v3-town.png),
-[in grey](img/v3-preview/v3-town-grey.png), [with the slots](img/v3-preview/v3-town-slots.png), [blocks only, with the
-slots](img/v3-preview/v3-town-blocks-slots.png); before the first sheet: [round 1](img/v3-preview/v3-town-round1.png).
+Screenshots at 1440 × 900 on a density-2 screen (×1.5, round 5): [the town](img/v3-preview/v3-town.png),
+[in grey](img/v3-preview/v3-town-grey.png), [with the slots](img/v3-preview/v3-town-slots.png); at density 1 (×1):
+[the town](img/v3-preview/v3-town-dpr1.png); before the first sheet: [round 1](img/v3-preview/v3-town-round1.png).
+The preview is written by `tools/campkit_v3.py` from `tools/campkit_v3.html` (`--v3` runs it after cutting).
 
 ## 8. The sheets: names, sizes, one command
 
@@ -281,20 +295,26 @@ keep. The cutter only **reports** pixels in a signal's yellow, orange or red (sa
 340°–65°; the honey wood and the sand sit well below), and such a sprite is redrawn; only the signals' sheet may have
 them. Round 3's report: the UX bench's banner (1.4 % of its pixels) and a few px of the Review board's fire.
 
-**Tiles must tile, so they are not "whatever the sheet draws":** a `tiles` group with `native` reads each tile inside
-its border at the sheet's own pitch, takes the drawn size (the median over the set) rounded to a multiple of 8 as
-**one size for the whole set**, and reads every tile into exactly that size; the preview's track grid follows it. The
-cutter reports how the straight pieces join: the colour step across the seam against the step inside, and the ties'
-spacing across the seam against inside. On the 0.3 track sheet (the stand-in below): tiles drawn about 93 art px, cut
-at **96 × 96**; the seam step is 2 against 8 inside (the bed and rails continue), but the ties are 8 px apart across the
-seam against 6 inside — a visible hitch, which c2's prompt asks the model to avoid (v3-prompts §3c.2). At 96 px the
-tile is mostly transparent margin: the rails and bed are a band about 40 px high in its middle, F1's gauge.
+**Tiles must tile, so they are not "whatever the sheet draws"** (`kind: track`, c2): the tile's length is a whole
+number of the straight piece's tie spacings (`ties`, 4), rounded to the grid of 8 — the one place v3 resamples, along
+the rails by a few per cent; a straight tile is one tie spacing repeated, so it joins itself exactly as it joins inside;
+every other piece is placed so its rails cross each of its `exits` at the tile's middle, and a rail that stops short of
+an edge is carried on to it. On c2: ties every 15.0 art px, four of them 60 → **a 64 × 64 tile** (×1.067), shown ×1;
+across a seam the step equals the step at the same place inside (16 and 16 on the straight, 4 and 4 on the vertical).
+[Crop at ×1.5](img/v3-preview/track-c2.png).
 
-**Stand-ins until c1, c2 and o1 arrive:** the sheets marked `standin` in `tools/camp_sheets_v3.json` re-cut the 0.3
-track tiles, mine carts (empty and with each load) and the ork's idle and work frames through the same path
-(native, own colours, re-pixelised) into `design-system/sprites/v3/standin/`, so they are as crisp as the v3
-buildings beside them. The preview draws a v3 sprite first, then its stand-in, then v2's. v2's own sprites (the
-GUI's today) are not touched.
+**c1 and c2, mapped by their geometry** (round 5): c1 by point, since the code cart and the flag cart below it touch —
+row 1 `empty`, `code`, `asset` (the crate), `message`, `doc`, `bundle`; row 2 `flag-none`, `flag-flag`, `flag-held`
+(the hourglass), and `pile` (four at the buffer stop); the rolling row is three-quarter and not cut. c2 by order: 0
+straight-h, 1 straight-v, 3 corner-se, 4 corner-sw, 6 corner-ne, 8 t-n, 9 t-s, 10 switch-e (two tiles long), 11 the
+merge and the crossing drawn touching (cut by halves: merge-e two tiles long, cross), 12 stop-e; not used: 2 (a vertical
+switch) and 5, 7 (smaller south-east curves). **There is no north-west curve yet**: the next c2 asks for it.
+
+**o1 and o2** (round 5, the owner's ork): o1 by order, rows idle 4, walk-down 6, walk-up 6, walk-side 6, work 6, door 4;
+o2 row 1 in the prompt's order without the pathfinder (warchief … warder, prospector, loader), the pathfinder from row 2
+(19). Both with `degrid`. The signal check does not flag the warder's key or the prospector's lamp (their yellow is
+below its saturation and value); the taskmaster keeps a pink smudge by its quill. o3 and o5 are not cut (another ork;
+regenerated on o1). The 0.3 stand-ins of round 4 are gone: c1, c2 and o1 replace them.
 
 **A drawn grid** (round 4: the model drew a box round every cell of the ork sheets, which joined the sprites): a sheet
 with `degrid` (set on o1–o5) has the grid dropped before the pieces are found — long (≥ 120 px), thin (≤ 14 px) dark

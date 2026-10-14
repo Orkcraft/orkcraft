@@ -1,0 +1,441 @@
+<!doctype html>
+<!-- The template of design-system/previews/CampKitV3.html: tools/campkit_v3.py fills EXPECTED and SHOW. -->
+<html><head><meta charset="utf-8"><title>Camp kit v3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<link rel="stylesheet" href="../tokens.css">
+<style>
+/* Design system v3 (docs/design/design-system-v3.md): a town laid out on the grid at 1440 × 900, from the sprites that
+   exist. Each piece is the v3 sprite (design-system/sprites/v3/, cut by `python tools/camp_sheet.py --v3`) once its
+   sheet has arrived, else v2's placeholder (sprites/camp/, shown at ×1 where its art pixel is finer), else a block in
+   v3's tokens. A v3 sprite is shown at its own art pixel (`--art-scale: 1`, never resampled); v2's stand-ins at the
+   scale they were drawn for; signals and chips are UI, in CSS px. */
+html,body{margin:0} body{background:var(--canvas);color:var(--ink);font:var(--type-camp-body)}
+main{max-width:1480px;margin:0 auto;padding:16px}
+h1{font:var(--type-camp-title);color:var(--ink-wood);margin:8px 0 4px}
+h2{font:var(--type-camp-heading);color:var(--ink-wood);margin:32px 0 8px}
+p,li{color:var(--ink-muted);max-width:920px} code{font:var(--type-code-small);color:var(--ink)}
+.bar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin:12px 0;font:var(--type-camp-label)}
+.bar label{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+.scroll{overflow-x:auto;padding-bottom:8px}
+.px{image-rendering:pixelated;image-rendering:crisp-edges}
+
+/* the frame: 1440 × 900, a 36 px HUD and the world of 1440 × 864 (the layout in units of 2 px) */
+.v3-frame{position:relative;width:1440px;height:900px;flex:none;overflow:hidden;border:2px solid var(--bevel-lo);background:var(--world-grass)}
+.v3-frame.is-grey{filter:grayscale(1)}
+.v3-hud{position:absolute;left:0;top:0;right:0;height:36px;background:var(--walnut);display:flex;align-items:center;gap:8px;padding:0 8px;box-sizing:border-box;box-shadow:inset 0 -2px 0 var(--art-outline);z-index:30}
+.v3-plate{height:26px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;background:var(--parchment);color:var(--parchment-ink);border:1px solid var(--art-outline);box-shadow:inset 0 0 0 1px var(--art-wood-light);box-sizing:border-box;font:var(--type-camp-number)}
+.v3-plate.is-name{font:var(--type-camp-heading);padding:0 14px;min-width:220px}
+.v3-hud .v3-gap{flex:1}
+.v3-button{height:28px;padding:0 16px;background:var(--accent-teal);color:var(--ink);border:1px solid var(--art-outline);box-shadow:inset 1px 1px 0 color-mix(in srgb,var(--accent-teal) 60%,white),inset -1px -1px 0 var(--art-outline);font:var(--type-camp-label);text-transform:uppercase;letter-spacing:.04em;cursor:pointer}
+.v3-world{position:absolute;left:0;top:36px;width:1440px;height:864px;
+  background-color:var(--world-grass);}
+.v3-tufts{position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(circle at 1px 1px,var(--world-grass-light) 0 1px,transparent 1.5px),radial-gradient(circle at 1px 1px,var(--world-grass-dark) 0 1px,transparent 1.5px);
+  background-size:46px 38px,62px 54px;background-position:7px 11px,29px 3px;opacity:.9}
+.v3-at{position:absolute;box-sizing:border-box}
+.v3-path{background:var(--world-earth);box-shadow:0 0 0 2px var(--world-grass-dark)}
+.v3-path.is-edge{box-shadow:none}
+.v3-stop{background:var(--world-earth-dark)}
+.v3-img{position:absolute;image-rendering:pixelated;image-rendering:crisp-edges;pointer-events:none}
+.v3-strip{position:absolute;background-repeat:no-repeat;image-rendering:pixelated;image-rendering:crisp-edges}
+.v3-shadow{position:absolute;border-radius:50%;background:color-mix(in srgb,var(--art-outline) 35%,transparent)}
+/* a block: a building drawn in v3's tokens until its sprite arrives (a wall, a roof, a door) */
+.v3-block{position:absolute;box-sizing:border-box;border:2px solid var(--art-outline)}
+.v3-block__wall{position:absolute;left:0;right:0;bottom:0;background:repeating-linear-gradient(90deg,var(--art-wood) 0 14px,var(--art-wood-dark) 14px 16px);border-top:2px solid var(--art-outline)}
+.v3-block__roof{position:absolute;left:-6px;right:-6px;top:0;border:2px solid var(--art-outline);background:var(--roof,var(--art-wood-light))}
+.v3-block__door{position:absolute;bottom:0;width:32px;height:44px;left:calc(50% - 16px);background:var(--art-wood-deep);border:2px solid var(--art-outline);border-bottom:0;box-sizing:border-box}
+.v3-block.is-stone .v3-block__wall{background:repeating-linear-gradient(0deg,var(--art-stone) 0 14px,var(--art-stone-dark) 14px 16px)}
+.v3-block.is-water{border-radius:40% 46% 38% 44%;background:var(--world-water);box-shadow:inset 0 0 0 4px var(--world-water-dark)}
+.v3-block.is-machine{border:0}
+.v3-block.is-machine .v3-block__roof,.v3-block.is-machine .v3-block__door{display:none}
+.v3-block.is-machine .v3-block__wall{height:30%!important;background:repeating-linear-gradient(90deg,var(--art-wood) 0 14px,var(--art-wood-dark) 14px 16px)}
+.v3-block__arm{position:absolute;left:30%;bottom:24%;width:12px;height:78%;background:var(--art-wood);border:2px solid var(--art-outline);transform:rotate(28deg);transform-origin:bottom center}
+.v3-block__arm::before{content:"";position:absolute;left:-14px;top:-16px;width:36px;height:20px;background:var(--art-wood-dark);border:2px solid var(--art-outline);border-radius:0 0 50% 50%}
+.v3-block__arm::after{content:"";position:absolute;left:-8px;top:-28px;width:24px;height:16px;background:var(--art-bone);border:2px solid var(--art-outline)}
+.v3-palisade{background:
+  radial-gradient(ellipse 7px 5px at 8px 6px,var(--art-wood-light) 0 90%,transparent 100%) 0 0/16px 64px repeat-x,
+  repeating-linear-gradient(90deg,var(--art-wood) 0 12px,var(--art-wood-deep) 12px 14px,var(--art-outline) 14px 16px);
+  border-bottom:2px solid var(--art-outline);box-sizing:border-box}
+.v3-palisade.is-v{background:repeating-linear-gradient(180deg,var(--art-wood) 0 12px,var(--art-wood-deep) 12px 14px,var(--art-outline) 14px 16px);border:0;border-left:2px solid var(--art-outline)}
+.v3-rails{background:
+  linear-gradient(var(--art-iron),var(--art-iron)) 0 18px/100% 4px no-repeat,
+  linear-gradient(var(--art-iron),var(--art-iron)) 0 42px/100% 4px no-repeat,
+  repeating-linear-gradient(90deg,var(--art-wood-dark) 0 8px,transparent 8px 16px) 0 12px/100% 40px no-repeat,
+  var(--world-earth-dark)}
+.v3-rails.is-v{background:
+  linear-gradient(var(--art-iron),var(--art-iron)) 18px 0/4px 100% no-repeat,
+  linear-gradient(var(--art-iron),var(--art-iron)) 42px 0/4px 100% no-repeat,
+  repeating-linear-gradient(180deg,var(--art-wood-dark) 0 8px,transparent 8px 16px) 12px 0/40px 100% no-repeat,
+  var(--world-earth-dark)}
+/* slots: where each v3 sprite goes, dashed; a v2 stand-in shows how far it is from its slot */
+.v3-slot{position:absolute;outline:2px dashed color-mix(in srgb,var(--chip-ink) 70%,transparent);outline-offset:-1px;pointer-events:none;display:none}
+.v3-frame.show-slots .v3-slot{display:block}
+.v3-slot > span{position:absolute;left:2px;top:2px;font:var(--type-camp-chip);font-size:12px;color:var(--chip-ink);background:var(--chip);padding:0 4px}
+/* layer 8–9: signals and chips (UI, CSS px at every zoom) */
+.v3-chip{position:absolute;height:var(--chip-h);display:inline-flex;align-items:center;padding:0 8px;background:var(--chip);color:var(--chip-ink);border:1px solid var(--art-outline);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--chip-ink) 18%,transparent);font:var(--type-camp-chip);white-space:nowrap;box-sizing:border-box;transform:translateX(-50%);z-index:20}
+.v3-frame.hide-names .v3-chip.is-name{display:none}
+.v3-badge{position:absolute;width:var(--badge);height:var(--badge);display:flex;align-items:center;justify-content:center;background:var(--chip);border:1px solid var(--art-outline);box-shadow:inset 0 0 0 1px var(--chip-ink);font:500 22px/1 var(--font-pixel);box-sizing:border-box;transform:translateX(-50%);z-index:21}
+.v3-badge::after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-5px;border:5px solid transparent;border-top:5px solid var(--chip-ink);border-bottom:0}
+.v3-badge.is-ask{color:var(--signal-ask);animation:v3-bob .5s steps(2) 3}
+.v3-badge.is-fire{color:var(--signal-fire);animation:v3-flick .5s steps(2) infinite}
+.v3-badge.is-held{color:var(--signal-held)}
+.v3-flag{position:absolute;width:4px;height:44px;background:var(--art-outline);z-index:19}
+.v3-flag::after{content:"";position:absolute;left:4px;top:0;width:28px;height:18px;background:var(--signal-ask);border:2px solid var(--art-outline);box-shadow:inset 0 -4px 0 color-mix(in srgb,var(--signal-ask) 75%,var(--art-outline))}
+@keyframes v3-bob{50%{transform:translate(-50%,-4px)}}
+@keyframes v3-flick{50%{opacity:.45}}
+.v3-roll{animation:v3-roll var(--dur,14s) steps(var(--steps,200)) infinite}
+@keyframes v3-roll{from{transform:translateX(0)}to{transform:translateX(var(--run,400px))}}
+@media (prefers-reduced-motion: reduce){.v3-roll,.v3-badge,.v3-strip{animation:none!important}}
+
+/* the reference pages below the frame */
+table{border-collapse:collapse;font:var(--type-camp-caption);color:var(--ink)} th,td{border:1px solid var(--bevel-hi);padding:4px 8px;text-align:left;vertical-align:middle}
+th{font:var(--type-camp-label);color:var(--ink-wood)}
+.sw{display:inline-block;width:40px;height:20px;border:1px solid var(--art-outline);vertical-align:middle}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px 16px;font:var(--type-code-small)}
+.grid .is-here{color:var(--success)} .grid .is-awaited{color:var(--ink-comment)}
+.type-row{display:flex;gap:24px;align-items:baseline;flex-wrap:wrap;border-bottom:1px solid var(--bevel-hi);padding:8px 0}
+.type-row > code{width:200px;flex:none}
+.sig{display:flex;gap:28px;align-items:flex-end;padding:20px;background:var(--world-grass)}
+.sig > div{position:relative;width:64px;height:56px}
+.sig .v3-badge{left:50%;top:0}
+.parch{background:var(--parchment);color:var(--parchment-ink);border:4px solid var(--walnut);box-shadow:inset 0 0 0 1px var(--art-wood-light),0 0 0 1px var(--art-outline);padding:12px 16px;max-width:420px}
+.parch b{font:var(--type-camp-heading)}
+</style></head>
+<body><main>
+<h1>Camp kit v3</h1>
+<p>Design system v3 (<code>docs/design/design-system-v3.md</code>): F1's brighter camp as tokens, sprites shown at
+their own art pixel (×1, never resampled), at most ten buildings on a 1440 × 900 window, one track line with dirt paths, the lookout and the
+catapult in the wall. Every piece is the v3 sprite once its sheet is cut (<code>python tools/camp_sheet.py --v3</code>),
+else v2's placeholder, else a block in v3's colours.</p>
+<div class="bar">
+  <label><input type="checkbox" id="t-grey"> Grey test</label>
+  <label><input type="checkbox" id="t-slots"> Show v3 slots</label>
+  <label><input type="checkbox" id="t-names" checked> Building names</label>
+  <label><input type="checkbox" id="t-blocks"> Blocks only (no v2 stand-ins)</label>
+  <span id="zoom" style="color:var(--ink-muted)"></span>
+  <span id="count" style="color:var(--ink-muted)"></span>
+</div>
+<div class="scroll"><div class="v3-frame" id="frame">
+  <div class="v3-hud">
+    <span class="v3-plate is-name">My camp</span>
+    <span class="v3-gap"></span>
+    <span class="v3-plate" title="Burning: errors">🔥 0</span>
+    <span class="v3-plate" title="Questions waiting for you">❓ 1</span>
+    <span class="v3-plate" title="Ork slots free">🥩 3</span>
+    <span class="v3-gap"></span>
+    <button class="v3-button" type="button">Stop all</button>
+  </div>
+  <div class="v3-world"><div class="v3-tufts"></div><div class="v3-at" id="world" style="left:0;top:0;width:0;height:0"></div></div>
+</div></div>
+
+<h2>The palette: v2 → v3</h2>
+<p>Measured on F1 (the mean of each surface's pixels); the stone and the bone a step darker than F1 so no art is as
+light as the question's yellow. Yellow and red stay the signals' alone.</p>
+<table id="palette"><tr><th>token</th><th>v2</th><th></th><th>v3</th><th></th><th>luminance</th></tr></table>
+
+<h2>Signals win by value</h2>
+<p>❓, <code>!</code> and ⏳ drawn larger (28 px, 32 on the phone) on the dark <code>chip</code> plate with an
+<code>art-outline</code> border and a <code>chip-ink</code> keyline; the cart's flag outlined. Tick “Grey test” above:
+the ❓ and the flag still lead.</p>
+<div class="sig">
+  <div><span class="v3-badge is-ask">?</span></div>
+  <div><span class="v3-badge is-fire">!</span></div>
+  <div><span class="v3-badge is-held"><svg viewBox="0 0 10 12" width="14" height="17" aria-label="held"><path d="M1 0h8v2.5L6 6l3 3.5V12H1V9.5L4 6 1 2.5z" fill="currentColor"/></svg></span></div>
+  <div><span class="v3-flag" style="left:20px;top:8px"></span></div>
+  <div style="width:220px"><span class="v3-chip" style="left:110px;top:16px">#42 · Fix login bug</span></div>
+</div>
+
+<h2>Type</h2>
+<div id="type"></div>
+<div class="parch" style="margin-top:16px"><b>Task board</b><br>To do 4 · Doing 2 · Done 11<br>Мой лагерь — Cyrillic in the names people give.</div>
+
+<h2>The sheets: awaited and arrived</h2>
+<p>Each v3 sprite, its sheet in <code>docs/design/img/references/v3/</code> and its size (art px). Green: cut and in
+<code>design-system/sprites/v3/</code>.</p>
+<div class="grid" id="sheets"></div>
+</main>
+<script>
+const EXPECTED = %%EXPECTED%%;
+const V2 = [["world-grass", "#5e8a4c"], ["world-grass-light", "#6f9a56"], ["world-grass-dark", "#4e7840"], ["world-earth", "#8f7250"], ["world-earth-dark", "#735b4c"], ["world-water", "#2f5a55"], ["world-water-dark", ""], ["art-wood", "#7c5f48"], ["art-wood-light", "#ba9468"], ["art-wood-dark", "#4f3935"], ["art-wood-deep", ""], ["art-stone", "#7d7a74"], ["art-stone-dark", "#4d4848"], ["art-iron", "#4a4b52"], ["art-bone", "#dccaa0"], ["art-cloth", "#6b2a2c"], ["art-cloth-plum", ""], ["art-skin", "#769544"], ["art-outline", "#1c1410"], ["signal-ask", "#facc15"], ["signal-fire", "#e8411c"], ["signal-held", "#8fa3b8"], ["chip", "#1c1712"], ["chip-ink", "#e8e0c8"], ["parchment", ""], ["parchment-ink", ""], ["walnut", ""], ["accent-teal", ""]];
+const HOURGLASS = '<svg viewBox="0 0 10 12" width="14" height="17" aria-label="held"><path d="M1 0h8v2.5L6 6l3 3.5V12H1V9.5L4 6 1 2.5z" fill="currentColor"/></svg>';
+// The zoom (design-system-v3.md §3): ×1.5 by default on a screen of density 2 or more (one art px = 3 × 3 device px),
+// ×1 on density 1; the wheel steps ×1 · ×1.5 · ×2 (×1.5 only where it is whole in device px). Each sheet is shown at
+// its own whole multiple (SHOW, from the manifest) times the zoom. The layout's numbers are units of 2 CSS px at ×1.
+const STEPS = devicePixelRatio >= 2 ? [1, 1.5, 2] : [1, 2];
+let Z = devicePixelRatio >= 2 ? 1.5 : 1;
+let K = 2 * Z;
+const SHOW = %%SHOW%%;
+const sc = (file) => (SHOW[file] || 1) * Z;             // a v3 sprite's CSS px per art px
+const V3 = "../sprites/v3/", CAMP = "../sprites/camp/";
+const world = document.getElementById("world"), frame = document.getElementById("frame");
+const here = new Set();
+
+function el(cls, x, y, w, h, style = "") {
+  const d = document.createElement("div");
+  d.className = cls;
+  d.style.cssText = `left:${x * K}px;top:${y * K}px;width:${w * K}px;height:${h * K}px;${style}`;
+  world.appendChild(d);
+  return d;
+}
+function probe(src) {
+  return new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
+}
+/** The first candidate that loads: [{src, scale}]; v2 stand-ins skipped under "blocks only". */
+async function pick(cands) {
+  for (const c of cands) {
+    if (c.v2 && document.getElementById("t-blocks").checked) continue;
+    const img = await probe(c.src);
+    if (img) return { ...c, img };
+  }
+  return null;
+}
+
+// --- the layout (art px): docs/design/design-system-v3.md §4 ------------------------------------------------
+// F1's density (round 4): two rows close to the line, about one path's width between buildings; the camp is as wide
+// as its buildings at ×1 and stands in the middle of the window, wilderness round it. Numbers in layout units (2 px).
+const OX = 40;                          // the camp's left edge in its own frame (#world is placed to centre the camp)
+const CAMP_W = 496, CAMP_H = 264;       // the camp's extent in units, the walls and the lane's chips included
+let OY = 0;                             // the wilderness above the back wall, in units (set by placeCamp)
+function placeCamp() {
+  const left = Math.round((1440 - CAMP_W * K) / 2), top = Math.round((864 - CAMP_H * K) / 2);
+  world.style.left = left + "px"; world.style.top = top + "px";
+  OY = top / K;
+}
+const LINE_Y = 128;                     // the main line's tile row (32 tall)
+const LANE_Y = 232;                     // the lower row's lane, under its doors
+const WALL_X = OX + 440;                // the right wall, the catapult against it
+const BUILDINGS = [
+  // type, name, box [x, y(top), w, h] (the cut sprite's size), v2 stand-in, block look, path: "line" | "lane" | …
+  ["watchtower", "External listeners", [OX + 12, 0, 40, 64], "covers/tower/lookout.png", { roof: "var(--art-bone)" }, "wall"],
+  ["fields", "Task board", [OX + 100, 76, 44, 36], "facades/fields.png", { roof: "var(--art-wood-light)" }, "line"],
+  ["barracks", "Agent pool", [OX + 160, 48, 96, 64], "facades/barracks.png", { roof: "var(--art-cloth)" }, "line"],
+  ["loot_vault", "Review gate", [OX + 272, 56, 80, 56], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, "line"],
+  ["catapult", "Publisher", [OX + 376, 104, 64, 56], null, { machine: true, roof: "var(--art-wood)" }, "end"],
+  ["lake", "Inspector", [OX + 16, 180, 64, 52], "covers/open/pond.png", { water: true }, "lane"],
+  ["mine", "Research", [OX + 96, 168, 48, 64], null, { stone: true, roof: "var(--art-bone)" }, "lane"],
+  ["lab", "Test bench", [OX + 160, 180, 76, 52], null, { roof: "var(--art-wood-light)" }, "lane"],
+  ["town_hall", "Town Hall", [OX + 252, 168, 92, 64], null, { roof: "var(--art-cloth-plum)" }, "lane"],
+  ["ux_lab", "UX bench", [OX + 360, 176, 64, 56], null, { roof: "var(--art-cloth)" }, "lane"],
+];
+
+function block(box, look) {
+  const [x, y, w, h] = box;
+  const b = el("v3-block" + (look.stone ? " is-stone" : "") + (look.water ? " is-water" : "") + (look.machine ? " is-machine" : ""),
+    x, y, w, h, look.water ? "" : `--roof:${look.roof}`);
+  if (look.water) return b;
+  b.style.border = "0";
+  const roofH = Math.round(h * K * 0.45);
+  b.innerHTML = `<div class="v3-block__wall" style="height:${h * K - roofH + 4}px;border:2px solid var(--art-outline)"></div>
+    <div class="v3-block__roof" style="height:${roofH}px"></div><div class="v3-block__door"></div>` + (look.machine ? '<div class="v3-block__arm"></div>' : "");
+  return b;
+}
+
+async function building([type, name, box, v2, look]) {
+  const [x, y, w, h] = box;
+  el("v3-shadow", x + 6, y + h - 6, w - 12, 10);
+  const s = el("v3-slot", x, y, w, h);
+  s.innerHTML = `<span>${type} ${w * K}×${h * K}</span>`;
+  const got = await pick([{ src: `${V3}buildings/${type}.png`, scale: sc(`buildings/${type}.png`) }, ...(v2 ? [{ src: CAMP + v2, scale: K, v2: true }] : [])]);
+  if (!got) return block(box, look);
+  if (!got.v2) here.add(`buildings/${type}.png`);
+  const i = got.img, iw = i.naturalWidth * got.scale, ih = i.naturalHeight * got.scale;
+  const img = document.createElement("img");
+  img.className = "v3-img"; img.src = got.src; img.alt = name;
+  img.style.cssText = `width:${iw}px;height:${ih}px;left:${(x + w / 2) * K - iw / 2}px;top:${(y + h) * K - ih}px`;
+  world.appendChild(img);
+}
+
+function nameChip(name, cx, top) {
+  const c = document.createElement("span");
+  c.className = "v3-chip is-name"; c.textContent = name;
+  c.style.left = cx * K + "px"; c.style.top = top * K + "px";
+  world.appendChild(c);
+}
+
+async function track() {
+  // the tiles: c2's once cut, else v2's. The track's grid follows the tile's own size (one size for the set), centred
+  // on the line's row and column.
+  const cands = (name) => [{ src: `${V3}track/${name}.png`, scale: sc(`track/${name}.png`) },
+    { src: `${CAMP}track/${name}.png`, scale: K, v2: true }];
+  const probe0 = await pick(cands("straight-h"));
+  const T = probe0 ? probe0.img.naturalWidth * probe0.scale / K : 32;            // the tile in layout units
+  const tile = async (name, x, y, v) => {
+    const got = await pick(cands(name));
+    if (got) {
+      if (!got.v2) here.add(`track/${name}.png`);
+      const img = document.createElement("img");
+      img.className = "v3-img"; img.src = got.src;
+      img.style.cssText = `left:${x * K}px;top:${y * K}px;width:${T * K}px;height:${T * K}px`;
+      world.appendChild(img);
+    } else el("v3-at v3-rails" + (v ? " is-v" : ""), x, y, T, T);
+  };
+  const cx = OX + 72 - T / 2, cy = LINE_Y + 16 - T / 2;       // the column's and the row's centres stay put
+  // the way in: from outside the wall at the tower's foot, down to the line, then left to right to the catapult
+  for (let y = cy - Math.ceil((cy + OY) / T) * T; y < cy; y += T) await tile("straight-v", cx, y, true);
+  await tile("corner-ne", cx, cy);
+  const end = OX + 376;                                      // the catapult's left edge: the buffer stop before it
+  let x = cx + T;
+  for (; x + 2 * T <= end; x += T) await tile("straight-h", x, cy);
+  await tile("stop-e", x, cy);
+}
+
+function paths() {
+  // the top row: a path from each door down to the line; a stop (the darker earth) where it meets the track
+  for (const [, , [x, y, w, h], , , kind] of BUILDINGS) {
+    if (kind === "line") { el("v3-at v3-path", x + w / 2 - 8, y + h - 4, 16, LINE_Y - (y + h) + 4); }
+  }
+  // the lane in front of the lower row, joined to the line by three short paths
+  // a lane per row of buildings (the owner's answer, v3-prompts §8): the upper row's lane is the track's verge; the
+  // lower row's runs under its doors, joined to the line by short paths between buildings, each joint a stop.
+  // Carts stay on the line; lanes are for orks. An eleventh building starts another row and lane below, the same way.
+  el("v3-at v3-path", OX + 8, LANE_Y, 424, 16);
+  for (const x of [OX + 80, OX + 236, OX + 344]) el("v3-at v3-path", x, LINE_Y + 32, 16, LANE_Y - LINE_Y - 32);
+  // the low palisade: along the top (a gap where the track comes in at the tower's foot) and down the right side
+  el("v3-at v3-palisade", OX - 40, 0, 96, 32);
+  el("v3-at v3-palisade", OX + 88, 0, WALL_X + 16 - OX - 88, 32);
+  el("v3-at v3-palisade is-v", WALL_X, 32, 16, LANE_Y + 24);
+}
+
+async function ork(cx, feetY, opts = {}) {
+  const got = await pick([
+    { src: `${V3}orks/body/${opts.anim || "idle"}.png`, scale: sc(`orks/body/${opts.anim || "idle"}.png`), frames: opts.anim === "work" ? 6 : 4 },
+    { src: `${CAMP}orks/body/${opts.anim || "idle"}.png`, scale: Z, frames: opts.anim === "work" ? 6 : 4, fw: opts.anim === "work" ? 48 : 32, fh: 48, v2: true }]);
+  el("v3-shadow", cx - 8, feetY - 3, 16, 5);
+  const s = el("v3-slot", cx - 16, feetY - 32, 32, 32);
+  s.innerHTML = "<span>ork 64</span>";
+  if (!got) return;
+  if (!got.v2) here.add(`orks/body/${opts.anim || "idle"}.png`);
+  const fw = got.fw || got.img.naturalWidth / got.frames, fh = got.fh || got.img.naturalHeight;   // v3: as the sheet draws
+  const w = fw * got.scale, h = fh * got.scale;
+  const d = document.createElement("div");
+  d.className = "v3-strip";
+  d.style.cssText = `left:${cx * K - w / 2}px;top:${feetY * K - h}px;width:${w}px;height:${h}px;background-image:url(${got.src});
+    background-size:${w * got.frames}px ${h}px;animation:v3-frames-${got.frames} ${got.frames * 125}ms steps(${got.frames}) infinite;--w:${w}px`;
+  if (opts.flip) d.style.transform = "scaleX(-1)";
+  world.appendChild(d);
+  if (opts.badge) badge(opts.badge, cx, feetY - (got.v2 ? 24 : 32) - 18);
+}
+const style = document.createElement("style");
+style.textContent = [4, 6].map((n) => `@keyframes v3-frames-${n}{to{background-position-x:calc(var(--w) * -${n})}}`).join("");
+document.head.appendChild(style);
+
+function badge(kind, cx, topArt) {
+  const b = document.createElement("span");
+  b.className = `v3-badge is-${kind}`;
+  b.innerHTML = { ask: "?", fire: "!", held: HOURGLASS }[kind];       // ⏳ as an emoji would wear its own yellow
+  b.style.left = cx * K + "px"; b.style.top = topArt * K + "px";
+  world.appendChild(b);
+}
+
+async function cart(x, load, opts = {}) {
+  // feet on the line's lower rail; v3: one sprite with its load, as the sheet draws it, at ×1; v2: bin 48×40 and load at ×1
+  const feet = LINE_Y + 26;
+  const wrap = document.createElement("div");
+  wrap.className = "v3-at" + (opts.roll ? " v3-roll" : "");
+  wrap.style.cssText = `left:${x * K}px;top:0;width:0;height:0;` + (opts.roll ? `--run:${opts.roll * K}px;--steps:${opts.roll};--dur:${opts.dur || 16}s;animation-delay:${opts.delay || 0}s` : "");
+  world.appendChild(wrap);
+  const put = (src, l, t, w, h) => { const i = document.createElement("img"); i.className = "v3-img"; i.src = src;
+    i.style.cssText = `left:${l}px;top:${t}px;width:${w}px;height:${h}px`; wrap.appendChild(i); };
+  const got = await pick([{ src: `${V3}carts/${load}.png`, scale: sc(`carts/${load}.png`) },
+    { src: `${CAMP}carts/side.png`, scale: Z, v2: true }]);
+  const slot = document.createElement("div");
+  slot.className = "v3-slot"; slot.style.cssText = `left:${-16 * K}px;top:${(feet - 24) * K}px;width:${32 * K}px;height:${24 * K}px`;
+  slot.innerHTML = "<span>cart 64×48</span>"; wrap.appendChild(slot);
+  if (!got) return;
+  let ch = 40 * Z;
+  if (!got.v2) { here.add(`carts/${load}.png`); const cw = got.img.naturalWidth * got.scale; ch = got.img.naturalHeight * got.scale;
+    put(got.src, -cw / 2, feet * K - ch, cw, ch); }
+  else {
+    put(got.src, -24, feet * K - 40, 48, 40);
+    if (load !== "empty") put(`${CAMP}carts/loads/${load}.png`, -24, feet * K - 40 - 26, 48, 32);
+  }
+  if (opts.flag) {
+    const f = document.createElement("span");
+    f.className = "v3-flag"; f.style.cssText = `left:${-14 * Z - 12}px;top:${feet * K - ch - 40}px`;
+    wrap.appendChild(f);
+    const c = document.createElement("span");
+    c.className = "v3-chip"; c.textContent = opts.flag; c.style.cssText = `left:0;top:${feet * K + 8}px`;
+    wrap.appendChild(c);
+  }
+}
+
+async function scene() {
+  paths();
+  await track();
+  for (const b of BUILDINGS) await building(b);
+  for (const [, name, [x, y, w, h], , , kind] of BUILDINGS) nameChip(name, x + w / 2, kind === "lane" ? y + h + 12 : kind === "wall" ? y + h + 2 : y - 14);
+  // carts: two rolling, one stopped at the Task board's path, one held at the gate with the yellow flag and its chip
+  await cart(OX + 96, "code", { roll: 240, dur: 14 });
+  await cart(OX + 96, "message", { roll: 240, dur: 14, delay: -7 });
+  await cart(OX + 116, "asset");
+  await cart(OX + 304, "code", { flag: "#42 · Fix login bug" });
+  // the keepers wait at the stops (Task board, Agent pool, Review gate, Inspector); one lifts the load off at the gate;
+  // one asks at the Agent pool's door; one works in the lane
+  await ork(OX + 136, LINE_Y - 2);
+  await ork(OX + 224, LINE_Y - 2);
+  await ork(OX + 320, LINE_Y - 2, { anim: "work" });
+  await ork(OX + 96, LINE_Y + 50);
+  await ork(OX + 190, 112, { badge: "ask" });
+  await ork(OX + 300, LANE_Y + 14, { anim: "work", flip: true });
+  report();
+}
+
+function report() {
+  const box = document.getElementById("sheets");
+  box.innerHTML = "";
+  let n = 0;
+  for (const [sheet, file, w, h, frames] of EXPECTED) {
+    const d = document.createElement("div");
+    probe(V3 + file).then((ok) => {
+      d.className = ok ? "is-here" : "is-awaited";
+      if (ok) n++;
+      document.getElementById("count").textContent = `${n} of ${EXPECTED.length} v3 sprites cut`;
+    });
+    d.textContent = `${file} ${w}×${h}${frames > 1 ? " ×" + frames : ""} ← ${sheet}`;
+    box.appendChild(d);
+  }
+}
+
+function palette() {
+  const t = document.getElementById("palette"), css = getComputedStyle(document.documentElement);
+  const lum = (hx) => { const c = [1, 3, 5].map((i) => parseInt(hx.slice(i, i + 2), 16) / 255)
+    .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  for (const [name, before] of V2) {
+    const now = css.getPropertyValue("--" + name).trim();
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><code>${name}</code></td><td>${before ? `<span class="sw" style="background:${before}"></span>` : ""}</td>
+      <td>${before || "new"}</td><td><span class="sw" style="background:${now}"></span></td><td>${now}</td><td>${now.length === 7 ? lum(now).toFixed(2) : ""}</td>`;
+    t.appendChild(tr);
+  }
+}
+
+function type() {
+  const styles = ["camp-title", "camp-heading", "camp-chip", "camp-label", "camp-body", "camp-caption", "camp-number", "code", "code-small"];
+  const sample = { "camp-title": "Task board", "camp-heading": "Agent pool · Мой лагерь", "camp-chip": "#42 · Fix login bug",
+    "camp-label": "Takes tasks from", "camp-body": "Up to 3 at once. Ask before starting: on.", "camp-caption": "waiting for a cart · 0 runs",
+    "camp-number": "41k · 6 %", code: "$ pytest -q tests/test_login.py", "code-small": "✓ 10:31 tests added" };
+  const css = getComputedStyle(document.documentElement);
+  document.getElementById("type").innerHTML = styles.map((s) =>
+    `<div class="type-row"><code>${s}<br>${css.getPropertyValue("--type-" + s).trim().replace(/var\(--font-(\w+)\)/, "$1")}</code>
+      <span style="font:var(--type-${s})">${sample[s]}</span></div>`).join("");
+}
+
+for (const [id, cls, on] of [["t-grey", "is-grey", true], ["t-slots", "show-slots", true], ["t-names", "hide-names", false]]) {
+  document.getElementById(id).addEventListener("change", (e) => frame.classList.toggle(cls, e.target.checked === on));
+}
+function redraw() {
+  world.replaceChildren();
+  here.clear(); placeCamp(); scene();
+  document.getElementById("zoom").textContent = `×${Z} (devicePixelRatio ${devicePixelRatio}; the wheel: ${STEPS.map((z) => "×" + z).join(" · ")})`;
+}
+document.getElementById("t-blocks").addEventListener("change", redraw);
+frame.addEventListener("wheel", (e) => {                 // zoom by the wheel, snapping to the steps
+  e.preventDefault();
+  const i = STEPS.indexOf(Z) + (e.deltaY < 0 ? 1 : -1);
+  if (i < 0 || i >= STEPS.length) return;
+  Z = STEPS[i]; K = 2 * Z; redraw();
+}, { passive: false });
+palette(); type(); redraw();
+</script>
+</body></html>

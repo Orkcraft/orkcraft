@@ -473,13 +473,16 @@ def signal_hue(rgb: tuple[int, int, int]) -> bool:
     return s >= 0.75 and v >= 0.7 and (h * 360 <= 65 or h * 360 >= 340)
 
 
-def seam(img: np.ndarray, rel: str) -> str:
+def seam(img: np.ndarray, rel: str, period: int = 0) -> str:
     """How a straight tile joins itself: the colour step across the seam against the mean step inside the tile, and
     the ties' spacing across the seam against their spacing inside (a straight-v is read turned)."""
     a = img if "straight-h" in rel else img.transpose(1, 0, 2)
     rgb = a[..., :3].astype(float)
     inside = np.abs(np.diff(rgb, axis=1)).mean()
     across = np.abs(rgb[:, 0] - rgb[:, -1]).mean()
+    if period:                                              # the same place inside: from one tie spacing to the next
+        same = np.mean([np.abs(rgb[:, k - 1] - rgb[:, k]).mean() for k in range(period, a.shape[1], period)])
+        return f"{rel}: across the seam {across:.0f}, at the same place inside {same:.0f} (one tie spacing repeated)"
     lum = (0.3 * rgb[..., 0] + 0.59 * rgb[..., 1] + 0.11 * rgb[..., 2]) * (a[..., 3] > 0)
     prof = lum.sum(axis=0)
     dark = prof < np.median(prof) * 0.9                         # tie columns: darker across the tile
@@ -595,8 +598,107 @@ def _cut(img: np.ndarray, cut: list) -> np.ndarray:
     return img[max(y, 0):max(y, 0) + h, x:x + w]
 
 
+def _rails(img: np.ndarray, axis: int) -> tuple[np.ndarray, float]:
+    """The dark rail lines across a piece (rows for axis 0: horizontal rails) and the middle between the outer two."""
+    rgb = img[..., :3].astype(float)
+    lum = 0.3 * rgb[..., 0] + 0.59 * rgb[..., 1] + 0.11 * rgb[..., 2]
+    dark = (img[..., 3] > 0) & (lum < 90)
+    prof = dark.mean(axis=1 - axis)
+    lines = np.nonzero(prof >= 0.5)[0]
+    return lines, ((lines.min() + lines.max() + 1) / 2 if len(lines) else img.shape[axis] / 2)
+
+
+def _edge_centre(img: np.ndarray, side: str) -> float | None:
+    """Where the rails cross one side of a piece: the middle of the dark pixels on its outermost opaque line."""
+    a = img[..., 3] > 0
+    rgb = img[..., :3].astype(float)
+    dark = a & ((0.3 * rgb[..., 0] + 0.59 * rgb[..., 1] + 0.11 * rgb[..., 2]) < 90)
+    line = {"n": dark[:3].any(0), "s": dark[-3:].any(0), "w": dark[:, :3].any(1), "e": dark[:, -3:].any(1)}[side]
+    idx = np.nonzero(line)[0]
+    return (idx.min() + idx.max() + 1) / 2 if len(idx) else None
+
+
+def cut_track(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) -> None:
+    """A track set that tiles (v3, design-system-v3.md §8). The tile's length is a whole number of tie spacings of the
+    straight piece (`ties` of them), rounded to the grid of 8 — the one place v3 resamples, along the rails by a few %,
+    so that ties keep their rhythm across every seam; a straight is one tie spacing repeated, so it joins itself exactly. Each piece is placed so that the rails cross each of its `exits`
+    at the tile's middle, and a rail that stops short of an edge is carried on to it."""
+    pieces_ = {item["file"]: trim(sheet.native(_extract(sheet, item))) for item in group["items"]}
+    straight = next(img for f, img in pieces_.items() if f.endswith("straight-h.png"))
+    a = straight[..., 3] > 0
+    rails, mid = _rails(straight, 0)
+    band = a[int(rails.min()) + 1:int(rails.max())] if len(rails) > 1 else a
+    tie_cols = band.mean(0) > 0.5
+    starts = np.nonzero(tie_cols & ~np.concatenate(([False], tie_cols[:-1])))[0]
+    ends = np.nonzero(tie_cols & ~np.concatenate((tie_cols[1:], [False])))[0] + 1
+    centres = (starts + ends) / 2
+    period = float(np.median(np.diff(centres)))
+    n = group.get("ties", 4)
+    T = max(8, int(round(period * n / 8)) * 8)
+    f = T / (period * n)
+    if group.get("target_tile"):
+        group["_show"] = max(1, int(round(group["target_tile"] / T)))
+    problems.append(f"{group['_sheet']}: ties every {period:.1f} art px; a tile of {n} ties = {period * n:.1f} → "
+                    f"{T} × {T} (×{f:.3f} along the rails), shown ×{group.get('_show', 1)}")
+    def scaled(img):
+        h, w = img.shape[:2]
+        return np.asarray(Image.fromarray(img, "RGBA").resize((max(1, round(w * f)), max(1, round(h * f))),
+                                                               Image.NEAREST))
+    for item in group["items"]:
+        img = scaled(pieces_[item["file"]])
+        exits = item["exits"]
+        sw, sh_ = item.get("span", [1, 1])
+        W, H = T * sw, T * sh_
+        if item["file"].endswith(("straight-h.png", "straight-v.png")):
+            vert = item["file"].endswith("straight-v.png")
+            src = img.transpose(1, 0, 2) if vert else img
+            _, m = _rails(src, 0)
+            aa = src[..., 3] > 0
+            r0 = _rails(src, 0)[0]
+            bnd = aa[int(r0.min()) + 1:int(r0.max())] if len(r0) > 1 else aa
+            tc = bnd.mean(0) > 0.5
+            st = np.nonzero(tc & ~np.concatenate(([False], tc[:-1])))[0]
+            en = np.nonzero(tc & ~np.concatenate((tc[1:], [False])))[0] + 1
+            x0 = int(round((st[0] + en[0]) / 2))              # from the first tie's middle: half a tie at each edge
+            p = T // n                                       # one tie spacing, repeated: the seam is the same as inside
+            seg = np.concatenate([src[:, x0:x0 + p]] * n, axis=1)
+            out = np.zeros((T, T, 4), np.uint8)
+            y0 = int(round(T / 2 - m))
+            ys, yd = max(0, -y0), max(0, y0)
+            hh = min(seg.shape[0] - ys, T - yd)
+            out[yd:yd + hh, :seg.shape[1]] = seg[ys:ys + hh]
+            out = out.transpose(1, 0, 2) if vert else out
+        else:
+            out = np.zeros((H, W, 4), np.uint8)
+            ns = next((e for e in "ns" if e in exits), None)
+            we = next((e for e in "we" if e in exits), None)
+            c = _edge_centre(img, ns) if ns and sw == 1 else None     # across: a north or south exit at the middle
+            dx = int(round(W / 2 - c)) if c is not None else (0 if "w" in exits else W - img.shape[1])
+            c = _edge_centre(img, we) if we and sh_ == 1 else None     # down: a west or east exit at the middle
+            dy = int(round(H / 2 - c)) if c is not None else (0 if "n" in exits else H - img.shape[0])
+            ys, xs = max(0, -dy), max(0, -dx)
+            yd, xd = max(0, dy), max(0, dx)
+            hh, ww = min(img.shape[0] - ys, H - yd), min(img.shape[1] - xs, W - xd)
+            out[yd:yd + hh, xd:xd + ww] = img[ys:ys + hh, xs:xs + ww]
+            for side in exits:                               # carry a rail that stops short on to its edge
+                if side == "w" and xd > 0:
+                    out[:, :xd] = out[:, xd:xd + 1]
+                if side == "e" and xd + ww < W:
+                    out[:, xd + ww:] = out[:, xd + ww - 1:xd + ww]
+                if side == "n" and yd > 0:
+                    out[:yd] = out[yd:yd + 1]
+                if side == "s" and yd + hh < H:
+                    out[yd + hh:] = out[yd + hh - 1:yd + hh]
+        out = own_palette(decast(out), group.get("colours", 24)) if group.get("keep_colours") else out
+        _write(out, item["file"], group, rows, problems, (W, H), 1, f, anchor="top-left")
+        if item["file"].endswith(("straight-h.png", "straight-v.png")):
+            problems.append(seam(out, item["file"], T // n))
+
+
 def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) -> None:
     kind = group.get("kind", "sprite")
+    if kind == "track":
+        return cut_track(sheet, group, rows, problems)
     pal = palette(group.get("tones", []), group.get("signals", False))
     if kind == "nine":
         return cut_nine(sheet, group, pal, rows, problems)
@@ -718,6 +820,7 @@ def _write(img, rel, group, rows, problems, frame, frames, scale=1.0, anchor=Non
             problems.append(f"{rel}: a signal's yellow or red outside a signal sprite")
     save(img, rel)
     row = {"file": rel, "size": [w, h], "frame": list(frame), "frames": frames,
+           **({"pitch": group["_pitch"], "show": group["_show"]} if "_show" in group else {}),
            "anchor": anchor or group.get("anchor", "feet"), "placeholder": True,
            "source": group["_sheet"], "scale": round(float(scale), 3), "licence": LICENCE, "author": AUTHOR}
     if frames > 1:
@@ -773,6 +876,17 @@ def render_kits(rows: list[dict], into: pathlib.Path) -> None:
 
 
 V3 = ROOT / "tools" / "camp_sheets_v3.json"
+
+
+def shown(sheet: Sheet, target: dict | None) -> int:
+    """The whole multiple (×1, ×2, …) that brings a sheet's pieces nearest their target size on screen (v3: each sheet
+    comes at its own pixel size; a cart drawn 38 px wide is shown at ×2 to be about 64). `target`: {"w": px} or
+    {"h": px}, compared with the median piece; none, ×1. A track sheet sets its own from its tile (`cut_track`)."""
+    if not target or not sheet.boxes:
+        return 1
+    side = 0 if "w" in target else 1
+    size = float(np.median([b[2 + side] - b[side] for b in sheet.boxes]))
+    return max(1, int(round(target.get("w", target.get("h")) / size)))
 
 
 def expect(spec: dict) -> None:
@@ -834,6 +948,8 @@ def main() -> None:
         print(f"{sh['name']}: pitch {sheet.pitch:.2f} px, {len(sheet.boxes)} pieces")
         for group in sh["groups"]:
             group["_sheet"] = sh["file"]
+            group["_pitch"] = round(float(sheet.pitch), 2)
+            group["_show"] = group.get("show", sh.get("show") or shown(sheet, sh.get("target")))
             for key in ("native", "keep_colours"):              # v3: set once for the whole spec
                 group.setdefault(key, spec.get(key, False))
             cut_group(sheet, group, rows, problems)
@@ -846,6 +962,9 @@ def main() -> None:
                                         "(docs/design/design-system-v2.md §11)."),
                                     "sprites": rows}, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"{len(rows)} sprites in {manifest}")
+    if spec_path == V3:
+        import campkit_v3                   # the preview learns what was cut and at what multiple
+        print(f"preview: {campkit_v3.build().relative_to(ROOT)}")
     if "faces" in spec:
         import camp_faces                   # the interface's faces, recut from the role bodies (tools/camp_faces.py)
         camp_faces.write_manifest(camp_faces.cut(spec))

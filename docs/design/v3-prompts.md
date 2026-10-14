@@ -480,3 +480,9 @@ a lectern, pinning a sheet); the lens has a magenta cast; one frame of the pinni
 2. **The scale: ×1.5 by default on a screen of density 2 or more** (one art pixel = 3 × 3 device pixels, sharp), so
    the town fills the window as F1 does; **the mouse wheel zooms ×1 · ×1.5 · ×2**, each step whole in device pixels;
    on a screen of density 1 the default is ×1 (×1.5 cannot be sharp there).
+
+**V3, round 5 cut:** c1, c2, o1 and o2 are cut (with `degrid`) and in the preview at the owner's ×1.5; each sheet's
+pitch and whole multiple are in design-system-v3.md §3. **For c2's next round:** the set has **no north-west curve** (it
+drew three south-east ones); ask "four curves, one for each pair of sides: north–east, east–south, south–west,
+west–north", and the merge and the crossing apart, not touching.
+

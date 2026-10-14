@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- The template of design-system/previews/CampKitV3.html: tools/campkit_v3.py fills EXPECTED and SHOW. -->
 <html><head><meta charset="utf-8"><title>Camp kit v3</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="../fonts/fonts.css">
@@ -112,6 +113,7 @@ else v2's placeholder, else a block in v3's colours.</p>
   <label><input type="checkbox" id="t-slots"> Show v3 slots</label>
   <label><input type="checkbox" id="t-names" checked> Building names</label>
   <label><input type="checkbox" id="t-blocks"> Blocks only (no v2 stand-ins)</label>
+  <span id="zoom" style="color:var(--ink-muted)"></span>
   <span id="count" style="color:var(--ink-muted)"></span>
 </div>
 <div class="scroll"><div class="v3-frame" id="frame">
@@ -124,7 +126,7 @@ else v2's placeholder, else a block in v3's colours.</p>
     <span class="v3-gap"></span>
     <button class="v3-button" type="button">Stop all</button>
   </div>
-  <div class="v3-world"><div class="v3-tufts"></div><div class="v3-at" id="world" style="left:0;top:144px;width:1440px;height:576px"></div></div>
+  <div class="v3-world"><div class="v3-tufts"></div><div class="v3-at" id="world" style="left:0;top:0;width:0;height:0"></div></div>
 </div></div>
 
 <h2>The palette: v2 → v3</h2>
@@ -236,29 +238,27 @@ const EXPECTED = [
 ["o5-inside.png", "orks/inside/lens.png", 32, 32, 4],
 ["o5-inside.png", "orks/inside/quill.png", 32, 32, 4],
 ["o5-inside.png", "orks/inside/pin.png", 32, 32, 4],
-["c1-carts.png", "carts/empty.png", 32, 24, 1],
-["c1-carts.png", "carts/code.png", 32, 24, 1],
-["c1-carts.png", "carts/asset.png", 32, 24, 1],
-["c1-carts.png", "carts/message.png", 32, 24, 1],
-["c1-carts.png", "carts/doc.png", 32, 24, 1],
-["c1-carts.png", "carts/bundle.png", 32, 24, 1],
-["c1-carts.png", "carts/flag-none.png", 32, 40, 1],
-["c1-carts.png", "carts/flag-flag.png", 32, 40, 1],
-["c1-carts.png", "carts/flag-held.png", 32, 40, 1],
+["c1-carts.png", "carts/empty.png", 40, 48, 1],
+["c1-carts.png", "carts/code.png", 40, 48, 1],
+["c1-carts.png", "carts/asset.png", 40, 48, 1],
+["c1-carts.png", "carts/message.png", 40, 48, 1],
+["c1-carts.png", "carts/doc.png", 40, 48, 1],
+["c1-carts.png", "carts/bundle.png", 40, 48, 1],
+["c1-carts.png", "carts/flag-none.png", 40, 48, 1],
+["c1-carts.png", "carts/flag-flag.png", 40, 48, 1],
+["c1-carts.png", "carts/flag-held.png", 40, 48, 1],
 ["c1-carts.png", "carts/pile.png", 128, 40, 1],
-["c1-carts.png", "carts/rolling.png", 32, 24, 4],
-["c2-track.png", "track/straight-h.png", 32, 32, 1],
-["c2-track.png", "track/straight-v.png", 32, 32, 1],
-["c2-track.png", "track/corner-ne.png", 32, 32, 1],
-["c2-track.png", "track/corner-nw.png", 32, 32, 1],
-["c2-track.png", "track/corner-se.png", 32, 32, 1],
-["c2-track.png", "track/corner-sw.png", 32, 32, 1],
-["c2-track.png", "track/t-n.png", 32, 32, 1],
-["c2-track.png", "track/t-s.png", 32, 32, 1],
-["c2-track.png", "track/switch-e.png", 32, 32, 1],
-["c2-track.png", "track/merge-e.png", 32, 32, 1],
-["c2-track.png", "track/cross.png", 32, 32, 1],
-["c2-track.png", "track/stop-e.png", 32, 32, 1],
+["c2-track.png", "track/straight-h.png", 64, 64, 1],
+["c2-track.png", "track/straight-v.png", 64, 64, 1],
+["c2-track.png", "track/corner-se.png", 64, 64, 1],
+["c2-track.png", "track/corner-sw.png", 64, 64, 1],
+["c2-track.png", "track/corner-ne.png", 64, 64, 1],
+["c2-track.png", "track/t-n.png", 64, 64, 1],
+["c2-track.png", "track/t-s.png", 64, 64, 1],
+["c2-track.png", "track/switch-e.png", 64, 64, 1],
+["c2-track.png", "track/merge-e.png", 64, 64, 1],
+["c2-track.png", "track/cross.png", 64, 64, 1],
+["c2-track.png", "track/stop-e.png", 64, 64, 1],
 ["g1-ground.png", "ground/grass-0.png", 32, 32, 1],
 ["g1-ground.png", "ground/grass-1.png", 32, 32, 1],
 ["g1-ground.png", "ground/grass-2.png", 32, 32, 1],
@@ -317,8 +317,14 @@ const EXPECTED = [
 ];
 const V2 = [["world-grass", "#5e8a4c"], ["world-grass-light", "#6f9a56"], ["world-grass-dark", "#4e7840"], ["world-earth", "#8f7250"], ["world-earth-dark", "#735b4c"], ["world-water", "#2f5a55"], ["world-water-dark", ""], ["art-wood", "#7c5f48"], ["art-wood-light", "#ba9468"], ["art-wood-dark", "#4f3935"], ["art-wood-deep", ""], ["art-stone", "#7d7a74"], ["art-stone-dark", "#4d4848"], ["art-iron", "#4a4b52"], ["art-bone", "#dccaa0"], ["art-cloth", "#6b2a2c"], ["art-cloth-plum", ""], ["art-skin", "#769544"], ["art-outline", "#1c1410"], ["signal-ask", "#facc15"], ["signal-fire", "#e8411c"], ["signal-held", "#8fa3b8"], ["chip", "#1c1712"], ["chip-ink", "#e8e0c8"], ["parchment", ""], ["parchment-ink", ""], ["walnut", ""], ["accent-teal", ""]];
 const HOURGLASS = '<svg viewBox="0 0 10 12" width="14" height="17" aria-label="held"><path d="M1 0h8v2.5L6 6l3 3.5V12H1V9.5L4 6 1 2.5z" fill="currentColor"/></svg>';
-const K = 2;                                          // the layout's unit: its numbers are half screen px (v2's grid)
-const ART = 1;                                        // --art-scale: a v3 sprite at its own art pixel, never resampled
+// The zoom (design-system-v3.md §3): ×1.5 by default on a screen of density 2 or more (one art px = 3 × 3 device px),
+// ×1 on density 1; the wheel steps ×1 · ×1.5 · ×2 (×1.5 only where it is whole in device px). Each sheet is shown at
+// its own whole multiple (SHOW, from the manifest) times the zoom. The layout's numbers are units of 2 CSS px at ×1.
+const STEPS = devicePixelRatio >= 2 ? [1, 1.5, 2] : [1, 2];
+let Z = devicePixelRatio >= 2 ? 1.5 : 1;
+let K = 2 * Z;
+const SHOW = {"buildings/barracks.png": 1, "buildings/catapult.png": 1, "buildings/council.png": 1, "buildings/fields.png": 1, "buildings/forge.png": 1, "buildings/lab.png": 1, "buildings/lake.png": 1, "buildings/loot.png": 1, "buildings/loot_vault.png": 1, "buildings/mill.png": 1, "buildings/mine.png": 1, "buildings/pit.png": 1, "buildings/scrolls.png": 1, "buildings/signpost.png": 1, "buildings/town_hall.png": 1, "buildings/ux_lab.png": 1, "buildings/watchtower.png": 1, "buildings/workshop.png": 1, "carts/asset.png": 2, "carts/bundle.png": 2, "carts/code.png": 2, "carts/doc.png": 2, "carts/empty.png": 2, "carts/flag-flag.png": 2, "carts/flag-held.png": 2, "carts/flag-none.png": 2, "carts/message.png": 2, "carts/pile.png": 2, "orks/body/door.png": 1, "orks/body/idle.png": 1, "orks/body/walk-down.png": 1, "orks/body/walk-side.png": 1, "orks/body/walk-up.png": 1, "orks/body/work.png": 1, "orks/roles/alchemist.png": 1, "orks/roles/grunt.png": 1, "orks/roles/loader.png": 1, "orks/roles/lookout.png": 1, "orks/roles/mechanic.png": 1, "orks/roles/pathfinder.png": 1, "orks/roles/prospector.png": 1, "orks/roles/seer.png": 1, "orks/roles/taskmaster.png": 1, "orks/roles/treasurer.png": 1, "orks/roles/warchief.png": 1, "orks/roles/warder.png": 1, "track/corner-ne.png": 1, "track/corner-se.png": 1, "track/corner-sw.png": 1, "track/cross.png": 1, "track/merge-e.png": 1, "track/stop-e.png": 1, "track/straight-h.png": 1, "track/straight-v.png": 1, "track/switch-e.png": 1, "track/t-n.png": 1, "track/t-s.png": 1};
+const sc = (file) => (SHOW[file] || 1) * Z;             // a v3 sprite's CSS px per art px
 const V3 = "../sprites/v3/", CAMP = "../sprites/camp/";
 const world = document.getElementById("world"), frame = document.getElementById("frame");
 const here = new Set();
@@ -346,8 +352,14 @@ async function pick(cands) {
 // --- the layout (art px): docs/design/design-system-v3.md §4 ------------------------------------------------
 // F1's density (round 4): two rows close to the line, about one path's width between buildings; the camp is as wide
 // as its buildings at ×1 and stands in the middle of the window, wilderness round it. Numbers in layout units (2 px).
-const OX = 150;                         // the camp's left edge
-const OY = 72;                          // the wilderness above the back wall (#world sits OY units down)
+const OX = 40;                          // the camp's left edge in its own frame (#world is placed to centre the camp)
+const CAMP_W = 496, CAMP_H = 264;       // the camp's extent in units, the walls and the lane's chips included
+let OY = 0;                             // the wilderness above the back wall, in units (set by placeCamp)
+function placeCamp() {
+  const left = Math.round((1440 - CAMP_W * K) / 2), top = Math.round((864 - CAMP_H * K) / 2);
+  world.style.left = left + "px"; world.style.top = top + "px";
+  OY = top / K;
+}
 const LINE_Y = 128;                     // the main line's tile row (32 tall)
 const LANE_Y = 232;                     // the lower row's lane, under its doors
 const WALL_X = OX + 440;                // the right wall, the catapult against it
@@ -382,7 +394,7 @@ async function building([type, name, box, v2, look]) {
   el("v3-shadow", x + 6, y + h - 6, w - 12, 10);
   const s = el("v3-slot", x, y, w, h);
   s.innerHTML = `<span>${type} ${w * K}×${h * K}</span>`;
-  const got = await pick([{ src: `${V3}buildings/${type}.png`, scale: ART }, ...(v2 ? [{ src: CAMP + v2, scale: K, v2: true }] : [])]);
+  const got = await pick([{ src: `${V3}buildings/${type}.png`, scale: sc(`buildings/${type}.png`) }, ...(v2 ? [{ src: CAMP + v2, scale: K, v2: true }] : [])]);
   if (!got) return block(box, look);
   if (!got.v2) here.add(`buildings/${type}.png`);
   const i = got.img, iw = i.naturalWidth * got.scale, ih = i.naturalHeight * got.scale;
@@ -400,16 +412,16 @@ function nameChip(name, cx, top) {
 }
 
 async function track() {
-  // the tiles: c2's once cut, else the 0.3 stand-ins re-pixelised (standin/), else v2's at ×2. The track's grid follows
-  // the tile's own size (one size for the set), centred on the line's old row and column.
-  const cands = (name) => [{ src: `${V3}track/${name}.png`, scale: ART }, { src: `${V3}standin/track/${name}.png`, scale: ART, standin: true },
+  // the tiles: c2's once cut, else v2's. The track's grid follows the tile's own size (one size for the set), centred
+  // on the line's row and column.
+  const cands = (name) => [{ src: `${V3}track/${name}.png`, scale: sc(`track/${name}.png`) },
     { src: `${CAMP}track/${name}.png`, scale: K, v2: true }];
   const probe0 = await pick(cands("straight-h"));
   const T = probe0 ? probe0.img.naturalWidth * probe0.scale / K : 32;            // the tile in layout units
   const tile = async (name, x, y, v) => {
     const got = await pick(cands(name));
     if (got) {
-      if (!got.v2 && !got.standin) here.add(`track/${name}.png`);
+      if (!got.v2) here.add(`track/${name}.png`);
       const img = document.createElement("img");
       img.className = "v3-img"; img.src = got.src;
       img.style.cssText = `left:${x * K}px;top:${y * K}px;width:${T * K}px;height:${T * K}px`;
@@ -445,9 +457,8 @@ function paths() {
 
 async function ork(cx, feetY, opts = {}) {
   const got = await pick([
-    { src: `${V3}orks/body/${opts.anim || "idle"}.png`, scale: ART, frames: opts.anim === "work" ? 6 : 4 },
-    { src: `${V3}standin/orks/body/${opts.anim || "idle"}.png`, scale: ART, frames: opts.anim === "work" ? 6 : 4, standin: true },
-    { src: `${CAMP}orks/body/${opts.anim || "idle"}.png`, scale: 1, frames: opts.anim === "work" ? 6 : 4, fw: opts.anim === "work" ? 48 : 32, fh: 48, v2: true }]);
+    { src: `${V3}orks/body/${opts.anim || "idle"}.png`, scale: sc(`orks/body/${opts.anim || "idle"}.png`), frames: opts.anim === "work" ? 6 : 4 },
+    { src: `${CAMP}orks/body/${opts.anim || "idle"}.png`, scale: Z, frames: opts.anim === "work" ? 6 : 4, fw: opts.anim === "work" ? 48 : 32, fh: 48, v2: true }]);
   el("v3-shadow", cx - 8, feetY - 3, 16, 5);
   const s = el("v3-slot", cx - 16, feetY - 32, 32, 32);
   s.innerHTML = "<span>ork 64</span>";
@@ -484,13 +495,14 @@ async function cart(x, load, opts = {}) {
   world.appendChild(wrap);
   const put = (src, l, t, w, h) => { const i = document.createElement("img"); i.className = "v3-img"; i.src = src;
     i.style.cssText = `left:${l}px;top:${t}px;width:${w}px;height:${h}px`; wrap.appendChild(i); };
-  const got = await pick([{ src: `${V3}carts/${load}.png`, scale: ART },
-    { src: `${V3}standin/carts/${load}.png`, scale: ART, standin: true }, { src: `${CAMP}carts/side.png`, scale: 1, v2: true }]);
+  const got = await pick([{ src: `${V3}carts/${load}.png`, scale: sc(`carts/${load}.png`) },
+    { src: `${CAMP}carts/side.png`, scale: Z, v2: true }]);
   const slot = document.createElement("div");
   slot.className = "v3-slot"; slot.style.cssText = `left:${-16 * K}px;top:${(feet - 24) * K}px;width:${32 * K}px;height:${24 * K}px`;
   slot.innerHTML = "<span>cart 64×48</span>"; wrap.appendChild(slot);
   if (!got) return;
-  if (!got.v2) { if (!got.standin) here.add(`carts/${load}.png`); const cw = got.img.naturalWidth, ch = got.img.naturalHeight;
+  let ch = 40 * Z;
+  if (!got.v2) { here.add(`carts/${load}.png`); const cw = got.img.naturalWidth * got.scale; ch = got.img.naturalHeight * got.scale;
     put(got.src, -cw / 2, feet * K - ch, cw, ch); }
   else {
     put(got.src, -24, feet * K - 40, 48, 40);
@@ -498,7 +510,7 @@ async function cart(x, load, opts = {}) {
   }
   if (opts.flag) {
     const f = document.createElement("span");
-    f.className = "v3-flag"; f.style.cssText = `left:${got.v2 ? -26 : -30}px;top:${(feet - 24) * K - 46}px`;
+    f.className = "v3-flag"; f.style.cssText = `left:${-14 * Z - 12}px;top:${feet * K - ch - 40}px`;
     wrap.appendChild(f);
     const c = document.createElement("span");
     c.className = "v3-chip"; c.textContent = opts.flag; c.style.cssText = `left:0;top:${feet * K + 8}px`;
@@ -570,10 +582,18 @@ function type() {
 for (const [id, cls, on] of [["t-grey", "is-grey", true], ["t-slots", "show-slots", true], ["t-names", "hide-names", false]]) {
   document.getElementById(id).addEventListener("change", (e) => frame.classList.toggle(cls, e.target.checked === on));
 }
-document.getElementById("t-blocks").addEventListener("change", () => {
-  world.querySelectorAll(":scope > :not(.v3-tufts)").forEach((n) => n.remove());
-  here.clear(); scene();
-});
-palette(); type(); scene();
+function redraw() {
+  world.replaceChildren();
+  here.clear(); placeCamp(); scene();
+  document.getElementById("zoom").textContent = `×${Z} (devicePixelRatio ${devicePixelRatio}; the wheel: ${STEPS.map((z) => "×" + z).join(" · ")})`;
+}
+document.getElementById("t-blocks").addEventListener("change", redraw);
+frame.addEventListener("wheel", (e) => {                 // zoom by the wheel, snapping to the steps
+  e.preventDefault();
+  const i = STEPS.indexOf(Z) + (e.deltaY < 0 ? 1 : -1);
+  if (i < 0 || i >= STEPS.length) return;
+  Z = STEPS[i]; K = 2 * Z; redraw();
+}, { passive: false });
+palette(); type(); redraw();
 </script>
 </body></html>

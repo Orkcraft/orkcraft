@@ -1,5 +1,5 @@
 {
- "note": "v3's sheets (docs/design/v3-prompts.md §3) and the sprites each is cut into (docs/design/design-system-v3.md §8). A sheet goes into `root` under exactly its `file` name; `python tools/camp_sheet.py --v3` cuts every sheet that is there and lists the rest as awaited. A piece is named by `order`: its place in reading order on the sheet (`--list SHEET` prints it); if the image model drew the sheet in another order, change the numbers, not the names. Sizes are the plan in art px; with `native` the slot is what the sheet draws (rounded up to 8), shown at ×1 (docs/design/design-system-v3.md §3), and `keep_colours` keeps the art's own colours. `degrid` (set on the ork sheets, whose first round came with a box drawn round every cell) drops a drawn grid before the pieces are found; it is off for the others, where it would eat a building's own straight outlines. Sheets marked `standin` (with their own `root`) re-cut the 0.3 placeholders the same way, into standin/, until the owner's c1, c2 and o1 arrive.",
+ "note": "v3's sheets (docs/design/v3-prompts.md §3) and the sprites each is cut into (docs/design/design-system-v3.md §8). A sheet goes into `root` under exactly its `file` name; `python tools/camp_sheet.py --v3` cuts every sheet that is there and lists the rest as awaited. A piece is named by `order`: its place in reading order on the sheet (`--list SHEET` prints it); if the image model drew the sheet in another order, change the numbers, not the names. Sizes are the plan in art px; with `native` the slot is what the sheet draws (rounded up to 8), shown at ×1 (docs/design/design-system-v3.md §3), and `keep_colours` keeps the art's own colours. `degrid` (set on the ork sheets, whose first round came with a box drawn round every cell) drops a drawn grid before the pieces are found; it is off for the others, where it would eat a building's own straight outlines. Each sheet is cut at its own pixel and shown at the whole multiple (`show`, or from `target`) nearest its size on screen; the manifest records each sprite's `pitch` and `show`.",
  "root": "docs/design/img/references/v3",
  "out": "design-system/sprites/v3",
  "native": true,
@@ -73,7 +73,8 @@
       }
      ]
     }
-   ]
+   ],
+   "show": 1
   },
   {
    "name": "b2-town",
@@ -142,7 +143,8 @@
       }
      ]
     }
-   ]
+   ],
+   "show": 1
   },
   {
    "name": "b3-plumbing",
@@ -211,7 +213,8 @@
       }
      ]
     }
-   ]
+   ],
+   "show": 1
   },
   {
    "name": "b4-others",
@@ -280,7 +283,8 @@
       }
      ]
     }
-   ]
+   ],
+   "show": 1
   },
   {
    "name": "b5-doors",
@@ -381,7 +385,8 @@
       }
      ]
     }
-   ]
+   ],
+   "show": 1
   },
   {
    "name": "o1-body",
@@ -533,12 +538,15 @@
       }
      ]
     }
-   ]
+   ],
+   "target": {
+    "h": 56
+   }
   },
   {
    "name": "o2-roles",
    "file": "o2-roles.png",
-   "about": "§3b.2 the twelve roles on the same body, 32 × 32, one row",
+   "about": "§3b.2 the roles on the o1/o2 ork (round 5): row 1 the eleven variants in the prompt's order without the pathfinder, row 2 the same again with the pathfinder (map and lantern) at 19",
    "degrid": true,
    "groups": [
     {
@@ -597,19 +605,22 @@
       },
       {
        "file": "orks/roles/pathfinder.png",
-       "order": 9
+       "order": 19
       },
       {
        "file": "orks/roles/prospector.png",
-       "order": 10
+       "order": 9
       },
       {
        "file": "orks/roles/loader.png",
-       "order": 11
+       "order": 10
       }
      ]
     }
-   ]
+   ],
+   "target": {
+    "h": 56
+   }
   },
   {
    "name": "o3-states",
@@ -900,12 +911,12 @@
   {
    "name": "c1-carts",
    "file": "c1-carts.png",
-   "about": "§3c.1 the mine carts: row 1 the loads (empty, code, asset, message, doc, bundle), row 2 the flags (none, a flag to recolour, an hourglass, four at a buffer stop), row 3 rolling right, 4 frames",
+   "about": "§3c.1 the mine carts, front-on (round 5): row 1 the loads, row 2 the flags and the pile at the buffer stop; the rolling row is three-quarter and not cut. Pieces by point (`at`, `box`: the code cart and the flag cart below it touch)",
    "groups": [
     {
      "size": [
-      32,
-      24
+      40,
+      48
      ],
      "anchor": "feet",
      "slots": [
@@ -915,51 +926,70 @@
      "items": [
       {
        "file": "carts/empty.png",
-       "order": 0
+       "at": [
+        0.083,
+        0.2
+       ]
       },
       {
        "file": "carts/code.png",
-       "order": 1
+       "box": [
+        0.171,
+        0.0,
+        0.329,
+        0.338
+       ]
       },
       {
        "file": "carts/asset.png",
-       "order": 2
+       "at": [
+        0.417,
+        0.17
+       ]
       },
       {
        "file": "carts/message.png",
-       "order": 3
+       "at": [
+        0.583,
+        0.19
+       ]
       },
       {
        "file": "carts/doc.png",
-       "order": 4
+       "at": [
+        0.75,
+        0.17
+       ]
       },
       {
        "file": "carts/bundle.png",
-       "order": 5
-      }
-     ]
-    },
-    {
-     "size": [
-      32,
-      40
-     ],
-     "anchor": "feet",
-     "slots": [
-      "flag"
-     ],
-     "items": [
+       "at": [
+        0.917,
+        0.18
+       ]
+      },
       {
        "file": "carts/flag-none.png",
-       "order": 6
+       "at": [
+        0.083,
+        0.55
+       ]
       },
       {
        "file": "carts/flag-flag.png",
-       "order": 7
+       "box": [
+        0.171,
+        0.338,
+        0.329,
+        0.677
+       ]
       },
       {
        "file": "carts/flag-held.png",
-       "order": 8
+       "at": [
+        0.417,
+        0.51
+       ]
       }
      ]
     },
@@ -972,104 +1002,113 @@
      "items": [
       {
        "file": "carts/pile.png",
-       "order": 9
-      }
-     ]
-    },
-    {
-     "size": [
-      32,
-      24
-     ],
-     "anchor": "feet",
-     "fps": 8,
-     "items": [
-      {
-       "file": "carts/rolling.png",
-       "frames": [
-        {
-         "order": 10
-        },
-        {
-         "order": 11
-        },
-        {
-         "order": 12
-        },
-        {
-         "order": 13
-        }
+       "at": [
+        0.75,
+        0.51
        ]
       }
      ]
     }
-   ]
+   ],
+   "degrid": true,
+   "target": {
+    "w": 64
+   }
   },
   {
    "name": "c2-track",
    "file": "c2-track.png",
-   "about": "§3c.2 the track autotiles, 32 × 32: straight both ways, four corners, T-junctions from above and below, a switch, a merge, a crossing, a buffer stop",
+   "about": "§3c.2 the track (round 5), flat from above; cut as a set that tiles: one tile of four tie spacings, each piece placed so its rails cross its exits at the tile's middle. Piece 2 (a vertical switch) and 5, 7 (smaller south-east curves) are not used; there is no north-west curve yet",
    "groups": [
     {
-     "kind": "tiles",
+     "kind": "track",
      "size": [
-      32,
-      32
+      64,
+      64
      ],
      "anchor": "top-left",
-     "key_grass": true,
+     "ties": 4,
+     "target_tile": 56,
      "items": [
       {
        "file": "track/straight-h.png",
-       "order": 0
+       "order": 0,
+       "exits": "we"
       },
       {
        "file": "track/straight-v.png",
-       "order": 1
-      },
-      {
-       "file": "track/corner-ne.png",
-       "order": 2
-      },
-      {
-       "file": "track/corner-nw.png",
-       "order": 3
+       "order": 1,
+       "exits": "ns"
       },
       {
        "file": "track/corner-se.png",
-       "order": 4
+       "order": 3,
+       "exits": "se"
       },
       {
        "file": "track/corner-sw.png",
-       "order": 5
+       "order": 4,
+       "exits": "sw"
+      },
+      {
+       "file": "track/corner-ne.png",
+       "order": 6,
+       "exits": "ne"
       },
       {
        "file": "track/t-n.png",
-       "order": 6
+       "order": 8,
+       "exits": "wen"
       },
       {
        "file": "track/t-s.png",
-       "order": 7
+       "order": 9,
+       "exits": "wes"
       },
       {
        "file": "track/switch-e.png",
-       "order": 8
+       "order": 10,
+       "exits": "we",
+       "span": [
+        2,
+        1
+       ]
       },
       {
        "file": "track/merge-e.png",
-       "order": 9
+       "order": 11,
+       "crop": [
+        0,
+        0,
+        0.55,
+        1
+       ],
+       "exits": "we",
+       "span": [
+        2,
+        1
+       ]
       },
       {
        "file": "track/cross.png",
-       "order": 10
+       "order": 11,
+       "crop": [
+        0.55,
+        0,
+        1,
+        1
+       ],
+       "exits": "wens"
       },
       {
        "file": "track/stop-e.png",
-       "order": 11
+       "order": 12,
+       "exits": "w"
       }
      ]
     }
-   ]
+   ],
+   "degrid": true
   },
   {
    "name": "g1-ground",
@@ -1476,260 +1515,6 @@
    "file": "u6-inside.png",
    "about": "§3e.6 the Task board's inside: the hall 480 × 360, boards 96 × 200, cards, flags, pins",
    "later": "I2"
-  },
-  {
-   "name": "standin-track",
-   "file": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
-   "root": "docs/design/img/references/0.3",
-   "standin": true,
-   "about": "stand-in until c2: the 0.3 track tiles, re-pixelised, one tile size for the set",
-   "groups": [
-    {
-     "kind": "tiles",
-     "size": [
-      32,
-      32
-     ],
-     "anchor": "top-left",
-     "key_grass": true,
-     "items": [
-      {
-       "file": "standin/track/straight-h.png",
-       "at": [
-        0.125,
-        0.163
-       ]
-      },
-      {
-       "file": "standin/track/straight-v.png",
-       "at": [
-        0.375,
-        0.163
-       ]
-      },
-      {
-       "file": "standin/track/corner-nw.png",
-       "at": [
-        0.625,
-        0.163
-       ]
-      },
-      {
-       "file": "standin/track/corner-ne.png",
-       "at": [
-        0.875,
-        0.163
-       ]
-      },
-      {
-       "file": "standin/track/corner-nw-1.png",
-       "at": [
-        0.125,
-        0.498
-       ]
-      },
-      {
-       "file": "standin/track/corner-se.png",
-       "at": [
-        0.375,
-        0.498
-       ]
-      },
-      {
-       "file": "standin/track/switch-e.png",
-       "at": [
-        0.625,
-        0.498
-       ]
-      },
-      {
-       "file": "standin/track/merge-e.png",
-       "at": [
-        0.875,
-        0.498
-       ]
-      },
-      {
-       "file": "standin/track/cross.png",
-       "at": [
-        0.125,
-        0.836
-       ]
-      },
-      {
-       "file": "standin/track/stop-e.png",
-       "at": [
-        0.375,
-        0.836
-       ]
-      },
-      {
-       "file": "standin/track/stop-n.png",
-       "at": [
-        0.625,
-        0.836
-       ]
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "name": "standin-carts",
-   "file": "Gemini_Generated_Image_qjb9tqjb9tqjb9tq.jpeg",
-   "root": "docs/design/img/references/0.3",
-   "standin": true,
-   "about": "stand-in until c1: the 0.3 mine carts with their loads, re-pixelised",
-   "groups": [
-    {
-     "size": [
-      48,
-      48
-     ],
-     "anchor": "feet",
-     "items": [
-      {
-       "file": "standin/carts/empty.png",
-       "at": [
-        0.081,
-        0.136
-       ]
-      },
-      {
-       "file": "standin/carts/code.png",
-       "at": [
-        0.248,
-        0.119
-       ]
-      },
-      {
-       "file": "standin/carts/asset.png",
-       "at": [
-        0.415,
-        0.119
-       ]
-      },
-      {
-       "file": "standin/carts/message.png",
-       "at": [
-        0.583,
-        0.124
-       ]
-      },
-      {
-       "file": "standin/carts/doc.png",
-       "at": [
-        0.749,
-        0.126
-       ]
-      },
-      {
-       "file": "standin/carts/bundle.png",
-       "at": [
-        0.916,
-        0.116
-       ]
-      }
-     ]
-    }
-   ]
-  },
-  {
-   "name": "standin-orks",
-   "file": "Gemini_Generated_Image_4xw8i84xw8i84xw8.jpeg",
-   "root": "docs/design/img/references/0.3",
-   "standin": true,
-   "about": "stand-in until o1: the 0.3 ork's idle and work frames, re-pixelised",
-   "groups": [
-    {
-     "size": [
-      32,
-      48
-     ],
-     "anchor": "feet",
-     "fps": 8,
-     "tones": [
-      "#8fb052",
-      "#5a7a34",
-      "#3e5a26",
-      "#6a5240",
-      "#4a3a30",
-      "#8a7a64"
-     ],
-     "items": [
-      {
-       "file": "standin/orks/body/idle.png",
-       "frames": [
-        {
-         "at": [
-          0.068,
-          0.106
-         ]
-        },
-        {
-         "at": [
-          0.212,
-          0.106
-         ]
-        },
-        {
-         "at": [
-          0.355,
-          0.106
-         ]
-        },
-        {
-         "at": [
-          0.497,
-          0.106
-         ]
-        }
-       ]
-      },
-      {
-       "file": "standin/orks/body/work.png",
-       "frames": [
-        {
-         "at": [
-          0.069,
-          0.512
-         ]
-        },
-        {
-         "at": [
-          0.211,
-          0.512
-         ]
-        },
-        {
-         "at": [
-          0.362,
-          0.515
-         ]
-        },
-        {
-         "at": [
-          0.506,
-          0.513
-         ]
-        },
-        {
-         "at": [
-          0.65,
-          0.505
-         ]
-        },
-        {
-         "at": [
-          0.792,
-          0.512
-         ]
-        }
-       ]
-      }
-     ]
-    }
-   ]
   }
  ]
 }

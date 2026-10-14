@@ -12,6 +12,8 @@
     128
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b1-core.png",
@@ -35,6 +37,8 @@
     112
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b1-core.png",
@@ -58,6 +62,8 @@
     96
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b2-town.png",
@@ -81,6 +87,8 @@
     72
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b1-core.png",
@@ -104,6 +112,8 @@
     120
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b3-plumbing.png",
@@ -127,6 +137,8 @@
     104
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b2-town.png",
@@ -150,6 +162,8 @@
     104
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b1-core.png",
@@ -173,6 +187,8 @@
     120
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b3-plumbing.png",
@@ -196,6 +212,8 @@
     112
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b1-core.png",
@@ -219,6 +237,8 @@
     120
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b3-plumbing.png",
@@ -242,6 +262,8 @@
     128
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b2-town.png",
@@ -265,6 +287,8 @@
     120
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b3-plumbing.png",
@@ -288,6 +312,8 @@
     120
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b2-town.png",
@@ -311,6 +337,8 @@
     112
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b3-plumbing.png",
@@ -334,6 +362,8 @@
     128
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b2-town.png",
@@ -357,6 +387,8 @@
     112
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b2-town.png",
@@ -380,6 +412,8 @@
     128
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b1-core.png",
@@ -403,6 +437,8 @@
     104
    ],
    "frames": 1,
+   "pitch": 4.17,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "b3-plumbing.png",
@@ -416,154 +452,257 @@
    ]
   },
   {
-   "file": "standin/carts/asset.png",
+   "file": "carts/asset.png",
    "size": [
-    64,
-    64
-   ],
-   "frame": [
-    64,
-    64
-   ],
-   "frames": 1,
-   "anchor": "feet",
-   "placeholder": true,
-   "source": "Gemini_Generated_Image_qjb9tqjb9tqjb9tq.jpeg",
-   "scale": 1.0,
-   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
-  },
-  {
-   "file": "standin/carts/bundle.png",
-   "size": [
-    64,
-    64
-   ],
-   "frame": [
-    64,
-    64
-   ],
-   "frames": 1,
-   "anchor": "feet",
-   "placeholder": true,
-   "source": "Gemini_Generated_Image_qjb9tqjb9tqjb9tq.jpeg",
-   "scale": 1.0,
-   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
-  },
-  {
-   "file": "standin/carts/code.png",
-   "size": [
-    64,
-    64
-   ],
-   "frame": [
-    64,
-    64
-   ],
-   "frames": 1,
-   "anchor": "feet",
-   "placeholder": true,
-   "source": "Gemini_Generated_Image_qjb9tqjb9tqjb9tq.jpeg",
-   "scale": 1.0,
-   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
-  },
-  {
-   "file": "standin/carts/doc.png",
-   "size": [
-    64,
-    56
-   ],
-   "frame": [
-    64,
-    56
-   ],
-   "frames": 1,
-   "anchor": "feet",
-   "placeholder": true,
-   "source": "Gemini_Generated_Image_qjb9tqjb9tqjb9tq.jpeg",
-   "scale": 1.0,
-   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
-  },
-  {
-   "file": "standin/carts/empty.png",
-   "size": [
-    64,
-    56
-   ],
-   "frame": [
-    64,
-    56
-   ],
-   "frames": 1,
-   "anchor": "feet",
-   "placeholder": true,
-   "source": "Gemini_Generated_Image_qjb9tqjb9tqjb9tq.jpeg",
-   "scale": 1.0,
-   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
-  },
-  {
-   "file": "standin/carts/message.png",
-   "size": [
-    64,
-    56
-   ],
-   "frame": [
-    64,
-    56
-   ],
-   "frames": 1,
-   "anchor": "feet",
-   "placeholder": true,
-   "source": "Gemini_Generated_Image_qjb9tqjb9tqjb9tq.jpeg",
-   "scale": 1.0,
-   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
-  },
-  {
-   "file": "standin/orks/body/idle.png",
-   "size": [
-    160,
-    56
+    40,
+    48
    ],
    "frame": [
     40,
-    56
+    48
    ],
-   "frames": 4,
+   "frames": 1,
+   "pitch": 8.33,
+   "show": 2,
    "anchor": "feet",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_4xw8i84xw8i84xw8.jpeg",
+   "source": "c1-carts.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
-   "fps": 8,
-   "tones": [
-    "#8fb052",
-    "#5a7a34",
-    "#3e5a26",
-    "#6a5240",
-    "#4a3a30",
-    "#8a7a64"
+   "slots": [
+    "load",
+    "flag"
    ]
   },
   {
-   "file": "standin/orks/body/work.png",
+   "file": "carts/bundle.png",
    "size": [
-    288,
+    40,
+    40
+   ],
+   "frame": [
+    40,
+    40
+   ],
+   "frames": 1,
+   "pitch": 8.33,
+   "show": 2,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c1-carts.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "load",
+    "flag"
+   ]
+  },
+  {
+   "file": "carts/code.png",
+   "size": [
+    40,
+    48
+   ],
+   "frame": [
+    40,
+    48
+   ],
+   "frames": 1,
+   "pitch": 8.33,
+   "show": 2,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c1-carts.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "load",
+    "flag"
+   ]
+  },
+  {
+   "file": "carts/doc.png",
+   "size": [
+    40,
+    48
+   ],
+   "frame": [
+    40,
+    48
+   ],
+   "frames": 1,
+   "pitch": 8.33,
+   "show": 2,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c1-carts.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "load",
+    "flag"
+   ]
+  },
+  {
+   "file": "carts/empty.png",
+   "size": [
+    40,
+    32
+   ],
+   "frame": [
+    40,
+    32
+   ],
+   "frames": 1,
+   "pitch": 8.33,
+   "show": 2,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c1-carts.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "load",
+    "flag"
+   ]
+  },
+  {
+   "file": "carts/flag-flag.png",
+   "size": [
+    40,
+    48
+   ],
+   "frame": [
+    40,
+    48
+   ],
+   "frames": 1,
+   "pitch": 8.33,
+   "show": 2,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c1-carts.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "load",
+    "flag"
+   ]
+  },
+  {
+   "file": "carts/flag-held.png",
+   "size": [
+    40,
+    48
+   ],
+   "frame": [
+    40,
+    48
+   ],
+   "frames": 1,
+   "pitch": 8.33,
+   "show": 2,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c1-carts.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "load",
+    "flag"
+   ]
+  },
+  {
+   "file": "carts/flag-none.png",
+   "size": [
+    40,
+    32
+   ],
+   "frame": [
+    40,
+    32
+   ],
+   "frames": 1,
+   "pitch": 8.33,
+   "show": 2,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c1-carts.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "load",
+    "flag"
+   ]
+  },
+  {
+   "file": "carts/message.png",
+   "size": [
+    40,
+    40
+   ],
+   "frame": [
+    40,
+    40
+   ],
+   "frames": 1,
+   "pitch": 8.33,
+   "show": 2,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c1-carts.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "load",
+    "flag"
+   ]
+  },
+  {
+   "file": "carts/pile.png",
+   "size": [
+    120,
+    32
+   ],
+   "frame": [
+    120,
+    32
+   ],
+   "frames": 1,
+   "pitch": 8.33,
+   "show": 2,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c1-carts.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "orks/body/door.png",
+   "size": [
+    192,
     56
    ],
    "frame": [
     48,
     56
    ],
-   "frames": 6,
+   "frames": 4,
+   "pitch": 5.0,
+   "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_4xw8i84xw8i84xw8.jpeg",
+   "source": "o1-body.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
@@ -578,200 +717,739 @@
    ]
   },
   {
-   "file": "standin/track/corner-ne.png",
+   "file": "orks/body/idle.png",
    "size": [
-    96,
-    96
+    160,
+    48
    ],
    "frame": [
-    96,
-    96
+    40,
+    48
+   ],
+   "frames": 4,
+   "pitch": 5.0,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o1-body.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8,
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ]
+  },
+  {
+   "file": "orks/body/walk-down.png",
+   "size": [
+    240,
+    56
+   ],
+   "frame": [
+    40,
+    56
+   ],
+   "frames": 6,
+   "pitch": 5.0,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o1-body.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8,
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ]
+  },
+  {
+   "file": "orks/body/walk-side.png",
+   "size": [
+    192,
+    56
+   ],
+   "frame": [
+    32,
+    56
+   ],
+   "frames": 6,
+   "pitch": 5.0,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o1-body.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8,
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ]
+  },
+  {
+   "file": "orks/body/walk-up.png",
+   "size": [
+    240,
+    56
+   ],
+   "frame": [
+    40,
+    56
+   ],
+   "frames": 6,
+   "pitch": 5.0,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o1-body.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8,
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ]
+  },
+  {
+   "file": "orks/body/work.png",
+   "size": [
+    336,
+    56
+   ],
+   "frame": [
+    56,
+    56
+   ],
+   "frames": 6,
+   "pitch": 5.0,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o1-body.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8,
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ]
+  },
+  {
+   "file": "orks/roles/alchemist.png",
+   "size": [
+    32,
+    48
+   ],
+   "frame": [
+    32,
+    48
    ],
    "frames": 1,
+   "pitch": 5.15,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o2-roles.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/grunt.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.15,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o2-roles.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/loader.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.15,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o2-roles.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/lookout.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.15,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o2-roles.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/mechanic.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.15,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o2-roles.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/pathfinder.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.15,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o2-roles.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/prospector.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.15,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o2-roles.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/seer.png",
+   "size": [
+    40,
+    40
+   ],
+   "frame": [
+    40,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.15,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o2-roles.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/taskmaster.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.15,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o2-roles.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/treasurer.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.15,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o2-roles.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/warchief.png",
+   "size": [
+    40,
+    48
+   ],
+   "frame": [
+    40,
+    48
+   ],
+   "frames": 1,
+   "pitch": 5.15,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o2-roles.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/warder.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.15,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o2-roles.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "track/corner-ne.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 6.24,
+   "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
-   "scale": 1.0,
+   "source": "c2-track.png",
+   "scale": 1.067,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
-   "file": "standin/track/corner-nw-1.png",
+   "file": "track/corner-se.png",
    "size": [
-    96,
-    96
+    64,
+    64
    ],
    "frame": [
-    96,
-    96
+    64,
+    64
    ],
    "frames": 1,
+   "pitch": 6.24,
+   "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
-   "scale": 1.0,
+   "source": "c2-track.png",
+   "scale": 1.067,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
-   "file": "standin/track/corner-nw.png",
+   "file": "track/corner-sw.png",
    "size": [
-    96,
-    96
+    64,
+    64
    ],
    "frame": [
-    96,
-    96
+    64,
+    64
    ],
    "frames": 1,
+   "pitch": 6.24,
+   "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
-   "scale": 1.0,
+   "source": "c2-track.png",
+   "scale": 1.067,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
-   "file": "standin/track/corner-se.png",
+   "file": "track/cross.png",
    "size": [
-    96,
-    96
+    64,
+    64
    ],
    "frame": [
-    96,
-    96
+    64,
+    64
    ],
    "frames": 1,
+   "pitch": 6.24,
+   "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
-   "scale": 1.0,
+   "source": "c2-track.png",
+   "scale": 1.067,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
-   "file": "standin/track/cross.png",
+   "file": "track/merge-e.png",
    "size": [
-    96,
-    96
+    128,
+    64
    ],
    "frame": [
-    96,
-    96
+    128,
+    64
    ],
    "frames": 1,
+   "pitch": 6.24,
+   "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
-   "scale": 1.0,
+   "source": "c2-track.png",
+   "scale": 1.067,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
-   "file": "standin/track/merge-e.png",
+   "file": "track/stop-e.png",
    "size": [
-    96,
-    96
+    64,
+    64
    ],
    "frame": [
-    96,
-    96
+    64,
+    64
    ],
    "frames": 1,
+   "pitch": 6.24,
+   "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
-   "scale": 1.0,
+   "source": "c2-track.png",
+   "scale": 1.067,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
-   "file": "standin/track/stop-e.png",
+   "file": "track/straight-h.png",
    "size": [
-    96,
-    96
+    64,
+    64
    ],
    "frame": [
-    96,
-    96
+    64,
+    64
    ],
    "frames": 1,
+   "pitch": 6.24,
+   "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
-   "scale": 1.0,
+   "source": "c2-track.png",
+   "scale": 1.067,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
-   "file": "standin/track/stop-n.png",
+   "file": "track/straight-v.png",
    "size": [
-    96,
-    96
+    64,
+    64
    ],
    "frame": [
-    96,
-    96
+    64,
+    64
    ],
    "frames": 1,
+   "pitch": 6.24,
+   "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
-   "scale": 1.0,
+   "source": "c2-track.png",
+   "scale": 1.067,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
-   "file": "standin/track/straight-h.png",
+   "file": "track/switch-e.png",
    "size": [
-    96,
-    96
+    128,
+    64
    ],
    "frame": [
-    96,
-    96
+    128,
+    64
    ],
    "frames": 1,
+   "pitch": 6.24,
+   "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
-   "scale": 1.0,
+   "source": "c2-track.png",
+   "scale": 1.067,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
-   "file": "standin/track/straight-v.png",
+   "file": "track/t-n.png",
    "size": [
-    96,
-    96
+    64,
+    64
    ],
    "frame": [
-    96,
-    96
+    64,
+    64
    ],
    "frames": 1,
+   "pitch": 6.24,
+   "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
-   "scale": 1.0,
+   "source": "c2-track.png",
+   "scale": 1.067,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
-   "file": "standin/track/switch-e.png",
+   "file": "track/t-s.png",
    "size": [
-    96,
-    96
+    64,
+    64
    ],
    "frame": [
-    96,
-    96
+    64,
+    64
    ],
    "frames": 1,
+   "pitch": 6.24,
+   "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
-   "scale": 1.0,
+   "source": "c2-track.png",
+   "scale": 1.067,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   }

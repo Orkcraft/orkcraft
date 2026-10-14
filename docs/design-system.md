@@ -173,8 +173,9 @@ art: its `world-*` and `art-*` fall back to its plain greys.
   0.15–0.55; no art is as light as `signal-ask`; yellow and red stay the signals'. New UI tokens `parchment`,
   `parchment-ink`, `walnut`, `accent-teal` for the keeper's scroll and the panels.
 - **Scale:** the generated art at its own pixel, ×1 (`art-scale`), never resampled; a slot is what the sheet draws: a
-  core building about 190 px, an ork about 64 tall, a cart about 64 wide; at most ten buildings on 1440 × 900. Town
-  ×1, close ×2, map ½. The cutter keeps the art's colours and only reports the signals' hues.
+  core building about 190 px, an ork about 54 tall, a cart about 76 wide; each sheet at its own pixel, shown at a whole
+  multiple (`show`, in the manifest); at most ten buildings on 1440 × 900. The zoom: ×1.5 by default on density 2
+  (one art px = 3 × 3 device px), ×1 on density 1; the wheel ×1 · ×1.5 · ×2; map ½. The cutter keeps the art's colours and only reports the signals' hues.
 - **Layout:** one main line; buildings joined to it by dirt paths; carts stop opposite a path, the keeper waits there
   and lifts the load off; the lookout tower in the low palisade with the way in at its foot, the catapult against it
   at the line's end; a building is one sprite with a door.
