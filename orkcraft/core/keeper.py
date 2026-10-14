@@ -325,7 +325,8 @@ def check(answer: Any, spec: dict, subject: Subject, repo_root: Path,
 def ask(repo_root: Path, spec: dict, scroll, building_id: str, request: str, *, selection: Any = None,
         runner: builders.Runner = builders.main_runner, budget_ok: bool = True,
         existing_ids: frozenset[str] | set[str] = frozenset(), max_attempts: int = MAX_ATTEMPTS,
-        looker: str = "", history: str = "") -> Proposal:
+        looker: str = "", history: str = "",
+        step: Callable[[str], None] | None = None) -> Proposal:
     """The person's words → the keeper's proposal (checked against the type's contract; a rejected answer
     goes back with its problems). Never raises. `looker`: the building whose steward speaks, when it is not the
     building's own (landscape has no ork: core/wakes.py). `history`: what happened lately (`lately`), read when
@@ -339,6 +340,8 @@ def ask(repo_root: Path, spec: dict, scroll, building_id: str, request: str, *, 
     t = catalog.type_of(spec)
     who = scroll.building(looker) if scroll is not None and looker else b
     keeper = who.garrison.steward.name if who is not None and who.garrison.steward else "the keeper"
+    say = step or (lambda _text: None)          # what it is doing, for the dialog that waits (gui/jobs.py)
+    say("Reading it")
     sel = selection_of(selection)
     history = history or lately(repo_root, building_id)
     rejected = ""
@@ -349,6 +352,7 @@ def ask(repo_root: Path, spec: dict, scroll, building_id: str, request: str, *, 
             language=subject.language(spec), roads=_roads(scroll, building_id) if scroll is not None else "none",
             lately=history, current=json.dumps(p.before, ensure_ascii=False, indent=1), feedback=rejected)
         p.attempts += 1
+        say("Asking the model" if p.attempts == 1 else f"Asking again ({p.attempts})")
         try:
             text, cost = runner(prompt)
         except RuntimeError as e:
@@ -356,6 +360,7 @@ def ask(repo_root: Path, spec: dict, scroll, building_id: str, request: str, *, 
             return p
         if cost is not None:
             p.cost_usd = (p.cost_usd or 0.0) + cost
+        say("Checking the answer")
         answer = builders.extract_json(text)
         value, errors = check(answer, spec, subject, repo_root, existing_ids)
         if not errors:

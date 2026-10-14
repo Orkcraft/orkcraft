@@ -458,6 +458,43 @@ they take any repository as their subject. Written down so that what is built no
   model provider.
 - **Where it runs:** in the person's town, on their machine and their AI tools (as now), or headless in CI at night.
 
+### 12.4 Priority and the gate to start (decided 2026-10-12)
+
+**Later**, and the one item most likely to pull the product apart. Taking any repository as the subject makes the
+Test bench and the UX bench a second product: LLM evaluation and visual regression for any app, a field with strong
+tools of its own. Opened before the launch, it splits the story ("a control room for coding agents" and "an
+evaluation platform") so that neither is heard. Nothing of §12.2 changes: the door stays open.
+
+**It starts when one of these holds:**
+
+1. the owner has used the Test bench on their own second project (not Orkcraft) for two weeks: the cheapest test;
+2. after the launch, three or more outside people have asked, in an issue or a discussion, to point it at their own
+   project.
+
+**Answers to §12.3 that are plain already:**
+
+- **First for:** the owner's own second project, then whoever asks (gate 2). Not game developers first.
+- **The adapter:** a command per job with JSON out, the simplest; an SDK only if commands fall short.
+- **Where it runs:** in the person's town, on their machine and their AI tools, as now. CI at night is Later.
+- **How an app's own model calls are costed:** left open until gate 1 or 2 is met.
+
+**Who is offered asset making** (reworked with the owner 2026-10-12). Two audiences, not one:
+
+- **New builders**, many making their first game or app with AI and no artist: icons, illustrations, splash screens,
+  sprites. For them making assets is a plain gain, and not only for games: every app needs an icon and pictures.
+  Asset making **may be advertised to them** (vibe-coding and side-project communities, indie hackers) once it is
+  built ([cut-list.md](cut-list.md) §3b) and the owner has used it on the owner's own game.
+- **The classic game developer community** (r/gamedev and its like, artists): part of it is hostile to generated
+  art. Asset making is **not advertised there**; Orkcraft is shown there as a tool for code and the chores around it.
+
+The main story stays parallel coding agents; assets are a second line ("and the pictures your app needs"), never the
+first. "Many new builders" is a guess until the testers say so: they are asked whether they need icons,
+illustrations or sprites and where they get them today ([first-mission.md](first-mission.md) §5).
+
+**It fits the model of 2026-10-12:** a role is an expertise and its context comes from where it works
+([town-hall-roles.md](town-hall-roles.md) §2): the Mechanic and the Alchemist on another repository are the same move
+as the Farseer on a person's own Review board ([ork-console.md](ork-console.md) §18).
+
 ## 13. Improve reads a day: the Mechanic and the Farseer (asked 2026-10-12)
 
 Asked by the owner: instead of copying a day's logs out for someone to read, **Improve** in the Warchief's line has the

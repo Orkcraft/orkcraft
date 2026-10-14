@@ -5,7 +5,7 @@
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { town, command, say } from "./link.js";
-import { Dialog } from "./dialog.js";
+import { Dialog, Waiting } from "./dialog.js";
 import { selectOrk } from "./windows.js";
 import { KeeperJob } from "./keeper.js";
 
@@ -186,8 +186,9 @@ export function Jobs() {
   const accept = () => command("job.accept", { job: job.id }).then((ref) => ref && selectOrk(ref), () => {});
   const title = say(`${JOB_TITLE[job.kind] || "Job"} — ${job.title}`);
   if (job.state === "running") {
-    return html`<${Dialog} title=${title} text=${job.text} onCancel=${drop}
+    return html`<${Dialog} title=${title} onCancel=${drop}
       actions=${html`<button class="ok-btn" onClick=${drop}>${say("Cancel")}</button>`}>
+      <${Waiting} job=${job} />
       <p class="ok-font-status ok-tone-muted">${say("This calls a model; it takes a moment.")}</p></${Dialog}>`;
   }
   if (job.state === "failed") {

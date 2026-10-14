@@ -7,9 +7,13 @@ A part of `Console` (console.py): its methods run with the console as `self`.
 from __future__ import annotations
 
 import threading
+import time
 from typing import Any, Callable
 
 from orkcraft.realm import fastpath, modes, tool_errors
+
+
+_TLS = threading.local()                     # the job this thread works for (`JobsMixin._step`)
 
 
 def plain(text: str) -> str:
@@ -30,15 +34,16 @@ class JobsMixin:
         """`work()` in a thread; `done(job, result)` back on the host's thread."""
         jid = f"{kind}-{next(self._ids)}"
         self.jobs[jid] = {"id": jid, "kind": kind, "building": building_id, "title": plain(self.town.title_of(building_id)),
-                          "state": "running", "text": text, "error": "", "view": {}}
+                          "state": "running", "text": text, "error": "", "view": {}, "phase": "", "since": time.time()}
         self._run(self.jobs[jid], text, work, done)
         return jid
 
     def _run(self, job: dict, text: str, work: Callable[[], Any], done: Callable[[dict, Any], None]) -> None:
         jid = job["id"]
-        job.update(state="running", text=text, _accept=None)
+        job.update(state="running", text=text, _accept=None, phase="", since=time.time())
 
         def run() -> None:
+            _TLS.job = job
             tool_errors.taken()                      # this thread's AI tool failures from here on
             try:
                 result, failed = work(), None
@@ -50,6 +55,17 @@ class JobsMixin:
 
         threading.Thread(target=run, daemon=True, name=f"gui-{jid}").start()
         self.host.on_change()
+
+    def _step(self, text: str) -> None:
+        """From the job's thread: what it is doing now, in two or three words (the dialog shows it beside its clock)."""
+        job = getattr(_TLS, "job", None)
+        if job is not None:
+            self.town.call(self._phase, job, text)
+
+    def _phase(self, job: dict, text: str) -> None:
+        if job["state"] == "running" and job["id"] in self.jobs:
+            job["phase"] = text
+            self.host.on_change()
 
     def _finished(self, jid: str, result: Any, failed: str | None, done: Callable[[dict, Any], None],
                   tool: tool_errors.ToolError | None = None, again: Callable[[], None] | None = None) -> None:

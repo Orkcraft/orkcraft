@@ -599,7 +599,7 @@ export function WarchiefLine() {
     ? html`<button class="gui-warchief__face is-steward" title=${say(`${steward.name}, the steward of ${card.title}: its Info`)}
         aria-label=${say(`${steward.name}: its Info`)} onClick=${() => openBuilding(card.id, "info")}>
         ${office ? html`<span class="gui-warchief__mono" aria-hidden="true">›</span>`
-          : html`<${StewardHead} type=${card.type} />`}
+          : html`<${StewardHead} type=${card.type} coarse=${3} />`}
         ${card.alert && html`<span class="ok-word gui-warchief__ask">?</span>`}</button>`
     : html`<button class="gui-warchief__face" title=${say(`${b.title}: the ${name}'s whole chat, the hall`)} aria-label=${say(b.title)}
         onClick=${() => { hallTab.value = "chat"; openBuilding(HALL, "work"); }}>

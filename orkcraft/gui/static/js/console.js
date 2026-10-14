@@ -231,7 +231,7 @@ function OrkCard({ b, i }) {
   const lead = b.garrison.find((o) => o.lead) || b.garrison[0];
   const name = lead ? lead.name : (i.steward && i.steward.name) || say("Its steward");
   return html`<div class="gui-orkcard">
-    <span class="gui-orkcard__face"><${StewardHead} type=${b.type} coarse /></span>
+    <span class="gui-orkcard__face"><${StewardHead} type=${b.type} coarse=${6} /></span>
     <div class="gui-orkcard__who">
       <b class="ok-font-body">${say(name)}</b>
       <p class="ok-font-status gui-orkcard__why">${say(i.ork_why || "")}</p>

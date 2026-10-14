@@ -58,6 +58,17 @@ def test_a_keeper_never_gets_past_the_contract(fake_repo, isolated_layout_file):
     assert keeper.apply(town, horn.id, p) and "nonsense" not in (town.custom_specs[horn.id].get("config") or {})
 
 
+def test_a_keeper_says_what_it_is_doing_while_it_works(fake_repo, isolated_layout_file):
+    town = Town(fake_repo)
+    horn = buildings.raise_spec(town, buildings.type_spec(town, "horn"))
+    seen: list[str] = []
+    bad = {"value": {"volume": "loud", "nonsense": 1}, "why": "louder"}
+    keeper.ask(fake_repo, town.custom_specs[horn.id], town.scroll, horn.id, "louder",
+               runner=_answers(bad, bad, bad), step=seen.append)
+    assert seen[:3] == ["Reading it", "Asking the model", "Checking the answer"]
+    assert "Asking again (2)" in seen
+
+
 def test_on_a_selection_the_keeper_answers_and_may_change_nothing(fake_repo, isolated_layout_file):
     town = Town(fake_repo)
     built = _signpost(town)
