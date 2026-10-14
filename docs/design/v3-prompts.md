@@ -471,3 +471,12 @@ a lectern, pinning a sheet); the lens has a magenta cast; one frame of the pinni
    target size (cart ~64 px, ork ~48–64, track tile ~48–64); pixels of two sizes side by side are accepted.
 2. **Two orks exist now:** the bald, round one of o1/o2 (the roles are drawn on it) and the capped, taller one of
    o3/o5. One must be chosen; the other sheets are regenerated with it attached.
+
+**The owner's choices (2026-10-14):**
+
+1. **The ork is o1/o2's:** bald, round, the leather apron; the roles add the headgear. o1 and o2 are renamed to their
+   cut names and cut as they are (o1's walks and its cap that comes and goes are fixed by a later sheet). o3's five
+   poses and o5's four actions are **regenerated on this ork**, with `o1-body.jpg` and `o2-roles.jpg` attached.
+2. **The scale: ×1.5 by default on a screen of density 2 or more** (one art pixel = 3 × 3 device pixels, sharp), so
+   the town fills the window as F1 does; **the mouse wheel zooms ×1 · ×1.5 · ×2**, each step whole in device pixels;
+   on a screen of density 1 the default is ×1 (×1.5 cannot be sharp there).
