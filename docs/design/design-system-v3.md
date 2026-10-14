@@ -167,7 +167,7 @@ the same unit (the canvas roof, 156 × 1.5 = 234 px):
 |---|---|---|---|---|---|
 | Agent pool | roof 278 | 1.00 | roof 156 | 1.00 | the unit |
 | Review gate | 225 wide | 0.81 | 160 | 1.03 | a little large |
-| Task board | 128 × 105 | 0.46 × 0.38 | 198 × 145 (b1-taskboard read at `merge: 2`) | 1.27 × 0.93 | as the owner asked: a core building, not F1's small notice board |
+| Task board | 128 × 105 | 0.46 × 0.38 | 132 × 97 (b1-taskboard at `merge: 3`) | 0.85 × 0.62 (0.69 of the pool's full 192) | the owner: about 0.8 of the Agent pool's width (≈154 px); merge 3 is the nearest whole read (merge 2 gave 198), until the smaller sheet (b1-taskboard-s) |
 | External listeners | 120 × 290 | 0.43 × 1.04 | 130 × 186, its piece of wall included | 0.83 × 1.19 | built into the wall, as decided |
 | Publisher | about 120 wide | 0.43 | 146 × 94 (side view, its own track) | 0.94 | side view, as decided |
 

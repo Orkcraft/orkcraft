@@ -232,9 +232,9 @@ async function grid() {
 const BUILDINGS = [
   // type, name, box [x, y(top), w, h] (the cut sprite's size), v2 stand-in, block look, its line: 1 | 2 | "wall" | "end"
   ["watchtower", "External listeners", [OX + 38, -36, 68, 96], "covers/tower/lookout.png", { roof: "var(--art-bone)" }, "wall"],
-  ["fields", "Task board", [OX + 142, 39, 99, 73], "facades/fields.png", { roof: "var(--art-wood-light)" }, 1],
-  ["barracks", "Agent pool", [OX + 257, 48, 96, 64], "facades/barracks.png", { roof: "var(--art-cloth)" }, 1],
-  ["loot_vault", "Review gate", [OX + 369, 56, 80, 56], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, 1],
+  ["fields", "Task board", [OX + 158, 60, 68, 52], "facades/fields.png", { roof: "var(--art-wood-light)" }, 1],
+  ["barracks", "Agent pool", [OX + 242, 48, 96, 64], "facades/barracks.png", { roof: "var(--art-cloth)" }, 1],
+  ["loot_vault", "Review gate", [OX + 354, 56, 80, 56], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, 1],
   ["catapult", "Publisher", [OX + 576, 232, 76, 48], null, { machine: true, roof: "var(--art-wood)" }, "end"],
   ["lake", "Inspector", [OX + 96, 188, 64, 52], "covers/open/pond.png", { water: true }, 2],
   ["mine", "Research", [OX + 176, 176, 48, 64], null, { stone: true, roof: "var(--art-bone)" }, 2],
@@ -503,15 +503,15 @@ async function scene() {
   await cart(COL_L + 40, "code", { roll: 400, dur: 18 });
   await cart(COL_L + 40, "message", { roll: 400, dur: 18, delay: -9 });
   await cart(OX + 192, "asset");
-  await cart(OX + 409, "code", { flag: "#42 · Fix login bug" });
+  await cart(OX + 394, "code", { flag: "#42 · Fix login bug" });
   await cart(COL_L + 40, "doc", { roll: 430, dur: 22, delay: -5 }, LINE2_Y);
   await cart(OX + 278, "bundle", {}, LINE2_Y);
   // the keepers wait at the stops; one lifts the load off at the gate; one asks at the Agent pool's door
   await ork(OX + 214, LINE_Y - 2);
-  await ork(OX + 321, LINE_Y - 2);
-  await ork(OX + 429, LINE_Y - 2, { anim: "work" });
+  await ork(OX + 306, LINE_Y - 2);
+  await ork(OX + 414, LINE_Y - 2, { anim: "work" });
   await ork(OX + 146, LINE2_Y - 2);
-  await ork(OX + 287, 112, { badge: "ask", state: "asks" });
+  await ork(OX + 272, 112, { badge: "ask", state: "asks" });
   await ork(OX + 300, LINE2_Y - 2, { anim: "work", flip: true });
   report();
 }

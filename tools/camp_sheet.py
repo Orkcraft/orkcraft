@@ -36,7 +36,7 @@ runs with the background on both sides, the key's own darkened violet, and a cut
 the sheet (`--degrid --list SHEET` to try it). The v3 spec sets `native` (each
 sprite cut at the sheet's own art pixel, never re-read coarser; its slot is what the sheet draws, rounded up to the
 grid of 8, and a size in the spec is only the plan; `merge: k` reads k × k of the sheet's pixels as one, their median,
-for a sheet drawn larger than the rest: o3 and the big Task board at 2, o5 at 1.5) and `keep_colours` (no snap to the tokens: the art keeps its own
+for a sheet drawn larger than the rest: o3 at 2, the big Task board at 3, o5 at 1.5) and `keep_colours` (no snap to the tokens: the art keeps its own
 shading; the cutter only reports pixels in a signal's yellow, orange or red). The sheets are soft (the model renders
 at about 4.17 image px per art px and smooths it, and JPEG blurs again), so each art pixel is the median of its cell's
 inner pixels, then the magenta cast near the key is removed and the sprite is reduced to its own 24 colours (a median
