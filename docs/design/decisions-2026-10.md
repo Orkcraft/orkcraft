@@ -354,3 +354,7 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
   then the homes are missing and the loop's split stays the stand-in.
 - GEN's round 9 picks (dispatcher's booth #2, gate with barrier #2, mine #2, Prospector #1, classes #1, growth marks
   #1) are cut and on `main` (c149e6b).
+- **Decided overnight for I1 (to confirm):** Office keeps the person-placed cards (drag, fold, stretch unchanged);
+  Camp lays the same buildings on the v3 rows and loop, **taking its rows and order from the Office positions** (by y
+  into rows, by x within a row; the work's order only for buildings never placed); the lookout and the catapult stay
+  pinned to the walls. Nothing is dragged in Camp itself.
