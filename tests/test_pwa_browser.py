@@ -136,7 +136,7 @@ async def test_no_answers_while_nobody_asks_and_every_target_is_a_thumbs_size(fa
             .map((b) => [b.textContent, b.getBoundingClientRect().height, b.className])""")
         assert buttons and [b[0] for b in buttons if b[1] < 44] == []
         # the design system's, but for the map's own pieces: a building on the camp, a cell, 🥩 in the head
-        assert [b[0] for b in buttons if "ok-" not in b[2] and b[2].split()[0] not in ("cell", "w-work", "tile-head", "camp-hut", "meat")] == []
+        assert [b[0] for b in buttons if "ok-" not in b[2] and b[2].split()[0] not in ("cell", "w-work", "tile-head", "camp-hut", "camp-ork", "camp-cart", "camp-bubble", "meat")] == []
 
 
 @pytest.mark.asyncio

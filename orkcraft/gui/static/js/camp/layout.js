@@ -18,11 +18,15 @@ export const SIDING_SHOWN = 5;   // carts drawn on it; the rest a "+N" chip (des
 export const FALLBACK = [128, 112];   // a building with no v3 sprite: a block of this size
 
 // The zoom steps, buildings / orks and track (§3): whole device pixels at every step. Density 2: ×1 / ×1 (an overview),
-// ×1.5 / ×1 (the default), ×3 / ×2 (close). Density 1: ×1 / ×1, ×2 / ×1 (the default).
+// ×1.5 / ×1 (the default), ×3 / ×2 (close). Density 1: ×1 / ×1, ×2 / ×1 (the default). Density 3 (a phone): ⅔ (two
+// device px an art px, the overview), ×1 (three, the default) and ×2 / ×4⁄3 (close).
 const HI = [{ b: 1, s: 1 }, { b: 1.5, s: 1 }, { b: 3, s: 2 }];
 const LO = [{ b: 1, s: 1 }, { b: 2, s: 1 }];
-export const stepsFor = (dpr) => (dpr >= 2 ? HI : LO);
+const TRI = [{ b: 2 / 3, s: 2 / 3 }, { b: 1, s: 1 }, { b: 2, s: 4 / 3 }];
+export const stepsFor = (dpr) => (dpr >= 3 ? TRI : dpr >= 2 ? HI : LO);
 export const DEFAULT_STEP = 1;
+/** A phone's default step: the art at its own pixel (×1), whatever the screen's density. */
+export const phoneStep = (steps) => Math.max(0, steps.findIndex((s) => s.b === 1 && s.s === 1));
 
 export const WAY_IN = "watchtower";          // stands in the back wall; the track comes in at its foot
 export const WAY_OUT = "catapult";           // stands against the right wall at the line's buffer stop

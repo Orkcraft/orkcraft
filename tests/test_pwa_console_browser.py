@@ -1,7 +1,9 @@
-"""The phone as the console, in Chromium at 390 px (docs/design/mobile.md §11): it opens on "since your last look"
-over the living camp with the camera on what waits; an ork's question is answered in one tap, and kept with no
-signal; an idea is dropped into the Task board's Ideas lane; 🥩 opens the orks at work with Stop all; the art at 1×,
-the signals and taps a finger's size; the orks stop walking when the page is hidden."""
+"""The phone as the console, in Chromium at 390 px (docs/design/mobile.md §11–§12): it opens on "since your last
+look" over the living camp in v3 with the camera on what waits; an ork's question is answered in one tap, and kept
+with no signal; an idea is dropped into the Task board's Ideas lane; 🥩 opens the orks at work with Stop all; the art
+at a whole number of device pixels, the signals and taps a finger's size; a first tap is the scroll and the quick
+actions, a second the building's sheet; a steward's tap its console, a cart's its history; the carts stop rolling
+while the page is hidden."""
 from __future__ import annotations
 
 import pytest
@@ -84,27 +86,34 @@ async def test_it_opens_on_since_your_last_look_over_the_camp_with_the_camera_on
         sizes = await page.evaluate(f"""() => {{
           const sig = document.querySelector(".camp-hut[data-b='{far}'] .camp-sig").getBoundingClientRect();
           const hut = document.querySelector(".camp-hut[data-b='{far}']").getBoundingClientRect();
-          const art = document.querySelector(".camp-hut[data-b='{far}'] .mark-sprite");
+          const art = document.querySelector(".camp-hut[data-b='{far}'] .camp-sprite");
           return [sig.height, hut.width, hut.height, art.getBoundingClientRect().width, art.naturalWidth,
                   getComputedStyle(art).imageRendering]; }}""")
         assert sizes[0] >= 24 and sizes[1] >= 44 and sizes[2] >= 44     # ❓ a finger can see and hit
-        assert sizes[3] == sizes[4] and sizes[5] == "pixelated"           # the art at 1×: whole numbers on the screen
+        assert sizes[3] == sizes[4] and sizes[5] == "pixelated"           # the art at its own pixel (×1 on a 1× screen)
         assert await page.evaluate("document.scrollingElement.scrollWidth") <= 390   # the page never scrolls sideways
         await look.get_by_role("button", name="Back to the camp").click()
         await look.wait_for(state="hidden", timeout=WAIT_MS)
 
 
 @pytest.mark.asyncio
-async def test_nothing_waits_the_whole_camp_is_fitted_and_a_tap_opens_its_card_as_a_sheet(fake_repo):
+async def test_nothing_waits_the_camera_is_on_the_work_a_tap_shows_its_scroll_and_a_second_its_sheet(fake_repo):
     async with _phone(fake_repo) as (server, page):
         pit = _raise(server, "pit", (0.1, 0.2))
         _raise(server, "fields", (0.8, 0.8))
-        await page.locator(f".camp-hut[data-b='{pit}']").wait_for(timeout=WAIT_MS)
+        hut = page.locator(f".camp-hut[data-b='{pit}']")
+        await hut.wait_for(timeout=WAIT_MS)
         assert await page.evaluate("document.querySelector('.camp').dataset.focus") == ""
-        fits = await page.evaluate("""() => { const v = document.querySelector('.camp-view');
-          return v.scrollWidth <= v.clientWidth + 1 && v.scrollHeight <= v.clientHeight + 1; }""")
-        assert fits                                                  # a small camp: all of it in view, nothing squeezed
-        await page.locator(f".camp-hut[data-b='{pit}']").click()
+        inside = await page.evaluate(f"""() => {{ const v = document.querySelector('.camp-view').getBoundingClientRect();
+          const b = document.querySelector(".camp-hut[data-b='{pit}']").getBoundingClientRect();
+          return b.right > v.left && b.left < v.right && b.bottom > v.top && b.top < v.bottom; }}""")
+        assert inside                                                # the work's start in view, nothing squeezed
+        await hut.evaluate("e => e.click()")                         # a first tap: its scroll, its quick actions
+        scroll = page.locator(f".camp-scroll[data-b='{pit}']")
+        await scroll.wait_for(timeout=WAIT_MS)
+        assert await scroll.get_by_role("button", name="Open").count() == 1
+        assert await page.locator("dialog.sheet[open]").count() == 0
+        await page.locator(f".camp-hut[data-b='{pit}']").evaluate("e => e.click()")   # a second: its card as a sheet
         sheet = page.locator("dialog.sheet[open]")
         await sheet.wait_for(timeout=WAIT_MS)
         assert await sheet.locator(".info-mark img.mark-sprite").count() == 1     # headed by its mark
@@ -183,20 +192,16 @@ async def test_what_was_given_with_no_signal_is_sent_when_the_town_answers(fake_
 
 
 @pytest.mark.asyncio
-async def test_the_orks_walk_slowly_and_stop_when_the_page_is_hidden(fake_repo):
+async def test_a_working_buildings_steward_thinks_over_its_roof_and_a_tap_opens_its_console(fake_repo):
     async with _phone(fake_repo) as (server, page):
         board = _raise(server, "fields")
         _dressed(server, working=board)
-        ork = page.locator(".camp-ork")
-        await ork.wait_for(timeout=WAIT_MS)
-        moves = await page.evaluate("""() => new Promise((done) => { const el = document.querySelector('.camp-ork');
-          const seen = new Set(); const t0 = performance.now();
-          const look = () => { seen.add(el.style.transform); if (performance.now() - t0 < 1000) requestAnimationFrame(look);
-            else done(seen.size); }; look(); })""")
-        assert 3 <= moves <= 9                                        # about six frames a second, not sixty
+        bubble = page.locator(".camp-bubble")
+        await bubble.wait_for(timeout=WAIT_MS)
+        await bubble.evaluate("e => e.click()")                     # its steward's console, as a sheet from the foot
+        sheet = page.locator("dialog.sheet[open]", has_text="Taskmaster")
+        await sheet.wait_for(timeout=WAIT_MS)
+        await sheet.get_by_text("terminal to show").wait_for(timeout=WAIT_MS)   # what is not known, said plainly
         await page.evaluate("""() => { Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
           document.dispatchEvent(new Event('visibilitychange')); }""")
-        still = await page.evaluate("""() => new Promise((done) => { const el = document.querySelector('.camp-ork');
-          const a = el.style.transform; setTimeout(() => done(a === el.style.transform), 600); })""")
-        assert still
-        assert await page.evaluate("navigator.clearAppBadge === undefined || true")      # no badge is ever set
+        assert await page.evaluate("document.querySelector('.camp').classList.contains('is-hidden')")   # carts paused

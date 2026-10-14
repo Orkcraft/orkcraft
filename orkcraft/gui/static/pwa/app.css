@@ -258,40 +258,48 @@ p { margin: 0 0 8px; }
 .look-open:focus-visible { outline: 2px solid var(--frame-focus); }
 .look .row { margin-top: 4px; }
 
-/* -- the living camp (camp.js): the art at 1× (whole-number scaling on the screen), the signals as UI ----------- */
-.camp { border-radius: var(--ok-radius-lg); overflow: hidden; border: 2px solid var(--frame); background: var(--canvas)
-  var(--terrain-image, none) repeat; background-size: 480px 432px; }
-:root[data-theme="office"] .camp { border-width: 1px; background: var(--panel-inset); }
-.camp-view { overflow: auto; overscroll-behavior: contain; touch-action: pan-x pan-y; scrollbar-width: none; }
-.camp-view::-webkit-scrollbar { display: none; }
-.camp-world { position: relative; }
-.camp-roads { position: absolute; inset: 0; pointer-events: none; }
-.camp-roads .road { stroke: var(--frame-strong); stroke-width: 3; stroke-dasharray: 6 6; stroke-linecap: round; }
-.camp-roads .road.busy { stroke: var(--success); stroke-dasharray: none; }
-.camp-hut { all: unset; position: absolute; width: 96px; min-height: 92px; display: flex; flex-direction: column;
-  align-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* -- the living camp in v3 (camp.js, design-system-v3.md): the desktop's layout and sprites, each at a whole number of
+   device px an art px (image-rendering: pixelated); ❓ ! and chips as UI; a finger pans, two pinch a zoom step ------ */
+.camp { position: relative; border-radius: var(--ok-radius-lg); overflow: hidden; border: 2px solid var(--frame);
+  background: var(--world-grass, #7cbd40); }
+.camp-view { position: relative; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+.camp-world { position: absolute; left: 0; top: 0; will-change: transform; }
+.camp-px { position: absolute; image-rendering: pixelated; image-rendering: crisp-edges; max-width: none; pointer-events: none; }
+.camp-earth { position: absolute; background: var(--world-earth, #e4b469); }
+.camp-logs { position: absolute; background: var(--art-wood, #c88444); border-bottom: 2px solid var(--art-outline, #1c1410); }
+.camp-block { position: absolute; background: var(--art-wood, #c88444); border: 2px solid var(--art-outline, #1c1410); }
+.camp-hut { all: unset; position: absolute; cursor: pointer; -webkit-tap-highlight-color: transparent; min-width: 44px; min-height: 44px; }
+.camp-hut .camp-sprite { left: 0; top: 0; }
 .camp-hut:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 2px; }
-.camp-art { width: 82px; height: 67px; display: flex; align-items: center; justify-content: center; }
-/* each sprite at its own size (1×): never stretched to a box, so a 2× or 3× screen scales it by whole numbers */
-.camp-art { align-items: flex-end; }
-.camp-art .mark-sprite { width: auto; height: auto; max-width: none; max-height: none; image-rendering: pixelated; }
-.camp-art .mark-line { width: 36px; height: 36px; fill: none; stroke: var(--ink); stroke-width: 1.2; stroke-linecap: round;
-  stroke-linejoin: round; }
-:root[data-theme="office"] .camp-art { width: 56px; height: 56px; margin: 6px 0 5px; background: var(--panel);
-  border: 1px solid var(--frame); border-radius: 10px; }
-.camp-name { font-family: var(--font-name); font-size: 0.75rem; line-height: 1.1; text-align: center; max-width: 96px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 4px; border-radius: 4px;
-  background: rgb(0 0 0 / .45); color: #fff; }
-:root[data-theme="office"] .camp-name { background: none; color: var(--ink); }
-/* ❓ and 🔥: at least 24 px high, whatever the art's scale (color-pass.md §6c) */
-.camp-sig { position: absolute; top: -4px; right: 2px; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 14px;
-  display: flex; align-items: center; justify-content: center; font-size: 1rem; line-height: 1; font-weight: 700;
-  background: var(--alert); color: #1a1206; box-shadow: 0 0 0 2px var(--canvas); }
-.camp-sig.fire { background: var(--danger); color: #fff; }
-.camp-hut.work .camp-name { box-shadow: inset 0 -2px 0 var(--success); }
-.camp-ork { position: absolute; width: 32px; height: 48px; pointer-events: none; image-rendering: pixelated;
-  background: url("camp/ork-walk.png") 0 0 / 192px 48px no-repeat; }
-.camp-name { position: relative; z-index: 1; }
+.camp-hut.is-selected .camp-sprite { filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff); }
+.camp-name, .camp-chip { position: absolute; z-index: 1; white-space: nowrap; height: 24px; display: inline-flex; align-items: center;
+  padding: 0 8px; font-family: var(--font-name); font-size: 0.8125rem; background: var(--chip, #1c1712); color: var(--chip-ink, #e8e0c8);
+  border: 1px solid var(--art-outline, #1c1410); }
+.camp-name { left: 50%; transform: translateX(-50%); }
+.camp-name.is-top { top: 12%; }
+.camp-name.is-under { top: 100%; }
+/* ❓ and !: at least 28 px, whatever the art's scale (design-system-v3.md §5) */
+.camp-sig { position: absolute; top: -6px; left: 50%; transform: translate(-50%, -100%); min-width: 28px; height: 28px; padding: 0 6px;
+  display: flex; align-items: center; justify-content: center; font-size: 1rem; line-height: 1; font-weight: 700; z-index: 2;
+  background: var(--chip, #1c1712); color: var(--signal-ask, #facc15); border: 1px solid var(--art-outline, #1c1410);
+  box-shadow: inset 0 0 0 1px var(--chip-ink, #e8e0c8); }
+.camp-sig.fire { color: var(--signal-fire, #e8411c); }
+.camp-ork { all: unset; position: absolute; cursor: pointer; background-repeat: no-repeat; image-rendering: pixelated; }
+.camp-bubble { all: unset; position: absolute; transform: translate(-50%, -100%); padding: 4px 10px; background: #fff; color: #3d2a23;
+  border: 2px solid var(--art-outline, #1c1410); border-radius: 12px; font-weight: 700; cursor: pointer; z-index: 40; }
+.camp-scrolls { position: absolute; left: 8px; right: 8px; top: 8px; z-index: 100; pointer-events: none; }
+.camp-scroll { pointer-events: auto; padding: 10px 12px; box-shadow: 0 4px 0 rgb(0 0 0 / .25);
+  background: var(--parchment, #ebdebb); color: var(--parchment-ink, #3d2a23); border: 3px solid var(--walnut, #3d2a23); }
+.camp-scroll p { margin: 4px 0; font-size: 0.875rem; }
+.camp-scroll .row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.camp-cart { all: unset; position: absolute; left: 0; top: 0; width: 0; height: 0; cursor: pointer; z-index: 30; }
+.camp-cart .camp-px { pointer-events: auto; }
+.camp-cart .camp-chip { left: 0; top: 6px; transform: translateX(-50%); }
+.camp-cart.is-ask .camp-chip { color: var(--signal-ask, #facc15); }
+.camp-cart.is-rolling { offset-rotate: 0deg; offset-anchor: 0 0; animation: camp-roll linear 1 both; }
+@keyframes camp-roll { from { offset-distance: 0%; } 96% { offset-distance: 100%; opacity: 1; } to { offset-distance: 100%; opacity: 0; } }
+.camp.is-hidden .camp-cart { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .camp-cart.is-rolling { animation-duration: .01s !important; } }
 
 /* -- 🥩 in the head opens the orks at work (slots.js) --------------------------------------------------------- */
 .head .meat { all: unset; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; cursor: pointer; }
@@ -307,3 +315,6 @@ p { margin: 0 0 8px; }
 .question .pinned { font-size: 0.875rem; padding: 6px 8px; background: var(--inset); border-left: 3px solid var(--alert); }
 .question.pool .pool-q h3 { margin-top: 8px; }
 .dock .idea { flex: 1.1 1 0; }
+.head .score { white-space: nowrap; }
+.head .score .trend { margin-left: 3px; color: var(--success); }
+@media (max-width: 400px) { .head .score img { display: none; } .head .hud { column-gap: 8px; } }

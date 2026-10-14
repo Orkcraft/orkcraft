@@ -52,6 +52,10 @@ COMMANDS: dict[str, Any] = {
     # a building's quick action, as the desktop's card presses it: only one `quick` names (docs/design/mobile.md §10)
     "building.input": None,
     # Task Fields: a to-do, a note or a task written on the phone (the widget, docs/design/mobile.md §10)
+    # read only: an ork's console, a building's Info, a task's history (the v3 camp's sheets, docs/design/mobile.md §12)
+    "ork.console": None,
+    "info": None,
+    "cart.waybill": None,
     # an Agent pool: its ork's question answered (A2's, pinned on its task) and one ork stopped from the 🥩 list
     "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",), "fields": ("add",), "barracks": ("answer", "stop_ork")},
 }
@@ -155,11 +159,51 @@ def _spot(hut) -> list[float] | None:
         return None
 
 
+def _ork_key(b: dict) -> str:
+    """The ork whose console a tap on the building's steward opens (as js/camp/town.js `orkKey`): its stopped or held
+    ork, else the one asking or at work, else an Agent pool's first; "" — its steward's Info instead."""
+    if b.get("signal") and b["signal"].get("key"):
+        return b["signal"]["key"]
+    g = b.get("garrison") or []
+    o = (next((x for x in g if x.get("status") == "asking"), None) or next((x for x in g if x.get("status") == "busy"), None)
+         or (g[0] if g and b.get("type") == "barracks" else None))
+    return (o.get("ref") or f"{b['id']}/{str(o.get('name', '')).lower()}") if o else ""
+
+
+def _todo(b: dict) -> int:
+    """A Task board's To Do lane, the carts its siding shows."""
+    lanes = ((b.get("card") or {}).get("lanes") or []) if b.get("type") == "fields" else []
+    lane = next((x for x in lanes if x.get("id") == "todo"), lanes[0] if lanes else None)
+    return int((lane or {}).get("count") or 0)
+
+
 def _building(b: dict) -> dict[str, Any]:
     return {"id": b["id"], "title": b["title"], "title_plain": modes.plain(b["title"]),
             "type": b["type"], "state": b.get("state", ""), "spot": _spot(b.get("hut")),
             "alert": (b.get("alert") or {}).get("id") or None,
-            "quick": quick(b.get("quick") or [])}     # the card's own pick (gui/state.py)
+            "quick": quick(b.get("quick") or []),     # the card's own pick (gui/state.py)
+            # the v3 camp (pwa/camp.js): its steward by its orkish name, its growth, its status, its siding
+            "ork_name": b.get("ork_name", ""), "ork_key": _ork_key(b), "level": b.get("level") or 0,
+            "goal": b.get("goal", "balance"), "status": [modes.plain(x) for x in (b.get("status_plain") or [])[:2]],
+            "signal": (b.get("signal") or {}).get("kind") or "", "todo": _todo(b)}
+
+
+CARTS_MAX = 40            # the newest carts a phone gets: what rolls and what stands
+
+
+def _carts(full: dict) -> list[dict[str, Any]]:
+    """The carts on the roads, small: which two buildings, rolling or standing and why, what they carry, their chip
+    and what their way spent so far (None: not recorded)."""
+    ends = {r["id"]: (r["from"], r["to"]) for r in full.get("roads") or [] if "id" in r}
+    out = []
+    for c in (full.get("carts") or [])[-CARTS_MAX:]:
+        if c.get("road") not in ends:
+            continue
+        a, z = ends[c["road"]]
+        out.append({"id": c["id"], "from": a, "to": z, "state": c.get("state", ""), "stands": bool(c.get("stands")),
+                    "age": c.get("age", 0), "load": c.get("load", ""), "ref": c.get("ref", ""),
+                    "title": modes.plain(c.get("title", ""))[:60], "tokens": c.get("tokens"), "cost": c.get("cost")})
+    return out
 
 
 def _orkspaces(full: dict) -> list[dict[str, Any]]:
@@ -320,6 +364,10 @@ def compact(full: dict[str, Any], last_look: dict[str, Any] | None = None) -> di
         "widget": _widget(full),
         "ideas": _ideas(full),
         "roads": _roads(full),
+        "carts": _carts(full),
+        "travel": full.get("travel", 0),
+        "score": {k: (full.get("score") or {}).get(k) for k in ("results", "tokens", "cost", "trend", "dislikes",
+                                                                 "reworks", "guard", "lean", "recorded")},
         "sessions_running": sum(1 for s in full.get("sessions") or [] if s.get("running")),
         "episodes": _episodes(full.get("buildings") or []),
         "slots": _slots(full),

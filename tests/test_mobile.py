@@ -53,7 +53,9 @@ def test_the_compact_snapshot_is_small_and_names_its_content(fake_repo, isolated
     assert snap["v"] == mobile.API and snap["project"] == full["project"]
     assert len(json.dumps(snap)) < len(json.dumps(full))
     hall = next(b for b in snap["buildings"] if b["id"] == "town_hall")
-    assert set(hall) == {"id", "title", "title_plain", "type", "state", "alert", "quick", "spot"} and hall["type"] == "town_hall"
+    assert set(hall) == {"id", "title", "title_plain", "type", "state", "alert", "quick", "spot",
+                         # the v3 camp's (pwa/camp.js): its steward, its growth, its status, its siding
+                         "ork_name", "ork_key", "level", "goal", "status", "signal", "todo"} and hall["type"] == "town_hall"
     assert [q["id"] for q in hall["quick"]] == ["hall.audit"]           # Build opens a window of the desktop's: not here
     assert {"gold", "gold_level", "quota", "quota_level", "alerts"} <= set(snap["hud"])
     assert "words" not in snap and "projects" not in snap

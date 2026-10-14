@@ -277,10 +277,10 @@ function layout() {
   parts.fields = makeFields({ send, flash });
   parts.slots = makeSlots({ send, flash, open: (id) => parts.town.open(id) });
   parts.dock = makeDock({ send, deliver, flash, building, ideas: () => town?.ideas, device: () => device, unpair: unpairHere, shared });
-  const [camp, answers, buildings, info] = parts.town.parts;
+  const [camp, answers, buildings, info, more] = parts.town.parts;
   // The town's parts acted on only while it answers (not its sheets, not Answers: an answer is kept offline).
   parts.content = () => [camp, parts.fields.el, buildings, parts.look.el];
-  show(parts.status, parts.install, parts.head, parts.news, parts.look.el, camp, answers, parts.fields.el, buildings, info,
+  show(parts.status, parts.install, parts.head, parts.news, parts.look.el, camp, answers, parts.fields.el, buildings, info, more,
     parts.dock.foot, parts.dock.el, ...parts.dock.sheets, parts.fields.sheet, parts.slots.sheet);
   return parts;
 }
@@ -333,6 +333,19 @@ function ground(s) {
 const LEVEL = { warn: "is-warn", over: "is-over" };
 // A resource as the desktop's HUD draws it (js/chrome.js Resource; design system: Hud): its sprite in Camp, its
 // word in Office, then its value.
+// The score as the desktop's HUD has it (the-score.md): the tokens per accepted result this week and the trend; only
+// what was recorded, the hint saying what is not measured yet. Nothing recorded: nothing shown.
+function score(sc) {
+  if (!sc || sc.tokens === null || sc.tokens === undefined) return null;
+  const k = sc.tokens >= 1000 ? `${(sc.tokens / 1000).toFixed(1)}k` : String(Math.round(sc.tokens));
+  const trend = sc.trend === null || sc.trend === undefined ? "" : `${sc.trend < 0 ? "↓" : "↑"}${Math.abs(Math.round(sc.trend * 100))}%`;
+  const said = `Tokens per accepted result this week: ${k}${trend ? `, ${trend} on last week` : ""}. `
+    + `Quality: 👎 ${sc.dislikes ?? 0}, sent back ${sc.reworks ?? 0} per result. Not measured yet: a cart's share of the window.`;
+  return h("span", { class: `ok-res score${sc.lean ? " is-lean" : ""}`, title: said, "aria-label": said },
+    h("img", { src: "icons/res-lumber.png", srcset: "icons/res-lumber.png 1x, icons/res-lumber@2x.png 2x", alt: "" }),
+    h("span", { class: "ok-word" }, "per result"), k, trend ? h("small", { class: "trend" }, trend) : null);
+}
+
 function resource(icon, word, value, level) {
   return h("span", { class: `ok-res${LEVEL[level] ? ` ${LEVEL[level]}` : ""}` },
     h("img", { src: `icons/res-${icon}.png`, srcset: `icons/res-${icon}.png 1x, icons/res-${icon}@2x.png 2x`, alt: "" }),
@@ -357,7 +370,8 @@ function render(s, keptAt = 0) {
     h("div", { class: "hud" },
       hud.quota && resource("quota", words.quota || "Quota", hud.quota, hud.quota_level),
       hud.show_gold && hud.gold && resource("gold", words.gold || "Spend", hud.gold, hud.gold_level),
-      meat(resource("meat", words.supply || "Orks", `${hud.agents_working ?? 0}/${hud.agents ?? 0}`, ""), hud, s)),
+      meat(resource("meat", words.supply || "Orks", `${hud.agents_working ?? 0}/${hud.agents ?? 0}`, ""), hud, s),
+      score(s.score)),
     h("h1", { class: "ok-hud__brand" }, camp && h("img", { class: "mark", src: "icon-192.png", alt: "" }),
       s.project || "Orkline", s.demo ? h("small", {}, " demo") : null));
 

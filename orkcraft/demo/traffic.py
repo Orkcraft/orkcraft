@@ -4,8 +4,8 @@ barrier, the catapult's launch, the task's history and the score show the real t
     traffic = Traffic(town); traffic.start()     # gui/host.py, in the demo only
     traffic.stop()
 
-Every few seconds a cart sets off along the next road (round the town's roads, the roads into a Publisher more
-often), carrying a trail of hops with the tokens, spend and time a run like it would have recorded. A cart waits at
+Every few seconds a cart sets off along the next road of each orkspace (round its roads, the roads into a Publisher
+more often), so whichever orkspace is shown has carts on it, carrying a trail of hops with the tokens, spend and time a run like it would have recorded. A cart waits at
 every Review gate (held for the person) and is sent again before it would leave the snapshot. Two weeks of accepted
 results (`results`) feed the score. All of it is demo data: every hop's model is "demo", and it lives in memory only
 (nothing is written to the town's logs; the demo has none).
@@ -74,8 +74,8 @@ class Traffic:
 
     def send(self, source: str, target: str, road, status: str = "delivered", title: str = "") -> Cart:
         now = dt.datetime.now().astimezone()
-        payload = pipes.Payload(kind="text", value="(demo)", source=source, mode=road.event,
-                                title=title or self.rnd.choice(TITLES), ref=str(self.rnd.randint(10, 99)),
+        title = title or self.rnd.choice(TITLES)
+        payload = pipes.Payload(kind="text", value=title, source=source, mode=road.event, title=title, ref=str(self.rnd.randint(10, 99)),
                                 trail=_hops(self.town, source, self.rnd, now), want="change")
         cart = Cart(road.id, source, target, status, payload, "demo", time.monotonic())
         engine = self.town.roads
@@ -85,12 +85,15 @@ class Traffic:
         return cart
 
     def tick(self) -> None:
-        """One step: the next road's cart, and a cart waiting at every Review gate."""
+        """One step: in each orkspace the next road's cart, and a cart waiting at every Review gate."""
         every = self.roads()
-        if every:
-            source, target, road = every[self._turn % len(every)]
-            self._turn += 1
-            self.send(source, target, road)
+        spaces = [set(o.buildings) for o in getattr(self.town.scroll, "orkspaces", []) or []] or [None]
+        for space in spaces:
+            mine = [x for x in every if space is None or (x[0] in space and x[1] in space)]
+            if mine:
+                source, target, road = mine[self._turn % len(mine)]
+                self.send(source, target, road)
+        self._turn += 1
         now = time.monotonic()
         for b in self.town.scroll.buildings:
             if b.demolished or (self.town.spec_of(b.id) or {}).get("type") != "loot" or not b.roads:

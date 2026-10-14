@@ -452,3 +452,22 @@ The phone stays a layout of the same app (§10), no second one.
 - **Names.** A building's name on the phone is today's word in both looks (`title_plain`), as CLAUDE.md asks.
 
 Checked by `tests/test_phone_console.py` and, in Chromium at 390 px, `tests/test_pwa_console_browser.py`.
+
+## 12. The camp in v3 on the phone (I1, 2026-10-14)
+
+The phone's living camp (`pwa/camp.js`) draws the desktop's v3 town: the same layout module (`js/camp/layout.js`,
+served to the app as `camp-layout.js`), the same sprites (`v3/…`), the same rows taken from the desktop's spots.
+
+- **Zoom by whole device pixels:** on a density-3 phone ⅔ (an overview), ×1 (the default: the art at its own pixel)
+  and ×2 / ×4⁄3 (close); two fingers pinch to the next step, never between; one finger pans.
+- **The camera:** on the first building that asks, else the first in trouble, else one at work, else the top row's
+  first; it moves again only when that changes.
+- **A first tap** is the desktop's hover and click: the building's scroll over the camp's top edge — its name, its
+  status in a line or two, its quick actions, Open; **a second tap** opens its card as the sheet it was.
+- **A steward's tap** opens its console as a sheet (`ork.console` for an ork asking or at work, else the steward's
+  Info: what it does, its week, and plainly that there is no terminal to show); **a cart's tap** the task's history
+  (`cart.waybill`). Both commands are read only, on the phone's list (`mobile.COMMANDS`).
+- **Carts** roll on the lines by CSS (paused while the page is hidden); the Task board's siding shows its To Do lane.
+- **The HUD** keeps one line at 390 px: spend, 🥩, ❓ 🔥, and the score (tokens per accepted result, its trend);
+  Stop all stays the foot's.
+- **Office** keeps its calm lists on the phone: the camp is Camp's drawing.

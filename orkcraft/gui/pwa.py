@@ -45,6 +45,9 @@ FENCE = tokens.SYSTEM / "sprites" / "fence"         # the fence a building's win
 ICONS = tokens.SYSTEM / "sprites" / "icons"         # the HUD's resources, served as icons/res-<name>.png
 # the living camp's ork, walking (six frames of 32×48), served as camp/ork-walk.png
 ORK_WALK = tokens.SYSTEM / "sprites" / "camp" / "orks" / "body" / "walk-side.png"
+V3 = tokens.SYSTEM / "sprites" / "v3"               # the v3 camp's sprites and manifest, served as v3/<path>
+# the v3 camp's layout, the desktop's own module (pure: no page, no Preact), served as camp-layout.js
+LAYOUT = Path(__file__).resolve().parent / "static" / "js" / "camp" / "layout.js"
 STYLES = ("tokens.css", "components.css")           # the design system itself: its colours, buttons, inputs, HUD
 PREFIX = "/app/"
 SUBPROTOCOL = "orkcraft.v1"
@@ -52,7 +55,7 @@ BEARER = "bearer."
 TOKEN = re.compile(r"[A-Za-z0-9_-]{20,128}")   # a device token as pairing makes it (token_urlsafe)
 TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
          ".css": "text/css; charset=utf-8", ".webmanifest": "application/manifest+json",
-         ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2"}
+         ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".json": "application/json"}
 # The app's page loads only its own files and talks only to its own listener.
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' wss:; "
        "manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; "
@@ -62,7 +65,7 @@ CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' 
 def files() -> dict[str, Path]:
     """The app's files by the name they are served at (under PREFIX), the design system's styles beside them, the
     desktop's fonts under fonts/, its buildings' header sprites under sprites/, its fence under fence/ and its
-    resources under icons/, the camp's walking ork under camp/: the same faces, components and marks in both, from one place."""
+    resources under icons/, the camp's walking ork under camp/, the v3 camp's sprites under v3/ and its layout as camp-layout.js: the same faces, components and marks in both, from one place."""
     own = {p.name: p for p in sorted(ROOT.iterdir()) if p.is_file() and p.suffix in TYPES}
     styles = {name: tokens.SYSTEM / name for name in STYLES}
     faces = {f"fonts/{p.name}": p for p in sorted(FONTS.iterdir()) if p.suffix in (".woff2", ".css")}
@@ -71,7 +74,10 @@ def files() -> dict[str, Path]:
     fence = {f"fence/{p.name}": p for p in sorted(FENCE.iterdir()) if p.suffix == ".png"}
     res = {f"icons/{p.name}": p for p in sorted(ICONS.iterdir()) if p.name.startswith("res-") and p.suffix == ".png"}
     camp = {"camp/ork-walk.png": ORK_WALK} if ORK_WALK.is_file() else {}
-    return {**own, **styles, **faces, **marks, **fence, **res, **camp}
+    v3 = {f"v3/{p.relative_to(V3).as_posix()}": p for p in sorted(V3.rglob("*"))
+          if p.is_file() and p.suffix in (".png", ".json")} if V3.is_dir() else {}
+    layout = {"camp-layout.js": LAYOUT} if LAYOUT.is_file() else {}
+    return {**own, **styles, **faces, **marks, **fence, **res, **camp, **v3, **layout}
 
 
 def wants(path: str) -> bool:

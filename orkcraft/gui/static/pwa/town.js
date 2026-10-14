@@ -44,7 +44,8 @@ function pickSpace(id) {
 /** `ctx`: {send, deliver, flash, rerender}. Returns the parts the app lays out, `render(town)` and `open(id)`: a
  *  building's card as a sheet from the foot. */
 export function makeTown(ctx) {
-  const camp_ = makeCamp({ open: (b) => about(b), name: (b) => name(b) });
+  const camp_ = makeCamp({ open: (b) => about(b), name: (b) => name(b), quick: (b) => quick(b).slice(1),
+                          ork: (b) => orkSheet(b), cart: (c) => cartSheet(c) });
   const summary = h("p", { class: "summary" });
   const tiles = h("div", { class: "tiles" });
   const answers = fenced({ class: "asking", "aria-labelledby": "answers-h" }, h("h2", { id: "answers-h" }, "Answers"), summary, tiles);
@@ -119,6 +120,55 @@ export function makeTown(ctx) {
       form.querySelector("textarea")?.focus();
     }
     return [h("h3", {}, "Quick actions"), h("div", { class: "row q-acts" }, ...buttons), form, msg];
+  }
+
+  // A tap on a steward: its ork's console (its line, its task, its runs and what they spent), or for a building with no
+  // ork asking or at work its steward's Info — what it does, its week — and plainly that there is no terminal to show.
+  const more = sheet("");
+  const moreBody = h("div", { class: "info" });
+  more.el.querySelector(".sheet-in").append(moreBody);
+  const tok = (n) => (n === null || n === undefined ? "not recorded" : n >= 1000 ? `${(n / 1000).toFixed(1)}k tokens` : `${n} tokens`);
+  const usd = (v) => (v === null || v === undefined ? "not recorded" : `$${Number(v).toFixed(2)}`);
+  async function orkSheet(b) {
+    more.title(`${b.ork_name || "Steward"} · ${name(b)}`);
+    moreBody.replaceChildren(h("p", { class: "muted" }, "Opening…"));
+    more.open();
+    if (b.ork_key) {
+      const r = await ctx.send("ork.console", { key: b.ork_key });
+      const d = r.ok ? r.result : null;
+      if (d) {
+        const t = d.totals || {};
+        moreBody.replaceChildren(h("p", {}, (d.row && d.row.line) || "Not at work now"),
+          d.cart ? h("p", {}, h("b", {}, "On: "), d.cart.title) : null,
+          h("p", {}, h("b", {}, "In all: "), `${tok(t.tokens || null)} · ${usd(t.cost || null)}`),
+          h("h3", {}, "History"),
+          d.history.length ? h("ul", { class: "runs" }, ...d.history.slice(0, 8).map((x) =>
+            h("li", {}, `${x.title} · ${tok(x.tokens)} · ${usd(x.cost)}`))) : h("p", { class: "muted" }, "No runs yet."));
+        return;
+      }
+    }
+    const r = await ctx.send("info", { id: b.id });
+    const d = r.ok ? r.result : null;
+    const w = d && d.week;
+    moreBody.replaceChildren(d && d.about_plain ? h("p", {}, d.about_plain) : null,
+      h("p", {}, h("b", {}, "Now: "), (b.status && b.status[0]) || "Quiet"),
+      h("p", {}, h("b", {}, "This week: "), w ? `${w.runs} runs · ✓${w.ok} ✖${w.failed} · ${w.results} results` : "not known",
+        d && d.spend_plain ? ` · ${d.spend_plain}` : ""),
+      h("p", { class: "muted" }, "No ork of its own is at work here now: there is no session or terminal to show."));
+  }
+  // A tap on a cart: the task's history — each stop, the ork there, the tokens, the spend, the time (gui/waybill.py).
+  async function cartSheet(c) {
+    more.title(c.title || "A cart");
+    moreBody.replaceChildren(h("p", { class: "muted" }, "Opening…"));
+    more.open();
+    const r = await ctx.send("cart.waybill", { cart: c.id });
+    const d = r.ok ? r.result : null;
+    if (!d) { moreBody.replaceChildren(h("p", { class: "muted" }, "No cart of it is on the roads now.")); return; }
+    const time = (ms) => (ms === null || ms === undefined ? "not recorded" : ms < 60000 ? `${Math.max(1, Math.round(ms / 1000))} s` : `${Math.round(ms / 60000)} min`);
+    moreBody.replaceChildren(d.source_title ? h("p", { class: "muted" }, `From ${d.source_title}`) : null,
+      h("ul", { class: "runs waybill" }, ...d.stops.map((x) => h("li", {}, h("b", {}, x.title), ` · ${x.ork || "—"} · ${tok(x.tokens)} · ${usd(x.cost)} · ${time(x.ms)}`)),
+        h("li", {}, h("b", {}, `Now: ${d.now.title}`), ` · ${d.now.status}`)),
+      h("p", {}, h("b", {}, "In all: "), `${tok(d.tokens)} · ${usd(d.cost)} · ${time(d.ms)}`));
   }
 
   // What a building takes from and sends to, by its roads: [[label, ids]] for the ones it has.
@@ -226,7 +276,8 @@ export function makeTown(ctx) {
     const space = chosenSpace(s);
 
     const n = alerts.length;
-    camp_.render(s, buildings.filter((b) => !(space && (s.orkspaces || []).length > 1) || new Set(space.buildings).has(b.id)), asking);
+    camp_.el.hidden = !camp;              // Office keeps its calm lists: the camp is Camp's drawing
+    if (camp) camp_.render(s, buildings.filter((b) => !(space && (s.orkspaces || []).length > 1) || new Set(space.buildings).has(b.id)), asking);
     const longest = Math.max(0, ...alerts.map((a) => a.waited || 0));
     summary.textContent = n ? `${n === 1 ? "An ork waits" : `${n} orks wait`} on you, the longest ${minutes(longest)}.`
       : "No ork is waiting on you.";
@@ -273,7 +324,7 @@ export function makeTown(ctx) {
   }
 
   const openId = (id) => { const b = byId.get(id); if (b) about(b); };
-  return { parts: [camp_.el, answers.el, town.el, info.el], render, open: openId };
+  return { parts: [camp_.el, answers.el, town.el, info.el, more.el], render, open: openId };
 }
 
 /** A question, its last lines and its answers; `who` says who asks and how long (a tile of one question of
