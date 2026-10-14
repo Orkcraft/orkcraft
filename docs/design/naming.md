@@ -1,6 +1,8 @@
 # Design — name candidates, should Orkcraft be renamed
 
 Status: candidates 2026-10-13, for the decision of [open-questions.md](open-questions.md) Q18 by Friday 17 October.
+*2026-10-14:* the four finalists weighed against Blizzard and Games Workshop, and the registers searched (§9): ORK is
+not registered by Games Workshop (only ORKS, filed in the UK, pending). **Most likely Orkline**, Orcline the fallback.
 **Nothing here is checked:** each name is checked by the owner in the registers (USPTO, EUIPO, WIPO; classes 9 and
 42), for a domain, a GitHub organisation, a PyPI name and handles. Not legal advice.
 
@@ -105,3 +107,110 @@ the story's shape), **Orcyard**, **Orcworks**. Checked as §4 says, and Factory.
 
 **Product view:** **Orcworks** (no Ltd) is a strong candidate beside Orcline: the indie studio and the factory in one
 word. Orcline tells the product's story better; Orcworks tells the maker's. Five developers decide between them.
+
+## 9. The four finalists against Blizzard and Games Workshop (2026-10-14)
+
+A product view, not legal advice. The first pass was a web search; **the registers were then searched through TMview**
+(EUIPO, UKIPO, USPTO, WIPO and national offices in one base; exact-name search, 2026-10-14), see §9c. Where only the
+web was searched, "not found" means "not found by a web search".
+
+### 9a. The table
+
+| name | Blizzard / Microsoft | Games Workshop | others with the name | overall |
+|---|---|---|---|---|
+| **Orkcraft** | **high** | low to medium | *OrcCraft*, an indie strategy game on Steam (2018) | 🔴 the riskiest |
+| **Orkmine / Orcmine** | low to medium: echoes Minecraft, the same owner as Warcraft | ork: low · orc: next to none | **OrcMine**, a Telegram crypto-"mining" game: the same name, and it confirms the crypto reading of §6; *Orecraft: Orc Mining Camp*, a mobile game | 🟠 |
+| **Orkworks / Orcworks** | low | Orkworks: low to medium ("ork works" reads as the orks' workshops of Warhammer 40,000) · Orcworks: next to none | **Ork Works**, a former in-house games studio of i-Free; "-works" is everywhere, so the mark is weak | 🟡 |
+| **Orkline / Orcline** | low | ork: low · orc: next to none | nothing found | 🟢 the cleanest |
+
+### 9b. Why Orkcraft is the riskiest
+
+- **A family of marks.** Since buying Activision Blizzard, Microsoft holds WARCRAFT, STARCRAFT and MINECRAFT: a family of
+  "-CRAFT" marks that reaches class 42 (Q18's search).
+- **A famous mark needs no similar goods.** In the EU and the UK a mark with a reputation, as Warcraft has, is protected
+  beyond similar goods (Art. 9(2)(c) EUTMR, s.10(3) UK Trade Marks Act 1994): a name that calls Warcraft to mind and
+  takes unfair advantage of its fame is enough. "A developer tool, not a game" helps little.
+- **The whole picture decides, not the name alone:** ork + craft + a real-time strategy look; the words Warchief,
+  Peon, Grunt, Great Hall, Barracks, Horde; Farseer (a Horde hero of Warcraft III); the gold-on-dark interface; and
+  design docs in a public repository saying "in the style of Warcraft II" ([building-prompts.md](building-prompts.md),
+  [sprites.md](sprites.md)). Docs that say "made to look like Warcraft" are the worst evidence in a dispute: intent.
+- **A precedent:** FreeCraft (2003), a free open-source strategy engine, got a cease-and-desist from Blizzard and was
+  renamed Stratagus. Being free and open did not protect it.
+- **The likely way it happens** is not a court but a letter, or a complaint to GitHub, PyPI or a marketplace, once the
+  project is visible: a forced rename after the launch.
+
+### 9c. Games Workshop, and what the registers say
+
+**The registers (TMview, 2026-10-14).** The search was checked first on Games Workshop's known marks: WARHAMMER (159
+records: GB, EM, US, WO and others), SPACE MARINE (15), ADEPTUS (11) are all found, so the base sees its marks.
+
+| searched | found |
+|---|---|
+| **ORK** (177 records) | **no mark of Games Workshop**, in any office. In class 9 a stranger's *Ork Manager* (GB, Goblinsama Ltd, a game) |
+| **ORKS** | **Games Workshop: UK00004351525**, filed 9 March 2026, *Filed* (not registered), classes **9**, 16, 28, 41. A week earlier (2 March 2026) a stranger, JOY.NEST FOR ONLINE SELLING, filed ORKS in GB in class 9, and in the EU and the US in August |
+| WAAAGH, ORRUK, GORKAMORKA | none of Games Workshop's: WAAAGH registered by others in China only; ORRUK not found; GORKAMORKA filed in the US by a private person |
+| ORKCRAFT, ORKWORKS, ORCWORKS | nothing |
+| **ORKLINE** | GlaxoSmithKline (medicines, class 5) and a Mexican cosmetics mark (class 3); **nothing in classes 9 or 42** |
+| **ORCLINE** | one French mark of 1992 (chemicals), expired |
+
+- **"Ork" with a k is claimed (™), not registered.** Q18's "classes 9, 16, 28, 41" are the **pending ORKS application**,
+  not a registration of ORK. Without a registration Games Workshop would have to argue passing off: a high bar for a
+  free developer tool with no Warhammer look.
+- **The ORKS application is a signal:** Games Workshop is locking the word down now, in class 9 too. Even if it is
+  granted, "Orkline" for a developer tool is far from ORKS; its weight is against **filing** an "Ork…" mark of our own,
+  which is not planned (§9d). Its status is checked by hand: the UKIPO page asks for a captcha
+  ([UK00004351525](https://trademarks.ipo.gov.uk/ipo-tmcase/page/Results/1/UK00004351525)).
+- **Not covered by the search:** logos with "ork" inside a picture (an exact-name search misses them).
+- **Even with a registration,** confusion with a developer tool is unlikely. Games Workshop goes after miniatures,
+  3D-print files, fan games and anything in the look of Warhammer 40,000.
+- **Where the risk grows:** **Orkworks** (it sounds like the setting), and words inside the product: **"Grot Pointa"**
+  (`orkcraft/demo/dashboard.py`: "grot" is a Warhammer 40,000 term, and the "-a" is Games Workshop's ork speech), and
+  **Farseer**, also an Aeldari psyker of Warhammer 40,000: one word hitting both universes.
+
+### 9d. The decision: most likely Orkline
+
+*First leaning (morning of 2026-10-14): Orcline, the c taking the name out of Games Workshop's claim.* **Moved to
+Orkline** once two facts were in:
+
+1. **ORK is not registered** (§9c): the c buys little against a ™ claim with no registration behind it.
+2. **No trademark of our own is planned.** Orkline is free, open-source software for developers; the one argument
+   left for the c, an easier filing of our own, falls away.
+
+So **Orkline**, for what stays: one spelling everywhere (orks, orkestration, orkspaces, CLAUDE.md's Wording unchanged),
+a coined spelling that is easier to find than "orc line", and the orkestration pun said aloud. It drops "-craft" (the
+Microsoft family) and "-mine" (Minecraft, OrcMine and crypto), and nothing stands under it in classes 9 or 42.
+**Orcline** stays the fallback: switched to if the ORKS application is granted and Games Workshop is seen enforcing it
+against software, or if a lawyer advises it.
+
+**A later commercial product** built on the same ideas (parallel work, the board, debates) **gets a name of its own,
+with no "ork" and no game words.** Ideas are owned by no mark; it keeps the commercial product clear of both the
+Games Workshop question and the camp's look. The Apache 2.0 licence lets the owner reuse the code there, outside
+contributions included; it grants no rights to the name (its §6), which is fine since the name does not travel.
+
+Before it is final:
+
+1. **The domain, the GitHub organisation, PyPI and the handles for both spellings**, Orkline and Orcline: the second
+   redirects to the first, against squatting and against a name typed by ear.
+   *2026-10-14:* **orkline.dev bought.** Free: `orcline.dev`, `orkline.app`, `orcline.app`; PyPI and npm `orkline` and
+   `orcline`; GitHub `orcline`, `orkline-dev`. Taken: **GitHub `Orkline`** (a dormant user since 2022, no repositories;
+   GitHub does not release a name for inactivity alone), `orkline.com` (registered since 2019 by someone else).
+2. **The ORKS application watched** (UK00004351525): its status by hand now, again before the launch.
+3. **A one-line disclaimer** of no affiliation with Blizzard, Microsoft or Games Workshop in the README's and the
+   landing page's footer.
+4. **The lawyer's hour** (Q18) is optional now: worth it if Games Workshop's ORKS is granted, or before the commercial
+   product.
+
+### 9e. Whatever the name: the words inside
+
+A rename removes the risk from the name, not from the product. Independent of it:
+
+| word | why | what to do |
+|---|---|---|
+| Peon, Grunt, Horde | Warcraft's units and faction, said by an ork in a strategy look | rename in `realm/lexicon.py` `TERMS` (the old spelling goes to `was`) |
+| Farseer | a Horde hero of Warcraft III, and an Aeldari psyker of Warhammer 40,000 | rename the night's Elder |
+| Grot (as in "Grot Pointa") | a Warhammer 40,000 term, in Games Workshop's ork speech | rename in the demo |
+| Warchief | an ordinary word, but beside orks it reads as Warcraft's title; used ~490 times | weigh: lowest priority of the table, keep unless the lawyer says otherwise |
+| "Warcraft" in shipped prompts, the gold-on-dark frames | already planned (Q18, [color-pass.md](color-pass.md) §3) | finish before the launch |
+
+**One spelling:** under Orkline the name and the orks inside both say "ork", so CLAUDE.md's Wording stays as it is. Only
+the Orcline fallback would bring back the question of a name with a c beside orks with a k (§7).

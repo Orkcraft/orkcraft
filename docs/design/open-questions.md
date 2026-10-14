@@ -159,6 +159,13 @@ launch wait on. Answers go under each question, and the doc it changes is update
   4. **Decided by Friday 17 October**, so the marketing on 19 October starts under its final name. *Default if the
      lawyer sees a real risk, or the hour cannot be had by Friday:* rename now, while it costs an afternoon.
 
+  *2026-10-14:* Orkcraft, Orkline/Orcline, Orkmine/Orcmine and Orkworks/Orcworks weighed against Blizzard (Microsoft)
+  and Games Workshop ([naming.md](naming.md) §9): Orkcraft the riskiest. **The registers (TMview):** Games Workshop
+  holds **no registration of ORK** anywhere; the "classes 9, 16, 28, 41" above are its **ORKS application in the UK**
+  (UK00004351525, filed March 2026, pending). ORKLINE and ORCLINE: nothing in classes 9 or 42. With no trademark of our
+  own planned, **most likely Orkline**, Orcline the fallback; the lawyer's hour becomes optional (naming.md §9d).
+  Whatever the name, a few words inside (Peon, Grunt, Horde, Farseer, Grot) go too (§9e).
+
 
 - **Q19.** **Buildings from the community:** is a building one folder a person can send as a pull request? Asked at the
     start of the day, not answered. *Default:* not yet; the "Build a building" guide waits for it.
