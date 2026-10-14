@@ -252,6 +252,12 @@ class FieldsWorker(NightRound, Settle, CardLore, Worker):
                          name=f"fields-title-{self.building_id}").start()
         return card
 
+    @property
+    def naming(self) -> bool:
+        """Cards written as one text still wait for their title (the namer at work, or about to be)."""
+        with self._naming:
+            return self._namer or bool(self._unnamed)
+
     def _name_waiting(self, runner) -> None:
         """Names the cards that wait for a title, the ones written at once in one call (`NAME_QUIET_S` with nothing
         new ends a burst), then renames them — off the town's thread."""

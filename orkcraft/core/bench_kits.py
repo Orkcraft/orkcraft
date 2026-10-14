@@ -201,6 +201,8 @@ def run_fields(ctx: Ctx) -> bench.Side:
             if card is None:
                 raise ValueError(f"the to-do “{p['title']}” was not added")
             cards.append(card.id)
+            with town.bench_lock:                       # its context, now: the board asks in batches on its tick
+                w.look_up_waiting(force=True)
             pages = [pg.title for pg in w.lore.context(card.id)]
             ctx.say(f"to-do “{p['title']}”: context {', '.join(pages) or 'none'}")
             side.how.append(f"“{p['title']}” took its context from: {', '.join(pages) or 'nothing'}")
@@ -212,7 +214,8 @@ def run_fields(ctx: Ctx) -> bench.Side:
         def named(t):
             return next((c for c in w.cards if (c.body or "").strip() == t["text"].strip()), None)
 
-        done = lambda: all(named(t) for t in titles) and not w.planning                 # noqa: E731
+        # written, and named: the namer works off the thread after a quiet spell, so a card is first its first words
+        done = lambda: all(named(t) for t in titles) and not w.naming and not w.planning   # noqa: E731
         if why := wait(ctx, side, done, since, start):
             return _stopped(side, why)
         if w.plan_error:
