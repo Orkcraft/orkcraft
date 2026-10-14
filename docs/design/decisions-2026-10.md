@@ -380,3 +380,7 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
   siding holds the backlog, the score shows two demo weeks. Started: **M1** (Mission 1 on the stations, the catapult
   finale, its rewards recorded) and **INV** (growth by missions and the score, the class portrait, the home at the
   gate, the inventory with placed items).
+- **21:45.** I1's polish all on `main`: carts face along their travel (c1 has side views only — a front view is an art
+  gap), name chips clear of doors and stewards, a steward console for buildings without orks, Office's pool card fixed,
+  Camp's Build… into a row. INV step 1 on `main` (ae0b77e): portrait stages by missions, lean weeks and levels; teal eyes
+  at stage 4. Next for I1: the phone on Camp v3, then stabilisation (the full suite and browser tests green).
