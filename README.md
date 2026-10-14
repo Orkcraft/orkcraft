@@ -6,25 +6,38 @@
   </picture>
 </p>
 
-<h3 align="center">Run many coding agents in one project — and see them like a real-time strategy game.</h3>
+<h3 align="center">Build the factory that builds your side project.</h3>
 
 <p align="center">
-  Claude Code · Codex · Antigravity — no API keys · local-first · Apache 2.0
+  Work comes in, your coding agents (the orks) refine it on the line, and finished goods are
+  catapulted over the wall: a pull request opened, a post published, a reply sent.
 </p>
 
-<!-- The hero GIF goes here: a town at work, a cart on a road, a hut on fire waiting for you. -->
-![The town: a task board, a calendar and a wiki feed a daily brief; the War Map of orkspaces at the bottom left, the Warchief's line at the foot](docs/img/town.png)
+<p align="center">
+  Claude Code · Codex · Antigravity (experimental) — no API keys · local-first · Apache 2.0
+</p>
 
-Running three or five agents at once gets messy fast: which one is working, which one is stuck
-waiting for you, what did they change, and how much has this cost today? Terminals and tabs don't
-answer that.
+<!-- The hero GIF goes here: a cart from the Task board to the Review gate with its pull request. -->
 
-**Orkline opens your project as a town.** Every window is a **building** with an **ork** inside — an
-agent, a script or a chain of data steps. Buildings send **carts** to each other along **roads**, so
-work flows on its own. You see the whole town at a glance:
+<table>
+  <tr>
+    <th>At work: Office</th>
+    <th>After work: Camp</th>
+  </tr>
+  <tr>
+    <td><img src="docs/img/look-office.png" alt="The demo town in the Office look: buildings as plain cards, roads between them, calm and monochrome"></td>
+    <td><img src="docs/img/look-camp.png" alt="The same demo town in the Camp look: pixel huts behind palisades, the same roads and numbers"></td>
+  </tr>
+</table>
+<p align="center"><i>The same town, two looks: switch any time in Settings.</i></p>
 
-- 🔥 **An ork that needs you sets its hut on fire** and waits. No pop-ups, no lost questions — and the
-  phone app shows them too.
+**Orkline is a control room for your coding agents.** It opens your project as a town: every window
+is a **building** with an **ork** inside — an agent, a script or a chain of data steps. Work enters
+from the ways in (a task on the board, a mail, a GitHub event, the town's clock), travels as
+**carts** along **roads** from building to building, passes the **Review gate** where you approve it,
+and leaves the town finished. The game is spending less per accepted result.
+
+- 🔥 **An ork that needs you sets its hut on fire** and waits. No pop-ups, no lost questions.
 - 🪙 **The HUD shows what you spend**, by building and purpose, with budgets that stop model calls.
 - 🛤 **Roads do the orkestration.** Mail, GitHub, a calendar or a dropped file starts work; a task
   goes to the Agent pool, a branch to Branches & PRs, a result to the Review gate where you approve it.
@@ -32,11 +45,21 @@ work flows on its own. You see the whole town at a glance:
   snapshots files before an ork touches them; **Stop all** halts everything.
 - 🧰 **Your tools, your login.** It talks to models only through the CLIs you already have —
   [Claude Code](https://claude.com/claude-code) (`claude`), [OpenAI Codex](https://github.com/openai/codex)
-  (`codex`) and Google Antigravity (`agy`). No keys, no accounts, no servers.
+  (`codex`) and, as an experiment that is off by default, Google Antigravity (`agy`). No keys, no
+  accounts, no servers.
+
+### How is this different from …
+
+Pixel Agents, AgentVille, Agent Village and others put your agent sessions on screen as characters,
+and do it well: if you want to *see* the agents you already run, try them. **They show your agents.
+Orkline runs the work:** tasks go down roads between buildings, through a review gate, and the game
+is spending less per accepted result. You can also run Orkline in the Office look and never see a
+sprite.
 
 > [!WARNING]
 > **Alpha.** Orkline is used daily and has ~1,300 tests, but features and file formats still change
-> between versions. Try it on a project you have committed or backed up, and keep the Warder on.
+> between versions. Checked on macOS; Linux and Windows should work, not yet checked. Try it on a
+> project you have committed or backed up, and keep the Warder on.
 > Bug reports and ideas are very welcome in [Issues](https://github.com/Orkcraft/orkcraft/issues).
 
 ## Try it in a minute
@@ -216,3 +239,8 @@ Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE). Copyright 20
 
 The fonts bundled in `design-system/fonts/` — Almendra SC, Titillium Web, JetBrains Mono and Pixelify
 Sans — are under the SIL Open Font License 1.1; their licences sit beside them.
+
+---
+
+<sub>Orkline is an independent open-source project, not affiliated with or endorsed by Blizzard
+Entertainment, Microsoft, Games Workshop or any other game publisher.</sub>
