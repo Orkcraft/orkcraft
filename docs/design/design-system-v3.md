@@ -13,6 +13,53 @@ nothing of their UI is built here.
 **Held to throughout:** a look changes the drawing, never a word (CLAUDE.md). Buildings are named by what they do
 (External listeners, Task board, Agent pool, Review gate, Publisher, Inspector), orks by their orkish names.
 
+## 0. Where v3 stands (the end of the night of 14 October)
+
+**Done** and on `main`: the tokens (§2), the scale and the layers (§3), the layout (§4), the signals (§5), the type
+(§6), the preview (§7) and the cutter with its manifest (§8): `python tools/camp_sheet.py --v3` cuts every picked sheet
+into `design-system/sprites/v3/` and rewrites the preview. Cut so far: the buildings (B1–B5, the lookout, the catapult,
+the Task board as the dispatcher's booth, the Review gate with its barrier down and up, Research as a mine); the capped
+ork (body, fifteen roles and the **Prospector**, states, inside poses, stepping out of a door); the carts; the track
+(c2 and its curves); the ground, the decor, the palisade with its right wall; the UI pieces for I1; the person's
+**eleven classes** (`people/<role id>.png`); the **growth marks** (`growth/footing-1..3`, `banner-1..3`,
+`annex-thrift`, `annex-quality`).
+
+**For I1 and I2, the stable names:** sprite paths are `design-system/sprites/v3/<kind>/<name>.png` as listed in its
+`manifest.json` (each row: `size`, `frame`, `frames`, `pitch`, `show`, `anchor`, `slots`); a building keeps its type's
+file name (`buildings/fields.png` is the Task board, `loot_vault.png` the Review gate, `mine.png` Research), whatever
+sheet drew it last. Token names are `design-system/tokens.json`'s; none was renamed in v3, only added.
+
+**The scale, per layer** (CSS px per art px; × the sprite's own `show`, ×1 for every sheet cut so far):
+
+| layer | what | density 2: overview · **default** · close | density 1: overview · **default** |
+|---|---|---|---|
+| buildings `L.b` | buildings, stations, growth marks, carts, ground, decor, palisade | ×1 · **×1.5** · ×3 | ×1 · **×2** |
+| orks and track `L.s` | orks and the Prospector, track tiles | ×1 · **×1** · ×2 | ×1 · **×1** |
+| UI | signals, chips, names, the HUD | CSS px at every zoom (28-px badges, 24-px chips) | the same |
+
+The layout's unit is 2 CSS px at `L.b = 1` (buildings are half their art px in units at every zoom); the track's tile
+is `64 × L.s / (2 × L.b)` units, so rows, gaps and stations are computed from the sprites at each step (`grid()`).
+
+**The layout** (§4 in full): one line per row, joined in a loop — the way in down through the lookout in the back
+wall, the split on the left, the merge on the right, line 2 on to the buffer stop and the catapult against the right
+wall. A building joins its line by a dirt path; **a station has its own track** (§4.11): the dispatcher's booth stands
+over a siding off line 1 (a north T, a curve, room for three carts, a buffer) with the waiting carts on it and a `+N`
+chip for more; the Review gate's weighbridge track and the mine's shaft track run into their line through a north T;
+the gate's barrier is down while a cart waits on the weighbridge, up otherwise (the preview's *Gate clear* toggle).
+**The person's home stands beside the Review gate** (where the person approves), east of it on line 1's row.
+
+**Still a stand-in or awaited** (GEN's last run, k2-homes and c2-fix, stopped on HTTP 402, the key's credits spent):
+
+- **the split's junction** (north–east–south): c2's north T turned a quarter; c2-more's `t-e` is cut but its straight
+  sits off the tile's column, so it is not placed (round 8, below). `track/corner-nw` is cut and unused.
+- **the person's home** (k2): not drawn; its place beside the gate is reserved in the rule, not in the preview.
+- **the Prospector's** walking, digging and sack frames: only standing is cut (o7 at `merge: 2.25`, 54 px tall).
+- **the door patch on a building** (§4.7): `orks/body/door.png` (o6-door #2, four frames) is cut for I1; the preview
+  does not open doors.
+- **Research as a mine is large** (184 × 240 with its shaft, the tallest sprite): line 2 sits low enough to hold it,
+  so at the default ×1.5 the window shows line 1's row and the mine's head; the overview shows the whole camp.
+- the palisade has no front or left side (the camp is open there by design); its other corners are cut and unused.
+
 ## 1. What changes from v2
 
 | | v2 | v3 |
@@ -262,7 +309,7 @@ a larger scale, which v3 does not use. To get F1's fill, the sheets must draw th
    line 2, under the lower row's; the two **merge on the right**, and line 2 runs on to the catapult's buffer stop.
    **No rail spurs:** each building is joined to its own line by a short **dirt path** (earth with grass rims, 32 px
    wide) from its door to its stop. **Carts run on the lines only, orks on the paths.** An eleventh building starts
-   another row with its own line, joined into the loop the same way. (This replaces round 4's lane per row.) c2 has no
+   another row with its own line, joined into the loop the same way (a station is the exception, rule 11). (This replaces round 4's lane per row.) c2 has no
    junction with exits north, east and south yet: in the preview its north T turned a quarter clockwise stands in (a
    flat track seen from above reads the same turned); the merge on the right is c2's own north T, the turns its
    north-east and south-west curves, so the loop needs no north-west curve.
@@ -291,6 +338,21 @@ a larger scale, which v3 does not use. To get F1's fill, the sheets must draw th
 9. **Few orks:** an ork is a session; a camp shows four to eight. Edges are quiet (few crates and bushes) so the eye
    stays on the line.
 10. The town's name is the person's (the project's name, "My camp" in the previews), never a character's.
+11. **Stations on the line** (round 9, v3-prompts §13.1): a building whose work is the track's own has its own track
+    and no path. **The Task board is the dispatcher's booth** over a **siding** off line 1: a north T on the line, the
+    south-east curve up, three tiles where waiting carts stand, a buffer stop; more than three waiting is a `+N` chip by
+    the buffer. **The Review gate** stands on a **weighbridge** whose track runs south into line 1 through a north T;
+    its **barrier is down while a cart waits on the weighbridge** (that cart wears the yellow flag and its chip), **up**
+    otherwise (`buildings/loot_vault-up.png`). **Research is a mine** whose shaft track runs south into line 2 the same
+    way; **the Prospector** keeps it, standing by the shaft. A station's track stands on a track tile's middle column so
+    it meets the line square. The rows are as tall as their tallest piece: a station's track reaches its line, a
+    building's door is a path (16 units) above it, the booth's foot is on its siding.
+12. **Growth shows on the building** (v3-prompts §13.4): its level I–III as a stone footing by the door and a banner on
+    the roof (`growth/footing-N`, `banner-N`); a goal's annex (Thrift, Quality) stands against its east wall. The
+    preview shows the Agent pool at III, the Test bench at II with the Quality annex, the Town Hall at I with the
+    Thrift annex.
+13. **The person's home stands beside the Review gate**, east of it on the upper row: the person is the one who
+    approves at the gate. (k2 not yet drawn.)
 
 **Layers** (v2 §3, revised): ground · paths and track · buildings · carts · orks · **doors** (the patch over a
 building, sorted with it) · signals · chips · UI. The covers' layer is gone. Shadows stay the product's.
@@ -348,17 +410,22 @@ I2 redraw them.
 ## 7. The preview
 
 `design-system/previews/CampKitV3.html` (open it from the folder; no server needed): the 1440 × 900 frame — the HUD
-(the camp's name on parchment, 🔥 ❓ 🥩 counters, Stop all in teal), the ten buildings of §3 on the grid, the main line
-with its way in at the tower's foot and its buffer stop at the catapult, paths and the lane, the low palisade, four
-carts (two rolling, one stopped, one held at the Review gate with its flag and chip), six orks (keepers at the stops,
-one lifting the load at the gate, one asking with ❓). Below it: the palette before and after, the signals, the type,
-and **every v3 sprite awaited or arrived**.
+(the camp's name on parchment, 🔥 ❓ 🥩 counters, Stop all in teal), the ten buildings of §4 on the grid, the loop with
+its way in at the tower's foot and its buffer stop at the catapult, the stations (the booth's siding with three carts
+and `+2`, the gate's weighbridge, the mine's shaft), paths, the low palisade with its right wall, carts (three rolling,
+three waiting on the siding, one at the Test bench, one held on the weighbridge with its flag and chip), orks (keepers
+at the stops, one lifting the load at the gate, one asking with ❓, the Prospector at the mine), growth on three
+buildings. Below it: **the person's eleven classes**, the palette before and after, the signals, the type, and **every
+v3 sprite awaited or arrived**.
 
 Each piece is drawn from **the v3 sprite** in `design-system/sprites/v3/` once its sheet is cut, else **v2's
 placeholder** (darker, and drawn at ×1 where its art pixel is finer than v3's), else **a block in v3's tokens**.
-Toggles: *Grey test*, *Show v3 slots* (each sprite's slot, dashed, with its size), *Building names*, *Blocks only*.
+Toggles: *Grey test*, *Show v3 slots* (each sprite's slot, dashed, with its size), *Building names*, *Blocks only*,
+*Gate clear* (the barrier up, no cart on the weighbridge).
 
-Screenshots at 1440 × 900 on a density-2 screen (×1.5, round 5): [the town](img/v3-preview/v3-town.png),
+Screenshots at 1440 × 900 on a density-2 screen (re-shot at the end of round 9: ×1.5, the overview, the classes):
+[the overview](img/v3-preview/v3-town-overview.png), [the classes](img/v3-preview/v3-classes.png),
+[the gate clear](img/v3-preview/v3-town-gate-clear.png), [the town](img/v3-preview/v3-town.png),
 [in grey](img/v3-preview/v3-town-grey.png), [with the slots](img/v3-preview/v3-town-slots.png); at density 1 (×1):
 [the town](img/v3-preview/v3-town-dpr1.png); the labels sit just under each building's foot, the top row's on its facade so they clear the track (round 6); before the first sheet: [round 1](img/v3-preview/v3-town-round1.png).
 The preview is written by `tools/campkit_v3.py` from `tools/campkit_v3.html` (`--v3` runs it after cutting).

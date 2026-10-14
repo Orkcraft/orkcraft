@@ -2255,12 +2255,12 @@
   {
    "file": "orks/roles/prospector.png",
    "size": [
-    72,
-    128
+    32,
+    56
    ],
    "frame": [
-    72,
-    128
+    32,
+    56
    ],
    "frames": 1,
    "pitch": 9.88,
@@ -2268,7 +2268,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o7-prospector.png",
-   "scale": 1.0,
+   "scale": 2.25,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },

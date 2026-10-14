@@ -57,6 +57,8 @@ p,li{color:var(--ink-muted);max-width:920px} code{font:var(--type-code-small);co
   radial-gradient(ellipse 7px 5px at 8px 6px,var(--art-wood-light) 0 90%,transparent 100%) 0 0/16px 64px repeat-x,
   repeating-linear-gradient(90deg,var(--art-wood) 0 12px,var(--art-wood-deep) 12px 14px,var(--art-outline) 14px 16px);
   border-bottom:2px solid var(--art-outline);box-sizing:border-box}
+.v3-gate-up,.gate-open .v3-gate-down,.gate-open .v3-held{display:none}
+.gate-open .v3-gate-up{display:block}
 .v3-palisade.is-v{background:repeating-linear-gradient(180deg,var(--art-wood) 0 12px,var(--art-wood-deep) 12px 14px,var(--art-outline) 14px 16px);border:0;border-left:2px solid var(--art-outline)}
 .v3-rails{background:
   linear-gradient(var(--art-iron),var(--art-iron)) 0 18px/100% 4px no-repeat,
@@ -113,6 +115,7 @@ else v2's placeholder, else a block in v3's colours.</p>
   <label><input type="checkbox" id="t-slots"> Show v3 slots</label>
   <label><input type="checkbox" id="t-names" checked> Building names</label>
   <label><input type="checkbox" id="t-blocks"> Blocks only (no v2 stand-ins)</label>
+  <label><input type="checkbox" id="t-gate"> Gate clear (barrier up, no cart waiting)</label>
   <span id="zoom" style="color:var(--ink-muted)"></span>
   <span id="count" style="color:var(--ink-muted)"></span>
 </div>
@@ -128,6 +131,12 @@ else v2's placeholder, else a block in v3's colours.</p>
   </div>
   <div class="v3-world"><div class="v3-tufts"></div><div class="v3-at" id="world" style="left:0;top:0;width:0;height:0"></div></div>
 </div></div>
+
+<h2>The person's classes</h2>
+<p>Who the person is in the camp (k1, <code>design-system/sprites/v3/people/&lt;role id&gt;.png</code>, named by
+<code>orkcraft/realm/intents.py</code> <code>ROLES</code>): the onboarding's first question and the portrait in the HUD. Drawn at
+their own art pixel on the grass, at the buildings' zoom.</p>
+<div class="sig" id="classes" style="flex-wrap:wrap"></div>
 
 <h2>The palette: v2 → v3</h2>
 <p>Measured on F1 (the mean of each surface's pixels); the stone and the bone a step darker than F1 so no art is as
@@ -431,7 +440,7 @@ function placeCamp() {                  // the default view is centred on the wo
   world.style.left = left + "px"; world.style.top = top + "px";
   OY = top / K;
 }
-const LINE_Y = 128;                     // line 1's tile row (32 tall), under the upper row's doors
+let LINE_Y = 128;                       // line 1's tile row (one tile tall), under the upper row's doors (set by grid)
 let LINE2_Y = 256;                      // line 2's, under the lower row's doors (a line of track per row, v3-prompts §11)
 const COL_L = OX + 56;                  // the loop's left column (the split); the right one (the merge) set by grid
 let COL_R = OX + 512, WALL_X = OX + 640, TU = 32;   // the right column, the right wall, the track's tile in units
@@ -439,28 +448,72 @@ let COL_R = OX + 512, WALL_X = OX + 640, TU = 32;   // the right column, the rig
 async function grid() {
   const got = await pick([{ src: `${V3}track/straight-h.png`, scale: sc("track/straight-h.png") }]);
   TU = got ? got.img.naturalWidth * got.scale / K : 32;
-  LINE2_Y = LINE_Y + Math.ceil((TU + 84) / TU) * TU;
-  COL_R = COL_L + Math.round(456 / TU) * TU;
-  WALL_X = COL_R + 144;                                           // the catapult (76 wide) against it
-  CAMP_W = WALL_X + 16;
+  // each box is its cut sprite (art px × its multiple, in units), else the plan's
   for (const b of BUILDINGS) {
-    if (b[5] === 2) b[2][1] = LINE2_Y - 16 - b[2][3];               // the lower row stands just above line 2
-    if (b[5] === "end") { b[2][0] = COL_R + 64; b[2][1] = LINE2_Y + 32 - b[2][3]; }
+    const f = `buildings/${b[0]}.png`, i = await probe(V3 + f);
+    if (i) { b[2][2] = Math.round(i.naturalWidth * sc(f) / K); b[2][3] = Math.round(i.naturalHeight * sc(f) / K); }
   }
+  const annexW = {};
+  for (const n of ["thrift", "quality"]) {
+    const f = `growth/annex-${n}.png`, i = await probe(V3 + f);
+    annexW[n] = i ? Math.round(i.naturalWidth * sc(f) / K) : 0;
+  }
+  // a row's height: a station's track reaches its line (a spur) or its siding does; a building's door is a path above it
+  const row = (n) => BUILDINGS.filter((b) => b[5] === n);
+  const above = (b) => (b[6] === "spur" ? b[2][3] : b[6] === "siding" ? b[2][3] + TU - 4 : b[2][3] + 16);
+  LINE_Y = Math.max(128, Math.round(36 + Math.max(...row(1).map(above))));      // clear of the back wall's logs
+  LINE2_Y = LINE_Y + Math.ceil((TU + 8 + Math.max(...row(2).map(above))) / TU) * TU;
+  // left to right, half a path's width apart (the stations are wide: ten buildings still fit 1440 at ×1); a station's track stands on a tile's middle so it meets the line square
+  const tileOf = (cx) => Math.round((cx - COL_L - TU / 2) / TU);
+  SPURS[1] = []; SPURS[2] = [];
+  let right = 0;
+  for (const r of [1, 2]) {
+    let x = Math.max(COL_L + TU + 8, r === 1 ? OX + 116 : 0);        // row 1 clear of the lookout's name
+    for (const b of row(r)) {
+      const bx = b[2], w = bx[2], line = r === 1 ? LINE_Y : LINE2_Y;
+      if (b[6] === "siding") {                                       // the switch, the curve, three carts' room, the buffer
+        const n0 = Math.ceil((x - COL_L) / TU);
+        SIDING = { n0 };
+        bx[0] = COL_L + (n0 + 2.5) * TU - w / 2;
+        x = Math.max(bx[0] + w, COL_L + (n0 + 5) * TU) + 8;
+      } else if (b[6] === "spur") {
+        const n = tileOf(x + w / 2);
+        SPURS[r].push(n);
+        bx[0] = COL_L + (n + 0.5) * TU - w / 2;
+        x = bx[0] + w + 8;
+      } else { bx[0] = x; x += w + 8; }
+      if (GROWTH[b[0]]?.annex) x += annexW[GROWTH[b[0]].annex] + 2;
+      bx[1] = line - above(b);
+      right = Math.max(right, x);
+    }
+  }
+  COL_R = COL_L + Math.ceil((right - COL_L) / TU) * TU;
+  WALL_X = COL_R + 128;                                           // the catapult (76 wide) against it
+  CAMP_W = WALL_X + 16;
+  for (const b of BUILDINGS) if (b[5] === "end") { b[2][0] = COL_R + 52; b[2][1] = LINE2_Y + 32 - b[2][3]; }
 }
 const BUILDINGS = [
-  // type, name, box [x, y(top), w, h] (the cut sprite's size), v2 stand-in, block look, its line: 1 | 2 | "wall" | "end"
+  // type, name, box [x, y(top), w, h] (the plan; grid() sets it from the cut sprite), v2 stand-in, block look,
+  // its line: 1 | 2 | "wall" | "end", and a station's own track (v3-prompts §13.1): "siding" (the dispatcher's booth over
+  // a siding off its line) or "spur" (the Review gate's weighbridge, the mine's shaft: its track runs into the line)
   ["watchtower", "External listeners", [OX + 38, -36, 68, 96], "covers/tower/lookout.png", { roof: "var(--art-bone)" }, "wall"],
-  ["fields", "Task board", [OX + 158, 60, 68, 52], "facades/fields.png", { roof: "var(--art-wood-light)" }, 1],
+  ["fields", "Task board", [OX + 158, 60, 88, 56], "facades/fields.png", { roof: "var(--art-wood-light)" }, 1, "siding"],
   ["barracks", "Agent pool", [OX + 242, 48, 96, 64], "facades/barracks.png", { roof: "var(--art-cloth)" }, 1],
-  ["loot_vault", "Review gate", [OX + 354, 56, 80, 56], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, 1],
+  ["loot_vault", "Review gate", [OX + 354, 56, 80, 104], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, 1, "spur"],
   ["catapult", "Publisher", [OX + 576, 232, 76, 48], null, { machine: true, roof: "var(--art-wood)" }, "end"],
   ["lake", "Inspector", [OX + 96, 188, 64, 52], "covers/open/pond.png", { water: true }, 2],
-  ["mine", "Research", [OX + 176, 176, 48, 64], null, { stone: true, roof: "var(--art-bone)" }, 2],
+  ["mine", "Research", [OX + 176, 176, 92, 120], null, { stone: true, roof: "var(--art-bone)" }, 2, "spur"],
   ["lab", "Test bench", [OX + 240, 188, 76, 52], null, { roof: "var(--art-wood-light)" }, 2],
   ["town_hall", "Town Hall", [OX + 332, 176, 92, 64], null, { roof: "var(--art-cloth-plum)" }, 2],
   ["ux_lab", "UX bench", [OX + 440, 184, 64, 56], null, { roof: "var(--art-cloth)" }, 2],
 ];
+// growth (v3-prompts §13.4), shown on three buildings: a level I–III as a stone footing at the door's side and a banner
+// on the roof; the goal's annexes stand against the east wall
+const GROWTH = { barracks: { level: 3 }, lab: { level: 2, annex: "quality" }, town_hall: { level: 1, annex: "thrift" } };
+const box = (type) => BUILDINGS.find((b) => b[0] === type)[2];
+const mid = (type) => { const [x, , w] = box(type); return x + w / 2; };
+let SIDING = null;                      // the booth's siding: { n0 } — the switch on line 1 at tile n0, buffer at n0 + 4
+const SPURS = { 1: [], 2: [] };         // the tiles where a station's track meets its line (a north T)
 
 function block(box, look) {
   const [x, y, w, h] = box;
@@ -487,6 +540,36 @@ async function building([type, name, box, v2, look]) {
   img.className = "v3-img"; img.src = got.src; img.alt = name;
   img.style.cssText = `width:${iw}px;height:${ih}px;left:${(x + w / 2) * K - iw / 2}px;top:${(y + h) * K - ih}px`;
   world.appendChild(img);
+  if (type === "loot_vault") {                     // the barrier: down while a cart waits on the weighbridge, else up
+    const up = await probe(`${V3}buildings/loot_vault-up.png`);
+    if (up) {
+      here.add("buildings/loot_vault-up.png");
+      img.classList.add("v3-gate-down");
+      const u = img.cloneNode(); u.src = up.src; u.className = "v3-img v3-gate-up";
+      world.appendChild(u);
+    }
+  }
+}
+
+// one sprite standing on its feet at (cx, feet) in units: growth marks, the Prospector
+async function figure(file, cx, feet, opts = {}) {
+  const i = await probe(V3 + file);
+  if (!i) return null;
+  here.add(file);
+  const s = sc(file), w = i.naturalWidth * s, h = i.naturalHeight * s, d = document.createElement("img");
+  d.className = "v3-img"; d.src = i.src;
+  d.style.cssText = `left:${opts.left ? cx * K : cx * K - w / 2}px;top:${feet * K - h}px;width:${w}px;height:${h}px`
+    + (opts.flip ? ";transform:scaleX(-1)" : "");
+  world.appendChild(d);
+  return d;
+}
+async function growth() {
+  for (const [type, g] of Object.entries(GROWTH)) {
+    const [x, y, w, h] = box(type);
+    await figure(`growth/footing-${g.level}.png`, x + 2, y + h + 3, { left: true });
+    await figure(`growth/banner-${g.level}.png`, x + w * 0.78, y + h * 0.32);
+    if (g.annex) await figure(`growth/annex-${g.annex}.png`, x + w + 1, y + h, { left: true });
+  }
 }
 
 function nameChip(name, cx, top) {
@@ -521,7 +604,16 @@ async function track() {
   await tile("t-n", COL_L, LINE_Y, false, 90);                     // the split: in from the north, out east and south
   for (let y = LINE_Y + T; y < LINE2_Y; y += T) await tile("straight-v", COL_L, y, true);
   await tile("corner-ne", COL_L, LINE2_Y);
-  for (const ly of [LINE_Y, LINE2_Y]) for (let x = COL_L + T; x < COL_R; x += T) await tile("straight-h", x, ly);
+  for (const [r, ly] of [[1, LINE_Y], [2, LINE2_Y]]) for (let x = COL_L + T; x < COL_R - T / 2; x += T) {
+    const n = Math.round((x - COL_L) / T);
+    await tile(SPURS[r].includes(n) || (r === 1 && SIDING && n === SIDING.n0) ? "t-n" : "straight-h", x, ly);
+  }
+  if (SIDING) {                                                    // the booth's siding: off line 1 north, east to a buffer
+    const { n0 } = SIDING, sy = LINE_Y - T;
+    await tile("corner-se", COL_L + n0 * T, sy);
+    for (let n = n0 + 1; n < n0 + 4; n++) await tile("straight-h", COL_L + n * T, sy);
+    await tile("stop-e", COL_L + (n0 + 4) * T, sy);
+  }
   await tile("corner-sw", COL_R, LINE_Y);                          // line 1 turns down on the right…
   for (let y = LINE_Y + T; y < LINE2_Y; y += T) await tile("straight-v", COL_R, y, true);
   await tile("t-n", COL_R, LINE2_Y);                               // …and merges into line 2
@@ -656,7 +748,8 @@ function palisadeDown(x, y0, y1) {
 function paths() {
   // each row's doors: a short path down to the stop on its own line (open to the grass on its two sides); carts run on
   // the lines, orks on the paths. An eleventh building starts another row with its own line, the same way.
-  for (const [, , [x, y, w, h], , , line] of BUILDINGS) {
+  for (const [, , [x, y, w, h], , , line, station] of BUILDINGS) {
+    if (station) continue;
     if (line === 1) earthPath(x + w / 2 - 8, y + h - 4, 16, LINE_Y - (y + h) + 4, "we");
     if (line === 2) earthPath(x + w / 2 - 8, y + h - 4, 16, LINE2_Y - (y + h) + 4, "we");
   }
@@ -703,7 +796,7 @@ async function cart(x, load, opts = {}, line = LINE_Y) {
   // feet on the line's lower rail; v3: one sprite with its load, as the sheet draws it, at ×1; v2: bin 48×40 and load at ×1
   const feet = line + TU * 0.8;
   const wrap = document.createElement("div");
-  wrap.className = "v3-at" + (opts.roll ? " v3-roll" : "");
+  wrap.className = "v3-at" + (opts.roll ? " v3-roll" : "") + (opts.cls ? " " + opts.cls : "");
   wrap.style.cssText = `left:${x * K}px;top:0;width:0;height:0;` + (opts.roll ? `--run:${opts.roll * K}px;--steps:${opts.roll};--dur:${opts.dur || 16}s;animation-delay:${opts.delay || 0}s` : "");
   world.appendChild(wrap);
   const put = (src, l, t, w, h) => { const i = document.createElement("img"); i.className = "v3-img"; i.src = src;
@@ -742,21 +835,33 @@ async function scene() {
   await track();
   for (const b of BUILDINGS) await building(b);
   for (const [, name, [x, y, w, h], , , line] of BUILDINGS) nameChip(name, x + w / 2, line === "wall" || line === "end" ? y + h + 2 : y + h / 2);   // on the facade, clear of the lines
-  // carts: two rolling on line 1, one stopped at the Task board, one held at the gate with the yellow flag and its chip;
-  // on line 2 one rolling and one stopped at the Test bench
-  await cart(COL_L + 40, "code", { roll: 400, dur: 18 });
-  await cart(COL_L + 40, "message", { roll: 400, dur: 18, delay: -9 });
-  await cart(OX + 192, "asset");
-  await cart(OX + 394, "code", { flag: "#42 · Fix login bug" });
-  await cart(COL_L + 40, "doc", { roll: 430, dur: 22, delay: -5 }, LINE2_Y);
-  await cart(OX + 278, "bundle", {}, LINE2_Y);
-  // the keepers wait at the stops; one lifts the load off at the gate; one asks at the Agent pool's door
-  await ork(OX + 214, LINE_Y - 2);
-  await ork(OX + 306, LINE_Y - 2);
-  await ork(OX + 414, LINE_Y - 2, { anim: "work" });
-  await ork(OX + 146, LINE2_Y - 2);
-  await ork(OX + 272, 112, { badge: "ask", state: "asks" });
-  await ork(OX + 300, LINE2_Y - 2, { anim: "work", flip: true });
+  await growth();
+  // carts: two rolling on line 1, three waiting on the booth's siding (more behind them as a chip), one held on the
+  // gate's weighbridge with the yellow flag and its chip (the barrier down); on line 2 one rolling and one at the Test bench
+  const run = COL_R - COL_L - 40;
+  await cart(COL_L + 40, "code", { roll: run, dur: 18 });
+  await cart(COL_L + 40, "message", { roll: run, dur: 18, delay: -9 });
+  if (SIDING) {
+    const at = (n) => COL_L + (SIDING.n0 + n + 0.5) * TU;
+    for (const [n, load] of [[1, "asset"], [2, "code"], [3, "message"]]) await cart(at(n), load, {}, LINE_Y - TU);
+    const c = document.createElement("span");
+    c.className = "v3-chip"; c.textContent = "+2";
+    c.style.left = (at(4) + TU * 0.2) * K + "px"; c.style.top = (LINE_Y - TU * 1.1) * K + "px";
+    world.appendChild(c);
+  }
+  await cart(mid("loot_vault"), "code", { flag: "#42 · Fix login bug", cls: "v3-held" });
+  await cart(COL_L + 40, "doc", { roll: run + 30, dur: 22, delay: -5 }, LINE2_Y);
+  await cart(mid("lab"), "bundle", {}, LINE2_Y);
+  // the keepers wait at the stops: the booth's by its lever, the pool's at its path, the gate's at the weighbridge
+  // lifting the load; one asks at the Agent pool's door; the Prospector at the mine's shaft
+  const [bx, by, , bh] = box("fields");
+  await ork(bx + 4, by + bh - 2);
+  await ork(mid("barracks") + 20, LINE_Y - 2);
+  await ork(mid("loot_vault") + box("loot_vault")[2] * 0.28, LINE_Y - 2, { anim: "work" });
+  await ork(mid("lake") + 18, LINE2_Y - 2);
+  await ork(mid("barracks") - 8, box("barracks")[1] + box("barracks")[3], { badge: "ask", state: "asks" });
+  await figure("orks/roles/prospector.png", mid("mine") + box("mine")[2] * 0.3, LINE2_Y - 2);
+  await ork(mid("lab") + 22, LINE2_Y - 2, { anim: "work", flip: true });
   report();
 }
 
@@ -789,6 +894,18 @@ function palette() {
   }
 }
 
+const CLASSES = [["engineer", "Software engineer"], ["qa", "QA engineer"], ["eng_manager", "Engineering manager"],
+  ["product_manager", "Product manager"], ["designer", "Product designer"], ["game_designer", "Game designer"],
+  ["aso_manager", "ASO manager"], ["marketing", "Marketing / growth manager"], ["data_analyst", "Data analyst"],
+  ["founder", "Founder / indie maker"], ["other", "Someone else"]];
+function classes() {
+  document.getElementById("classes").innerHTML = CLASSES.map(([id, title]) =>
+    `<figure style="margin:0;text-align:center;width:112px"><img src="${V3}people/${id}.png" alt="${title}"
+      style="image-rendering:pixelated;height:${112 * L.b}px" onload="this.style.width=this.naturalWidth*${L.b}+'px';this.style.height=this.naturalHeight*${L.b}+'px'"
+      onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'v3-slot',textContent:'${id}'}))">
+      <figcaption style="font:var(--type-camp-caption);color:var(--chip-ink);background:var(--chip);padding:2px 4px;margin-top:4px">${title}</figcaption></figure>`).join("");
+}
+
 function type() {
   const styles = ["camp-title", "camp-heading", "camp-chip", "camp-label", "camp-body", "camp-caption", "camp-number", "code", "code-small"];
   const sample = { "camp-title": "Task board", "camp-heading": "Agent pool · Мой лагерь", "camp-chip": "#42 · Fix login bug",
@@ -800,7 +917,8 @@ function type() {
       <span style="font:var(--type-${s})">${sample[s]}</span></div>`).join("");
 }
 
-for (const [id, cls, on] of [["t-grey", "is-grey", true], ["t-slots", "show-slots", true], ["t-names", "hide-names", false]]) {
+for (const [id, cls, on] of [["t-grey", "is-grey", true], ["t-slots", "show-slots", true], ["t-names", "hide-names", false],
+  ["t-gate", "gate-open", true]]) {
   document.getElementById(id).addEventListener("change", (e) => frame.classList.toggle(cls, e.target.checked === on));
 }
 function redraw() {
@@ -824,6 +942,6 @@ frame.addEventListener("pointermove", (e) => {
   panX = e.clientX - drag.x; panY = e.clientY - drag.y; placeCamp();
 });
 frame.addEventListener("pointerup", () => { if (drag) { drag = null; redraw(); } });
-palette(); type(); redraw();
+palette(); type(); classes(); redraw();
 </script>
 </body></html>

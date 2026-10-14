@@ -264,7 +264,7 @@
                "items": [{"file": "buildings/mine.png", "order": 0, "size": [184, 240]}]}]},
   {"name": "o7-prospector", "file": "o7-prospector.png", "degrid": true, "show": 1,
    "about": "v3-prompts §13.1: the capped ork as the Prospector, keeper of the mine (gen_sheets o7-prospector #1): standing (0); walking, digging, the sack (1–3) not cut",
-   "groups": [{"size": [72, 128], "anchor": "feet", "items": [{"file": "orks/roles/prospector.png", "order": 0, "size": [72, 128]}]}]},
+   "groups": [{"size": [72, 128], "anchor": "feet", "merge": 2.25, "items": [{"file": "orks/roles/prospector.png", "order": 0, "size": [72, 128]}]}]},
   {"name": "k1-classes", "file": "k1-classes.png", "show": 1,
    "about": "v3-prompts §13.3: the person's eleven classes (gen_sheets k1-classes #1), named by realm/intents.py ROLES",
    "groups": [{"size": [96, 112], "anchor": "feet", "items": [
