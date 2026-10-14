@@ -1,14 +1,15 @@
 """🥩 The ork slots (docs/design/ork-console.md §8): the town's one list of orks at work or waiting on the person.
 
-    slots.summary(town, muster)   → {"working", "limit", "asks", "fire", "rows"}
+    slots.summary(town, muster)   → {"working", "limit", "asks", "held", "errors", "fire", "rows"}
     slots.console(town, muster, key) → the ork's console unfolded (§7): its row, and what its building tells of it —
                                     its role's sessions, its cart, its answer (§20), its terminal, its history (runs
                                     with their cost); a building that keeps no such record gives the row alone
 
 One row per ork, in the one status of realm/status.py (§5) — the same marks the town draws — with its building, the
 cart it works on, how long it has been at it (or has waited), its spend, its AI tool, the way to stop it softly (⏹,
-§9) and, when it asks, the way to answer it. Waiting first, then the longest running: a long session that never asks
-is worth a look too.
+§9) and, when it asks, the way to answer it. An ork stopped on its own error (`!`) has a row with what broke
+(`error`) and `clear`; one held for a limit (⏳) has its wait: until when, and Run anyway (§19). Waiting first, then
+the longest running: a long session that never asks is worth a look too.
 
 The rows come from three places, each ork once:
     a building that keeps its own orks (an Agent pool: `ork_slots()`, core/workers/barracks_status.py)
@@ -108,8 +109,10 @@ def rows(town, muster: Muster, now: float | None = None) -> tuple[list[dict], se
 def summary(town, muster: Muster, now: float | None = None) -> dict[str, Any]:
     found, burning = rows(town, muster, now)
     limit = getattr(getattr(town.scroll, "budget", None), "supply_max_workers", 0) if town.scroll is not None else 0
-    return {"working": sum(1 for r in found if r["state"] != status.ASKS), "limit": limit,
-            "asks": sum(1 for r in found if r["state"] == status.ASKS), "fire": len(burning), "rows": found}
+    count = {state: sum(1 for r in found if r["state"] == state) for state in (status.ASKS, status.HELD, status.ERROR)}
+    # held work takes no slot (town-time.md §4); an ork stopped on its error holds none either
+    return {"working": len(found) - sum(count.values()), "limit": limit, "asks": count[status.ASKS],
+            "held": count[status.HELD], "errors": count[status.ERROR], "fire": len(burning), "rows": found}
 
 
 def console(town, muster: Muster, key: str, now: float | None = None) -> dict[str, Any] | None:

@@ -3,7 +3,7 @@ words: each ork's state with the task it works on named, each waiting task's wai
 past it, and the building's own state. Data only: the view draws it (gui/views/barracks.py).
 
     w.task_wait(task)      → status.Wait | None     (None: it does not wait — it works, or it is done)
-    w.ork_status(orc)      → status.OrkStatus
+    w.ork_status(orc)      → status.OrkStatus     (asks ❓, held for a limit ⏳, its own error !, at work, at rest)
     w.building_status()    → "working" | "idle" | "burning" | "smouldering"
 """
 from __future__ import annotations
@@ -36,6 +36,8 @@ class StatusMixin:
             return None
         if st.paused:
             return status.Wait(status.PAUSED, "paused by you", skip=status.Skip("pause", "Resume"))
+        if self.limit_held(task, now):
+            return self.limit_wait(task, now)
         if task.decided.startswith("budget"):
             return status.Wait(status.LIMIT, "held: the budget is spent")
         if task.status == "planning":
@@ -96,6 +98,15 @@ class StatusMixin:
         if asking is not None:
             return status.OrkStatus(orc.name, status.ASKS, title, cart=asking.title, cart_id=asking.id,
                                     assumptions=len(asking.assumptions), wait=self.task_wait(asking, now))
+        now = time.time() if now is None else now
+        held = next((t for t in st.queue if t.wait_for == orc.name and self.limit_held(t, now)), None)
+        if held is not None:
+            return status.OrkStatus(orc.name, status.HELD, title, cart=held.title, cart_id=held.id,
+                                    wait=self.limit_wait(held, now))
+        if orc.error:
+            failed = st.task(orc.error_task)
+            return status.OrkStatus(orc.name, status.ERROR, title, cart=failed.title if failed else "",
+                                    cart_id=failed.id if failed else "", error=orc.error)
         return status.OrkStatus(orc.name, status.RESTING, title)
 
     def _building_title(self) -> str:
@@ -119,25 +130,31 @@ class StatusMixin:
         self._since[orc_name] = time.time()
 
     def ork_slots(self, now: float | None = None) -> list[dict]:
-        """Each ork at work or asking, as the 🥩 list's row: its one status, how long, its spend, its tool, the way
-        to stop it softly and the way to answer it."""
+        """Each ork at work, asking, held for a limit or stopped on its own error, as the 🥩 list's row: its one
+        status, how long, its spend, its tool, the way to stop it softly, to answer it, or to clear its error (a
+        held one's way past is its wait's skip: Run anyway)."""
         now = time.time() if now is None else now
         since = getattr(self, "_since", {})
         rows = []
         for orc in self.state.orcs:
             s = self.ork_status(orc, now)
-            if s.state not in (status.THINKING, status.TOOL, status.ASKS):
+            if s.state not in (status.THINKING, status.TOOL, status.ASKS, status.HELD, status.ERROR):
                 continue
             task = self.state.task(s.cart_id) if s.cart_id else None
+            at_work = s.state in (status.THINKING, status.TOOL)
             row = {**s.as_dict(now=now), "key": f"{self.building_id}/{orc.name.lower()}", "building_id": self.building_id,
-                   "since_s": round(now - since[orc.name]) if s.state != status.ASKS and orc.name in since else
-                   (round(now - task.waits_since) if task is not None and task.waits_since else None),
+                   "since_s": round(now - since[orc.name]) if at_work and orc.name in since else
+                   (round(now - task.waits_since) if s.state == status.ASKS and task is not None and task.waits_since
+                    else None),
                    "spend": round((task.cost_usd or 0.0), 2) if task is not None else 0.0,
-                   "tool": orc.harness, "stop": None, "answer": None}
-            if s.state == status.ASKS and task is not None:
+                   "tool": orc.harness, "stop": None, "answer": None, "clear": None}
+            if s.state == status.ERROR:
+                row["clear"] = {"command": "act", "args": {"id": self.building_id, "act": "clear_error",
+                                                           "args": {"ork": orc.name}}}
+            elif s.state == status.ASKS and task is not None:
                 row["answer"] = {"kind": "pool", "building": self.building_id, "task": task.id,
                                  "question": task.question, "questions": list(task.questions)}
-            else:
+            elif at_work:                          # a held one's way past is its wait's skip: Run anyway
                 row["stop"] = {"command": "act", "args": {"id": self.building_id, "act": "stop_ork",
                                                           "args": {"ork": orc.name}}}
             rows.append(row)

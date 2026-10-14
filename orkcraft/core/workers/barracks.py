@@ -56,9 +56,10 @@ from orkcraft.core.workers.barracks_paths import PathsMixin
 from orkcraft.core.workers.barracks_plan import PlanMixin
 from orkcraft.core.workers.barracks_review import ReviewMixin
 from orkcraft.core.workers.barracks_console import ConsoleMixin
+from orkcraft.core.workers.barracks_limits import LimitsMixin
 from orkcraft.core.workers.barracks_status import StatusMixin
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, settle, steward, tiers
+from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, settle, steward, tiers, tool_errors
 from orkcraft.sources import telemetry
 
 ICON = {"idle": "💤", "working": "⚒"}
@@ -127,6 +128,7 @@ class RunOutcome:
     gist: str = ""                                       # what it did or found (barracks_asks.py)
     gist_from: str = ""                                  # "block" · "last paragraph"
     accepted: bool | None = None                         # None: never reviewed (an error, a question)
+    limit: bool = False                                  # its AI tool said its usage limit is hit (barracks_limits.py)
     notes: str = ""
     pr: str = ""
     pr_note: str = ""
@@ -148,7 +150,8 @@ def take_back(town, source_id: str, payload: pipes.Payload) -> str:
     return ""
 
 
-class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin, StatusMixin, ConsoleMixin, Worker):
+class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin, StatusMixin, ConsoleMixin, LimitsMixin,
+                     Worker):
     TYPE = "barracks"
     TAKES_REWORK = True
     APPROVAL = gate.APPROVAL      # the hop's outcome on a draft that waits for the operator (a Loot always holds it)
@@ -378,7 +381,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
                 continue
             if f.over_budget(st.spent):
                 return
-            nxt = f.next_for(o, [q for q in st.queue if self.held_by(q) is None], room=len(st.orcs) < f.max_orcs)
+            nxt = f.next_for(o, [q for q in st.queue if self.held_by(q) is None and not self.limit_held(q)],
+                             room=len(st.orcs) < f.max_orcs)
             if nxt is not None:
                 st.log(bk.Decision(bk.now_iso(), nxt.id, "follow-up" if nxt.wait_for else "reuse", o.name,
                                    f"{o.name} is free" + (" — its follow-up" if nxt.wait_for else "")))
@@ -419,12 +423,14 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
     # -- work ---------------------------------------------------------------------------------------
 
     def _assign(self, task: bk.PoolTask, orc: bk.PoolOrc | None, how: str) -> None:
-        if orc is None:
+        if orc is None or self.town_holds(task, orc):      # its tool's window nearly spent: held for the reset
             return
         st = self.state
         if task in st.queue:
             st.queue.remove(task)
         task.status, task.orc, task.wait_for = "working", orc.name, ""
+        task.limit_until, task.limit_by, task.limit_skip = 0.0, "", False
+        orc.error = orc.error_task = ""                    # at work again: its last error is behind it
         task.attempts += 1
         self.started(orc.name)
         if task not in st.tasks:
@@ -547,6 +553,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
             out.error = "stopped"
         except Exception as e:  # one orc's failure must not take the barracks down
             out.error = str(e)[:300]
+            out.limit = isinstance(e, tool_errors.ToolError) and e.kind == tool_errors.LIMIT
         timeline.take(self.town, where, project, f"after {orc.name}: {task.title}")
         self._call(self.finish, task.id, orc.name, out)
 
@@ -682,12 +689,16 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
         elif not out.error:              # a harness without sessions: nothing to resume
             orc.session, orc.session_tasks = "", 0
         ok = out.accepted is True
-        orc.done, orc.failed = orc.done + int(ok), orc.failed + int(out.accepted is False or bool(out.error))
-        f.learn(orc, ok, out.cost, out.tokens or None)
+        failed = out.accepted is False or (bool(out.error) and not out.limit)
+        orc.done, orc.failed = orc.done + int(ok), orc.failed + int(failed)
+        if not out.limit:                                 # a limit is its tool's, not the ork's
+            f.learn(orc, ok, out.cost, out.tokens or None)
         st.stats = f.stats
         for q, a, _who in out.qa:
             st.log(bk.Decision(bk.now_iso(), task.id, "answer", orc.name, f"{q} → {a}"))
-        if out.error and out.error != "stopped" and not task.retried and not task.publish:
+        if out.error and out.limit:                       # held until its tool's window resets (barracks_limits.py)
+            self.tool_limit(task, orc)
+        elif out.error and out.error != "stopped" and not task.retried and not task.publish:
             task.retried = True                           # a crash is tried once more, by itself
             st.log(bk.Decision(bk.now_iso(), task.id, "retry", orc.name, f"once more after: {out.error[:200]}"))
             st.tasks.remove(task)
@@ -696,6 +707,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
         elif out.error:
             task.status = "failed"
             self._unclaim(task)
+            if out.error != "stopped":                    # the ork's own `!`, with what broke
+                self.ork_failed(orc, task, out.error)
             if task.parent:                               # the whole fails when nothing else runs (_advance)
                 st.log(bk.Decision(bk.now_iso(), task.id, "failed", orc.name, f"part `{task.sub}`: {out.error}"))
             else:

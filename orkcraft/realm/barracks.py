@@ -102,6 +102,8 @@ class PoolOrc:
     session_tasks: int = 0          # tasks the current session carries
     tokens: int = 0
     persona: str = ""               # who it was hired as (realm/personas.py); "" — any work
+    error: str = ""                 # its last run failed: what broke, until it takes work again or you clear it
+    error_task: str = ""            # … the task that run was on
 
     @property
     def tier(self) -> str | None:
@@ -171,6 +173,9 @@ class PoolTask:
     waits_since: float = 0.0        # asked the operator since then (epoch seconds): the autonomy says how long
     ask_kind: str = ""              # what it asks: question | rejected | persona | draft (never decided by the orks)
     retried: bool = False           # a crashed run was tried once more already
+    limit_until: float = 0.0        # held for a limit until then (epoch s; town-time.md §4); 0 — not held
+    limit_by: str = ""              # who held it: "tool" (its AI tool hit its limit) | "town" (the window nearly spent)
+    limit_skip: bool = False        # Run anyway: the town holds it no more for its window
     # Areas in work and design briefs (realm/claims.py, realm/briefs.py; docs/design/barracks-designs.md).
     claimed: list[str] = field(default_factory=list)  # the paths it claims (a guess until its work shows them)
     overlaps: list[dict] = field(default_factory=list)  # other tasks on its area: key, title, paths, branch, pr, …

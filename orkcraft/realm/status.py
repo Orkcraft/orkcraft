@@ -9,6 +9,10 @@ wherever an ork or a building is drawn, and every wait with why, until when and 
     w.line                         # "starts on its own in 4 min"
     w.as_dict(now)                 # {why, line, until, in_s, skip: {act, label, args}}
 
+    status.OrkStatus("Grunt", status.ERROR, error="Claude Code exited with 1: …")   # its own `!`, with what broke
+    status.OrkStatus("Grunt", status.HELD, wait=status.held("Claude Code", reset, by=status.BY_TOOL, skip=…))  # ⏳
+    status.reset_of(town.limits, "claude", now)       # when the tool's spent window comes back (epoch s) | None
+
 Never colour alone: each state has a shape (Camp) and a short word (Office), so either look, and a person who does
 not tell colours apart, read the same. Colours are the design system's (`design-system/`), not this module's. The
 words are the plain ones: a status is a label, not the camp's voice (CLAUDE.md, Wording). Pure module, no face.
@@ -20,14 +24,18 @@ import time
 from dataclasses import asdict, dataclass, field
 
 # An ork (§5): state → (Camp mark, Office word, asks for attention: 0 no · 1 softly · 2 yes).
+# An error is the ork's own (its run failed, its tool errored): `!` on that ork; its building burns only when the
+# building itself is broken. Held: its work waits for a limit window to reset (town-readability.md §4, town-time.md §4).
 RESTING, THINKING, TOOL, READY, ASKS, ERROR, STOPPED = "resting", "thinking", "tool", "ready", "asks", "error", "stopped"
+HELD = "held"
 ORK_STATES: dict[str, tuple[str, str, int]] = {
     RESTING: ("Zz", "Resting", 0),
     THINKING: ("💭", "Thinking", 0),
     TOOL: ("🔧", "Running", 0),
     READY: ("📜", "Done", 1),
     ASKS: ("❓", "Asks", 2),
-    ERROR: ("✖", "Error", 2),
+    ERROR: ("!", "Error", 2),
+    HELD: ("⏳", "Held for a limit", 1),
     STOPPED: ("■", "Stopped by you", 0),
 }
 # A building (§5): state → (Camp mark, Office word). A question is the ork's, a stop is the building's.
@@ -96,6 +104,52 @@ def timer(seconds: float, what: str = "starts on its own", skip: Skip | None = N
     return Wait(TIMER, f"{what} {when(seconds, now)}", now + max(seconds, 0), skip)
 
 
+# Held for a limit (§19, town-time.md §4): who held it, and the way past it.
+BY_TOOL, BY_TOWN = "tool", "town"     # the AI tool said its limit is hit · the town held it, the window nearly spent
+SPENT = 0.02                          # a window with this share or less left is spent
+NEARLY = 0.05                         # … this or less: the town holds new work until it resets
+UNKNOWN_RESET_S = 15 * 60             # a reset nobody can read: the work is tried again after this
+
+
+def _reset_s(lim) -> float | None:
+    reset = getattr(lim, "reset", None)
+    if reset is None:
+        return None
+    return reset.timestamp() if isinstance(reset, dt.datetime) else float(reset)
+
+
+def reset_of(limits, provider: str, now: float | None = None, below: float = SPENT) -> float | None:
+    """When `provider`'s window comes back (epoch seconds), from the quota readers' last read (`town.limits`): the
+    latest reset among its windows with `below` or less left (all of them must come back), else None — nothing read
+    as spent, or no reset read."""
+    now = time.time() if now is None else now
+    resets = [r for lim in limits or () if getattr(lim, "provider", "") == provider
+              and getattr(lim, "remaining", None) is not None and lim.remaining <= below
+              and (r := _reset_s(lim)) is not None and r > now]
+    return max(resets) if resets else None
+
+
+def held(tool: str, until: float | None, by: str = BY_TOOL, skip: Skip | None = None, now: float | None = None,
+         known: bool = True) -> Wait:
+    """The wait of work held for a limit, in plain words, with until when. A reset nobody could read (`known`
+    False, or no `until`) is said so: the work is tried again at `until` (UNKNOWN_RESET_S from now when None)."""
+    now = time.time() if now is None else now
+    if until is None:
+        until, known = now + UNKNOWN_RESET_S, False
+    if by == BY_TOWN:
+        line = f"held by the Treasurer until the {_clock(until, now)} reset: {tool}'s window is nearly spent"
+    elif known:
+        line = f"held: {tool} hit its usage limit · it resets {when(until - now, now)}"
+    else:
+        line = f"held: {tool} hit its usage limit · when it resets is not known, tried again {when(until - now, now)}"
+    return Wait(LIMIT, line, until, skip)
+
+
+def _clock(at: float, now: float) -> str:
+    then = dt.datetime.fromtimestamp(at)
+    return f"{then:%H:%M}" if then.date() == dt.datetime.fromtimestamp(now).date() else f"{then:%b} {then.day}, {then:%H:%M}"
+
+
 def quoted(title: str) -> str:
     return f"«{' '.join((title or '').split())[:80]}»"
 
@@ -111,6 +165,7 @@ class OrkStatus:
     cart_id: str = ""
     assumptions: int = 0             # marked on its result (§4)
     wait: Wait | None = None
+    error: str = ""                  # ERROR: what broke, in a line (its run's or its tool's own words)
 
     def mark(self, look: str = "camp") -> str:
         camp, office, _ = ORK_STATES.get(self.state, ORK_STATES[RESTING])
@@ -132,6 +187,11 @@ class OrkStatus:
             return f"thinking: {self.what}" if self.what else "thinking"
         if self.state == ASKS:
             return "asks you"
+        if self.state == ERROR:
+            why = self.error if len(self.error) <= 80 else f"{self.error[:79].rstrip()}…"   # whole in `error`
+            return f"error: {why}" if why else "error"
+        if self.state == HELD:
+            return "held for a limit"
         if self.state == READY:
             n = self.assumptions
             return "done" + (f" · {n} assumption{'' if n == 1 else 's'}" if n else "")
@@ -148,7 +208,7 @@ class OrkStatus:
         return {"name": self.name, "state": self.state, "mark": self.mark(look), "word": self.mark("office"),
                 "attention": self.attention, "building": self.building, "what": self.what, "cart": self.cart,
                 "cart_id": self.cart_id, "assumptions": self.assumptions, "doing": self.doing(), "line": self.line(),
-                "wait": self.wait.as_dict(now) if self.wait else None}
+                "wait": self.wait.as_dict(now) if self.wait else None, "error": self.error}
 
 
 def building_state(working: bool, asks_blocking: bool = False, error: bool = False, stopped: bool = False) -> str:

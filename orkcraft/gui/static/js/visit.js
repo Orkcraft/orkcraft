@@ -4,6 +4,9 @@
 // at its steward: its tier and AI tool) — a 👎 is what teaches it; 👍 stays in the building's Info (js/console.js).
 // The mouse over a building brings nobody out. The building no longer selected, it waits a moment and walks back in (facing right). An ork that asks comes out by itself and waits there,
 // a yellow ? on a dark chip over its head (docs/design/town-readability.md §4): a press answers it (js/orders.js). An ork come to a yard for a wake stands there while it is.
+// An ork stopped on its own error comes out with a flickering red ! (`signal-fire`), one held for a limit with ⏳
+// (`signal-held`), only while the host says so (`b.signal`, gui/state.py): a press opens its console, which says what
+// broke, or until when it waits and Run anyway (js/slots.js).
 // A yard's 👍 / 👎 rate the building (its steward wakes on a 👎), a hut's its lead ork's work. Office draws none of
 // it (office.css): its 👍 / 👎 and models are in the building's Info (js/console.js).
 import { signal } from "@preact/signals";
@@ -14,6 +17,7 @@ import { openOrders } from "./orders.js";
 import { DislikeDialog, NoteDialog } from "./console.js";
 import { openBuilding } from "./windows.js";
 import { HATS, ToolMark } from "./icons.js";
+import { showConsole } from "./orkconsole.js";
 
 const WALK_MS = 240;               // out of the door to its place on the plinth, or back
 const STAY_MS = 400;               // the mouse gone, it waits this long before it walks back in
@@ -62,9 +66,10 @@ export function Outside({ b, selected }) {
   // comes out of it (docs/design/yards.md §8)
   const o = b.yard ? null : lead(b);
   const asking = !!b.alert;
+  const sig = !asking && !b.yard ? b.signal : null;       // its own ! or ⏳
   const visiting = !!(b.yard && b.visit);
-  const rates = !asking && (b.yard || !!o);
-  const place = usePlace(!b.yard && (asking || visiting || (rates && selected)));
+  const rates = !asking && !sig && (b.yard || !!o);
+  const place = usePlace(!b.yard && (asking || !!sig || visiting || (rates && selected)));
   if (b.yard || place === "in" || !o) return null;
   const who = o ? o.name : say(b.title);
   const stop = (e) => e.stopPropagation();
@@ -89,6 +94,7 @@ export function Outside({ b, selected }) {
     title=${`${say("AI tool")}: ${thinker.scheme}`}><${ToolMark} mark=${harness} /></span>`}`;
   const bubble = place !== "out" ? null
     : asking ? html`<span class="gui-out__bubble is-ask" aria-hidden="true">?</span>`
+    : sig ? html`<span class=${`gui-out__bubble is-ask is-${sig.kind}`} aria-hidden="true">${sig.kind === "error" ? "!" : "⏳"}</span>`
     : rates && selected ? html`<span class="gui-out__bubble" role="group" aria-label=${`${who}: ${say("rate its work")}`}
         onPointerDown=${stop} onClick=${stop}>
           <button class="gui-out__act" onClick=${dislike}
@@ -100,10 +106,15 @@ export function Outside({ b, selected }) {
             aria-label=${say("Its settings: tier and AI tool")}><img class="ok-sprite" src="/ds/sprites/icons/settings.png"
             srcset="/ds/sprites/icons/settings@2x.png 2x" width="20" height="20" alt="" draggable="false" /></button>`}</span>`
     : null;
-  const at = cls("gui-out", { [`is-${place}`]: true, "is-asking": asking, "is-step": walking });
+  const at = cls("gui-out", { [`is-${place}`]: true, "is-asking": asking, "is-stuck": !!sig && sig.kind === "error",
+    "is-held": !!sig && sig.kind === "held", "is-step": walking });
   if (asking) {
     return html`<button class=${at} title=${`${who}: ${b.alert.title}`} aria-label=${`${say("Answer")} ${who}`}
         onPointerDown=${stop} onClick=${(e) => { stop(e); openOrders(b.alert.id); }}>${bubble}${body}</button>`;
+  }
+  if (sig) {
+    return html`<button class=${at} title=${sig.line} aria-label=${`${sig.name}: ${say(sig.kind === "error" ? "Error" : "Held for a limit")}`}
+        onPointerDown=${stop} onClick=${(e) => { stop(e); showConsole(sig.key); }}>${bubble}${body}</button>`;
   }
   return html`<span class=${at} title=${visiting ? `${who} · ${say("visiting")}` : who}>${bubble}${body}</span>`;
 }

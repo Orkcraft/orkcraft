@@ -11,7 +11,7 @@
 // The list leads to the console, it does not repeat it. ⏹ stops one ork softly; Stop all stops everything at once.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { town, command, say } from "./link.js";
+import { town, command, act, say } from "./link.js";
 import { openBuilding } from "./windows.js";
 import { consoleOrk, unfolded, closeConsole, money, Unfolded, Questions } from "./orkconsole.js";
 import { lit } from "./cover.js";
@@ -140,9 +140,13 @@ export function OrkConsole() {
     ${r && r.answer && !(open && pool) && (pool && !open
       ? html`<${Questions} building=${r.answer.building} a=${r.answer} />`
       : html`<p><b>${r.answer.question}</b></p><${Reply} r=${r} />`)}
-    ${r && r.wait && !r.answer && !open && html`<p class="ok-tone-muted">⏳ ${r.wait.line}</p>`}
+    ${r && r.wait && !r.answer && !open && html`<p class="ok-tone-muted">⏳ ${r.wait.line}${r.wait.skip && r.wait.skip.act !== "open"
+      && r.building_id && html` <button class="ok-btn" onClick=${() => act(r.building_id, r.wait.skip.act, r.wait.skip.args).catch(() => {})}>${say(r.wait.skip.label)}</button>`}</p>`}
+    ${r && r.error && html`<p class="ok-tone-error">! ${r.error}</p>`}
     ${r && html`<div class="ok-row">
       ${r.stop && html`<button class="ok-btn" title=${say("Its run ends where it is; its session is kept")} onClick=${() => stop(r)}>⏹ ${say("Stop")}</button>`}
+      ${r.clear && html`<button class="ok-btn" title=${say("You read it: the ork rests again")}
+        onClick=${() => command(r.clear.command, r.clear.args).catch(() => {})}>${say("Clear")}</button>`}
       ${r.building_id && html`<button class="ok-btn" title=${say("Its building")}
         onClick=${() => openBuilding(r.building_id)}>${say("Open")} ▸</button>`}
       <span class="ok-tone-muted">${[money(r.spend), r.tool, since(r.since_s)].filter(Boolean).join(" · ")}</span>

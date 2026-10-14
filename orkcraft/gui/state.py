@@ -25,7 +25,7 @@ from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.gui import projects as gui_projects
 from orkcraft.gui import views
-from orkcraft.realm import card_docs, catalog, halt, lexicon, modes, motion, pipes, script_first, steward_models
+from orkcraft.realm import card_docs, catalog, halt, lexicon, modes, motion, pipes, script_first, status, steward_models
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.scroll import road_key
 
@@ -121,8 +121,21 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             # answers (the demo's calls none)
             "keeper": bs.id in town.custom_specs and not (town.demo and runners.KEEPER_RUNNER is None),
             "loose": _loose(worker),                       # its exits with no road yet: stubs on the map
+            "signal": None,                                # an ork's own ! or ⏳ (`signals`, from the 🥩 rows)
         })
     return out
+
+
+def signals(found: list[dict[str, Any]], rows: list[dict[str, Any]]) -> None:
+    """Each building's ork stopped on its own error (`!`) or held for a limit (⏳), from the 🥩 rows (core/slots.py),
+    for the ork that comes out of it (js/visit.js): the error first. A question is the ork's ❓ (`alert`); the
+    building burns only when it is broken itself (docs/design/town-readability.md §4)."""
+    by = {b["id"]: b for b in found}
+    for kind, state in (("error", status.ERROR), ("held", status.HELD)):
+        for r in rows:
+            b = by.get(r.get("building_id") or "")
+            if b is not None and b.get("signal") is None and r.get("state") == state:
+                b["signal"] = {"kind": kind, "key": r["key"], "name": r["name"], "line": r["line"]}
 
 
 def visit(b: dict[str, Any], jobs) -> str:
@@ -359,6 +372,8 @@ def alerts(town: Town, muster: Muster, night=None) -> list[dict[str, Any]]:
 
 def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None = None,
              live=None, night=None) -> dict[str, Any]:
+    found, ork_slots = buildings(town, muster), slots.summary(town, muster)
+    signals(found, ork_slots["rows"])
     return {
         "project": town.scroll.meta.get("project_name") or town.repo_root.name,
         "repo": str(town.repo_root),
@@ -371,12 +386,12 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "active_orkspace": town.scroll.active_orkspace_id,
         "orkspaces": orkspaces(town, muster),
         "projects": gui_projects.snapshot(town),
-        "buildings": buildings(town, muster),
+        "buildings": found,
         "roads": roads(town),
         "carts": carts(town, muster=muster),
         "travel": float(getattr(town, "cart_travel_s", 0.0) or 0.0),
         "hud": hud(town, muster, treasury, limits),
-        "slots": slots.summary(town, muster),     # 🥩 the orks at work or asking, one row each (core/slots.py)
+        "slots": ork_slots,                       # 🥩 the orks at work or waiting on you, one row each (core/slots.py)
         "sessions": sessions(live),
         "alerts": alerts(town, muster, night),
         "motions": motion.ready(),               # the houses that move at work (docs/design/building-motion.md)

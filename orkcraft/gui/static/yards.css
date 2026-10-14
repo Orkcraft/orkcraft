@@ -96,6 +96,10 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
   animation: gui-ask var(--motion-ask) steps(2) 1; }   /* a 2-frame bob, then still (tokens: motion-ask) */
 .gui-out__bubble.is-ask::after { display: none; }
 @keyframes gui-ask { 50% { transform: translateY(-2px); } }
+/* Its own error: a red ! that flickers; held for a limit: ⏳ on the same chip (town-readability.md §4). */
+.gui-out__bubble.is-error { color: var(--signal-fire); animation: gui-out-stuck var(--motion-flicker) steps(2) infinite; }
+.gui-out__bubble.is-held { color: var(--signal-held); font-size: 12px; animation: none; }
+@keyframes gui-out-stuck { 50% { opacity: .55; } }
 .gui-out__act { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 2px;
   border: 0; background: none; cursor: pointer; line-height: 0; }
 .gui-out__act:hover { background: rgb(0 0 0 / .12); }
