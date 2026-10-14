@@ -70,6 +70,37 @@ def test_camps_chrome_is_wood_and_maroon_and_reads():
         assert _contrast(camp["road"], camp["canvas"]) >= 3
 
 
+def test_an_old_token_name_is_an_alias_with_its_new_names_value():
+    """docs/design/design-system-v2.md §7: the chrome's v2 names (`wood`, `bone`, `cloth`, `ink-wood`) are the source;
+    the old names stay as aliases with the same value in every theme, so nothing in the GUI changes."""
+    toks = {t["name"]: t for t in tokens.system()["color"]["tokens"]}
+    aliases = {n: t["aliasOf"] for n, t in toks.items() if "aliasOf" in t}
+    assert aliases == {"frame": "wood", "frame-focus": "bone", "banner": "cloth", "ink-gold": "ink-wood"}
+    for old, new in aliases.items():
+        assert toks[old]["value"] == toks[new]["value"], old
+
+
+def test_the_new_camps_world_keeps_outlines_chips_and_signals_readable():
+    """docs/design/design-system-v2.md §5, §7: the ground the sprites stand on is a middle value, so a dark outline and
+    a dark chip are seen on it; a chip's words read; yellow and red are only the signals'."""
+    import colorsys
+    camp = {t["name"]: t["value"]["camp"] for t in tokens.system()["color"]["tokens"]}
+    for ground in ("world-grass", "world-grass-light", "world-grass-dark", "world-earth"):
+        assert 0.12 <= _luminance(camp[ground]) <= 0.30, ground
+        assert _contrast(camp[ground], camp["art-outline"]) >= 3, ground
+        assert _contrast(camp[ground], camp["chip"]) >= 3, ground
+    assert _contrast(camp["chip-ink"], camp["chip"]) >= 7
+    for signal in ("signal-ask", "signal-fire", "signal-held"):
+        assert _contrast(camp[signal], camp["chip"]) >= 3, signal
+    for name, value in camp.items():
+        if not name.startswith(("world-", "art-")):
+            continue
+        r, g, b = (int(value[i:i + 2], 16) / 255 for i in (1, 3, 5))
+        h, _, s = colorsys.rgb_to_hls(r, g, b)
+        loud = s > 0.6 and (h * 360 < 15 or h * 360 > 345 or 45 <= h * 360 <= 65)
+        assert not loud, f"{name} {value}: a signal's yellow or red in the art"
+
+
 @pytest.mark.parametrize("type_id", sorted(catalog.TYPES))
 def test_every_type_has_a_contract_and_its_default_passes(type_id):
     c = ui.contract(type_id)
