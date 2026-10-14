@@ -377,8 +377,10 @@ FAIL_OPEN = "If Orkline is not there or fails, the hook lets the tool go on: it 
 def preview(project: Path, agy: bool | None = None) -> list[dict]:
     """What `install_all(project, agy)` would write, file by file, in plain lines: [{"file", "tool", "lines"}].
     Writes nothing."""
+    plugin = plugin_in(project)                 # the plugin brings Claude Code's session log: only the Warder there
     out = [{"file": str(FILES[h]), "tool": harnesses.title(h),
-            "lines": [f"{event}: {WHAT.get(event, event)}" for event in wanted(h)]}
+            "lines": [f"{event}: {WHAT.get(event, event)}" for event in wanted(h)
+                      if not (h == "claude" and plugin and event in SESSION_EVENTS)]}
            for h in FILES if h == "claude" or wants_codex(project)]
     if wants_agy() if agy is None else agy:
         out.append({"file": str(AGY_FILE), "tool": harnesses.title("agy"),

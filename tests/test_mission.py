@@ -206,3 +206,24 @@ def test_the_hooks_are_shown_before_they_are_written_and_taken_back_in_settings_
     host.close()
     assert cli.main(["--repo", str(fake_repo), "hooks", "remove", "--no-agy-global"]) == 0
     assert "removed: " in capsys.readouterr().out and not hooks_install.installed(fake_repo)
+
+
+def test_with_the_plugin_in_quest_4_asks_nothing_and_quest_5_still_asks_for_the_security_reviewer(fake_repo: Path):
+    """distribution.md §3: installing Orkline's Claude Code plugin was the yes to the session log; the Security
+    reviewer (the Warder) stays the person's own yes, asked before quest 5."""
+    import json
+    import os
+    from orkcraft.hooks import install as hooks_install
+    home = Path(os.environ["CLAUDE_CONFIG_DIR"])
+    home.mkdir(parents=True, exist_ok=True)
+    (home / "settings.json").write_text(json.dumps({"enabledPlugins": {hooks_install.PLUGIN_ID: True}}))
+    claude = next(f for f in hooks_install.preview(fake_repo, agy=False) if f["tool"] == "Claude Code")
+    assert len(claude["lines"]) == 1 and "Security reviewer" in claude["lines"][0]   # the session log is the plugin's
+    checkpoint.ensure(fake_repo)
+    host = Host(fake_repo, auto_commit=False)
+    m = Mission(host.town)
+    mission.save(fake_repo, {"on": True, "quest": "listen", "built": {}, "done": []})
+    assert m.view()["hooks"] is None and m.view()["press"] == "Set up External listeners"
+    mission.save(fake_repo, {"on": True, "quest": "two", "built": {}, "done": []})
+    assert m.view()["hooks"] is not None                                    # quest 5: the Warder, asked
+    host.close()

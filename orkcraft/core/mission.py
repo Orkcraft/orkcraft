@@ -121,10 +121,13 @@ class Mission:
         return None if getattr(self.town.machine, "agy_warder_checked", False) else False
 
     def _asks_hooks(self, s: dict, quest_id: str) -> bool:
-        """Quest 4 waits on the answer; quest 5 needs the Security reviewer on."""
+        """Quest 4 waits on the answer, unless Orkline's Claude Code plugin is in (installing it was the yes to the
+        session log); quest 5 needs the Security reviewer on, which the plugin does not bring."""
         if quest_id not in ("listen", "two") or hooks_install.installed(self.root):
             return False
-        return quest_id == "two" or s.get("hooks") not in ("yes", "no")
+        if quest_id == "two":
+            return True
+        return s.get("hooks") not in ("yes", "no") and not hooks_install.plugin_in(self.root)
 
     def hooks(self, yes: bool) -> list[str]:
         """The person's answer: the hooks written into the project's settings (the files written), or not now."""
