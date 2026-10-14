@@ -178,3 +178,18 @@ Everything the week's code needs is decided; the name waits (nothing that locks 
 
 Then, next week beside the marketing: Mission 1 quests 1–3, the colour pass (Camp's UI off gold, Q18), the console.
 The goal and its dates: [launch-prep.md](launch-prep.md) §1. The critical tests of CLAUDE.md gate each merge.
+
+## 9. Phase 1 of development, started 14 October in parallel sessions
+
+The product is renamed **Orkline** ([naming.md](naming.md) §9). Four sessions run at once, each on its own branch,
+each merging into `main` when the critical tests pass (CLAUDE.md), rebasing on `main` before every push:
+
+| session | backlog items ([backlog.md](backlog.md)) | touches |
+|---|---|---|
+| 1. The name | the rename to Orkline (text only, `orkline` command beside `orkcraft`); B2 "Warcraft" out of the shipped prompts and the docs (not the design system) | README, docs, GUI strings, CLI help, `pyproject.toml` |
+| 2. Small fixes | B1 Cursor's token reader; B3 the night off by default; B4 External listeners limited; B5 agy experimental and off | `quota/`, settings defaults, listeners' catalog, AI tools' setup |
+| 3. Asking | A0 the local event log; A1 research R2; A2 the way to ask, Claude Code first; then A3 one status | `core/`, `realm/`, `hooks/`, the console's views |
+| 4. Camp's colour | C1 the colour pass by tokens, forest only, Camp's UI off gold; B2's design-system part | `design-system/`, `gui/static/*.css` |
+
+Sessions 1 and 4 both touch text and tokens: session 1 leaves `design-system/` to session 4.
+

@@ -214,3 +214,22 @@ A rename removes the risk from the name, not from the product. Independent of it
 
 **One spelling:** under Orkline the name and the orks inside both say "ork", so CLAUDE.md's Wording stays as it is. Only
 the Orcline fallback would bring back the question of a name with a c beside orks with a k (§7).
+
+## 9. Decided: Orkline (the owner, 2026-10-14)
+
+**The product is renamed Orkline.** The owner's choice, with "ork" kept knowingly (the Games Workshop question of
+Q18 stays open, and "-craft", the larger weight, is gone). "Orkline": the rail line, the production line and the
+camp's story ([camp-story.md](camp-story.md)).
+
+**What changes now (text a person reads):** the name in the README, the docs, the GUI (title, onboarding, the
+Warchief's lines, About), the CLI's help and messages, `updates.json` notes from now on, `pyproject.toml`'s
+`name`/`description`, a second command **`orkline`** beside `orkcraft`.
+
+**What stays (CLAUDE.md: code keeps its names, so settings and town scrolls keep loading):** the Python package
+`orkcraft/`, module and file names, identifiers, schema `$id`s, the `.orkcraft/` folders and `~/.orkcraft`, setting
+keys, event ids; **the `orkcraft` command keeps working** for every machine already installed.
+
+**For the owner (outside the repository):** the GitHub organisation and repository renamed (GitHub redirects the
+old links); a domain for Orkline (the installer and `updates.json` keep `orkcraft.dev` until the new one serves the
+same files); the PyPI name `orkline` checked free before D1; the handles. The lawyer's hour on ORK is still worth
+having before the launch.
