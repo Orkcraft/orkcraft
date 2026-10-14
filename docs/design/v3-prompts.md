@@ -545,7 +545,7 @@ The owner, all confirmed:
    shack with crates); a click on it opens "since your last look", the profile and settings. Later: the four stages of
    growth on the figure.
 4. **Growth and the goal, visible in v3** ([growth.md](growth.md) built them in v2's look; they must not vanish):
-   - a building's **level I–III** as a footing of stone courses and a banner on its roof that turns gold at III; the
+   - a building's **level I–III** as a footing of stone courses and a banner on its roof that gains a crest at III (no gold: yellow is the question's colour); the
      **goal** (🪙 Thrift · ⚖️ Balance · 💎 Quality) as an **annex** beside it: a lean-to over stacked logs (wide, low)
      and a crystal on a whetstone (tall, narrow) — redrawn in v3. Later: the core buildings drawn anew at each level.
    - **the score made visible** ([the-score.md](the-score.md), P0 since §13 of the decisions): every cart the catapult
