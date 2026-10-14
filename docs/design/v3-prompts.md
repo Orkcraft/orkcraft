@@ -599,3 +599,19 @@ places them where they like. Each item says what it was earned for ("Earned: the
 
 **Cost:** the inventory panel, drag onto the grass with grid snap, saved in the town file — 2–3 days; 20–30 items via
 GEN. Order: the score and the stages first (they give the items), then the inventory.
+
+## 15. GEN's rounds 9–10, overnight (2026-10-14, night)
+
+**Cut (the owner's picks, confirmed in the GEN session):** st-dispatch #2 (the Task board as a dispatcher's booth,
+cut above its siding: the product draws the waiting carts from c1), st-gate #2 (the barrier down as the Review gate,
+the barrier up as `loot_vault-up`, the weighbridge in both), st-mine #2 (Research as a mine), o7-prospector #1 (the
+standing pose), k1-classes #1 (the eleven classes as `people/<role id>`), g4-growth #1 (footings 1–3, banners 1–3, the
+Thrift and Quality annexes; the Thrift annex's log ends fail the signal check). Mapping: design-system-v3.md §8 and
+`tools/camp_sheets_v3.json`.
+
+**Not generated: k2-homes and c2-fix.** Every call got HTTP 402 "Your prepayment credits are depleted": the key's
+project pays from prepaid credits (it is not the free tier, as GEN first reported), and rounds 1–9 spent them, about
+70 images. Nothing was picked overnight. Once the credits are topped up (AI Studio → the project → billing),
+`python tools/gen_sheets.py k2-homes c2-fix -n 3` runs them as written; the PM session's rules for picking them are:
+front-on, no text baked in, no magenta smear, passes the signal check, closest to the request; for c2-fix the rails
+closest to 32 art px apart and reaching the tile's edges.
