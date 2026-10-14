@@ -373,3 +373,10 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
   Build… into a row's free slot). **I2 started**: the Task board's inside (the dispatcher's booth), with stand-in art.
   **For you in the morning:** GEN has the inside's art ready to generate (booth interior, cards, panels) but waits for
   your yes before spending credits: `python tools/gen_sheets.py u6-inside u6-cards u2-panels -n 3 --max-calls 9`.
+- **21:35.** **I2 merged** (5ab8a4b): the Task board's inside, entered by the second click — three boards with the
+  cards as parchment (ork tasks) and stone (your to-dos), flags as checkboxes, drag between boards, the Taskmaster and
+  orks walking inside; Info on a merchant's panel on the right; Exit and Esc; stand-in art until GEN's run. I2's own
+  call, to confirm: Office and the phone keep today's large card. Demo traffic added by I1 (56d2db5): carts move, the
+  siding holds the backlog, the score shows two demo weeks. Started: **M1** (Mission 1 on the stations, the catapult
+  finale, its rewards recorded) and **INV** (growth by missions and the score, the class portrait, the home at the
+  gate, the inventory with placed items).
