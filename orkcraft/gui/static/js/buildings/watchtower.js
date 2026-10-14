@@ -1,23 +1,25 @@
-// 🗼 Watchtower: what comes in from outside (core/workers/watchtower.py). Closed: how many are new, a
-// counter per source (a failing one marked), the newest message in the foot. Open, made for the half
-// panel: a chip per source with what is new in it (it filters the feed), when it last looked, Add source,
-// Open new, Read all and Check now; a failing source says why; the feed one line per message — its source's
-// glyph, who, the start of its text, when, read or not (Only unread hides the read) — a signal opening over
-// it to be read in full (← back); the sources and the intent open the same way, from Sources & intent, and so
-// does Add source, which a tower with no source opens on (watchtower_add.js, the panel's ← Back back to the
-// list) — never a dialog. Sources but nothing in yet: a hint, Check now and Add source.
+// 🗼 External listeners: what comes in from outside (core/workers/watchtower.py). It has no Work window
+// (docs/design/lighter-buildings.md §2): its card does its everyday job, what came in. Closed: how many are new, a
+// counter per source (a failing one marked), the newest message in the foot. Large (opened, grown in place): a chip
+// per source with what is new in it (it filters the feed), when it last looked, Open new, Read all and Check now; a
+// failing source says why; the feed one line per message — its source's glyph, who, the start of its text, when,
+// read or not (Only unread hides the read) — a signal opening over it to be read in full (← back). Its sources and
+// its intent are its Info (`settings`), and so is Add source, a page of its Info (watchtower_add.js, the panel's
+// ← Back) — never a dialog. Sources but nothing in yet: a hint, Check now and Add source.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { act, say } from "../link.js";
+import { act, details, say } from "../link.js";
 import { askKeeper } from "../keeper.js";
 import { Dialog } from "../dialog.js";
-import { openBuilding, setupDone } from "../windows.js";
+import { usePeek } from "../windows.js";
+import { openInfoPage, closeInfoPage } from "../infopage.js";
 import { AddPane, Glyph, editSource } from "./watchtower_add.js";
 import { Places } from "./watchtower_places.js";
 
+export const work = false;         // no Work window: its large card and its Info (lighter-buildings.md §2)
+
 const source = signal({});         // building id → the source whose feed shows ("" all)
-const tab = signal({});            // building id → "signals" | "settings" | "add" (over the feed); none: "add" while no source
 const opened = signal({});         // building id → the key of the signal read over the feed
 const unreadOnly = signal({});     // building id → the feed hides the read ones (else every message)
 
@@ -42,17 +44,18 @@ if (typeof document !== "undefined" && !document.querySelector(`link[href="${she
 /** No view of its own: in Camp it stands with no card, its house and its name alone (js/hut.js bareOf). */
 export const bare = true;
 
-export function card(b) {
+export function card(b, level = "s") {
   const c = b.card;
   if (!c) return null;
   if (!c.sources.length) {
     return html`<div class="gui-hut__body-in">
       <div class="gui-hut__big">${say("No sources")}<small>${say("yet")}</small></div>
       <button class="ok-btn primary gui-tower__add" onPointerDown=${(e) => e.stopPropagation()}
-        onClick=${(e) => { e.stopPropagation(); tab.value = { ...tab.value, [b.id]: "add" }; openBuilding(b.id, "work"); }}>+ ${say("Add source")}</button>
+        onClick=${(e) => { e.stopPropagation(); addSource(b.id); }}>+ ${say("Add source")}</button>
       <div class="gui-hut__text ok-tone-muted">${say("Mail, GitHub, Slack, Jira, Figma…")}</div>
     </div>`;
   }
+  if (level === "l") return html`<div class="gui-hut__body-in gui-tower"><${Large} id=${b.id} /></div>`;
   const s = (c.latest || [])[0];
   const n = c.new ?? 0;
   return html`<div class="gui-hut__body-in gui-tower">
@@ -88,8 +91,11 @@ export function quick(id, action) {
 
 // -- open: the head -------------------------------------------------------------------------------------------
 
-/** Make a listed source again in the pane over the feed: Edit (step 2) or Log in again (step 1). */
-const fix = (id, x, login) => editSource(id, x.id, login).then(() => { tab.value = { ...tab.value, [id]: "add" }; }, () => {});
+/** Add source: a page of its Info (js/infopage.js), the steps of watchtower_add.js. */
+const addSource = (id) => openInfoPage(id, { kind: "add" });
+
+/** Make a listed source again on that page: Edit (step 2) or Log in again (step 1). */
+const fix = (id, x, login) => editSource(id, x.id, login).then(() => addSource(id), () => {});
 
 /** The one button a failing source offers: Log in again, Edit — or none, when it only could not get through. */
 function Fix({ id, x }) {
@@ -102,21 +108,14 @@ function Failing({ id, listed }) {
     <span>✗ <b>${x.label}</b> ${say("is failing")}: ${x.why}</span> <${Fix} id=${id} x=${x} /></p>`);
 }
 
-const addSource = (id) => { tab.value = { ...tab.value, [id]: "add" }; opened.value = { ...opened.value, [id]: null }; };
-
-const shownTab = (id, d) => tab.value[id] || (d.sources.length ? "signals" : "add");
-
 function Sources({ id, d }) {
-  if (!d.sources.length) return null;          // nothing to filter or check yet: the feed pane is Add a source
+  if (!d.sources.length) return null;          // nothing to filter or check yet
   const pick = source.value[id] || "";
-  const on = shownTab(id, d);
-  if (on === "add") return null;                // Add source fills the Work tab; the panel's ← Back is the way out
   const choose = (key) => {
     source.value = { ...source.value, [id]: key };
-    tab.value = { ...tab.value, [id]: "signals" };
     opened.value = { ...opened.value, [id]: null };
   };
-  const chip = (key, label, n, why) => html`<button key=${key} class=${cls("ok-chip", { "is-on": pick === key && on === "signals" })}
+  const chip = (key, label, n, why) => html`<button key=${key} class=${cls("ok-chip", { "is-on": pick === key })}
       aria-pressed=${pick === key} title=${why || ""} onClick=${() => choose(key)}>
     ${label} <b class=${cls("", { "ok-tone-error": !!why })}>${why ? "✗ ERR" : n}</b></button>`;
   const state = [d.looking ? say("checking…") : d.checked && `${say("checked")} ${d.checked}`,
@@ -128,9 +127,6 @@ function Sources({ id, d }) {
       ${d.sources.map((s) => chip(s.id, s.label, s.new, s.why))}
     </div>
     <div class="gui-tower__bar">
-      <button class="ok-btn primary gui-tower__addsrc" onClick=${() => addSource(id)}>+ ${say("Add source")}</button>
-      <button class=${cls("ok-btn", { "is-pressed": on === "settings" })} aria-pressed=${on === "settings"}
-        onClick=${() => { tab.value = { ...tab.value, [id]: on === "settings" ? "signals" : "settings" }; }}>${say("Sources & intent")}</button>
       <button class="ok-btn" onClick=${() => act(id, "check_now").catch(() => {})}>${say("Check now")}</button>
       <button class="ok-btn" onClick=${() => act(id, "read_all", { source: pick }).catch(() => {})}>${say("Read all")}</button>
       <button class="ok-btn" disabled=${!d.new} onClick=${() => act(id, "open_new").then((key) => { if (key) opened.value = { ...opened.value, [id]: key }; }, () => {})}>${say("Open new")}</button>
@@ -204,12 +200,37 @@ function Item({ id, d, at }) {
 }
 
 function FeedPane({ id, d }) {
-  const on = shownTab(id, d);
-  if (on === "settings") return html`<${Settings} id=${id} d=${d} />`;
-  const signals = () => { tab.value = { ...tab.value, [id]: "signals" }; };
-  if (on === "add") return html`<${AddPane} id=${id} d=${d} done=${signals} saved=${() => { signals(); setupDone(id); }} />`;
   const at = opened.value[id];
   return at ? html`<${Item} key=${at} id=${id} d=${d} at=${at} />` : html`<${Feed} id=${id} d=${d} />`;
+}
+
+/** Its large card's everyday job (lighter-buildings.md §2): what came in — the chips, Check now, Read all, Open new,
+ *  the feed and a signal read over it. A press inside is the card's, never the hut's. */
+function Large({ id }) {
+  usePeek(id);
+  const got = details.value[id];
+  const d = got && got.data;
+  const keep = (e) => e.stopPropagation();
+  if (!d || !d.sources) return html`<p class="ok-tone-muted">${say("Opening…")}</p>`;
+  return html`<div class="gui-tower__large" onPointerDown=${keep} onClick=${keep} onDblClick=${keep}>
+    <${Sources} id=${id} d=${d} /><${FeedPane} id=${id} d=${d} /></div>`;
+}
+
+/** Its sources and its intent, in its Info (lighter-buildings.md §2): what it listens for, each source with Edit,
+ *  Log in again and Remove, Add source, its places, and the sources changed in plain words by its steward. */
+export function settings(id, d) {
+  if (!d || !d.listed) return null;
+  return html`<${Settings} id=${id} d=${d} />`;
+}
+
+/** Add source, a page of its Info: its steps (watchtower_add.js); added or left, the usual Info again. */
+export function infoPage(b, page) {
+  const got = details.value[b.id];
+  const d = got && got.data;
+  if (page.kind !== "add") return null;
+  if (!d || !d.sources) return html`<p class="ok-tone-muted">${say("Opening…")}</p>`;
+  const done = () => closeInfoPage(b.id);
+  return html`<${AddPane} id=${b.id} d=${d} done=${done} saved=${done} />`;
 }
 
 function Settings({ id, d }) {
@@ -217,9 +238,7 @@ function Settings({ id, d }) {
   const [ask, setAsk] = useState("");
   const [removing, setRemoving] = useState(null);
   useEffect(() => setIntent(d.intent), [d.intent]);
-  const back = () => { tab.value = { ...tab.value, [id]: "signals" }; };
-  return html`<div class="gui-tower__setup" onKeyDown=${(e) => { if (e.key === "Escape") { e.stopPropagation(); back(); } }}>
-    <button class="ok-btn gui-tower__back" onClick=${back}>← ${say("Signals")} · ${d.signals.length}</button>
+  return html`<div class="gui-tower__setup">
     <p class="ok-list__head">What to listen for</p>
     <div class="gui-head">
       <input class="ok-input" style="flex: 1; width: auto" placeholder=${say("e.g. user feedback about the app — empty lets everything through")} value=${intent}
@@ -282,9 +301,9 @@ export function Setup({ id, done }) {
       <span><button class="ok-btn primary" onClick=${done}>${say("Good")}</button></span>`;
   }
   const first = html`<div class="gui-setup__ways">
-      <button class="ok-btn primary" onClick=${() => { done(); openBuilding(id); }}>${say("Add a source")}</button>
+      <button class="ok-btn primary" onClick=${() => { done(); addSource(id); }}>${say("Add a source")}</button>
       <button class="ok-btn" aria-expanded=${more} onClick=${() => setMore(!more)}>${say("More sources")}</button></div>
-    <p class="ok-font-status ok-tone-muted">${say("GitHub, a schedule or a webhook, in its window.")}</p>`;
+    <p class="ok-font-status ok-tone-muted">${say("GitHub, a schedule or a webhook, in its Info.")}</p>`;
   if (!more) return first;
   if (!s) return html`${first}<p class="ok-font-status ok-tone-muted">${say("Asking Claude Code which connectors it has…")}</p>`;
   if (s.busy) return html`${first}<p class="ok-font-status ok-tone-muted" role="status">${say(s.busy)}</p>`;
@@ -297,15 +316,4 @@ export function Setup({ id, done }) {
       : html`<p class="ok-font-status ok-tone-muted">${say(s.asked
         ? "Claude Code has no connector for Gmail, Slack, Jira or Confluence here. Connect one with /mcp in Claude Code."
         : "Asking Claude Code which connectors it has…")}</p>`}`;
-}
-
-/** The window by its UI document (design/buildings/watchtower.json): a signal and the sources & intent open
- *  over the feed, in `feed`; `item` shows nothing of its own (an older document that still has it loses
- *  nothing). */
-export function panes(id, d) {
-  return {
-    sources: () => html`<${Sources} id=${id} d=${d} />`,
-    feed: () => html`<${FeedPane} id=${id} d=${d} />`,
-    item: () => null,
-  };
 }

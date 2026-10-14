@@ -425,10 +425,13 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   const camp = document.documentElement.dataset.look !== "office";
   const lvl = b.id === CORNER ? "c" : zoomLevel.value;
   const far = lvl === "a";
-  const roomy = lvl === "c" && camp && bareOf(b);
-  const bare = (bareOf(b) && !roomy) || (far && camp);
-  const yard = (fenced(b) || roomy) && !bare;
-  const folded = b.id !== CORNER && !(far && camp) && !roomy && (!!b.folded || far);
+  // Grown in place (js/windows.js `showOnCard`, lighter-buildings.md §2): its card at its large size whatever the zoom,
+  // its fold or its being bare, while it stays selected.
+  const grown = grownCard.value === b.id && b.id !== CORNER;
+  const roomy = !grown && lvl === "c" && camp && bareOf(b);
+  const bare = !grown && ((bareOf(b) && !roomy) || (far && camp));
+  const yard = (fenced(b) || roomy || grown) && !bare;
+  const folded = !grown && b.id !== CORNER && !(far && camp) && !roomy && (!!b.folded || far);
   // Its card is not drawn, so it may peek: folded, or a card building drawn bare in the map view. A bare building's
   // card is never drawn in Camp, map view or not (yards.md §7).
   const hides = bare && camp ? far && !bareOf(b) : folded;
@@ -472,9 +475,8 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   // A card is as wide as its medium size, or as the person stretched it, at the overview and close up: only its height
   // changes, as tall as what it says but no taller than a small card at the overview and a medium one close up (the UX
   // bench's sizes, js/buildings/ux_lab.js SIZE_PX). A size the person gave shows close up only.
-  // Grown in place (js/windows.js `showOnCard`, lighter-buildings.md §2): at its large size at any zoom, while selected.
   const mine = b.size || auto;
-  const big = grownCard.value === b.id && !folded && !bare && !roomy;
+  const big = grown;
   const wide = Math.max(mine ? mine[0] : 0, big ? LEVEL_L.w : LEVEL_M.w);
   const tall = big ? Math.max(mine && mine[1] ? mine[1] : 0, LEVEL_L.h)
     : lvl === "c" && mine && mine[1] ? Math.max(mine[1], LEVEL_M.h) : null;

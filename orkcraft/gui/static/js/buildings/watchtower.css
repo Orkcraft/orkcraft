@@ -145,3 +145,6 @@
 .gui-tower__count-head { display: flex; align-items: center; gap: var(--space-2); }
 .gui-tower__count-head > .gui-tower__readtoo { margin-left: auto; }
 .gui-tower__empty { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+/* The large card's everyday job (lighter-buildings.md §2): the chips and the feed, scrolling in the card. */
+.gui-hut.is-sized > .ok-hut__card > .gui-hut__body > .gui-hut__body-in > .gui-tower__large { flex: 1 1 auto; min-height: 0;
+  overflow: auto; display: flex; flex-direction: column; gap: var(--space-2); white-space: normal; }

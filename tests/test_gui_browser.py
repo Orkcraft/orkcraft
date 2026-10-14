@@ -162,7 +162,7 @@ def _info(pg) -> None:
 
 
 # Types with no Work window (docs/design/lighter-buildings.md §2): opened, the card grows to its large size in place.
-WORKLESS = {"barracks"}
+WORKLESS = {"barracks", "watchtower"}
 
 
 def _three_ways(pg, bid: str, has_view: bool = True, workless: bool = False) -> None:
@@ -1034,19 +1034,18 @@ def test_the_warchief_gives_the_work_and_his_card_builds_and_undoes_it(page, mon
 
 
 def _open_tower_add(pg, bid: str) -> None:
-    """A tower stands bare, with no card (docs/design/yards.md §7): a press on it opens its window, which opens on
-    the picker while it has no source, else on its feed with + Add source."""
+    """A tower stands bare, with no card (docs/design/yards.md §7) and no Work (lighter-buildings.md §2): opened, its
+    card grows in place, with + Add source while it has no source; Add source is a page of its Info."""
     _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
     _hut(pg, bid).locator(".gui-hut__title").dblclick()
-    pg.locator(".gui-panel .gui-add__tile, .gui-panel .gui-tower__add").first.wait_for(state="visible", timeout=WAIT_MS)
-    if not pg.locator(".gui-panel .gui-add__tile").count():
-        pg.locator(".gui-panel .gui-tower__add").first.click()
+    _hut(pg, bid).locator(".gui-tower__add").first.click()
+    pg.locator(".gui-panel .gui-add__tile").first.wait_for(state="visible", timeout=WAIT_MS)
 
 
 def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, gui, monkeypatch):
-    """Build a Watchtower: its panel opens on the picker (no dialog); a pasted Jira link, the login, the projects,
-    the first look and Add happen in the panel over the feed, and the new source stands in its chips
-    (docs/design/watchtower-quick-add.md §4). The services are fakes; `ORKCRAFT_SHOTS` keeps screenshots."""
+    """Build External listeners: Add source opens its picker in its Info (no dialog); a pasted Jira link, the login,
+    the projects, the first look and Add happen there, and the new source stands in its chips on its large card
+    (docs/design/watchtower-quick-add.md §4, lighter-buildings.md §2). The services are fakes; `ORKCRAFT_SHOTS` keeps screenshots."""
     from orkcraft.core.workers.watchtower import WatchtowerWorker
     from tests.test_watchtower_quickadd import ATL, Opener, _gh
     monkeypatch.setattr(WatchtowerWorker, "feed_opener", Opener(ATL))
@@ -1105,9 +1104,10 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, gui,
     panel.get_by_role("button", name="Add Jira").click()
     panel.locator(".gui-info").first.wait_for(state="visible", timeout=WAIT_MS)       # done: the tower's Info
     assert panel.locator(".gui-panel__back").count() == 0
-    panel.locator(".gui-panel__tabs .ok-tab", has_text="Work").click()
-    panel.locator(".gui-tower__chips .ok-chip", has_text="jira").wait_for(state="visible", timeout=WAIT_MS)
-    panel.locator(".gui-tower__waiting", has_text="No messages yet").wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator(".gui-panel__tabs .ok-tab", has_text="Work").count() == 0    # no Work: its large card
+    feed = _hut(pg, bid).locator(".gui-tower__large")
+    feed.locator(".gui-tower__chips .ok-chip", has_text="jira").wait_for(state="visible", timeout=WAIT_MS)
+    feed.locator(".gui-tower__waiting", has_text="No messages yet").wait_for(state="visible", timeout=WAIT_MS)
     shot("5-feed")
     # the feed lists every message, the unread marked; Only unread hides the read (docs/design/watchtower-automation.md §2 H)
     from orkcraft.realm import watch
@@ -1116,31 +1116,28 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, gui,
         w.add_signal(watch.Signal(f"2026-10-02T05:{10 + i}:00", "jira", title, "", f"WEB-{5 + i}"))
     w.mark_read([w.signals[1]])
     w.changed()
-    panel.locator(".gui-tower__count-head", has_text="Messages · 2 · 1 new").wait_for(state="visible", timeout=WAIT_MS)
-    assert panel.locator(".gui-tower__row").count() == 2
-    assert panel.locator(".gui-tower__row", has_text="Login loops").locator("[aria-label=new]").count() == 1
-    assert panel.locator(".gui-tower__row", has_text="the old one").locator("[aria-label=read]").count() == 1
-    card = _hut(pg, bid).locator(".gui-tower__msg")
-    assert "Ben" in card.inner_text() and "05:11" in card.inner_text()            # the closed card: the newest unread
+    feed.locator(".gui-tower__count-head", has_text="Messages · 2 · 1 new").wait_for(state="visible", timeout=WAIT_MS)
+    assert feed.locator(".gui-tower__row").count() == 2
+    assert feed.locator(".gui-tower__row", has_text="Login loops").locator("[aria-label=new]").count() == 1
+    assert feed.locator(".gui-tower__row", has_text="the old one").locator("[aria-label=read]").count() == 1
     shot("5b-messages")
-    panel.get_by_role("button", name="Only unread").click()
-    panel.locator(".gui-tower__count-head", has_text="Unread · 1").wait_for(state="visible", timeout=WAIT_MS)
-    assert "Login loops" in panel.locator(".gui-tower__row").inner_text()
-    panel.get_by_role("button", name="Show all").click()
-    panel.get_by_role("button", name="+ Add source").click()                    # Add source in Work, ← Back to the list
+    feed.get_by_role("button", name="Only unread").click()
+    feed.locator(".gui-tower__count-head", has_text="Unread · 1").wait_for(state="visible", timeout=WAIT_MS)
+    assert "Login loops" in feed.locator(".gui-tower__row").inner_text()
+    feed.get_by_role("button", name="Show all").click()
+    sources = panel.locator(".gui-type-settings")                                # its sources and intent: its Info
+    sources.locator(".gui-tower__source", has_text="Jira").wait_for(state="visible", timeout=WAIT_MS)
+    sources.get_by_role("button", name="+ Add source").click()                  # Add source, a page of its Info
     tiles.first.wait_for(state="visible", timeout=WAIT_MS)
-    assert panel.locator(".gui-tower__chips").count() == 0
-    panel.locator(".gui-panel__back").click()
-    panel.locator(".gui-tower__row", has_text="the old one").wait_for(state="visible", timeout=WAIT_MS)
-    panel.get_by_role("button", name="Sources & intent").click()
-    panel.locator(".gui-tower__source", has_text="Jira").wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator(".gui-panel__back").click()                                   # ← Back: its Info again
+    sources.locator(".gui-tower__source", has_text="Jira").wait_for(state="visible", timeout=WAIT_MS)
     shot("6-sources")
     # the token is revoked: the next look fails as the login, and Log in again fixes it in one step (§8)
     monkeypatch.setattr(WatchtowerWorker, "feed_opener", Opener({**ATL, "acme.atlassian.net/rest/api/3/myself": 401}))
-    panel.get_by_role("button", name="Check now").click()
-    failing = panel.locator(".gui-tower__failing", has_text="the token was refused")
+    feed.get_by_role("button", name="Check now").click()
+    failing = feed.locator(".gui-tower__failing", has_text="the token was refused")
     failing.wait_for(state="visible", timeout=WAIT_MS)
-    row = panel.locator(".gui-tower__source.is-bad", has_text="Jira")
+    row = sources.locator(".gui-tower__source.is-bad", has_text="Jira")
     row.get_by_role("button", name="Log in again").wait_for(state="visible", timeout=WAIT_MS)
     shot("7-failing")
     monkeypatch.setattr(WatchtowerWorker, "feed_opener", Opener(ATL))
@@ -1155,10 +1152,9 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, gui,
     panel.get_by_role("button", name="Check", exact=True).click()
     panel.get_by_role("button", name="Keep it").click()
     panel.locator(".gui-info").first.wait_for(state="visible", timeout=WAIT_MS)
-    panel.locator(".gui-panel__tabs .ok-tab", has_text="Work").click()
-    panel.locator(".gui-tower__chips .ok-chip", has_text="jira").wait_for(state="visible", timeout=WAIT_MS)
-    panel.get_by_role("button", name="Check now").click()
-    pg.wait_for_function("() => !document.querySelector('.gui-panel .gui-tower__failing')", timeout=WAIT_MS)
+    feed.locator(".gui-tower__chips .ok-chip", has_text="jira").wait_for(state="visible", timeout=WAIT_MS)
+    feed.get_by_role("button", name="Check now").click()
+    pg.wait_for_function("() => !document.querySelector('.gui-tower__large .gui-tower__failing')", timeout=WAIT_MS)
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 
@@ -1201,9 +1197,7 @@ def test_a_tower_hears_jira_through_claudes_connection_without_a_token(page, mon
     shot("c4-check")
     panel.get_by_role("button", name="Add Jira").click()
     panel.locator(".gui-info").first.wait_for(state="visible", timeout=WAIT_MS)
-    panel.locator(".gui-panel__tabs .ok-tab", has_text="Work").click()
-    panel.get_by_role("button", name="Sources & intent").click()
-    panel.locator(".gui-tower__source", has_text="via Claude · atlassian · every 45 min").wait_for(state="visible", timeout=WAIT_MS)
+    panel.locator(".gui-type-settings .gui-tower__source", has_text="via Claude · atlassian · every 45 min").wait_for(state="visible", timeout=WAIT_MS)
     shot("c5-sources")
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
