@@ -17,7 +17,7 @@
 import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { opened, openBuilding, selected, pickBuilding } from "./windows.js";
+import { opened, openBuilding, selected, pickBuilding, grownCard } from "./windows.js";
 import { laying, demolishing, copying } from "./build.js";
 import { reasons, busy as busyOf, fold } from "./fold.js";
 import { openMenu } from "./menu.js";
@@ -472,9 +472,12 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   // A card is as wide as its medium size, or as the person stretched it, at the overview and close up: only its height
   // changes, as tall as what it says but no taller than a small card at the overview and a medium one close up (the UX
   // bench's sizes, js/buildings/ux_lab.js SIZE_PX). A size the person gave shows close up only.
+  // Grown in place (js/windows.js `showOnCard`, lighter-buildings.md §2): at its large size at any zoom, while selected.
   const mine = b.size || auto;
-  const wide = Math.max(mine ? mine[0] : 0, LEVEL_M.w);
-  const tall = lvl === "c" && mine && mine[1] ? Math.max(mine[1], LEVEL_M.h) : null;
+  const big = grownCard.value === b.id && !folded && !bare && !roomy;
+  const wide = Math.max(mine ? mine[0] : 0, big ? LEVEL_L.w : LEVEL_M.w);
+  const tall = big ? Math.max(mine && mine[1] ? mine[1] : 0, LEVEL_L.h)
+    : lvl === "c" && mine && mine[1] ? Math.max(mine[1], LEVEL_M.h) : null;
   const own = b.id === CORNER ? mine : folded || bare || roomy ? null : [wide, tall];
   const cap = b.id === CORNER || !own || tall ? 0 : lvl === "c" ? LEVEL_M.h : LEVEL_S_H;
   const level = b.id === CORNER ? levelOf(b, auto) : own ? levelOf(null, [wide, tall || cap]) : "s";

@@ -257,7 +257,8 @@ to an ork instead of one. To fill in from the code before stage 1:
 | today | where | replaced by |
 |---|---|---|
 | Answers (HUD button) | `calm-town.md` | ❓ N and the ork slots list (§8) |
-| | | |
+| the Agent pool's ork tabs: terminal, Take over, Hand back, recent work | its Work (`js/buildings/barracks.js`) | the console unfolded (§7, `js/orkconsole.js`), A5 |
+| the Agent pool's question strip and answer dialog | its Work | the console's pinned questions (§20) and the task on its large card |
 
 ## 11. Stages and priorities
 

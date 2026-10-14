@@ -5,6 +5,11 @@
 // ← back. ⤢ takes the whole town; Esc steps back: whole → half, an ork → its building, then closed. Closed
 // with documents open, the panel waits as a handle at the right edge. A setup in steps (js/setup.js) has its
 // ← Back in the bar's top right corner, past its first step; done, the panel opens the building's Info.
+// A type with no Work (its module says `work = false`, docs/design/lighter-buildings.md §2) does its everyday job on
+// its large card: opening it grows the card to its large size in place, the town whole around it; opened again (or
+// at its large size already) its Info. Grown is a view of this page, never a size kept in the Town Scroll: the card
+// goes back when it is let go (another building selected, the bare town, Esc). On the phone, with no town, the panel
+// shows that card as its sheet.
 import { signal, effect } from "@preact/signals";
 import { html, cls } from "./html.js";
 import { town, command, details, online, say } from "./link.js";
@@ -16,7 +21,8 @@ import { typeModule } from "./types.js";
 import { lake, tabs as docTabs, DocTab, DocBody } from "./lake.js";
 import { InfoTab, OrkView, RuleView } from "./console.js";
 import { setupBack } from "./setup.js";
-import { buildingMenu } from "./hut.js";
+import { buildingMenu, sizes, LEVEL_L, Card } from "./hut.js";
+import { narrow } from "./pocket.js";
 
 // A type's window is `buildings/<type>.js` (js/types.js): the host draws a type when
 // `gui/views/<type>.py` exists (its detail carries data); a new type is new files, no list here.
@@ -62,7 +68,32 @@ function numberOf(b) {
   return t.buildings.filter((x) => ids.has(x.id)).indexOf(b) + 1 || "";
 }
 
+/** A type with no Work window: its large card and its Info do it all (lighter-buildings.md §2). */
+export function workless(b) {
+  const mod = b && b.page ? typeModule(b.type) : null;
+  return !!(mod && mod.work === false);
+}
+
+export const grownCard = signal(null);     // the building whose card is grown to its large size in place (js/hut.js)
+const isLarge = (id) => { const s = sizes.value[id]; return grownCard.value === id || (!!s && s.w >= LEVEL_L.w && s.h >= LEVEL_L.h); };
+
+/** Its card at its large size, in place, selected (no panel); false when it was large already. */
+export function showOnCard(id) {
+  selected.value = id;
+  if (isLarge(id)) return false;
+  grownCard.value = id;
+  return true;
+}
+
+// A grown card goes back as soon as its building is not the selected one.
+effect(() => { if (grownCard.value && selected.value !== grownCard.value) grownCard.value = null; });
+
 export function openBuilding(id, tab) {
+  const b = town.value && town.value.buildings.find((x) => x.id === id);
+  if ((!tab || tab === "work") && workless(b) && !narrow.value) {
+    if (showOnCard(id)) return;              // grown in place; opened again, its Info
+    tab = "info";
+  }
   select(id, tab);
 }
 
@@ -163,8 +194,10 @@ function More({ b }) {
     aria-label=${say("More")} aria-haspopup="menu" onClick=${open}>⋯</button>`;
 }
 
-/** Work: the building's own view by its UI document; a type without one shows its status lines. */
+/** Work: the building's own view by its UI document; a type without one shows its status lines. A type with no
+ *  Work shows its large card here, on the phone only (its sheet). */
 function Work({ b }) {
+  if (workless(b)) return html`<div class="ok-win__body gui-win__body gui-sheet"><${Card} b=${b} level="l" /></div>`;
   const d = details.value[b.id];
   const view = d && d.data && viewOf(d.type);
   if (view) {
@@ -179,6 +212,7 @@ function Work({ b }) {
 
 /** Does the building have a view of its own (a Work tab)? Unknown while its detail comes: yes. */
 function hasWork(b) {
+  if (workless(b)) return narrow.value;
   const d = details.value[b.id];
   return !d || !!(d.data && b.page) || b.status_plain.length > 0;
 }
@@ -229,7 +263,7 @@ export function Panel() {
         <span class="ok-win__title">${b ? say(b.title) : say("Lake")}</span>
         <div class="ok-tabs gui-panel__tabs" role="tablist" onDblClick=${(e) => e.stopPropagation()}>
           ${b && work && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "work" })} role="tab"
-              aria-selected=${!front && tab === "work"} onClick=${() => pickTab("work")}>${say("Work")}</button>`}
+              aria-selected=${!front && tab === "work"} onClick=${() => pickTab("work")}>${say(workless(b) ? "Card" : "Work")}</button>`}
           ${b && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "info" })} role="tab"
               aria-selected=${!front && tab === "info"} onClick=${() => pickTab("info")}>${say("Info")}</button>`}
           ${l.shown && docs.map((t) => html`<${DocTab} key=${t.id} t=${t} active=${front && activeDoc && t.id === activeDoc.id}

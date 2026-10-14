@@ -1,19 +1,19 @@
-// 🏕 Barracks: the orks and their tasks (docs/design/building-views.md §3). Closed: how many orks work of
-// how many, the queue, the tally and the spend, the steward first when it asks. Open, made for the half
-// panel: the counters on one line, the question waiting for you with Answer, a New task written in place,
-// the open tasks as one flow of cards (the one that asks first), the finished ones folded to a line; a
-// card opens its task over the flow (← back), a tab per ork with its terminal under it, the rules and
-// settings folded to a line — each a pane of its UI document (design/buildings/barracks.json). The worker
-// does it all (core/workers/barracks.py); documents open in Lake, the rules change through the keeper.
+// 🏕 The Agent pool: the orks and their tasks (docs/design/building-views.md §3). It has no Work window
+// (docs/design/lighter-buildings.md §2): its card does its everyday job. Small, how many orks work of how many, the
+// queue, the tally and the spend, the steward first when it asks; medium, a lane per role with its sessions as chips;
+// large, under the lanes, a New task written in place and the open tasks as one flow of cards (the one that asks
+// first), the finished ones folded to a line — a task opens over the flow (← back) with its answer written there.
+// Each ork's session, its terminal and its history are its console (js/orkconsole.js); its rules, folder, kinds of
+// work and settings are its Info (`settings`). The worker does it all (core/workers/barracks.py); documents open in
+// the Inspector, the rules change through the keeper.
 import { signal, effect } from "@preact/signals";
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, town, details, say } from "../link.js";
 import { Dialog } from "../dialog.js";
-import { Terminal } from "../terminal.js";
 import { openInLake } from "../lake.js";
 import { askKeeper } from "../keeper.js";
-import { usePeek, openBuilding } from "../windows.js";
+import { usePeek, showOnCard } from "../windows.js";
 import { OrkHead, TierMark } from "../icons.js";
 import { showConsole, shownCart } from "../slots.js";
 
@@ -25,23 +25,19 @@ if (!document.querySelector(`link[href="${sheet}"]`)) {
   document.head.appendChild(link);
 }
 
-const tabs = signal({});           // building id → "ork:<name>": the ork whose terminal shows
-const chosen = signal({});         // building id → the task shown beside the lanes
+export const work = false;         // no Work window: the card and the console do it (lighter-buildings.md §2)
+
+const chosen = signal({});         // building id → the task open on its large card
 const dialogs = signal({});        // building id → {kind: "task" | "answer" | "rule", …}
-const folded = signal({});         // building id → true: the orks' terminal folded to its tabs
 
 
 const setIn = (sig, id, value) => { sig.value = { ...sig.value, [id]: value }; };
 const openDialog = (id, d) => setIn(dialogs, id, d);
 const closeDialog = (id) => setIn(dialogs, id, null);
 
-function sessionOf(key) {
-  return (town.value.sessions || []).find((s) => s.key === key) || null;
-}
-
 // -- dialogs ------------------------------------------------------------------------------------------
 
-/** New task, at the top of its Work: one line written in place, no window and no title (its first words are
+/** New task, at the top of its large card: one line written in place, no window and no title (its first words are
  *  one); it grows while it is written. */
 function NewTask({ id }) {
   const [brief, setBrief] = useState("");
@@ -133,14 +129,14 @@ function openSession(e, id, s) {
   showConsole(`${id}/${s.name.toLowerCase()}`, s.state === "resting" || s.state === "stopped");
 }
 
-// A console's cart link (ork-console.md §21): the task shown on its pool.
+// A console's cart link (ork-console.md §21): the task open on its pool's large card.
 effect(() => {
   const want = shownCart.value;
   const b = want && (town.peek()?.buildings || []).find((x) => x.id === want.building);
   if (!b || b.type !== "barracks") return;
   shownCart.value = null;
   setIn(chosen, b.id, want.id);
-  openBuilding(b.id);
+  showOnCard(b.id);
 });
 
 /** Its roles, a lane each (docs/design/pool-roles.md): an ork is a role — "Grunt · tests" — and the orks hired as it
@@ -163,9 +159,17 @@ function Lanes({ id, lanes, more }) {
   </li>`)}${more > 0 && html`<li class="pool-lane is-more ok-tone-muted">+${more}</li>`}</ul>`;
 }
 
-export function card(b) {
+export function card(b, level = "s") {
   const c = b.card;
   if (!c) return null;
+  if (level === "l") return html`<div class="gui-hut__body-in">${c.paused
+      ? html`<div class="gui-hut__text ok-tone-wait">⚠ ${say("Paused")} · <button class="gui-link" onPointerDown=${keep}
+          onClick=${(e) => { keep(e); act(b.id, "pause").catch(() => {}); }}>${say("Resume")}</button></div>`
+      : html`<div class="gui-hut__text"><b>${c.active}</b> ${say(`of ${c.max} orks at work`)} · ${say("queue")} <b>${c.queue}</b>
+          · <span class=${c.done ? "ok-tone-ok" : ""}>✓${c.done}</span> <span class=${c.failed ? "ok-tone-error" : ""}>✗${c.failed}</span> · <b>${c.spent}</b></div>`}
+    ${(c.lanes || []).length > 0 && html`<${Lanes} id=${b.id} lanes=${c.lanes} more=${c.more || 0} />`}
+    <${Large} id=${b.id} />
+  </div>`;
   const working = c.working || [];
   const lanes = c.lanes || [];
   return html`<div class="gui-hut__body-in">
@@ -373,54 +377,6 @@ function Tasks({ id, data }) {
   return t ? html`<${TaskDetail} key=${t.id} id=${id} data=${data} t=${t} />` : html`<${Flow} id=${id} data=${data} />`;
 }
 
-function OrkTab({ id, o }) {
-  const s = sessionOf(o.terminal);
-  const open = () => act(id, "terminal", { ork: o.name }).catch(() => {});
-  const take = () => act(id, "take_over", { ork: o.name }).catch(() => {});
-  const back = () => act(id, "hand_back", { ork: o.name }).catch(() => {});
-  const handBack = o.by_hand && html`<div class="gui-section"><button class="ok-btn primary" onClick=${back}
-      title=${say("Close the terminal: the steward reviews what is in its worktree")}>${say("Hand back to review")}</button>
-    <span class="ok-tone-muted"> ${say("You took this over: type to it here.")}</span></div>`;
-  if (s && s.running) return html`${handBack}<${Terminal} key=${s.key} sessionKey=${s.key} />`;   // an ended one takes no keys: reopen it
-  return html`<div class="gui-section">
-    ${o.one_status && html`<p class="ok-detail__meta" title=${o.one_status.word}>${o.one_status.mark} ${o.one_status.line}</p>`}
-    <p class="ok-tone-muted">${s ? say("Its session has ended") + (s.exit_code ? ` · ${s.exit_code}` : "")
-      : o.status === "working" ? say("It is working now: take it over to type to it.") : say("No terminal open.")}
-      ${o.by_hand ? html` <button class="ok-btn" onClick=${open}>${say("Reopen its terminal")}</button>` : null}
-      ${o.status === "working" && !o.by_hand && html` <button class="ok-btn" onClick=${take}
-        title=${say("Stop its run where it is and go on in a terminal on its worktree")}>${say("Take over")}</button>`}
-      ${o.status !== "working" && html` <button class="ok-btn" onClick=${open}
-        title=${say("Its last session, on its worktree")}>${o.session ? say("Resume its session") : say("Open its terminal")}</button>`}</p>
-    ${handBack}
-    ${o.recent.length > 0 && html`<h3 class="ok-font-heading">${say("Its recent work")}</h3>
-      <ul class="gui-rows">${o.recent.map((r, i) => html`<li key=${i}>${r}</li>`)}</ul>`}
-  </div>`;
-}
-
-/** The orks' pane: a tab per ork (its head says how it is), the chosen one's terminal under them; ▾ folds it
- *  to the tabs, and it folds by itself while a task is open. */
-function Orks({ id, data }) {
-  if (!data.orks.length && !data.tasks.length) return null;   // an empty pool says it once, under the task field (ui.md U19)
-  if (!data.orks.length) return html`<p class="ok-tone-muted">${say("No orks yet — the steward hires them for the tasks.")}</p>`;
-  const tab = tabs.value[id] || "";
-  const ork = data.orks.find((o) => `ork:${o.name}` === tab)
-    || data.orks.find((o) => o.asks) || data.orks.find((o) => o.status === "working") || data.orks[0];
-  const fold = folded.value[id] ?? !!chosen.value[id];
-  const pick = (o) => { setIn(tabs, id, `ork:${o.name}`); setIn(folded, id, false); };
-  return html`<div class=${cls("pool-orks", { "is-folded": fold })}>
-    <nav class="pool-orks__bar" role="tablist" aria-label=${say("Orks")}>
-      ${data.orks.map((o) => html`<button key=${o.name} role="tab" aria-selected=${o === ork && !fold}
-          class=${cls("ok-tab", { "is-active": o === ork && !fold })} onClick=${() => pick(o)}
-          title=${`${o.role ? `${say(o.role)} · ` : ""}${o.asks ? say("asks you") : o.status === "working" ? say("at work") : say("resting")}`}>
-        <${Head} ork=${o.name} asks=${o.asks} working=${o.status === "working"} />${o.name}</button>`)}
-      <span class="pool-orks__about ok-font-status">${ork.role ? `${say(ork.role)} · ` : ""}${ork.label}${ork.tier ? ` · ${ork.tier}` : ""} · ✓${ork.done} ✗${ork.failed} · ${ork.cost}${ork.tokens ? ` · ${Math.round(ork.tokens / 1000)}k` : ""}</span>
-      <button class="ok-btn" aria-label=${fold ? say("Show the terminal") : say("Fold the terminal")} title=${fold ? say("Show the terminal") : say("Fold the terminal")}
-        onClick=${() => setIn(folded, id, !fold)}>${fold ? "▴" : "▾"}</button>
-    </nav>
-    ${!fold && html`<${OrkTab} key=${ork.name} id=${id} o=${ork} />`}
-  </div>`;
-}
-
 function KeeperAsk({ id, keeper }) {
   const [ask, setAsk] = useState("");
   const send = () => askKeeper(id, ask).then((r) => { if (r !== null) setAsk(""); });
@@ -515,42 +471,25 @@ function Rules({ id, data }) {
   </details>`;
 }
 
-/** The head: the counters on one line, Pause; the question waiting for you, with Answer; the dialogs live here. */
-function PoolHead({ id, data }) {
-  const queue = data.tasks.filter((t) => t.lane === "queue").length;
-  const working = data.orks.filter((o) => o.status === "working").length;
-  const done = data.tasks.filter((t) => t.status === "done").length, failed = data.tasks.filter((t) => t.status === "failed").length;
-  const spent = parseFloat(String(data.spent).replace("$", "")) || 0, budget = parseFloat(String(data.budget).replace("$", "")) || 0;
-  const ask = data.asked[0];
-  return html`<div>
-    <div class="pool-head">
-      ${data.paused && html`<span class="ok-tone-wait">⚠ ${say("paused")}</span>`}
-      <span><b>${working}/${data.max}</b> ${say("at work")}</span>
-      <span><b>${queue}</b> ${say("queued")}</span>
-      <span class="pool-head__spend"><b>${data.spent}</b>${data.budget ? html` ${say("of")} ${data.budget}
-        <span class="pool-meter" aria-hidden="true"><i style=${`width:${Math.min(100, budget ? (spent / budget) * 100 : 0)}%`}></i></span>` : ""}</span>
-      <span><b class=${done ? "ok-tone-ok" : ""}>✓${done}</b> <b class=${failed ? "ok-tone-error" : ""}>✗${failed}</b></span>
-      <span class="pool-head__spacer"></span>
-      <button class="ok-btn" onClick=${() => act(id, "pause").catch(() => {})}>${data.paused ? "Resume" : "Pause"}</button>
-    </div>
-    ${ask && html`<div class="pool-ask">
-      <span class="pool-ask__who">? ${data.keeper} ${say("asks")}${data.asked.length > 1 ? ` · ${data.asked.length}` : ""}</span>
-      <span class="pool-ask__what" title=${ask.question}>${ask.title}: ${ask.question}</span>
-      <button class="ok-btn primary" onClick=${() => setIn(chosen, id, ask.id)}>Answer</button>
-    </div>`}
+/** Its large card's everyday job (lighter-buildings.md §2): New task written in place, the open tasks as one flow
+ *  with why each waits, a task opened over the flow with its answer written there. A press inside is the card's, never
+ *  the hut's (no drag, no select). */
+function Large({ id }) {
+  usePeek(id);
+  const d = details.value[id];
+  const data = d && d.data;
+  if (!data || !data.tasks) return html`<p class="ok-tone-muted">${say("Opening…")}</p>`;
+  return html`<div class="pool-large" onPointerDown=${keep} onClick=${keep} onDblClick=${keep}>
+    <${NewTask} id=${id} />
+    <${Tasks} id=${id} data=${data} />
   </div>`;
 }
 
-/** The window by its UI document (design/buildings/barracks.json). `task` shows nothing of its own: a task
- *  opens over the flow, in `lanes` (an older document that still has the pane loses nothing). */
-export function panes(id, data) {
-  return {
-    head: () => html`<div class="gui-split"><${PoolHead} id=${id} data=${data} /><${NewTask} id=${id} /></div>`,
-    lanes: () => html`<${Tasks} id=${id} data=${data} />`,
-    task: () => null,
-    orks: () => html`<${Orks} id=${id} data=${data} />`,
-    rules: () => html`<${Rules} id=${id} data=${data} />`,
-  };
+/** Its settings, in its Info (lighter-buildings.md §2): the rules, the folder, the kinds of work, the settings, the
+ *  areas in work and the foreman's decisions, as they were in its Work. */
+export function settings(id, data) {
+  if (!data || !data.rules) return null;
+  return html`<${Rules} id=${id} data=${data} />`;
 }
 
 /** Its quick actions, from its Info or its closed card: New task and Answer open their own small window,

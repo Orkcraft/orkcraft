@@ -8,7 +8,7 @@
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { town, command, say } from "./link.js";
+import { town, command, details, say } from "./link.js";
 import { runQuick, typeModule } from "./types.js";
 import { infoPage } from "./infopage.js";
 import { selectOrk } from "./windows.js";
@@ -400,6 +400,15 @@ export function InfoTab({ b }) {
   return html`<${UsualInfo} b=${b} />`;
 }
 
+/** The type's own settings (`settings(id, data)`, js/types.js): what was its Work's, now in its Info
+ *  (docs/design/lighter-buildings.md §2). From the building's state, which comes while its panel is open. */
+function TypeSettings({ b }) {
+  const mod = b.page ? typeModule(b.type) : null;
+  const d = details.value[b.id];
+  if (!mod || !mod.settings || !d || !d.data) return null;
+  return html`<section class="gui-section gui-type-settings">${mod.settings(b.id, d.data)}</section>`;
+}
+
 function UsualInfo({ b }) {
   const i = useInfo(b.id, null);
   const [dialog, open, close] = useDialog(b.id);
@@ -411,6 +420,7 @@ function UsualInfo({ b }) {
         <p class="gui-info-part__label ok-font-label">${say("The building")}</p>
         <${BuildingInfo} b=${b} i=${i} redo=${redo} open=${open} />
         <${BuildingSettings} b=${b} i=${i} redo=${redo} />
+        <${TypeSettings} b=${b} />
         <${Quick} b=${b} i=${i} />
         <${Roads} b=${b} t=${t} />
       </div>

@@ -172,6 +172,8 @@ def test_the_page_fills_every_pane_of_a_contract(type_id):
         pytest.skip(f"{type_id} has no page of its own yet")
     import re
     src = page.read_text(encoding="utf-8")
+    if "export const work = false" in src:          # no Work window: its card and Info (lighter-buildings.md §2)
+        pytest.skip(f"{type_id} has no Work window; its contract stays so its saved documents load")
     at = src.index("export function panes(")
     body = src[at:src.index("\n}\n", at)]
     filled = set(re.findall(r"\b(\w+):\s*\(", body))

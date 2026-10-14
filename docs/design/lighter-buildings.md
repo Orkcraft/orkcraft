@@ -1,6 +1,6 @@
 # Design — lighter buildings: no Work panel, a setup of one question
 
-Status: proposal 2026-10-12, the owner's ask; nothing built. Priority **P1**, with the Work and Info split of
+Status: proposal 2026-10-12, the owner's ask; **being built (A5, 2026-10-14), type by type — see §7.** Priority **P1**, with the Work and Info split of
 [ork-console.md](ork-console.md) §15, and one check at **P0** (§4). Builds on
 [select-a-building.md](select-a-building.md) §7 (a building raised is set up in the Warchief's line, built for
 External listeners), [warchief-line-and-cards.md](warchief-line-and-cards.md) §3 (place first, then set up) and §4
@@ -89,3 +89,15 @@ on) and the **Agent pool's** (why an ork does not start, what it is doing). Neit
 is it not moving". That is the status's job, P0: every wait says why, until when and how to skip it, and a task says
 where it goes next ([ork-console.md](ork-console.md) §19, §5). Their large cards then keep the everyday jobs of §2,
 and their Work can go.
+
+## 7. Built (A5): Work taken away, type by type
+
+How a type loses its Work: its page module says `export const work = false` (js/types.js). Opening it then grows its
+card to its large size **in place**, at any zoom, while it stays selected (a view of the page, never a size kept in the
+Town Scroll; js/windows.js `showOnCard`, js/hut.js); opened again, its Info. On the phone, with no town, the panel shows
+that large card as its sheet. Its settings are drawn in its Info by the type's `settings(id, data)`. Saved towns keep
+loading: every setting stays in the building's config as before, and its old UI document stays valid, unused.
+
+| type | its Work held | where it went |
+|---|---|---|
+| **Agent pool** | counters and Pause; the question strip; New task; the flow of tasks and a task opened over it (brief, diff, report, answer, files, assumptions); a tab per ork with its terminal, Take over / Hand back, its recent work; rules, the steward's ask, folder, settings, kinds of work, areas in work, decisions | counters on the large card's first line, Pause / Resume the command card's (and the card's when paused); questions on the ❓ and in the console (§7 of ork-console.md); New task and the flow with the task opened over it on the **large card**; each ork's session, terminal, Take over / Hand back, history with cost in its **console** (js/orkconsole.js); rules, folder, settings, kinds of work, areas, decisions in its **Info** |

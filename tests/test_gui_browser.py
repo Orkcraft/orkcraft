@@ -161,11 +161,22 @@ def _info(pg) -> None:
     pg.locator(".gui-panel .gui-info").first.wait_for(state="visible", timeout=WAIT_MS)
 
 
-def _three_ways(pg, bid: str, has_view: bool = True) -> None:
+# Types with no Work window (docs/design/lighter-buildings.md §2): opened, the card grows to its large size in place.
+WORKLESS = {"barracks"}
+
+
+def _three_ways(pg, bid: str, has_view: bool = True, workless: bool = False) -> None:
     _closed(pg, bid)
     _hut(pg, bid).locator(".gui-hut__title").dblclick()   # open: a click selects, a second opens its Work
-    _panel(pg, "Work" if has_view else "")
-    if has_view:                                # its detail came and its panes are laid out
+    if workless:                                # its card grown in place, no panel; opened again, its Info
+        pg.locator(f'.gui-hut.is-size-l[data-id="{bid}"]').wait_for(state="visible", timeout=WAIT_MS)
+        assert pg.locator(".gui-panel").count() == 0
+        _hut(pg, bid).locator(".gui-hut__title").click()
+        _panel(pg, "Info")
+        assert pg.locator(".gui-panel__tabs .ok-tab", has_text="Work").count() == 0
+    else:
+        _panel(pg, "Work" if has_view else "")
+    if has_view and not workless:               # its detail came and its panes are laid out
         pg.locator(".gui-panel .gui-win__body.is-view").wait_for(state="visible", timeout=WAIT_MS)
     _info(pg)
     pg.locator(".gui-panel .gui-panel__full").click()  # the whole town
@@ -231,7 +242,7 @@ def test_every_type_built_draws_three_ways(page, type_id):
     pg.locator(".gui-build").wait_for(state="hidden", timeout=WAIT_MS)
     bid = _place(pg, before)
     assert not pg.locator(".gui-panel").is_visible()        # Build no longer opens it: it stands, and waits
-    _three_ways(pg, bid)
+    _three_ways(pg, bid, workless=type_id in WORKLESS)
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)     # the next one stands where this one stood
 
@@ -457,27 +468,31 @@ def test_the_lake_window_shows_text_markdown_and_code(page):
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
 
 
-def test_info_keeps_the_buildings_commands_and_work_takes_a_task_in_place(page):
+def test_info_keeps_the_buildings_commands_and_the_large_card_takes_a_task_in_place(page):
     """Info: 👍 / 👎 and no Pin, nothing recruits, the steward's part with Redesign, its goal and Freedom, Demolish at
-    the bottom. The Barracks' Work takes a New task in place (its first words its title)."""
+    the bottom. The Agent pool has no Work (lighter-buildings.md §2): opened, its card grows to its large size in place,
+    the town whole around it, and takes a New task there (its first words its title); opened again, its Info, with
+    its rules and settings."""
     pg = page
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'barracks' }))")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.act(id, 'pause'))", bid)   # nothing runs here
     _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
     _hut(pg, bid).locator(".gui-hut__title").dblclick()
-    _panel(pg, "Work")
-    panel = pg.locator(".gui-panel")
-    box = panel.bounding_box()
-    assert box["x"] + box["width"] >= pg.viewport_size["width"] - 1            # at the right edge…
-    assert abs(box["width"] - pg.viewport_size["width"] / 2) < 2               # …half of the town
-    work = panel.locator(".gui-win__body.is-view")
-    brief = work.locator(".gui-newtask textarea")
+    large = _hut(pg, bid).locator(".pool-large")
+    brief = large.locator(".gui-newtask textarea")
     brief.wait_for(state="visible", timeout=WAIT_MS)
-    work.get_by_role("button", name="Pause", exact=True).first.click()
+    assert pg.locator(".gui-panel").count() == 0                                   # no Work window: the card grew
+    assert "is-size-l" in (_hut(pg, bid).get_attribute("class") or "")
     brief.fill("tidy the readme headings and nothing else")
-    work.locator(".gui-newtask").get_by_role("button", name="Send", exact=True).click()
-    pg.wait_for_function("() => document.querySelector('.gui-newtask textarea').value === ''", timeout=WAIT_MS)
+    large.locator(".gui-newtask").get_by_role("button", name="Send", exact=True).click()
+    pg.wait_for_function("() => document.querySelector('.pool-large .gui-newtask textarea').value === ''", timeout=WAIT_MS)
     assert pg.locator(".gui-modal").count() == 0                  # no window opened for it
-    work.get_by_text("Tidy the readme headings").first.wait_for(state="visible", timeout=WAIT_MS)
+    large.get_by_text("Tidy the readme headings").first.wait_for(state="visible", timeout=WAIT_MS)
+    _hut(pg, bid).locator(".gui-hut__title").click()                               # opened again: its Info
+    _panel(pg, "Info")
+    panel = pg.locator(".gui-panel")
+    assert panel.locator(".gui-panel__tabs .ok-tab", has_text="Work").count() == 0
+    panel.locator(".gui-type-settings .pool-rules").wait_for(state="visible", timeout=WAIT_MS)  # its settings, from its Work
     _info(pg)
     info = panel.locator(".gui-info-tab")
     info.get_by_role("button", name="Good", exact=True).wait_for(state="visible", timeout=WAIT_MS)
