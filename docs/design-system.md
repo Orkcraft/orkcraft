@@ -1,7 +1,9 @@
 # The design system
 
-How orkcraft looks, written down as data so that people, the terminal face, a future GUI and
-the orks that rebuild buildings all follow the same rules. Background: [docs/design/gui-migration.md](design/gui-migration.md).
+How Orkline looks, written down as data so that people, the GUI (the one face) and the orks that rebuild
+buildings all follow the same rules. Background: [docs/design/gui-migration.md](design/gui-migration.md).
+**Version 2** (2026-10-14) adds the new Camp's world: the card as a building, rails and mine carts, the orks, signals
+and chips (§6–§9). The full proposal, its audit and its open questions: [docs/design/design-system-v2.md](design/design-system-v2.md).
 
 | What | Where |
 |---|---|
@@ -9,7 +11,8 @@ the orks that rebuild buildings all follow the same rules. Background: [docs/des
 | A building's UI document, its schema | `orkcraft/schemas/building-ui.v1.json` |
 | What each type's window has (its contract) | `orkcraft/design/buildings/<type>.json` |
 | Checking a document, the rules a model gets | `orkcraft/design/ui.py` (`validate`, `RULES`) |
-| How the terminal draws a document | `orkcraft/tui/ui_apply.py` |
+| The GUI's tokens, components, sprites, previews | `design-system/` (`tokens.json` → `tokens.css` by `python -m orkcraft.design.tokens`) |
+| The new Camp's kits and sprite pipeline (v2) | `design-system/components.md` (Camp kit), `design-system/sprites/README.md` |
 
 ## 1. Tokens: roles, not values
 
@@ -18,7 +21,7 @@ face looks the role up.
 
 **Font roles**
 
-| role | for | GUI type style (camp / office) | TUI |
+| role | for | GUI type style (camp / office) | (the old terminal's) |
 |---|---|---|---|
 | `title` | a building's name, a dialog's heading | `camp-heading` / `office-title` | bold |
 | `heading` | a pane's or a section's heading | `camp-label` / `office-heading` | bold |
@@ -40,9 +43,9 @@ face with Cyrillic for the names people give. The fonts ship with it (`design-sy
 and ground roles `canvas`, `surface`, `frame`, `frame_focus`, `road`, `road_selected`; and one per
 harness (`harness.claude`, `harness.agy`, `harness.codex`, `harness.pipeline`). Camp and Office give
 each role their own value: in the GUI the design system's colour token the role maps to (`fire` →
-`alert`, `ok` → `success`, `surface` → `panel`, …), in the TUI the hex in `tokens.json`. **`fire` means one thing only: something waits for the person.**
+`alert`, `ok` → `success`, `surface` → `panel`, …), in `orkcraft/design/tokens.json` a hex kept from the removed terminal face. **`fire` means one thing only: something waits for the person.**
 
-**Space**: steps 0–6, which are pixels in a GUI (0, 4, 8, 12, 16, 24, 32) and cells in the terminal.
+**Space**: steps 0–6, which are pixels (0, 4, 8, 12, 16, 24, 32).
 
 ## 2. A building's UI document
 
@@ -78,10 +81,8 @@ Contracts so far: 🌊 Lake (`head`, `view`, `editor`), 🌾 Task Fields (`board
 (`head`, `tree`, `page`). Every other type is one `main` pane for now. A type gets a contract when
 its view is split into named panes (`TypedView.UI_PANES`).
 
-**How the terminal draws it**: it applies sizes, the order among panes that share a parent, titles
-on the frame, `hidden`, a font role as a text style and a tone as its colour. The terminal keeps a
-view's own nesting, so a group the document moves elsewhere stays where the view has it. A GUI
-draws the groups exactly as written.
+**How the GUI draws it**: the groups exactly as written, a font role as its type style and a tone as its colour token
+(`.ok-font-<role>`, `.ok-tone-<role>`). (The terminal face that drew it before was removed, [calm-town.md](design/calm-town.md) §9.)
 
 ## 3. Who changes a building's window
 
@@ -120,3 +121,42 @@ These hold for any face, Office and Camp alike:
 - On the map a building shows its name and up to three status lines. Its settings and its work
   live inside its window.
 - Where a building stands is the person's choice, never an automatic layout.
+
+## 6. Camp's world (v2): the grid, the projection, the layers
+
+- **The art pixel is the unit; the grid is 8.** Every sprite is drawn at its final size, a multiple of 8 art pixels.
+  Ground and track tiles are 32 × 32; the layout cell is 16.
+- **Whole numbers only:** the zoom snaps to a ladder of **map ½** (the pipeline's half-size copies), **overview 1**
+  and **close 2** CSS pixels per art pixel; on a fractional screen the camera picks the nearest whole device scale.
+- **The card is the building's inside:** footprints XS 96 · S 120 · M 144 · L 168 art pixels wide (`footprint-*`),
+  so at the close zoom the card keeps its width (192 · 240 · 288 · 336).
+- **One projection, three-quarter top-down, never isometric;** light from the top left.
+- **Layers, bottom to top:** ground · track · floors · buildings · carts · orks · covers · signals · chips · UI.
+  Signals and chips never sort with the art. The product draws the shadows; the art carries none.
+
+## 7. Colour: three families that never mix
+
+| family | tokens | rule |
+|---|---|---|
+| **UI chrome** | `panel*`, `ink*`, `wood`, `bone`, `cloth`, `ink-wood`, … | text and frames; contrast as before (4.5:1 text, 3:1 frames) |
+| **world** | `world-*` (grass, earth, water), `art-*` (wood, stone, iron, bone, cloth, skin, outline) | the sprites' palette and the map's ground; **no text is ever drawn on them** |
+| **signals and chips** | `signal-ask` (yellow: a question), `signal-fire` (red: an error, 🔥), `signal-held` (⏳), `chip`, `chip-ink` | yellow and red appear nowhere else |
+
+Today's dark Camp ground (`canvas`, the biomes' grounds) stays behind windows and today's cards; the new camp's grass
+is the world layer. **Old names are aliases:** `frame` = `wood`, `frame-focus` = `bone`, `banner` = `cloth`,
+`ink-gold` = `ink-wood` (same values in every theme; `tests/test_design.py` holds it). Road tokens keep `road-*`:
+a road is a road, whatever Camp draws it as.
+
+## 8. Signals and chips
+
+1. **Badges only for exceptions:** ❓ (a question), `!` (stuck, an error), ⏳ (held). Normal work is motion.
+2. **Words on chips, in the UI font** (`camp-chip` / `office-chip`), never pixel text on the ground. A waiting cart's
+   chip is always shown.
+3. **Sizes in CSS pixels at every zoom:** chip 20 high (24 on the phone, text never under 11); badge 20 (24 on the
+   phone) with a 44 tap area.
+
+## 9. Camp and Office
+
+One layout, two drawings: every component of the Camp kit (`design-system/components.md`) has an Office drawing in the
+same place with the same word (the table in [design-system-v2.md](design/design-system-v2.md) §9). Office has no world
+art: its `world-*` and `art-*` fall back to its plain greys.

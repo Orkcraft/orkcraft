@@ -1,6 +1,9 @@
 # Sprites in this folder
 
-Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite is shown with
+**v2 (the new Camp, from backlog C3):** the kits go in `camp/` beside today's folders, laid out as below; nothing
+here moves until each piece replaces today's. The rules: docs/design/design-system-v2.md §2–4 and §11.
+
+Today: Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite is shown with
 `image-rendering: pixelated` at 1× or a whole multiple, each with an `@2x`.
 
 - `buildings/<type>/header.png`: the header of each of the 19 catalog buildings, the flat set
@@ -65,3 +68,32 @@ Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite is shown
 Component previews (`../previews/`) embed their sprites as `data:` URIs, because an upload's `/_blob/`
 URL does not load inside a preview frame, so they keep drawings no longer in this folder (carts, road
 tiles, doodads, fire, tier marks). The app itself loads the files.
+
+## v2: `camp/` and how a sheet becomes sprites
+
+Drawn at 1× in art pixels, every size a multiple of 8; no `@2x` (the renderer scales by whole numbers); one
+three-quarter top-down projection; a 1 px `art-outline`; **no shadows** (the product draws them); yellow and red only
+in signal sprites. `orkcraft 0.3/` holds generated reference sheets: references for the artist, not sprites to ship.
+
+```
+camp/
+  manifest.json   one row per sprite: file, size, anchor, frames, fps, slots, licence, author
+  ground/  track/  edge/  covers/hall|open|tower|gate/  facades/<type>.png  crests/
+  carts/ (side, front, rolling; loads/, flags/)  orks/body/<anim>.png  orks/roles/<role>.png
+  props/  machines/catapult.png  map/ (half-size copies, written by the pipeline)
+```
+
+- **Names:** lowercase, `-` between words; a building's pieces by its type id (`fields`, `barracks`, `loot_vault`,
+  `lake`, `watchtower`, `catapult`); nine-slice pieces `nw n ne w c e sw s se` (edge variants `n-1`, `n-2`);
+  directions `n e s w`.
+- **Animations:** horizontal strips of equal frames; frames and fps in the manifest.
+- **Anchors:** standing things at the feet's bottom centre; tiles and nine-slice pieces top left; crests bottom
+  centre.
+
+**From a sheet** (a keyed sheet on `#FF00FF`): key the magenta and any purple fringe a blended shadow left → find
+each sprite as a connected shape (small gaps closed) → read the sheet's pixel size (≈ 6 screen px on the 0.3 sheets)
+and take each cell's median colour, so the sprite is on its grid again → trim, then pad to its slot at its anchor →
+a tile drawn with a border is cut inside the border first and checked to tile edge to edge → colours snapped to the
+`art-*` / `world-*` palette, the outline to `art-outline` → PNG with alpha and a manifest row, and the map's half-size
+copy → checked: no signal hue outside signal sprites, nine-slice kits render as 3×3 and 5×4 without seams, sizes on
+the grid of 8.

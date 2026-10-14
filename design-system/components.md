@@ -128,6 +128,69 @@ The Forge opened: every branch with its pull request and changes, the selected b
 - The Source Control view: a sidebar list with 22px rows, outlined pill badges and a `frame-focus` outline on the selected branch.
 - The detail is a plain panel with smooth rounded diff bars and the sweeping progress strip.
 
+## Camp kit (v2)
+The new Camp's world: the card as a building, rails and mine carts, the orks, signals and chips. Settled in
+docs/design/design-system-v2.md; built with the backlog's C2–C5, beside today's Hut, Road and Sprite until each is
+replaced. Preview: `previews/CampKit.html` (the 0.3 reference sprites cut to the system; references, not shipped art).
+Sizes are in art pixels; the town draws them at ½ (map), 1 (overview) or 2 (close) CSS pixels per art pixel, never
+in between. Words and badges are UI at their own size at every zoom.
+
+**Cover** — a building as it stands. Three kinds: **hall** (a roof over the walls kit: Agent pool, Research),
+**open ground** (the scene is the cover: the Inspector's pond, the Review board's fire), **tower or gate** (the
+structure from the front over its yard walls: External listeners, the Review gate).
+- Slots: `footprint` (XS 96×64, S 120×80, M 144×96, L 168×112: the card's area; the walls stand outside it) ·
+  `material` · `facade` · `crest` · `signal` · `count` · `state`.
+- States: `covered` (map, overview) · `peek` (hover or select: the cover at 50 %) · `lifted` (close: the cover gone,
+  the walls are the card's frame, the crest is the card's header mark) · `burning` · `asking` · `idle` (never
+  dimmed below 92 %).
+- Office: the same box with its name, `hut-frame`; `peek` turns the frame `frame-focus`.
+
+**Nine-slice (roofs and walls).** Corners 24×24 (back corners 24×32) with a border on their two outer sides only;
+edges 24 deep (the back 32), a border on their outer side only, repeating every 8 px with up to three variants;
+the centre a 32×32 tile with no border. Repeat, never stretch. Roofs: canvas (maroon), thatch, hide. Walls: stone
+and log, palisade logs.
+
+**Facade** — a building's own front at the door, 96×48 (XS 64×48), standing on the front wall's centre, the bottom
+cut straight, no ground under it. Where orks go in and the track spur meets the building.
+
+**Crest** — one object over the cover, 32×48, bottom centre on the ridge; one per building, never repeated in a camp.
+At the close zoom it is the card's header mark, drawn at 1×.
+
+**Track** — roads drawn as rails. 32×32 autotiles, the gauge 20 centred, ties every 8 px and low in contrast: straight
+(H, V), corners (4), T-junctions (4), a crossing, switches and merges per direction, buffer stops (4), the way in and
+the way out through the palisade. Picked by a 4-bit neighbour mask; never rotated. At the map zoom a 4 px line in
+`art-wood-dark`. Office: today's Road lines.
+
+**Mine cart** — side view 48×32, front view 32×40, anchored at the wheels' bottom centre. `load` slot 32×24 over the
+bin (`code` a `</>` scroll, `asset` a crate, `message` a sealed letter, `doc` a book, `bundle` three sacks; a `×3`
+chip for several). `flag` slot 16×12 on a pole at the back left: none (moving), `ask` (`signal-ask`), `held` (⏳),
+`fire` (`signal-fire`, flickering). Rolling: 4 frames. A queue is a pile at a buffer stop with a `×4` chip. Orks never
+move or ride carts. Office: a 10 px square in the state's colour, the load as a word.
+
+**Ork** — one body, frame 32×48, anchored at the feet. Directions down, up, side (mirrored). Frames: idle 4, walk 6
+per direction, work 6, sit 2, at 8 fps. `role` slot: headgear and tool over the body (its name is `orc.<type>` in
+`TERMS`: the Warchief, a Grunt, the Lookout, the Seer, …). `state` slot, a pose: working (the tool swings, no badge),
+asks (a hand raised, ❓), stuck (slumped, `!`), held (arms crossed, ⏳), idle (dozing, no badge). Office: the state as
+a word.
+
+**Signal** — ❓ `!` ⏳ on a dark plate (`chip`, 1 px `art-outline`), 20×20 (24×24 and a 44×44 tap area on the phone),
+2 px over the head or roof it marks. Yellow (`signal-ask`) and red (`signal-fire`) appear nowhere else. Only for
+exceptions: normal work is motion.
+
+**Chip** — every word on the map: `chip` plate, `chip-ink` text in `camp-chip` / `office-chip`, 20 high (24 on the
+phone, text never under 11), 6 px padding. A cart's chip `#42 · Login form` (a title cut at about 20 characters) is
+always shown for a cart that waits for the person; a building's count chip (`🥩 2 · ❓ 1`) at its door. The same chip
+in both looks.
+
+**Spotlight** — hover or select an ork, a cart or a 🥩 row: the pair is lifted (full saturation, a 1 px `chip-ink`
+keyline), a dashed rope in `chip-ink` joins them, the rest dims to 70 % saturation and 85 % lightness. Office: the
+row and its cart highlighted, the rest at 40 %.
+
+**Layers**, bottom to top: ground · track · floors · buildings · carts · orks · covers · signals · chips · UI.
+
+**Do.** Draw every word on a chip. Keep the yellow and the red for signals. Scale by whole numbers.
+**Don't.** No pixel text, no baked shadows, no fence round a card, no isometric piece, no decorative fire.
+
 ## Ground
 The Camp map behind the buildings. It is one flat colour per biome with a handful of small decorations, so the cards, the fire and the text keep the eye.
 
