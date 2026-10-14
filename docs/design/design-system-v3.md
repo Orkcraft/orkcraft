@@ -25,7 +25,7 @@ nothing of their UI is built here.
 | the cart | 48 × 40 bin and a 48 × 32 load | about **64 × 48** with its load, as the sheet draws it |
 | a building | a cover kit that lifts (nine-slice roofs and walls, facade, crest) | **one sprite with a door**; the keeper steps out of it (§13.1); the cover kit is superseded |
 | spurs | a rail spur to each building | **one main line**; dirt paths join the buildings to it; carts stop opposite a path (§4) |
-| the camp's edge | a palisade of sharpened 48-px stakes | a **low palisade of rounded logs**, 32 tall; the lookout tower in it, the catapult against it (§4) |
+| the camp's edge | a palisade of sharpened 48-px stakes | a **low palisade of rounded logs**, 64 px tall, along the back and the right edge; the lookout tower in it, the catapult (in side view) against it (§4) |
 | type | Titillium Web labels, chips in the UI face, today's sizes | **Nunito** labels, **Pixelify Sans** titles and chips, JetBrains Mono; every size a step larger (§6) |
 
 ## 2. The palette
@@ -152,8 +152,12 @@ fits too, but the rule stays at ten so the camp does not crowd.
 ## 4. Layout rules (decided the night of 14 October)
 
 1. **One main track line** runs left to right in the work's order. **No rail spurs:** each building is joined to the
-   line by a **dirt path** (`world-earth`, 16 wide, a `world-grass-dark` rim) from its door.
-2. **Carts stop opposite a path.** The stop is where a path meets the line; the line's last cell is the buffer stop at
+   line by a **dirt path** (`world-earth`, 32 px wide, a `world-grass-dark` rim) from its door.
+   **A lane per row of buildings** (the owner, v3-prompts §8): buildings face the viewer, so a row's doors open
+   downwards. The row above the line has the track's verge as its lane (a short path from each door); each row below
+   has **its own lane under its doors**, joined to the main line by short paths between buildings. **Carts run on the
+   main line only; lanes are for orks.** More than ten buildings: another row and lane below, the same way.
+2. **Carts stop opposite a path.** The stop is where a path (or a lane's joining path) meets the line; the line's last cell is the buffer stop at
    the catapult.
 3. **The keeper waits at the stop.** A building that takes work from the line (Task board, Agent pool, Review gate,
    Inspector) has its keeper at the end of its path; where the keeper stands says its state (v3-prompts §5): at the
@@ -163,10 +167,13 @@ fits too, but the rule stays at ten so the camp does not crowd.
    cart at the stop.
 5. **The two buildings that face the world stand in the wall.** External listeners' lookout tower is **built into the
    palisade**; the track comes in from outside through a gap at **the tower's foot**. The Publisher's catapult stands
-   **against the palisade at the line's end** and throws over it. *Whatever crosses the camp's border stands on the
+   **against the palisade at the line's end**, drawn **in side view** (the owner: it reads better; the one exception
+   to the single projection), facing right, the track coming into its side from the left, and throws up and to the
+   right over the wall. *Whatever crosses the camp's border stands on the
    wall* — the way in on one side, the way out on the other (for now only these two).
-6. **The palisade is low, of rounded logs** (32 tall, never sharpened), along the back and down the side the catapult
-   throws over; nowhere round a building.
+6. **The palisade is low, of rounded logs** (64 px tall, never sharpened), along the back and **down the right edge**,
+   which the catapult stands against and throws over; nowhere round a building. Work comes in through the tower in the
+   wall at the left and leaves over the wall at the right.
 7. **A building is one sprite with a door** (§13.1): no lifting cover, no nine-slice roof, no facade or crest slot.
    The door is in the lower middle of its front; its three states (closed; open, warm light; the keeper half out) are
    a 32 × 40 patch drawn over it. The cover kit (v2 §4a–4c) stays only until I1 takes it out.
@@ -206,7 +213,8 @@ light stone. So signals are **UI drawn by the product** (layer 8), never in the 
 Titillium Web stays shipped as Nunito's fallback (`--font-camp: "Nunito", "Titillium Web", …`), so nothing breaks
 while a machine still has the old page cached.
 
-**The type scale, one step larger** (Camp and the monospace; Office keeps its editor's scale):
+**The type scale, one step larger** — Camp, the monospace, and Office too (the owner, v3-prompts §8): Office's title
+20 → 22/28, heading 11 → 12/16, label and body 13 → 14/20, caption 12 → 13/18, chip 12 → 13/16. Camp's:
 
 | style | face | v2 | **v3** |
 |---|---|---|---|
@@ -267,6 +275,15 @@ keep. The cutter only **reports** pixels in a signal's yellow, orange or red (sa
 340°–65°; the honey wood and the sand sit well below), and such a sprite is redrawn; only the signals' sheet may have
 them. Round 3's report: the UX bench's banner (1.4 % of its pixels) and a few px of the Review board's fire.
 
+**Re-pixelised** (the sheets are soft: the model renders at about 4.17 image px per art px and smooths it, and the
+JPEG blurs again — inside one art pixel the colour varies by about 25 of 255): each art pixel is the **median of its
+cell's inner pixels** (the cell's edges skipped); the **magenta cast** near the key is removed (an opaque pixel within
+3 px of the background whose red and blue both stand well above green, blue at least ¾ of red — the plum cloth is
+redder — takes the median of its clean neighbours); then the sprite is reduced to **its own 24 colours** (a median cut on
+its own pixels, not the tokens) with a hard alpha. The signal check runs before that reduction, so a banner's orange
+cannot be averaged away. The Agent pool went from 6 530 colours to 24, its floor's purple cast gone:
+[img/v3-preview/agent-pool-repixelised.png](img/v3-preview/agent-pool-repixelised.png).
+
 | file | v3-prompts | sprites (planned art px) |
 |---|---|---|
 | `b1-core.png` | §3a B1 | `buildings/` watchtower 96×128, fields 128×96, barracks 128×112, loot_vault 128×112, lake 112×96, catapult 128×112 |
@@ -309,12 +326,9 @@ colours of the attached frame F1: the grass as saturated and bright as in it (ab
 
 After each sheet: `python tools/camp_sheet.py --v3`, then open the preview; the piece takes its slot.
 
-## 10. Open questions for the owner
+## 10. The owner's answers (v3-prompts §8)
 
-1. **Nunito for labels** instead of Titillium Web: friendlier and with Cyrillic, but rounder; the alternative is to
-   keep Titillium (no Cyrillic) at the larger sizes.
-2. **The palisade down the right side:** the catapult stands against a wall, so the preview runs the palisade down
-   the right edge as well as the back. Keep, or only along the back with the catapult at its corner?
-3. **The lane in front of the lower row:** the lower buildings face the viewer, so their doors open onto a lane at the
-   bottom, joined to the line by three short paths (each a stop). Keep, or a path per building?
-4. **Office** keeps its type scale; should it also go a step larger?
+1. **Nunito** for labels: yes.
+2. **The catapult in side view**, against the right wall; the palisade runs down the right edge (§4.5–4.6).
+3. **A lane per row** of buildings, joined to the main line by short paths; carts on the line only (§4.1).
+4. **Office** a step larger too (§6).

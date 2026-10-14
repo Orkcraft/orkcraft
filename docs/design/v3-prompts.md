@@ -430,3 +430,12 @@ Saved as references, **not cut** (named `-r1` so `camp_sheet.py --v3` does not p
 6. **B4 is isometric again** (the drum, the grove on its own square of grass, the stage, the huts), with purple smoke
    blurred into two pieces, and the Script bench repeated from B3. Redo with the front-on line of §7 and
    `b1-core.jpg` attached; "no ground under the building, no smoke, no glow".
+
+**The Task board must be asked at core size.** B1 drew it 88 × 72 beside a 192-px Agent pool; it is a core building
+on the line. In B1's redo: "the task board as large as the work hall beside it, about 160–192 px wide: a broad notice
+board under a shingle roof on two posts, big scrolls and stone slabs pinned to it, a door-sized gap below for its keeper".
+
+**Done (V3, after round 3):** the cutter re-pixelises (median per art pixel, the magenta cast removed, each sprite in its own
+24 colours; [img/v3-preview/agent-pool-repixelised.png](img/v3-preview/agent-pool-repixelised.png)); §8's answers are in
+design-system-v3.md §4, §6, §10 and the preview (the catapult against the right wall, a lane per row, Office larger).
+

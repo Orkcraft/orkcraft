@@ -33,7 +33,10 @@ right, counted from 0), instead of a point; `--list` prints that order. A sheet 
 listed as awaited, so the command is the same before and after each sheet arrives. The v3 spec sets `native` (each
 sprite cut at the sheet's own art pixel, never re-read coarser; its slot is what the sheet draws, rounded up to the
 grid of 8, and a size in the spec is only the plan) and `keep_colours` (no snap to the tokens: the art keeps its own
-shading; the cutter only reports pixels in a signal's yellow, orange or red).
+shading; the cutter only reports pixels in a signal's yellow, orange or red). The sheets are soft (the model renders
+at about 4.17 image px per art px and smooths it, and JPEG blurs again), so each art pixel is the median of its cell's
+inner pixels, then the magenta cast near the key is removed and the sprite is reduced to its own 24 colours (a median
+cut on its own pixels), with a hard alpha.
 
 Every sprite it writes is a **placeholder** (generated art, docs/design/color-pass.md §10b), to be replaced by the
 commissioned artist's; the manifest says so on every row. Needs `pip install pillow numpy`.
@@ -360,6 +363,53 @@ def loud(rgb: tuple[int, int, int]) -> bool:
     return s > 0.6 and (h * 360 < 15 or h * 360 > 345 or 45 <= h * 360 <= 65)
 
 
+def decast(img: np.ndarray, near: int = 3) -> np.ndarray:
+    """The magenta a soft sheet blended into a sprite's edge (the Agent pool's floor shade): an opaque pixel within
+    `near` px of the transparent key whose hue leans to magenta (red and blue both well above green, blue at least
+    three quarters of red — the plum banners' cloth is redder) takes the median of its non-magenta neighbours, or is
+    dropped when it has none."""
+    rgb = img[..., :3].astype(int)
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    opaque = img[..., 3] > 0
+    magenta = opaque & (r - g > 25) & (b - g > 25) & (b * 4 >= r * 3)
+    magenta &= _grow(~opaque, near)
+    out = img.copy()
+    h, w = magenta.shape
+    for y, x in zip(*np.nonzero(magenta)):
+        y0, y1, x0, x1 = max(y - 2, 0), min(y + 3, h), max(x - 2, 0), min(x + 3, w)
+        ok = opaque[y0:y1, x0:x1] & ~magenta[y0:y1, x0:x1]
+        if ok.any():
+            out[y, x, :3] = np.median(rgb[y0:y1, x0:x1][ok], axis=0).astype(np.uint8)
+        else:
+            out[y, x] = 0
+    return out
+
+
+def own_palette(img: np.ndarray, n: int = 24) -> np.ndarray:
+    """The sprite reduced to its own `n` colours (a median cut on its own opaque pixels, not the tokens), so the
+    smoothing of the image model and the JPEG's noise inside one art pixel are gone and the shading stays."""
+    opaque = img[..., 3] > 0
+    px = img[..., :3][opaque].astype(int)
+    if len(px) == 0:
+        return img
+    boxes = [px]
+    while len(boxes) < n:
+        i = max(range(len(boxes)), key=lambda k: (np.ptp(boxes[k], axis=0).max() if len(boxes[k]) > 1 else -1))
+        box = boxes[i]
+        if len(box) < 2 or np.ptp(box, axis=0).max() == 0:
+            break
+        ch = int(np.ptp(box, axis=0).argmax())
+        box = box[box[:, ch].argsort()]
+        boxes[i:i + 1] = [box[:len(box) // 2], box[len(box) // 2:]]
+    cols = np.array([np.median(bx, axis=0) for bx in boxes]).round()
+    d = ((img[..., :3].astype(int)[..., None, :] - cols[None, None]) ** 2).sum(-1)
+    out = np.zeros_like(img)
+    out[..., :3] = cols[d.argmin(-1)].astype(np.uint8)
+    out[..., 3] = np.where(opaque, 255, 0)                          # hard alpha
+    out[~opaque, :3] = 0
+    return out
+
+
 def signal_hue(rgb: tuple[int, int, int]) -> bool:
     """A signal's yellow, orange or red (v3, docs/design/design-system-v3.md §8): saturated and bright, from red to
     yellow. The honey wood and the sand (saturation about 0.5–0.65) are below it; `#facc15` and `#e8411c` above."""
@@ -518,7 +568,17 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
                 frame[int(fy0 * ih):int(fy1 * ih), int(fx0 * iw):int(fx1 * iw)] = 0
             frames.append(frame)
         out = strip(frames) if len(frames) > 1 else frames[0]
-        out = out if group.get("keep_colours") else recolour(out, pal)
+        if group.get("keep_colours"):           # v3: re-pixelised in its own colours, the magenta cast removed
+            out = decast(out)
+            if not group.get("signals"):        # checked before the palette, which could average a banner's orange away
+                opaque = out[out[..., 3] > 0][:, :3]
+                n = sum(signal_hue(tuple(int(v) for v in p)) for p in opaque)
+                if n >= 8:
+                    problems.append(f"{item['file']}: {n} px in a signal's yellow, orange or red "
+                                    f"({100 * n / max(len(opaque), 1):.1f} %) — redraw it without them")
+            out = own_palette(out, group.get("colours", 24))
+        else:
+            out = recolour(out, pal)
         _write(out, item["file"], group, rows, problems, frames[0].shape[1::-1], len(frames), scale,
                anchor=item.get("anchor"))
 
@@ -568,14 +628,9 @@ def _write(img, rel, group, rows, problems, frame, frames, scale=1.0, anchor=Non
     h, w = img.shape[:2]
     if w % 8 or h % 8:
         problems.append(f"{rel}: {w} × {h} is off the grid of 8")
-    if not group.get("signals"):
+    if not group.get("signals") and not group.get("keep_colours"):   # v3 is checked in cut_group, before its palette
         opaque = img[img[..., 3] > 0][:, :3]
-        if group.get("keep_colours"):           # v3 keeps the art's colours: only the signals' hues are refused
-            n = sum(signal_hue(tuple(int(v) for v in p)) for p in opaque)
-            if n >= 8:
-                problems.append(f"{rel}: {n} px in a signal's yellow, orange or red ({100 * n / max(len(opaque), 1):.1f} %)"
-                                " — redraw it without them")
-        elif any(loud(p) for p in {tuple(int(v) for v in p) for p in opaque}):
+        if any(loud(p) for p in {tuple(int(v) for v in p) for p in opaque}):
             problems.append(f"{rel}: a signal's yellow or red outside a signal sprite")
     save(img, rel)
     row = {"file": rel, "size": [w, h], "frame": list(frame), "frames": frames,

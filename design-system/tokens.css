@@ -502,12 +502,12 @@
   --type-camp-caption: 600 13px/18px var(--font-camp);
   --type-camp-number: 700 14px/20px var(--font-camp);
   --type-camp-chip: 500 14px/16px var(--font-pixel);
-  --type-office-title: 600 20px/28px var(--font-office);
-  --type-office-heading: 700 11px/16px var(--font-office);
-  --type-office-label: 600 13px/18px var(--font-office);
-  --type-office-body: 400 13px/20px var(--font-office);
-  --type-office-caption: 400 12px/16px var(--font-office);
-  --type-office-chip: 600 12px/16px var(--font-office);
+  --type-office-title: 600 22px/28px var(--font-office);
+  --type-office-heading: 700 12px/16px var(--font-office);
+  --type-office-label: 600 14px/20px var(--font-office);
+  --type-office-body: 400 14px/20px var(--font-office);
+  --type-office-caption: 400 13px/18px var(--font-office);
+  --type-office-chip: 600 13px/16px var(--font-office);
   --type-code: 400 14px/20px var(--font-mono);
   --type-code-small: 400 13px/18px var(--font-mono);
 }
