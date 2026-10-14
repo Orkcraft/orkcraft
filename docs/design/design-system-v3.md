@@ -281,6 +281,21 @@ keep. The cutter only **reports** pixels in a signal's yellow, orange or red (sa
 340°–65°; the honey wood and the sand sit well below), and such a sprite is redrawn; only the signals' sheet may have
 them. Round 3's report: the UX bench's banner (1.4 % of its pixels) and a few px of the Review board's fire.
 
+**Tiles must tile, so they are not "whatever the sheet draws":** a `tiles` group with `native` reads each tile inside
+its border at the sheet's own pitch, takes the drawn size (the median over the set) rounded to a multiple of 8 as
+**one size for the whole set**, and reads every tile into exactly that size; the preview's track grid follows it. The
+cutter reports how the straight pieces join: the colour step across the seam against the step inside, and the ties'
+spacing across the seam against inside. On the 0.3 track sheet (the stand-in below): tiles drawn about 93 art px, cut
+at **96 × 96**; the seam step is 2 against 8 inside (the bed and rails continue), but the ties are 8 px apart across the
+seam against 6 inside — a visible hitch, which c2's prompt asks the model to avoid (v3-prompts §3c.2). At 96 px the
+tile is mostly transparent margin: the rails and bed are a band about 40 px high in its middle, F1's gauge.
+
+**Stand-ins until c1, c2 and o1 arrive:** the sheets marked `standin` in `tools/camp_sheets_v3.json` re-cut the 0.3
+track tiles, mine carts (empty and with each load) and the ork's idle and work frames through the same path
+(native, own colours, re-pixelised) into `design-system/sprites/v3/standin/`, so they are as crisp as the v3
+buildings beside them. The preview draws a v3 sprite first, then its stand-in, then v2's. v2's own sprites (the
+GUI's today) are not touched.
+
 **A drawn grid** (round 4: the model drew a box round every cell of the ork sheets, which joined the sprites): a sheet
 with `degrid` (set on o1–o5) has the grid dropped before the pieces are found — long (≥ 120 px), thin (≤ 14 px) dark
 straight runs with the background on both sides, the key's own darkened violet, and a cut along any line drawn across

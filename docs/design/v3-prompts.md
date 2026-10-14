@@ -178,6 +178,12 @@ inside; the door open with the keeper half out (the keeper of §3b).
 2. **The track:** "A wooden mine-cart track on few, light ties, 32 × 32 autotile set: straight both ways, four
    corners, T-junctions from above and below, a switch, a merge, a crossing, a buffer stop. It reads as a clear line
    on bright grass, not as a texture."
+   **So that the tiles join** (V3, design-system-v3.md §8), add: "Every tile exactly the same square size, drawn on
+   the same pixel grid; each tile shown alone with magenta round it, no border or frame. The rails and the earth bed
+   cross the tile's edge at exactly the same place on every tile and stop flush with the edge. The ties are evenly
+   spaced and the spacing divides the tile's width exactly: the first tie starts half a spacing in from the left edge
+   and the last ends half a spacing before the right edge, so two tiles side by side continue the same rhythm. The
+   rails sit in the middle of the tile, the same distance apart on every piece."
 
 ### 3d. Ground, edge and the biomes
 

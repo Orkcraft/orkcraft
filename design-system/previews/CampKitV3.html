@@ -400,21 +400,30 @@ function nameChip(name, cx, top) {
 }
 
 async function track() {
+  // the tiles: c2's once cut, else the 0.3 stand-ins re-pixelised (standin/), else v2's at ×2. The track's grid follows
+  // the tile's own size (one size for the set), centred on the line's old row and column.
+  const cands = (name) => [{ src: `${V3}track/${name}.png`, scale: ART }, { src: `${V3}standin/track/${name}.png`, scale: ART, standin: true },
+    { src: `${CAMP}track/${name}.png`, scale: K, v2: true }];
+  const probe0 = await pick(cands("straight-h"));
+  const T = probe0 ? probe0.img.naturalWidth * probe0.scale / K : 32;            // the tile in layout units
   const tile = async (name, x, y, v) => {
-    const got = await pick([{ src: `${V3}track/${name}.png`, scale: ART }, { src: `${CAMP}track/${name}.png`, scale: K, v2: true }]);
+    const got = await pick(cands(name));
     if (got) {
-      if (!got.v2) here.add(`track/${name}.png`);
+      if (!got.v2 && !got.standin) here.add(`track/${name}.png`);
       const img = document.createElement("img");
       img.className = "v3-img"; img.src = got.src;
-      img.style.cssText = `left:${x * K}px;top:${y * K}px;width:${got.img.naturalWidth * got.scale}px;height:${got.img.naturalHeight * got.scale}px`;
+      img.style.cssText = `left:${x * K}px;top:${y * K}px;width:${T * K}px;height:${T * K}px`;
       world.appendChild(img);
-    } else el("v3-at v3-rails" + (v ? " is-v" : ""), x, y, 32, 32);
+    } else el("v3-at v3-rails" + (v ? " is-v" : ""), x, y, T, T);
   };
+  const cx = OX + 72 - T / 2, cy = LINE_Y + 16 - T / 2;       // the column's and the row's centres stay put
   // the way in: from outside the wall at the tower's foot, down to the line, then left to right to the catapult
-  for (let y = -OY; y < LINE_Y; y += 32) await tile("straight-v", OX + 56, y, true);   // in from outside the wall
-  await tile("corner-ne", OX + 56, LINE_Y);
-  for (let x = OX + 88; x < OX + 344; x += 32) await tile("straight-h", x, LINE_Y);
-  await tile("stop-e", OX + 344, LINE_Y);
+  for (let y = cy - Math.ceil((cy + OY) / T) * T; y < cy; y += T) await tile("straight-v", cx, y, true);
+  await tile("corner-ne", cx, cy);
+  const end = OX + 376;                                      // the catapult's left edge: the buffer stop before it
+  let x = cx + T;
+  for (; x + 2 * T <= end; x += T) await tile("straight-h", x, cy);
+  await tile("stop-e", x, cy);
 }
 
 function paths() {
@@ -437,6 +446,7 @@ function paths() {
 async function ork(cx, feetY, opts = {}) {
   const got = await pick([
     { src: `${V3}orks/body/${opts.anim || "idle"}.png`, scale: ART, frames: opts.anim === "work" ? 6 : 4 },
+    { src: `${V3}standin/orks/body/${opts.anim || "idle"}.png`, scale: ART, frames: opts.anim === "work" ? 6 : 4, standin: true },
     { src: `${CAMP}orks/body/${opts.anim || "idle"}.png`, scale: 1, frames: opts.anim === "work" ? 6 : 4, fw: opts.anim === "work" ? 48 : 32, fh: 48, v2: true }]);
   el("v3-shadow", cx - 8, feetY - 3, 16, 5);
   const s = el("v3-slot", cx - 16, feetY - 32, 32, 32);
@@ -474,12 +484,13 @@ async function cart(x, load, opts = {}) {
   world.appendChild(wrap);
   const put = (src, l, t, w, h) => { const i = document.createElement("img"); i.className = "v3-img"; i.src = src;
     i.style.cssText = `left:${l}px;top:${t}px;width:${w}px;height:${h}px`; wrap.appendChild(i); };
-  const got = await pick([{ src: `${V3}carts/${load}.png`, scale: ART }, { src: `${CAMP}carts/side.png`, scale: 1, v2: true }]);
+  const got = await pick([{ src: `${V3}carts/${load}.png`, scale: ART },
+    { src: `${V3}standin/carts/${load}.png`, scale: ART, standin: true }, { src: `${CAMP}carts/side.png`, scale: 1, v2: true }]);
   const slot = document.createElement("div");
   slot.className = "v3-slot"; slot.style.cssText = `left:${-16 * K}px;top:${(feet - 24) * K}px;width:${32 * K}px;height:${24 * K}px`;
   slot.innerHTML = "<span>cart 64×48</span>"; wrap.appendChild(slot);
   if (!got) return;
-  if (!got.v2) { here.add(`carts/${load}.png`); const cw = got.img.naturalWidth, ch = got.img.naturalHeight;
+  if (!got.v2) { if (!got.standin) here.add(`carts/${load}.png`); const cw = got.img.naturalWidth, ch = got.img.naturalHeight;
     put(got.src, -cw / 2, feet * K - ch, cw, ch); }
   else {
     put(got.src, -24, feet * K - 40, 48, 40);

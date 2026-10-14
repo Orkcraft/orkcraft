@@ -1,5 +1,5 @@
 {
- "note": "v3's sheets (docs/design/v3-prompts.md §3) and the sprites each is cut into (docs/design/design-system-v3.md §8). A sheet goes into `root` under exactly its `file` name; `python tools/camp_sheet.py --v3` cuts every sheet that is there and lists the rest as awaited. A piece is named by `order`: its place in reading order on the sheet (`--list SHEET` prints it); if the image model drew the sheet in another order, change the numbers, not the names. Sizes are the plan in art px; with `native` the slot is what the sheet draws (rounded up to 8), shown at ×1 (docs/design/design-system-v3.md §3), and `keep_colours` keeps the art's own colours. `degrid` (set on the ork sheets, whose first round came with a box drawn round every cell) drops a drawn grid before the pieces are found; it is off for the others, where it would eat a building's own straight outlines.",
+ "note": "v3's sheets (docs/design/v3-prompts.md §3) and the sprites each is cut into (docs/design/design-system-v3.md §8). A sheet goes into `root` under exactly its `file` name; `python tools/camp_sheet.py --v3` cuts every sheet that is there and lists the rest as awaited. A piece is named by `order`: its place in reading order on the sheet (`--list SHEET` prints it); if the image model drew the sheet in another order, change the numbers, not the names. Sizes are the plan in art px; with `native` the slot is what the sheet draws (rounded up to 8), shown at ×1 (docs/design/design-system-v3.md §3), and `keep_colours` keeps the art's own colours. `degrid` (set on the ork sheets, whose first round came with a box drawn round every cell) drops a drawn grid before the pieces are found; it is off for the others, where it would eat a building's own straight outlines. Sheets marked `standin` (with their own `root`) re-cut the 0.3 placeholders the same way, into standin/, until the owner's c1, c2 and o1 arrive.",
  "root": "docs/design/img/references/v3",
  "out": "design-system/sprites/v3",
  "native": true,
@@ -1476,6 +1476,260 @@
    "file": "u6-inside.png",
    "about": "§3e.6 the Task board's inside: the hall 480 × 360, boards 96 × 200, cards, flags, pins",
    "later": "I2"
+  },
+  {
+   "name": "standin-track",
+   "file": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
+   "root": "docs/design/img/references/0.3",
+   "standin": true,
+   "about": "stand-in until c2: the 0.3 track tiles, re-pixelised, one tile size for the set",
+   "groups": [
+    {
+     "kind": "tiles",
+     "size": [
+      32,
+      32
+     ],
+     "anchor": "top-left",
+     "key_grass": true,
+     "items": [
+      {
+       "file": "standin/track/straight-h.png",
+       "at": [
+        0.125,
+        0.163
+       ]
+      },
+      {
+       "file": "standin/track/straight-v.png",
+       "at": [
+        0.375,
+        0.163
+       ]
+      },
+      {
+       "file": "standin/track/corner-nw.png",
+       "at": [
+        0.625,
+        0.163
+       ]
+      },
+      {
+       "file": "standin/track/corner-ne.png",
+       "at": [
+        0.875,
+        0.163
+       ]
+      },
+      {
+       "file": "standin/track/corner-nw-1.png",
+       "at": [
+        0.125,
+        0.498
+       ]
+      },
+      {
+       "file": "standin/track/corner-se.png",
+       "at": [
+        0.375,
+        0.498
+       ]
+      },
+      {
+       "file": "standin/track/switch-e.png",
+       "at": [
+        0.625,
+        0.498
+       ]
+      },
+      {
+       "file": "standin/track/merge-e.png",
+       "at": [
+        0.875,
+        0.498
+       ]
+      },
+      {
+       "file": "standin/track/cross.png",
+       "at": [
+        0.125,
+        0.836
+       ]
+      },
+      {
+       "file": "standin/track/stop-e.png",
+       "at": [
+        0.375,
+        0.836
+       ]
+      },
+      {
+       "file": "standin/track/stop-n.png",
+       "at": [
+        0.625,
+        0.836
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "standin-carts",
+   "file": "Gemini_Generated_Image_qjb9tqjb9tqjb9tq.jpeg",
+   "root": "docs/design/img/references/0.3",
+   "standin": true,
+   "about": "stand-in until c1: the 0.3 mine carts with their loads, re-pixelised",
+   "groups": [
+    {
+     "size": [
+      48,
+      48
+     ],
+     "anchor": "feet",
+     "items": [
+      {
+       "file": "standin/carts/empty.png",
+       "at": [
+        0.081,
+        0.136
+       ]
+      },
+      {
+       "file": "standin/carts/code.png",
+       "at": [
+        0.248,
+        0.119
+       ]
+      },
+      {
+       "file": "standin/carts/asset.png",
+       "at": [
+        0.415,
+        0.119
+       ]
+      },
+      {
+       "file": "standin/carts/message.png",
+       "at": [
+        0.583,
+        0.124
+       ]
+      },
+      {
+       "file": "standin/carts/doc.png",
+       "at": [
+        0.749,
+        0.126
+       ]
+      },
+      {
+       "file": "standin/carts/bundle.png",
+       "at": [
+        0.916,
+        0.116
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "standin-orks",
+   "file": "Gemini_Generated_Image_4xw8i84xw8i84xw8.jpeg",
+   "root": "docs/design/img/references/0.3",
+   "standin": true,
+   "about": "stand-in until o1: the 0.3 ork's idle and work frames, re-pixelised",
+   "groups": [
+    {
+     "size": [
+      32,
+      48
+     ],
+     "anchor": "feet",
+     "fps": 8,
+     "tones": [
+      "#8fb052",
+      "#5a7a34",
+      "#3e5a26",
+      "#6a5240",
+      "#4a3a30",
+      "#8a7a64"
+     ],
+     "items": [
+      {
+       "file": "standin/orks/body/idle.png",
+       "frames": [
+        {
+         "at": [
+          0.068,
+          0.106
+         ]
+        },
+        {
+         "at": [
+          0.212,
+          0.106
+         ]
+        },
+        {
+         "at": [
+          0.355,
+          0.106
+         ]
+        },
+        {
+         "at": [
+          0.497,
+          0.106
+         ]
+        }
+       ]
+      },
+      {
+       "file": "standin/orks/body/work.png",
+       "frames": [
+        {
+         "at": [
+          0.069,
+          0.512
+         ]
+        },
+        {
+         "at": [
+          0.211,
+          0.512
+         ]
+        },
+        {
+         "at": [
+          0.362,
+          0.515
+         ]
+        },
+        {
+         "at": [
+          0.506,
+          0.513
+         ]
+        },
+        {
+         "at": [
+          0.65,
+          0.505
+         ]
+        },
+        {
+         "at": [
+          0.792,
+          0.512
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
   }
  ]
 }

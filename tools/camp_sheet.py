@@ -298,6 +298,11 @@ class Sheet:
 
     def tile(self, box, w: int, h: int, border_lum: int = 70) -> np.ndarray:
         """A tile cut inside its dark border and read into exactly w × h."""
+        x0, y0, x1, y1 = self.tile_box(box, border_lum)
+        return snap(self.a, self.bg, x0, y0, (x1 - x0) / w, (y1 - y0) / h, w, h)
+
+    def tile_box(self, box, border_lum: int = 70) -> tuple[int, int, int, int]:
+        """The tile's box in screen px, inside its dark border."""
         x0, y0, x1, y1 = (int(v) for v in self.screen(box))
         lum = 0.3 * self.a[..., 0] + 0.59 * self.a[..., 1] + 0.11 * self.a[..., 2]
         def is_border(ys, xs):
@@ -324,7 +329,7 @@ class Sheet:
                 y1 -= 1
             else:
                 break
-        return snap(self.a, self.bg, x0, y0, (x1 - x0) / w, (y1 - y0) / h, w, h)
+        return x0, y0, x1, y1
 
 
 # --- 4–5. trim, pad, anchor ------------------------------------------------------------------------------------
@@ -468,6 +473,23 @@ def signal_hue(rgb: tuple[int, int, int]) -> bool:
     return s >= 0.75 and v >= 0.7 and (h * 360 <= 65 or h * 360 >= 340)
 
 
+def seam(img: np.ndarray, rel: str) -> str:
+    """How a straight tile joins itself: the colour step across the seam against the mean step inside the tile, and
+    the ties' spacing across the seam against their spacing inside (a straight-v is read turned)."""
+    a = img if "straight-h" in rel else img.transpose(1, 0, 2)
+    rgb = a[..., :3].astype(float)
+    inside = np.abs(np.diff(rgb, axis=1)).mean()
+    across = np.abs(rgb[:, 0] - rgb[:, -1]).mean()
+    lum = (0.3 * rgb[..., 0] + 0.59 * rgb[..., 1] + 0.11 * rgb[..., 2]) * (a[..., 3] > 0)
+    prof = lum.sum(axis=0)
+    dark = prof < np.median(prof) * 0.9                         # tie columns: darker across the tile
+    starts = [i for i in range(len(dark)) if dark[i] and (i == 0 or not dark[i - 1])]
+    gaps = np.diff(starts) if len(starts) > 1 else []
+    tie = f"ties every {np.median(gaps):.0f} px, across the seam {starts[0] + len(dark) - starts[-1]} px" if len(gaps) \
+        else "no ties found"
+    return f"{rel}: seam step {across:.0f} against {inside:.0f} inside; {tie}"
+
+
 # --- 7. write ----------------------------------------------------------------------------------------------------
 
 def save(img: np.ndarray, rel: str) -> None:
@@ -580,13 +602,24 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
         return cut_nine(sheet, group, pal, rows, problems)
     if kind == "tiles":
         w, h = group["size"]
+        if group.get("native"):                 # v3: one size for the set, the drawn tile at the sheet's own pitch
+            boxes = [sheet.tile_box(_extract(sheet, item)) for item in group["items"]]
+            drawn = float(np.median([max(b[2] - b[0], b[3] - b[1]) for b in boxes])) / sheet.pitch
+            w = h = max(8, int(round(drawn / 8)) * 8)
+            problems.append(f"{group['_sheet']}: tiles drawn about {drawn:.0f} art px, cut at {w} × {h}")
         for item in group["items"]:
             img = sheet.tile(_extract(sheet, item), w, h)
             img[..., 3] = 255
             if group.get("key_grass"):                           # the tile's grass: the ground layer draws its own
                 img = grass_keyed(img)
-            _write(img if group.get("keep_colours") else recolour(img, pal), item["file"], group, rows, problems,
-                   (w, h), 1)
+            if group.get("keep_colours"):
+                img[..., 3] = np.where(img[..., 3] > 0, 255, 0)
+                img = own_palette(img, group.get("colours", 24))
+            else:
+                img = recolour(img, pal)
+            _write(img, item["file"], group, rows, problems, (w, h), 1)
+            if item["file"].rsplit("/", 1)[-1] in ("straight-h.png", "straight-v.png"):
+                problems.append(seam(img, item["file"]))
         return
     w, h = group["size"]
     boxes = [[_extract(sheet, f) for f in item.get("frames", [item])] for item in group["items"]]
@@ -745,7 +778,7 @@ V3 = ROOT / "tools" / "camp_sheets_v3.json"
 def expect(spec: dict) -> None:
     """Every sheet of a spec, whether it is in the folder, and the sprites with their sizes it is cut into."""
     for sh in spec["sheets"]:
-        p = ROOT / spec["root"] / sh["file"]
+        p = ROOT / sh.get("root", spec["root"]) / sh["file"]
         there = any(q.exists() for q in (p, p.with_suffix(".jpg"), p.with_suffix(".jpeg")))
         print(f"{'✓' if there else '·'} {sh['file']}  ({sh['name']}{': ' + sh['about'] if sh.get('about') else ''})")
         for group in sh.get("groups", []):
@@ -789,7 +822,7 @@ def main() -> None:
     for sh in spec["sheets"]:
         if args.only not in sh["name"] or not sh.get("groups"):
             continue
-        path = ROOT / spec["root"] / sh["file"]
+        path = ROOT / sh.get("root", spec["root"]) / sh["file"]
         for other in (path.with_suffix(".jpg"), path.with_suffix(".jpeg")):     # an image model that only gives JPEG
             if not path.exists() and other.exists():
                 path = other

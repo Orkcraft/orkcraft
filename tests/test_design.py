@@ -160,12 +160,15 @@ def test_the_v3_preview_awaits_every_sprite_the_v3_sheets_are_cut_into():
     root = Path(__file__).resolve().parent.parent
     spec = json.loads((root / "tools" / "camp_sheets_v3.json").read_text(encoding="utf-8"))
     preview = (root / "design-system" / "previews" / "CampKitV3.html").read_text(encoding="utf-8")
-    files = [item["file"] for sh in spec["sheets"] for g in sh.get("groups", []) for item in g["items"]]
+    files = [item["file"] for sh in spec["sheets"] if not sh.get("standin") for g in sh.get("groups", [])
+             for item in g["items"]]
     assert files and len(files) == len(set(files))
     for f in files:
         assert f'"{f}"' in preview, f
     assert spec["out"] == "design-system/sprites/v3" and spec["root"] == "docs/design/img/references/v3"
     for sh in spec["sheets"]:
+        if sh.get("standin"):                           # the 0.3 placeholders keep v2's points, not v3's order
+            continue
         for g in sh.get("groups", []):
             for item in g["items"]:
                 w, h = item.get("size", g["size"])
