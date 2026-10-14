@@ -597,7 +597,7 @@ body { user-select: text; -webkit-user-select: text; }
     drop-shadow(0 2px 1px color-mix(in srgb, var(--art-outline) 70%, transparent)); }
 .gui-cart.is-held .gui-cart__gold { filter: drop-shadow(0 0 1px var(--art-outline)) drop-shadow(0 0 5px var(--signal-held)); }
 .gui-cart.is-error .gui-cart__gold { filter: drop-shadow(0 0 1px var(--art-outline)) drop-shadow(0 0 5px var(--signal-fire));
-  animation: gui-cart-stuck .6s steps(2) infinite; }
+  animation: gui-cart-stuck var(--motion-flicker) steps(2) infinite; }
 @keyframes gui-cart-stuck { 50% { opacity: .55; } }
 .gui-cart.is-back .gui-cart__gold { filter: grayscale(1) opacity(.7); }
 .gui-cart__label { position: absolute; right: 0; top: calc(100% + 10px); max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 6px;

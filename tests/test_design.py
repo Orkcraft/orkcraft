@@ -153,6 +153,21 @@ def test_the_camps_placeholder_sprites_keep_v2s_grid_and_say_they_are_placeholde
         assert not (r["frame"][0] % 8 or r["frame"][1] % 8), r["file"]
 
 
+def test_motion_is_tokens_and_the_gui_names_only_those():
+    """docs/design/design-system-v2.md §10, §12 Q6: the motion values are a token group, written into tokens.css; a
+    duration is in ms or s, work moves at 8 fps, and every `--motion-*` the GUI's stylesheets name is one of them."""
+    import re
+    motion = {t["name"]: t["value"] for t in tokens.system()["motion"]["tokens"]}
+    assert motion["motion-frame"] == "125ms" and motion["motion-cover"] == "250ms"
+    for name, value in motion.items():
+        assert re.fullmatch(r"\d+(ms|s|px)|cubic-bezier\([\d., ]+\)", value), (name, value)
+    css = (tokens.SYSTEM / "tokens.css").read_text(encoding="utf-8")
+    assert all(f"--{name}: {value};" in css for name, value in motion.items())
+    static = Path(tokens.__file__).resolve().parents[1] / "gui" / "static"
+    used = {m for f in static.rglob("*.css") for m in re.findall(r"var\(--(motion-[\w-]+)\)", f.read_text(encoding="utf-8"))}
+    assert used and used <= set(motion), sorted(used - set(motion))
+
+
 @pytest.mark.parametrize("type_id", sorted(catalog.TYPES))
 def test_every_type_has_a_contract_and_its_default_passes(type_id):
     c = ui.contract(type_id)

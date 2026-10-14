@@ -116,7 +116,8 @@ def roles_css() -> str:
 
 def system_css() -> str:
     """design-system/tokens.css, written from design-system/tokens.json: one block of colours and shadows per theme,
-    then the sizes and families. A token is changed in the JSON, then `python -m orkcraft.design.tokens` writes the CSS."""
+    then the sizes, the motion values and the families. A token is changed in the JSON, then
+    `python -m orkcraft.design.tokens` writes the CSS."""
     data = system()
     themes = [t["id"] for t in data["color"]["themes"]]
     out = ["/* Generated from tokens.json. Set data-theme on a root element: " + ", ".join(themes[:-1])
@@ -126,7 +127,7 @@ def system_css() -> str:
         out += [f"  --{t['name']}: {t['value'][theme]};" for t in data["color"]["tokens"] + data["shadow"]["tokens"]]
         out += ["}", ""]
     out.append(":root {")
-    for group in ("spacing", "radius", "border", "size"):
+    for group in ("spacing", "radius", "border", "size", "motion"):
         out += [f"  --{t['name']}: {t['value']};" for t in data[group]["tokens"]]
     out += [f"  --font-{k}: {v};" for k, v in data["type"]["families"].items()]
     return "\n".join(out) + "\n}\n"

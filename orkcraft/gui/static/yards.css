@@ -15,7 +15,7 @@
    and only exceptions are badges (docs/design/town-readability.md §2.3). Outlined, so it reads on any ground. */
 .gui-hut__doing { position: absolute; right: -12px; top: -6px; width: 16px; height: 16px; pointer-events: none;
   image-rendering: pixelated; background: image-set(url("/ds/sprites/orks/ork-busy.png") 1x, url("/ds/sprites/orks/ork-busy@2x.png") 2x)
-  -24px 0 / 40px 16px no-repeat; animation: gui-work .5s steps(2) infinite; filter: var(--unit-outline); }
+  -24px 0 / 40px 16px no-repeat; animation: gui-work calc(2 * var(--motion-frame)) steps(2) infinite; filter: var(--unit-outline); }
 @keyframes gui-work { 50% { transform: translateY(-1px); } }
 
 /* A unit on the map (an ork, a cart, a badge) has a one-pixel dark outline and stands on a small dark shadow, as cosy
@@ -93,7 +93,7 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 .gui-out__bubble.is-ask { left: 2px; box-sizing: border-box; width: 20px; height: 20px; justify-content: center; padding: 0; margin: 0;
   border: 0; border-image: none; font: 700 14px/16px var(--font-camp); color: var(--signal-ask); background: var(--chip);
   box-shadow: var(--chip-edge);
-  animation: gui-ask 1.2s ease-in-out infinite; }
+  animation: gui-ask var(--motion-ask) steps(2) 1; }   /* a 2-frame bob, then still (tokens: motion-ask) */
 .gui-out__bubble.is-ask::after { display: none; }
 @keyframes gui-ask { 50% { transform: translateY(-2px); } }
 .gui-out__act { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 2px;
