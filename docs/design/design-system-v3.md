@@ -56,8 +56,6 @@ the gate's barrier is down while a cart waits on the weighbridge, up otherwise (
 - **the Prospector's** walking, digging and sack frames: only standing is cut (o7 at `merge: 2.25`, 54 px tall).
 - **the door patch on a building** (§4.7): `orks/body/door.png` (o6-door #2, four frames) is cut for I1; the preview
   does not open doors.
-- **Research as a mine is large** (184 × 240 with its shaft, the tallest sprite): line 2 sits low enough to hold it,
-  so at the default ×1.5 the window shows line 1's row and the mine's head; the overview shows the whole camp.
 - the palisade has no front or left side (the camp is open there by design); its other corners are cut and unused.
 
 ## 1. What changes from v2
@@ -344,7 +342,8 @@ a larger scale, which v3 does not use. To get F1's fill, the sheets must draw th
     the buffer. **The Review gate** stands on a **weighbridge** whose track runs south into line 1 through a north T;
     its **barrier is down while a cart waits on the weighbridge** (that cart wears the yellow flag and its chip), **up**
     otherwise (`buildings/loot_vault-up.png`). **Research is a mine** whose shaft track runs south into line 2 the same
-    way; **the Prospector** keeps it, standing by the shaft. A station's track stands on a track tile's middle column so
+    way; **the Prospector** keeps it, standing by the shaft. (st-mine is drawn 184 × 240; read at `merge: 2` it is
+    96 × 120, as tall as the lower row with its paths, so line 2 stays up and the default ×1.5 shows both lines.) A station's track stands on a track tile's middle column so
     it meets the line square. The rows are as tall as their tallest piece: a station's track reaches its line, a
     building's door is a path (16 units) above it, the booth's foot is on its siding.
 12. **Growth shows on the building** (v3-prompts §13.4): its level I–III as a stone footing by the door and a banner on

@@ -404,12 +404,12 @@
   {
    "file": "buildings/mine.png",
    "size": [
-    184,
-    240
+    96,
+    120
    ],
    "frame": [
-    184,
-    240
+    96,
+    120
    ],
    "frames": 1,
    "pitch": 6.0,
@@ -417,7 +417,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "st-mine.png",
-   "scale": 1.0,
+   "scale": 2.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
