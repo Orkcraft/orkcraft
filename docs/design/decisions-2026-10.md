@@ -193,3 +193,17 @@ each merging into `main` when the critical tests pass (CLAUDE.md), rebasing on `
 
 Sessions 1 and 4 both touch text and tokens: session 1 leaves `design-system/` to session 4.
 
+
+## 10. Phase 1 done, phase 2 started (14 October)
+
+**Phase 1 on `main`:** the rename to Orkline; B1–B5; A0–A3; C1 (Camp off gold). Critical tests green; the full suite
+has two failures that predate phase 1 or are order-dependent (given to lane B).
+
+**Phase 2, in the same four sessions** (they keep their context), beside the design-system v2 session:
+
+| session | items |
+|---|---|
+| A. Asking | A4 the 🥩 list, Stop all, the console folded; then W2 quiet working hours |
+| B. Small fixes | agy out of the Test bench's defaults; the two failing tests; B6 the onboarding cut (B7 Mission 1 after A4) |
+| C. Colour | C2 readability (outlines, signal colours reserved, badges for exceptions, a chip on a waiting cart), tokens additive beside design-system v2 |
+| D. Name | D3 the README's first screen and `docs/github-profile.md`; the switch to orkline.dev listed, not done, until the domain serves the files |
