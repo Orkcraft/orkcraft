@@ -60,16 +60,17 @@ def compare(now: dict, before: dict) -> dict[str, Any]:
     return {"trend": trend, "guard": guard, "lean": trend is not None and trend < 0 and guard == "steady"}
 
 
-def town(root: Path | None, now: dt.datetime | None = None) -> dict[str, Any]:
-    """The town's score now: this week's numbers, the last week's, the trend and the guard (all None-safe)."""
+def town(root: Path | None, now: dt.datetime | None = None, rows: list[dict] | None = None) -> dict[str, Any]:
+    """The town's score now: this week's numbers, the last week's, the trend and the guard (all None-safe). `rows`:
+    result lines given instead of the log's (the demo's, which writes none)."""
     now = now or dt.datetime.now().astimezone()
     empty = {"results": 0, "tokens": None, "cost": None, "recorded": 0, "dislikes": None, "reworks": None}
-    if root is None:
+    if root is None and rows is None:
         return {**empty, "before": dict(empty), "trend": None, "guard": None, "lean": False}
     since = (now - 2 * WEEK).date().isoformat()
-    rows = [r for r in event_log.read(Path(root), since=since)
-            if r.get("event") == event_log.BUILT and r.get("kind") in ACCEPTED]
-    incs = [vars(i) for i in feedback.incidents(Path(root), limit=2000)]
+    lines = rows if rows is not None else event_log.read(Path(root), since=since)
+    rows = [r for r in lines if r.get("event") == event_log.BUILT and r.get("kind") in ACCEPTED]
+    incs = [vars(i) for i in feedback.incidents(Path(root), limit=2000)] if root is not None else []
 
     def within(t: dt.datetime | None, a: dt.datetime, b: dt.datetime) -> bool:
         return t is not None and a < t <= b

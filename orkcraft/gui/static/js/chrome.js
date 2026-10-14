@@ -81,12 +81,12 @@ export function Hud() {
     <span class="ok-hud__brand">Orkline</span>
     <button class="gui-hud__project gui-hud__menu" title=${`${t.project}${t.demo ? " (demo)" : ""} — ${say("town settings: how freely the orks decide, how long they wait")}`}
       onClick=${() => { settingsOpen.value = true; }}>${say("Menu")}${t.demo ? " · demo" : ""} ▾</button>
+    <${ScoreHud} s=${t.score} />
     <span class="ok-hud__spacer"></span>
     <${Hour} hud=${hud} p=${t.portrait} />
     ${hud.quota && html`<${Resource} icon="quota" word=${words.quota} value=${hud.quota} level=${hud.quota_level} />`}
     ${hud.show_gold && html`<${Resource} icon="gold" word=${words.gold} value=${hud.gold} level=${hud.gold_level} />`}
     <${Resource} icon="lumber" word=${words.lumber} value=${hud.lumber} level=${hud.lumber_level} />
-    <${ScoreHud} s=${t.score} />
     <${SlotsHud} word=${words.supply} online=${online.value} />
   </header>`;
 }

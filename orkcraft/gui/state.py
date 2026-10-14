@@ -387,7 +387,7 @@ def score_now(town: Town) -> dict[str, Any]:
     got = _scored.get(key)
     if got is None or now - got[0] > SCORE_S:
         try:
-            got = (now, score.town(root))
+            got = (now, score.town(root, rows=getattr(town, "demo_results", None) if town.demo else None))
         except Exception:                  # a log that will not read never takes the town down
             got = (now, score.town(None))
         _scored[key] = got

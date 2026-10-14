@@ -158,6 +158,9 @@ class Host:
         if demo:                                   # the sandbox's orks have screens (and questions) of their own
             from orkcraft.demo import live
             live.open_all(self.sessions, self.town.repo_root)
+            from orkcraft.demo.traffic import Traffic   # demo carts on its roads (the score, the waybill, the launch)
+            self.traffic = Traffic(self.town)
+            self.traffic.start()
 
     # -- what the page sees --------------------------------------------------------------------
 
@@ -373,6 +376,8 @@ class Host:
         """The window closed: what an editor holds is written, what runs stops, the scroll is kept."""
         self.day_logs.close()
         self.fixes.close()
+        if getattr(self, "traffic", None) is not None:
+            self.traffic.stop()
         for bid, w in list(self.town.workers.items()):
             flush = getattr(views.of(self.type_of(bid)), "flush", None)
             if flush is not None:

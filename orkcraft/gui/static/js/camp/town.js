@@ -176,12 +176,13 @@ function Growth({ L, buildings }) {
   return html`<div class="gui-camp__layer is-growth">${out}</div>`;
 }
 
-/** The Task board's siding: the carts waiting to go (its to-do lane), at most five and "+N" for the rest. */
+/** The Task board's siding: the carts waiting to go (its To Do lane: the orks' backlog, not the person's own
+ *  to-dos), at most five and "+N" for the rest. */
 function Siding({ L, buildings }) {
   const B = L.step.b;
   return html`${L.sidings.map((s) => {
     const b = buildings.find((x) => x.id === s.id), c = b && b.card;
-    const lane = c && (c.lanes || []).find((l) => l.id === c.todo_lane);
+    const lanes = (c && c.lanes) || [], lane = lanes.find((l) => l.id === "todo") || lanes[0];
     const n = lane ? lane.count : 0, shown = Math.min(n, SIDING_SHOWN), cart = sizeOf("carts/doc.png") || [40, 48];
     return html`<div key=${s.id} class="gui-camp__siding" data-id=${s.id}>
       ${Array.from({ length: shown }, (_, k) => img("carts/doc.png", s.stand.x + k * s.stand.dx * 0.66 - (cart[0] * B) / 2,

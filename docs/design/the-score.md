@@ -63,3 +63,16 @@ is about.
 - From the local event log ([dogfood-logs.md](dogfood-logs.md)): items shown, applied, dismissed; the cost per result
   before and after an applied item.
 - The owner's own game: does the cost per result fall over four weeks, and was it the 💡 list that made it fall?
+
+## 6. Built (I1, 2026-10-14) and what waits
+
+**Built:** `realm/score.py` — the wood (tokens) and $ per accepted result (a Review gate's pass, a task done; a launch is
+not a judgement) this week against the last, from the local event log's `result_built` lines, which now keep the
+tokens and spend of the cart's trail when the result lands (`core/last_look.py`); the guard from the feedback log
+(👎 and send-backs per result). The HUD shows it beside the context (js/score.js); a launched cart flies over the wall
+with its tokens, and its $ where its tool bills by key (js/camp/carts.js). **Only what is recorded is shown:** a part
+never recorded is left out, and the hint says what is not measured yet (the PM, overnight).
+
+**Later: a cart's share of the window.** No recorder exists: the limits give only the remaining fraction of each
+provider's window. The recorder to build: that fraction read before and after a run, per provider, kept on the run's
+hop like its tokens; then the flying cart and the HUD show it.

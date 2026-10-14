@@ -100,18 +100,20 @@ export function arriving(L, roads, carts = [], travel = 0) {
   return out;
 }
 
-/** A cart the catapult launches flies over the wall with its cost (the-score.md, v3-prompts §13.4): its wood, and its
- *  share of the window when that is known — it is not recorded yet, and the chip says so; green when the cart cost
- *  less than the town's average per result (`avg`). It leaves the moment the cart reaches the buffer stop. */
+/** A cart the catapult launches flies over the wall with its cost (the-score.md, v3-prompts §13.4): only what was
+ *  recorded — its wood, and its $ where its AI tool bills by an API key (its share of the window is not measured yet:
+ *  Later); green when the cart cost less than the town's average per result (`avg`). It leaves the moment the cart
+ *  reaches the buffer stop. With nothing recorded it flies with no chip. */
 function Launch({ c, p, at, avg, B }) {
   const t = c.tokens, lean = t !== null && t !== undefined && avg !== null && avg !== undefined && t < avg;
-  const word = t === null || t === undefined ? say("🪵 not recorded") : `🪵 ${tokensWord(t)}`;
-  const title = say(`${chipOf(c)} · ${t === null || t === undefined ? "its tokens were not recorded" : `${tokensWord(t)} tokens`}`
-    + (avg ? ` · the town's average per result is ${tokensWord(Math.round(avg))}` : "") + " · its share of the window is not recorded");
+  const has = t !== null && t !== undefined, money = c.cost !== null && c.cost !== undefined;
+  const word = [has ? `🪵 ${tokensWord(t)}` : "", money ? `$${Number(c.cost).toFixed(2)}` : ""].filter(Boolean).join(" · ");
+  const title = say(`${chipOf(c)} · ${has ? `${tokensWord(t)} tokens` : "its tokens were not recorded"}`
+    + (avg ? ` · the town's average per result is ${tokensWord(Math.round(avg))}` : "") + " · its share of the window is not measured yet");
   return html`<div class=${cls("gui-camp__launch", { "is-lean": lean })} title=${title} aria-label=${title}
       style=${`left:${p.x + p.w * 0.3}px;top:${p.y + p.h * 0.15}px;animation-delay:${at}s;--fly-x:${260 * B}px;--fly-y:${-170 * B}px`}>
     <img class="gui-camp__px" src=${`${V3}carts/${loadOf(c)}.png`} alt="" style=${`left:-${20 * B}px;top:-${24 * B}px;width:${40 * B}px;height:${48 * B}px`} />
-    <span class="gui-camp__launch-chip">${word}<small>${say("% of window —")}</small></span>
+    ${word && html`<span class="gui-camp__launch-chip">${word}</span>`}
   </div>`;
 }
 

@@ -1,12 +1,13 @@
 // A building's steward and its scroll (decisions-2026-10.md §13.1, v3-prompts §5–§7): the mouse on a building brings
 // its steward out of the door, a thought bubble over its head (what it does, in two or three words), and a small scroll
-// over the building with its status in one or two lines; a click grows the scroll and puts the building's quick actions
-// at its foot; a second click enters the building (for now its window or its large card: A5, until I2). On a touch
+// over the building with its status in one or two lines; a click grows the scroll (its status, Enter, Answer when it
+// asks) while the building's quick actions stand in the bottom bar, its command card (js/warchief.js), never twice; a
+// second click enters the building (for now its window or its large card: A5, until I2). On a touch
 // screen the first tap is the mouse and the click at once. The steward is called by its orkish name (`ork_name`).
 import { signal } from "@preact/signals";
 import { html, cls } from "../html.js";
 import { say } from "../link.js";
-import { typeModule, runQuick } from "../types.js";
+import { typeModule } from "../types.js";
 import { busy as busyOf } from "../fold.js";
 import { brokenOf } from "../hut.js";
 import { openBuilding } from "../windows.js";
@@ -81,7 +82,6 @@ function Scroll({ b, p, grown, seen }) {
   const tall = 84 + (grown ? 24 * lines.length + 92 : 0);
   const top = Math.max(p.y - 8, seen.top + tall);
   const x = Math.min(Math.max(p.cx, seen.left + 244), seen.right - 244);
-  const quick = (b.quick || []).slice(0, 4);
   return html`<div class=${cls("gui-camp__scroll", { "is-grown": grown })} data-id=${b.id} style=${`left:${x}px;top:${top}px`}
       onClick=${(e) => e.stopPropagation()} onPointerDown=${(e) => grown && e.stopPropagation()}>
     <div class="gui-camp__scroll-head" style=${banner ? `background-image:url(${V3}ui/scroll/banner.png)` : ""}>
@@ -91,9 +91,8 @@ function Scroll({ b, p, grown, seen }) {
     ${grown && html`<div class="gui-camp__scroll-body">
       ${lines.map((l, i) => html`<p key=${i} class="gui-camp__scroll-line">${l}</p>`)}
       <p class="gui-camp__scroll-who">${say(`${b.ork_name || "Steward"}: ${thought(b)}`)}</p>
-      <div class="gui-camp__scroll-acts" role="group" aria-label=${say(`${b.title}: quick actions`)}>
+      <div class="gui-camp__scroll-acts" role="group" aria-label=${say(`${b.title}: enter`)}>
         ${b.alert && html`<button type="button" class="ok-btn primary" onClick=${() => openOrders(b.alert.id)}>${say("Answer")}</button>`}
-        ${quick.map((a) => html`<button key=${a.id} type="button" class="ok-btn" onClick=${() => runQuick(b, a.id)}>${say(a.label)}</button>`)}
         <button type="button" class=${cls("ok-btn", { primary: !b.alert })} onClick=${() => openBuilding(b.id)}>${say("Enter")}</button>
       </div>
     </div>`}

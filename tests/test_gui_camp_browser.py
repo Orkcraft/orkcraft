@@ -210,7 +210,8 @@ def test_the_mouse_brings_the_steward_out_a_click_grows_its_scroll_and_a_second_
     grown.wait_for(state="visible", timeout=WAIT_MS)
     acts = grown.locator(".gui-camp__scroll-acts button")
     names = [a.get_attribute("aria-label") or a.text_content() for a in acts.all()]
-    assert "New task" in names and "Enter" in names
+    assert names == ["Enter"]                                                # its quick actions: the bottom bar's alone
+    assert pg.locator(".gui-warchief__act", has_text="New task").count() == 1
     assert "Taskmaster" in grown.inner_text()                                # its steward by its orkish name
     box = grown.bounding_box()
     assert box["y"] >= 0                                                     # inside the window
@@ -240,9 +241,11 @@ def test_a_launched_cart_flies_with_its_cost_and_the_hud_shows_the_score(camp_lo
     pg.reload()
     fly = pg.locator(".gui-camp__launch")
     fly.wait_for(state="attached", timeout=WAIT_MS)
-    assert "🪵 12k" in fly.text_content() and "% of window —" in fly.text_content()   # it waits hidden till the cart arrives
+    assert fly.text_content().strip() == "🪵 12k · $0.20"          # only what was recorded (it waits hidden till it arrives)
     score = pg.locator(".gui-score")
-    assert score.count() == 1 and "per result" in score.inner_text() and "👎" in score.inner_text()
+    assert score.count() == 1 and "per result" in score.inner_text()
+    assert "👎" not in score.inner_text() and "—" not in score.inner_text()   # nothing accepted yet: nothing made up
+    assert "Not measured yet" in score.get_attribute("title")
     server.host.town.roads.carts.clear()
     for bid in (a, out):
         _call(pg, "town.demolish", {"id": bid})
