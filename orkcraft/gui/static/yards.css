@@ -242,5 +242,5 @@ button.gui-out:focus-visible { outline: 2px solid var(--frame-focus); outline-of
 /* Chosen in the portrait's menu and kept in this browser (js/portrait.js): Ground (the default) draws the cards on the
    town's ground and the selected one in its yard; Yard draws every card's inside a step lighter. The title bar keeps its
    plate; a card that asks keeps the fire's ground. */
-[data-look="camp"][data-cards="ground"] .gui-hut:not(.is-alert):not(.is-fenced):not(.is-bare):not(.is-selected) > .ok-hut__card { background: transparent; }
+[data-look="camp"][data-cards="ground"] .gui-hut:not(.is-alert):not(.is-fenced):not(.is-bare):not(.is-walled):not(.is-selected) > .ok-hut__card { background: transparent; }
 [data-look="camp"][data-cards="ground"] .gui-hut.is-fenced:not(.is-alert):not(.is-broken):not(.is-selected) { --yard-ground: transparent; }

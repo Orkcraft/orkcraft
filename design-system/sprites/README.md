@@ -1,7 +1,9 @@
 # Sprites in this folder
 
 **v2 (the new Camp, from backlog C3):** the kits go in `camp/` beside today's folders, laid out as below; nothing
-here moves until each piece replaces today's. The rules: docs/design/design-system-v2.md §2–4 and §11.
+here moves until each piece replaces today's. The GUI draws a piece as soon as its file is here (the server lists them at
+`/ds/sprites/camp/kit.json`, `js/cover.js`), a placeholder in the `art-*` tokens until then: the five core buildings'
+`covers/…`, `crests/<crest>.png` and `facades/<type>.png` (C3). The rules: docs/design/design-system-v2.md §2–4 and §11.
 
 Today: Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite is shown with
 `image-rendering: pixelated` at 1× or a whole multiple, each with an `@2x`.

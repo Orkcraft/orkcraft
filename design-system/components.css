@@ -10,7 +10,7 @@
 
 :root, [data-theme="camp"], [data-theme="camp-ice"], [data-theme="camp-void"] {
   --ok-font: var(--font-camp);
-  --ok-head: var(--font-display);
+  --ok-head: var(--font-pixel);          /* titles: Pixelify Sans (design-system-v2.md §10); Almendra SC is the wordmark's alone */
   --ok-radius: var(--radius-0);
   --ok-radius-md: var(--radius-0);
   --ok-radius-lg: var(--radius-0);
@@ -241,7 +241,7 @@
 /* --- HUD -------------------------------------------------------------------------------- */
 .ok-hud { width: 100%; height: var(--bar-hud); display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-2); box-sizing: border-box;
   background: var(--panel-raised); box-shadow: var(--bevel-raised); font: 700 13px/1 var(--ok-font); color: var(--ink); white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
-.ok-hud__brand { font: 400 16px/1 var(--ok-head); color: var(--ink-gold); }
+.ok-hud__brand { font: 400 16px/1 var(--font-display); color: var(--ink-gold); }
 .ok-hud__ready { color: var(--success); } .ok-hud__halt { color: var(--panel); background: var(--danger); padding: 2px 6px; }
 .ok-hud__fire { color: var(--alert); }
 .ok-hud__spacer { flex: 1; }

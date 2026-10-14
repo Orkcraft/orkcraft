@@ -35,6 +35,17 @@ def assets_dir() -> Path:
     return Path(base) / "orkcraft" / "assets"
 
 
+def camp_kit() -> list[str]:
+    """The sprites of the new Camp's kit this machine has (`design-system/sprites/camp/`, docs/design/design-system-v2.md
+    §11), as paths under `camp/`, the machine's own pictures among them: the GUI draws a piece once it is there and a
+    placeholder until then, so it never asks for a file that is not (js/cover.js)."""
+    found: set[str] = set()
+    for root in (SYSTEM / "sprites" / "camp", assets_dir() / "sprites" / "camp"):
+        if root.is_dir():
+            found |= {f.relative_to(root).as_posix() for f in root.rglob("*.png") if f.is_file()}
+    return sorted(found)
+
+
 @functools.lru_cache(maxsize=1)
 def load() -> dict:
     return json.loads(PATH.read_text(encoding="utf-8"))

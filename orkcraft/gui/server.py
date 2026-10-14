@@ -193,6 +193,8 @@ class Server:
             return _response(HTTPStatus.OK, (page or STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
         if parts.path == "/favicon.ico":                  # the ork mark (design-system/logo)
             return _response(HTTPStatus.OK, (tokens.SYSTEM / "logo" / "favicon.ico").read_bytes(), "image/x-icon")
+        if parts.path == "/ds/sprites/camp/kit.json":        # the new Camp's sprites that are here (js/cover.js)
+            return _response(HTTPStatus.OK, json.dumps({"files": tokens.camp_kit()}).encode(), "application/json")
         if parts.path == "/roles.css":
             return _response(HTTPStatus.OK, tokens.roles_css().encode(), "text/css; charset=utf-8")
         target = resolve(parts.path, preview)

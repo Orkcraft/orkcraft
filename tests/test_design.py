@@ -101,6 +101,30 @@ def test_the_new_camps_world_keeps_outlines_chips_and_signals_readable():
         assert not loud, f"{name} {value}: a signal's yellow or red in the art"
 
 
+def test_camps_titles_are_pixelify_and_the_wordmark_keeps_almendra():
+    """The owner's answer 3 (design-system-v2.md §12): Camp's titles in Pixelify Sans with C3, Almendra SC the wordmark's alone."""
+    styles = {st["name"]: st for g in tokens.system()["type"]["groups"] for st in g["styles"]}
+    assert styles["camp-title"]["family"] == styles["camp-heading"]["family"] == "pixel"
+    css = (tokens.SYSTEM / "components.css").read_text(encoding="utf-8")
+    assert "--ok-head: var(--font-pixel);" in css
+    assert ".ok-hud__brand { font: 400 16px/1 var(--font-display);" in css
+
+
+def test_the_camp_kit_lists_only_the_sprites_that_are_there(tmp_path, monkeypatch):
+    """js/cover.js draws a piece of the v2 kit once it is there, a placeholder until then: never a file that is not."""
+    monkeypatch.setattr(tokens, "SYSTEM", tmp_path / "system")
+    monkeypatch.setenv("ORKCRAFT_ASSETS_DIR", str(tmp_path / "own"))
+    assert tokens.camp_kit() == []
+    crest = tmp_path / "system" / "sprites" / "camp" / "crests" / "horn.png"
+    crest.parent.mkdir(parents=True)
+    crest.write_bytes(b"png")
+    mine = tmp_path / "own" / "sprites" / "camp" / "facades" / "lake.png"
+    mine.parent.mkdir(parents=True)
+    mine.write_bytes(b"png")
+    (crest.parent / "notes.txt").write_text("not a sprite")
+    assert tokens.camp_kit() == ["crests/horn.png", "facades/lake.png"]
+
+
 def test_a_chip_stands_off_todays_dark_ground_by_its_wood_edge():
     """The town's ground is still the colour pass's dark earth (docs/design/color-pass.md §3) until v2's world layer
     lands, and there `chip` and `art-outline` are as dark as the ground: the chips (yards.css, layout.css) carry a 1 px

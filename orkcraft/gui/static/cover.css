@@ -1,0 +1,170 @@
+/* The card is the building (js/cover.js; docs/design/design-system-v2.md §4a, color-pass.md §6a–6c): the five core
+   buildings in Camp. On the map and in the overview the cover hides the card — a hall's roof, an open ground's pond, a
+   tower or a gate — with the facade at the door and the crest above; close up the cover fades and the walls stay as the
+   card's frame. Office draws the same box with its plain border and no cover.
+
+   Until the v2 kit's sprites land (design-system/sprites/camp/), every piece is a neutral placeholder drawn here in the
+   art tokens (§7): no text on the art, no yellow or red outside the signals. A piece that is there replaces its
+   placeholder (js/cover.js: the roof and walls as nine-slice backgrounds, the crest and the facade as images). */
+
+.gui-cover { display: none; }
+.gui-hut.is-walled { --wall-side: 12px; --wall-back: 16px; }
+/* Room over the card for the crest and ❓ (Camp): roads meet the card under it (js/hut.js measure). */
+[data-look="camp"] .gui-town__room > .gui-hut.is-walled { padding-top: var(--crest-room, 40px); }
+[data-look="camp"] .gui-town__room > .gui-hut.is-walled.is-far { --crest-room: 22px; }
+
+/* -- the walls: the card's frame (v2 §4b), outside the footprint ---------------------------------------------------- */
+[data-look="camp"] .gui-hut.is-walled { --walls:
+    repeating-linear-gradient(90deg, transparent 0 15px, var(--art-stone-dark) 15px 16px),
+    repeating-linear-gradient(180deg, var(--art-stone) 0 7px, var(--art-stone-dark) 7px 8px); }
+[data-look="camp"] .gui-hut.is-walled:is(.is-kit-tower, .is-kit-gate) { --walls:
+    repeating-linear-gradient(90deg, var(--art-wood) 0 6px, var(--art-wood-dark) 6px 8px); }
+[data-look="camp"] .gui-hut.is-walled.is-kit-open { --walls:
+    radial-gradient(circle at 5px 5px, var(--art-stone) 0 3px, transparent 3.5px) 0 0 / 11px 11px,
+    var(--world-earth); }
+[data-look="camp"] .gui-hut.is-walled > .ok-hut__card,
+[data-look="camp"] .gui-hut.is-walled > .ok-hut__card[class] {
+  box-sizing: border-box; border-style: solid; border-color: transparent;
+  border-width: var(--wall-back) var(--wall-side) var(--wall-side);
+  background: linear-gradient(var(--panel), var(--panel)) padding-box, var(--walls-art, var(--walls)) border-box;
+  box-shadow: 0 0 0 1px var(--art-outline), inset 0 0 0 1px var(--art-outline), var(--shadow-window); }
+/* A question, a fire, a selection: the walls glow, the card's words never do. */
+[data-look="camp"] .gui-hut.is-walled.is-alert:not(.is-broken) > .ok-hut__card { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--signal-ask) 60%, transparent)); }
+[data-look="camp"] .gui-hut.is-walled.is-broken > .ok-hut__card { filter: drop-shadow(0 0 6px var(--fire-glow));
+  background: linear-gradient(var(--fire-ground), var(--fire-ground)) padding-box, var(--walls-art, var(--walls)) border-box; }
+
+/* The door: the ork comes out at the front wall's left end; a waiting cart's chip stands right of the building. */
+[data-look="camp"] .gui-hut.is-walled > .gui-hut__door { position: absolute; left: 0; right: 0; bottom: 0; height: 0; margin: 0; z-index: 4; }
+[data-look="camp"] .gui-hut.is-walled > .gui-hut__door > .gui-hut__roof { position: relative; display: block; width: 100%; height: 0; margin: 0; }
+[data-look="camp"] .gui-hut.is-walled .gui-hut__door .gui-out { left: -26px; bottom: 0; }
+[data-look="camp"] .gui-hut.is-walled .gui-hut__door .gui-hut__waiting { left: calc(100% + 6px); top: auto; bottom: 4px; }
+
+/* Close up the name heads the card in the display face, after the crest as its mark. */
+[data-look="camp"] .gui-hut.is-walled .gui-hut__title { box-shadow: none; background: color-mix(in srgb, var(--panel-raised) 70%, transparent); }
+[data-look="camp"] .gui-hut.is-walled .gui-hut__title > .gui-type-icon { display: none; }
+[data-look="camp"] .gui-hut.is-walled .ok-hut__label .gui-hut__name { font: 400 15px/1 var(--ok-head); text-transform: none; letter-spacing: 0; }
+
+/* -- the cover (v2 §4a) --------------------------------------------------------------------------------------------- */
+/* Over the card's whole box, walls included; the roof's front edge overhangs the front wall a little. Presses go to the
+   card under it (the hut selects, opens, pulls a road), never to the card's own controls while it is covered. */
+[data-look="camp"] .gui-hut.is-walled > .gui-cover { display: block; position: absolute; inset: var(--crest-room, 40px) 0 0; z-index: 3; pointer-events: none; }
+[data-look="camp"] .gui-hut.is-covered > .ok-hut__card > :not(.gui-hut__road, .gui-hut__title) { pointer-events: none; }
+.gui-cover__roof { position: absolute; inset: -2px -2px -4px; image-rendering: pixelated;
+  box-shadow: 0 0 0 1px var(--art-outline), 0 3px 0 color-mix(in srgb, var(--art-outline) 35%, transparent);
+  transition: opacity .25s ease-out; }
+/* a hall: a roof on poles — canvas (maroon cloth, the Agent pool) or thatch (the Task board); a ridge across, the eave's
+   shade along the front */
+.gui-cover.is-hall .gui-cover__roof { background:
+    linear-gradient(var(--art-wood-dark), var(--art-wood-dark)) 0 36% / 100% 3px no-repeat,
+    linear-gradient(color-mix(in srgb, var(--art-outline) 30%, transparent), color-mix(in srgb, var(--art-outline) 30%, transparent)) bottom / 100% 8px no-repeat,
+    repeating-linear-gradient(90deg, var(--art-cloth) 0 14px, color-mix(in srgb, var(--art-cloth) 78%, var(--art-outline)) 14px 16px); }
+.gui-cover.is-hall.is-thatch .gui-cover__roof { background:
+    linear-gradient(var(--art-wood-dark), var(--art-wood-dark)) 0 36% / 100% 3px no-repeat,
+    linear-gradient(color-mix(in srgb, var(--art-outline) 30%, transparent), color-mix(in srgb, var(--art-outline) 30%, transparent)) bottom / 100% 8px no-repeat,
+    repeating-linear-gradient(180deg, var(--art-wood-light) 0 5px, var(--art-wood) 5px 7px, var(--art-wood-light) 7px 8px); }
+/* open ground: the pond's surface on its shore (the Inspector) */
+.gui-cover.is-open .gui-cover__roof { background:
+    radial-gradient(ellipse 40% 9% at 38% 42%, color-mix(in srgb, var(--world-water) 70%, var(--chip-ink)) 0 40%, transparent 46%),
+    radial-gradient(ellipse 30% 7% at 64% 64%, color-mix(in srgb, var(--world-water) 75%, var(--chip-ink)) 0 40%, transparent 46%),
+    radial-gradient(ellipse 46% 40% at 50% 52%, var(--world-water) 0 97%, transparent 100%),
+    radial-gradient(circle at 5px 5px, var(--art-stone) 0 2px, transparent 2.5px) 0 0 / 9px 9px,
+    var(--world-earth); }
+/* a tower (External listeners): the lookout over its yard of logs */
+.gui-cover.is-tower .gui-cover__roof { background:
+    repeating-linear-gradient(90deg, var(--art-stone-dark) 0 6px, transparent 6px 12px) 50% 10% / 30% 8px no-repeat,
+    linear-gradient(var(--art-stone), var(--art-stone)) 50% 22% / 30% 64% no-repeat,
+    linear-gradient(var(--art-outline), var(--art-outline)) 50% 34% / 8% 18% no-repeat,
+    linear-gradient(var(--world-earth), var(--world-earth)) 50% 50% / calc(100% - 16px) calc(100% - 16px) no-repeat,
+    repeating-linear-gradient(90deg, var(--art-wood) 0 6px, var(--art-wood-dark) 6px 8px); }
+/* a gate (the Review gate): the gatehouse's face, its battlements and its arch */
+.gui-cover.is-gate .gui-cover__roof { background:
+    repeating-linear-gradient(90deg, var(--art-stone-dark) 0 12px, transparent 12px 24px) top / 100% 9px no-repeat,
+    radial-gradient(ellipse 50% 60% at 50% 100%, var(--art-outline) 0 96%, transparent 100%) 50% 100% / 26% 62% no-repeat,
+    repeating-linear-gradient(90deg, transparent 0 23px, var(--art-stone-dark) 23px 24px),
+    repeating-linear-gradient(180deg, var(--art-stone) 0 9px, var(--art-stone-dark) 9px 10px); }
+
+/* The facade at the door, on the front wall's centre (96 × 48, its foot on the wall's foot): a placeholder door. */
+.gui-cover__facade { position: absolute; left: 50%; bottom: -4px; width: 96px; height: 40px; transform: translateX(-50%);
+  image-rendering: pixelated; background:
+    linear-gradient(var(--art-outline), var(--art-outline)) 50% 100% / 24px 26px no-repeat,
+    linear-gradient(var(--art-wood-dark), var(--art-wood-dark)) 50% 100% / 34px 32px no-repeat,
+    linear-gradient(var(--art-wood), var(--art-wood)) 50% 6px / 100% 6px no-repeat,
+    linear-gradient(var(--art-wood), var(--art-wood)) 8px 100% / 6px 34px no-repeat,
+    linear-gradient(var(--art-wood), var(--art-wood)) calc(100% - 8px) 100% / 6px 34px no-repeat;
+  filter: drop-shadow(1px 0 0 var(--art-outline)) drop-shadow(-1px 0 0 var(--art-outline)) drop-shadow(0 -1px 0 var(--art-outline)); }
+.gui-cover__facade.is-art { background: none; filter: none; }
+.gui-cover__facade img { display: block; width: 100%; height: 100%; object-fit: contain; object-position: bottom; image-rendering: pixelated; }
+
+/* The crest over the cover (32 × 48, anchored bottom-centre on the ridge), ❓ beside it. */
+.gui-cover__top { position: absolute; left: 50%; top: 0; display: flex; align-items: flex-end; gap: 2px; transform: translate(-50%, -78%); }
+.gui-crest { position: relative; display: inline-block; width: 32px; height: 48px; flex: none; transition: opacity .25s ease-out; }
+.gui-crest__art { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+/* placeholder: a pole and a bone plate with the building's sign */
+.gui-crest:not(.is-art)::before { content: ""; position: absolute; left: 14px; top: 20px; bottom: 0; width: 4px; background: var(--art-wood);
+  box-shadow: 0 0 0 1px var(--art-outline); }
+.gui-crest__plate { position: absolute; left: 3px; top: 0; display: flex; align-items: center; justify-content: center; width: 26px; height: 24px;
+  background: var(--art-bone); color: var(--art-outline); box-shadow: 0 0 0 1px var(--art-outline); }
+.gui-crest__plate .gui-type-icon { width: 16px; height: 16px; color: var(--art-outline); stroke-width: 1.8; }
+/* close up the crest is the card's header mark, small in its title bar */
+.gui-crest.is-mark { width: 16px; height: 24px; margin-right: 2px; }
+.gui-crest.is-mark::before { left: 7px; top: 10px; width: 2px; }
+.gui-crest.is-mark .gui-crest__plate { left: 1px; width: 14px; height: 12px; }
+.gui-crest.is-mark .gui-crest__plate .gui-type-icon { width: 10px; height: 10px; }
+[data-look="office"] .gui-crest { display: none; }
+
+/* -- the signals on the cover (v2 §5): ❓ over it, 🔥 as it burning, a count chip at the door ----------------------- */
+.gui-cover__ask { display: flex; align-items: center; justify-content: center; box-sizing: border-box; width: 20px; height: 20px;
+  margin-bottom: 26px; font: 700 14px/16px var(--font-camp); color: var(--signal-ask); background: var(--chip); box-shadow: var(--chip-edge);
+  animation: gui-ask 1.2s ease-in-out infinite; }
+.gui-cover.is-burning .gui-cover__roof::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to top, color-mix(in srgb, var(--signal-fire) 30%, transparent), transparent 45%);
+  animation: gui-smoulder 1.6s steps(4) infinite; }
+.gui-cover__smoke { position: absolute; left: 30%; right: 30%; top: -18px; height: 22px; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--art-outline) 70%, transparent), transparent) 0 0 / 40% 100% repeat-x;
+  animation: gui-smoke 2.4s ease-out infinite; }
+@keyframes gui-smoulder { 50% { opacity: .55; } }
+@keyframes gui-smoke { from { transform: translateY(4px); opacity: .9; } to { transform: translateY(-8px); opacity: .2; } }
+.gui-cover__count, .gui-cover__name { position: absolute; display: inline-flex; align-items: center; gap: 3px; box-sizing: border-box; height: 20px;
+  padding: 0 6px; white-space: nowrap; font: 600 12px/16px var(--ok-font); background: var(--chip); color: var(--chip-ink);
+  box-shadow: var(--chip-edge, 0 0 0 1px var(--art-outline)); }
+.gui-cover__count { left: calc(50% + 52px); bottom: -2px; }
+.gui-cover__count img { image-rendering: pixelated; }
+.gui-cover__q { color: var(--signal-ask); }
+.gui-cover__sep { color: var(--ink-muted); }
+/* its name on a chip under the door (at the close zoom the name is the card's title) */
+.gui-cover__name { left: 50%; top: calc(100% + 6px); max-width: 100%; transform: translateX(-50%); overflow: hidden; text-overflow: ellipsis; }
+.gui-cover__name .no { color: var(--ink-muted); font-variant-numeric: tabular-nums; margin-right: 2px; }
+.gui-hut.is-walled.is-selected .gui-cover__name { color: var(--ink-gold); }
+
+/* -- by zoom (v2 §8) ------------------------------------------------------------------------------------------------- */
+/* The map: the cover alone, half size; its crest and ❓ smaller; no chips. */
+.gui-hut.is-walled.is-far .gui-crest { transform: scale(.5); transform-origin: bottom center; margin: 0 -8px -0px; }
+.gui-hut.is-walled.is-far .gui-cover__top { transform: translate(-50%, -60%); }
+.gui-hut.is-walled.is-far .gui-cover__ask { margin-bottom: 4px; }
+/* Hover or select at any zoom: the cover half-clear, the inside seen (peek); a 🥩 row pointed at does the same. */
+.gui-hut.is-covered:is(:hover, .is-selected, .is-lit) .gui-cover__roof { opacity: .5; transition-duration: .15s; }
+/* Close up: the cover lifted, the crest gone into the title bar; the walls, the facade and the signals stay. */
+.gui-hut.is-lifted .gui-cover__roof, .gui-hut.is-lifted .gui-cover__top .gui-crest { opacity: 0; }
+.gui-hut.is-lifted .gui-cover__name { display: none; }
+.gui-hut.is-lifted .gui-cover__smoke { display: none; }
+.gui-hut.is-lifted .gui-cover__facade { bottom: -12px; height: 18px; width: 56px; }
+.gui-hut.is-lifted .gui-cover__ask { margin-bottom: 0; }
+.gui-hut.is-lifted .gui-cover__top { transform: translate(-50%, -50%); }
+/* Covered, its card's own title stays under the cover: the name is on the chip. */
+.gui-hut.is-covered .gui-hut__title .gui-crest { visibility: hidden; }
+
+/* -- the spotlight (v2 §8): a 🥩 row pointed at lights its building; the rest of the camp dims ------------------------ */
+.gui-town:has(.gui-hut.is-lit) .gui-town__room > .gui-hut:not(.is-lit) { filter: saturate(.7) brightness(.85); }
+.gui-hut.is-lit > .ok-hut__card { outline: 1px solid var(--chip-ink); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gui-cover__roof, .gui-crest { transition: none !important; }
+  .gui-cover__ask, .gui-cover.is-burning .gui-cover__roof::after, .gui-cover__smoke { animation: none !important; }
+}
+
+/* -- Office: the same box, its plain border, no cover (a look changes the drawing, never the place) ------------------ */
+[data-look="office"] .gui-hut.is-walled > .ok-hut__card { box-sizing: border-box; }
+.gui-hut.is-walled.is-far .gui-cover__name { top: calc(100% + 3px); height: 18px; padding: 0 4px; font-size: 11px; }
+
+.gui-cover__facade.is-art { height: 48px; }
+.gui-hut.is-lifted .gui-cover__facade.is-art { width: 48px; height: 24px; }

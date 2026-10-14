@@ -28,6 +28,7 @@ import { Outside } from "./visit.js";
 import { openOrders } from "./orders.js";
 import { TypeIcon, HutSprite, OrkHead, Scheme, activeBiome } from "./icons.js";
 import { zoomLevel } from "./zoom.js";
+import { coverOf, coverBox, Cover, Crest, wallArt, lit } from "./cover.js";
 
 const DRAG_PX = 4;                         // a press that moves less is a click
 export const CORNER = "town_hall";          // stands in the town's bottom-right corner, as in the TUI: never moved
@@ -428,10 +429,18 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   // Grown in place (js/windows.js `showOnCard`, lighter-buildings.md §2): its card at its large size whatever the zoom,
   // its fold or its being bare, while it stays selected.
   const grown = grownCard.value === b.id && b.id !== CORNER;
-  const roomy = !grown && lvl === "c" && camp && bareOf(b);
-  const bare = !grown && ((bareOf(b) && !roomy) || (far && camp));
-  const yard = (fenced(b) || roomy || grown) && !bare;
-  const folded = !grown && b.id !== CORNER && !(far && camp) && !roomy && (!!b.folded || far);
+  // A core building is its cover in Camp (js/cover.js): over its card on the map and in the overview, lifted close up
+  // or grown, its walls the card's frame; in Office the same box with a plain border. Never a yard, never bare.
+  const kit = b.id === CORNER ? null : coverOf(b);
+  const covered = !!kit && camp && lvl !== "c" && !grown;
+  const lifted = !!kit && camp && !covered;
+  const roomy = !kit && !grown && lvl === "c" && camp && bareOf(b);
+  const bare = !kit && !grown && ((bareOf(b) && !roomy) || (far && camp));
+  const yard = !kit && (fenced(b) || roomy || grown) && !bare;
+  // folded as the person folded it (a covered one shows its cover over the title bar alone); on the map in Office
+  const folded = !grown && b.id !== CORNER && !roomy && (kit ? (camp ? !far && !!b.folded : !!b.folded || far)
+    : !(far && camp) && (!!b.folded || far));
+  const shone = !!kit && !!lit.value && lit.value.building_id === b.id;    // a 🥩 row points at it
   // Its card is not drawn, so it may peek: folded, or a card building drawn bare in the map view. A bare building's
   // card is never drawn in Camp, map view or not (yards.md §7).
   const hides = bare && camp ? far && !bareOf(b) : folded;
@@ -481,7 +490,9 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   const wide = Math.max(mine ? mine[0] : 0, big ? room.w : LEVEL_M.w);
   const tall = big ? Math.max(mine && mine[1] ? mine[1] : 0, room.h)
     : lvl === "c" && mine && mine[1] ? Math.max(mine[1], LEVEL_M.h) : null;
-  const own = b.id === CORNER ? mine : folded || bare || roomy ? null : [wide, tall];
+  const box = kit && coverBox(kit, lvl);      // a covered card's box: the same place and size in both looks
+  const own = b.id === CORNER ? mine : kit && !grown ? [far ? box[0] : Math.max(wide, box[0]), lvl === "c" ? tall : folded ? null : box[1]]
+    : folded || bare || roomy ? null : [wide, tall];
   const cap = b.id === CORNER || !own || tall ? 0 : lvl === "c" ? LEVEL_M.h : LEVEL_S_H;
   const level = b.id === CORNER ? levelOf(b, auto) : own ? levelOf(null, [wide, tall || cap]) : "s";
   const sized = !!own;
@@ -492,7 +503,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   // meet that box.
   const title = html`<span class="ok-hut__label gui-hut__title"><span class="no" title=${number <= 9 ? say(`Press ${number} to open it`) : ""}>${number}</span>
       ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
-      <${TypeIcon} type=${b.type} />
+      <${TypeIcon} type=${b.type} />${kit && camp && html`<${Crest} b=${b} kit=${kit} mark=${true} />`}
       <span class="gui-hut__name">${say(b.title)}</span>
       <${Keeper} garrison=${b.garrison} alert=${b.alert} yard=${!!b.yard} visit=${b.visit || ""} />
       ${b.alert && html`<span class="ok-word gui-hut__ask">?</span>`}
@@ -500,7 +511,8 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
 </span>`;      // pin and fold live in its menu (right click): the card carries no controls of its own
   return html`<div ref=${ref} data-id=${b.id} style=${`left:${x}px;top:${y}px` + (sized ? `;width:${w}px` : "")}
       class=${cls("ok-hut m gui-hut", { "is-selected": selected.value === b.id, "is-busy": busy, "is-yard": !!b.yard, "is-fenced": yard, "is-bare": bare,
-                                        "is-far": far,
+                                        "is-far": far, "is-walled": !!kit, "is-covered": covered, "is-lifted": lifted,
+                                        "is-lit": shone, ...(kit ? { [`is-kit-${kit.kind}`]: true } : {}),
                                         "is-alert": !!b.alert, "is-broken": !!broken, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id,
                                         "is-fresh": fresh, "is-folded": folded, "is-peek": peek,
@@ -508,13 +520,15 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
                                         "is-resizing": resizing.value?.id === b.id })}
       onPointerDown=${down} onContextMenu=${(e) => buildingMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}
 >
-    <div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
+    ${kit ? html`<div class="ok-head gui-hut__door"><span class="gui-hut__roof"><${Waiting} alert=${b.alert} />
+      <${Outside} b=${b} selected=${selected.value === b.id || shone} /></span></div>`
+    : html`<div class="ok-head"><span class="gui-hut__roof"><${HutSprite} className="gui-hut__sprite" type=${b.type} biome=${activeBiome()} goal=${b.goal}
       busy=${busy && !((town.value && town.value.hud) || {}).quiet}
       level=${b.level} onError=${(e) => { e.currentTarget.hidden = true; }} /><${Flames} alert=${broken ? { id: `broken:${b.id}:${broken}`, waited: 0 } : null} />
       <${Doing} b=${b} busy=${busy} /><${Waiting} alert=${b.alert} />${b.id !== CORNER && html`<${YardName} b=${b} number=${number} />`}
       ${bare && html`<span class="gui-hut__badge"><${Mark} b=${b} quiet=${far} /></span>`}
-      <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} selected=${selected.value === b.id} /></span></div>
-    <div class="ok-hut__card" style=${h ? `height:${h}px` : cap ? `max-height:${snap(cap, step && step.h)}px` : ""} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
+      <span class="gui-hut__plinth" aria-hidden="true"></span><${Outside} b=${b} selected=${selected.value === b.id} /></span></div>`}
+    <div class="ok-hut__card" style=${(h ? `height:${h}px;` : cap ? `max-height:${snap(cap, step && step.h)}px;` : "") + (kit && camp ? wallArt(kit) : "")} onPointerMove=${nearEdge} onPointerLeave=${awayEdge}>
       ${title}
       ${freeRoads(b) && html`<button ref=${road} class="gui-hut__road" title=${say("Pull a road to another building")} aria-label=${say("Pull a road")}
         onPointerDown=${(e) => pull(e, b)}><img class="ok-sprite" src="/ds/sprites/icons/road-handle.png"
@@ -524,6 +538,8 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
         : !folded && html`<${Card} b=${b} level=${level} />`}
       ${lvl === "c" && !folded && !bare && onSized && html`<${Grips} b=${b} onSized=${onSized} />`}
     </div>
+    ${kit && camp && html`<${Cover} b=${b} kit=${kit} number=${number} lvl=${lvl} burning=${!!broken}
+      fire=${html`<${Flames} alert=${broken ? { id: `broken:${b.id}:${broken}`, waited: 0 } : null} />`} />`}
   </div>`;
 }
 

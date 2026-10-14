@@ -54,7 +54,7 @@ building's card in `gui/static`; A3's data first, C3's drawing on top, not both 
 | B8 | quests 4–5; the hooks asked before quest 4, failing open | B | 2 | after B7 | first-mission §3; Q16 |
 | C1 | the colour pass by tokens, forest only; Camp's UI off gold | C | 1.5 | ∥ | color-pass §3; Q18 |
 | C2 | readability: outlines and shadows, yellow and red reserved (banners maroon), badges only for exceptions, a chip on a waiting cart | C | 1.5 | after C1 | town-readability |
-| C3 | the card as a building for the five core buildings: cover lifting on zoom, facade, crest; signals on the cover; a sheet on the phone | C | 4 | after C1; after A3's data | color-pass §6a–6c |
+| C3 | the card as a building for the five core buildings: cover lifting on zoom, facade, crest; signals on the cover; a sheet on the phone — **built** (placeholder art until the v2 kit lands; design-system/components.md Camp kit) | C | 4 | after C1; after A3's data | color-pass §6a–6c |
 | C4 | roads drawn as rails, carts as mine carts, loads and flags | C | 2.5 | ∥ with C3 (`roads.js`) | color-pass §6d |
 | C5 | the ways in outside the wall, the Publisher's catapult at the end, the launch | C | 1 | after C4 | camp-story |
 | C6 | the commissioned art put in (replacing generated sprites in what the GIF shows) | C | 1.5 | after O3 | color-pass §10 |

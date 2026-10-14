@@ -2468,6 +2468,7 @@ def test_the_agent_pool_s_lanes_are_roles_and_a_session_s_chip_opens_it(gui, pag
                                  question="pytest or unittest?", persona="tests", waits_since=time.time())]
     w.state.save()
     pg.evaluate("([id, x, y]) => import('/static/js/link.js').then(m => m.command('hut.move', { id, x, y }))", [bid, 0.3, 0.3])
+    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('c'))")   # its cover lifted: the card inside (C3)
     lanes = _hut(pg, bid).locator(".pool-lane:not(.is-more)")
     lanes.first.wait_for(state="visible", timeout=WAIT_MS)
     pg.wait_for_function(f"() => [...document.querySelectorAll('.gui-hut[data-id=\"{bid}\"] .pool-chip__mark')]"
@@ -2530,3 +2531,43 @@ def test_mission_1_asks_for_the_hooks_once_before_quest_4_showing_what_is_writte
     assert not (root / ".claude" / "settings.json").exists()
     log.get_by_role("button", name="Skip the mission").click()
     pg.wait_for_function("() => !document.querySelector('.gui-warchief__setup')", timeout=WAIT_MS)
+
+
+def test_a_core_building_is_its_cover_and_lifted_close_up(gui, page):
+    """docs/design/color-pass.md §6a–6c, design-system-v2.md §4a (C3): in the overview the Agent pool is its cover —
+    a roof, its facade at the door, its crest above, its name on a chip; the mouse on it makes the roof half-clear;
+    close up the roof fades, the walls stay as the card's frame and the crest is the title's mark. Office draws the
+    same box with no cover."""
+    server, browser = gui
+    pg = page
+    call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
+    bid = call("town.build", {"type": "barracks"})
+    call("hut.move", {"id": bid, "x": 0.3, "y": 0.3})
+    pg.keyboard.press("Escape")
+    hut = pg.locator(f'.gui-hut.is-walled.is-covered[data-id="{bid}"]')
+    hut.wait_for(state="visible", timeout=WAIT_MS)
+    assert "is-kit-hall" in hut.get_attribute("class")
+    for part in (".gui-cover__roof", ".gui-cover__facade", ".gui-cover__top .gui-crest", ".gui-cover__name"):
+        assert hut.locator(part).is_visible(), part
+    assert "Agent pool" in hut.locator(".gui-cover__name").inner_text()
+    roof = pg.locator(f'.gui-hut[data-id="{bid}"] .gui-cover__roof')
+    opacity = lambda: float(roof.evaluate("e => getComputedStyle(e).opacity"))
+    assert opacity() == 1
+    hut.locator(".ok-hut__card").hover()
+    pg.wait_for_function("e => getComputedStyle(e).opacity === '0.5'", arg=roof.element_handle(), timeout=WAIT_MS)
+    pg.mouse.move(2, 600)
+    width = hut.bounding_box()["width"]
+    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('c'))")
+    lifted = pg.locator(f'.gui-hut.is-lifted[data-id="{bid}"]')
+    lifted.wait_for(state="visible", timeout=WAIT_MS)
+    pg.wait_for_function("e => getComputedStyle(e).opacity === '0'", arg=roof.element_handle(), timeout=WAIT_MS)
+    assert lifted.locator(".gui-hut__title .gui-crest.is-mark").is_visible()            # the crest heads the card
+    assert lifted.bounding_box()["width"] == width                                       # never moves sideways
+    call("you.look", {"look": "office"})
+    office = pg.locator(f'html[data-look="office"] .gui-hut.is-walled[data-id="{bid}"]')
+    office.wait_for(state="visible", timeout=WAIT_MS)
+    assert office.locator(".gui-cover").count() == 0 and office.bounding_box()["width"] == width
+    call("you.look", {"look": "camp"})
+    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('b'))")
+
+    call("town.demolish", {"id": bid})

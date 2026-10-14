@@ -122,7 +122,7 @@ The Forge opened: every branch with its pull request and changes, the selected b
 **Camp (1990s real-time strategy × Factorio)**
 - The Forge sprite stands on the window, glowing while the window is active.
 - Branches sit in a sunken ledger, and PR pills are small bevelled plates.
-- The detail is a raised plate with an Almendra heading, hashes in `code`, a sunken gold/green/red diff bar and the striped test belt.
+- The detail is a raised plate with a Pixelify Sans heading, hashes in `code`, a sunken gold/green/red diff bar and the striped test belt.
 
 **Office (VS Code)**
 - The Source Control view: a sidebar list with 22px rows, outlined pill badges and a `frame-focus` outline on the selected branch.
@@ -144,6 +144,16 @@ structure from the front over its yard walls: External listeners, the Review gat
   the walls are the card's frame, the crest is the card's header mark) · `burning` · `asking` · `idle` (never
   dimmed below 92 %).
 - Office: the same box with its name, `hut-frame`; `peek` turns the frame `frame-focus`.
+- **Built (C3)** for the five core buildings (`js/cover.js`, `gui/static/cover.css`): Task board (hall, thatch, crest
+  skull), Agent pool (hall, canvas, L, crossed axes), Review gate (gate, banner), Inspector (open ground, lens),
+  External listeners (tower, horn). Classes: `.gui-hut.is-walled` (its walls are the card's border: 12 px sides and
+  front, 16 px back, outside the footprint) with `.is-covered` (map, overview) or `.is-lifted` (close), `.is-kit-<kind>`;
+  `.gui-cover` over it holds `__roof` (fades 250 ms close up, 50 % on hover, select or a 🥩 row pointed at), `__facade`,
+  `__top` (the `.gui-crest` and the ❓ badge), `__count` (`🥩 n · ? n` at the door) and `__name` (a chip under the
+  door). The card keeps the same width in both looks (footprint × 2 + the walls), its height fixed on the map and in the
+  overview. A piece of the v2 kit is drawn once `design-system/sprites/camp/` has it (the server lists them at
+  `/ds/sprites/camp/kit.json`); until then each is a placeholder in the `art-*` tokens. On the phone the core
+  buildings stand as covers at the top of the narrow town and a tap opens the card as a sheet (`js/sheet.js`).
 
 **Nine-slice (roofs and walls).** Corners 24×24 (back corners 24×32) with a border on their two outer sides only;
 edges 24 deep (the back 32), a border on their outer side only, repeating every 8 px with up to three variants;
@@ -376,7 +386,7 @@ The Task Fields building opened: one board that holds both tasks and sticky note
 - A card's kind follows its lane. Moving a note into To Do makes it a task, so a task and a note look the same.
 
 **Camp (1990s real-time strategy × Factorio)**
-- Lanes are sunken fields with Almendra headers: `ink-gold` (light wood) for status lanes, `warning` for lanes of notes.
+- Lanes are sunken fields with Pixelify Sans headers: `ink-gold` (light wood) for status lanes, `warning` for lanes of notes.
 - Cards are bevelled plaques tinted with their `sticky-*` colour, like Factorio's coloured slots.
 - Selected: a 2px `frame-focus` (bone) outline. Dragging: the card tilts and lifts.
 
@@ -425,7 +435,7 @@ The list of orkspaces (F1–F8) with their biome and a marker for waiting questi
 - States: `is-selected`, `is-alert`, `is-disabled`.
 
 **Camp**
-- A `frame-focus` (bone) rule on top, an Almendra header in `ink-gold` and items in a sunken well.
+- A `frame-focus` (bone) rule on top, a Pixelify Sans header in `ink-gold` and items in a sunken well.
 - The selected row sits on `selection`. An alert row is `alert` yellow (the question's) and ends with the waiting ork (`orks/ork-waiting.png`).
 
 **Office**

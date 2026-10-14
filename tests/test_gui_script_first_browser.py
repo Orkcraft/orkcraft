@@ -148,7 +148,8 @@ def test_a_yard_is_fenced_and_one_that_asks_glows_and_opens_its_question(demo_pa
     assert gate.locator(".gui-out").count() == 0                          # a yard: no ork comes out
     chip = gate.locator(".gui-hut__waiting")                              # its waiting cart's chip, always shown
     assert chip.is_visible() and re.search(r"#\w+\s*· 3 carts wait for re…", chip.inner_text())   # `#ref · title`, cut
-    gate.locator(".gui-hut__sprite").click()
+    assert gate.locator(".gui-cover__ask").is_visible()                    # ❓ over its cover (C3)
+    gate.locator(".ok-hut__card").click()
     dialog = pg.locator(".ok-dialog", has_text="Awaiting an answer")
     dialog.wait_for(state="visible", timeout=WAIT_MS)
     assert "carts wait" in dialog.inner_text()
@@ -157,9 +158,10 @@ def test_a_yard_is_fenced_and_one_that_asks_glows_and_opens_its_question(demo_pa
 
 
 def test_a_selected_buildings_ork_walks_out_onto_the_plinth_and_its_bubble_rates_its_work(demo_page):
-    """docs/design/yards.md §4, §7: the mouse over a building brings nobody out; selected, its ork walks out onto the
-    plinth's left end, beside the house, and its bubble holds 👎 and a gear, its settings; a 👎 asks what went
-    wrong; let go, it walks back in. A yard has no ork: selected, nobody comes out (§8)."""
+    """docs/design/yards.md §4, §7: the mouse over a building brings nobody out; selected, its ork walks out at its
+    door — the Task board is its cover (C3): at the front wall's left end, its feet on the wall's foot — and its bubble holds
+    👎 and a gear, its settings; a 👎 asks what went wrong; let go, it walks back in. A yard has no ork: selected,
+    nobody comes out (§8)."""
     pg = demo_page
     _call(pg, "orkspace.select", {"id": "my_day"})
     hut = pg.locator('.gui-hut[data-id="todo"]')
@@ -171,9 +173,9 @@ def test_a_selected_buildings_ork_walks_out_onto_the_plinth_and_its_bubble_rates
     hut.locator(".gui-hut__title").click()                                         # selected
     bubble = hut.locator(".gui-out__bubble")
     bubble.wait_for(state="visible", timeout=WAIT_MS)
-    ork, plinth, house = (hut.locator(s).bounding_box() for s in (".gui-out", ".gui-hut__plinth", ".gui-hut__sprite"))
-    assert plinth["x"] <= ork["x"] and ork["x"] + ork["width"] <= house["x"] + 1     # on the plinth, left of the house
-    assert abs(ork["y"] + ork["height"] - (plinth["y"] + 4)) <= 1                  # its feet on the slab
+    ork, card = (hut.locator(s).bounding_box() for s in (".gui-out", ".ok-hut__card"))
+    assert ork["x"] <= card["x"] + 12                                              # at the front wall's left end
+    assert abs(ork["y"] + ork["height"] - (card["y"] + card["height"])) <= 2       # its feet on the wall's foot
     assert bubble.locator("button").count() == 2                                   # 👎 and its settings (no 👍: Info)
     bubble.locator('button[aria-label="Bad"]').click()
     pg.locator(".ok-dialog", has_text="Bad work").wait_for(state="visible", timeout=WAIT_MS)
