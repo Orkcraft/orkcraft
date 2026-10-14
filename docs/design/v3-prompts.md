@@ -566,3 +566,36 @@ and two of them also open by the game's goal ([the-score.md](the-score.md)): **s
 town's cost per accepted result down from the week before with the quality guard steady (👎 and reworks per result not
 up); **stage 4** also by **a month of it** (four lean weeks in five). A stage, once reached, stays. The deed is named in
 the Warchief's line when it lands ("Lich of Sprints: a week at 12 % less per result, nothing sent back more").
+
+## 14. Items the person places in the camp; growth by missions (the owner, 2026-10-14, evening)
+
+**Stages by missions too.** A portrait's stage opens by any of its paths: stage 2 — Mission 1 finished (or 3+ buildings
+rated in a week); stage 3 — the campaign's second chapter (a process that comes back), a lean week, or a building at
+II; stage 4 — the third chapter, a lean month, or three buildings at III.
+
+**Rewards are items the person places, never powers.** Nothing a person can do is locked behind a level (a working
+tool must not wall off the person's own project; [growth.md](growth.md) §1 refused points for the same reason). A
+class may get a **one-time offer** fitting it at stage 3 (Bug Ork: a reviewer ork on the Agent pool's output;
+Data-Mining Goblin: a Metrics building; Gradient-Sick Elf: the UX bench; Indie Knight: weekly release notes from the
+Publisher) — an offer, buildable without it.
+
+**The inventory (P1, right after I1):** earned items go into an inventory; the person drags them onto the camp and
+places them where they like. Each item says what it was earned for ("Earned: the first lean week, 14 October").
+
+| earned by | items |
+|---|---|
+| a mission | Mission 1: "the first cart" on a plinth; the second chapter: a sundial |
+| a portrait stage | the class's set: the Jira Lich a tombstone with a ticket, Bug Ork a beetle-in-a-jar statue, Indie Knight a crest banner, Data-Mining Goblin a chest of crystals, … |
+| a building at III | that building's item: the Review gate a statue of scales, the dispatcher's booth an old semaphore, the Agent pool an anvil |
+| a lean week / month | a thrift trophy, a log-pile monument |
+| from the start | trees, rocks, bushes, log piles (v3's g2 decor), so there is something to place on day one |
+
+**Rules:**
+1. Items stand on grass only: never on track, paths or stops, never against a building; the grid shows where they fit.
+2. Signals always win: items in calm colours, never yellow or red, always under ❓, `!` and flags.
+3. Items are not drawn in the Office look: placing is part of the game after work.
+4. Nothing is owed: an item lands in the inventory quietly — no "3 items to place".
+5. An item is a file, so the community may make them later, as buildings ([open-questions.md](open-questions.md) Q19).
+
+**Cost:** the inventory panel, drag onto the grass with grid snap, saved in the town file — 2–3 days; 20–30 items via
+GEN. Order: the score and the stages first (they give the items), then the inventory.
