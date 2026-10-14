@@ -1,4 +1,4 @@
-# Design — who Orkcraft is for first
+# Design — who Orkline is for first
 
 Status: decided with the owner 2026-10-13. Answers [open-questions.md](open-questions.md) Q1 and Q2. Everything a
 new person sees (the demo GIF, Mission 1, the README, the posts) is made for this audience first. Builds on
@@ -10,7 +10,7 @@ new person sees (the demo GIF, Mission 1, the README, the posts) is made for thi
 | hypothesis | strong | weak |
 |---|---|---|
 | **People in IT**, overloaded, who after work look for flow (Stardew Valley; Factorio among engineers) | a real pain; Factorio is the exact image | "rest" and "improving work automation" sit badly together: for a burnt-out person an evening in a work tool is more work. What holds is not relief from stress but **optimising as play**. At work, many employers do not allow a personal tool running agents on their repositories |
-| **Indie creators** building a factory for content (games, apps, a channel) | the clearest need for roads and automation; n8n frightens them | many are not developers, and Orkcraft needs Python, git and a CLI such as Claude Code: a wall before Mission 1. "A factory of AI content" risks a reputation for slop. The game look gives them least |
+| **Indie creators** building a factory for content (games, apps, a channel) | the clearest need for roads and automation; n8n frightens them | many are not developers, and Orkline needs Python, git and a CLI such as Claude Code: a wall before Mission 1. "A factory of AI content" risks a reputation for slop. The game look gives them least |
 | **Game development**, the new wave | the look fits; assets; serious buildings | the old guard is hostile ([improve-buildings.md](improve-buildings.md) §12.4); the new wave is mostly the second hypothesis again |
 
 ## 2. The first audience: where the three meet
@@ -25,7 +25,7 @@ new person sees (the demo GIF, Mission 1, the README, the posts) is made for thi
 - **The score is Factorio's pleasure:** less wood per result ([the-score.md](the-score.md)).
 - **Assets for their own game or app** are a plain gain: the "new builders" of the third hypothesis, with a developer's
   skills ([improve-buildings.md](improve-buildings.md) §12.4).
-- **The owner is one of them,** building a game after work with Orkcraft: the founder is the user.
+- **The owner is one of them,** building a game after work with Orkline: the founder is the user.
 
 ## 2a. The first user's day: the commute home (the owner, 2026-10-13)
 
@@ -62,7 +62,7 @@ background. So:
 
 - **Two groups of the same audience.** **Remote workers:** the laptop is on already, and the scene works with no change
   of habit (the commute becomes lunch, or the gap between two calls). **They are the first testers to look for.**
-  **Office workers:** the scene works only if they leave the laptop running, so Orkcraft has to make that worth it and
+  **Office workers:** the scene works only if they leave the laptop running, so Orkline has to make that worth it and
   safe.
 - **Why they would leave it on:** the orks no longer stop on the first question (rule 1 above). That is the product's
   own answer to "nothing happens without me".
@@ -115,7 +115,7 @@ switch. If it holds, it is the strongest habit the product can have, a few looks
 
 ## 3. The story
 
-> **Orkcraft: build the factory that builds your side project — your coding agents as a town you grow after work.**
+> **Orkline: build the factory that builds your side project — your coding agents as a town you grow after work.**
 
 (A draft line for the README and the posts.) **Q2:** a control room for the agents that build the person's project;
 automating the rest of a person's work is "and more", below the fold.
@@ -137,7 +137,7 @@ The owner, 2026-10-13: the same people automate their personal, not work, routin
 events, research on personal questions (where to have the dog groomed, which vaccinations a child needs).
 
 - **Second, not first.** One-off personal research is done well already by general assistants and their agent modes;
-  a town adds little there. Orkcraft's edge is where things **repeat and follow rules**: replies by rules, a weekly
+  a town adds little there. Orkline's edge is where things **repeat and follow rules**: replies by rules, a weekly
   look for events to register for, a vaccination plan that reminds of its dates. It stays the "and more" of §3, out of
   the GIF and the first paragraph.
 - **The stakes are higher than in code:**

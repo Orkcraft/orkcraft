@@ -55,7 +55,7 @@ building's card in `gui/static`; A3's data first, C3's drawing on top, not both 
 | C4 | roads drawn as rails, carts as mine carts, loads and flags | C | 2.5 | ∥ with C3 (`roads.js`) | color-pass §6d |
 | C5 | the ways in outside the wall, the Publisher's catapult at the end, the launch | C | 1 | after C4 | camp-story |
 | C6 | the commissioned art put in (replacing generated sprites in what the GIF shows) | C | 1.5 | after O3 | color-pass §10 |
-| D1 | Orkcraft (or its new name) on PyPI, published by CI | D | 1 | **after O1 (the name)** | distribution §3 |
+| D1 | Orkline (or its new name) on PyPI, published by CI | D | 1 | **after O1 (the name)** | distribution §3 |
 | D2 | the Claude Code plugin: its hooks failing open, `/orkcraft`; its own marketplace | D | 3 | after D1, B8's hooks | distribution §3 |
 | D3 | README's first screen, GitHub description, topics, preview image, the small disclaimer | D | 1 | drafts ∥ now; published after O1 | launch-prep §2a |
 | D4 | the landing page | D | 2 | after O1, D5 | launch-prep §2b |

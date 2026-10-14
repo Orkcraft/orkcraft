@@ -159,7 +159,7 @@ Each stage is useful alone, in this order:
 ## 4. Open questions
 
 1. **Whose OAuth apps?** Slack, Atlassian, Figma, Google and Microsoft OAuth needs registered client
-   ids. Orkcraft-owned apps (one click for users, but orkcraft becomes a vendor they trust, with
+   ids. Orkline-owned apps (one click for users, but Orkline becomes a vendor they trust, with
    app reviews — Google's restricted Gmail scopes need a security assessment) or each team's own
    (no vendor, but a setup step per service)?
 2. **A relay?** A small orkcraft-run relay would give every user a stable address and survive the

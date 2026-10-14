@@ -107,7 +107,7 @@ Assumptions never raise ❓. A ❓ that is up nearly all the time stops being se
 without you".
 
 For any of this an ork needs a **way to ask and a way to mark**, in every AI tool, also when its session runs out of
-sight. How (a tool Orkcraft gives every ork, the harness's own question form, a block at the end of the run) is an
+sight. How (a tool Orkline gives every ork, the harness's own question form, a block at the end of the run) is an
 open question for engineering (§12).
 
 ## 5. One status, everywhere
@@ -293,7 +293,7 @@ P0 is for the buildings in the demo GIF and the testers' first fifteen minutes o
    answered or asked more; this may be the root of §1.
 2. What does "open the session" mean for each AI tool (`claude`, `codex`, `agy`): attach to a live terminal, or resume
    a kept session with the person's message?
-3. How does an ork ask and mark an assumption the same way in every AI tool, also out of sight: a tool Orkcraft
+3. How does an ork ask and mark an assumption the same way in every AI tool, also out of sight: a tool Orkline
    gives every ork (an MCP server, as all three take MCP), the AI tool's own form, or a block the ork writes at the
    end of its run? Which of them works with each tool run without a terminal is to be checked, not assumed.
 4. Spend per call in the history: can each AI tool's run be priced on its own, as today's 🪙 does per building?
@@ -413,7 +413,7 @@ Asked 2026-10-12: a night's look at the person's own project and its quarter's g
 product designer and an AI architect. **It is a building's work, a Review board's, not a hidden Town Hall flow.** The
 Town Hall and its flows (the Elders, the audit, the builder) look after the town itself; the person's work is done by
 buildings, so its flow shows on the map with its spend, its exits and its 👎. The Town Hall's roles are written for
-Orkcraft and would give the wrong advice on another project.
+Orkline and would give the wrong advice on another project.
 
 How it is set up today, by hand: the goals in a file of the project (`docs/goals-q4.md`); a schedule in External
 listeners, **weekly**, plus a run when that file changes (a quarter's goals do not change overnight; three opinions a

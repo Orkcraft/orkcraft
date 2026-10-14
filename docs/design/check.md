@@ -5,7 +5,7 @@ Status: built 2026-10-11 (`realm/check.py`, `realm/check_pictures.py`, `check_cl
 
 ## 1. What it answers
 
-Before the first people use Orkcraft: does it do its main jobs **well enough**, for **the cost it should**, and does a
+Before the first people use Orkline: does it do its main jobs **well enough**, for **the cost it should**, and does a
 town **stay quiet** when nothing comes in? The tests (tests/) prove the logic with every model faked; the check runs
 the main jobs with real models — **on the cheap AI tool by default (agy, its lightest model; asked 2026-10-11)** — and
 says **green** or **red** with the numbers. Its other job is **the logs**: one check leaves everything it saw in one

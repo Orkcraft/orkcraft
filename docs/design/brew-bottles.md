@@ -3,7 +3,7 @@
 `brew install orkcraft/orkcraft/orkcraft` installs from the formula in this repository (docs/updates.md,
 "The Homebrew formula"). Since 0.2.2 the formula takes every Python package as a wheel from PyPI, so
 an install takes seconds of pip on top of the downloads. It still builds two things on the person's
-machine: Orkcraft itself from the GitHub archive (setuptools, quick), and, on an Intel Mac,
+machine: Orkline itself from the GitHub archive (setuptools, quick), and, on an Intel Mac,
 cryptography from its sdist, which has brew install Rust first (minutes). A **bottle** is the
 installed keg packed by brew: `brew install` pours it and builds nothing, on any platform it was
 made for.

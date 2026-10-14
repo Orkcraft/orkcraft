@@ -68,9 +68,9 @@ go to the same proxy as the usage stats (`tools/usage-worker/`), which keeps onl
 and drops your IP address. **Never sent:** paths, user or project names, the error's own text, the
 log.
 
-## From a git checkout: to change Orkcraft from your machine
+## From a git checkout: to change Orkline from your machine
 
-To use Orkcraft on real work and send its fixes — comments on the window for the Alchemist, the Mechanic's code
+To use Orkline on real work and send its fixes — comments on the window for the Alchemist, the Mechanic's code
 findings ([improve-buildings.md](design/improve-buildings.md) §14) — run it from a clone of the repository rather
 than brew or the installer: each fix is then written in a `git worktree` of the clone, with its CLAUDE.md and its
 tests, and `git pull` brings every commit of `main`, not only releases.
@@ -86,7 +86,7 @@ orkcraft                                          # your towns and settings are 
 - **Updates**: a release is offered as on any copy, and installs as `git pull --ff-only` ([updates.md](updates.md));
   between releases, `git pull` yourself and restart. Keep your own work out of the clone — the fixes have their own
   worktrees, Claude Code sessions of yours belong in a worktree or another clone — or a release cannot pull.
-- **Improve → Since the last update** reads the logs from the moment Orkcraft started on the commit it runs now.
+- **Improve → Since the last update** reads the logs from the moment Orkline started on the commit it runs now.
 - **Pull requests** go through the Orkcraft Improve app: the mascot's menu → GitHub → Connect, and Install it on your
   account (it pushes to your fork). Claude Code (or the main tool picked in Town settings) must be on the PATH.
 

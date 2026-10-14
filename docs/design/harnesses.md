@@ -1,6 +1,6 @@
 # AI tools: one registry, a main tool
 
-Orkcraft leads six AI tools: **Claude Code**, **Antigravity (agy)**, **Codex**, **Hermes Agent**,
+Orkline leads six AI tools: **Claude Code**, **Antigravity (agy)**, **Codex**, **Hermes Agent**,
 **pi** and **Cursor** (`cursor-agent`). Nothing outside `orkcraft/realm/harnesses.py` names how one
 is called: every ork, building and decision goes through that registry.
 
@@ -63,7 +63,7 @@ on; with none on it is Claude Code, as before there was a choice (`builders.main
   and a working run its worktree. Dangerous commands are refused in one-shot runs
   (`approvals.single_query_mode: deny`, its default).
 - Resume: `--resume <id>`. Interactive: `hermes`, a first prompt `hermes chat -q <prompt>`.
-- Hooks: only in `$HERMES_HOME/config.yaml` (no project file). Orkcraft adds a block between two
+- Hooks: only in `$HERMES_HOME/config.yaml` (no project file). Orkline adds a block between two
   marker comments after asking (`orkcraft hooks install --hermes-global`), never beside a `hooks:`
   key of the person's own. Headless runs get `HERMES_ACCEPT_HOOKS=1`.
 - Spend: `estimated_cost_usd` per session in `$HERMES_HOME/state.db` (read-only). Limits:

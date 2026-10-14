@@ -1,6 +1,6 @@
 # Anonymous usage stats
 
-Orkcraft can share which of its features are used, so we know what to make better. It is **off until
+Orkline can share which of its features are used, so we know what to make better. It is **off until
 you say yes**: the window asks once (or the installer, whose answer the window keeps), and Settings or
 `orkcraft usage on|off|status` change it at any time.
 
@@ -26,17 +26,17 @@ Each event below, with only the properties listed. Numbers go as buckets (`0`, `
 | `install_finished` | the installer ends | `ok`, `seconds`, `failed_step` |
 
 Every batch also carries a random install id (drawn when you say yes, forgotten when you say no), when
-this window was opened, the Orkcraft version, the OS (darwin · linux · windows) and the Python version.
+this window was opened, the Orkline version, the OS (darwin · linux · windows) and the Python version.
 
 **Never sent:** your code, prompts, what the orks or you wrote, file names, paths, project or building
 names, git data, your settings' text, your email, your IP address.
 
-The same answer covers [crash reports](crash-reports.md): where in Orkcraft's code something broke,
+The same answer covers [crash reports](crash-reports.md): where in Orkline's code something broke,
 never what was in it.
 
 ## Where it goes
 
-To Orkcraft's own proxy, a Cloudflare Worker (its code: [tools/usage-worker/](../tools/usage-worker/)),
+To Orkline's own proxy, a Cloudflare Worker (its code: [tools/usage-worker/](../tools/usage-worker/)),
 which drops anything not in the table above and your IP address, and passes the rest to
 [Amplitude](https://amplitude.com/) in its US data centre.
 

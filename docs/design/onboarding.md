@@ -100,7 +100,7 @@ The 🛡 Warder does not guard agy yet: … start agy with --sandbox and keep se
 ```
 
 - The CLIs orkcraft leads get ✓ (on when found) and how they are paid for — subscription or API;
-  the HUD corner follows it. Orkcraft never stores a key.
+  the HUD corner follows it. Orkline never stores a key.
 - Every tool gets 👍 and 👎; a 👍 opens **good for**, a 👎 **weak at**: code · architecture ·
   documentation · search (web, Jira) · tickets. One tool can be both — liked for docs, weak at
   tickets. The cells keep their columns when hidden, so the screen stays a table.

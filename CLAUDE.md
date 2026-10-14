@@ -1,4 +1,4 @@
-# Orkcraft — notes for contributors and agents
+# Orkline — notes for contributors and agents
 
 ## Wording
 
@@ -49,7 +49,7 @@
 
 ## Alpha: merge fast, with the critical tests
 
-- While Orkcraft is in alpha, a change is merged into `main` as soon as the **critical tests** pass;
+- While Orkline is in alpha, a change is merged into `main` as soon as the **critical tests** pass;
   the full suite and the browser tests are not waited for. A red full CI after the merge is fixed by
   the next commit to `main`.
 - The critical tests: `tests/test_architecture.py`, `tests/test_cli.py`, `tests/test_updates.py`, and

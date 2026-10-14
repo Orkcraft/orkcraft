@@ -17,7 +17,7 @@ buildings ([yards.md](yards.md) §3, §7), the card sizes of the UX bench ([impr
 A person who runs orks mostly watches (calm-town.md). A town of twelve cards reads as a dashboard with houses drawn on
 it; most of them say the same thing all day. The zoom is the strategy game's camera: pulled back, the town is its
 houses, its roads, its carts and its fire, and only what needs the person is said; brought close, the cards say what
-each building is doing. It is also the picture that says what Orkcraft is in half a second.
+each building is doing. It is also the picture that says what Orkline is in half a second.
 
 ## 2. Three levels of the whole town, not a state of each card
 

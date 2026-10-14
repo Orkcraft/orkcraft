@@ -21,7 +21,7 @@ the plain refusal and the way round it (§6).
 
 Weighed on 2026-10-08 (the discussion is in the session that wrote this):
 
-- **An Orkcraft-owned OAuth client** is one click for the person, but makes Orkcraft a vendor: a verified app,
+- **An Orkline-owned OAuth client** is one click for the person, but makes Orkline a vendor: a verified app,
   a privacy policy, and for Gmail (a *restricted* scope) a security assessment (CASA) every year, ≈ $540–1 800
   through TAC Security and weeks of work. Not for a personal tool.
 - **The person's own client** (chosen): a Desktop app in their own Google Cloud project, published **In
@@ -120,7 +120,7 @@ as above.
 
 ## 7. Not done, on purpose
 
-- No Orkcraft-owned client, no server of ours, no relay.
+- No Orkline-owned client, no server of ours, no relay.
 - No `gmail.modify`, `gmail.send`, `mail.google.com`, full `drive` or full `calendar`.
 - No reading of Claude's or agy's own Google tokens (watchtower-quick-add.md §7.1).
 - No Testing-mode client handed to the person: tokens that die after a week look like a bug.
@@ -139,7 +139,7 @@ as above.
 5. Calendar → New event → it appears in Google Calendar.
 6. Settings → Accounts → Disconnect → the account is gone from `myaccount.google.com/connections`.
 
-What to send back if a step fails: the step's number, the text Orkcraft or Google showed (a screenshot is best),
+What to send back if a step fails: the step's number, the text Orkline or Google showed (a screenshot is best),
 and whether Google's warning page offered *Go to … (unsafe)*.
 
 ## 9. Where it lives

@@ -1,7 +1,7 @@
 # Design — the town's time: every schedule on the sun and moon dial, work that waits for a limit
 
 Status: proposal 2026-10-12, talked through with the owner (§4 and §5 decided); nothing built. Priority **P1**, first of the P1s: it
-speaks to the people Orkcraft is for, who work on a subscription through their own AI tools and meet its limits
+speaks to the people Orkline is for, who work on a subscription through their own AI tools and meet its limits
 every day. Builds on [building-views.md](building-views.md) (the Calendar's beats: meetings, scheduled runs,
 ≈ limits), [calendar-import.md](calendar-import.md), [codex-limits.md](codex-limits.md) (a window's `resetsAt`),
 [catalog-shelves.md](catalog-shelves.md).

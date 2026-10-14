@@ -11,7 +11,7 @@ vocabulary, two looks).
 > town.**
 
 So each look gets a job. Today Office is "the calm look for whoever thinks it is a toy". With this, the looks become
-two ways of using Orkcraft:
+two ways of using Orkline:
 
 | | Office | Camp |
 |---|---|---|
@@ -69,7 +69,7 @@ Toward a 1990s real-time strategy game and a cosy farming game, keeping the pixe
 
 ### 4b. Making the idea known from the first session (decided 2026-10-13)
 
-The risk: a person who sees only the game in the first minutes takes Orkcraft for a toy, not a tool for work, and
+The risk: a person who sees only the game in the first minutes takes Orkline for a toy, not a tool for work, and
 never learns Office exists. Not answered with another onboarding question; shown instead:
 
 1. **In Mission 1, a step of fifteen seconds** between quests 3 and 4 ([first-mission.md](first-mission.md) §3, 3½):
@@ -104,7 +104,7 @@ default, and the 💡 and gate actions on it.
 Asked: should Camp move to a game engine? **No.** The town is drawn with Preact and htm over the DOM, SVG and a little
 canvas (`gui/static/js`), inside pywebview; that is enough for what Camp needs.
 
-1. **Battery and CPU:** Orkcraft stays open all day. An engine draws sixty frames a second whether anything moves or
+1. **Battery and CPU:** Orkline stays open all day. An engine draws sixty frames a second whether anything moves or
    not; the web animates only what moves and sleeps otherwise. A tool that warms the laptop gets closed.
 2. **One layout, two drawings** (§2): an engine would be a second interface for Camp. Text, forms, the terminal
    (xterm), copying and accessibility all live in the web.

@@ -55,7 +55,7 @@ A town has one root today: the folder `orkcraft` opened in (`find_project_root`:
 ]
 ```
 
-- `projects[]` is the town's list: `id`, `name`, `path` (absolute, or `~/…`), `git.managed` (true when Orkcraft
+- `projects[]` is the town's list: `id`, `name`, `path` (absolute, or `~/…`), `git.managed` (true when Orkline
   started its git, so it may say more, §4).
 - `orkspace.project` is a project id or `null` (the town's root). `GitLink` stays as it is and now means a branch
   or a worktree **inside the orkspace's project** (`.orkcraft/worktrees/<orkspace>` of that project).
@@ -65,7 +65,7 @@ A town has one root today: the folder `orkcraft` opened in (`find_project_root`:
   works as before. The schema gets the two fields (`schemas/town-scroll.v3.json`, minor version).
 - **Where the Town file lives.** While a town has no project of its own, nothing moves: `.orkcraft.json` stays in
   the root. A town with projects keeps its file and its `.orkcraft/` in the town's root; the projects are
-  only paths. A project folder gets no Orkcraft files of its own except what its worktrees and snapshots
+  only paths. A project folder gets no Orkline files of its own except what its worktrees and snapshots
   need (§7).
 
 ## 4. A new orkspace picks its project
@@ -76,10 +76,10 @@ The War Map's fog (war-map.md §2.4) takes a name and a biome; under them, one m
 
 - **A new project** creates `~/Orkcraft/projects/<name>/`, starts
   git there and makes a first commit (`jobs.ensure_repo`: a `.gitignore` that leaves out `.env`, keys,
-  caches and `.orkcraft/`). No question: the folder is Orkcraft's own.
+  caches and `.orkcraft/`). No question: the folder is Orkline's own.
 - **A folder…** that is already a git repository is taken as it is.
 - **A folder…** without git asks once, in one plain line: *"This folder has no history. Start git here, so
-  Orkcraft can take you back to any earlier state? Your files stay as they are."* **Start git** · **Not now**.
+  Orkline can take you back to any earlier state? Your files stay as they are."* **Start git** · **Not now**.
   "Not now" still links the project; §7 is off for it and the History says why.
 - **Refused:** `/`, the home folder, a folder inside another repository (`git rev-parse --show-toplevel` is a
   parent), and a first commit over 200 MB (it names the largest folders, so the person can ignore them).
@@ -95,7 +95,7 @@ The War Map shows the project's name in the open land's line and in every land's
 - `gui/projects.py`: `project.link` (`{state: "ask_git"}` for a folder with no git until `git` is given),
   `project.use`, `project.pick` / `project.picked`; `orkspace.new` takes `project`: `""` · `town` · `new` · an id.
   `js/project.js` is the dialog, `js/warmap.js` the fog's **Works in** row.
-- A project inside Orkcraft's own `~/Orkcraft` repository is put in that repository's local exclude
+- A project inside Orkline's own `~/Orkcraft` repository is put in that repository's local exclude
   (`.git/info/exclude`), so the town's git never takes it in.
 - Changing an orkspace's project drops its worktree link: a worktree belongs to the repository it was made of.
 - Already in their project: War Tent sessions (`worktrees.cwd_for`) and the Agent pool (`code_root`: its own folder,
@@ -226,7 +226,7 @@ A worker asks `Worker.project_root` (its building's orkspace's project, else the
 ## 9. What stays as it is
 
 - A town without projects works exactly as today, and its Town file loads unchanged.
-- Orkcraft never commits to the person's branches for a snapshot, never rewrites their history, never pushes.
+- Orkline never commits to the person's branches for a snapshot, never rewrites their history, never pushes.
 - `core/`, `realm/`, `design/` stay faceless (`tests/test_architecture.py`).
 
 ## 10. Tests

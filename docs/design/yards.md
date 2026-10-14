@@ -21,7 +21,7 @@ a File tree the head says nothing: [script-first.md](script-first.md) §3 alread
 building never calls a model on its own. The head is on all 21 types, so it cannot answer the question
 a person who runs agents asks first: **where does a model think, and what does it cost?**
 
-The people Orkcraft is for (developers, indie studios, game designers) ask that of every agent tool.
+The people Orkline is for (developers, indie studios, game designers) ask that of every agent tool.
 An ork drawn only where a model works answers it at a glance, and says plainly what spends money
 (CLAUDE.md, Wording: anything about money says plainly what happens).
 
@@ -243,7 +243,7 @@ leaves the title bar on every card, hut and yard; the building says what its ork
 ## 5. What we measure
 
 - **The screenshot.** The README's town (`docs/img/town.png`) before and after: can a person who never
-  ran Orkcraft point at the buildings that spend money? Asked of five people.
+  ran Orkline point at the buildings that spend money? Asked of five people.
 - **Noise.** A town of 15 buildings: the eye goes to the cards that want it (fire, a peek) first.
   If the fences make it go elsewhere, stage 2 waits on a quieter fence, never on more decoration.
 - **Spend.** No change: stage 1 is a picture of a rule that already holds.

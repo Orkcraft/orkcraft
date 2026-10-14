@@ -90,7 +90,7 @@ the developer story**, once the GIF's flow works.
    | **broadcast** | X, Bluesky, Mastodon, LinkedIn | **automated:** each devlog post and release written once, mirrored to all; a release also posts to Discord's announcements by a GitHub webhook |
    | **communities** | Reddit, Hacker News, the Claude Code and side-project communities | **by hand only:** their rules forbid automated posting, and replying is the point |
 
-   **Dogfooding:** the broadcast runs in Orkcraft's own town: a release or a devlog post becomes a cart, an ork drafts
+   **Dogfooding:** the broadcast runs in Orkline's own town: a release or a devlog post becomes a cart, an ork drafts
    each network's version, the drafts wait at the Review gate, and only what the owner passes goes out (what leaves the
    town goes through the gate, [audience.md](audience.md) §4a). It is the story "built and marketed by the agents it
    runs", told with proof.

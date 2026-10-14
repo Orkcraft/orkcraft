@@ -53,7 +53,7 @@ failure as `realm/tool_errors.py` classifies it: its line ("Codex is not signed 
 what to do ("Sign in again in a terminal: codex login") and Details, the tool's own words. Nothing is saved.
 
 **No AI tool here.** The step says so in its title ("No AI tool here yet") and shows instead of the table:
-what an AI tool is (a coding agent you run in a terminal, with your own sign-in; Orkcraft has no AI of its own),
+what an AI tool is (a coding agent you run in a terminal, with your own sign-in; Orkline has no AI of its own),
 three to install (`onboarding.RECOMMENDED`: Claude Code, Codex, Cursor) with the commands to install and sign in
 from `harnesses.REGISTRY` (`install`, `login`), **Check again** (`onboarding.detect`: the tools are looked for
 once more, no restart), and what the town does without one: External listeners, Calendar, Task board, Output and
@@ -61,7 +61,7 @@ the Drop work; Agent pool, Research and the Town planner wait for a tool. **Go o
 steps; Skip opens an empty town.
 
 **Request a tool** opens a small dialog: the tool's name, a link, what orks would do with it. It opens a GitHub
-issue in the browser, filled in (`onboarding.request` returns the URL). Nothing is sent from Orkcraft: the
+issue in the browser, filled in (`onboarding.request` returns the URL). Nothing is sent from Orkline: the
 person submits it there. No backend, no usage event.
 
 ## 3. Who are you?

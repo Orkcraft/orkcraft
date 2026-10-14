@@ -233,7 +233,7 @@ What each service needs, the shortest login, what step 2 lists, and what becomes
 Slack has no personal token without an app. The panel makes the app in two clicks:
 
 1. **Create the app** — a link to `api.slack.com/apps?new_app=1&manifest_json=…` *(check: the
-   manifest in the address)* carrying orkcraft's manifest: name *Orkcraft listener*, **user**
+   manifest in the address)* carrying orkcraft's manifest: name *Orkline listener*, **user**
    scopes `search:read`, `channels:history`, `groups:history`, `im:history`, `mpim:history`,
    `channels:read`, `groups:read`, `users:read`. The person picks the workspace and confirms.
    If the address cannot carry it, the panel shows the manifest with **Copy** and the link to

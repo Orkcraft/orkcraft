@@ -1,6 +1,6 @@
 # Updates
 
-Orkcraft looks for a newer version of itself and installs it. A **critical update** — a fix for
+Orkline looks for a newer version of itself and installs it. A **critical update** — a fix for
 something that loses work or lets harm in — installs by itself the next time the town opens, before
 anything else loads. Any other update is offered: the window asks once per version, and
 `orkcraft update` installs it from the terminal.
@@ -11,11 +11,11 @@ One setting per machine (Settings → *Updates that install by themselves*, or `
 
 | Policy | When the town opens | In the window |
 |---|---|---|
-| `critical` (default) | a critical update installs, then Orkcraft restarts on it | other updates are offered |
-| `auto` | every update installs, then Orkcraft restarts on it | — |
+| `critical` (default) | a critical update installs, then Orkline restarts on it | other updates are offered |
+| `auto` | every update installs, then Orkline restarts on it | — |
 | `ask` | nothing installs by itself | every update is offered, a critical one loudly |
 
-An install that fails never stops the town from opening: Orkcraft says why in the terminal, opens on
+An install that fails never stops the town from opening: Orkline says why in the terminal, opens on
 the version it has, and tries again after a day (or now, with `orkcraft update`).
 
 The window reads the list when it opens and every 6 hours. When it finds a newer version it asks
@@ -45,11 +45,11 @@ With the tool that installed this copy, so its records stay right:
 
 A brew copy is told by its path: it runs from `<HOMEBREW_PREFIX>/Cellar/orkcraft/<version>/libexec`.
 `brew update` comes first because `brew upgrade` alone reads the tap only once a day; after the
-upgrade brew removes the old version, so Orkcraft restarts on `<HOMEBREW_PREFIX>/opt/orkcraft`, which
+upgrade brew removes the old version, so Orkline restarts on `<HOMEBREW_PREFIX>/opt/orkcraft`, which
 points at the new one.
 
 A git checkout updates itself only on `main` and only with no changes of its own: a working copy
-with edits or on another branch is yours, so Orkcraft says what is out and leaves it alone.
+with edits or on another branch is yours, so Orkline says what is out and leaves it alone.
 
 ## When nothing is read
 

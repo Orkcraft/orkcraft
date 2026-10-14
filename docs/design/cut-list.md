@@ -31,8 +31,8 @@ hidden or frozen, so older towns keep loading (CLAUDE.md, Wording).
 | **The night's processes, six of them** | **Merge** into one flow, the Town Hall's night council ([town-hall-roles.md](town-hall-roles.md) §2): one switch, one budget, one morning brief. [simplify.md](simplify.md) §4 and §7 already go this way | **P1** |
 | **Autonomy in three places** (the town's level, a building's own level and waits, a building's Freedom for its retro) | **Merge**: one Autonomy per ork ([ork-console.md](ork-console.md) §2), gates on buildings; the building's level, its own waits and its Freedom go | **P1** |
 | **External listeners' sources** (Gmail, Slack, Jira, Confluence, Figma, Google, GitHub, schedules, webhooks) | **Hide** all but GitHub, a schedule, a webhook and a file | the main scenario needs GitHub; the rest are the owner's | **P0** (what is offered only) |
-| **The phone's places** (the town's rules by where the phone is) | **Drop** (§3: the owner does not use Orkcraft's phone app) | far from the main scenario; Tailscale and the place rules are upkeep for a few | **P1** |
-| **The phone app** | **The console on the phone** (§3a): the ork slots list, ❓ and 🔥, the console and the waits, built once for both; out of the README's first screen until the owner switches to it | the owner would move from Claude Code's phone app to Orkcraft's once it does more; what it needs is what the desktop already gets | **P1**, after the console; the README line **P0** |
+| **The phone's places** (the town's rules by where the phone is) | **Drop** (§3: the owner does not use Orkline's phone app) | far from the main scenario; Tailscale and the place rules are upkeep for a few | **P1** |
+| **The phone app** | **The console on the phone** (§3a): the ork slots list, ❓ and 🔥, the console and the waits, built once for both; out of the README's first screen until the owner switches to it | the owner would move from Claude Code's phone app to Orkline's once it does more; what it needs is what the desktop already gets | **P1**, after the console; the README line **P0** |
 | **The Test bench and the UX bench** | **Freeze**, through Improve only ([catalog-shelves.md](catalog-shelves.md)); gate in [improve-buildings.md](improve-buildings.md) §12.4 | the biggest area, made for the owner and contributors | — |
 | **Wiki, Research, Audio briefing** | **Freeze**, More shelf | — | — |
 | **Orkspaces beyond the first** (F2–F8, each in its biome) | **Hide** from the first session: one town until the person asks for a second | small in code; one more idea in the first fifteen minutes | **P1** |
@@ -43,12 +43,12 @@ hidden or frozen, so older towns keep loading (CLAUDE.md, Wording).
 
 ## 3. The owner's answers (2026-10-12)
 
-1. **The phone:** corrected the same day. The owner uses **Claude Code's** phone app every day, **not Orkcraft's**. So:
-   - Orkcraft's phone app is **frozen**: it works as it is, no new work on it;
+1. **The phone:** corrected the same day. The owner uses **Claude Code's** phone app every day, **not Orkline's**. So:
+   - Orkline's phone app is **frozen**: it works as it is, no new work on it;
    - its **places** are **dropped**: rules on top of an app nobody uses;
    - **the README's first screen stops selling it** ("the phone app shows them too"): what the author does not use, a
      first tester should not be promised;
-   - later, by what testers ask: perhaps no app of Orkcraft's own at all, only 🔥 and ❓ sent where the person already
+   - later, by what testers ask: perhaps no app of Orkline's own at all, only 🔥 and ❓ sent where the person already
      is (a push, Slack, mail), as the person already chose another tool's app for their phone.
 2. **What is read from the night:** changes to the product (technical and product), and proposals to improve the
    person's ways of working. So the merged night council ([town-hall-roles.md](town-hall-roles.md) §2) makes exactly
@@ -67,19 +67,19 @@ hidden or frozen, so older towns keep loading (CLAUDE.md, Wording).
 
 ### 3a. The phone, a second time (2026-10-12)
 
-The owner: "I will move from Claude Code once Orkcraft's phone app does more." The owner is the main user and
+The owner: "I will move from Claude Code once Orkline's phone app does more." The owner is the main user and
 "useful to me" counts as success, so the phone is not frozen for good. But "does more" is a guess until it is said
 **what work** the owner does on the phone.
 
 - **No phone features of its own.** What the phone needs is what [ork-console.md](ork-console.md) gives the desktop:
   the ork slots list with 🔥 and ❓ (§8), the console to answer, stop and read a session with its spend (§7), the
   waits with their reason and Start now / Run anyway (§19). Built once, drawn for both.
-- **P1, right after the console works on the desktop** (P0). Orkcraft's own phone app as it is today stays frozen until
+- **P1, right after the console works on the desktop** (P0). Orkline's own phone app as it is today stays frozen until
   then; its places are still dropped.
 - **The test is the owner's switch.** The README promises the phone again on the day the owner stops opening Claude
   Code's app for this town's work.
 - **The owner's answer: what is done on the phone every day.** Ideas for the product are thrown in, talked through and
-  sent to be built; sometimes a picture is made with Gemini. The gain of doing it in Orkcraft: one place, no switching
+  sent to be built; sometimes a picture is made with Gemini. The gain of doing it in Orkline: one place, no switching
   between sessions, nor between Claude and Gemini. So the bar, and nothing past it:
 
   | on the phone | made of | priority |

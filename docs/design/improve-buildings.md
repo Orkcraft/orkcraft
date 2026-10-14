@@ -3,7 +3,7 @@
 Status: stages 0–8 and 3b built 2026-10-11 (the Improve group, the UX bench standing with its settings and gallery, the
 road rule; a building's inputs; the Test bench's setup; environments, case sets and what is kept to spend less; the
 virtual building; GitHub and pull requests; the UX bench painting pictures and laying windows and cards out); stages
-9 and 11 on 2026-10-12 (the mascots; Send to Orkcraft from both benches). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
+9 and 11 on 2026-10-12 (the mascots; Send to Orkline from both benches). Asked by the owner: tools inside the product that try a change to a building's logic or look, measure it
 and keep it, **faster and cheaper than testing and rewriting it through Claude Code**.
 
 | stage | what | state |
@@ -20,13 +20,13 @@ and keep it, **faster and cheaper than testing and rewriting it through Claude C
 | 8 | Orks by their orkish names, buildings by what they do; the Mechanic and the Alchemist as agents (design/agents/), on the Council of Elders, improving the town at night by the autonomy (§8) | built |
 | 9 | The mascots in the UX bench: a target that is no building; each head drawn again as its grid by a text model, never the image tool (§6.4) | built |
 | 10 | A moving house's two layers in the UX bench's *At work* group (docs/design/building-motion.md, its own stages) | building-motion.md |
-| 11 | **Send to Orkcraft** from both benches: the UX bench's pictures, mascots, cards and windows (§6.5); the Test bench's settings and prompts as a type's shipped defaults, beside its code (§5.4) | built |
+| 11 | **Send to Orkline** from both benches: the UX bench's pictures, mascots, cards and windows (§6.5); the Test bench's settings and prompts as a type's shipped defaults, beside its code (§5.4) | built |
 | 12 | Improve reads **the logs since the last update** (§13): from the moment this machine started on the code it runs now | built |
-| 13 | **Improve Orkcraft**: Comment mode on any part of the window for the Alchemist, *Write the fix* on the Mechanic's code findings; each fix written in a copy of Orkcraft's source (a worktree of the checkout it runs from), previewed, sent as a pull request (§14) | built |
+| 13 | **Improve Orkline**: Comment mode on any part of the window for the Alchemist, *Write the fix* on the Mechanic's code findings; each fix written in a copy of Orkline's source (a worktree of the checkout it runs from), previewed, sent as a pull request (§14) | built |
 
 ## 1. Why
 
-A person who wants a building to work better today has one way: open Claude Code on Orkcraft's source, read, edit,
+A person who wants a building to work better today has one way: open Claude Code on Orkline's source, read, edit,
 run, look. Every round reads the code base again, nothing is measured against the bare AI tool, and the change lives
 on one machine. The two Improve buildings do the same inside the product, with the context already gathered (one
 building, its prompts, its window, its cases), every run measured, and the result kept locally or sent upstream as a
@@ -85,8 +85,8 @@ so nothing but a person could give a building that input.
   seconds until it is typed (`slow_down` respected, an expired or refused code said). No client secret ships. The
   token is kept as the login `github-improve` (`realm/logins.py`: the keychain, else the logins file). **Disconnect**
   forgets it here. When the app is not on the person's own account the menu says so, with **Install**.
-- **A pull request** (*Send to Orkcraft as a pull request…* on the virtual building's code change) is made with the
-  API only, no clone: the person's fork (made when missing), a branch `improve/<type>-<time>` from Orkcraft's `main`
+- **A pull request** (*Send to Orkline as a pull request…* on the virtual building's code change) is made with the
+  API only, no clone: the person's fork (made when missing), a branch `improve/<type>-<time>` from Orkline's `main`
   with the changed files — each merged three ways (`git merge-file`) onto `main` as it is now when `main` changed it
   since the installed version, refused when both change the same lines — and the pull request into `main`, labelled
   `from-orkcraft` when the app may.
@@ -99,7 +99,7 @@ so nothing but a person could give a building that input.
   `main` as it is when sent. (Dropping the copy when an update carries the change is next.)
 - **The same way for both benches** (stage 11): the Test bench sends its code change and the settings and prompts it
   tried, as the defaults a new building of their type starts with (§5.4); the UX bench sends what its machine applied
-  (§6.5). A picture goes as bytes: there are no lines to merge, so it is refused when Orkcraft's `main` changed it
+  (§6.5). A picture goes as bytes: there are no lines to merge, so it is refused when Orkline's `main` changed it
   since the installed version.
 - What *Save changes* made a building's own stays the person's town's; what goes is what the bench tried.
 
@@ -139,7 +139,7 @@ so nothing but a person could give a building that input.
   virtual building, never on the building in the town (stage 4).
 
 **Cassettes (stage 3b, built 2026-10-11).** An AI tool's MCP servers are its own, inside its process: the bench
-cannot catch them from Orkcraft, so it replaces them.
+cannot catch them from Orkline, so it replaces them.
 
 - A run's AI tool is started with an MCP configuration of the bench's only (`realm/cassette.py` `config`, written
   beside the run; `ORKCRAFT_MCP_CONFIG` makes Claude Code take it with `--mcp-config … --strict-mcp-config`,
@@ -186,10 +186,10 @@ and prompt builders in Python).
 
 Asked by the owner: what the Mechanic finds better should reach every new building, not only this town's.
 
-- **Orkcraft ships a type's defaults** as data: `orkcraft/design/defaults/<type>.json`, `{"config": {...}}`
+- **Orkline ships a type's defaults** as data: `orkcraft/design/defaults/<type>.json`, `{"config": {...}}`
   (`realm/type_defaults.py`). A building raised from Build starts with them (`core/buildings.py` `type_spec`); a
   type with none starts as before. A building already standing keeps its settings.
-- **Send to Orkcraft** on the virtual building now goes with settings and prompts alone too: each building's config
+- **Send to Orkline** on the virtual building now goes with settings and prompts alone too: each building's config
   as tried against its config now gives the keys the changes set (`type_defaults.changed`), over the defaults its type
   ships already (`lab_pr.defaults`). Only those keys go, never the rest of the person's config. A part a type keeps
   outside its spec (the Workshop's script) stays here.
@@ -251,7 +251,7 @@ what it says), `foot` (what it works on, where it sends), `when` (when it last d
 
 ### 6.4 The mascots (stage 9, built 2026-10-12)
 
-Asked by the owner: the mascots are drawn again inside Orkcraft, not by a script and a session in Claude Code.
+Asked by the owner: the mascots are drawn again inside Orkline, not by a script and a session in Claude Code.
 
 - **A target that is no building.** Beside Build's groups, *Not a building* holds **Mascots**
   (`core/workers/ux_lab.py` `MASCOTS`). Its gallery is every role's head (realm/intents.py `ROLES`) at its four
@@ -269,18 +269,18 @@ Asked by the owner: the mascots are drawn again inside Orkcraft, not by a script
   the design system's back (Apply then takes all three away). Every place that shows a mascot reads `/ds/`, so the
   portrait, Settings and the onboarding show this machine's at once.
 - **Not yet:** a head's name and ranks (realm/intents.py, realm/growth.py) and its kin's home are code, not pictures.
-  A head applied here goes to Orkcraft with **Send to Orkcraft** (§6.5).
+  A head applied here goes to Orkline with **Send to Orkline** (§6.5).
 
-### 6.5 Send to Orkcraft (stage 11, built 2026-10-12)
+### 6.5 Send to Orkline (stage 11, built 2026-10-12)
 
-What this machine applied in the UX bench stays on it until Orkcraft takes it in. **Send to Orkcraft as a pull
+What this machine applied in the UX bench stays on it until Orkline takes it in. **Send to Orkline as a pull
 request… (n)** under the bench's settings opens what would leave the machine, item by item (`realm/ux_pr.py`):
 
-| item | the files of Orkcraft's repository it changes |
+| item | the files of Orkline's repository it changes |
 |---|---|
 | a picture (a Build icon, a house on a ground, an ork, a moving house's layer) | `design-system/<path>` and its @2x, as bytes |
 | a mascot's head | its picture and @2x; its grid in `grids.json` and in `drawn.json`, which tools/growth_sprites.py keeps over the heads its code draws, so a run of the tool keeps it |
-| a type's cards | `design-system/cards/<type>.json`: the card Orkcraft ships (`card_docs.shipped`), laid out by every hut until a machine has its own |
+| a type's cards | `design-system/cards/<type>.json`: the card Orkline ships (`card_docs.shipped`), laid out by every hut until a machine has its own |
 | a type's window (the type the bench works on, when its buildings have a layout of their own) | the `default` of `orkcraft/design/buildings/<type>.json`, the rest of the file as written |
 
 Each item is ticked and shown — a picture before and after, a text's diff — with the title and the description of
@@ -379,14 +379,14 @@ ledger (`.orkcraft/spend/calls.jsonl`, by `purpose`) so the saving is a number, 
   (github.com/apps/orkcraft-improve), its client id `Iv23ligmdXetPjrWsh4J` (not a secret: the device flow needs no client secret, and none ships). It asks for
   Contents, Pull requests and Administration (to fork) on the repositories it is installed on, has no webhook and no
   callback URL; a person installs it on their own account (for their fork) after signing in
-  (github.com/apps/orkcraft-improve/installations/new), and Orkcraft finds the
+  (github.com/apps/orkcraft-improve/installations/new), and Orkline finds the
   installation through the API.
 
 ## 9. Open
 
 1. Which building's prompts move to templates first (stage 4): the Agent pool's, the most tested.
 2. Does agy paint here, or does the image tool need its own key (stage 6)?
-3. How a person improves their own buildings without rebuilding Orkcraft (§11): the hidden loop below.
+3. How a person improves their own buildings without rebuilding Orkline (§11): the hidden loop below.
 
 ## 11. The Test bench made plain; improving a building, folded (asked 2026-10-11)
 
@@ -404,12 +404,12 @@ asked for).
 **Folded under More, not removed:** the goal of the testing (and its Write cases for the goal), **What to change**
 (proposals → tasks of an Agent pool), the **virtual building** (§5.3: a change tried on the bench's copy, Save
 changes, the pull request) and the shipped cases. They are the loop that should one day let a person improve **their
-own** buildings — their prompts, settings and roads — **without rebuilding Orkcraft from its source**: a change
+own** buildings — their prompts, settings and roads — **without rebuilding Orkline from its source**: a change
 tried on the copy, measured against the bare AI tool on their own cases, kept only when the medians say it is
 better. Not decided yet:
 
 - **What a person may change** without a pull request: data only (prompts, settings, roads; kept locally, §8) is
-  the safe start; code changes stay a pull request to Orkcraft.
+  the safe start; code changes stay a pull request to Orkline.
 - **Who proposes**: the Recommendations as they are (advice to read), or proposals that can be tried in one press.
 - **What "better" is**: the goal's metric over the medians of 3 runs or more, and a check no worse, before Save
   changes is offered.
@@ -417,33 +417,33 @@ better. Not decided yet:
 
 Until then the loop stays folded and works as before for whoever opens it.
 
-## 12. Beyond Orkcraft: the Mechanic and the Alchemist on any codebase (asked 2026-10-12)
+## 12. Beyond Orkline: the Mechanic and the Alchemist on any codebase (asked 2026-10-12)
 
-Orkcraft testing and improving itself is one case of something wider. The Mechanic measures what an app's logic does
+Orkline testing and improving itself is one case of something wider. The Mechanic measures what an app's logic does
 and what it costs, finds why, tries a change on a copy and keeps it only when the numbers say it is better; the
-Alchemist does the same for how an app looks. Neither needs the app to be Orkcraft. **Now:** both stay on Orkcraft
+Alchemist does the same for how an app looks. Neither needs the app to be Orkline. **Now:** both stay on Orkline
 until the scenario format, the check and the night loop have held up for some weeks (docs/design/check.md). **Later:**
 they take any repository as their subject. Written down so that what is built now does not close that door.
 
-### 12.1 What is Orkcraft's own today
+### 12.1 What is Orkline's own today
 
-| Part | Orkcraft only | The general form |
+| Part | Orkline only | The general form |
 |---|---|---|
 | The subject | a building or a chain of them (`flow_spec`) | an app: a repository and the jobs it does |
 | A scenario | a Test bench kit (`realm/bench_kits.py`) runs a building on a case | an adapter runs the app's job: a command, an HTTP call, a script, a browser flow |
 | The baseline | the bare AI tool on the same model | the bare AI tool, the app's previous version, last night |
 | The check | kit checks by words, a test command, a judge | the same three: exit code, words, a judge only where code cannot tell |
 | The cost | tokens and time from the call log (`realm/call_log.py`) | time for any app; tokens for an app that calls models, from its own traces or a proxy in front of its model calls |
-| Where it reads | Orkcraft's own source (`bench_review.source_dir`) | the subject's repository |
+| Where it reads | Orkline's own source (`bench_review.source_dir`) | the subject's repository |
 | A change tried | the package copied beside the bench (`realm/code_overlay.py`) | a worktree of the subject's repository |
-| A change kept | data locally; code as a pull request to Orkcraft (`realm/lab_pr.py`) | a pull request to the subject's repository, with its numbers |
+| A change kept | data locally; code as a pull request to Orkline (`realm/lab_pr.py`) | a pull request to the subject's repository, with its numbers |
 | The Alchemist | the design system's pictures (`realm/painter.py`) and building windows | any app's assets and screens: screenshots night to night (visual regression), assets redrawn from words, the design system's rules held |
 
 ### 12.2 What keeps the door open now
 
 - Scenarios are data, not code: a scenario names its job, its cases, its checks and its budget (`realm/check.py`
   `Scenario`, budgets.json). A subject's own file of them (`.orkcraft/check/scenarios.json` in its repository) is the
-  next form, Orkcraft's shipped ones its first instance.
+  next form, Orkline's shipped ones its first instance.
 - The check, the call log, the explaining in words (`realm/explain.py`) and the folder for an agent know nothing of
   buildings: they read runs (`bench.Report`) and calls. New code there stays so.
 - What the Mechanic and the Alchemist propose goes through one gate: tried on a copy, measured against the baseline
@@ -467,7 +467,7 @@ evaluation platform") so that neither is heard. Nothing of §12.2 changes: the d
 
 **It starts when one of these holds:**
 
-1. the owner has used the Test bench on their own second project (not Orkcraft) for two weeks: the cheapest test;
+1. the owner has used the Test bench on their own second project (not Orkline) for two weeks: the cheapest test;
 2. after the launch, three or more outside people have asked, in an issue or a discussion, to point it at their own
    project.
 
@@ -485,7 +485,7 @@ evaluation platform") so that neither is heard. Nothing of §12.2 changes: the d
   Asset making **may be advertised to them** (vibe-coding and side-project communities, indie hackers) once it is
   built ([cut-list.md](cut-list.md) §3b) and the owner has used it on the owner's own game.
 - **The classic game developer community** (r/gamedev and its like, artists): part of it is hostile to generated
-  art. Asset making is **not advertised there**; Orkcraft is shown there as a tool for code and the chores around it.
+  art. Asset making is **not advertised there**; Orkline is shown there as a tool for code and the chores around it.
 
 The main story stays parallel coding agents; assets are a second line ("and the pictures your app needs"), never the
 first. "Many new builders" is a guess until the testers say so: they are asked whether they need icons,
@@ -541,20 +541,20 @@ finding with **Try in <its Test bench>**, or why it cannot be (no Test bench tes
 it; a road: on the map). Try hands it to the bench as a proposal (*From the Farseer, in the logs of <day> (H1)*, first,
 and kept when the Mechanic writes its own again), puts it on the virtual building — settings and prompts through the
 building's keeper, code in the bench's copy of the package (§5.3) — and runs the bench's cases; with none, it says to
-add a case set. The bench's window then has the numbers, and **Send to Orkcraft** when they are ahead (§4): a pull
+add a case set. The bench's window then has the numbers, and **Send to Orkline** when they are ahead (§4): a pull
 request only from there, shown before it goes, sent by the person, with numbers and never the logs.
 
 At night every finding of the day just read goes to its Test bench the same way (free), and the night's
 improvements (§8.4) try its settings and prompt ones first, as they try any proposal. **Code is not the night's**: an
 agent writing code with nobody there, and its cost, wait for the person's Try in the morning.
 
-## 14. Improve Orkcraft: comments on the window and fixes as pull requests (asked 2026-10-12)
+## 14. Improve Orkline: comments on the window and fixes as pull requests (asked 2026-10-12)
 
-Asked by the owner: to use Orkcraft on real work at their own machine and, from there, have **comments on any part of
+Asked by the owner: to use Orkline on real work at their own machine and, from there, have **comments on any part of
 the interface** go to the Alchemist and **what the Mechanic finds in the logs** become a fix, both written by the
-machine's own AI tool and sent to Orkcraft as pull requests.
+machine's own AI tool and sent to Orkline as pull requests.
 
-- **Comment mode** (`js/fixes.js`): the mascot's menu → *Improve Orkcraft* → **Comment mode**, or Ctrl/⌘+Shift+M
+- **Comment mode** (`js/fixes.js`): the mascot's menu → *Improve Orkline* → **Comment mode**, or Ctrl/⌘+Shift+M
   anywhere. A bar says it is on; a dashed frame follows the pointer; a press on any element opens a note beside it
   instead of doing what the press would. **Send to the Alchemist** keeps the comment with where it was: a CSS path of
   the element, its text, its markup (1,500 characters), the window it is in (`aria-label`), the building of a card,
@@ -564,7 +564,7 @@ machine's own AI tool and sent to Orkcraft as pull requests.
 - **Write the fix**: in Improve, a read day's or span's finding of kind *code* has it beside *Try in the Test bench*:
   the Mechanic writes it from the finding, its change and the hotspots it cites (never the logs themselves).
 - **A copy per fix** (`realm/work_copy.py`), in `~/.orkcraft/improve/copies/<fix>` (`ORKCRAFT_STATE_DIR`):
-  - Orkcraft runs from a **git checkout** (bin/orkcraft, `pip install -e`): a `git worktree` of it at the commit it
+  - Orkline runs from a **git checkout** (bin/orkcraft, `pip install -e`): a `git worktree` of it at the commit it
     runs — the whole repository, so the agent reads CLAUDE.md and runs the tests. Its `.claude/settings.local.json`
     (never part of the change) lets Claude Code run pytest and read git there; it may not commit or push.
   - Else: the package as installed, in a git repository of its own (no tests there; the dialog says so).
@@ -575,7 +575,7 @@ machine's own AI tool and sent to Orkcraft as pull requests.
   **Change it** / **Write it again** asks once more in the same copy with what else to do.
 - **Preview**: a written fix that changes the page (`orkcraft/gui/static`) can be shown in this window: the server
   serves the copy's page first (`server.resolve(path, preview)`) and the window reloads; **Stop preview** goes back.
-  Its Python part runs once Orkcraft takes the pull request and this machine updates.
+  Its Python part runs once Orkline takes the pull request and this machine updates.
 - **Send as a pull request…** shows what leaves the machine (the title and the body; the diff is under *What
   changes*), then sends it through the Orkcraft Improve app (§4, `github_app.send`) on a branch
   `improve/<alchemist|mechanic>-<time>`: the changed files merged three ways onto `main`, pictures as bytes. A file
@@ -583,5 +583,5 @@ machine's own AI tool and sent to Orkcraft as pull requests.
   it, from which commit, what the person said (their own words: they typed them to be sent) or the finding, what the
   agent said it did and the files.
 - **Kept on this machine, not in a town** (`realm/fixes.py`, `~/.orkcraft/improve/fixes.json`): they are about
-  Orkcraft, whichever town shows it. A fix being written when the window closed is said as one to write again.
+  Orkline, whichever town shows it. A fix being written when the window closed is said as one to write again.
 

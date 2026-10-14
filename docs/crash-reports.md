@@ -1,6 +1,6 @@
 # Crash reports
 
-When something breaks in Orkcraft, a report says **where in Orkcraft's own code** it broke, so it can
+When something breaks in Orkline, a report says **where in Orkline's own code** it broke, so it can
 be fixed. Crash reports share one answer with the [usage stats](usage-stats.md): **off until you say
 yes**, in the window, the installer or Settings (`orkcraft usage on|off`).
 
@@ -9,12 +9,12 @@ yes**, in the window, the installer or Settings (`orkcraft usage on|off`).
 - the error's type (`KeyError`, `TypeError`…) and its message with everything that could be yours
   taken out: paths, URLs, e-mail addresses and anything in quotes become `<path>`, `<url>`,
   `<email>`, `'…'`;
-- the stack: for each line, the file **in Orkcraft** (`orkcraft/gui/host.py`) or the library
+- the stack: for each line, the file **in Orkline** (`orkcraft/gui/host.py`) or the library
   (`websockets/server.py`), the function and the line number. A line in any other file — your
   project, a script of yours — is only `<other>`, with no name;
 - where it happened: an error nobody caught, on a thread, in the server's loop, in a command of the
   window, in the town's clock, or in the window's page;
-- the Orkcraft version, the OS (darwin · linux · windows), the Python version, and the same random
+- the Orkline version, the OS (darwin · linux · windows), the Python version, and the same random
   install id as the usage stats.
 
 **Never sent:** local variables, your code, prompts, what the orks or you wrote, logs, file, project
@@ -31,7 +31,7 @@ is how we see the share of runs of each version that ended well.
 
 ## Where it goes
 
-To Orkcraft's own proxy, the same Cloudflare Worker as the usage stats
+To Orkline's own proxy, the same Cloudflare Worker as the usage stats
 ([tools/usage-worker/](../tools/usage-worker/), `POST /v1/crash`). It checks every field again,
 keeps only the ones above, drops your IP address and passes the report to
 [Sentry](https://sentry.io/), in its EU data centre (Frankfurt).

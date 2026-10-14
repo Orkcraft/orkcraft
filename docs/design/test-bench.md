@@ -273,9 +273,9 @@ Agents are started through `jobs.run_work`, so Stop all stops them (`realm/halt.
   a written one says *not read yet* until **I read it: it counts**. **Write a case** asks one agent.
 - **Reviews.** Tech: architect, AI engineer, AI researcher (the last run in their prompt). UX: product
   manager, product designer. Product: product manager, architect, each with the AHA moment shown above
-  the findings. Every reviewer is one AI tool call that only reads Orkcraft's own source and answers in
+  the findings. Every reviewer is one AI tool call that only reads Orkline's own source and answers in
   JSON (`realm/bench_review.py`), kept in `.orkcraft/bench/reviews/<type>/<tab>.json` with the
-  Orkcraft version: a newer version marks it to review again.
+  Orkline version: a newer version marks it to review again.
 - **On open.** A building whose type has no review kept gets all seven reviewers at once, the first
   time its bench opens (what the operator asked for); after that only **Review again** starts them.
 - **Copying for an analysis.** A run's terminal keeps to its last four lines; **Copy** takes every line it
@@ -283,7 +283,7 @@ Agents are started through `jobs.run_work`, so Stop all stops them (`realm/halt.
   each side's model, every check, how it went, its decisions on the clock, its check's last lines and its
   report. On the summary of cases it gives the building against the bare tool, case by case.
 - **Make tasks.** The ticked findings of any tab go to the Agent pool picked, one task each, with the
-  reviewer, the tab, the finding, where, its severity and Orkcraft's version.
+  reviewer, the tab, the finding, where, its severity and Orkline's version.
 
 ## 10. As built: the building's own goal and cases (realm/lab_cases.py, gui/lab_runs.py)
 

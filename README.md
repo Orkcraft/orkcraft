@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo-dark.png">
     <source media="(prefers-color-scheme: light)" srcset="docs/img/logo-light.png">
-    <img src="docs/img/logo-dark.png" alt="Orkcraft" width="480">
+    <img src="docs/img/logo-dark.png" alt="Orkline" width="480">
   </picture>
 </p>
 
@@ -19,7 +19,7 @@ Running three or five agents at once gets messy fast: which one is working, whic
 waiting for you, what did they change, and how much has this cost today? Terminals and tabs don't
 answer that.
 
-**Orkcraft opens your project as a town.** Every window is a **building** with an **ork** inside — an
+**Orkline opens your project as a town.** Every window is a **building** with an **ork** inside — an
 agent, a script or a chain of data steps. Buildings send **carts** to each other along **roads**, so
 work flows on its own. You see the whole town at a glance:
 
@@ -28,14 +28,14 @@ work flows on its own. You see the whole town at a glance:
 - 🪙 **The HUD shows what you spend**, by building and purpose, with budgets that stop model calls.
 - 🛤 **Roads do the orkestration.** Mail, GitHub, a calendar or a dropped file starts work; a task
   goes to the Agent pool, a branch to Branches & PRs, a result to the Review gate where you approve it.
-- 🛡 **Safe by default.** The Warder hook blocks `rm -rf`, secret reads and force-pushes; Orkcraft
+- 🛡 **Safe by default.** The Warder hook blocks `rm -rf`, secret reads and force-pushes; Orkline
   snapshots files before an ork touches them; **Stop all** halts everything.
 - 🧰 **Your tools, your login.** It talks to models only through the CLIs you already have —
   [Claude Code](https://claude.com/claude-code) (`claude`), [OpenAI Codex](https://github.com/openai/codex)
   (`codex`) and Google Antigravity (`agy`). No keys, no accounts, no servers.
 
 > [!WARNING]
-> **Alpha.** Orkcraft is used daily and has ~1,300 tests, but features and file formats still change
+> **Alpha.** Orkline is used daily and has ~1,300 tests, but features and file formats still change
 > between versions. Try it on a project you have committed or backed up, and keep the Warder on.
 > Bug reports and ideas are very welcome in [Issues](https://github.com/Orkcraft/orkcraft/issues).
 
@@ -44,23 +44,24 @@ work flows on its own. You see the whole town at a glance:
 ```bash
 brew tap orkcraft/orkcraft https://github.com/Orkcraft/orkcraft
 brew install orkcraft/orkcraft/orkcraft
-orkcraft --demo        # a sandbox town with simulated data: nothing real is touched, no model is called
+orkline --demo         # a sandbox town with simulated data: nothing real is touched, no model is called
 ```
 
 Without Homebrew, on macOS or Linux: `curl -fsSL https://orkcraft.dev/install.sh | sh`
-(it puts uv, a Python and Orkcraft in place and logs each step; [docs/install.md](docs/install.md)), or
+(it puts uv, a Python and Orkline in place and logs each step; [docs/install.md](docs/install.md)), or
 `pipx install "orkcraft[gui] @ git+https://github.com/Orkcraft/orkcraft"` (Python 3.11+ and git).
+The command is `orkline`; `orkcraft`, its name before the rename, works the same.
 
 Then in a real project:
 
 ```bash
 cd your-project
-orkcraft hooks install   # the session log + the Warder guard in .claude/settings.json (reversible)
-orkcraft                 # open the town in a window; `orkcraft gui --browser` opens it in a tab
+orkline hooks install    # the session log + the Warder guard in .claude/settings.json (reversible)
+orkline                  # open the town in a window; `orkline gui --browser` opens it in a tab
 ```
 
 Optional: `claude`, `codex` and/or `agy` on your `PATH` for agents (building new buildings needs
-`claude`), and `gh` for GitHub events. Orkcraft updates itself: a critical fix installs when the town
+`claude`), and `gh` for GitHub events. Orkline updates itself: a critical fix installs when the town
 opens, any other update is offered ([docs/updates.md](docs/updates.md)).
 
 Worth knowing: `/` or `Ctrl+K` puts you in the Warchief's line (`/build`, `/road`, `/orkspace`,
@@ -128,13 +129,13 @@ units are attacked.
 ## Safety
 
 - **Your CLIs, your login.** Models are called as `claude -p …` / `codex exec …` / `agy --print …`.
-  Orkcraft has no API keys, accounts or servers, and sends nothing anywhere on its own. A building
+  Orkline has no API keys, accounts or servers, and sends nothing anywhere on its own. A building
   talks to the network only if you configure it to.
-- **🛡 Warder** is a Claude Code and Codex `PreToolUse` hook (`orkcraft hooks install`): it denies
+- **🛡 Warder** is a Claude Code and Codex `PreToolUse` hook (`orkline hooks install`): it denies
   catastrophic or secret-leaking calls (`rm -rf /`, `curl … | sh`, reading `.env` / `.ssh`,
   force-push…) and asks about destructive ones (Codex cannot ask yet, so there it denies and says
   why). `agy` has no such hook yet.
-- **Snapshots.** Before and after an ork works in a project, Orkcraft keeps a snapshot of its files
+- **Snapshots.** Before and after an ork works in a project, Orkline keeps a snapshot of its files
   without touching your branch, index or git log; a land's History takes them back.
 - **Scripts** run as `python3 -I` or `bash` with no shell interpolation and a timeout; handler
   scripts run only after review and are held again if the file changes.
@@ -143,11 +144,11 @@ units are attacked.
 - **Usage stats are off until you say yes** — anonymous feature counts only, never code, prompts,
   paths or names ([docs/usage-stats.md](docs/usage-stats.md)); `DO_NOT_TRACK=1` always stops them.
 
-Orkcraft runs agents on your machine. Read what a building does before you let it loose.
+Orkline runs agents on your machine. Read what a building does before you let it loose.
 
 ## How it's designed
 
-Every feature of Orkcraft started as a design note: the problem, the options, what was decided and
+Every feature of Orkline started as a design note: the problem, the options, what was decided and
 why, and an *As built* section once it shipped. A few worth reading:
 
 - [Roads and orks](docs/design/roads-and-orcs.md) — the core model: buildings, carts, and why the
@@ -163,7 +164,7 @@ and flow — is in [docs/reference.md](docs/reference.md), and what comes next i
 
 ## Where things live
 
-Inside the project it runs in, Orkcraft keeps only local state (add these to your `.gitignore`):
+Inside the project it runs in, Orkline keeps only local state (add these to your `.gitignore`):
 
 - `.orkcraft.json` — the Town file: maps, buildings, roads, garrisons, budgets
 - `.orkcraft/` — logs, sessions, per-building state and **the camp's own git** (branch `camp`) that
@@ -175,8 +176,8 @@ deeds are per machine in `~/.config/orkcraft/settings.json`.
 
 ## Contributing
 
-Orkcraft is young and built in the open — ideas, bug reports and pull requests are welcome.
-The quickest way to help is to try `orkcraft --demo` or a real project and
+Orkline is young and built in the open — ideas, bug reports and pull requests are welcome.
+The quickest way to help is to try `orkline --demo` or a real project and
 [open an issue](https://github.com/Orkcraft/orkcraft/issues) with what confused you or broke.
 Before writing code, read [CLAUDE.md](CLAUDE.md): it has the wording rules (ork, orkestration) and
 where code goes.
@@ -185,7 +186,7 @@ where code goes.
 git clone https://github.com/Orkcraft/orkcraft && cd orkcraft
 python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 .venv/bin/pytest -q -n auto        # the tests in parallel; the GUI's are driven in Chromium
-.venv/bin/orkcraft --demo
+.venv/bin/orkline --demo
 ```
 
 Every pull request and every push to `main` runs the tests on GitHub Actions.
@@ -205,7 +206,7 @@ orkcraft/
 
 ## Author
 
-Orkcraft is made by **Vadim Sidoryk** ([@VadimSidoryk](https://github.com/VadimSidoryk)) — first
+Orkline is made by **Vadim Sidoryk** ([@VadimSidoryk](https://github.com/VadimSidoryk)) — first
 as a tool for running the author's own agents, now for everyone who runs more than one. Much of its
 code was written by coding agents under the author's direction; the decisions are in the design notes.
 

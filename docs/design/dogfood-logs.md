@@ -1,6 +1,6 @@
 # Design — logs for real use: what is kept, what to switch on, what is missing
 
-Status: written 2026-10-12. The owner starts building a game with Orkcraft and wants every insight from real use:
+Status: written 2026-10-12. The owner starts building a game with Orkline and wants every insight from real use:
 technical logs, product analytics, and logs to analyse the AI and its orkestration. §1 is what the code keeps today
 (checked in the code, not assumed); §2 is what to switch on before starting; §3 is what is missing, with priorities.
 
@@ -27,7 +27,7 @@ technical logs, product analytics, and logs to analyse the AI and its orkestrati
 |---|---|---|
 | **every model call in full**: prompt, whole output, errors, the tool's own trail (Claude Code's transcript with its thinking and tool calls; agy's brain folder), seconds, exit code, cost, tokens | `.orkcraft/logs/<day>/<building>/calls.jsonl` and a gzipped file per call (`realm/call_log.py`) | **a day is cleared the next morning** unless asked for or 👎'd that day, then kept 14 days (`realm/day_log.py`), unless the switch of §2 is on |
 | spend per call: building, purpose, model, tokens, $ | `.orkcraft/spend/calls.jsonl` (`sources/telemetry.py`) | |
-| the CLI sessions Orkcraft started, with their transcript paths | `.orkcraft/sessions.jsonl` (`hooks/session.py`) | |
+| the CLI sessions Orkline started, with their transcript paths | `.orkcraft/sessions.jsonl` (`hooks/session.py`) | |
 | the Agent pool steward's decisions: hires, reworks, waits | `decisions.jsonl` in the analytics zip | |
 | the 👎 with what the person said | `dislikes.jsonl` in the analytics zip (`.orkcraft/feedback`) | |
 | the Council's reviews, the Elders' advice, the night's improvements | `.orkcraft/council/reviews.jsonl`, `elders.jsonl`, `improve.jsonl`, `days/` | |
@@ -63,4 +63,4 @@ buckets, made for strangers' privacy, not for the owner's own insight).
 | **The install funnel for Homebrew and pipx**, not only the `sh` installer | the launch plan's week 2 measures installs; most people will use brew or pipx | **P1**, before the testers |
 
 **Not needed:** a separate notes feature (the 👎 with a note does it), session recording of the window (the testers'
-own screen recordings do it), a dashboard of the logs inside Orkcraft (the analytics zip and an agent do it).
+own screen recordings do it), a dashboard of the logs inside Orkline (the analytics zip and an agent do it).

@@ -9,7 +9,7 @@ External listeners), [warchief-line-and-cards.md](warchief-line-and-cards.md) §
 ## 1. Why
 
 - **The Work panel takes half the screen** (`layout.css` `.gui-panel`: `width: 50%`, at least 380 px) and gives
-  little for it. An open building hides half the town, and the town at a glance is what Orkcraft promises.
+  little for it. An open building hides half the town, and the town at a glance is what Orkline promises.
 - **Setting a building up is heavy.** Only External listeners asks its first question in the line; every other type
   opens its whole window when it is raised.
 

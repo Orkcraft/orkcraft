@@ -343,7 +343,7 @@ mark or a row lights the building's neighbours, dims the rest and says at the fo
 - *An answer*: the tile says "Answered: Yes. The ork goes on." at once, and the news line "Answered: Yes",
   till the town's update takes the question away.
 - *How many wait*: on the app's icon where the phone shows a badge (the Badging API of an installed app), and in
-  the page's title, "(3) Orkcraft".
+  the page's title, "(3) Orkline".
 - *A card's trail*: after a task or a note is written on the phone, the widget keeps for 10 minutes where it
   went ("It went down the road to Daily Brief.", or that it waits in To Do) and each change of the buildings
   down the road since ("Daily Brief: at work."). It says what those buildings do, not that it is this card.
@@ -394,7 +394,7 @@ fragment, so the app the person adds opens with it once, keeps it and wipes it f
 same each time it shows, so the app can be added later too. Until the
 app is added that address holds the phone's key, and the page says so.
 
-**The computer stays awake.** A town asleep answers no phone and its orks stop, so while Orkcraft is open
+**The computer stays awake.** A town asleep answers no phone and its orks stop, so while Orkline is open
 the computer does not sleep by itself (`gui/awake.py`; Town settings → Keep the computer awake, on by
 default): `caffeinate -i` on macOS, `systemd-inhibit --what=sleep` on Linux, `SetThreadExecutionState` on
 Windows. The screen still turns off, and a laptop's closed lid still sleeps it; no phone wakes it.

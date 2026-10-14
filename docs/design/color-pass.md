@@ -68,7 +68,7 @@ and five seconds with a tester ("what needs you here?"). The variant where the a
 1. **The biomes are a task of their own, P1.** Each building has a header per biome (`header-meadow`, `-dust`, `-ice`,
    `-lava`, `-void`); each is compared with its biome's ground, in grey and squinted, as in §3. The P0 pass touches
    only Camp · forest, the biome of the demo and the GIF.
-2. **Almendra SC stays for the product's name only:** the wordmark "Orkcraft" is a picture of a name, not the
+2. **Almendra SC stays for the product's name only:** the wordmark "Orkline" is a picture of a name, not the
    interface's face. Every other display text is Pixelify Sans; text Titillium Web; code JetBrains Mono.
 
 ## 6. The yard's frame: ground, not a fence (P1)
@@ -422,17 +422,17 @@ below; [audience.md](audience.md) §2a).
 asset pack, not with generated images. It bears out [open-questions.md](open-questions.md) Q11's worry: this community
 reads generated art as slop, and a developer is quick to see it.
 
-**Today:** Orkcraft's sprites were made with an image generator, then reduced to the pixel grid by hand
+**Today:** Orkline's sprites were made with an image generator, then reduced to the pixel grid by hand
 ([sprites.md](sprites.md), "how the done sprites were made").
 
 **Decided:**
 
 1. **Generated images stay references:** the palette, the silhouettes, the rules (§9). They are never shipped, nor
-   shown in the README, the landing page or a post as Orkcraft's art.
+   shown in the README, the landing page or a post as Orkline's art.
 2. **What ships is made by people:**
    - **a free pack as the base** (ground, paths, trees, fences, props), **CC0 first** (no conditions), CC-BY with its
      credit in `NOTICE`; **no share-alike or GPL art**, so the art's terms never mix with Apache 2.0;
-   - **a pixel artist commissioned for what is Orkcraft's own:** the three cover kits (hall, open ground, tower or
+   - **a pixel artist commissioned for what is Orkline's own:** the three cover kits (hall, open ground, tower or
      gate) with each core building's facade and crest (§6a–6b), the orks by role
      ([ork-icons.md](ork-icons.md)), the carts and their loads ([town-readability.md](town-readability.md)). The
      generated references of §9d are the artist's brief. The artist credited in the README and on the landing page.
@@ -456,7 +456,7 @@ palette across a large series. Its page could not be read from here; the series'
 - **redistributing them, altered or not, is forbidden;** the author asks that paid packs **not be put in a public
   GitHub repository** (a private one is fine; the free packs are fine in public).
 
-**So the pack as bought cannot ship:** Orkcraft's repository is public and its wheel carries every sprite to every
+**So the pack as bought cannot ship:** Orkline's repository is public and its wheel carries every sprite to every
 person who installs it, which is redistribution; and "a videogame" may not cover a developer tool.
 
 **What follows, for any artist or pack:**
@@ -468,7 +468,7 @@ person who installs it, which is redistribution; and "a videogame" may not cover
    no one can make a building that matches the town. It costs more than an ordinary commission; it is said in the
    first message.
 3. **Krishna Palacio is a good first artist to ask:** the style the owner chose, the orks already drawn, a series
-   kept in one palette. The ask: a commission for Orkcraft (five core buildings, nine orks by role, carts and loads,
+   kept in one palette. The ask: a commission for Orkline (five core buildings, nine orks by role, carts and loads,
    [town-readability.md](town-readability.md)) in the Minifantasy style, under CC-BY 4.0, or a written licence for
    chosen existing Orc Kingdom and RTS Orcs pieces to ship in an open-source tool's public repository.
 4. **If no licence fits:** a CC0 pack for the ground and props, and another pixel artist on the same terms.
@@ -491,7 +491,7 @@ testers instead of holding the launch. The launch waits for the art only if the 
 
 **What it may cost** (typical indie pixel-art rates as known, not a quote; the artist's own price decides):
 
-| piece | typical | Orkcraft's brief |
+| piece | typical | Orkline's brief |
 |---|---|---|
 | a small animated character (idle, walk, work, 4–6 frames each) | $80–250 | **one ork body animated, nine roles as heads and tools on it:** $300–600 for the body, $20–50 a role → ≈ $500–1,000 instead of ≈ $1,500–2,000 for nine separate |
 | a building, 64–128 px, with a working and an idle state | $80–200 | five core buildings ≈ $400–1,000 |
