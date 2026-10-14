@@ -23,7 +23,7 @@ import threading
 import urllib.request
 from dataclasses import asdict
 
-from orkcraft.realm import feeds, feeds_agent, lexicon, logins, paths, quickadd, sources_link
+from orkcraft.realm import feeds, feeds_agent, lexicon, logins, paths, quickadd, sources_link, watch
 from orkcraft.realm.quickadd import Refused, Verified
 
 
@@ -442,7 +442,8 @@ class Adding:
                     f"in Claude, {c.status}" if c else
                     {"github": "gh or a token", "gitlab": "glab or a token", "gmail": "an app password",
                      "discord": "a bot"}.get(s.id, "a token"))
-            out.append({"id": s.id, "label": s.label, "mark": mark, "ready": mark.startswith("✓"), "group": s.group})
+            out.append({"id": s.id, "label": s.label, "mark": mark, "ready": mark.startswith("✓"), "group": s.group,
+                        "first": s.id in quickadd.FIRST})
         return out
 
     def through_claude(self) -> list[dict]:
@@ -456,8 +457,8 @@ class Adding:
 
     @staticmethod
     def groups() -> list[dict]:
-        """The picker's groups in their order, each with its word; one with no service does not show."""
-        have = {s.group for s in quickadd.SERVICES.values()}
+        """More sources' groups in their order, each with its word; one with no service there does not show."""
+        have = {s.group for s in quickadd.SERVICES.values() if s.id not in quickadd.FIRST}
         return [{"id": g, "label": lexicon.term(f"source_group.{g}")} for g in quickadd.GROUPS if g in have]
 
     def _want_now(self) -> str:
@@ -512,6 +513,27 @@ class Adding:
             out.update(says=self.plan.says, found=self.found, line=self.plan.feed or "", every=every,
                        listens_for=str(self.plan.changes.get("intent") or self.w.intent or ""))
         return out
+
+
+def plain(worker, kind: str, value: str) -> str:
+    """The tower's own sources, no login: a schedule (`cron`: `every 15m`, `hourly`, `daily 05:00`, a 5-field
+    cron) or a webhook (`webhook`: the port it listens on, on 127.0.0.1)."""
+    value = " ".join(value.split())
+    if kind == "cron":
+        if not watch.schedule_ok(value):
+            raise Refused("Not a schedule — like every 15m, hourly, daily 05:00 or a 5-field cron")
+        changes: dict = {"cron": value}
+    elif kind == "webhook":
+        port = int(value) if value.isdigit() else 0
+        if not 1024 <= port <= 65535:
+            raise Refused("A port is a number from 1024 to 65535")
+        changes = {"webhook_port": port}
+    else:
+        raise Refused(f"{kind!r} is not a source")
+    if not worker.save_config(changes):
+        raise Refused("Not saved")
+    worker.restart()
+    return kind
 
 
 def remove(worker, source: str) -> bool:

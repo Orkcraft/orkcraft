@@ -75,6 +75,9 @@ GITLAB_TOKEN_PAGE = "https://{host}/-/user_settings/personal_access_tokens?name=
 # The groups of Add a source's services, in their order (their words: lexicon `source_group.<id>`). A group
 # with no service yet (a calendar) does not show.
 GROUPS = ("messengers", "mail", "code", "calendar", "other")
+# What a new person is offered first (docs/design/cut-list.md §2): GitHub, beside the tower's own schedule and
+# webhook (core/workers/watchtower_add.py `plain`). Every other service stays one click away, under More sources.
+FIRST = ("github",)
 
 SERVICES: dict[str, Service] = {s.id: s for s in (
     Service("github", "GitHub",

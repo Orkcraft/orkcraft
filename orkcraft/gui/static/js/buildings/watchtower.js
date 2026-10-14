@@ -263,31 +263,39 @@ export function setupAsk(b) {
   return `${b.title} is going up. What should it listen to?`;
 }
 
-/** One press: a service Claude Code has a connector for, heard through it as it comes (every 30 min, at most $0.50
- *  a day, sorting each message); everything else later in the building. */
+/** GitHub, a schedule or a webhook first, in the tower's window (docs/design/cut-list.md §2); under More sources,
+ *  one press for a service Claude Code has a connector for, heard through it as it comes (every 30 min, at most
+ *  $0.50 a day, sorting each message). */
 export function Setup({ id, done }) {
   const [s, setS] = useState(null);
+  const [more, setMore] = useState(false);
   useEffect(() => {
+    if (!more) return undefined;
     let live = true;
     const look = () => act(id, "setup").then((x) => { if (live) setS(x); }, () => {});
     look();
     const t = setInterval(look, 1500);
     return () => { live = false; clearInterval(t); };
-  }, [id]);
-  if (!s) return html`<p class="ok-font-status ok-tone-muted">${say("Asking Claude Code which connectors it has…")}</p>`;
-  if (s.added) {
+  }, [id, more]);
+  if (s && s.added) {
     return html`<p class="ok-font-status ok-tone-ok">✓ ${say(`Listening to ${s.label}. It looks every 30 min and sorts each message: how important, and whether an agent can answer it.`)}</p>
       <span><button class="ok-btn primary" onClick=${done}>${say("Good")}</button></span>`;
   }
-  if (s.busy) return html`<p class="ok-font-status ok-tone-muted" role="status">${say(s.busy)}</p>`;
+  const first = html`<div class="gui-setup__ways">
+      <button class="ok-btn primary" onClick=${() => { done(); openBuilding(id); }}>${say("Add a source")}</button>
+      <button class="ok-btn" aria-expanded=${more} onClick=${() => setMore(!more)}>${say("More sources")}</button></div>
+    <p class="ok-font-status ok-tone-muted">${say("GitHub, a schedule or a webhook, in its window.")}</p>`;
+  if (!more) return first;
+  if (!s) return html`${first}<p class="ok-font-status ok-tone-muted">${say("Asking Claude Code which connectors it has…")}</p>`;
+  if (s.busy) return html`${first}<p class="ok-font-status ok-tone-muted" role="status">${say(s.busy)}</p>`;
   const ways = s.sources.filter((x) => x.status === "connected");
-  return html`${s.error && html`<p class="ok-font-status ok-tone-error" role="alert">✗ ${say(s.error)}</p>`}
+  return html`${first}${s.error && html`<p class="ok-font-status ok-tone-error" role="alert">✗ ${say(s.error)}</p>`}
     ${ways.length ? html`<div class="gui-setup__ways">
         ${ways.map((x) => html`<button key=${x.service} class="ok-btn" onClick=${() => act(id, "add_quick", { service: x.service }).catch(() => {})}>
           ${say(x.label)}</button>`)}</div>
         <p class="ok-font-status ok-tone-muted">${say("Through Claude's connector, no token. Each look is a model run you pay for (about $0.05).")}</p>`
       : html`<p class="ok-font-status ok-tone-muted">${say(s.asked
-        ? "Claude Code has no connector for Gmail, Slack, Jira or Confluence here. Connect one with /mcp in Claude Code, or pick a source in its settings."
+        ? "Claude Code has no connector for Gmail, Slack, Jira or Confluence here. Connect one with /mcp in Claude Code."
         : "Asking Claude Code which connectors it has…")}</p>`}`;
 }
 

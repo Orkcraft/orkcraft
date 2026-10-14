@@ -78,6 +78,9 @@
 .gui-add__steps .is-done { color: var(--success); }
 /* The picker's services in groups (realm/quickadd.py GROUPS): Messengers, Mail, Code, Calendar, Other. */
 .gui-add__group { display: flex; flex-direction: column; gap: var(--space-1); }
+/* More sources (cut-list.md §2): what a new person is not offered first, one click away. */
+.gui-add__more > summary { cursor: pointer; }
+.gui-add__more[open] > summary { margin-bottom: var(--space-2); }
 .gui-add__group-title { margin: 0; font: 600 12px/16px var(--ok-font); color: var(--ink); }
 .gui-add__tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: var(--space-2); }
 .gui-add__tile { appearance: none; border: 0; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: var(--space-1);

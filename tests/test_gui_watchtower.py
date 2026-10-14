@@ -136,7 +136,7 @@ def test_the_closed_card_previews_the_newest_unread_signal(fake_repo, gh):
 
 
 def test_add_a_source_shows_its_services_in_groups():
-    """The picker's groups in their order, each with its word from the glossary; Calendar has no service yet."""
+    """More sources' groups in their order, each with its word from the glossary; Calendar has no service yet."""
     from orkcraft.core.workers.watchtower_add import Adding
     from orkcraft.realm import lexicon, quickadd
     groups = Adding.groups()
@@ -145,3 +145,28 @@ def test_add_a_source_shows_its_services_in_groups():
     assert {s.id for s in quickadd.SERVICES.values() if s.group == "messengers"} == {"slack", "discord"}
     assert {s.id for s in quickadd.SERVICES.values() if s.group == "code"} == {"github", "gitlab"}
     assert all(s.group in quickadd.GROUPS for s in quickadd.SERVICES.values())
+
+
+def test_a_new_person_is_offered_github_a_schedule_and_a_webhook_first(fake_repo, gh):
+    """cut-list.md §2: GitHub first, beside the tower's own schedule and webhook; every other service stays under
+    More sources. A schedule or a webhook is saved at once, no login, and checked first."""
+    from orkcraft.realm import quickadd
+    _tower(fake_repo)
+    host = _host(fake_repo)
+    w = host.town.worker("tower")
+    act = lambda name, **args: host.command("act", {"id": "tower", "act": name, "args": args})
+    act("add_open")
+    services = w.adding.services()
+    assert [s["id"] for s in services if s["first"]] == list(quickadd.FIRST) == ["github"]
+    assert {s["id"] for s in services if not s["first"]} >= {"slack", "gmail", "jira", "confluence", "figma"}
+    with pytest.raises(CommandError):
+        act("add_plain", kind="cron", value="now and then")
+    with pytest.raises(CommandError):
+        act("add_plain", kind="webhook", value="80")
+    with pytest.raises(CommandError):
+        act("add_plain", kind="slack", value="x")
+    assert act("add_plain", kind="cron", value="every 15m") == "cron" and w.config["cron"] == "every 15m"
+    assert act("add_plain", kind="webhook", value="8787") == "webhook" and w.config["webhook_port"] == 8787
+    assert w.adding.view() is None                                          # the picker closed: the source is added
+    assert {x["id"] for x in host.detail("tower")["data"]["listed"]} >= {"github", "cron", "webhook"}
+    host.close()

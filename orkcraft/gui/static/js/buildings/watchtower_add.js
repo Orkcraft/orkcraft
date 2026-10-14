@@ -6,9 +6,10 @@
 // A service Claude Code has a connection for offers a second way at step 1: Claude's connection, no token, a
 // paid look every 30 min (§7.3); its step 2 asks what to listen for, how often and the most a day.
 // Past the picker, ← Back stands in the panel's top right corner (js/setup.js), not in a step's foot; Add
-// opens the tower's Info (§4.4); on the picker it goes back to the messages. The picker's services stand in
-// groups: Through Claude first — the services Claude Code has a connector (MCP) for, each straight to Claude's
-// connection (realm/feeds_agent.py), no token — then Messengers, Mail, Code, Calendar, Other with a token of your own.
+// opens the tower's Info (§4.4); on the picker it goes back to the messages. The picker offers GitHub, a schedule and
+// a webhook first (docs/design/cut-list.md §2); under More sources: Through Claude — the services Claude Code has a
+// connector (MCP) for, each straight to Claude's connection (realm/feeds_agent.py), no token — then Messengers,
+// Mail, Code, Calendar, Other with a token of your own.
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say } from "../link.js";
@@ -66,30 +67,75 @@ function ThroughClaude({ id, a }) {
   </section>`;
 }
 
-function Picker({ id, a }) {
+/** A tile of a source offered first: a service's (GitHub) opens its steps; the tower's own schedule and webhook
+ *  open one field under the tiles. */
+function Tile({ id, s }) {
+  return html`<button class="gui-add__tile" onClick=${() => act(id, "add_start", { service: s.id }).catch(() => {})}>
+    <span class="gui-add__tile-top"><${Glyph} service=${s.id} />${s.label}</span>
+    <span class=${cls("gui-add__mark", { "ok-tone-ok": s.ready })}>${s.mark}</span></button>`;
+}
+
+const PLAIN = {
+  cron: { label: "Schedule", mark: "no login", field: "When", placeholder: "every 15m, hourly, daily 05:00",
+          about: "The tower sends a signal on this schedule: a road from it starts work at that time." },
+  webhook: { label: "Webhook", mark: "no login", field: "Port", placeholder: "8787",
+             about: "The tower listens for POSTs on http://127.0.0.1:<port>/ on this machine; each one is a signal." },
+};
+
+function Plain({ id, kind, saved }) {
+  const p = PLAIN[kind];
+  const [v, setV] = useState("");
+  const add = () => v.trim() && act(id, "add_plain", { kind, value: v.trim() }).then(saved, () => {});
+  return html`<div class="gui-add__field">
+    <p class="ok-tone-muted gui-add__sub">${say(p.about)}</p>
+    <label class="gui-add__label" for=${`add-${kind}-${id}`}>${say(p.field)}</label>
+    <div class="gui-head">
+      <input id=${`add-${kind}-${id}`} class="ok-input" style="flex: 1; width: auto" autofocus value=${v} placeholder=${p.placeholder}
+        onInput=${(e) => setV(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && add()} />
+      <button class="ok-btn primary" disabled=${!v.trim()} onClick=${add}>${say(`Add ${p.label.toLowerCase()}`)}</button>
+    </div></div>`;
+}
+
+/** The picker. Offered first (docs/design/cut-list.md §2): GitHub, a schedule, a webhook — and a file, which
+ *  goes to Drop file here. Every other service, a pasted link and Claude's connectors wait under More sources. */
+function Picker({ id, a, saved }) {
   const [link, setLink] = useState("");
+  const [plain, setPlain] = useState("");
   const go = () => link.trim() && act(id, "add_link", { link: link.trim() }).catch(() => {});
+  const services = a.services || [];
   return html`<div class="gui-add">
     <div>
       <h3 class="gui-add__title">Add a source</h3>
       <p class="ok-tone-muted gui-add__sub">Say where to listen. One paste at most, then pick what to hear.</p>
     </div>
-    <${ThroughClaude} id=${id} a=${a} />
-    <label class="gui-add__label" for=${`add-link-${id}`}>Or paste a link to what you want to hear</label>
-    <div class="gui-head">
-      <input id=${`add-link-${id}`} class="ok-input" style="flex: 1; width: auto" value=${link}
-        placeholder=${say("a repo, a Slack channel, a Jira issue, a Figma file, an e-mail address")}
-        onInput=${(e) => setLink(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && go()} />
-      <button class="ok-btn primary" disabled=${!link.trim()} onClick=${go}>Continue</button>
+    <div class="gui-add__tiles">
+      ${services.filter((s) => s.first).map((s) => html`<${Tile} key=${s.id} id=${id} s=${s} />`)}
+      ${Object.entries(PLAIN).map(([kind, p]) => html`<button key=${kind} class="gui-add__tile" aria-pressed=${plain === kind}
+          onClick=${() => setPlain(plain === kind ? "" : kind)}>
+        <span class="gui-add__tile-top"><${Glyph} service=${kind} />${say(p.label)}</span>
+        <span class="gui-add__mark">${say(p.mark)}</span></button>`)}
     </div>
-    <span class="gui-add__label">Or pick a service, with a token of your own</span>
-    ${(a.groups || []).map((g) => html`<section key=${g.id} class="gui-add__group" aria-label=${say(g.label)}>
-      <h4 class="gui-add__group-title">${say(g.label)}</h4>
-      <div class="gui-add__tiles">
-        ${(a.services || []).filter((s) => s.group === g.id).map((s) => html`<button key=${s.id} class="gui-add__tile" onClick=${() => act(id, "add_start", { service: s.id }).catch(() => {})}>
-          <span class="gui-add__tile-top"><${Glyph} service=${s.id} />${s.label}</span>
-          <span class=${cls("gui-add__mark", { "ok-tone-ok": s.ready })}>${s.mark}</span></button>`)}
-      </div></section>`)}
+    ${plain && html`<${Plain} key=${plain} id=${id} kind=${plain} saved=${saved} />`}
+    <p class="ok-tone-muted gui-add__sub">${say("A file? Drop it on Drop file here: it sorts what came and sends it on.")}</p>
+    <details class="gui-add__more">
+      <summary class="gui-add__label">${say("More sources")}</summary>
+      <div class="gui-add">
+        <${ThroughClaude} id=${id} a=${a} />
+        <label class="gui-add__label" for=${`add-link-${id}`}>Or paste a link to what you want to hear</label>
+        <div class="gui-head">
+          <input id=${`add-link-${id}`} class="ok-input" style="flex: 1; width: auto" value=${link}
+            placeholder=${say("a repo, a Slack channel, a Jira issue, a Figma file, an e-mail address")}
+            onInput=${(e) => setLink(e.target.value)} onKeyDown=${(e) => e.key === "Enter" && go()} />
+          <button class="ok-btn primary" disabled=${!link.trim()} onClick=${go}>Continue</button>
+        </div>
+        <span class="gui-add__label">Or pick a service, with a token of your own</span>
+        ${(a.groups || []).map((g) => html`<section key=${g.id} class="gui-add__group" aria-label=${say(g.label)}>
+          <h4 class="gui-add__group-title">${say(g.label)}</h4>
+          <div class="gui-add__tiles">
+            ${services.filter((s) => s.group === g.id && !s.first).map((s) => html`<${Tile} key=${s.id} id=${id} s=${s} />`)}
+          </div></section>`)}
+      </div>
+    </details>
     <p class="ok-tone-muted gui-add__sub">Tokens stay on this machine, in Logins. No model sees them.</p>
   </div>`;
 }
@@ -290,7 +336,7 @@ export function AddPane({ id, d, done, saved }) {
   };
   if (!a) return html`<p class="ok-tone-muted">${say("Opening…")}</p>`;
   return html`<div class="gui-add__pane" onKeyDown=${keys}>
-    ${a.step === "pick" ? html`<${Picker} id=${id} a=${a} />`
+    ${a.step === "pick" ? html`<${Picker} id=${id} a=${a} saved=${saved || done} />`
       : a.step === "login" ? html`<${Login} key=${a.service} id=${id} a=${a} />`
       : a.step === "what" && a.via ? html`<${Ask} key=${`${a.service}-claude`} id=${id} a=${a} />`
       : a.step === "what" ? html`<${What} key=${a.service} id=${id} a=${a} />`

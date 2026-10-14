@@ -269,6 +269,14 @@ def _add_close(w, args: dict) -> None:
 
 
 @_adding
+def _add_plain(w, args: dict) -> str:
+    """A schedule or a webhook, offered first beside GitHub (cut-list.md §2): saved at once, no login."""
+    kind = watchtower_add.plain(w, text(args, "kind", 20), text(args, "value", 200))
+    w.adding.close()
+    return kind
+
+
+@_adding
 def _remove(w, args: dict) -> bool:
     return watchtower_add.remove(w, text(args, "source", 2000))
 
@@ -296,6 +304,6 @@ ACTS = {"add_open": _add_open, "add_link": _add_link, "add_start": _add_start, "
         "add_use": _add_use, "add_files": _add_files, "add_what": _add_what, "add_save": _add_save,
         "add_back": _add_back, "add_close": _add_close, "add_again": _add_again, "add_claude": _add_claude,
         "add_via_claude": _add_via_claude, "add_quick": _add_quick, "setup": _setup,
-        "add_ask": _add_ask, "edit": _edit, "remove": _remove,
+        "add_ask": _add_ask, "add_plain": _add_plain, "edit": _edit, "remove": _remove,
         "places_save": _places_save, "places_clear": _places_clear,
         "simulate": _simulate, "read": _read, "open_new": _open_new, "read_all": _read_all, "check_now": _check_now, "intent": _intent}

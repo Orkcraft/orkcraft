@@ -1046,7 +1046,12 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, gui,
     panel = pg.locator(".gui-panel")
     tiles = panel.locator(".gui-add__tile")
     tiles.first.wait_for(state="visible", timeout=WAIT_MS)          # no source: the panel opens on the picker
-    assert pg.locator(".gui-modal").count() == 0 and tiles.count() == 8          # GitLab and Discord too
+    first = tiles.all_inner_texts()[:3]
+    assert all(name in t for name, t in zip(("GitHub", "Schedule", "Webhook"), first)), first   # cut-list.md §2
+    assert pg.locator(".gui-modal").count() == 0 and tiles.count() == 10         # GitLab and Discord too
+    more = panel.locator(".gui-add__more > summary")
+    assert not panel.get_by_text("Messengers").is_visible()                      # the rest under More sources
+    more.click()
     groups = panel.locator(".gui-add__group-title").all_inner_texts()            # in groups; Calendar has none yet
     assert groups == ["Through Claude (MCP)", "Messengers", "Mail", "Code", "Other"]
     panel.locator(".gui-add__group", has_text="Through Claude").get_by_text("None found").wait_for(timeout=WAIT_MS)
@@ -1062,6 +1067,7 @@ def test_a_new_tower_opens_on_add_a_source_and_adds_jira_in_its_panel(page, gui,
     assert back.is_visible() and panel.locator(".gui-add__foot", has_text="Back").count() == 0
     back.click()
     tiles.first.wait_for(state="visible", timeout=WAIT_MS)
+    more.click()
     panel.locator("#add-link-" + bid).fill("https://acme.atlassian.net/browse/WEB-3")
     panel.get_by_role("button", name="Continue").click()
     panel.locator("#add-email-" + bid).wait_for(state="visible", timeout=WAIT_MS)
@@ -1155,6 +1161,7 @@ def test_a_tower_hears_jira_through_claudes_connection_without_a_token(page, mon
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'watchtower' }))")
     _open_tower_add(pg, bid)
     panel = pg.locator(".gui-panel")
+    panel.locator(".gui-add__more > summary").click()                           # not offered first (cut-list.md §2)
     token = panel.locator(".gui-add__group:not(:has-text('Through Claude')) .gui-add__tile")   # Through Claude is first
     jira = token.filter(has_text="Jira").first
     jira.locator(".ok-tone-ok", has_text="in Claude").wait_for(timeout=WAIT_MS)
