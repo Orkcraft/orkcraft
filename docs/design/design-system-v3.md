@@ -136,6 +136,18 @@ each sprite's `pitch` and `show`; the preview reads them.
 | g2 decor | 6.31 | 18–47 | — | ×1 | trees about 45 · 68 |
 | u1 bubble and scroll (I1) | 8.39 | bubble pieces 22–24, scroll sheets 29–42, banner 236 × 38 | about 40 | ×2 | for I1 |
 
+**The proportion rule** (round 7): every later sheet and layout is checked against F1, with **the Agent pool's canvas
+roof as the unit** (F1: 278 px at 1312 wide; the cut sprite: 156 art px of its 192, the rest is ropes). Measured on F1
+by eye on a 10-px grid at ×3–×4, on the preview from the sprites' own pixels:
+
+| | F1 | ratio | preview (×1) | ratio | action |
+|---|---|---|---|---|---|
+| an ork's height | 50–57 px | 0.19 | 44 | 0.28 | **orks are 1.45× too large beside the buildings**: the next ork or building sheets (GEN) draw the ork at about 0.19 of the work hall's roof, or the buildings larger |
+| a cart, wide × tall with its load | 64 × 71 | 0.23 × 0.26 | 36 × 43 (c1 at ×1) | 0.23 × 0.28 | matches (since round 6's ×1) |
+| the track's band (ties end to end) | 45 | 0.16 | 32 (c2) | 0.21 | 1.27×; acceptable, or c2's ties drawn shorter |
+| a path's width | 55–60 | 0.21 | 32 | 0.21 | matches; kept at 32 (stop areas the same) |
+| the gap between buildings | 45–60 | about 0.18 | was 64 (upper row), 16 (lower) | 0.41, 0.10 | **set to 32** (one path's width, the nearest step of 8): the loop widened by 32 units to hold the lower row |
+
 **Carts against orks** (round 6; since then shown at ×1, the PM's decision: the 64-px target was wrong — a cart about
 an ork's height, as in F1). The numbers at ×2 that led to it: an ork is drawn 44 px tall (o1's idle; the roles 40–43); a cart is
 36 art px wide, so 72 px at ×2. The empty cart stands 62 px, the loaded ones 70 (letter) to 86 (scroll, crate): the
@@ -143,8 +155,8 @@ load rises to about twice the ork's height (×1.5: 93–129 against 66). At ×1 
 ork, but under the 64-px target.
 
 **The window: 1440 × 900.** A 36 px HUD, then the world, 1440 × 864. With a line per row the loop must hold the lower
-row (five buildings, about 408 units of 2 px), so the camp is 664 × 308 units: about 1330 × 620 px at ×1, which fits,
-and about 1990 × 920 px at ×1.5, which does not — at the default ×1.5 the window shows the camp's middle (both lines
+row (five buildings, about 408 units of 2 px), so the camp is 696 × 308 units: about 1390 × 620 px at ×1, which fits,
+and about 2090 × 920 px at ×1.5, which does not — at the default ×1.5 the window shows the camp's middle (both lines
 and all eight inner buildings) and the lookout and the catapult at its two ends are just outside; the wheel's ×1 shows
 the whole camp. Either the camera pans (drag, I1), or the lower row is drawn narrower.
 

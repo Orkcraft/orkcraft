@@ -383,7 +383,7 @@ async function pick(cands) {
 // F1's density (round 4): two rows close to the line, about one path's width between buildings; the camp is as wide
 // as its buildings at ×1 and stands in the middle of the window, wilderness round it. Numbers in layout units (2 px).
 const OX = 40;                          // the camp's left edge in its own frame (#world is placed to centre the camp)
-const CAMP_W = 664, CAMP_H = 308;       // the camp's extent in units, the walls and the chips included
+const CAMP_W = 696, CAMP_H = 308;       // the camp's extent in units, the walls and the chips included
 let OY = 0;                             // the wilderness above the back wall, in units (set by placeCamp)
 function placeCamp() {
   const left = Math.round((1440 - CAMP_W * K) / 2), top = Math.round((864 - CAMP_H * K) / 2);
@@ -392,20 +392,20 @@ function placeCamp() {
 }
 const LINE_Y = 128;                     // line 1's tile row (32 tall), under the upper row's doors
 const LINE2_Y = 256;                    // line 2's, under the lower row's doors (a line of track per row, v3-prompts §11)
-const COL_L = OX + 56, COL_R = OX + 480; // the loop's two columns: the split on the left, the merge on the right
-const WALL_X = OX + 608;                // the right wall, the catapult against it at line 2's end
+const COL_L = OX + 56, COL_R = OX + 512; // the loop's two columns: the split on the left, the merge on the right
+const WALL_X = OX + 640;                // the right wall, the catapult against it at line 2's end
 const BUILDINGS = [
   // type, name, box [x, y(top), w, h] (the cut sprite's size), v2 stand-in, block look, its line: 1 | 2 | "wall" | "end"
   ["watchtower", "External listeners", [OX + 12, 0, 40, 64], "covers/tower/lookout.png", { roof: "var(--art-bone)" }, "wall"],
-  ["fields", "Task board", [OX + 132, 76, 44, 36], "facades/fields.png", { roof: "var(--art-wood-light)" }, 1],
-  ["barracks", "Agent pool", [OX + 208, 48, 96, 64], "facades/barracks.png", { roof: "var(--art-cloth)" }, 1],
-  ["loot_vault", "Review gate", [OX + 344, 56, 80, 56], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, 1],
-  ["catapult", "Publisher", [OX + 544, 232, 64, 56], null, { machine: true, roof: "var(--art-wood)" }, "end"],
+  ["fields", "Task board", [OX + 174, 76, 44, 36], "facades/fields.png", { roof: "var(--art-wood-light)" }, 1],
+  ["barracks", "Agent pool", [OX + 234, 48, 96, 64], "facades/barracks.png", { roof: "var(--art-cloth)" }, 1],
+  ["loot_vault", "Review gate", [OX + 346, 56, 80, 56], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, 1],
+  ["catapult", "Publisher", [OX + 576, 232, 64, 56], null, { machine: true, roof: "var(--art-wood)" }, "end"],
   ["lake", "Inspector", [OX + 96, 188, 64, 52], "covers/open/pond.png", { water: true }, 2],
-  ["mine", "Research", [OX + 168, 176, 48, 64], null, { stone: true, roof: "var(--art-bone)" }, 2],
-  ["lab", "Test bench", [OX + 224, 188, 76, 52], null, { roof: "var(--art-wood-light)" }, 2],
-  ["town_hall", "Town Hall", [OX + 308, 176, 92, 64], null, { roof: "var(--art-cloth-plum)" }, 2],
-  ["ux_lab", "UX bench", [OX + 408, 184, 64, 56], null, { roof: "var(--art-cloth)" }, 2],
+  ["mine", "Research", [OX + 176, 176, 48, 64], null, { stone: true, roof: "var(--art-bone)" }, 2],
+  ["lab", "Test bench", [OX + 240, 188, 76, 52], null, { roof: "var(--art-wood-light)" }, 2],
+  ["town_hall", "Town Hall", [OX + 332, 176, 92, 64], null, { roof: "var(--art-cloth-plum)" }, 2],
+  ["ux_lab", "UX bench", [OX + 440, 184, 64, 56], null, { roof: "var(--art-cloth)" }, 2],
 ];
 
 function block(box, look) {
@@ -472,7 +472,7 @@ async function track() {
   for (let y = LINE_Y + T; y < LINE2_Y; y += T) await tile("straight-v", COL_R, y, true);
   await tile("t-n", COL_R, LINE2_Y);                               // …and merges into line 2
   let x = COL_R + T;
-  for (; x + 2 * T <= OX + 544; x += T) await tile("straight-h", x, LINE2_Y);
+  for (; x + 2 * T <= OX + 576; x += T) await tile("straight-h", x, LINE2_Y);
   await tile("stop-e", x, LINE2_Y);
 }
 
@@ -525,7 +525,7 @@ function decals() {
 }
 // g2's decor, a little, only in the wilderness round the camp (never in the work area)
 const DECOR = [["tree", -6, 36], ["pine", 4, 92], ["bush", -12, 150], ["rock", 2, 214], ["mushrooms-teal", 14, 246],
-  ["pine", 688, 70], ["tree", 698, 130], ["logpile", 692, 196], ["reeds", 688, 260], ["stump", 150, -24], ["bush-small", 300, -30],
+  ["pine", 720, 70], ["tree", 730, 130], ["logpile", 724, 196], ["reeds", 720, 260], ["stump", 150, -24], ["bush-small", 300, -30],
   ["boulder", 520, -28], ["pebbles", 90, 318], ["log-mossy", 260, 326], ["mushrooms-white", 420, 320], ["rocks", 600, 326]];
 async function decor() {
   for (const [n, x, y] of DECOR) {
@@ -624,19 +624,19 @@ async function scene() {
   for (const [, name, [x, y, w, h], , , line] of BUILDINGS) nameChip(name, x + w / 2, line === "wall" || line === "end" ? y + h + 2 : y + h / 2);   // on the facade, clear of the lines
   // carts: two rolling on line 1, one stopped at the Task board, one held at the gate with the yellow flag and its chip;
   // on line 2 one rolling and one stopped at the Test bench
-  await cart(COL_L + 40, "code", { roll: 360, dur: 18 });
-  await cart(COL_L + 40, "message", { roll: 360, dur: 18, delay: -9 });
-  await cart(OX + 154, "asset");
-  await cart(OX + 384, "code", { flag: "#42 · Fix login bug" });
-  await cart(COL_L + 40, "doc", { roll: 400, dur: 22, delay: -5 }, LINE2_Y);
-  await cart(OX + 262, "bundle", {}, LINE2_Y);
+  await cart(COL_L + 40, "code", { roll: 400, dur: 18 });
+  await cart(COL_L + 40, "message", { roll: 400, dur: 18, delay: -9 });
+  await cart(OX + 196, "asset");
+  await cart(OX + 386, "code", { flag: "#42 · Fix login bug" });
+  await cart(COL_L + 40, "doc", { roll: 430, dur: 22, delay: -5 }, LINE2_Y);
+  await cart(OX + 278, "bundle", {}, LINE2_Y);
   // the keepers wait at the stops; one lifts the load off at the gate; one asks at the Agent pool's door
-  await ork(OX + 172, LINE_Y - 2);
-  await ork(OX + 272, LINE_Y - 2);
-  await ork(OX + 404, LINE_Y - 2, { anim: "work" });
+  await ork(OX + 214, LINE_Y - 2);
+  await ork(OX + 298, LINE_Y - 2);
+  await ork(OX + 406, LINE_Y - 2, { anim: "work" });
   await ork(OX + 146, LINE2_Y - 2);
-  await ork(OX + 238, 112, { badge: "ask" });
-  await ork(OX + 284, LINE2_Y - 2, { anim: "work", flip: true });
+  await ork(OX + 264, 112, { badge: "ask" });
+  await ork(OX + 300, LINE2_Y - 2, { anim: "work", flip: true });
   report();
 }
 
