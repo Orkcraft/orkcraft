@@ -392,3 +392,41 @@ log buffer stop where a mine-cart track ends coming in from the left, a cow skul
 base, its arm and bucket with a scroll; four frames: resting; pulled back; mid-throw; the scroll flying up and to the
 right. The same style and colours as the attached sheet, front wall of the frame parallel to the image's bottom
 edge."
+
+## 9. Round 4: o1 body, o2 roles, o3 states, B4 (2026-10-14)
+
+Saved as references, **not cut** (named `-r1` so `camp_sheet.py --v3` does not pick them up):
+`o1-body-r1.jpg`, `o2-roles-r1.jpg`, `o3-states-r1.jpg`, `b4-others-r1.jpg`.
+
+**Taken:**
+
+- **The ork of v3:** round, big head, olive skin, a leather apron, small tusks, a friendly resting face — the same
+  character in o1 and o2, and our own.
+- **The twelve roles read by silhouette** (o2): the Warchief's horned helmet and tie, the Grunt's hard hat, the
+  Taskmaster's quill and scroll, the Seer's hood and staff, the Lookout's fur hat, the Mechanic's cap and wrench, the
+  Alchemist's pointed hat and flask, the Treasurer's clipboard, the Warder's shield, the Pathfinder's map and lantern
+  (row 2), the Prospector's miner's lamp and pick, the Loader's rope and gloves.
+- **The door frames** (o1, last row): the ork stepping out of a door reads at once — the keeper of §13.1.
+- **The states' poses and faces** (o3): working, asking with a hand up, stuck with a grey puff, arms crossed (held),
+  dozing with "z z" — exactly the five states.
+
+**To fix:**
+
+1. **Frames round every cell** (o1, o2, o3): the model drew a box round each sprite; the boxes join the sprites, so
+   the cutter cannot separate them (o2 read as 11 blobs). Add to the head of every ork sheet: **"No frames, no boxes,
+   no grid lines, no borders between sprites; each sprite floats alone on the magenta."** (And the cutter learns to
+   drop a drawn grid, if the model keeps drawing one.)
+2. **o3 is drawn at twice the pixel size** (one art pixel ≈ 8.3 image px against o1's 5): a different, blockier
+   character beside o1. Regenerate with **o1 attached**: "the same orc, the same pixel size and proportions as the
+   attached sheet", keeping these five poses.
+3. **o1's cap comes and goes:** bare-headed from the front, a cap from the back, the side and at work. One choice:
+   **bare-headed** (the roles add the headgear). Walking down barely moves its legs, and its last two frames turn to
+   three-quarter; walking up barely moves. Ask for "legs and arms clearly swinging, the same facing in every frame
+   of a row".
+4. **Signal colours in props:** the Warder's key is gold, the Prospector's lamp glows yellow, a pink smudge sits by
+   the Taskmaster's quill: brass key, a teal-white lamp, no smudge.
+5. **The Lookout and the Mechanic** both wear a cap: the Lookout keeps the fur hat and gets the headset that was
+   asked; the Mechanic a welder's cap with goggles up.
+6. **B4 is isometric again** (the drum, the grove on its own square of grass, the stage, the huts), with purple smoke
+   blurred into two pieces, and the Script bench repeated from B3. Redo with the front-on line of §7 and
+   `b1-core.jpg` attached; "no ground under the building, no smoke, no glow".
