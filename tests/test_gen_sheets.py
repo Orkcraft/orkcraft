@@ -42,6 +42,8 @@ def test_each_kind_gets_its_lines_and_references(gs):
             assert "No ground under the building" in p, name
         if sh["kind"] == "ork":
             assert {"o1-body.jpg", "o2-roles.jpg"} <= set(refs) and "The same orc as the attached sheets" in p, name
+        elif sh["kind"] == "ork-capped":                                        # the main ork since §12
+            assert "../0.3/roles-2.jpg" in refs and "o1-body.jpg" not in refs and "a cloth cap" in p, name
         else:
             assert "The same orc" not in p, name
         if sh["kind"] == "track":

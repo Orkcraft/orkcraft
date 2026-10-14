@@ -78,6 +78,11 @@ ORK = [
     "shirt and trousers.",
     "Legs and arms clearly swing in every walk; the same facing in every frame of a row.",
 ]
+CAPPED = [                                  # the main ork since v3-prompts §12: the capped ork of the 0.3 sheets
+    "The same orc as the attached sheets roles-2 and o3-states-r1: a cloth cap, a leather apron over a shirt, a tool "
+    "belt, olive-moss skin, small tusks; the same pixel size and proportions as in them, the same outline.",
+    "The same facing in every frame; each frame a clear step of the movement.",
+]
 TRACK = [
     "Flat from above, exactly like the attached track sheet c2: dark iron rails on honey-wood ties, the ties evenly "
     "spaced.",
@@ -87,7 +92,8 @@ SIGNALS = "Bright yellow and bright red appear ONLY on the signal markers asked 
 # the reference images, by name (a JPEG or a PNG under REFS)
 REF = {"f1": "f1-town.jpg", "b1": "b1-core.jpg", "o1": "o1-body.jpg", "o2": "o2-roles.jpg", "c1": "c1-carts.jpg",
        "c2": "c2-track.jpg", "g2": "g2-decor.jpg",
-       "g3": "g3-palisade.jpg", "tb": "b1-taskboard.jpg"}       # the owner's picks of round 7
+       "g3": "g3-palisade.jpg", "tb": "b1-taskboard.jpg",       # the owner's picks of round 7
+       "r03": "../0.3/roles-2.jpg", "o3r": "o3-states-r1.jpg"}  # the capped ork (§12)
 
 # the sheets: kind (building, ork, track, edge, signals), the prompt (v3-prompts §3, as the reviews redid it), the
 # pieces the cutter should find, the image's aspect, and the cut name `--pick` copies it to
@@ -201,6 +207,14 @@ SHEETS: dict[str, dict] = {
                   "the magenta.",
         "about": "the picked Task board at 0.8 of the work hall (round 7); --pick replaces b1-taskboard",
     },
+    "o6-door": {
+        "kind": "ork-capped", "expect": 4, "aspect": "21:9", "refs": ["r03", "o3r"],
+        "prompt": "The worker orc, 32 × 32, stepping out of a wooden door, four frames in one row, the same door in "
+                  "each: the door closed with the orc behind it (only the door seen); the door opening, the orc's "
+                  "face in the gap; the orc half out of the doorway; the orc out in front of the door, facing the "
+                  "viewer.",
+        "about": "v3-prompts §12: the capped ork stepping out of a door (o1 had it), 4 frames",
+    },
     "c2-curves": {
         "kind": "track", "expect": 6, "aspect": "3:2",
         "prompt": "A wooden mine-cart track, 64 × 64 tiles, six pieces in a row with magenta round each: four curves, "
@@ -228,7 +242,7 @@ def build_prompt(name: str) -> str:
     if sh["kind"] == "signals":                  # the one sheet that may have them
         head = head.replace("Bright yellow and bright red appear nowhere.", SIGNALS)
     lines = [head, sh["prompt"]]
-    lines += {"building": BUILDING, "ork": ORK, "track": TRACK}.get(sh["kind"], [])
+    lines += {"building": BUILDING, "ork": ORK, "ork-capped": CAPPED, "track": TRACK}.get(sh["kind"], [])
     if sh["expect"] == 1:                       # one building alone: the model draws it as large as the image
         lines.append(ALONE)
     lines += [s for s in ALL if not (sh["kind"] == "signals" and s.startswith("No yellow"))]
@@ -372,7 +386,7 @@ def _spec_sheet(name: str) -> dict:
 
 
 def degrid_of(name: str) -> bool:
-    return bool(_spec_sheet(name).get("degrid", SHEETS.get(name, {}).get("kind") in ("ork", "track")))
+    return bool(_spec_sheet(name).get("degrid", SHEETS.get(name, {}).get("kind") in ("ork", "ork-capped", "track")))
 
 
 def check(path: pathlib.Path, name: str) -> dict:
@@ -404,7 +418,7 @@ def check(path: pathlib.Path, name: str) -> dict:
     if cast.sum() / n_op > 0.01:
         issues.append(f"magenta cast on {100 * cast.sum() / n_op:.1f} % of the art")
     return {"sheet": name, "file": path.name, "image": list(Image_size(path)), "pitch": round(float(sheet.pitch), 2),
-            "art_px": round(side), "art_range": [round(lo), round(hi)],
+            "art_px": round(side), "art_range": [round(lo), round(hi)] if hi != float("inf") else None,
             "grid": [sheet.w, sheet.h], "pieces": found, "expected": expected, "sizes": sizes,
             "degrid": degrid_of(name), "signal_px": signal, "signal_pct": round(100 * signal / n_op, 2),
             "cast_px": int(cast.sum()), "cast_pct": round(100 * float(cast.sum()) / n_op, 2),

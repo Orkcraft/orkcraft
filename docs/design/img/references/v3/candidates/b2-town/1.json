@@ -9,7 +9,7 @@
   1536
  ],
  "pitch": 5.73,
- "art_px": 47,
+ "art_px": 122,
  "art_range": [
   48,
   260
@@ -18,64 +18,36 @@
   480,
   268
  ],
- "pieces": 14,
+ "pieces": 7,
  "expected": 6,
  "sizes": [
   [
-   159,
-   108
+   165,
+   114
   ],
   [
-   38,
-   38
-  ],
-  [
-   39,
-   35
-  ],
-  [
-   49,
-   21
-  ],
-  [
-   40,
-   45
-  ],
-  [
-   42,
-   16
-  ],
-  [
-   5,
-   7
-  ],
-  [
-   39,
-   36
-  ],
-  [
-   34,
-   34
-  ],
-  [
-   65,
-   116
-  ],
-  [
-   148,
-   105
-  ],
-  [
-   79,
+   135,
    97
   ],
   [
-   92,
-   109
+   71,
+   122
   ],
   [
-   92,
-   109
+   154,
+   111
+  ],
+  [
+   85,
+   103
+  ],
+  [
+   98,
+   115
+  ],
+  [
+   98,
+   115
   ]
  ],
  "degrid": false,
@@ -85,8 +57,7 @@
  "cast_pct": 1.02,
  "ok": false,
  "issues": [
-  "14 pieces found, 6 expected",
-  "pieces about 47 art px, the taken sheets' 48–260: another pixel size",
+  "7 pieces found, 6 expected",
   "magenta cast on 1.0 % of the art"
  ]
 }

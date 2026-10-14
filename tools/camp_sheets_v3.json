@@ -1660,6 +1660,20 @@
     }
    ]
   },
+  {"name": "c2-more", "file": "c2-more.png", "degrid": true, "show": 1,
+   "about": "track pieces c2 lacked (round 8, gen_sheets c2-more #1): the north-west curve (5) and the junction north-east-south (4), fitted to c2's tile and gauge (`tile_from`); its other curves (0, 2, 3) and the crossing with a branch (1) not used",
+   "groups": [{"kind": "track", "size": [64, 64], "anchor": "top-left", "tile_from": "track/straight-h.png",
+               "items": [{"file": "track/corner-nw.png", "order": 5, "exits": "nw"},
+                         {"file": "track/t-e.png", "order": 4, "exits": "nes"}]}]},
+  {"name": "g3-sides", "file": "g3-sides.png", "show": 1,
+   "about": "the palisade's sides (round 8, gen_sheets g3-sides #1): the side wall as a column of log tops (0), the corners as a run with one log dropping where the wall turns (3 north-west, 5 north-east, 6 south-west, 1 south-east), an end post (7); 2, 4 and 8 not used",
+   "groups": [{"size": [32, 32], "anchor": "feet",
+               "items": [{"file": "edge/palisade-v.png", "order": 0, "size": [40, 120]},
+                         {"file": "edge/palisade-corner-nw.png", "order": 3, "size": [72, 56]},
+                         {"file": "edge/palisade-corner-ne.png", "order": 5, "size": [56, 56]},
+                         {"file": "edge/palisade-corner-sw.png", "order": 6, "size": [56, 56]},
+                         {"file": "edge/palisade-corner-se.png", "order": 1, "size": [40, 56]},
+                         {"file": "edge/palisade-post.png", "order": 7, "size": [16, 56]}]}]},
   {
    "name": "u4-signals",
    "file": "u4-signals.png",

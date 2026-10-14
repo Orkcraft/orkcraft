@@ -1198,6 +1198,86 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "edge/palisade-corner-ne.png",
+   "size": [
+    56,
+    56
+   ],
+   "frame": [
+    56,
+    56
+   ],
+   "frames": 1,
+   "pitch": 11.62,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g3-sides.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "edge/palisade-corner-nw.png",
+   "size": [
+    72,
+    56
+   ],
+   "frame": [
+    72,
+    56
+   ],
+   "frames": 1,
+   "pitch": 11.62,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g3-sides.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "edge/palisade-corner-se.png",
+   "size": [
+    40,
+    56
+   ],
+   "frame": [
+    40,
+    56
+   ],
+   "frames": 1,
+   "pitch": 11.62,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g3-sides.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "edge/palisade-corner-sw.png",
+   "size": [
+    56,
+    56
+   ],
+   "frame": [
+    56,
+    56
+   ],
+   "frames": 1,
+   "pitch": 11.62,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g3-sides.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
    "file": "edge/palisade-end-e.png",
    "size": [
     24,
@@ -1273,6 +1353,46 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "g3-palisade.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "edge/palisade-post.png",
+   "size": [
+    16,
+    56
+   ],
+   "frame": [
+    16,
+    56
+   ],
+   "frames": 1,
+   "pitch": 11.62,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g3-sides.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "edge/palisade-v.png",
+   "size": [
+    40,
+    120
+   ],
+   "frame": [
+    40,
+    120
+   ],
+   "frames": 1,
+   "pitch": 11.62,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g3-sides.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
@@ -2240,6 +2360,26 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "track/corner-nw.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 7.06,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "c2-more.png",
+   "scale": 0.727,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
    "file": "track/corner-se.png",
    "size": [
     64,
@@ -2396,6 +2536,26 @@
    "placeholder": true,
    "source": "c2-track.png",
    "scale": 1.067,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "track/t-e.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 7.06,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "c2-more.png",
+   "scale": 0.727,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },

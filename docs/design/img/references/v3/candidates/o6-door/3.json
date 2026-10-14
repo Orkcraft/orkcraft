@@ -1,0 +1,46 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "prompt": "No shadows. Pixel-art sprite sheet in exactly the style and palette of the attached image. Crisp hard pixels on a strict grid, no anti-aliasing, no blur, no gradients, each sprite with a dark 1-pixel outline, drawn at its final size with no finer detail than that size can hold. One three-quarter top-down projection, never isometric. Sprites in a neat grid with even spacing on a flat solid #FF00FF magenta background, nothing touching, no ground under them, no text unless asked. Bright yellow and bright red appear nowhere.\n\nThe worker orc, 32 × 32, stepping out of a wooden door, four frames in one row, the same door in each: the door closed with the orc behind it (only the door seen); the door opening, the orc's face in the gap; the orc half out of the doorway; the orc out in front of the door, facing the viewer.\n\nThe same orc as the attached sheets roles-2 and o3-states-r1: a cloth cap, a leather apron over a shirt, a tool belt, olive-moss skin, small tusks; the same pixel size and proportions as in them, the same outline.\n\nThe same facing in every frame; each frame a clear step of the movement.\n\nNo frames, no boxes, no grid lines, no borders between sprites; each sprite floats alone on the magenta.\n\nNo shadows, no smoke, no glow.\n\nKeep exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #7cbd40), the paths warm sand (about #e4b469); warm honey wood, light cool stone, teal and plum cloth, cream bone.\n\nNo yellow, no orange and no red anywhere: those colours are reserved for the product's signals. The wood a muted honey brown, never orange.\n\nOutput the sheet as a PNG image.\n\nAttached, in order: f1-town, roles-2, o3-states-r1. F1 is the approved frame: its style and colours rule.",
+ "ok": true,
+ "issues": [],
+ "sheet": "o6-door",
+ "file": "3.jpg",
+ "image": [
+  3168,
+  1344
+ ],
+ "pitch": 7.53,
+ "art_px": 164,
+ "art_range": null,
+ "grid": [
+  419,
+  178
+ ],
+ "pieces": 4,
+ "expected": 4,
+ "sizes": [
+  [
+   98,
+   152
+  ],
+  [
+   98,
+   168
+  ],
+  [
+   99,
+   165
+  ],
+  [
+   99,
+   163
+  ]
+ ],
+ "degrid": true,
+ "signal_px": 0,
+ "signal_pct": 0.0,
+ "cast_px": 17,
+ "cast_pct": 0.03
+}
