@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orkline: a factory for your coding agents, drawn as a town (Claude Code, Codex)</title>
+<meta name="description" content="Orkline runs several coding agents (Claude Code, Codex, Antigravity) on your own project as a factory town: work comes in, goes down the line, through a review gate, and ships. Local-first agent orchestration on your own subscriptions, no API keys.">
+<meta name="theme-color" content="#1b170e">
+<meta property="og:title" content="Orkline: the factory that builds your side project">
+<meta property="og:description" content="Your coding agents as a town you grow after work. Local-first, no API keys, your own subscriptions.">
+<meta property="og:type" content="website">
+<!-- OWNER: add og:url and og:image as absolute URLs on orkline.dev once the page is deployed. -->
+<meta property="og:image" content="img/camp-concept-1280.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="img/ork-mark.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/titillium-web-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/almendra-sc-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to the content</a>
+
+<header class="top">
+  <a class="brand" href="#" aria-label="Orkline, to the top">
+    <img src="img/ork-mark.svg" alt="" width="30" height="20">
+    <span>Orkline</span>
+  </a>
+  <nav aria-label="On this page">
+    <a href="#install">Install</a>
+    <a href="#factory">How it works</a>
+    <a href="https://github.com/Orkcraft/orkcraft">GitHub</a>
+  </nav>
+</header>
+
+<main id="main">
+
+<!-- 1. The line, the visual, install -->
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap">
+    <p class="kicker">A control room for coding agents · alpha</p>
+    <h1 id="hero-title">Build the factory that builds your side&nbsp;project.</h1>
+    <p class="lede">Your coding agents as a town you grow after work. Work comes in, the orks refine it on the line,
+      you pass it at the gate, and finished goods are catapulted over the wall.</p>
+
+    <figure class="shot">
+      <!-- OWNER: replace with the GIF/video of the commute flow when it is filmed (launch-prep §2b):
+           <video autoplay muted loop playsinline poster="img/camp-concept-1280.jpg"> … </video> -->
+      <picture>
+        <source type="image/webp" srcset="img/camp-concept-960.webp 960w, img/camp-concept-1920.webp 1920w"
+                sizes="(min-width: 1120px) 1080px, 100vw">
+        <img src="img/camp-concept-1280.jpg" width="1280" height="720" fetchpriority="high"
+             alt="The camp: carts roll along a track from External listeners and the Task board through the Agent pool, where orks work at benches, to the Review gate, where pull request #42 waits for you, and on to the Publisher's catapult at the palisade.">
+      </picture>
+      <figcaption><span class="tag">Concept art</span> How the Camp look is being drawn. The app today is plainer; the
+        recording of the real thing comes before the launch.</figcaption>
+    </figure>
+
+    <div class="install" id="install">
+      <h2 class="h-small">Install in one line <span class="muted">(macOS, Linux)</span></h2>
+      <div class="cmd">
+        <pre><code id="cmd-curl">curl -fsSL https://orkcraft.dev/install.sh | sh</code></pre>
+        <button type="button" class="copy" data-copy="cmd-curl">Copy</button>
+      </div>
+      <p class="note">It puts uv, a Python and Orkline in place, logs each step, and opens the town.
+        <a href="https://github.com/Orkcraft/orkcraft/blob/main/install.sh">Read the script first</a>.
+        With Homebrew: <code>brew tap orkcraft/orkcraft https://github.com/Orkcraft/orkcraft</code> then
+        <code>brew install orkcraft/orkcraft/orkcraft</code>. Try <code>orkline --demo</code> for a sandbox town:
+        nothing real is touched and no model is called.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 2. The commute scene -->
+<section class="band" aria-labelledby="commute-title">
+  <div class="wrap">
+    <h2 id="commute-title">Made for the way home</h2>
+    <ol class="steps">
+      <li class="step">
+        <div class="pic pic-day" aria-hidden="true">
+          <span class="row">Review: MR !318 · payments</span>
+          <span class="row">Call: Q4 planning · 45 min</span>
+          <span class="row">Review: MR !321 · flaky test</span>
+          <span class="row">Call: sync with design</span>
+        </div>
+        <h3><span class="n">1</span> A day of other people's work</h3>
+        <p>Merge requests to review, calls to sit through. Your own project waits. Meanwhile the town works on it,
+          and keeps quiet: no pings in working hours, questions gathered for later.</p>
+      </li>
+      <li class="step">
+        <div class="pic pic-phone" aria-hidden="true">
+          <div class="phone">
+            <b>Since your last look</b>
+            <span class="win">✓ 2 launched: PR #41, PR #42</span>
+            <span class="ask">❓ 1 question · answer in one tap</span>
+            <span class="dim">🪵 used 18 % of the window</span>
+          </div>
+        </div>
+        <h3><span class="n">2</span> The phone, on the way home</h3>
+        <p>What was built first, then the one question, then what it cost. Answer it between two stations, pass or
+          send back a result. A look, not a second job.</p>
+      </li>
+      <li class="step">
+        <div class="pic pic-laptop" aria-hidden="true">
+          <div class="laptop"><img src="img/camp-gate.webp" alt="" width="740" height="520" loading="lazy"></div>
+        </div>
+        <h3><span class="n">3</span> The laptop at home, the camp</h3>
+        <p>Open the same town, now in Camp. Pick up what the orks left at the gate and go on building your own thing,
+          for the joy of it.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- 3. What makes it a factory -->
+<section aria-labelledby="factory-title" id="factory">
+  <div class="wrap">
+    <h2 id="factory-title">A factory, not a dashboard</h2>
+    <p class="lede">Every task is a cart. It has one life, and you learn its shape once.</p>
+    <ol class="line">
+      <li><b>Work comes in</b><span>From External listeners (mail, GitHub, a webhook), the Task board, or the town's
+        clock at its hour.</span></li>
+      <li><b>The line</b><span>Carts roll down roads between buildings. In the Agent pool the orks (your Claude Code,
+        Codex or Antigravity sessions) do the work; scripts do what needs no model.</span></li>
+      <li class="gate"><b>The Review gate</b><span>Nothing leaves without your nod. A result waits for you with its
+        diff; you pass it or send it back.</span></li>
+      <li><b>The Publisher</b><span>The passed cart is launched: a pull request opened, a reply sent. Drawn in Camp
+        as a catapult at the wall.</span></li>
+    </ol>
+    <div class="score">
+      <h3>The score: less wood per accepted result</h3>
+      <p>🪵 Wood is tokens. The game is not to spend less in total, which doing nothing wins, but to spend less wood
+        and less of your plan's limit <em>for each result you accept</em>. The cheapest thing that works wins: a script
+        before an agent, a smaller model where it is enough.</p>
+      <p class="example" aria-label="An example of the score">12 launched this week · 30 % less wood each</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Office at work, Camp after work -->
+<section class="band" aria-labelledby="looks-title">
+  <div class="wrap">
+    <h2 id="looks-title">Office at work. Camp after work. The same town.</h2>
+    <div class="looks">
+      <figure class="look look-office">
+        <div class="mock office" aria-hidden="true">
+          <div class="o-bar"><span>Orkline</span><span>Spend $1.20 / $5.00 · Orks 2/8</span></div>
+          <div class="o-row"><span>Task board</span><span>3 to do · 1 in progress</span></div>
+          <div class="o-row"><span>Agent pool</span><span>2 at work</span></div>
+          <div class="o-row hot"><span>Review gate</span><span>#42 Login form · waits for you</span></div>
+          <div class="o-row"><span>Publisher</span><span>1 launched today</span></div>
+        </div>
+        <figcaption><b>Office</b> Calm and monochrome, no sprites: rows and numbers you can leave open beside your
+          work.</figcaption>
+      </figure>
+      <figure class="look look-camp">
+        <div class="mock camp"><img src="img/camp-gate.webp" width="740" height="520" loading="lazy"
+          alt="The same Review gate in Camp: a stone fort with a cart and its yellow flag at the gate, an ork with a question beside it."></div>
+        <figcaption><b>Camp</b> The default look: the pixel town, orks at work, carts on the track. One key switches
+          between them; no word changes.</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- 5. How it differs, what it is not -->
+<section aria-labelledby="differs-title">
+  <div class="wrap two">
+    <div>
+      <h2 id="differs-title">How it differs</h2>
+      <p class="big">Other tools show your agents. Orkline runs the work.</p>
+      <p>Tasks go down roads between buildings, through a review gate, and the game is spending less per accepted
+        result. Several vendors in one town; you see who is working, who waits for you, and what each result cost.</p>
+    </div>
+    <div>
+      <h2>What it is not</h2>
+      <ul class="nots">
+        <li><b>No cloud.</b> The town runs on your computer; your code stays there.</li>
+        <li><b>No API keys.</b> It talks to models only through the command-line tools you already have:
+          <code>claude</code>, <code>codex</code>, <code>agy</code>.</li>
+        <li><b>Your own subscriptions.</b> Your sign-in, your plan's limits, with budgets you set and
+          <b>Stop all</b> one click away.</li>
+        <li><b>Open source</b>, Apache 2.0. Checked on macOS.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Community and GitHub -->
+<section class="band end" aria-labelledby="join-title">
+  <div class="wrap">
+    <h2 id="join-title">Come and build a town</h2>
+    <p>Orkline is in alpha and made in the open. Bring your bugs, ideas and towns.</p>
+    <p class="ctas">
+      <!-- OWNER: point this at the community place once it is opened (launch-prep §2c, decisions-2026-10 §4.4). -->
+      <a class="btn btn-main" href="#community" id="community" aria-disabled="true">Community <span class="soon">opens soon</span></a>
+      <a class="btn" href="https://github.com/Orkcraft/orkcraft">GitHub</a>
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>Orkline · Apache 2.0 · <a href="https://github.com/Orkcraft/orkcraft">github.com/Orkcraft/orkcraft</a></p>
+    <p class="small">Orkline is an independent open-source project. It is not affiliated with, endorsed by or
+      connected to any game publisher or game. Claude Code, Codex and Antigravity are the trademarks of their
+      owners; Orkline runs them as you installed them.</p>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll("button.copy").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var t = document.getElementById(b.dataset.copy).textContent;
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(t).then(function () {
+        b.textContent = "Copied";
+        setTimeout(function () { b.textContent = "Copy"; }, 1600);
+      });
+    });
+  });
+  var c = document.getElementById("community");
+  c.addEventListener("click", function (e) { if (c.getAttribute("aria-disabled") === "true") e.preventDefault(); });
+</script>
+</body>
+</html>
