@@ -98,7 +98,8 @@ SIGNALS = "Bright yellow and bright red appear ONLY on the signal markers asked 
 REF = {"f1": "f1-town.jpg", "b1": "b1-core.jpg", "o1": "o1-body.jpg", "o2": "o2-roles.jpg", "c1": "c1-carts.jpg",
        "c2": "c2-track.jpg", "g2": "g2-decor.jpg",
        "g3": "g3-palisade.jpg", "tb": "b1-taskboard.jpg",       # the owner's picks of round 7
-       "r03": "../0.3/roles-2.jpg", "o3r": "o3-states-r1.jpg"}  # the capped ork (§12)
+       "r03": "../0.3/roles-2.jpg", "o3r": "o3-states-r1.jpg",  # the capped ork (§12)
+       "std": "st-dispatch.jpg"}                                 # the picked dispatcher's booth (§13)
 
 # the sheets: kind (building, ork, track, edge, signals), the prompt (v3-prompts §3, as the reviews redid it), the
 # pieces the cutter should find, the image's aspect, and the cut name `--pick` copies it to
@@ -291,6 +292,29 @@ SHEETS: dict[str, dict] = {
                   "straight from top to bottom with a branch curving off to the right). Each tile the same square "
                   "size as c2's, magenta round each, apart.",
         "about": "c2's north-west curve and the N–E–S junction on c2's exact gauge (round 10)",
+    },
+    # I2: the dispatcher's booth from inside (v3-prompts §13, decisions §13.2)
+    "u6-inside": {
+        "kind": "ui", "expect": 1, "aspect": "16:9", "refs": ["std"],
+        "prompt": "The inside of a small wooden dispatcher's booth seen front-on from slightly above, warm light, a "
+                  "plank floor and beams, empty of characters, about 480 × 300 px; three tall wooden boards side by "
+                  "side with blank carved headers, a window to the track. No text.",
+        "about": "I2: the dispatcher's booth from inside (the Task board's inside)",
+    },
+    "u6-cards": {
+        "kind": "ui", "expect": 12, "aspect": "16:9", "refs": ["std"],
+        "prompt": "Pieces for cards on the boards inside the booth, on magenta: a parchment sheet and a light stone "
+                  "slab, each as nine-slice pieces (top with corners, a middle that repeats downward, bottom with "
+                  "corners); bone pins; a small cloth flag on a pin, lowered and raised, in teal and plum; a lever.",
+        "about": "I2: cards that grow downward, pins, the flag lowered and raised, a lever",
+    },
+    "u2-panels": {
+        "kind": "ui", "expect": 12, "aspect": "16:9",
+        "prompt": "Pixel UI panels as nine-slice pieces on an 8-px grid: a cream parchment panel in a dark walnut "
+                  "frame with small teal corner studs (a merchant's window); a dark terminal panel in the same walnut "
+                  "frame; tabs to sit on a panel's top edge, active and inactive; a square 48 × 48 action button in "
+                  "a walnut frame in three states (normal, hover, pressed); an \"Exit\" button with an arrow.",
+        "about": "v3-prompts §3e.2: the panels, tabs, the action button in three states, Exit",
     },
     "c2-curves": {
         "kind": "track", "expect": 6, "aspect": "3:2",
