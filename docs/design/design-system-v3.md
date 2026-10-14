@@ -46,13 +46,18 @@ wall. A building joins its line by a dirt path; **a station has its own track** 
 over a siding off line 1 (a north T, a curve, room for three carts, a buffer) with the waiting carts on it and a `+N`
 chip for more; the Review gate's weighbridge track and the mine's shaft track run into their line through a north T;
 the gate's barrier is down while a cart waits on the weighbridge, up otherwise (the preview's *Gate clear* toggle).
-**The person's home stands beside the Review gate** (where the person approves), east of it on line 1's row.
+**The person's home stands beside the Review gate** (where the person approves), east of it on line 1's row, over
+the line's turn (the right column runs only below line 1, so the loop does not widen): `homes/<kin>.png`, one per kin
+of `realm/intents.py` `ROLES` (k2-homes #1); the preview's *Home* button cycles the seven, the ork's first.
 
-**Still a stand-in or awaited** (GEN's last run, k2-homes and c2-fix, stopped on HTTP 402, the key's credits spent):
+**Still a stand-in** (after GEN's round 10, k2-homes and c2-fix, run once the credits were topped up):
 
-- **the split's junction** (north–east–south): c2's north T turned a quarter; c2-more's `t-e` is cut but its straight
-  sits off the tile's column, so it is not placed (round 8, below). `track/corner-nw` is cut and unused.
-- **the person's home** (k2): not drawn; its place beside the gate is reserved in the rule, not in the preview.
+- **the split's junction** (north–east–south): c2's north T turned a quarter. c2-more's `t-e` is cut but its straight
+  sits off the tile's column (round 8, below). **c2-fix #2** does not join either: its straight's rails are 150 image px
+  apart and its branch's 223 (1.49×), so at the set's gauge (32 art px) the branch comes out about 48 at any one
+  scale, and the turnout spans about 4 × 3 tiles; its other piece is a south-east curve two tiles wide, a turn the
+  loop does not have. Neither is cut. `track/corner-nw` (c2-more) is cut and unused. A junction drawn on one tile,
+  both legs 32 apart, is still wanted.
 - **the Prospector's** walking, digging and sack frames: only standing is cut (o7 at `merge: 2.25`, 54 px tall).
 - **the door patch on a building** (§4.7): `orks/body/door.png` (o6-door #2, four frames) is cut for I1; the preview
   does not open doors.
@@ -350,8 +355,8 @@ a larger scale, which v3 does not use. To get F1's fill, the sheets must draw th
     the roof (`growth/footing-N`, `banner-N`); a goal's annex (Thrift, Quality) stands against its east wall. The
     preview shows the Agent pool at III, the Test bench at II with the Quality annex, the Town Hall at I with the
     Thrift annex.
-13. **The person's home stands beside the Review gate**, east of it on the upper row: the person is the one who
-    approves at the gate. (k2 not yet drawn.)
+13. **The person's home stands beside the Review gate**, east of it on the upper row, its feet just above line 1
+    (no path: carts do not stop there): the person is the one who approves at the gate. One home per kin (k2).
 
 ### 4b. A real town on these rules (I1, built)
 

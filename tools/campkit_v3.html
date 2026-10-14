@@ -116,6 +116,7 @@ else v2's placeholder, else a block in v3's colours.</p>
   <label><input type="checkbox" id="t-names" checked> Building names</label>
   <label><input type="checkbox" id="t-blocks"> Blocks only (no v2 stand-ins)</label>
   <label><input type="checkbox" id="t-gate"> Gate clear (barrier up, no cart waiting)</label>
+  <button type="button" id="t-kin">Home: Ork</button>
   <span id="zoom" style="color:var(--ink-muted)"></span>
   <span id="count" style="color:var(--ink-muted)"></span>
 </div>
@@ -293,6 +294,11 @@ const BUILDINGS = [
 const GROWTH = { barracks: { level: 3 }, lab: { level: 2, annex: "quality" }, town_hall: { level: 1, annex: "thrift" } };
 const box = (type) => BUILDINGS.find((b) => b[0] === type)[2];
 const mid = (type) => { const [x, , w] = box(type); return x + w / 2; };
+// the person's home (k2, a home per kin: realm/intents.py ROLES' kins), beside the Review gate (§4.13); the bar's
+// button cycles the seven, an engineer's (the ork's) first
+const KINS = [["orc", "Ork"], ["elf", "Elf"], ["gnome", "Gnome"], ["knight", "Knight"], ["lich", "Lich"],
+  ["skeleton", "Skeleton"], ["goblin", "Goblin"]];
+let KIN = 0;
 let SIDING = null;                      // the booth's siding: { n0 } — the switch on line 1 at tile n0, buffer at n0 + 4
 const SPURS = { 1: [], 2: [] };         // the tiles where a station's track meets its line (a north T)
 
@@ -343,6 +349,21 @@ async function figure(file, cx, feet, opts = {}) {
     + (opts.flip ? ";transform:scaleX(-1)" : "");
   world.appendChild(d);
   return d;
+}
+// east of the gate, its feet just above line 1: the line's right column only runs below line 1, so the home may
+// stand over its turn without widening the loop
+async function home() {
+  const [kin] = KINS[KIN], f = `homes/${kin}.png`, i = await probe(V3 + f);
+  const [gx, , gw] = box("loot_vault"), x = gx + gw + 8, feet = LINE_Y - 10;
+  if (!i) { el("v3-slot", x, feet - 56, 64, 56).innerHTML = "<span>home 128</span>"; return; }
+  here.add(f);
+  const s = sc(f), w = i.naturalWidth * s, h = i.naturalHeight * s;
+  el("v3-shadow", x + 4, feet - 6, w / K - 8, 8);
+  const d = document.createElement("img");
+  d.className = "v3-img"; d.src = i.src; d.alt = "Home";
+  d.style.cssText = `left:${x * K}px;top:${feet * K - h}px;width:${w}px;height:${h}px`;
+  world.appendChild(d);
+  nameChip("Home", x + w / K / 2, feet - h / K / 2);
 }
 async function growth() {
   for (const [type, g] of Object.entries(GROWTH)) {
@@ -617,6 +638,7 @@ async function scene() {
   for (const b of BUILDINGS) await building(b);
   for (const [, name, [x, y, w, h], , , line] of BUILDINGS) nameChip(name, x + w / 2, line === "wall" || line === "end" ? y + h + 2 : y + h / 2);   // on the facade, clear of the lines
   await growth();
+  await home();
   // carts: two rolling on line 1, three waiting on the booth's siding (more behind them as a chip), one held on the
   // gate's weighbridge with the yellow flag and its chip (the barrier down); on line 2 one rolling and one at the Test bench
   const run = COL_R - COL_L - 40;
@@ -709,6 +731,9 @@ function redraw() {
     + `the wheel: ${STEPS.map((z) => "×" + z.b + "/×" + z.s).join(" · ")}; drag to pan)`;
 }
 document.getElementById("t-blocks").addEventListener("change", redraw);
+document.getElementById("t-kin").addEventListener("click", (e) => {
+  KIN = (KIN + 1) % KINS.length; e.target.textContent = `Home: ${KINS[KIN][1]}`; redraw();
+});
 frame.addEventListener("wheel", (e) => {                 // zoom by the wheel, snapping to the steps
   e.preventDefault();
   const i = STEPS.indexOf(L) + (e.deltaY < 0 ? 1 : -1);
