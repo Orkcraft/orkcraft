@@ -688,6 +688,566 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "decor/boulder.png",
+   "size": [
+    48,
+    40
+   ],
+   "frame": [
+    48,
+    40
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/brush.png",
+   "size": [
+    48,
+    32
+   ],
+   "frame": [
+    48,
+    32
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/bush-small.png",
+   "size": [
+    24,
+    16
+   ],
+   "frame": [
+    24,
+    16
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/bush.png",
+   "size": [
+    48,
+    32
+   ],
+   "frame": [
+    48,
+    32
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/log-mossy.png",
+   "size": [
+    48,
+    40
+   ],
+   "frame": [
+    48,
+    40
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/log.png",
+   "size": [
+    24,
+    24
+   ],
+   "frame": [
+    24,
+    24
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/logpile.png",
+   "size": [
+    48,
+    40
+   ],
+   "frame": [
+    48,
+    40
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/mushrooms-teal.png",
+   "size": [
+    24,
+    24
+   ],
+   "frame": [
+    24,
+    24
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/mushrooms-white.png",
+   "size": [
+    16,
+    24
+   ],
+   "frame": [
+    16,
+    24
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/pebbles.png",
+   "size": [
+    24,
+    24
+   ],
+   "frame": [
+    24,
+    24
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/pine.png",
+   "size": [
+    40,
+    48
+   ],
+   "frame": [
+    40,
+    48
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/reeds-small.png",
+   "size": [
+    16,
+    24
+   ],
+   "frame": [
+    16,
+    24
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/reeds-tall.png",
+   "size": [
+    40,
+    40
+   ],
+   "frame": [
+    40,
+    40
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/reeds.png",
+   "size": [
+    40,
+    40
+   ],
+   "frame": [
+    40,
+    40
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/rock.png",
+   "size": [
+    24,
+    16
+   ],
+   "frame": [
+    24,
+    16
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/rocks.png",
+   "size": [
+    40,
+    40
+   ],
+   "frame": [
+    40,
+    40
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/stump.png",
+   "size": [
+    24,
+    24
+   ],
+   "frame": [
+    24,
+    24
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/tree.png",
+   "size": [
+    40,
+    48
+   ],
+   "frame": [
+    40,
+    48
+   ],
+   "frames": 1,
+   "pitch": 6.31,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/corner-ne.png",
+   "size": [
+    43,
+    43
+   ],
+   "frame": [
+    43,
+    43
+   ],
+   "frames": 1,
+   "pitch": 7.19,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g1-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/corner-nw.png",
+   "size": [
+    44,
+    43
+   ],
+   "frame": [
+    44,
+    43
+   ],
+   "frames": 1,
+   "pitch": 7.19,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g1-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/earth.png",
+   "size": [
+    32,
+    32
+   ],
+   "frame": [
+    32,
+    32
+   ],
+   "frames": 1,
+   "pitch": 7.19,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g1-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/flowers.png",
+   "size": [
+    43,
+    43
+   ],
+   "frame": [
+    43,
+    43
+   ],
+   "frames": 1,
+   "pitch": 7.19,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g1-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/inner-ne.png",
+   "size": [
+    43,
+    43
+   ],
+   "frame": [
+    43,
+    43
+   ],
+   "frames": 1,
+   "pitch": 7.19,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g1-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/rim-e.png",
+   "size": [
+    18,
+    40
+   ],
+   "frame": [
+    18,
+    40
+   ],
+   "frames": 1,
+   "pitch": 7.19,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g1-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/rim-n.png",
+   "size": [
+    40,
+    17
+   ],
+   "frame": [
+    40,
+    17
+   ],
+   "frames": 1,
+   "pitch": 7.19,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g1-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/rim-s.png",
+   "size": [
+    40,
+    18
+   ],
+   "frame": [
+    40,
+    18
+   ],
+   "frames": 1,
+   "pitch": 7.19,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g1-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/rim-w.png",
+   "size": [
+    18,
+    40
+   ],
+   "frame": [
+    18,
+    40
+   ],
+   "frames": 1,
+   "pitch": 7.19,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g1-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/tufts.png",
+   "size": [
+    43,
+    43
+   ],
+   "frame": [
+    43,
+    43
+   ],
+   "frames": 1,
+   "pitch": 7.19,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g1-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
    "file": "orks/body/door.png",
    "size": [
     192,
@@ -1450,6 +2010,486 @@
    "placeholder": true,
    "source": "c2-track.png",
    "scale": 1.067,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/bubble/c.png",
+   "size": [
+    24,
+    21
+   ],
+   "frame": [
+    24,
+    21
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/bubble/e.png",
+   "size": [
+    24,
+    21
+   ],
+   "frame": [
+    24,
+    21
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/bubble/n.png",
+   "size": [
+    24,
+    21
+   ],
+   "frame": [
+    24,
+    21
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/bubble/ne.png",
+   "size": [
+    22,
+    19
+   ],
+   "frame": [
+    22,
+    19
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/bubble/nw.png",
+   "size": [
+    22,
+    19
+   ],
+   "frame": [
+    22,
+    19
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/bubble/s.png",
+   "size": [
+    24,
+    20
+   ],
+   "frame": [
+    24,
+    20
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/bubble/se.png",
+   "size": [
+    22,
+    19
+   ],
+   "frame": [
+    22,
+    19
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/bubble/sw.png",
+   "size": [
+    22,
+    19
+   ],
+   "frame": [
+    22,
+    19
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/bubble/tail-1.png",
+   "size": [
+    9,
+    9
+   ],
+   "frame": [
+    9,
+    9
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/bubble/tail-2.png",
+   "size": [
+    5,
+    5
+   ],
+   "frame": [
+    5,
+    5
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/bubble/w.png",
+   "size": [
+    24,
+    21
+   ],
+   "frame": [
+    24,
+    21
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/ring-l.png",
+   "size": [
+    80,
+    40
+   ],
+   "frame": [
+    80,
+    40
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "centre",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/ring-m.png",
+   "size": [
+    64,
+    32
+   ],
+   "frame": [
+    64,
+    32
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "centre",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/ring-s.png",
+   "size": [
+    32,
+    16
+   ],
+   "frame": [
+    32,
+    16
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "centre",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/scroll/a-bottom.png",
+   "size": [
+    42,
+    11
+   ],
+   "frame": [
+    42,
+    11
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/scroll/a-sheet.png",
+   "size": [
+    32,
+    42
+   ],
+   "frame": [
+    32,
+    42
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/scroll/a-top.png",
+   "size": [
+    43,
+    11
+   ],
+   "frame": [
+    43,
+    11
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/scroll/b-bottom.png",
+   "size": [
+    56,
+    15
+   ],
+   "frame": [
+    56,
+    15
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/scroll/b-sheet.png",
+   "size": [
+    42,
+    35
+   ],
+   "frame": [
+    42,
+    35
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/scroll/b-top.png",
+   "size": [
+    56,
+    15
+   ],
+   "frame": [
+    56,
+    15
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/scroll/banner.png",
+   "size": [
+    236,
+    38
+   ],
+   "frame": [
+    236,
+    38
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/scroll/c-bottom.png",
+   "size": [
+    41,
+    11
+   ],
+   "frame": [
+    41,
+    11
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/scroll/c-sheet.png",
+   "size": [
+    29,
+    36
+   ],
+   "frame": [
+    29,
+    36
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/scroll/c-top.png",
+   "size": [
+    41,
+    15
+   ],
+   "frame": [
+    41,
+    15
+   ],
+   "frames": 1,
+   "pitch": 8.39,
+   "show": 2,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u1-bubble.png",
+   "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   }

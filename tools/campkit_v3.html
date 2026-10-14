@@ -280,17 +280,79 @@ async function track() {
   await tile("stop-e", x, cy);
 }
 
-function paths() {
-  // the top row: a path from each door down to the line; a stop (the darker earth) where it meets the track
-  for (const [, , [x, y, w, h], , , kind] of BUILDINGS) {
-    if (kind === "line") { el("v3-at v3-path", x + w / 2 - 8, y + h - 4, 16, LINE_Y - (y + h) + 4); }
+// the ground (g1): the grass is the token; a path is the earth fill with the grass rim of an edge tile along each of
+// its open sides (the earth side flush with the path), so a path meets the grass with no step. Falls back to flat
+// earth until g1 is cut.
+let GROUND = null;
+async function loadGround() {
+  const names = ["earth", "rim-n", "rim-s", "rim-w", "rim-e", "tufts", "flowers"];
+  const got = await Promise.all(names.map((n) => probe(`${V3}ground/${n}.png`)));
+  GROUND = got.every(Boolean) ? Object.fromEntries(names.map((n, i) => [n, got[i]])) : null;
+}
+function repeatImg(cls, file, img, x, y, w, h, pos = "0 0") {
+  const s = sc(`ground/${file}.png`), d = document.createElement("div");
+  d.className = "v3-img " + cls;
+  d.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:url(${img.src}) ${pos} / ${img.naturalWidth * s}px ${img.naturalHeight * s}px repeat`;
+  world.appendChild(d);
+  return d;
+}
+function earthPath(x, y, w, h, sides = "nswe", gaps = []) {
+  if (!GROUND) return el("v3-at v3-path", x, y, w, h);
+  const X = x * K, Y = y * K, W = w * K, H = h * K;
+  repeatImg("", "earth", GROUND.earth, X, Y, W, H);
+  const r = (n) => GROUND["rim-" + n], s = (n) => sc(`ground/rim-${n}.png`);
+  const runs = (a, b) => {                                  // the stretch a..b less the gaps where paths join
+    const out = []; let at = a;
+    for (const [g0, g1] of gaps.slice().sort((p, q) => p[0] - q[0])) { if (g0 > at) out.push([at, g0]); at = Math.max(at, g1); }
+    if (at < b) out.push([at, b]); return out;
+  };
+  if (sides.includes("n")) for (const [a, b] of runs(x, x + w))
+    repeatImg("", "rim-n", r("n"), a * K, Y - (r("n").naturalHeight - 2) * s("n"), (b - a) * K, r("n").naturalHeight * s("n"));
+  if (sides.includes("s")) for (const [a, b] of runs(x, x + w))
+    repeatImg("", "rim-s", r("s"), a * K, Y + H - 2 * s("s"), (b - a) * K, r("s").naturalHeight * s("s"));
+  if (sides.includes("w")) repeatImg("", "rim-w", r("w"), X - (r("w").naturalWidth - 2) * s("w"), Y, r("w").naturalWidth * s("w"), H);
+  if (sides.includes("e")) repeatImg("", "rim-e", r("e"), X + W - 2 * s("e"), Y, r("e").naturalWidth * s("e"), H);
+}
+// grass tufts and flowers (g1's decals), sparse, from a fixed seed so every shot is the same
+function rand(seed) { let t = seed; return () => ((t = (t * 1103515245 + 12345) % 2147483648) / 2147483648); }
+function decals() {
+  if (!GROUND) return;
+  const r = rand(7);
+  for (let k = 0; k < 26; k++) {
+    const n = r() < 0.6 ? "tufts" : "flowers", img = GROUND[n], s = sc(`ground/${n}.png`);
+    const x = (OX - 60 + r() * (CAMP_W + 40)) * K, y = (-OY + r() * (CAMP_H + 2 * OY)) * K;
+    const d = document.createElement("img");
+    d.className = "v3-img"; d.src = img.src;
+    d.style.cssText = `left:${x}px;top:${y}px;width:${img.naturalWidth * s}px;height:${img.naturalHeight * s}px`;
+    world.appendChild(d);
   }
-  // the lane in front of the lower row, joined to the line by three short paths
+}
+// g2's decor, a little, only in the wilderness round the camp (never in the work area)
+const DECOR = [["tree", -6, 36], ["pine", 4, 92], ["bush", -12, 150], ["rock", 2, 214], ["mushrooms-teal", 14, 246],
+  ["pine", 524, 70], ["tree", 534, 130], ["logpile", 528, 196], ["reeds", 524, 250], ["stump", 150, -24], ["bush-small", 260, -30],
+  ["boulder", 380, -28], ["pebbles", 90, 282], ["log-mossy", 230, 290], ["mushrooms-white", 330, 284], ["rocks", 430, 288]];
+async function decor() {
+  for (const [n, x, y] of DECOR) {
+    const img = await probe(`${V3}decor/${n}.png`);
+    if (!img) continue;
+    const s = sc(`decor/${n}.png`), d = document.createElement("img");
+    d.className = "v3-img"; d.src = img.src;
+    d.style.cssText = `left:${x * K - img.naturalWidth * s / 2}px;top:${y * K - img.naturalHeight * s}px;width:${img.naturalWidth * s}px;height:${img.naturalHeight * s}px`;
+    world.appendChild(d);
+  }
+}
+
+function paths() {
+  // the top row: a path from each door down to the line (open to the grass on its two sides)
+  for (const [, , [x, y, w, h], , , kind] of BUILDINGS) {
+    if (kind === "line") earthPath(x + w / 2 - 8, y + h - 4, 16, LINE_Y - (y + h) + 4, "we");
+  }
   // a lane per row of buildings (the owner's answer, v3-prompts §8): the upper row's lane is the track's verge; the
   // lower row's runs under its doors, joined to the line by short paths between buildings, each joint a stop.
   // Carts stay on the line; lanes are for orks. An eleventh building starts another row and lane below, the same way.
-  el("v3-at v3-path", OX + 8, LANE_Y, 424, 16);
-  for (const x of [OX + 80, OX + 236, OX + 344]) el("v3-at v3-path", x, LINE_Y + 32, 16, LANE_Y - LINE_Y - 32);
+  const joints = [OX + 80, OX + 236, OX + 344];
+  earthPath(OX + 8, LANE_Y, 424, 16, "nswe", joints.map((x) => [x, x + 16]));
+  for (const x of joints) earthPath(x, LINE_Y + 32, 16, LANE_Y - LINE_Y - 32, "we");
   // the low palisade: along the top (a gap where the track comes in at the tower's foot) and down the right side
   el("v3-at v3-palisade", OX - 40, 0, 96, 32);
   el("v3-at v3-palisade", OX + 88, 0, WALL_X + 16 - OX - 88, 32);
@@ -361,10 +423,13 @@ async function cart(x, load, opts = {}) {
 }
 
 async function scene() {
+  await loadGround();
+  decals();
+  await decor();
   paths();
   await track();
   for (const b of BUILDINGS) await building(b);
-  for (const [, name, [x, y, w, h], , , kind] of BUILDINGS) nameChip(name, x + w / 2, kind === "lane" ? y + h + 12 : kind === "wall" ? y + h + 2 : y - 14);
+  for (const [, name, [x, y, w, h], , , kind] of BUILDINGS) nameChip(name, x + w / 2, y + h + 2);   // just under the foot
   // carts: two rolling, one stopped at the Task board's path, one held at the gate with the yellow flag and its chip
   await cart(OX + 96, "code", { roll: 240, dur: 14 });
   await cart(OX + 96, "message", { roll: 240, dur: 14, delay: -7 });

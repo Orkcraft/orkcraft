@@ -695,8 +695,75 @@ def cut_track(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
             problems.append(seam(out, item["file"], T // n))
 
 
+def cut_ground(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) -> None:
+    """The ground (v3, g1). Its grass and earth are moved onto the tokens' (`world-grass`, `world-earth`: F1's), so an
+    edge meets the plain grass, which is the token itself, without a step; outlines stay. Roles: `decal` (a tile's
+    plain grass made transparent, its tufts or flowers kept), `fill` (the earth from inside the tile's drawn border,
+    `inset` of it, cut to a multiple of 8 so it repeats), `rim-n|s|w|e` (the strip of an edge tile from its grass side
+    to just inside the earth, the earth side flush with a path's edge, repeated along it), `tile` (whole)."""
+    tok = {t["name"]: _rgb(t["value"]["camp"]) for t in json.loads(TOKENS.read_text(encoding="utf-8"))["color"]["tokens"]
+           if t["name"] in ("world-grass", "world-earth")}
+    def inner(img, f=0.25):
+        h, w = img.shape[:2]
+        return img[int(h * f):int(h * (1 - f)), int(w * f):int(w * (1 - f))]
+    def med(img):
+        px = img[img[..., 3] > 0][:, :3].astype(float)
+        return np.median(px, axis=0)
+    # each cell less its outermost pixel, where the magenta between the cells bled in
+    by_order = {item["order"]: trim(sheet.native(_extract(sheet, item)))[1:-1, 1:-1] for item in group["items"]}
+    g_med = med(inner(trim(sheet.native(sheet.nth(group["grass_ref"])))))
+    e_med = med(inner(trim(sheet.native(sheet.nth(group["earth_ref"])))))
+    def is_grass(rgb):
+        return (rgb[..., 1] > rgb[..., 0] + 8) & (rgb[..., 1] > rgb[..., 2] + 8)
+    def onto_tokens(img):
+        out = img.copy()
+        rgb = img[..., :3].astype(float)
+        lum = 0.3 * rgb[..., 0] + 0.59 * rgb[..., 1] + 0.11 * rgb[..., 2]
+        g = is_grass(rgb) & (img[..., 3] > 0)
+        e = ~g & (img[..., 3] > 0) & (lum > 45)
+        rgb[g] += np.array(tok["world-grass"]) - g_med
+        rgb[e] += np.array(tok["world-earth"]) - e_med
+        out[..., :3] = rgb.clip(0, 255).astype(np.uint8)
+        return out
+    problems.append(f"{group['_sheet']}: the sheet's grass {'#%02x%02x%02x' % tuple(int(v) for v in g_med)} → "
+                    f"world-grass, its earth {'#%02x%02x%02x' % tuple(int(v) for v in e_med)} → world-earth")
+    for item in group["items"]:
+        img, role = by_order[item["order"]], item["role"]
+        if role == "decal":
+            rgb = img[..., :3].astype(float)
+            plain = np.sqrt(((rgb - g_med) ** 2).sum(-1)) < group.get("plain", 22)
+            img = img.copy()
+            img[plain] = 0
+            img = onto_tokens(img)
+        elif role == "fill":
+            h, w = img.shape[:2]
+            f = item.get("inset", 0.12)
+            img = img[int(h * f):, int(w * f):]
+            n = min(img.shape[0], img.shape[1], int(min(h, w) * (1 - 2 * f))) // 8 * 8
+            img = onto_tokens(img[:n, :n])
+        elif role.startswith("rim-"):
+            side = role[-1]
+            a = img if side in "ns" else img.transpose(1, 0, 2)
+            a = a if side in "nw" else a[::-1]                     # grass side first
+            earth = ~is_grass(a[..., :3].astype(int)) & (a[..., 3] > 0)
+            frac = earth.mean(axis=1)
+            r = int(np.argmax(frac >= 0.9)) if (frac >= 0.9).any() else a.shape[0] // 2
+            a = a[:r + 2]
+            L = a.shape[1] // 8 * 8                                  # a whole number of 8 along the edge, centred
+            x0 = (a.shape[1] - L) // 2
+            a = a[:, x0:x0 + L]
+            a = a if side in "nw" else a[::-1]
+            img = onto_tokens(a if side in "ns" else a.transpose(1, 0, 2))
+        else:
+            img = onto_tokens(img)
+        img = own_palette(img, group.get("colours", 24))
+        _write(img, item["file"], group, rows, problems, img.shape[1::-1], 1, 1, anchor="top-left")
+
+
 def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) -> None:
     kind = group.get("kind", "sprite")
+    if kind == "ground":
+        return cut_ground(sheet, group, rows, problems)
     if kind == "track":
         return cut_track(sheet, group, rows, problems)
     pal = palette(group.get("tones", []), group.get("signals", False))
@@ -736,7 +803,8 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
         frames = []
         if group.get("native"):                 # v3: the slot is what the sheet draws, on the grid of 8, never resampled
             imgs = [trim(sheet.native(b)) for b in bs]
-            item = {**item, "size": (up8(max(i.shape[1] for i in imgs)), up8(max(i.shape[0] for i in imgs)))}
+            r8 = (lambda n: n) if group.get("exact") else up8          # `exact`: nine-slice pieces keep their size
+            item = {**item, "size": (r8(max(i.shape[1] for i in imgs)), r8(max(i.shape[0] for i in imgs)))}
         read = lambda box: trim(sheet.native(box) if scale == 1 else sheet.coarse(box, scale))  # noqa: E731
         for b in bs:
             img = read(b)

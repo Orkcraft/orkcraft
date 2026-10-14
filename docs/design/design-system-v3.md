@@ -132,6 +132,14 @@ each sprite's `pitch` and `show`; the preview reads them.
 | o1, o2 orks | 5.00, 5.15 | frames about 32–54 × 46–57 | 48–64 tall | ×1 | about 54 · 81 |
 | c1 carts | 8.33 | about 38–41 wide | about 64 | ×2 | 76–82 · 114–123 |
 | c2 track | 6.24 | tile 64 (4 tie spacings of 15 → 60, ×1.07) | 48–64 | ×1 | 64 · 96 |
+| g1 ground | 7.19 | tiles 45; earth fill 32, rims 40 × 17–18 | — | ×1 | 32 · 48 (fill) |
+| g2 decor | 6.31 | 18–47 | — | ×1 | trees about 45 · 68 |
+| u1 bubble and scroll (I1) | 8.39 | bubble pieces 22–24, scroll sheets 29–42, banner 236 × 38 | about 40 | ×2 | for I1 |
+
+**Carts against orks** (round 6, at ×2 as decided): an ork is drawn 44 px tall (o1's idle; the roles 40–43); a cart is
+36 art px wide, so 72 px at ×2. The empty cart stands 62 px, the loaded ones 70 (letter) to 86 (scroll, crate): the
+load rises to about twice the ork's height (×1.5: 93–129 against 66). At ×1 a cart would be 36 × 31–43, as tall as an
+ork, but under the 64-px target.
 
 **The window: 1440 × 900.** A 36 px HUD, then the world, 1440 × 864. At ×1.5 the packed camp (496 × 264 layout units of
 2 px) is about 1490 × 790 px: it fills the window, its two outer walls just past the edges.
@@ -268,7 +276,7 @@ Toggles: *Grey test*, *Show v3 slots* (each sprite's slot, dashed, with its size
 
 Screenshots at 1440 × 900 on a density-2 screen (×1.5, round 5): [the town](img/v3-preview/v3-town.png),
 [in grey](img/v3-preview/v3-town-grey.png), [with the slots](img/v3-preview/v3-town-slots.png); at density 1 (×1):
-[the town](img/v3-preview/v3-town-dpr1.png); before the first sheet: [round 1](img/v3-preview/v3-town-round1.png).
+[the town](img/v3-preview/v3-town-dpr1.png); the labels sit just under each building's foot (round 6); before the first sheet: [round 1](img/v3-preview/v3-town-round1.png).
 The preview is written by `tools/campkit_v3.py` from `tools/campkit_v3.html` (`--v3` runs it after cutting).
 
 ## 8. The sheets: names, sizes, one command
@@ -309,6 +317,19 @@ row 1 `empty`, `code`, `asset` (the crate), `message`, `doc`, `bundle`; row 2 `f
 straight-h, 1 straight-v, 3 corner-se, 4 corner-sw, 6 corner-ne, 8 t-n, 9 t-s, 10 switch-e (two tiles long), 11 the
 merge and the crossing drawn touching (cut by halves: merge-e two tiles long, cross), 12 stop-e; not used: 2 (a vertical
 switch) and 5, 7 (smaller south-east curves). **There is no north-west curve yet**: the next c2 asks for it.
+
+**g1, g2, u1** (round 6). **g1, the ground:** plain grass is the token `world-grass` itself; the sheet's grass
+(`#507937`) and earth (`#664633`) are moved onto the tokens' (`world-grass`, and `world-earth`, F1's sand) so an edge
+meets the plain grass with no step and the paths keep F1's sand; outlines stay. Cut with `kind: ground`: the tufts and
+the flowers as **decals** (their plain grass transparent), the **earth fill** from inside its drawn border (32 × 32,
+repeating), and **rims** from the edge tiles (`rim-n`, `rim-s`, `rim-w`, `rim-e`: the grass side to just inside the
+earth, laid along a path's open sides, its earth side flush with the path); the corners `corner-ne`, `corner-nw` and
+an inner corner kept whole (no south corners on the sheet). In the preview the paths and the lane are earth with grass
+rims, the rims left open where paths join. **g2, the decor:** seventeen pieces plus a dry brush and a mossy log drawn
+touching (cut by halves), scattered sparsely in the wilderness round the camp only. **u1, for I1:** the bubble's nine
+pieces (`ui/bubble/nw…se`) and its two tail dots, three scroll columns (`ui/scroll/a|b|c-top|sheet|bottom`), the long
+`banner`, three rings (`ui/ring-s|m|l`, the small one dashed); nine-slice pieces keep their exact size (`exact`), so
+some are off the grid of 8 — I1 uses them as drawn. No UI is built from them here. g3 (the palisade) is not cut.
 
 **o1 and o2** (round 5, the owner's ork): o1 by order, rows idle 4, walk-down 6, walk-up 6, walk-side 6, work 6, door 4;
 o2 row 1 in the prompt's order without the pathfinder (warchief … warder, prospector, loader), the pathfinder from row 2

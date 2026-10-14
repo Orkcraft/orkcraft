@@ -1113,159 +1113,175 @@
   {
    "name": "g1-ground",
    "file": "g1-ground.png",
-   "about": "§3d.1 the forest ground, 32 × 32 seamless: three grass, two earth, grass-to-earth edges (n e s w) and corners (ne nw se sw)",
+   "about": "§3d.1 the forest ground (round 6): row 1 plain grass, tufts, flowers, an inner corner, an earth fill; row 2 three more fills; rows 3–4 the grass-to-earth edges and corners. Plain grass is the token `world-grass` itself; the sheet's grass and earth are moved onto the tokens'",
    "groups": [
     {
-     "kind": "tiles",
+     "kind": "ground",
      "size": [
-      32,
-      32
+      48,
+      48
      ],
      "anchor": "top-left",
+     "grass_ref": 0,
+     "earth_ref": 6,
      "items": [
       {
-       "file": "ground/grass-0.png",
-       "order": 0
+       "file": "ground/tufts.png",
+       "order": 1,
+       "role": "decal"
       },
       {
-       "file": "ground/grass-1.png",
-       "order": 1
+       "file": "ground/flowers.png",
+       "order": 2,
+       "role": "decal"
       },
       {
-       "file": "ground/grass-2.png",
-       "order": 2
+       "file": "ground/earth.png",
+       "order": 6,
+       "role": "fill",
+       "inset": 0.12
       },
       {
-       "file": "ground/earth-0.png",
-       "order": 3
+       "file": "ground/rim-n.png",
+       "order": 9,
+       "role": "rim-n"
       },
       {
-       "file": "ground/earth-1.png",
-       "order": 4
+       "file": "ground/rim-s.png",
+       "order": 10,
+       "role": "rim-s"
       },
       {
-       "file": "ground/edge-n.png",
-       "order": 5
+       "file": "ground/rim-w.png",
+       "order": 12,
+       "role": "rim-w"
       },
       {
-       "file": "ground/edge-e.png",
-       "order": 6
+       "file": "ground/rim-e.png",
+       "order": 13,
+       "role": "rim-e"
       },
       {
-       "file": "ground/edge-s.png",
-       "order": 7
+       "file": "ground/corner-ne.png",
+       "order": 11,
+       "role": "tile"
       },
       {
-       "file": "ground/edge-w.png",
-       "order": 8
+       "file": "ground/corner-nw.png",
+       "order": 17,
+       "role": "tile"
       },
       {
-       "file": "ground/edge-ne.png",
-       "order": 9
-      },
-      {
-       "file": "ground/edge-nw.png",
-       "order": 10
-      },
-      {
-       "file": "ground/edge-se.png",
-       "order": 11
-      },
-      {
-       "file": "ground/edge-sw.png",
-       "order": 12
+       "file": "ground/inner-ne.png",
+       "order": 3,
+       "role": "tile"
       }
      ]
     }
-   ]
+   ],
+   "close": 0,
+   "show": 1
   },
   {
    "name": "g2-decor",
    "file": "g2-decor.png",
-   "about": "§3d.2 decorations: two trees, two bushes, a rock, a stump, reeds, a log pile, mushrooms",
+   "about": "§3d.2 the decor (round 6): row 1 small, row 2 large, row 3 a dry brush and a mossy log (drawn touching: cut by halves) and rocks",
    "groups": [
     {
      "size": [
-      32,
-      32
+      48,
+      48
      ],
      "anchor": "feet",
      "items": [
       {
-       "file": "decor/tree-0.png",
-       "order": 0,
-       "size": [
-        32,
-        48
-       ]
+       "file": "decor/stump.png",
+       "order": 0
       },
       {
-       "file": "decor/tree-1.png",
-       "order": 1,
-       "size": [
-        32,
-        48
-       ]
-      },
-      {
-       "file": "decor/bush-0.png",
-       "order": 2,
-       "size": [
-        32,
-        32
-       ]
-      },
-      {
-       "file": "decor/bush-1.png",
-       "order": 3,
-       "size": [
-        16,
-        16
-       ]
+       "file": "decor/reeds-small.png",
+       "order": 1
       },
       {
        "file": "decor/rock.png",
-       "order": 4,
-       "size": [
-        16,
-        16
-       ]
+       "order": 2
       },
       {
-       "file": "decor/stump.png",
-       "order": 5,
-       "size": [
-        16,
-        16
-       ]
+       "file": "decor/pebbles.png",
+       "order": 3
+      },
+      {
+       "file": "decor/mushrooms-teal.png",
+       "order": 4
+      },
+      {
+       "file": "decor/mushrooms-white.png",
+       "order": 5
+      },
+      {
+       "file": "decor/bush-small.png",
+       "order": 6
+      },
+      {
+       "file": "decor/log.png",
+       "order": 7
+      },
+      {
+       "file": "decor/tree.png",
+       "order": 8
+      },
+      {
+       "file": "decor/pine.png",
+       "order": 9
+      },
+      {
+       "file": "decor/logpile.png",
+       "order": 10
+      },
+      {
+       "file": "decor/boulder.png",
+       "order": 11
+      },
+      {
+       "file": "decor/bush.png",
+       "order": 12
       },
       {
        "file": "decor/reeds.png",
-       "order": 6,
-       "size": [
-        16,
-        16
+       "order": 13
+      },
+      {
+       "file": "decor/reeds-tall.png",
+       "order": 14
+      },
+      {
+       "file": "decor/brush.png",
+       "order": 15,
+       "crop": [
+        0,
+        0,
+        0.5,
+        1
        ]
       },
       {
-       "file": "decor/logs.png",
-       "order": 7,
-       "size": [
-        32,
-        32
+       "file": "decor/log-mossy.png",
+       "order": 15,
+       "crop": [
+        0.5,
+        0,
+        1,
+        1
        ]
       },
       {
-       "file": "decor/mushrooms.png",
-       "order": 8,
-       "size": [
-        16,
-        16
-       ]
+       "file": "decor/rocks.png",
+       "order": 16
       }
      ]
     }
-   ]
+   ],
+   "show": 1
   },
   {
    "name": "g3-palisade",
@@ -1495,8 +1511,143 @@
   {
    "name": "u1-bubble",
    "file": "u1-bubble.png",
-   "about": "§3e.1 the keeper's bubble and the scroll",
-   "later": "I1 (nine-slices on an 8-px grid: the bubble, the scroll; three selection rings)"
+   "about": "§3e.1 for I1 (round 6): the thought bubble's nine pieces and its two tail dots; a scroll in three columns (a: the left one, rolled at its side; b: the middle, stretchable; c: the right), each a top roll, a sheet and a bottom roll; the long banner scroll; three selection rings (the small one dashed). Nine-slice pieces keep their exact size",
+   "close": 0,
+   "target": {
+    "h": 40
+   },
+   "groups": [
+    {
+     "size": [
+      24,
+      24
+     ],
+     "anchor": "top-left",
+     "exact": true,
+     "items": [
+      {
+       "file": "ui/bubble/nw.png",
+       "order": 0
+      },
+      {
+       "file": "ui/bubble/n.png",
+       "order": 1
+      },
+      {
+       "file": "ui/bubble/ne.png",
+       "order": 2
+      },
+      {
+       "file": "ui/bubble/w.png",
+       "order": 6
+      },
+      {
+       "file": "ui/bubble/c.png",
+       "order": 8
+      },
+      {
+       "file": "ui/bubble/e.png",
+       "order": 10
+      },
+      {
+       "file": "ui/bubble/sw.png",
+       "order": 7
+      },
+      {
+       "file": "ui/bubble/s.png",
+       "order": 9
+      },
+      {
+       "file": "ui/bubble/se.png",
+       "order": 11
+      },
+      {
+       "file": "ui/bubble/tail-1.png",
+       "order": 15
+      },
+      {
+       "file": "ui/bubble/tail-2.png",
+       "order": 19
+      }
+     ]
+    },
+    {
+     "size": [
+      48,
+      48
+     ],
+     "anchor": "top-left",
+     "exact": true,
+     "items": [
+      {
+       "file": "ui/scroll/a-top.png",
+       "order": 3
+      },
+      {
+       "file": "ui/scroll/b-top.png",
+       "order": 4
+      },
+      {
+       "file": "ui/scroll/c-top.png",
+       "order": 5
+      },
+      {
+       "file": "ui/scroll/a-sheet.png",
+       "order": 12
+      },
+      {
+       "file": "ui/scroll/b-sheet.png",
+       "order": 13
+      },
+      {
+       "file": "ui/scroll/c-sheet.png",
+       "order": 14
+      },
+      {
+       "file": "ui/scroll/a-bottom.png",
+       "order": 16
+      },
+      {
+       "file": "ui/scroll/b-bottom.png",
+       "order": 17
+      },
+      {
+       "file": "ui/scroll/c-bottom.png",
+       "order": 18
+      },
+      {
+       "file": "ui/scroll/banner.png",
+       "order": 20
+      }
+     ]
+    },
+    {
+     "size": [
+      80,
+      40
+     ],
+     "anchor": "centre",
+     "items": [
+      {
+       "file": "ui/ring-s.png",
+       "box": [
+        0.09663865546218488,
+        0.8354430379746836,
+        0.23109243697478993,
+        0.9367088607594937
+       ]
+      },
+      {
+       "file": "ui/ring-m.png",
+       "order": 25
+      },
+      {
+       "file": "ui/ring-l.png",
+       "order": 26
+      }
+     ]
+    }
+   ]
   },
   {
    "name": "u2-panels",
