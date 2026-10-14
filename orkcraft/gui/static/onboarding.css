@@ -110,6 +110,10 @@
   background: var(--road-bright); box-shadow: inset 0 2px 0 var(--road-selected), inset 0 -2px 0 var(--road); }
 .gui-onb__how { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--space-6); align-items: start; }
 .gui-onb__how p { margin: var(--space-1) 0 0; }
+/* Mission 1 (first-mission.md §3): the person raises the camp themselves; first on the town step. */
+.gui-onb__mission { display: flex; gap: var(--space-4); align-items: center; justify-content: space-between;
+  padding: var(--space-3); background: var(--panel-raised); box-shadow: var(--bevel-raised); border-radius: var(--ok-radius); }
+.gui-onb__mission p { margin: var(--space-1) 0 0; }
 .gui-onb__choose { display: flex; flex-direction: column; gap: var(--space-2); }
 .gui-onb__choose .ok-btn { justify-content: center; }
 

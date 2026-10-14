@@ -322,6 +322,11 @@ function TownStep({ o }) {
   const it = o.towns[Math.min(pick, o.towns.length - 1)];
   return html`<section class="gui-onb__card is-wide">
     <${Head} o=${o} title="Your first town" lead=${o.nick ? say(`For a ${o.nick}`) : ""} />
+    <div class="gui-onb__mission">
+      <div><span class="ok-font-label">Mission 1 · Set up the camp</span>
+        <p class="ok-font-body">${say("Build your first town yourself, one building a quest: a Task board, an Agent pool, a Review gate. A drill shows what each one does. About 5 minutes, free, no model.")}</p></div>
+      <span><button class="ok-btn primary" onClick=${() => send("onboarding.town", { mission: true })}>Set up the camp myself</button></span>
+    </div>
     ${it ? html`
       <div class="ok-tabs" role="tablist">
         ${o.towns.map((x, i) => html`<button key=${x.id} role="tab" aria-selected=${i === pick}
@@ -331,7 +336,7 @@ function TownStep({ o }) {
       <div class="gui-onb__how">
         <div><span class="ok-font-label">How it works</span><p class="ok-font-body">${it.summary || it.blurb}</p></div>
         <div class="gui-onb__choose">
-          <button class="ok-btn primary" onClick=${() => send("onboarding.town", { preset: it.id })}>Use this town</button>
+          <button class="ok-btn" onClick=${() => send("onboarding.town", { preset: it.id })}>Use this town</button>
           <button class="ok-btn" disabled=${!o.planner} title=${o.planner ? "" : say("No AI tool that can plan a town is on")}
             onClick=${() => send("onboarding.town", { custom: true })}>Doesn't fit: tell the planner</button>
           <button class="ok-btn gui-onb__quiet" onClick=${() => send("onboarding.town", { empty: true })}>Empty town, I'll build it myself</button>

@@ -2490,3 +2490,21 @@ def test_the_agent_pool_s_lanes_are_roles_and_a_session_s_chip_opens_it(gui, pag
     pg.locator(".gui-orkconsole[aria-label=\"snaga's console\"]").wait_for(timeout=WAIT_MS)
     pg.get_by_role("button", name="Close").last.click()
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+
+
+def test_mission_1_shows_its_quest_in_the_warchiefs_line_and_sets_up_the_board(page, gui):
+    """first-mission.md §3: the quest log stands in the Warchief's line; its one press sets up the building on its
+    plot; Skip the mission leaves the town as it stands."""
+    server, _ = gui
+    pg = page
+    server.host.town.call(server.host.mission.begin)
+    log = pg.locator(".gui-warchief__setup", has_text="Mission 1 · quest 1 of 4")
+    log.wait_for(state="visible", timeout=WAIT_MS)
+    assert "the work needs somewhere to lie" in log.inner_text() and "free, no model" in log.inner_text()
+    log.get_by_role("button", name="Set up the Task board").click()
+    pg.locator(".gui-warchief__setup", has_text="quest 2 of 4").wait_for(state="visible", timeout=WAIT_MS)
+    board = server.host.mission.mission.state["built"]["board"]
+    _hut(pg, board).wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".gui-warchief__setup").get_by_role("button", name="Skip the mission").click()
+    pg.wait_for_function("() => !document.querySelector('.gui-warchief__setup')", timeout=WAIT_MS)
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", board)

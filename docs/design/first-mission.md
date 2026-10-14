@@ -1,6 +1,10 @@
 # Design — the first session is a game's first mission
 
-Status: proposal 2026-10-12, the owner's ask; nothing built. Priority **P0**: it is the first fifteen minutes.
+Status: proposal 2026-10-12, the owner's ask. Priority **P0**: it is the first fifteen minutes. **Built 2026-10-14
+(B7): quests 1 to 3½** (`realm/mission.py` the quests and their words, `core/mission.py` the work, `gui/mission.py`
+and `js/mission.js` the quest log in the Warchief's line); offered first on the onboarding's town step ("Set up the
+camp myself"). The drill runs no model: the Agent pool runs it by a script while its `drill.json` is there. Not yet:
+quests 4 and 5, the hooks asked before quest 4, the deeds and the mascot's stage, the class changing the words.
 Builds on [gui-onboarding.md](gui-onboarding.md) and [onboarding.md](onboarding.md) (today's steps),
 [growth.md](growth.md) (deeds, the mascot), [ork-console.md](ork-console.md) (❓, the console, the one status),
 [cut-list.md](cut-list.md) (the onboarding row), [dogfood-logs.md](dogfood-logs.md) (the events).

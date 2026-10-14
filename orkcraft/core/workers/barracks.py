@@ -98,6 +98,8 @@ def _simulated_steward(harness, prompt, workdir, cancel, model):
     return "ACCEPT\n_(demo — simulated review)_", None
 
 
+DRILL = "drill.json"            # a drill's script, `simulated.json`'s shape: while it is here, the pool runs no model
+
 TITLE_WORDS = 4                 # a task written without a title is named by its brief's first words
 
 
@@ -548,12 +550,21 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
         timeline.take(self.town, where, project, f"after {orc.name}: {task.title}")
         self._call(self.finish, task.id, orc.name, out)
 
+    @property
+    def simulated(self) -> bool:
+        """The demo's sandbox, or a drill under way here (Mission 1, core/mission.py): no model, no git, no plan."""
+        return super().simulated or (self.state_dir / DRILL).is_file()
+
     def _sandbox_work(self):
-        """The sandbox's ork: its report from `simulated.json` (what the demo wrote), else the plain one."""
-        try:
-            rules = json.loads((self.state_dir / "simulated.json").read_text(encoding="utf-8")).get("work")
-        except (OSError, ValueError, AttributeError):
-            rules = None
+        """The sandbox's ork: its report from the drill's script, else from `simulated.json` (what the demo wrote),
+        else the plain one."""
+        rules = None
+        for name in (DRILL, "simulated.json"):
+            try:
+                rules = json.loads((self.state_dir / name).read_text(encoding="utf-8")).get("work")
+            except (OSError, ValueError, AttributeError):
+                continue
+            break
         return _scripted_work(rules) if isinstance(rules, list) and rules else _simulated_work
 
     def _call(self, fn, *args) -> None:

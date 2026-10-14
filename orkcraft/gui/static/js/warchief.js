@@ -41,6 +41,7 @@ import { WarchiefHead, StewardHead } from "./icons.js";
 import { askKeeper } from "./keeper.js";
 import { ImprovePick, SINCE_UPDATE } from "./improve.js";
 import { fold, foldQuiet, unfoldAll } from "./fold.js";
+import { QuestLog } from "./mission.js";
 
 const THREAD = 3;                          // the last messages shown over the line
 const HISTORY = 30;                        // lines ↑ walks back through
@@ -608,6 +609,7 @@ export function WarchiefLine() {
         ${b.alert && html`<span class="ok-word gui-warchief__ask">?</span>`}
       </button>`;
   const thread = !!data && (focused || !!shown || data.thinking);
+  const quest = t.onboarding ? null : t.mission;   // Mission 1's quest under way (js/mission.js)
   return html`<div ref=${root} class=${cls("gui-warchief", { "is-focused": focused, "is-alert": t.alerts.length > 0 })}>
     ${picking ? html`<div key="improve" class="ok-win gui-warchief__over gui-warchief__grown">
       <div class="ok-win__frame"><div class="ok-win__body"><${ImprovePick} im=${t.improve} onPick=${improve} /></div></div></div>`
@@ -621,6 +623,8 @@ export function WarchiefLine() {
           <button class="gui-link ok-font-status" onClick=${() => { endSetup(); openBuilding(suB.id, "info"); }}>${say("All its settings")}</button>
           <button class="ok-btn" onClick=${() => { endSetup(); }}>${say("Later")}</button></div>
       </div></div></div>`
+    : quest && !focused ? html`<div key="quest" class="ok-win gui-warchief__over gui-warchief__setup" aria-live="polite">
+      <div class="ok-win__frame"><div class="ok-win__body"><${QuestLog} m=${quest} name=${name} /></div></div></div>`
     : focused || thread || !!said ? html`<div key="over" class="ok-win gui-warchief__over"
         onMouseDown=${(e) => { if (!e.target.closest("input, textarea, select")) e.preventDefault(); }}>
       <div class="ok-win__frame"><div class="ok-win__body">
@@ -628,7 +632,7 @@ export function WarchiefLine() {
         ${said && html`<p class="ok-font-status ok-tone-wait gui-warchief__said">${said}</p>`}
         ${focused && html`<${Over} text=${l.text} about=${[...l.about, ...(auto ? [auto.id] : [])]} onPick=${pick} />`}
       </div></div></div>` : null}
-    <${Speaks} hidden=${!!card || buildOn || focused || thread || !!said || !!setting || !!l.text || chips.length > 0} />
+    <${Speaks} hidden=${!!card || buildOn || focused || thread || !!said || !!setting || !!quest || !!l.text || chips.length > 0} />
     <div key="bar" class="gui-warchief__bar">
       ${face}
       ${card && html`<span class="gui-warchief__who ok-font-status"

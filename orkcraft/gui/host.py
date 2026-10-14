@@ -29,7 +29,7 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import (accounts, awake, away, bench, builder, console, day_logs, day_review, failures, fixes, github, growth, history, mobile, nightly, onboarding, projects,
+from orkcraft.gui import (accounts, awake, away, bench, builder, console, day_logs, day_review, failures, fixes, github, growth, history, mission, mobile, nightly, onboarding, projects,
                           state, town_settings, updates, views, you)
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
@@ -141,6 +141,8 @@ class Host:
         self.commands.update(self.updates.commands())
         self.onboarding = onboarding.Onboarding(self)   # a project with no town yet opens on it (gui/onboarding.py)
         self.commands.update(self.onboarding.commands())
+        self.mission = mission.MissionFace(self)        # Mission 1's quest log (gui/mission.py, core/mission.py)
+        self.commands.update(self.mission.commands())
         # "Since your last look" (core/last_look.py): the page beats while it is in front of the person
         self.last_look = last_look.LastLook(self.town, self.muster, self.limits,
                                             lambda: treasury.subscriptions(self.town.machine))
@@ -171,6 +173,7 @@ class Host:
         snap["improve"] = self.day_review.state()          # the days Improve can read, and the one read now
         snap["fixes"] = self.fixes.summary()               # Improve Orkline: comments waiting, fixes written (js/fixes.js)
         snap["onboarding"] = self.onboarding.snapshot()    # the first run's steps and the town going up (js/onboarding.js)
+        snap["mission"] = self.mission.snapshot()          # Mission 1's quest under way (js/mission.js)
         snap["last_look"] = self.last_look.snapshot()      # what greets the person back (js/lastlook.js)
         return snap
 
@@ -279,6 +282,7 @@ class Host:
         self.usage.tick(now)
         self.updates.tick(now)
         self.onboarding.tick(now)
+        self.mission.tick()
 
     def _wakes(self, now: float) -> None:
         """A script-first building's ork wakes on an error or a 👎 (core/wakes.py), as its keeper's job."""
@@ -399,7 +403,7 @@ class Host:
             result = fn(args)
         except (console.ConsoleError, growth.GrowthError, updates.UpdateError, onboarding.OnboardingError,
                 you.YouError, accounts.AccountsError, github.GithubCommandError, bench.BenchError, projects.ProjectCommandError,
-                history.HistoryError, fixes.FixError) as e:
+                history.HistoryError, fixes.FixError, mission.MissionError) as e:
             raise CommandError(str(e)) from None
         self._used(name, args, result)
         return result

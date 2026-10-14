@@ -83,6 +83,7 @@ class Onboarding:
         self.servers: list[mcp.Server] = []
         self.mcp_on: list[str] = []
         self.raising: dict[str, Any] | None = None
+        self.mission = False            # the person chose to raise the camp themselves: Mission 1 when the town opens
         self._queue: list[tuple[str, Callable[[], Any], str]] = []    # (label, act, building id or "")
         self._next_at = 0.0
         self._plan_title = ""
@@ -410,8 +411,12 @@ class Onboarding:
         return self.snapshot()
 
     def set_town(self, args: dict) -> dict | None:
-        """A ready town (`preset`), the survey (`custom`) or an empty town (`empty`)."""
+        """Mission 1 (`mission`: the person raises the camp, a quest a building, first-mission.md §3), a ready town
+        (`preset`), the survey (`custom`) or an empty town (`empty`)."""
         self._live()
+        if args.get("mission"):
+            self.mission = True                 # it starts when the town is opened (`close`)
+            return self._begin(None, "")
         if args.get("custom"):
             if not self.snapshot()["planner"]:
                 raise OnboardingError("No AI tool that can plan a town is on")
@@ -462,6 +467,9 @@ class Onboarding:
         """The town stands: the onboarding leaves the page."""
         if self.raising and self.raising["phase"] in ("done", "failed"):
             self.active = False
+            if self.mission:
+                self.mission = False
+                self.host.mission.begin()
             self.host.on_change()
 
     # -- raising the town --------------------------------------------------------------------------
@@ -480,7 +488,7 @@ class Onboarding:
     def _begin(self, it: intents.Intent | None, prompt: str, answers: dict | None = None) -> dict | None:
         town = self.host.town
         self._save_machine()
-        title = it.title if it else ("Your town" if prompt else "An empty town")
+        title = it.title if it else ("Your town" if prompt else "Your camp" if self.mission else "An empty town")
         self.step = RAISING
         self.raising = {"title": title, "phase": "raising", "steps": [], "buildings": [], "error": ""}
         self._step("The camp's records", lambda: checkpoint.ensure(town.repo_root))
