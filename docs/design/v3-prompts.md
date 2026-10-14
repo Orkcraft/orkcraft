@@ -486,3 +486,21 @@ pitch and whole multiple are in design-system-v3.md §3. **For c2's next round:*
 drew three south-east ones); ask "four curves, one for each pair of sides: north–east, east–south, south–west,
 west–north", and the merge and the crossing apart, not touching.
 
+
+## 11. Round 6: g1 ground, g2 decor, g3 palisade, u1 bubble and scroll (2026-10-14)
+
+**g1, the ground — partly taken.** The grass-to-earth edges and corners are good (a ragged dark grass rim, earth
+with pebbles). The **grass is darker and duller than F1** and the **earth fill tiles have a dark border drawn round
+them** (they would show a grid when laid side by side). So: plain grass is the token `world-grass` with the tufts
+and flower tiles as decals over it (their flowers teal and white, as asked); the earth fill is taken from inside the
+border; the edge tiles' grass is recoloured to the tokens' grass.
+
+**g2, the decor — taken:** two trees, a pine, a log pile, rocks, bushes, reeds, teal and white mushrooms, a stump,
+logs; one style, one outline, front-on.
+
+**g3, the palisade — not taken as drawn:** magenta smoke smeared over three pieces, a piece of track mixed in, a
+rail fence. The rounded logs themselves are right. Saved as `g3-palisade-r1.jpg`; regenerate with "no smoke, no glow,
+no track; only the palisade of rounded logs: a straight run, a corner, an end post, and a gap where a track passes".
+
+**u1, the bubble and the scroll — taken:** a white thought bubble as nine pieces with a two-dot tail, a scroll in
+pieces (rolled ends, a stretchable sheet), a long banner scroll, and three teal selection rings (one dashed). For I1.
