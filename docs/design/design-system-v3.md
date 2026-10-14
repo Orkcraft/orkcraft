@@ -148,6 +148,26 @@ by eye on a 10-px grid at ×3–×4, on the preview from the sprites' own pixels
 | a path's width | 55–60 | 0.21 | 32 | 0.21 | matches; kept at 32 (stop areas the same) |
 | the gap between buildings | 45–60 | about 0.18 | was 64 (upper row), 16 (lower) | 0.41, 0.10 | **set to 32** (one path's width, the nearest step of 8): the loop widened by 32 units to hold the lower row |
 
+**Layers at their own multiple** (round 7, the PM's proposal, no sheet redrawn): at the default zoom **buildings,
+carts, the ground and the decor are shown at ×1.5, orks and the track at ×1** (on density 2: 3 and 2 device px per art
+px, both whole). The layout's grid (paths, gaps, the loop) scales with the buildings. The measured ratios then, with
+the same unit (the canvas roof, 156 × 1.5 = 234 px):
+
+| | F1 | preview, layers ×1.5 / ×1 |
+|---|---|---|
+| ork height | 0.19 | 44 / 234 = **0.19** |
+| cart, wide × tall | 0.23 × 0.26 | 54 × 64.5 / 234 = **0.23 × 0.28** |
+| track band | 0.16 | 32 / 234 = **0.14** |
+| path width | 0.21 | 48 / 234 = **0.21** |
+| gap between buildings | about 0.18 | 48 / 234 = **0.21** |
+
+**The zoom steps keep whole device pixels** (buildings / orks and track): on density 2, **×1.5 / ×1** (default),
+×3 / ×2 (close), and ×1 / ×1 (an overview: whole, the orks a little large); on density 1, **×2 / ×1** (default) and
+×1 / ×1. The wheel steps through them, **drag pans**; the default view is centred on the work (the back wall to line 2),
+the lookout and the catapult at the ends reached by dragging or by the overview. **The loop is compact:** line 2 sits as
+close under line 1 as the lower row allows, a whole number of track tiles below it (computed from the tile at each
+step).
+
 **Carts against orks** (round 6; since then shown at ×1, the PM's decision: the 64-px target was wrong — a cart about
 an ork's height, as in F1). The numbers at ×2 that led to it: an ork is drawn 44 px tall (o1's idle; the roles 40–43); a cart is
 36 art px wide, so 72 px at ×2. The empty cart stands 62 px, the loaded ones 70 (letter) to 86 (scroll, crate): the

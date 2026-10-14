@@ -162,11 +162,17 @@ const HOURGLASS = '<svg viewBox="0 0 10 12" width="14" height="17" aria-label="h
 // The zoom (design-system-v3.md §3): ×1.5 by default on a screen of density 2 or more (one art px = 3 × 3 device px),
 // ×1 on density 1; the wheel steps ×1 · ×1.5 · ×2 (×1.5 only where it is whole in device px). Each sheet is shown at
 // its own whole multiple (SHOW, from the manifest) times the zoom. The layout's numbers are units of 2 CSS px at ×1.
-const STEPS = devicePixelRatio >= 2 ? [1, 1.5, 2] : [1, 2];
-let Z = devicePixelRatio >= 2 ? 1.5 : 1;
-let K = 2 * Z;
+// Layers at their own whole multiple (design-system-v3.md §3, the proportion rule): buildings, carts, the ground and
+// the decor at L.b, orks and the track at L.s — F1's proportions with no sheet redrawn. Every step is whole in device
+// px: on density 2 the default is ×1.5 / ×1 (3 and 2 device px per art px), the wheel ×1 / ×1 (an overview, orks a
+// little large) and ×3 / ×2 (close); on density 1, ×2 / ×1 by default and ×1 / ×1. The layout's numbers are units of
+// 2 CSS px at L.b = 1, so the grid (paths, gaps) scales with the buildings.
+const STEPS = devicePixelRatio >= 2 ? [{ b: 1, s: 1 }, { b: 1.5, s: 1 }, { b: 3, s: 2 }] : [{ b: 1, s: 1 }, { b: 2, s: 1 }];
+let L = STEPS[1];
+let K = 2 * L.b;
 const SHOW = %%SHOW%%;
-const sc = (file) => (SHOW[file] || 1) * Z;             // a v3 sprite's CSS px per art px
+const small = (file) => file.startsWith("orks/") || file.startsWith("track/");
+const sc = (file) => (SHOW[file] || 1) * (small(file) ? L.s : L.b);   // a v3 sprite's CSS px per art px
 const V3 = "../sprites/v3/", CAMP = "../sprites/camp/";
 const world = document.getElementById("world"), frame = document.getElementById("frame");
 const here = new Set();
@@ -195,17 +201,33 @@ async function pick(cands) {
 // F1's density (round 4): two rows close to the line, about one path's width between buildings; the camp is as wide
 // as its buildings at ×1 and stands in the middle of the window, wilderness round it. Numbers in layout units (2 px).
 const OX = 40;                          // the camp's left edge in its own frame (#world is placed to centre the camp)
-const CAMP_W = 696, CAMP_H = 308;       // the camp's extent in units, the walls and the chips included
+let CAMP_W = 696;                        // the camp's width in units (set by grid)
+const CAMP_H = 308;
 let OY = 0;                             // the wilderness above the back wall, in units (set by placeCamp)
-function placeCamp() {
-  const left = Math.round((1440 - CAMP_W * K) / 2), top = Math.round((864 - CAMP_H * K) / 2);
+let panX = 0, panY = 0;                 // the drag's offset, in CSS px
+function placeCamp() {                  // the default view is centred on the work: the loop's middle
+  const cx = (COL_L + COL_R + TU) / 2, cy = (16 + LINE2_Y + TU) / 2;      // from the back wall to line 2
+  const left = Math.round(720 - cx * K + panX), top = Math.round(432 - cy * K + panY);
   world.style.left = left + "px"; world.style.top = top + "px";
   OY = top / K;
 }
 const LINE_Y = 128;                     // line 1's tile row (32 tall), under the upper row's doors
-const LINE2_Y = 256;                    // line 2's, under the lower row's doors (a line of track per row, v3-prompts §11)
-const COL_L = OX + 56, COL_R = OX + 512; // the loop's two columns: the split on the left, the merge on the right
-const WALL_X = OX + 640;                // the right wall, the catapult against it at line 2's end
+let LINE2_Y = 256;                      // line 2's, under the lower row's doors (a line of track per row, v3-prompts §11)
+const COL_L = OX + 56;                  // the loop's left column (the split); the right one (the merge) set by grid
+let COL_R = OX + 512, WALL_X = OX + 640, TU = 32;   // the right column, the right wall, the track's tile in units
+// the track's tile sets the loop: line 2 as close under line 1 as the lower row allows (compact), whole tiles apart
+async function grid() {
+  const got = await pick([{ src: `${V3}track/straight-h.png`, scale: sc("track/straight-h.png") }]);
+  TU = got ? got.img.naturalWidth * got.scale / K : 32;
+  LINE2_Y = LINE_Y + Math.ceil((TU + 84) / TU) * TU;
+  COL_R = COL_L + Math.round(456 / TU) * TU;
+  WALL_X = COL_R + 128;
+  CAMP_W = WALL_X + 16;
+  for (const b of BUILDINGS) {
+    if (b[5] === 2) b[2][1] = LINE2_Y - 16 - b[2][3];               // the lower row stands just above line 2
+    if (b[5] === "end") { b[2][0] = COL_R + 64; b[2][1] = LINE2_Y + 32 - b[2][3]; }
+  }
+}
 const BUILDINGS = [
   // type, name, box [x, y(top), w, h] (the cut sprite's size), v2 stand-in, block look, its line: 1 | 2 | "wall" | "end"
   ["watchtower", "External listeners", [OX + 12, 0, 40, 64], "covers/tower/lookout.png", { roof: "var(--art-bone)" }, "wall"],
@@ -259,8 +281,7 @@ async function track() {
   // on the line's row and column.
   const cands = (name) => [{ src: `${V3}track/${name}.png`, scale: sc(`track/${name}.png`) },
     { src: `${CAMP}track/${name}.png`, scale: K, v2: true }];
-  const probe0 = await pick(cands("straight-h"));
-  const T = probe0 ? probe0.img.naturalWidth * probe0.scale / K : 32;            // the tile in layout units
+  const T = TU;
   const tile = async (name, x, y, v, rot = 0) => {
     const got = await pick(cands(name));
     if (got) {
@@ -284,7 +305,7 @@ async function track() {
   for (let y = LINE_Y + T; y < LINE2_Y; y += T) await tile("straight-v", COL_R, y, true);
   await tile("t-n", COL_R, LINE2_Y);                               // …and merges into line 2
   let x = COL_R + T;
-  for (; x + 2 * T <= OX + 576; x += T) await tile("straight-h", x, LINE2_Y);
+  for (; x + 2 * T <= COL_R + 64; x += T) await tile("straight-h", x, LINE2_Y);
   await tile("stop-e", x, LINE2_Y);
 }
 
@@ -366,7 +387,7 @@ function paths() {
 async function ork(cx, feetY, opts = {}) {
   const got = await pick([
     { src: `${V3}orks/body/${opts.anim || "idle"}.png`, scale: sc(`orks/body/${opts.anim || "idle"}.png`), frames: opts.anim === "work" ? 6 : 4 },
-    { src: `${CAMP}orks/body/${opts.anim || "idle"}.png`, scale: Z, frames: opts.anim === "work" ? 6 : 4, fw: opts.anim === "work" ? 48 : 32, fh: 48, v2: true }]);
+    { src: `${CAMP}orks/body/${opts.anim || "idle"}.png`, scale: L.s, frames: opts.anim === "work" ? 6 : 4, fw: opts.anim === "work" ? 48 : 32, fh: 48, v2: true }]);
   el("v3-shadow", cx - 8, feetY - 3, 16, 5);
   const s = el("v3-slot", cx - 16, feetY - 32, 32, 32);
   s.innerHTML = "<span>ork 64</span>";
@@ -396,7 +417,7 @@ function badge(kind, cx, topArt) {
 
 async function cart(x, load, opts = {}, line = LINE_Y) {
   // feet on the line's lower rail; v3: one sprite with its load, as the sheet draws it, at ×1; v2: bin 48×40 and load at ×1
-  const feet = line + 26;
+  const feet = line + TU * 0.8;
   const wrap = document.createElement("div");
   wrap.className = "v3-at" + (opts.roll ? " v3-roll" : "");
   wrap.style.cssText = `left:${x * K}px;top:0;width:0;height:0;` + (opts.roll ? `--run:${opts.roll * K}px;--steps:${opts.roll};--dur:${opts.dur || 16}s;animation-delay:${opts.delay || 0}s` : "");
@@ -404,12 +425,12 @@ async function cart(x, load, opts = {}, line = LINE_Y) {
   const put = (src, l, t, w, h) => { const i = document.createElement("img"); i.className = "v3-img"; i.src = src;
     i.style.cssText = `left:${l}px;top:${t}px;width:${w}px;height:${h}px`; wrap.appendChild(i); };
   const got = await pick([{ src: `${V3}carts/${load}.png`, scale: sc(`carts/${load}.png`) },
-    { src: `${CAMP}carts/side.png`, scale: Z, v2: true }]);
+    { src: `${CAMP}carts/side.png`, scale: L.b, v2: true }]);
   const slot = document.createElement("div");
   slot.className = "v3-slot"; slot.style.cssText = `left:${-16 * K}px;top:${(feet - 24) * K}px;width:${32 * K}px;height:${24 * K}px`;
   slot.innerHTML = "<span>cart 64×48</span>"; wrap.appendChild(slot);
   if (!got) return;
-  let ch = 40 * Z;
+  let ch = 40 * L.b;
   if (!got.v2) { here.add(`carts/${load}.png`); const cw = got.img.naturalWidth * got.scale; ch = got.img.naturalHeight * got.scale;
     put(got.src, -cw / 2, feet * K - ch, cw, ch); }
   else {
@@ -418,7 +439,7 @@ async function cart(x, load, opts = {}, line = LINE_Y) {
   }
   if (opts.flag) {
     const f = document.createElement("span");
-    f.className = "v3-flag"; f.style.cssText = `left:${-14 * Z - 12}px;top:${feet * K - ch - 40}px`;
+    f.className = "v3-flag"; f.style.cssText = `left:${-14 * L.b - 12}px;top:${feet * K - ch - 40}px`;
     wrap.appendChild(f);
     const c = document.createElement("span");
     c.className = "v3-chip"; c.textContent = opts.flag; c.style.cssText = `left:0;top:${feet * K + 8}px`;
@@ -427,6 +448,8 @@ async function cart(x, load, opts = {}, line = LINE_Y) {
 }
 
 async function scene() {
+  await grid();
+  placeCamp();
   await loadGround();
   decals();
   await decor();
@@ -497,16 +520,25 @@ for (const [id, cls, on] of [["t-grey", "is-grey", true], ["t-slots", "show-slot
 }
 function redraw() {
   world.replaceChildren();
-  here.clear(); placeCamp(); scene();
-  document.getElementById("zoom").textContent = `×${Z} (devicePixelRatio ${devicePixelRatio}; the wheel: ${STEPS.map((z) => "×" + z).join(" · ")})`;
+  here.clear(); scene();
+  document.getElementById("zoom").textContent = `buildings ×${L.b} · orks and track ×${L.s} (devicePixelRatio ${devicePixelRatio}; `
+    + `the wheel: ${STEPS.map((z) => "×" + z.b + "/×" + z.s).join(" · ")}; drag to pan)`;
 }
 document.getElementById("t-blocks").addEventListener("change", redraw);
 frame.addEventListener("wheel", (e) => {                 // zoom by the wheel, snapping to the steps
   e.preventDefault();
-  const i = STEPS.indexOf(Z) + (e.deltaY < 0 ? 1 : -1);
+  const i = STEPS.indexOf(L) + (e.deltaY < 0 ? 1 : -1);
   if (i < 0 || i >= STEPS.length) return;
-  Z = STEPS[i]; K = 2 * Z; redraw();
+  const k0 = K;
+  L = STEPS[i]; K = 2 * L.b; panX *= K / k0; panY *= K / k0; redraw();
 }, { passive: false });
+let drag = null;                                         // drag to pan: the ends are reached by dragging or zooming out
+frame.addEventListener("pointerdown", (e) => { drag = { x: e.clientX - panX, y: e.clientY - panY }; frame.setPointerCapture(e.pointerId); });
+frame.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  panX = e.clientX - drag.x; panY = e.clientY - drag.y; placeCamp();
+});
+frame.addEventListener("pointerup", () => { if (drag) { drag = null; redraw(); } });
 palette(); type(); redraw();
 </script>
 </body></html>
