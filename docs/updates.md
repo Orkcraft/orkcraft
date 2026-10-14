@@ -40,6 +40,8 @@ With the tool that installed this copy, so its records stay right:
 | `brew install orkcraft/orkcraft/orkcraft` (the tap below) | `brew update && brew upgrade orkcraft/orkcraft/orkcraft` |
 | `pipx install "orkcraft[gui] @ git+…"` | `pipx upgrade orkcraft` |
 | `uv tool install …`, or the installer (`install.sh`, [install.md](install.md)) | `uv tool upgrade orkcraft` |
+| from PyPI: `uv tool install orkline`, `pipx install orkline` | `uv tool upgrade orkline`, `pipx upgrade orkline` |
+| `pip install orkline` (PyPI) | `python -m pip install --upgrade orkline` |
 | `pip install "orkcraft @ git+…"` | `python -m pip install --upgrade "orkcraft @ git+…"` (the same URL) |
 | a git checkout (`bin/orkcraft`, `pip install -e`) | `git pull --ff-only` (then `uv pip install -e .` when `uv` is there) |
 
@@ -73,7 +75,8 @@ The list is [`updates.json`](../updates.json) at the root of the repository, rea
     "notes": "The Warder let a shell command through when …"}
    ```
 
-3. after it lands, the `brew` workflow ([`.github/workflows/brew.yml`](../.github/workflows/brew.yml))
+3. after it lands, the tag `v<version>` on that commit publishes it to PyPI as `orkline`
+   ([distribution-howto.md](distribution-howto.md)); and the `brew` workflow ([`.github/workflows/brew.yml`](../.github/workflows/brew.yml))
    sees the new `__version__` and commits the Homebrew formula for it (below).
 
 Mark a release `critical` only for a security fix or a bug that loses work: it installs on every

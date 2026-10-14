@@ -47,6 +47,7 @@ same files as on orkcraft.dev. Keep orkcraft.dev redirecting to orkline.dev for 
 | `orkcraft/cli.py`, the help of `--role` and `--look` | "as orkcraft.dev asked" | "as orkline.dev asked" (update `tests/test_cli.py`'s docstrings in the same commit) |
 | `orkcraft/realm/intents.py`, comments at lines 743, 752 and 761 | "the classes of orkcraft.dev" | `orkline.dev` |
 | `tools/usage-worker/worker.js` line 66 (comment) and `tools/usage-worker/wrangler.toml` line 9 (the commented-out route `usage.orkcraft.dev`) | the proxy's route | `usage.orkline.dev` when the proxy gets a domain |
+| `.claude-plugin/marketplace.json`, `plugins/claude-code/.claude-plugin/plugin.json` and its README | `homepage`, `repository`, the owner's `url` | the new repository (raise the plugin's `version`, [distribution-howto.md](distribution-howto.md) §3) |
 | the landing page (not in this repository) | its own links and its `/install/<role>/<look>` redirects | `orkline.dev` |
 
 **Never switched** (code keeps its names, CLAUDE.md): the schemas' `$id`s (`https://orkcraft.dev/schemas/…`, also

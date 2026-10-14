@@ -1,0 +1,19 @@
+{
+  "name": "orkline",
+  "displayName": "Orkline",
+  "version": "0.1.0",
+  "description": "Opens the Orkline town from Claude Code (/orkline) and logs your sessions where the town reads them. Installs Orkline only when you say yes.",
+  "author": {
+    "name": "Vadim Sidoryk",
+    "url": "https://github.com/Orkcraft"
+  },
+  "homepage": "https://github.com/Orkcraft/orkcraft",
+  "repository": "https://github.com/Orkcraft/orkcraft",
+  "license": "Apache-2.0",
+  "keywords": [
+    "orkline",
+    "agents",
+    "orkestration",
+    "gui"
+  ]
+}

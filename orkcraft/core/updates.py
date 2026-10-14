@@ -244,6 +244,25 @@ class Method:
 
 
 MANUAL = f'pipx install --force "orkcraft[gui] @ {SOURCE}"'
+PYPI = "orkline"                       # the name on PyPI (docs/distribution-howto.md); from git it stays orkcraft
+NAMES = (PYPI, "orkcraft")
+
+
+def _tool_name(prefix: str) -> str:
+    """The name pipx or uv knows this copy by: its environment's folder (`…/venvs/orkline`,
+    `…/tools/orkcraft`), the distribution it was installed as."""
+    name = Path(prefix).name
+    return name if name in NAMES else "orkcraft"
+
+
+def _from_pypi() -> bool:
+    """Whether this copy is the PyPI distribution (`orkline`), installed by pip without a URL."""
+    try:
+        from importlib import metadata
+        metadata.distribution(PYPI)
+    except Exception:
+        return False
+    return True
 
 
 def _checkout(package: Path) -> Path | None:
@@ -275,7 +294,13 @@ def _direct_url() -> str:
     """The URL pip installed this copy from (PEP 610), "" when it came from elsewhere."""
     try:
         from importlib import metadata
-        raw = metadata.distribution("orkcraft").read_text("direct_url.json") or ""
+        raw = ""
+        for name in NAMES:
+            try:
+                raw = metadata.distribution(name).read_text("direct_url.json") or ""
+                break
+            except metadata.PackageNotFoundError:
+                continue
         data = json.loads(raw) if raw else {}
     except Exception:
         return ""
@@ -305,16 +330,19 @@ def method(package: Path | None = None, prefix: str | None = None,
         return (Method("brew", ((brew, "update", "--quiet"), (brew, "upgrade", name)), python=python)
                 if brew else Method("none", why=f"brew is not on PATH; run: brew update && brew upgrade {name}"))
     parts = Path(prefix).parts
+    name = _tool_name(prefix)
     if "pipx" in parts and "venvs" in parts:
-        return (Method("pipx", (("pipx", "upgrade", "orkcraft"),)) if which("pipx")
+        return (Method("pipx", (("pipx", "upgrade", name),)) if which("pipx")
                 else Method("none", why=f"pipx is not on PATH; run: {MANUAL}"))
     if "uv" in parts and "tools" in parts:
-        return (Method("uv", (("uv", "tool", "upgrade", "orkcraft"),)) if which("uv")
-                else Method("none", why=f"uv is not on PATH; run: uv tool upgrade orkcraft"))
+        return (Method("uv", (("uv", "tool", "upgrade", name),)) if which("uv")
+                else Method("none", why=f"uv is not on PATH; run: uv tool upgrade {name}"))
     source = _direct_url()
     if source.startswith("git+") or source.startswith("https://github.com/"):
         spec = source if source.startswith("git+") else f"git+{source}"
         return Method("pip", ((sys.executable, "-m", "pip", "install", "--upgrade", f"orkcraft @ {spec}"),))
+    if not source and _from_pypi():
+        return Method("pip", ((sys.executable, "-m", "pip", "install", "--upgrade", PYPI),))
     return Method("none", why=f"this copy was not installed from git; run: {MANUAL}")
 
 

@@ -33,6 +33,12 @@ console stays in the GUI.
 | **3. Other AI tools' marketplaces** (Codex, Cursor and the rest, where they have one) | the same door as 1, per tool | per tool, as its plugin format allows | unknown | **research R10**: which have a public marketplace, and what their format allows |
 | **4. Homebrew core** | `brew install orkcraft` without the tap | the formula moved from `Formula/` to homebrew-core's rules (stars and age are asked for) | ≈ 1 day, when accepted | Later, when it qualifies |
 
+**Built 2026-10-14** (doors 0 and 1, nothing published): `.github/workflows/pypi.yml` and `tools/pypi.py` (the
+package `orkline` on PyPI, from a tag, by trusted publishing; from git it stays `orkcraft`), the plugin in
+`plugins/claude-code/` with the repository's own `.claude-plugin/marketplace.json`, `hooks_install.plugin_in`. The
+plugin brings the session log only; the Warder stays a per-project opt-in. The owner's steps:
+[distribution-howto.md](../distribution-howto.md).
+
 ## 4. What stays the same
 
 - The town, the buildings, the console, Camp and Office: nothing is drawn twice.

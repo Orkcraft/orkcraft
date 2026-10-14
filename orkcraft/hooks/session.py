@@ -4,6 +4,7 @@
     python3 -m orkcraft.hooks.session claude   # .claude/settings.json hooks (`orkcraft hooks install`)
     python3 -m orkcraft.hooks.session codex    # .codex/hooks.json hooks (`orkcraft hooks install`)
     python3 -m orkcraft.hooks.session agy      # .agents/hooks.json hooks
+    orkline hooks session                      # Orkline's Claude Code plugin (plugins/claude-code/hooks/)
 
 Reads the hook payload (JSON) on stdin and appends one line to
 `<repo>/.orkcraft/sessions.jsonl` of the project the session works in, found from its `cwd`
@@ -18,6 +19,11 @@ the older `$ORCRAFT_TICKET` / `$MGTUI_TICKET` still work) and from
 swallowed and the hook exits 0. For agy it prints `{}` (agy reads hook stdout
 as a response); for Claude and Codex it prints nothing (both add SessionStart /
 UserPromptSubmit stdout to the conversation). Standard library only.
+
+From the plugin (`plugin=True`), which Claude Code runs in every project, a session is recorded only in
+a project Orkline already keeps (its `.orkcraft/` folder is there), and not when the project's own
+`.claude/settings.json` carries this hook too (`orkcraft hooks install` from before the plugin): one
+line per event, never two.
 """
 import datetime as dt
 import json
@@ -119,12 +125,27 @@ def record(harness: str, payload: dict, env: dict | None = None) -> dict | None:
     return entry
 
 
-def main() -> int:
-    harness = sys.argv[1] if len(sys.argv) > 1 else "claude"
+def plugin_records(payload: dict) -> bool:
+    """Whether the plugin's hook records this event: in a project Orkline keeps, whose settings do not
+    already run this hook themselves."""
+    cwd = _first(payload, "cwd")
+    project = project_of(cwd) if cwd else None
+    if project is None or not (project / ".orkcraft").is_dir():
+        return False
+    try:
+        settings = (project / ".claude" / "settings.json").read_text(encoding="utf-8")
+    except OSError:
+        return True
+    return "orkcraft.hooks.session" not in settings
+
+
+def main(argv: list[str] | None = None, plugin: bool = False) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    harness = argv[0] if argv else "claude"
     try:
         raw = sys.stdin.read()
         payload = json.loads(raw) if raw.strip() else {}
-        if isinstance(payload, dict):
+        if isinstance(payload, dict) and (not plugin or plugin_records(payload)):
             record(harness, payload)
     except Exception:
         pass  # a hook must never break the session it observes

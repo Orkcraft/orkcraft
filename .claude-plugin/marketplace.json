@@ -1,0 +1,21 @@
+{
+  "name": "orkline",
+  "description": "Orkline's own plugin marketplace: the Claude Code door to the town (docs/design/distribution.md).",
+  "owner": {
+    "name": "Vadim Sidoryk",
+    "url": "https://github.com/Orkcraft"
+  },
+  "plugins": [
+    {
+      "name": "orkline",
+      "source": "./plugins/claude-code",
+      "description": "Opens the Orkline town from Claude Code (/orkline) and logs your sessions where the town reads them. Installs Orkline only when you say yes.",
+      "category": "productivity",
+      "keywords": ["orkline", "agents", "orkestration", "gui"],
+      "homepage": "https://github.com/Orkcraft/orkcraft",
+      "repository": "https://github.com/Orkcraft/orkcraft",
+      "license": "Apache-2.0",
+      "strict": true
+    }
+  ]
+}

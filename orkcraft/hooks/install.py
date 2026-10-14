@@ -19,6 +19,10 @@ cursor-agent is on PATH or the project has `.cursor/`. pi has no hook config: it
 starts pass it with `-e`). Hermes reads hooks only from its own `~/.hermes/config.yaml`: a block of
 ours, between two marker comments, is added there after the operator said yes — never into a file
 that already has a `hooks:` key of its own (`HERMES_MERGE` says what to add by hand then).
+
+Orkline's Claude Code plugin (`plugins/claude-code/`, docs/design/distribution.md door 1) brings the session
+log's hooks itself: when it is enabled (`plugin_in`), Claude Code's settings get only the Warder, never the
+session hooks a second time.
 """
 from __future__ import annotations
 
@@ -276,6 +280,31 @@ def install_agy_global() -> Path:
     return install_agy(agy_global_file())
 
 
+PLUGIN_ID = "orkline@orkline"     # Claude Code's id of the plugin: <plugin>@<marketplace> (.claude-plugin/marketplace.json)
+SESSION_EVENTS = ("SessionStart", "UserPromptSubmit")   # the plugin's hooks (plugins/claude-code/hooks/hooks.json)
+
+
+def _claude_home() -> Path:
+    return Path(os.environ.get("CLAUDE_CONFIG_DIR") or Path.home() / ".claude")
+
+
+def plugin_in(project: Path | None = None) -> bool:
+    """Whether Orkline's Claude Code plugin is enabled for `project`: `enabledPlugins` in Claude Code's user,
+    project and local settings, the later scope winning (an explicit false turns it off). Never raises."""
+    files = [_claude_home() / "settings.json"]
+    if project is not None:
+        files += [Path(project) / ".claude" / "settings.json", Path(project) / ".claude" / "settings.local.json"]
+    on = False
+    for path in files:
+        try:
+            enabled = _read(path).get("enabledPlugins")
+        except (ValueError, OSError):
+            continue
+        if isinstance(enabled, dict) and isinstance(enabled.get(PLUGIN_ID), bool):
+            on = enabled[PLUGIN_ID]
+    return on
+
+
 def _ours(group: dict) -> bool:
     return any(any(m in str(h.get("command", "")) for m in MARKERS) for h in group.get("hooks", []))
 
@@ -306,13 +335,17 @@ def project_folders(root: Path) -> list[Path]:
 
 
 def install(project: Path, harness: str = "claude") -> Path:
-    """Returns the settings file written. Raises ValueError if it is not valid JSON."""
+    """Returns the settings file written. Raises ValueError if it is not valid JSON. With the plugin in
+    (`plugin_in`), Claude Code's session hooks are the plugin's: ours there are taken out, not written."""
     path = Path(project) / FILES[harness]
     data = _read(path)
     hooks = data.setdefault("hooks", {})
+    plugin = harness == "claude" and plugin_in(project)
     for event, groups in wanted(harness).items():
         kept = [g for g in hooks.get(event, []) if isinstance(g, dict) and not _ours(g)]
-        hooks[event] = kept + groups
+        hooks[event] = kept + ([] if plugin and event in SESSION_EVENTS else groups)
+        if not hooks[event]:
+            del hooks[event]
     return _write(path, data)
 
 

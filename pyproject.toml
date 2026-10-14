@@ -55,6 +55,10 @@ include = ["orkcraft*"]
 # design/system links to design-system/: a wheel carries the files themselves.
 orkcraft = ["schemas/*.json", "design/*.json", "design/buildings/*.json", "design/defaults/*.json", "design/prompts/*.md", "design/agents/*.md", "realm/catapult_mcp/recipes/*.json", "design/system/**/*", "gui/static/**/*"]
 
+[tool.setuptools.exclude-package-data]
+# Pages and notes for the design system's readers, never read by the GUI: they stay in the repository.
+orkcraft = ["design/system/previews/*", "design/system/*.md", "design/system/**/*.md"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = ["browser: drives the GUI in Chromium (tests/test_gui_browser.py); skipped without Playwright or Chromium"]
