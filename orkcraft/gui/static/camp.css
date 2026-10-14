@@ -69,7 +69,11 @@
 
 /* the second click on a type with no Work window: its large card beside it (until I2 draws the inside) */
 .gui-camp__card { position: absolute; z-index: 2100; width: 460px; cursor: default; user-select: text; }
-.gui-camp__placing { cursor: copy; }
+.gui-camp__placing { position: absolute; inset: 0; z-index: 2500; }
+.gui-camp__band { position: absolute; display: flex; align-items: flex-start; justify-content: center; padding-top: 6px;
+  background: color-mix(in srgb, var(--chip-ink) 10%, transparent); border: 2px dashed var(--chip-ink); cursor: copy; }
+.gui-camp__band:hover, .gui-camp__band:focus-visible { background: color-mix(in srgb, var(--accent-teal) 28%, transparent); outline: none; }
+.gui-camp__band .gui-camp__chip { position: static; }
 
 @media (prefers-reduced-motion: reduce) { .gui-camp__badge { animation: none !important; } }
 
@@ -139,3 +143,4 @@
 @media (prefers-reduced-motion: reduce) { .gui-camp__launch { animation-duration: .01s; } }
 .gui-camp__steward { left: 340px; right: auto; }
 .gui-camp__steward p { margin: 6px 0; }
+.gui-camp .gui-empty { pointer-events: none; }                      /* never over Build's rows */

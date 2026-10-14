@@ -62,7 +62,9 @@ export function order(buildings, roads) {
  *  its place in the row by its x, so moving a card in Office moves the building in Camp; one never placed fills the
  *  room left, top row first, in the work's order (decisions-2026-10.md §14). */
 export function rowsOf(list) {
-  const n = Math.max(1, Math.ceil(list.length / ROW_MAX));
+  // a second row as soon as one building was placed in the lower half (Build's "Bottom row" in Camp, a card in Office)
+  const low = list.length >= 2 && list.some((b) => Array.isArray(b.hut) && b.hut[1] >= 0.5);
+  const n = Math.max(low ? 2 : 1, Math.ceil(list.length / ROW_MAX));
   const per = Math.max(1, Math.ceil(list.length / n));
   const rows = Array.from({ length: n }, () => []);
   const placed = list.filter((b) => Array.isArray(b.hut));

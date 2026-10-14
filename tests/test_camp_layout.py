@@ -144,3 +144,12 @@ def test_a_cart_faces_along_each_straight_run_and_keeps_it_on_a_column(tmp_path)
     out = json.loads(subprocess.run(["node", str(script)], capture_output=True, text=True, check=True, timeout=30).stdout)
     assert out[0] == [[0, 1], [2 / 3, -1]]                  # east, down the column still east, then west
     assert out[1] == [[0, 1]]                                # down first: as it comes, then east
+
+
+def test_a_building_placed_low_opens_a_second_row_in_a_small_town(tmp_path):
+    out = _run("""
+const two = C.rowsOf([{ id: "a", type: "forge", hut: [0.9, 0.1] }, { id: "b", type: "lab", hut: [0.999, 0.75] }]);
+const one = C.rowsOf([{ id: "a", type: "forge" }, { id: "b", type: "lab", hut: [0.999, 0.25] }]);
+console.log(JSON.stringify([two.map((r) => r.map((b) => b.id)), one.map((r) => r.map((b) => b.id))]));
+""", tmp_path)
+    assert out == [[["a"], ["b"]], [["b", "a"]]]

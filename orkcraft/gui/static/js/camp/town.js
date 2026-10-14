@@ -212,23 +212,41 @@ function GrownCard({ b, p, L }) {
   </div>`;
 }
 
-/** Build's second half in Camp: the building takes its place in the rows, so a press anywhere on the camp builds it. */
-function Placing({ p }) {
+/** The rows a new building may join, as bands over the camp: each row standing, and a bottom row below a camp of
+ *  one row. A row's band runs from over its buildings to its line. World px. */
+export function rowBands(L) {
+  const B = L.step.b, T = L.T, n = Math.max(L.lines.length, 2), out = [];
+  for (let r = 0; r < n; r++) {
+    const top = r === 0 ? L.wall.y - 24 * B : L.lines[r - 1] + T;
+    const bottom = r < L.lines.length ? L.lines[r] + T : top + 200 * B;
+    out.push({ r, n, x: L.cols.left, y: top, w: L.work.w, h: bottom - top,
+               word: r === 0 ? "Top row" : r === n - 1 ? "Bottom row" : `Row ${r + 1}` });
+  }
+  return out;
+}
+
+/** Build's second half in Camp: the building joins the row the person presses, in its next free slot — the row's end
+ *  (decisions §14: Camp's rows follow the Office positions, so it takes a spot at that row's right in Office). No
+ *  free placement in Camp; Escape or a right click lets it go. */
+function Placing({ p, L }) {
   useEffect(() => {
     const key = (e) => { if (e.key === "Escape") { e.preventDefault(); placing.value = null; } };
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, []);
-  const put = (e) => {
+  const put = (e, band) => {
     e.stopPropagation();
     const { type } = p;
     placing.value = null;
-    command("town.build", { type, hut: [0.5, 0.5] }).then((id) => raised(id, type), () => {});
+    command("town.build", { type, hut: [0.999, (band.r + 0.5) / band.n] }).then((id) => raised(id, type), () => {});
   };
-  return html`<div class="gui-town__placing gui-camp__placing" role="application"
-      aria-label=${say(`Place ${p.title}: press on the camp to build it, Escape to cancel`)}
-      onClick=${put} onContextMenu=${(e) => { e.preventDefault(); e.stopPropagation(); placing.value = null; }}>
-    <p class="gui-town__placing-hint ok-font-status">${say(`Build ${p.title}: press on the camp · it takes its place on the line · Esc cancels`)}</p>
+  const cancel = (e) => { e.preventDefault(); e.stopPropagation(); placing.value = null; };
+  return html`<div class="gui-camp__placing" role="group" aria-label=${say(`Build ${p.title}: pick its row`)}
+      onClick=${(e) => e.stopPropagation()} onContextMenu=${cancel}>
+    ${rowBands(L).map((band) => html`<button key=${band.r} type="button" class="gui-camp__band"
+        style=${`left:${band.x}px;top:${band.y}px;width:${band.w}px;height:${band.h}px`}
+        aria-label=${say(`Build ${p.title} at the end of the ${band.word.toLowerCase()}`)} onClick=${(e) => put(e, band)}>
+      <span class="gui-camp__chip">${say(band.word)}</span></button>`)}
   </div>`;
 }
 
@@ -316,11 +334,12 @@ export function CampTown({ buildings, roads }) {
         onOrk=${onOrk} onBubble=${onBubble} />
       ${outB && html`<${StewardOut} b=${outB} p=${L.buildings[outB.id]} L=${L} grown=${selected.value === outB.id} onOrk=${onOrk} onBubble=${onBubble}
         seen=${{ left: -ox, top: -oy + 8, right: -ox + seen }} />`}
+      ${placing.value && html`<${Placing} p=${placing.value} L=${L} />`}
       ${grown && L.buildings[grown.id] && html`<${GrownCard} b=${grown} p=${L.buildings[grown.id]} L=${L} />`}
     </div>`}
     <${Waybill} />
     <${StewardConsole} />
-    ${placing.value && html`<${Placing} p=${placing.value} />`}
+    ${placing.value && html`<p class="gui-town__placing-hint ok-font-status">${say(`Build ${placing.value.title}: press a row · it takes the row's next place on the line · Esc cancels`)}</p>`}
     ${!buildings.length && html`<p class="gui-empty ok-font-body ok-tone-muted">${say("No buildings in this orkspace yet.")}</p>`}
   </main>`;
 }

@@ -150,13 +150,23 @@ def test_build_in_camp_takes_its_place_on_the_line(camp_look):
     pg = camp_look
     _clear(pg)
     pg.evaluate("() => import('/static/js/build.js').then(m => m.place({ id: 'forge', title: 'Branches & PRs' }))")
-    layer = pg.locator(".gui-camp__placing")
-    layer.wait_for(state="visible", timeout=WAIT_MS)
-    layer.click()
-    house = pg.locator(".gui-camp__building[data-type='forge']")
-    house.wait_for(state="visible", timeout=WAIT_MS)
+    bands = pg.locator(".gui-camp__placing .gui-camp__band")
+    bands.first.wait_for(state="visible", timeout=WAIT_MS)
+    assert [b.inner_text() for b in bands.all()] == ["Top row", "Bottom row"]    # no free placement: a row
+    bands.first.click()
+    first = pg.locator(".gui-camp__building[data-type='forge']")
+    first.wait_for(state="visible", timeout=WAIT_MS)
     pg.wait_for_selector(".gui-town__raising", state="detached", timeout=WAIT_MS)
-    _call(pg, "town.demolish", {"id": house.get_attribute("data-id")})
+    one = first.get_attribute("data-id")
+    first = pg.locator(f'.gui-camp__building[data-id="{one}"]')
+    pg.evaluate("() => import('/static/js/build.js').then(m => m.place({ id: 'forge', title: 'Branches & PRs' }))")
+    pg.locator(".gui-camp__band", has_text="Bottom row").click()
+    second = pg.locator(f'.gui-camp__building[data-type="forge"]:not([data-id="{one}"])')
+    second.wait_for(state="visible", timeout=WAIT_MS)
+    pg.wait_for_selector(".gui-town__raising", state="detached", timeout=WAIT_MS)
+    assert second.bounding_box()["y"] > first.bounding_box()["y"] + first.bounding_box()["height"]   # a row of its own, below
+    for h in (first, second):
+        _call(pg, "town.demolish", {"id": h.get_attribute("data-id")})
 
 
 def test_a_buildings_error_or_held_ork_shows_over_it_as_a_badge(camp_look, monkeypatch):
