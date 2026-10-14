@@ -177,3 +177,15 @@ script's work offers mission 5. A mission then answers the person's real problem
    ([catalog-shelves.md](catalog-shelves.md)); missions 3 and 4 come when those buildings' turn does, not to bring it.
 4. **Each mission:** one idea, fifteen minutes at most, real work on the person's own project, its cost said first, a
    deed at its end. A mission is a file, so the community can make them ([open-questions.md](open-questions.md) Q19).
+
+## 9. Mission 1 on v3's camp, and the campaign's next (the owner, 2026-10-14, evening)
+
+1. **The quests meet the stations** ([v3-prompts.md](v3-prompts.md) §13): quest 1 raises the dispatcher's booth and the
+   drill cart stands on its siding; quest 3's "pass" is **lifting the Review gate's barrier**.
+2. **A finale after quest 3, no new quest:** the passed drill cart rolls on to the catapult and is launched, its cost
+   flying above it ([the-score.md](the-score.md)); marked a drill, nothing leaves the town. It is the GIF's frame.
+3. **Rewards on v3's scheme** (v3-prompts §14): a deed per quest; at the mission's end the portrait's stage 2 and the
+   first item, "the first cart" on a plinth, in the inventory.
+4. **The campaign's next mission is 1b, Proof before the gate** (a check inside the loop): the most useful to a
+   developer, and it raises the quality the score guards. Then Mission 2, a process that comes back.
+Built with I1 (items 1–3); 1b after the inventory.
