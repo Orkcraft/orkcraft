@@ -1125,3 +1125,10 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 .gui-orkconsole__run { display: grid; grid-template-columns: 1.5em minmax(0, 1fr) auto auto; gap: var(--space-2); align-items: baseline; }
 .gui-orkconsole__run .gui-link { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
 @media (max-width: 640px) { .gui-orkconsole, .gui-orkconsole.is-unfolded { width: auto; flex: 1; } }
+
+/* The score in the HUD (js/score.js): quiet, a calm colour; a lean week in the success tone, a worse guard muted. */
+.gui-score { gap: 6px; }
+.gui-score__trend { font-variant-numeric: tabular-nums; opacity: .85; }
+.gui-score__trend.is-down { color: var(--success); }
+.gui-score__guard { opacity: .75; font-variant-numeric: tabular-nums; }
+.gui-score.is-worse .gui-score__guard { opacity: 1; text-decoration: underline dotted; }

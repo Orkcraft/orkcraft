@@ -9,7 +9,7 @@ import { chipOf } from "../carts.js";
 import { lengthOf } from "./layout.js";
 import { V3, sizeOf } from "./sprites.js";
 import { Badge } from "./signals.js";
-import { waybillOf } from "./waybill.js";
+import { waybillOf, tokensWord } from "./waybill.js";
 
 const started = new Map();               // cart id → its animation-delay, fixed when first seen
 const LOUD = ["ask", "stuck", "held"];   // a pile's flag: its loudest cart's
@@ -21,6 +21,15 @@ function delayOf(c) {
     if (started.size > 400) started.delete(started.keys().next().value);
   }
   return started.get(c.id);
+}
+
+const launched = new Map();              // cart id → its launch's delay, fixed when first seen (as `started`)
+function launchAt(c, dur) {
+  if (!launched.has(c.id)) {
+    launched.set(c.id, (dur - c.age).toFixed(2));
+    if (launched.size > 200) launched.delete(launched.keys().next().value);
+  }
+  return launched.get(c.id);
 }
 
 const loadOf = (c) => (["code", "asset", "message", "doc", "bundle"].includes(c.load) ? c.load : "asset");
@@ -91,7 +100,22 @@ export function arriving(L, roads, carts = [], travel = 0) {
   return out;
 }
 
-export function CampCarts({ L, roads, carts = [], travel = 0 }) {
+/** A cart the catapult launches flies over the wall with its cost (the-score.md, v3-prompts §13.4): its wood, and its
+ *  share of the window when that is known — it is not recorded yet, and the chip says so; green when the cart cost
+ *  less than the town's average per result (`avg`). It leaves the moment the cart reaches the buffer stop. */
+function Launch({ c, p, at, avg, B }) {
+  const t = c.tokens, lean = t !== null && t !== undefined && avg !== null && avg !== undefined && t < avg;
+  const word = t === null || t === undefined ? say("🪵 not recorded") : `🪵 ${tokensWord(t)}`;
+  const title = say(`${chipOf(c)} · ${t === null || t === undefined ? "its tokens were not recorded" : `${tokensWord(t)} tokens`}`
+    + (avg ? ` · the town's average per result is ${tokensWord(Math.round(avg))}` : "") + " · its share of the window is not recorded");
+  return html`<div class=${cls("gui-camp__launch", { "is-lean": lean })} title=${title} aria-label=${title}
+      style=${`left:${p.x + p.w * 0.3}px;top:${p.y + p.h * 0.15}px;animation-delay:${at}s;--fly-x:${260 * B}px;--fly-y:${-170 * B}px`}>
+    <img class="gui-camp__px" src=${`${V3}carts/${loadOf(c)}.png`} alt="" style=${`left:-${20 * B}px;top:-${24 * B}px;width:${40 * B}px;height:${48 * B}px`} />
+    <span class="gui-camp__launch-chip">${word}<small>${say("% of window —")}</small></span>
+  </div>`;
+}
+
+export function CampCarts({ L, roads, carts = [], travel = 0, avg = null }) {
   const B = L.step.b;
   const byId = Object.fromEntries(roads.map((r) => [r.id, r]));
   const rolling = [], standing = new Map();
@@ -110,11 +134,13 @@ export function CampCarts({ L, roads, carts = [], travel = 0 }) {
     if (!pts || pts.length < 2) continue;
     const feet = L.T * 0.3;
     const dur = tripOf(L, pts, travel);
-    if (c.age > dur + 0.5) continue;
-    rolling.push({ c, pts: pts.map(([x, y]) => [Math.round(x), Math.round(y + feet)]), dur });
+    if (c.age > dur + 2.5) continue;                     // gone (a launched one has flown by then)
+    rolling.push({ c, pts: pts.map(([x, y]) => [Math.round(x), Math.round(y + feet)]), dur, out: L.buildings[r.to].wall === "out" ? r.to : "" });
   }
   return html`<div class="gui-camp__layer is-carts">
     ${rolling.map(({ c, pts, dur }) => html`<${Rolling} key=${c.id} c=${c} pts=${pts} dur=${dur} B=${B} />`)}
+    ${rolling.filter((x) => x.out).map(({ c, dur, out }) => html`<${Launch} key=${`fly-${c.id}`} c=${c} p=${L.buildings[out]}
+      at=${launchAt(c, dur)} avg=${avg} B=${B} />`)}
     ${[...standing].map(([id, list]) => html`<${Standing} key=${id} list=${list} p=${L.buildings[id]} L=${L} />`)}
   </div>`;
 }

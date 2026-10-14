@@ -1,6 +1,6 @@
 """👀 "Since your last look" as a service (docs/design/audience.md §2a; realm/last_look.py has the rules and words).
 
-    built(town, building_id, event_id, title, ref)   # core/delivery.py: a result went through, launched, was done
+    built(town, building_id, event_id, title, ref, trail)   # core/delivery.py: a result went through, launched, was done
     moved(town, cart)                                # core/delivery.py: a cart reached its building
     look = LastLook(town, muster, limits)            # a face makes one; `limits()` is the last quota reads
     look.beat()          # the face is in front of the person (a look): it may begin a new look and greet them
@@ -21,7 +21,7 @@ import re
 from typing import Any, Callable
 
 from orkcraft.core import bus
-from orkcraft.realm import event_log, last_look, modes, status
+from orkcraft.realm import event_log, last_look, modes, pipes, status
 
 STUCK_S = 30 * 60           # a task waiting this long is a problem, with what it waits for
 # Waits the questions already show (the person's answer or yes), and ones that end by themselves soon.
@@ -32,14 +32,17 @@ def _root(town):
     return None if getattr(town, "demo", False) else getattr(town, "repo_root", None)
 
 
-def built(town, building_id: str, event_id: str, title: str = "", ref: str = "") -> None:
-    """A building sent an event that is a result (realm/last_look.py `BUILT_BY_EVENT`): kept in the local log."""
+def built(town, building_id: str, event_id: str, title: str = "", ref: str = "", trail: tuple = ()) -> None:
+    """A building sent an event that is a result (realm/last_look.py `BUILT_BY_EVENT`): kept in the local log, with the
+    tokens and spend its trail recorded (None when no hop did) — the score per result reads them (realm/score.py)."""
     kind = last_look.BUILT_BY_EVENT.get(event_id)
     if kind:
         title = modes.strip_emoji(title or "")
         if kind == "launched":                 # the Publisher titles a shot "<status> <url>": where it went is the news
             title = re.sub(r"^\d{3}\s+", "", title)
-        event_log.record(_root(town), event_log.BUILT, building=building_id, kind=kind, title=title[:200], ref=ref)
+        tokens, cost = pipes.trail_totals(tuple(trail or ()))
+        event_log.record(_root(town), event_log.BUILT, building=building_id, kind=kind, title=title[:200], ref=ref,
+                         tokens=tokens, cost=cost)
 
 
 def moved(town, cart) -> None:

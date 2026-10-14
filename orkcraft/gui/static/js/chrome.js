@@ -11,6 +11,7 @@ import { Scheme } from "./icons.js";
 import { opened, panelShown, panelWidth } from "./windows.js";
 import { narrow } from "./pocket.js";
 import { SlotsHud } from "./slots.js";
+import { ScoreHud } from "./score.js";
 
 const LEVEL = { warn: "is-warn", over: "is-over" };
 const MARK = { information: "✓", warning: "⚠", error: "✗" };
@@ -85,6 +86,7 @@ export function Hud() {
     ${hud.quota && html`<${Resource} icon="quota" word=${words.quota} value=${hud.quota} level=${hud.quota_level} />`}
     ${hud.show_gold && html`<${Resource} icon="gold" word=${words.gold} value=${hud.gold} level=${hud.gold_level} />`}
     <${Resource} icon="lumber" word=${words.lumber} value=${hud.lumber} level=${hud.lumber_level} />
+    <${ScoreHud} s=${t.score} />
     <${SlotsHud} word=${words.supply} online=${online.value} />
   </header>`;
 }

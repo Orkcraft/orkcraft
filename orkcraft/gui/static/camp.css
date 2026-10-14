@@ -121,3 +121,16 @@
 .gui-camp__waybill-stops td { padding: 3px 6px; border-bottom: 1px solid color-mix(in srgb, var(--walnut) 25%, transparent); }
 .gui-camp__waybill-stops tr.is-now td { font: var(--type-camp-label); }
 .gui-camp__waybill-sum { margin: 0; font: var(--type-camp-label); }
+
+/* a launched cart flies over the wall with its cost (js/camp/carts.js Launch) */
+.gui-camp__launch { position: absolute; width: 0; height: 0; z-index: 1500; visibility: hidden; pointer-events: none;
+  animation: gui-camp-fly 1.8s cubic-bezier(.3, .0, .6, 1) 1 both; animation-fill-mode: none; }
+.gui-camp__launch-chip { position: absolute; left: 12px; top: -48px; display: flex; flex-direction: column; padding: 2px 8px;
+  background: var(--chip); color: var(--chip-ink); border: 1px solid var(--art-outline); font: var(--type-camp-chip); white-space: nowrap; }
+.gui-camp__launch-chip small { font: var(--type-camp-caption); opacity: .75; }
+.gui-camp__launch.is-lean .gui-camp__launch-chip { color: var(--success); border-color: var(--success); }
+@keyframes gui-camp-fly {
+  0% { visibility: visible; transform: translate(0, 0); opacity: 1; }
+  60% { visibility: visible; transform: translate(calc(var(--fly-x) * .6), var(--fly-y)); opacity: 1; }
+  100% { visibility: visible; transform: translate(var(--fly-x), calc(var(--fly-y) * .4)); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .gui-camp__launch { animation-duration: .01s; } }

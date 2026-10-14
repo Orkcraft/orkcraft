@@ -45,7 +45,7 @@ QUEST_STARTED = "quest_started"   # quest
 QUEST_DONE = "quest_done"         # quest, seconds
 QUEST_SKIPPED = "quest_skipped"   # quest
 # "Since your last look" (audience.md §2a): what the town made while the person was away, and their looks.
-BUILT = "result_built"            # building, kind ("passed" | "launched" | "done"), title, ref
+BUILT = "result_built"            # building, kind ("passed" | "launched" | "done"), title, ref, tokens, cost (None: unrecorded)
 CART_MOVED = "cart_moved"         # source, target, title: a cart delivered along a road
 LOOKED = "look"                   # started, seconds: the GUI in front of the person (looks a day, their length)
 

@@ -33,6 +33,9 @@ function orkKey(b) {
   if (o) return o.ref || `${b.id}/${String(o.name).toLowerCase()}`;
   return `${b.id}/${String(b.ork_name || "steward").toLowerCase()}`;
 }
+/** The town's average wood per accepted result: this week's, else last week's; null when none was recorded. */
+const averagePerResult = (s) => (!s ? null : s.tokens !== null && s.tokens !== undefined ? s.tokens
+  : s.before && s.before.tokens !== null && s.before.tokens !== undefined ? s.before.tokens : null);
 const onOrk = (b) => showConsole(orkKey(b), true);          // its terminal, at the town's foot
 const onBubble = (b) => { waybillOf.value = { building: b.id }; };   // the task's history
 
@@ -272,7 +275,7 @@ export function CampTown({ buildings, roads }) {
           raising=${going[b.id] !== undefined} />`)}
       </div>
       <${Siding} L=${L} buildings=${buildings} />
-      <${CampCarts} L=${L} roads=${here} carts=${carts} travel=${travel} />
+      <${CampCarts} L=${L} roads=${here} carts=${carts} travel=${travel} avg=${averagePerResult(snapshot.value && snapshot.value.score)} />
       <${Stewards} L=${L} buildings=${buildings} roads=${here} out=${outId} soon=${arriving(L, here, carts, travel)}
         onOrk=${onOrk} onBubble=${onBubble} />
       ${outB && html`<${StewardOut} b=${outB} p=${L.buildings[outB.id]} L=${L} grown=${selected.value === outB.id} onOrk=${onOrk} onBubble=${onBubble}

@@ -25,7 +25,7 @@ from orkcraft.core.roster import Muster
 from orkcraft.core.town import Town
 from orkcraft.gui import projects as gui_projects
 from orkcraft.gui import views
-from orkcraft.realm import card_docs, catalog, halt, lexicon, modes, motion, pipes, script_first, status, steward_models
+from orkcraft.realm import card_docs, catalog, halt, lexicon, modes, motion, pipes, score, script_first, status, steward_models
 from orkcraft.realm.buildings import TOWN_HALL
 from orkcraft.scroll import road_key
 
@@ -376,6 +376,24 @@ def alerts(town: Town, muster: Muster, night=None) -> list[dict[str, Any]]:
              "waited": round(now - muster.alert_first_seen.get(a.id, now), 1)} for a in found]
 
 
+SCORE_S = 60.0                 # the score is read from the town's logs at most once a minute
+_scored: dict[str, tuple[float, dict]] = {}
+
+
+def score_now(town: Town) -> dict[str, Any]:
+    """The town's score per accepted result (realm/score.py), kept a minute: the logs are files, the snapshot is often."""
+    root = None if town.demo else town.repo_root
+    key, now = str(root), time.monotonic()
+    got = _scored.get(key)
+    if got is None or now - got[0] > SCORE_S:
+        try:
+            got = (now, score.town(root))
+        except Exception:                  # a log that will not read never takes the town down
+            got = (now, score.town(None))
+        _scored[key] = got
+    return got[1]
+
+
 def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | None = None,
              live=None, night=None) -> dict[str, Any]:
     found, ork_slots = buildings(town, muster), slots.summary(town, muster)
@@ -397,6 +415,7 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "carts": carts(town, muster=muster),
         "travel": float(getattr(town, "cart_travel_s", 0.0) or 0.0),
         "hud": hud(town, muster, treasury, limits),
+        "score": score_now(town),                 # wood and spend per accepted result, the trend, the guard (the-score.md)
         "slots": ork_slots,                       # 🥩 the orks at work or waiting on you, one row each (core/slots.py)
         "sessions": sessions(live),
         "alerts": alerts(town, muster, night),

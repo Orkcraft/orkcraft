@@ -218,3 +218,31 @@ def test_the_mouse_brings_the_steward_out_a_click_grows_its_scroll_and_a_second_
     pg.locator(f'.gui-camp__card[data-id="{board}"], .gui-panel').first.wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
     _call(pg, "town.demolish", {"id": board})
+
+
+def test_a_launched_cart_flies_with_its_cost_and_the_hud_shows_the_score(camp_look, gui):
+    """the-score.md, v3-prompts §13.4: each cart the catapult launches shows its wood as it flies (its share of the
+    window not recorded yet, said so); the HUD shows the wood per accepted result with the quality guard beside it."""
+    from orkcraft.realm import roads as realm_roads
+    server, _ = gui
+    pg = camp_look
+    _clear(pg)
+    a, out = _call(pg, "town.build", {"type": "forge"}), _call(pg, "town.build", {"type": "catapult"})
+    choices = _call(pg, "roads.choices", {"from": a, "to": out})
+    choice = next((c for c in choices if not c.get("handler")), choices[0])
+    _call(pg, "roads.lay", {"from": a, "to": out, "event": choice["event"], "handler": choice.get("handler")})
+    pg.keyboard.press("Escape")
+    road = next(r for x in server.host.town.scroll.buildings if x.id == out for r in x.roads if r.source == a)
+    payload = pipes.Payload(kind="text", value="x", source=a, mode=road.event, title="Release notes", ref="9",
+                            trail=(pipes.Hop(a, tokens=12000, cost=0.2),))
+    server.host.town.roads.carts.append(realm_roads.Cart(road_id=road.id, source=a, target=out, status="delivered",
+                                                         payload=payload, at=time.monotonic()))
+    pg.reload()
+    fly = pg.locator(".gui-camp__launch")
+    fly.wait_for(state="attached", timeout=WAIT_MS)
+    assert "🪵 12k" in fly.text_content() and "% of window —" in fly.text_content()   # it waits hidden till the cart arrives
+    score = pg.locator(".gui-score")
+    assert score.count() == 1 and "per result" in score.inner_text() and "👎" in score.inner_text()
+    server.host.town.roads.carts.clear()
+    for bid in (a, out):
+        _call(pg, "town.demolish", {"id": bid})
