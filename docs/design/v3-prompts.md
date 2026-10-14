@@ -552,3 +552,11 @@ The owner, all confirmed:
      launches shows its cost as it flies (wood and % of the window), green when below the town's average; the HUD shows
      the town's cost per accepted result with its trend arrow; a building's scroll (I1) shows its own; the quality guard
      (👎 and reworks per result) beside it, so a cheaper week with worse quality never reads as a win.
+
+**Changed the same evening (the owner):** the person is **not** a figure walking in the camp. **Their portrait stays in
+the HUD's corner** (as built, [portrait.md](portrait.md)), and grows there through the four stages of
+[growth.md](growth.md) §7. **In the camp stands only their home, at the Review gate** — the checkpoint where they judge:
+a lich's crypt, an elf's tree house, a gnome's burrow, a knight's tent, a ruin for the ghost, a dugout for the ork, a
+goblin's shack, by kin. The gate's barrier already says "waiting for you"; a click on the home opens "since your last
+look", the profile and settings. The full-body class figures (GEN's k1) serve the onboarding's class cards and the
+portrait's heads. Stage 4's gold eyes become a teal glow (yellow is the question's).
