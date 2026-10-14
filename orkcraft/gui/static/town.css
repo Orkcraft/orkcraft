@@ -1,8 +1,6 @@
 /* The town as both looks draw it, Camp and Office (docs/design/portrait.md §3), over the layout (layout.css):
    the building sprites smaller and at the card's left, its roads as a block diagram. What only Office changes
    (the monochrome, no sprites, the system font) is office.css. */
-[data-look] { --canvas: #141210; --terrain: #141210; --road: #8f8166; --road-bright: #7a6e55;
-  --road-selected: #e8b94a; --road-live: #6aa84f; }
 /* A hut keeps its building at three quarters of its sprite's size, standing at the card's left over its name (Camp draws a fenced or bare one at .9, yards.css). */
 [data-look] .gui-hut > .ok-head { justify-content: flex-start; padding-left: var(--space-3); }
 [data-look] .gui-hut__sprite { zoom: .75; }
@@ -23,6 +21,8 @@
 [data-look] .gui-road.is-live .gui-road__line { stroke: var(--road-live); stroke-dasharray: none; marker-end: url(#gui-road-head-live); }
 [data-look] .gui-road.is-live .gui-road__out { fill: var(--road-live); }
 [data-look] .gui-road.is-return .gui-road__line { stroke-dasharray: 6 4; }
+/* Camp's roads are seen (docs/design/color-pass.md §3.4): a warm path (tokens: road), a step wider. */
+[data-look="camp"] .gui-road__line { stroke-width: 3; }
 [data-look] .gui-road__in { display: none; }
 [data-look] .gui-road__halo { display: inline; fill: none; stroke: var(--canvas); stroke-width: 8; }
 [data-look] .gui-road__label { display: inline; fill: var(--ink-muted); paint-order: stroke; stroke: var(--canvas);

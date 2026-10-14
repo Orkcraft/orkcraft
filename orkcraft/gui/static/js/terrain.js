@@ -11,7 +11,7 @@ const DENSITY = 0.09;                      // theme.TERRAIN_DENSITY
 // glyphs and their colour per biome: forest and ice are the TUI's own
 export const GLYPHS = {
   dirt: { glyphs: ["·", ".", "`", "°"], ink: "#2a251c" },
-  forest: { glyphs: ["·", ",", '"', "↟"], ink: "#1f3823" },
+  forest: { glyphs: ["·", ",", '"', "↟"], ink: "#2d2e1c" },   // dry olive tufts on the earth (tokens: terrain)
   ice: { glyphs: ["·", "'", "*", "⁕"], ink: "#162736" },
   dust: { glyphs: ["·", "~", "∴", "˜"], ink: "#3a2d1b" },
   void: { glyphs: [], ink: "" },

@@ -42,7 +42,7 @@ export function TypeIcon({ type }) {
 // as a plane on it (about 1.2:1 at least), never as a hole in it.
 export const BIOMES = {
   dirt: { ground: "#141210", land: "#3a3326" },
-  forest: { ground: "#101a0b", land: "#22341a" },
+  forest: { ground: "#1b170e", land: "#22341a" },   // a dark neutral earth, off the green huts' hue (color-pass.md §3)
   ice: { ground: "#070d14", land: "#1c2c3c" },
   dust: { ground: "#1a1712", land: "#5a462a" },   // a step greyer than the fence's wood, so the two part
   void: { ground: "#0e0c14", land: "#2c263c" },

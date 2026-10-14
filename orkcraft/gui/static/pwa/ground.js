@@ -3,12 +3,12 @@
 // The colours and glyphs are the desktop's (tests/test_pwa.py keeps them so).
 
 export const BIOMES = {
-  dirt: "#141210", forest: "#101a0b", ice: "#070d14", dust: "#1a1712", void: "#0e0c14", lava: "#170f0d", meadow: "#0d1a16",
+  dirt: "#141210", forest: "#1b170e", ice: "#070d14", dust: "#1a1712", void: "#0e0c14", lava: "#170f0d", meadow: "#0d1a16",
 };
 
 const GLYPHS = {
   dirt: { glyphs: ["·", ".", "`", "°"], ink: "#2a251c" },
-  forest: { glyphs: ["·", ",", '"', "↟"], ink: "#1f3823" },
+  forest: { glyphs: ["·", ",", '"', "↟"], ink: "#2d2e1c" },
   ice: { glyphs: ["·", "'", "*", "⁕"], ink: "#162736" },
   dust: { glyphs: ["·", "~", "∴", "˜"], ink: "#3a2d1b" },
   void: { glyphs: [], ink: "" },

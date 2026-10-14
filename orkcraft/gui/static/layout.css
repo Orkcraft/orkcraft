@@ -257,12 +257,13 @@ body { user-select: text; -webkit-user-select: text; }
 /* A building, its flag and an ork on a card are never dragged as pictures: a press on them drags the hut
    (Preact sets draggable="false" as a property, which reads true). */
 .gui-hut__sprite, .gui-hut img { -webkit-user-drag: none; user-drag: none; }
-/* The building's sprite: a 1px dark outline, so a green hut stands off green ground; a building whose orks sleep
-   is muted, so the eye finds the ones at work — one that asks, or is open, keeps its full colour. */
+/* The building's sprite: a 1px dark outline, so a hut stands off its ground; a building whose orks sleep is a
+   little muted, so the eye finds the ones at work — one that asks, or is open, keeps its full colour. A calm town
+   is calm, not faded (docs/design/color-pass.md §3.2). */
 .gui-hut .gui-sprite { filter: drop-shadow(1px 0 0 var(--bevel-lo)) drop-shadow(-1px 0 0 var(--bevel-lo))
   drop-shadow(0 1px 0 var(--bevel-lo)) drop-shadow(0 -1px 0 var(--bevel-lo)); }
 .gui-hut__roof > :not(.gui-out) { transition: filter .3s; }
-.gui-hut:not(.is-busy):not(.is-alert):not(.is-selected) .gui-hut__roof > :not(.gui-out) { filter: brightness(.78) saturate(.8); }
+.gui-hut:not(.is-busy):not(.is-alert):not(.is-selected) .gui-hut__roof > :not(.gui-out) { filter: brightness(.92) saturate(.95); }
 .gui-hut .ok-hut__card { min-height: 28px; }
 .gui-hut__body { min-width: 0; padding-right: var(--space-3); }
 /* A building that stopped taking work (Barracks after Halt All or ⏸): a warning frame and Resume on its card,
