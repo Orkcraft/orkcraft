@@ -137,3 +137,5 @@
   60% { visibility: visible; transform: translate(calc(var(--fly-x) * .6), var(--fly-y)); opacity: 1; }
   100% { visibility: visible; transform: translate(var(--fly-x), calc(var(--fly-y) * .4)); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .gui-camp__launch { animation-duration: .01s; } }
+.gui-camp__steward { left: 340px; right: auto; }
+.gui-camp__steward p { margin: 6px 0; }

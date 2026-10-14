@@ -23,20 +23,22 @@ import { Badge } from "./signals.js";
 import { typeModule } from "../types.js";
 import { showConsole } from "../orkconsole.js";
 import { Waybill, waybillOf } from "./waybill.js";
+import { StewardConsole, stewardOf, openStewardConsole } from "./stewardconsole.js";
 
 /** The ork a click on a building's steward means: the one stopped or asking, else at work, else its first; its
- *  console's key (core/slots.py rows: a roster ork's ref, a pool's `<building>/<name>`). */
+ *  console's key (core/slots.py rows: a roster ork's ref, a pool's `<building>/<name>`); null with none to show. */
 function orkKey(b) {
   if (b.signal && b.signal.key) return b.signal.key;
   const g = b.garrison || [];
-  const o = g.find((x) => x.status === "asking") || g.find((x) => x.status === "busy") || g[0];
-  if (o) return o.ref || `${b.id}/${String(o.name).toLowerCase()}`;
-  return `${b.id}/${String(b.ork_name || "steward").toLowerCase()}`;
+  // an ork asking or at work has a session to show; an Agent pool's keeps its runs (core/workers/barracks_console.py)
+  const o = g.find((x) => x.status === "asking") || g.find((x) => x.status === "busy") || (b.type === "barracks" ? g[0] : null);
+  return o ? o.ref || `${b.id}/${String(o.name).toLowerCase()}` : null;
 }
 /** The town's average wood per accepted result: this week's, else last week's; null when none was recorded. */
 const averagePerResult = (s) => (!s ? null : s.tokens !== null && s.tokens !== undefined ? s.tokens
   : s.before && s.before.tokens !== null && s.before.tokens !== undefined ? s.before.tokens : null);
-const onOrk = (b) => showConsole(orkKey(b), true);          // its terminal, at the town's foot
+// its terminal at the town's foot; a building with no ork of its own: its steward's console (js/camp/stewardconsole.js)
+const onOrk = (b) => { const key = orkKey(b); if (key) { stewardOf.value = null; showConsole(key, true); } else openStewardConsole(b.id); };
 const onBubble = (b) => { waybillOf.value = { building: b.id }; };   // the task's history
 
 const pan = signal({ x: 0, y: 0 });        // the drag's offset from the default view, CSS px
@@ -317,6 +319,7 @@ export function CampTown({ buildings, roads }) {
       ${grown && L.buildings[grown.id] && html`<${GrownCard} b=${grown} p=${L.buildings[grown.id]} L=${L} />`}
     </div>`}
     <${Waybill} />
+    <${StewardConsole} />
     ${placing.value && html`<${Placing} p=${placing.value} />`}
     ${!buildings.length && html`<p class="gui-empty ok-font-body ok-tone-muted">${say("No buildings in this orkspace yet.")}</p>`}
   </main>`;

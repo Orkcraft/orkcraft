@@ -95,14 +95,15 @@ def test_a_stopped_cart_stands_at_its_stop_with_its_flag_and_chip(camp_look, gui
     assert "not recorded" in bill.inner_text()
     pg.keyboard.press("Escape")
     bill.wait_for(state="detached", timeout=WAIT_MS)
-    # its steward pressed: its terminal at the foot, unfolded, with its tabs
+    # its steward pressed (its Smith rests, no session): its steward's console, saying plainly what is not known
     pg.locator('.gui-camp__layer.is-orks .gui-camp__ork').first.evaluate("e => e.click()")
-    console = pg.locator(".gui-orkconsole.is-unfolded")
+    console = pg.locator(".gui-camp__steward")
     console.wait_for(state="visible", timeout=WAIT_MS)
-    tabs = console.locator(".ok-tab")
-    if tabs.count():                                         # an ork the town knows: Now, History, Tokens, Task
-        assert tabs.all_inner_texts() == ["Now", "History", "Tokens", "Task"]
-    pg.locator(".gui-orkconsole").get_by_role("button", name="Close").click()
+    console.get_by_text("This week").wait_for(timeout=WAIT_MS)
+    assert "terminal to show" in console.inner_text() and "Smith" in console.inner_text()     # what is not known, said
+    assert console.get_by_role("button", name="Enter").count() == 1
+    pg.keyboard.press("Escape")
+    console.wait_for(state="detached", timeout=WAIT_MS)
     server.host.town.roads.carts.clear()
     for bid in (a, b):
         _call(pg, "town.demolish", {"id": bid})
