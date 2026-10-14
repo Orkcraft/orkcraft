@@ -27,9 +27,9 @@ A command. Use `ok-btn` for buttons in dialogs and panels, with one `primary` pe
 - A pictograph goes in `<i class="ok-ico">`, so Office drops it.
 - Building actions: `<button class="ok-act" title="Run">`, holding `<img>` (the 32px command icon sprite) or `<i class="ok-ico">` until the sprite exists, followed by `<span class="ok-act__label">Run</span>`.
 
-**Camp (Warcraft 2 × Factorio)**
-- `ok-btn` is a square stone face (`panel-raised`) with `bevel-raised` and an uppercase gold `camp-label`. Pressing swaps it to `bevel-sunken`. `primary` uses the Factorio confirm green (`action`).
-- `ok-act` is a 40px square command button carrying an `icon-command` sprite, like the Warcraft 2 command card. Its label is only the tooltip.
+**Camp (1990s real-time strategy × Factorio)**
+- `ok-btn` is a square stone face (`panel-raised`) with `bevel-raised` and an uppercase `camp-label` in `ink-gold` (light wood). Pressing swaps it to `bevel-sunken`. `primary` uses the Factorio confirm green (`action`).
+- `ok-act` is a 40px square command button carrying an `icon-command` sprite, like a 1990s real-time strategy command card. Its label is only the tooltip.
 
 **Office (VS Code)**
 - `ok-btn` is flat with `radius-sm`, regular weight and a hover wash. `primary` uses `action` green. `danger` is outlined.
@@ -50,7 +50,7 @@ Multi-choice marks (the carts a building takes, the events it sends) and single-
 - `.ok-chip`, with `is-on` on the chosen one.
 - The onboarding levels are 🐣 New to it · 🪓 Some · 🤘 **Punk ork**.
 
-**Camp.** A sunken square with a green ✓. The chosen chip is raised and gold.
+**Camp.** A sunken square with a green ✓. The chosen chip is raised, its label in `ink-gold` (light wood).
 
 **Office.** A VS Code checkbox: checked is filled `frame-focus`. Chips are pills.
 
@@ -84,7 +84,7 @@ A modal: the Builder chat, Orders, Confirm, F10 settings. It is the only place a
 - Variants: the default (`frame-focus`), `is-warn` (proposals, Confirm), `is-error` (build failed).
 
 **Camp**
-- A Warcraft 2 panel: a square 4px gold frame with a hard drop.
+- A 1990s real-time strategy panel: a square 4px warm wood frame (`frame`) with a hard drop; the active window's frame turns bone (`frame-focus`) and its title bar is maroon cloth (`banner`).
 - The speaker's 46×38 portrait sits beside a `camp-title` heading. The Builder has his (`portraits/builder.png`: an old ork in a dented helmet with a candle stub, round spectacles, a grey beard and a blueprint behind one ear); the asking ork uses `orks/ork-portrait.png`.
 - Actions are left-aligned, with the primary last.
 
@@ -119,8 +119,8 @@ The Forge opened: every branch with its pull request and changes, the selected b
 
 **Behaviour.** ⚒ Merge tests the branch with `test_cmd` in a throw-away worktree and squash-merges it into the base without asking. `C` turns a confirmation on first. Success sends `forge.merged`, and conflicts or red tests send `forge.conflict`.
 
-**Camp (Warcraft 2 × Factorio)**
-- The Forge sprite stands on the window, glowing gold while the window is active.
+**Camp (1990s real-time strategy × Factorio)**
+- The Forge sprite stands on the window, glowing while the window is active.
 - Branches sit in a sunken ledger, and PR pills are small bevelled plates.
 - The detail is a raised plate with an Almendra heading, hashes in `code`, a sunken gold/green/red diff bar and the striped test belt.
 
@@ -151,7 +151,7 @@ The resource strip along the top of the town: the brand, the menu, the halt stat
 - Each resource carries its Camp icon and its Office word (`ok-word`), following `modes.RESOURCES`: Quota (`icons/res-quota.png`, an hourglass, was ⏳), Spend (`res-gold`, a stack of coins, was 🪙), Context (`res-lumber`, crossed logs, was 🪵) and Agents (`res-meat`, meat on the bone, was 🥩). Each is a 16×16 `icon-resource` sprite `<img class="ok-sprite" data-kind="res">`; Office hides it and keeps the word.
 - States: `is-warn` at 80% or more, `is-over` at 100% or more, and `quiet` for the quiet-hours segment.
 
-**Camp.** The Warcraft 2 resource bar: a bevelled `panel-raised` strip, the brand in Almendra, and an icon then a number for each resource.
+**Camp.** A real-time strategy resource bar: a bevelled `panel-raised` strip, the brand in Almendra, and an icon then a number for each resource.
 
 **Office.** A VS Code title bar: flat `panel-inset` with a bottom hairline, the UI face, each word before its value, and no icons.
 
@@ -172,12 +172,12 @@ A building as it stands on the town map, collapsed. In Camp it is a card with th
 - Size classes `xs`, `s`, `m`, `l` on `.ok-hut` set the width (`header-xs` … `header-l`). The header slot is as wide as the card.
 - The structure is `.ok-hut` › `.ok-head` (unframed) + `.ok-hut__card`. The frame, selection and fire belong to the card only.
 
-**Camp (Warcraft 2)**
+**Camp (1990s real-time strategy)**
 - A bevelled `panel` card with a 2px `frame` border.
 - The header is a small, compact building (2:1) in the frame's own muted colours. It stands centred on the card's top edge like a finial, outside the frame, and the frame's edge stays visible on both sides.
 - The card opens with a bevelled title bar, as a window's: the number, the name in `camp-heading` and the garrison's Badge (the ork's head in its state). Under it go status lines in `camp-caption` and 40px command buttons.
 - The selected building glows softly from behind in `frame-focus`, the colour of its frame. A burning one glows in `alert` / `alert-hot`.
-- Selection turns the frame gold and adds Warcraft 2 corner brackets.
+- Selection turns the frame bone (`frame-focus`) and adds corner brackets, as a 1990s strategy game marks a unit.
 - Fire follows the stages in `modes.py`:
   - **0 s:** an `alert` frame with the `glow-fire` halo, the card's panel turns `fire-ground`, and the building glows `alert` from behind.
   - **30 s:** `alert-hot`, `fire-ground-hot` and an `alert-hot` glow.
@@ -188,7 +188,7 @@ A building as it stands on the town map, collapsed. In Camp it is a card with th
 - A 240px card on `panel-raised` with a 1px `hut-frame` and `radius-md`, so it keeps its box on the map. No header: the name heads the card over a `frame` hairline, so a block is one box and its roads meet that box.
 - The hut's number and pin show on hover, focus or selection only.
 - A status dot on the right: grey when idle, `alert-hot` when waiting.
-- Busy is a 2px `meter` strip sweeping along the card's foot (still under `prefers-reduced-motion`), never gold: gold is selection only.
+- Busy is a 2px `meter` strip sweeping along the card's foot (still under `prefers-reduced-motion`), never `frame-focus`: that colour is selection only.
 - Text actions.
 - A waiting card turns its outline (2px) and name red-orange and adds `?`.
 - With a building selected, every hut that is neither it nor at the other end of one of its roads dims to 40%. A waiting hut never dims.
@@ -211,7 +211,7 @@ The bottom strip of key hints.
 - `.ok-keys` holds one span per binding, with the key in `ok-kbd`.
 - Where Office words a binding differently (`modes.FOOTER_WORDS`), put the Camp label in `ok-ico` and the Office label in `ok-word`. For example, Spawn Ork becomes Add agent, and Orders becomes Answers.
 
-**Camp.** A bevelled strip with keys in `ink-gold`.
+**Camp.** A bevelled strip with keys in `ink-gold` (light wood).
 
 **Office.** The VS Code status bar: a solid 22px `frame-focus` strip with `on-action` text, where each item gets a hover wash.
 
@@ -223,7 +223,7 @@ A labelled progress bar for quotas, budgets, telemetry and long jobs.
 - States: `is-warn` (`warning`), `is-over` (`danger`) and `is-busy` (indeterminate).
 - The value always prints as text too.
 
-**Camp.** A 12px sunken trough holding a gold `meter` bar with a lit top edge and a dark bottom edge, like a Factorio progress bar. While busy, the trough shows a striped belt.
+**Camp.** A 12px sunken trough holding a warm wood `meter` bar with a lit top edge and a dark bottom edge, like a Factorio progress bar. While busy, the trough shows a striped belt.
 
 **Office.** A smooth 6px track with `radius-full` ends.
 - The fill eases to new widths over 0.3 s.
@@ -251,7 +251,7 @@ A subscription between two buildings, with carts (events) travelling from the ex
 - Every road carries its label, in `ink-muted` on a `canvas` halo, at the middle of its longest straight run.
 - Bends turn on `radius-md` (4px). Where roads cross, the later one's `canvas` halo breaks the one below.
 - Roads that would share a path take lanes of their own, one cell (8px) apart.
-- With a building selected, its roads out turn `road-selected` (gold), its roads in keep their colour, and every other road dims to 40%.
+- With a building selected, its roads out turn `road-selected` (light wood), its roads in keep their colour, and every other road dims to 40%.
 - Carts are small stacks of gold (`icons/res-gold.png`, the Spend icon, at 8px) glowing gold, red while held, grey when turned back, with a pill label.
 - A road runs straight out of its gate and into the other for up to 48px before it turns, so it never bends right at a building.
 
@@ -295,7 +295,7 @@ Switches between views inside one window, as in the Town Hall (Hall · Sessions 
 
 **Markup.** `.ok-tabs` › `.ok-tab`, with `is-active` on one.
 
-**Camp.** Sunken stone tabs. The active tab is raised, with a gold label.
+**Camp.** Sunken stone tabs. The active tab is raised, with its label in `ink-gold` (light wood).
 
 **Office.** VS Code editor tabs, 35px tall and separated by hairlines. The active tab sits on `panel` with a 1px `frame-focus` top line.
 
@@ -312,10 +312,10 @@ The Task Fields building opened: one board that holds both tasks and sticky note
 - States: `is-selected`, `is-dragging`, `is-done` (struck through, with ✓), and `is-alert` (an ork asks about this card).
 - A card's kind follows its lane. Moving a note into To Do makes it a task, so a task and a note look the same.
 
-**Camp (Warcraft 2 × Factorio)**
-- Lanes are sunken fields with Almendra headers: gold for status lanes, `warning` for lanes of notes.
+**Camp (1990s real-time strategy × Factorio)**
+- Lanes are sunken fields with Almendra headers: `ink-gold` (light wood) for status lanes, `warning` for lanes of notes.
 - Cards are bevelled plaques tinted with their `sticky-*` colour, like Factorio's coloured slots.
-- Selected: a 2px gold outline. Dragging: the card tilts and lifts.
+- Selected: a 2px `frame-focus` (bone) outline. Dragging: the card tilts and lifts.
 
 **Office (VS Code)**
 - Lanes are bare columns with an 11px uppercase header and a pill counter.
@@ -339,7 +339,7 @@ A short, passive notice in the corner. It never asks a question; questions are f
 A piece of the map: real building sprites on their cards, on the Camp ground, beside the same cards in Office. This preview shows how the parts look together. It is not a component of its own.
 
 **What it shows**
-- Town Hall (L) **selected**: a gold frame, corner brackets and a gold glow behind the hall.
+- Town Hall (L) **selected**: a bone frame, corner brackets and a glow behind the hall.
 - War Drum (L) **busy**.
 - Tally Crag (M).
 - Lake of Insight (L) **waiting for an answer**: an orange frame and halo, an orange glow behind the pier, and a flame on its roof.
@@ -362,7 +362,7 @@ The list of orkspaces (F1–F8) with their biome and a marker for waiting questi
 - States: `is-selected`, `is-alert`, `is-disabled`.
 
 **Camp**
-- A gold `frame-focus` rule on top, an Almendra header in `ink-gold` and items in a sunken well.
+- A `frame-focus` (bone) rule on top, an Almendra header in `ink-gold` and items in a sunken well.
 - The selected row sits on `selection`. An alert row is `alert` orange and ends with the waiting ork (`orks/ork-waiting.png`).
 
 **Office**
@@ -385,11 +385,11 @@ An opened building. In Camp it is a wide banner sprite over a title bar and a pa
   - `is-alert`: a question waits.
   - `is-alert is-hot`: it has waited 30 s or more.
 
-**Camp (Warcraft 2)**
+**Camp (1990s real-time strategy)**
 - The window is `.ok-win` › `.ok-head.is-banner` (unframed) + `.ok-win__frame` (border, bar, body). The frame, focus and fire belong to `.ok-win__frame`.
 - The window's building sprite is 128×64 (`banner-w` × `banner-h`): the same building a size up, in the frame's muted colours, centred on the frame's top edge. The building stands on the frame's top edge, and its roof rises over the map ground, not inside the frame. A narrower window crops the banner from the centre.
 - The active window's building glows softly from behind in `frame-focus`; a burning one glows in `alert` / `alert-hot`. The UI draws the glow with `drop-shadow`.
-- Under the banner sit a bevelled title bar in `camp-heading` and a 4px frame that turns gold on focus.
+- Under the banner sit a bevelled title bar in `camp-heading` and a 4px wood frame that turns bone on focus, under a maroon title bar.
 - A waiting window burns: an `alert` frame with the `glow-fire` halo, the building glows `alert-hot` from behind, and flame sprites spread over its roof.
 
 **Office (VS Code)**

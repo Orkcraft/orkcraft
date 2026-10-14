@@ -36,6 +36,40 @@ def test_the_gui_roles_come_from_the_design_system():
     assert ".ok-tone-harness-claude { color: var(--harness-claude); }" in css
 
 
+def test_tokens_css_is_written_from_tokens_json():
+    """design-system/tokens.css is the JSON's tokens as CSS: changed in the JSON, written by
+    `python -m orkcraft.design.tokens`, never by hand."""
+    assert (tokens.SYSTEM / "tokens.css").read_text(encoding="utf-8") == tokens.system_css()
+
+
+def _luminance(hex_: str) -> float:
+    rgb = [int(hex_[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    lin = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
+    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
+
+
+def _contrast(a: str, b: str) -> float:
+    la, lb = sorted((_luminance(a), _luminance(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def test_camps_chrome_is_wood_and_maroon_and_reads():
+    """docs/design/open-questions.md Q18, color-pass.md §3: Camp's frames, labels and HUD numbers are warm wood, bone
+    and maroon, not gold; bright yellow and red are kept for signals. Text reads at 4.5:1, frames and focus at 3:1."""
+    import colorsys
+    camp = {t["name"]: t["value"]["camp"] for t in tokens.system()["color"]["tokens"]}
+    for name in ("ink-gold", "frame", "hut-frame", "frame-focus", "banner", "meter", "road-selected"):
+        r, g, b = (int(camp[name][i:i + 2], 16) / 255 for i in (1, 3, 5))
+        assert colorsys.rgb_to_hls(r, g, b)[2] < 0.65, f"{name} {camp[name]}: as loud as a signal"
+    for ground in ("panel", "panel-raised", "banner"):
+        assert _contrast(camp["ink-gold"], camp[ground]) >= 4.5, ground
+    assert _contrast(camp["ink"], camp["banner"]) >= 4.5
+    for ground in ("panel", "canvas"):
+        assert _contrast(camp["frame"], camp[ground]) >= 3, ground
+        assert _contrast(camp["frame-focus"], camp[ground]) >= 3, ground
+        assert _contrast(camp["road"], camp["canvas"]) >= 3
+
+
 @pytest.mark.parametrize("type_id", sorted(catalog.TYPES))
 def test_every_type_has_a_contract_and_its_default_passes(type_id):
     c = ui.contract(type_id)

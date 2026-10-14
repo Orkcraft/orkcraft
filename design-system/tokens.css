@@ -1,22 +1,23 @@
 /* Generated from tokens.json. Set data-theme on a root element: camp, camp-ice, camp-void or office. */
 
 :root, [data-theme="camp"] {
-  --canvas: #172a0a;
-  --terrain: #1f3823;
+  --canvas: #1b170e;
+  --terrain: #2d2e1c;
   --panel: #2a2419;
   --panel-inset: #120f0a;
   --panel-raised: #463a28;
+  --banner: #5c1a1d;
   --bevel-hi: #7a6240;
   --bevel-lo: #050403;
   --selection: #1f3a5c;
-  --frame: #a07c38;
-  --hut-frame: #a07c38;
+  --frame: #a8754a;
+  --hut-frame: #a8754a;
   --frame-strong: #6a9a6f;
-  --frame-focus: #e8b94a;
+  --frame-focus: #e9d3ae;
   --ink: #e8e0c8;
   --ink-muted: #a89f86;
   --ink-comment: #7d7562;
-  --ink-gold: #f2c66d;
+  --ink-gold: #e3bf9a;
   --action: #5d9e3b;
   --on-action: #0c0a06;
   --alert: #ff8c1a;
@@ -29,7 +30,7 @@
   --danger: #f85149;
   --warning: #facc15;
   --info: #82aaff;
-  --unit-active: #e5c07b;
+  --unit-active: #d6aa7c;
   --unit-alert: #e06c75;
   --harness-claude: #f59e0b;
   --harness-agy: #5b9bff;
@@ -42,10 +43,10 @@
   --day-quiet: #3b1f5c;
   --day-office: #6b7280;
   --quiet-ink: #b48ead;
-  --road: #5c4326;
-  --road-bright: #a0703c;
-  --road-selected: #d9a066;
-  --road-live: #5c4326;
+  --road: #9c6b45;
+  --road-bright: #c69a6c;
+  --road-selected: #e0b07c;
+  --road-live: #9c6b45;
   --tier-elder: #c084fc;
   --tier-warrior: #f87171;
   --tier-laborer: #a8a29e;
@@ -63,7 +64,7 @@
   --mark-red: #f85149;
   --mark-purple: #c084fc;
   --pr-merged: #c084fc;
-  --meter: #c9a86a;
+  --meter: #b08560;
   --bevel-raised: inset 2px 2px 0 #7a6240, inset -2px -2px 0 #050403;
   --bevel-sunken: inset 2px 2px 0 #050403, inset -2px -2px 0 #7a6240;
   --card-edge: inset 1px 1px 0 rgba(255, 226, 170, 0.12);
@@ -77,6 +78,7 @@
   --panel: #121a22;
   --panel-inset: #0a1016;
   --panel-raised: #22303d;
+  --banner: #22303d;
   --bevel-hi: #4a6884;
   --bevel-lo: #020508;
   --selection: #1f3a5c;
@@ -87,7 +89,7 @@
   --ink: #dbe6ef;
   --ink-muted: #8ea4b8;
   --ink-comment: #5f7488;
-  --ink-gold: #f2c66d;
+  --ink-gold: #e3bf9a;
   --action: #5d9e3b;
   --on-action: #0c0a06;
   --alert: #ff8c1a;
@@ -100,7 +102,7 @@
   --danger: #f85149;
   --warning: #facc15;
   --info: #82aaff;
-  --unit-active: #e5c07b;
+  --unit-active: #d6aa7c;
   --unit-alert: #e06c75;
   --harness-claude: #f59e0b;
   --harness-agy: #5b9bff;
@@ -134,7 +136,7 @@
   --mark-red: #f85149;
   --mark-purple: #c084fc;
   --pr-merged: #c084fc;
-  --meter: #c9a86a;
+  --meter: #b08560;
   --bevel-raised: inset 2px 2px 0 #4a6884, inset -2px -2px 0 #020508;
   --bevel-sunken: inset 2px 2px 0 #020508, inset -2px -2px 0 #4a6884;
   --card-edge: inset 1px 1px 0 rgba(190, 220, 255, 0.10);
@@ -148,17 +150,18 @@
   --panel: #161411;
   --panel-inset: #0c0b09;
   --panel-raised: #2a2620;
+  --banner: #4a1514;
   --bevel-hi: #5a5040;
   --bevel-lo: #000000;
   --selection: #2a2a3a;
   --frame: #22262b;
   --hut-frame: #22262b;
   --frame-strong: #6b6b6b;
-  --frame-focus: #c99a3e;
+  --frame-focus: #e9d3ae;
   --ink: #e8e0c8;
   --ink-muted: #a89f86;
   --ink-comment: #7d7562;
-  --ink-gold: #f2c66d;
+  --ink-gold: #e3bf9a;
   --action: #5d9e3b;
   --on-action: #0c0a06;
   --alert: #ff8c1a;
@@ -171,7 +174,7 @@
   --danger: #f85149;
   --warning: #facc15;
   --info: #82aaff;
-  --unit-active: #e5c07b;
+  --unit-active: #d6aa7c;
   --unit-alert: #e06c75;
   --harness-claude: #f59e0b;
   --harness-agy: #5b9bff;
@@ -205,7 +208,7 @@
   --mark-red: #f85149;
   --mark-purple: #c084fc;
   --pr-merged: #c084fc;
-  --meter: #c9a86a;
+  --meter: #b08560;
   --bevel-raised: inset 2px 2px 0 #5a5040, inset -2px -2px 0 #000000;
   --bevel-sunken: inset 2px 2px 0 #000000, inset -2px -2px 0 #5a5040;
   --card-edge: inset 1px 1px 0 rgba(255, 240, 210, 0.08);
@@ -219,6 +222,7 @@
   --panel: #221f18;
   --panel-inset: #17150f;
   --panel-raised: #2e2a20;
+  --banner: #2e2a20;
   --bevel-hi: #4a4334;
   --bevel-lo: #0f0d09;
   --selection: #3d3420;

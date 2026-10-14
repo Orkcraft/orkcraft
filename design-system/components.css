@@ -1,8 +1,9 @@
 @import url("fonts/fonts.css");
 
 /* Orkcraft GUI — one markup, two looks.
-   Camp (Warcraft 2 × Factorio): pixel-art sprites on a tiled ground, square bevelled stone and oak panels,
-   gold labels, hard shadows.
+   Camp (1990s real-time strategy × Factorio): pixel-art sprites on a tiled ground, square bevelled stone and oak
+   panels, light wood labels, maroon cloth on the active title bar, hard shadows. Bright yellow and red are kept
+   for signals (a question, an error, fire), never chrome.
    Office (VS Code): flat editor chrome, hairlines, rounded controls, smooth meters, no emoji, no sprites.
    Colours come only from tokens.css; the mode knobs below switch shape and type.
    Mono (--font-mono) is for code, logs and terminals only — never for chrome. */
@@ -52,7 +53,7 @@
 [data-theme="office"] .ok-ico { display: none; }
 [data-theme="office"] .ok-word { display: inline; }
 
-/* Key hints: an engraved gold key in Camp, a VS Code keycap in Office. */
+/* Key hints: an engraved wooden key in Camp, a VS Code keycap in Office. */
 .ok-kbd { font: 700 12px/1 var(--ok-font); color: var(--ink-gold); letter-spacing: .02em; }
 [data-theme="office"] .ok-kbd { font: 400 11px/16px var(--font-office); color: var(--ink); padding: 0 5px; border-radius: 3px;
   background: var(--panel-raised); box-shadow: inset 0 -1px 0 var(--bevel-lo), inset 0 0 0 1px var(--frame); }
@@ -81,7 +82,7 @@
 [data-theme="office"] .ok-btn.primary:disabled, [data-theme="office"] .ok-btn.primary.is-disabled { color: var(--ink-comment); background: var(--panel-raised); font-weight: 400; }
 [data-theme="office"] .ok-btn .ok-kbd { background: none; box-shadow: none; padding: 0; }
 
-/* Building action. Camp: a square Warcraft 2 command button holding a 32px icon sprite (or a pictograph
+/* Building action. Camp: a square real-time strategy command button holding a 32px icon sprite (or a pictograph
    until the sprite exists). Office: a text link with a hover wash, as in VS Code view toolbars. */
 .ok-act { appearance: none; border: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   width: 40px; height: 40px; padding: 0; background: var(--panel-raised); box-shadow: var(--bevel-raised); color: var(--ink-gold);
@@ -107,7 +108,7 @@
 .ok-win.is-alert.is-hot > .ok-win__frame { border-color: var(--alert-hot); }
 .ok-win__bar { height: var(--titlebar); display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-2);
   background: var(--panel-raised); box-shadow: var(--bevel-raised); font: 700 15px/1 var(--ok-head); color: var(--ink-muted); }
-.ok-win.is-active .ok-win__bar { color: var(--ink-gold); }
+.ok-win.is-active .ok-win__bar { color: var(--ink-gold); background: var(--banner); }   /* Camp: maroon cloth (tokens: banner) */
 .ok-win__no { font: 700 12px/1 var(--ok-font); color: var(--ink-muted); }
 .ok-win__title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ok-win__body { padding: var(--ok-pad) var(--space-3); font-size: var(--ok-body); line-height: 1.45; }
@@ -115,7 +116,7 @@
   background: linear-gradient(135deg, transparent 50%, var(--ink-comment) 50%); }
 [data-theme="office"] .ok-win__bar { height: 35px; padding: 0 var(--space-3); background: var(--panel-inset); box-shadow: inset 0 -1px 0 var(--frame); font: 400 13px/1 var(--font-office); }
 [data-theme="office"] .ok-win__no { font-weight: 400; color: var(--ink-comment); }
-[data-theme="office"] .ok-win.is-active .ok-win__bar { color: var(--ink); }
+[data-theme="office"] .ok-win.is-active .ok-win__bar { color: var(--ink); background: var(--panel-inset); }
 [data-theme="office"] .ok-win.is-active > .ok-win__frame { border-color: var(--frame); box-shadow: var(--shadow-window), 0 0 0 1px var(--frame-focus); }
 [data-theme="office"] .ok-win.is-alert > .ok-win__frame { border-color: var(--alert-hot); box-shadow: var(--shadow-window), var(--glow-fire); }
 [data-theme="office"] .ok-win.is-alert .ok-win__title { color: var(--danger); }
@@ -197,7 +198,7 @@
 .ok-hut__dot { display: none; }
 .ok-hut__lines { margin: 0; padding: 0 var(--space-2) 6px; list-style: none; font: 600 12px/16px var(--ok-font); color: var(--ink-muted); }
 .ok-hut__acts { display: flex; gap: 4px; padding: 0 var(--space-2) var(--space-2); }
-/* Warcraft 2 selection: gold frame and gold corner brackets round the card (never round the roof). */
+/* Selection, as a 1990s strategy game marks a unit: a bone frame and corner brackets round the card (never round the roof). */
 .ok-hut.is-selected .ok-hut__card { border-color: var(--frame-focus); }
 .ok-hut.is-selected .ok-hut__card::after { content: ""; position: absolute; inset: -6px; pointer-events: none; background:
   linear-gradient(var(--frame-focus), var(--frame-focus)) 0 0 / 12px 2px no-repeat,
@@ -221,7 +222,7 @@
 [data-theme="office"] .ok-hut__label { height: auto; padding: 0; background: none; box-shadow: none; font: 600 13px/20px var(--font-office); }
 [data-theme="office"] .ok-hut__label .no { font: 400 12px/20px var(--font-office); color: var(--ink-comment); }
 [data-theme="office"] .ok-hut__dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-comment); margin-left: auto; align-self: center; }
-/* Office busy: a meter strip sweeping along the card's foot, not a gold dot (gold is selection only). */
+/* Office busy: a meter strip sweeping along the card's foot, not a focus-coloured dot (that colour is selection only). */
 [data-theme="office"] .ok-hut.is-busy .ok-hut__card::before { content: ""; position: absolute; left: 1px; right: 1px; bottom: 1px; height: 2px;
   border-radius: var(--radius-full); pointer-events: none; background: linear-gradient(var(--meter), var(--meter)) no-repeat;
   background-size: 30% 100%; animation: ok-hut-busy 1.4s ease-in-out infinite; }

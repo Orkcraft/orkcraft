@@ -10,6 +10,7 @@ own tokens (`design-system/`, linked here as `system/`): a type style per look, 
     tokens.style("title", "camp")    # "camp-heading": a type style of design-system/tokens.json
     tokens.css_var("fire")           # "--alert": a colour token of design-system/tokens.json
     tokens.roles_css()               # the role classes the GUI's panes wear (.ok-font-status, .ok-tone-fire)
+    tokens.system_css()              # design-system/tokens.css as tokens.json says (python -m orkcraft.design.tokens)
 """
 from __future__ import annotations
 
@@ -113,6 +114,24 @@ def roles_css() -> str:
     return "\n".join(lines) + "\n"
 
 
+def system_css() -> str:
+    """design-system/tokens.css, written from design-system/tokens.json: one block of colours and shadows per theme,
+    then the sizes and families. A token is changed in the JSON, then `python -m orkcraft.design.tokens` writes the CSS."""
+    data = system()
+    themes = [t["id"] for t in data["color"]["themes"]]
+    out = ["/* Generated from tokens.json. Set data-theme on a root element: " + ", ".join(themes[:-1])
+           + f" or {themes[-1]}. */", ""]
+    for theme in themes:
+        out.append((':root, [data-theme="camp"]' if theme == "camp" else f'[data-theme="{theme}"]') + " {")
+        out += [f"  --{t['name']}: {t['value'][theme]};" for t in data["color"]["tokens"] + data["shadow"]["tokens"]]
+        out += ["}", ""]
+    out.append(":root {")
+    for group in ("spacing", "radius", "border", "size"):
+        out += [f"  --{t['name']}: {t['value']};" for t in data[group]["tokens"]]
+    out += [f"  --font-{k}: {v};" for k, v in data["type"]["families"].items()]
+    return "\n".join(out) + "\n}\n"
+
+
 def space(step: int, unit: str = "px") -> int:
     steps = load()["space"][unit]
     return steps[max(0, min(step, len(steps) - 1))]
@@ -138,3 +157,7 @@ def problems() -> list[str]:
         if gui["colors"].get(tone) not in colours:
             out.append(f"gui.colors.{tone}: no colour token {gui['colors'].get(tone)!r} in design-system/tokens.json")
     return out
+
+
+if __name__ == "__main__":
+    (SYSTEM / "tokens.css").write_text(system_css(), encoding="utf-8")
