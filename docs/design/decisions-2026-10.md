@@ -406,3 +406,8 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
     - a project without tests gets a linter as its check, said plainly;
     - a slow suite gets a narrower command proposed;
     - a flaky test or a red `main` never counts as the trigger.
+- **22:49.** Check-in.
+  - I1 is still stabilising. It found the root causes of the red tests on `main` (e20ad1e) and is doing two more
+    full-suite runs before it merges the fixes.
+  - Everyone else is idle by design: INV and M1 are done, I2 waits for art, GEN waits for the owner's yes, V3 is done.
+  - Nothing new is handed out: building 1b waits until the owner has played Mission 1.
