@@ -201,3 +201,111 @@ the line's buffer stop; the view follows the gate, then the drill. **Rewards** (
 quest 5 may be put off; `mission_done` in `.orkcraft/mission.json`) is the campaign's first chapter
 (`growth.chapters`), which INV's paths read: the deed *Mission 1*, the portrait's stage 2, and the item `first-cart`
 (`realm/items.py`, `.orkcraft/items.json`). Screenshots: [img/m1/](img/m1/).
+
+## 10. Mission 1b: Proof before the gate (design, 2026-10-14, night; not built)
+
+The campaign's next mission (§8, §9.4). **One idea: a check inside the loop.** The ork runs the project's tests on
+its own work and reworks until they pass, so what reaches the person at the Review gate has already been checked,
+and the waybill shows each round. It is built on Mission 1's town: the Task board, the Agent pool, the Review gate.
+
+### 10.1 Where the check lives, and how it looks
+
+- **The check belongs to the Agent pool, not a new building.** The pool already runs a test command on an ork's
+  branch after the ork (`test_cmd`, core/workers/barracks_review.py) and sends a failed run back to the same ork
+  (`REWORK`, at most `max_reworks`, then 🔥 for the person). Mission 1b turns that on and shows it. The Test bench
+  stays frozen: a mission never unfreezes a building (§8 rule 3).
+- **In Camp: the proving siding.** It is a short siding beside the Agent pool, drawn the way the Task board's siding
+  is (layout.js `SIDING`): two straights, a buffer stop, and a semaphore arm at its mouth. A cart leaving the pool
+  rolls onto the siding first. The arm says the verdict by its position, never by colour (yellow and red stay the
+  person's signals, design-system-v3.md §5):
+  - **tests pass:** the arm goes up, the cart backs out and rolls on along the line to the Review gate;
+  - **tests fail:** the arm stays down and the cart rolls back into the pool's door. Its chip reads `round 2 · tests
+    failed`, and the ork at the pool takes it again. **This is the cart going round again**, seen from across the
+    camp without opening anything;
+  - **out of rounds** (`max_reworks` spent): the cart stands on the siding with 🔥, and the person's console opens on
+    the ork's last run, as any stuck cart does today.
+- **In Office:** the pool's row shows `round 2 of 3 · tests failed`, then `tests ✓ · 2 rounds`. Same words, no siding.
+- **The waybill** (cart-waybill.md, `Hop.round`) gets one row per round at the pool: the round, what the ork changed
+  (its commit count), the verdict (`tests ✓` / `tests ✗` with the last lines of the failure, folded), and that round's
+  tokens and time. Its foot adds them up: `2 rounds · 1 failed check · 🪵 41k`. The cost of a rework is never hidden:
+  it is the price of proof, and the score counts it (the-score.md).
+
+### 10.2 The quests
+
+The quest log and its rules are Mission 1's: one objective at a time, one press, the price said before it, skippable
+at every step. The ork that works is called by its orkish name, a Grunt; the buildings by what they do.
+
+| quest | the Warchief | what happens | time · cost |
+|---|---|---|---|
+| **1** | "Boss, the Grunts hand you work they never tried." | **Set the check.** The Warchief finds the project's test command (`pytest`, `npm test`, `go test ./...`, `cargo test`, `make test`, read from the project's files, no model) and the person confirms it or types their own: one press. It is run once on the main branch. A red main stops the quest and says so plainly ("the tests fail before any ork touched them: fix them first, or pick a narrower command"). The proving siding is laid beside the pool | ≤ 2 min · free, no model |
+| **2** | "Watch one fail, then pass." | **A drill.** Called a drill on its card and in the Warchief's words (§2 rule 5). A scripted Grunt's first round fails the check and its second passes. The check's verdicts are scripted too: no model, the project untouched. The person watches the cart go round again, then opens its waybill: two rounds | ≤ 2 min · free, no model |
+| **3** | "Now for real." | **One real card**, chosen by the person from the board (Mission 1's quest 4 left some there), run on a branch with the check on. Its price is said first: one run on the main tool, a budget of $1.00 on the pool for the quest (taken off when it ends, as quest 5's is). It reaches the Review gate already checked. The person reads its waybill and lifts the barrier, or sends it back with a reason: then the round count goes on | ≤ 10 min · price said first |
+
+Quest 3 needs the Security reviewer on, as Mission 1's quest 5 does. It works on a branch and nothing is merged
+without the person.
+
+### 10.3 What offers it
+
+**The trigger:** a result passed at the gate that later fails its tests. Any one of these counts:
+
+1. the pull request of a pool task passed at the Review gate shows a failed check (`gh pr view --json
+   statusCheckRollup`, read when the pool settles its pull requests: `settle_prs`);
+2. a pool branch that was passed and merged is reverted within 14 days (the git log, read the same way);
+3. the person sends a result back at the gate, or rates it 👎, with a note that says it broke (the reason chip
+   "did the wrong thing" with a note matching test, build, fails, broken).
+
+Mission 1b is offered **once**, in the Warchief's line after the next morning brief, while the pool has no
+`test_cmd` set. It is a new chapter, not an improvement, so it never goes in the 💡 list. The line names what
+happened: "Boss, *Fix the login form* passed your gate on Tuesday and broke its tests on GitHub. Want the Grunts to
+prove their work before you see it?" A "Not now" is remembered for 14 days. **The fallback** (§8): offered anyway
+three days after Mission 1 is done, if none of the triggers fired.
+
+### 10.4 The finale and the rewards
+
+- **The finale:** the checked cart passes the gate and rolls on as in Mission 1's finale (`Finale`), its chip showing
+  what it really cost and how it was proved: `tests ✓ · 2 rounds · 🪵 41k` (and `$` on an API key). It is green when
+  below the town's average per result, as any launched cart is. This cart is real work: it goes down its real roads
+  (a pull request, the Publisher if there is one), and nothing is merged without the person.
+- **A deed per quest** (`quest1b.check`, `quest1b.drill`, `quest1b.real`, in `growth.MISSION_DEEDS`, listed once
+  earned) and **"Proof before the gate"** for the mission.
+- **The item:** *the proving stone*, a whetstone on a plinth, earned once. It is a file like every item:
+  `design-system/items/proving-stone.json`, `by: "mission"`. Its sprite is a stand-in until GEN draws it. It lands in
+  the inventory quietly (v3-prompts §14 rule 4).
+- **No stage of its own.** 1b is not one of the campaign's chapters. The portrait's paths stay as INV built them:
+  stage 2 by Mission 1, stage 3 by Mission 2 (the second chapter), a lean week or a building at II. Mission 1b helps
+  toward stage 3 only the honest way: proved work gets fewer 👎 and reworks, so the quality guard holds and lean
+  weeks count. Nothing a person can do is locked behind it: the pool's `test_cmd` is in its settings for anyone,
+  mission or not.
+
+### 10.5 What it reuses, what is new, and a rough size
+
+**Reused from Mission 1 and main:** the mission engine (quests, one press, `tick`, skip, the event log's
+`quest_started` / `quest_done` / `quest_skipped`), the drill's script (`drill.json`), the pool's `test_cmd` and its
+rework loop, `Hop.round`, the waybill, the Review gate's barrier and *Lift the barrier*, Mission 1's `Finale`, the
+quest's budget on the pool (quest 5's), and the deeds, items and stage paths (realm/growth.py, realm/items.py).
+
+**New code:**
+
+| piece | where | size |
+|---|---|---|
+| missions as data files (§8 rule 2): Mission 1's quests moved out of `realm/mission.py` into `missions/1.json`, 1b in `missions/1b.json`, checked by a test; `mission.json` keyed by mission (Mission 1's file read as before) | realm/mission.py, core/mission.py | 1 day |
+| the test command found and run once on main | realm/mission_work.py | ½ day |
+| the drill's scripted check (`"check": [false, true]` in `drill.json`) | core/workers/barracks_review.py | ¼ day |
+| a check's round on the bus (`pool.checked`: round, verdict, the failure's tail), so carts and the waybill see it | core/workers/barracks_review.py, gui/state.py | ½ day |
+| the proving siding and its arm, a cart backing into the pool | js/camp/layout.js, js/camp/carts.js | 1 day |
+| the waybill's rows per round and its foot | js/camp/waybill.js, gui/views/loot.py | ¼ day |
+| the trigger: a passed result's failed checks or revert, the 👎 note, the one-time offer | core/workers/barracks_review.py, realm/gitinfo.py, core/mission.py | 1 day |
+| deeds, the item's file and stand-in sprite, tests (unit, a browser test for the siding and the rounds) | realm/growth.py, design-system/items/, tests/ | ½ day |
+
+**About 5 days**, in that order. Moving the quests to data files comes first: it is the price of a second mission
+and is owed by §8 anyway.
+
+### 10.6 Open
+
+1. **A project with no tests.** Quest 1 could offer a linter or a type check in the tests' place (`ruff`, `tsc
+   --noEmit`), or stop and say so. My proposal is to offer the linter, said plainly: "no tests found; the check will
+   be the linter".
+2. **A slow test suite** (over two minutes) makes every round slow. Quest 1 could time the run on main and propose a
+   narrower command (the changed package's tests) when it is slow.
+3. **A failed check on GitHub that is not the ork's** (a flaky test, a red main) must not count as the trigger.
+   Count it only when main was green at the same time.
