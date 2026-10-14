@@ -362,3 +362,9 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
   for the owner; the PM session answered it (homes #1, track pieces #2, as GEN recommended). V3: the stations, the
   Prospector, the classes and the growth marks are in the preview (2a81827, aa4dff7). **I1 steps 1 and 2 are on `main`**:
   the real Camp drawn in v3 (807c4fe) and the steward, bubble, scroll and quick actions (a6f1a72); step 3 under way.
+- **21:15.** The person's home (k2 #1, merged by the PM session from GEN's branch, 689113c) stands east of the Review
+  gate in the preview, a toggle cycles the seven kins (bd4aa2b). The track junction is still the stand-in: GEN's c2-fix
+  draws the branch 1.5× wider than the straight and over 4×3 tiles; a junction on one 64-px tile is still wanted.
+  I1 steps 3 and 4 merged: the ork's console and the task's history (3546145), the score on the flying cart and in the
+  HUD (d085528). Decided: the flying cart shows only what is recorded (tokens, $ on an API key); the per-cart share of
+  the limit's window goes to Later (a recorder reading the limit before and after a run).
