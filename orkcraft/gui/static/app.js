@@ -8,6 +8,7 @@ import { Hud, Toasts } from "./js/chrome.js";
 import { WarMap } from "./js/warmap.js";
 import { wearGround } from "./js/terrain.js";
 import { Town } from "./js/town.js";
+import { CampTown } from "./js/camp/town.js";
 import { Panel, panelShown, panelWidth, opened } from "./js/windows.js";
 import { Jobs } from "./js/acts.js";
 import { Orders } from "./js/orders.js";
@@ -35,7 +36,8 @@ function App() {
   const t = town.value;
   if (!t) return html`<div class="gui-loading ok-font-body">Opening the town…</div>`;
   // Two looks, the person's (docs/design/portrait.md §3): Camp on the camp theme, Office, calm, on the office
-  // theme (town.css draws both, office.css only Office). The words are the same in both.
+  // theme (town.css draws both, office.css only Office). Camp's town is v3's rows and loop (js/camp/), Office's its
+  // cards (js/town.js): one town, two drawings. The words are the same in both.
   const look = t.look === "office" ? "office" : "camp";
   const root = document.documentElement;
   if (root.dataset.look !== look) { root.dataset.look = look; root.dataset.theme = look; }
@@ -47,7 +49,9 @@ function App() {
   const buildings = t.buildings.filter((b) => ids.has(b.id));
   return html`<div class="gui">
     <${Hud} />
-    ${narrow.value ? html`<${Pocket} buildings=${buildings} />` : html`<${Town} buildings=${buildings} roads=${t.roads} />`}
+    ${narrow.value ? html`<${Pocket} buildings=${buildings} />`
+      : look === "camp" ? html`<${CampTown} buildings=${buildings} roads=${t.roads} />`
+      : html`<${Town} buildings=${buildings} roads=${t.roads} />`}
     <div class="gui-foot" style=${`margin-right:${panelShown() && !opened.value.full ? panelWidth.value : 0}px`}>
       ${!narrow.value && html`<${WarMap} />`}<${WarchiefLine} /><${OrkConsole} /></div>
     ${!narrow.value && html`<${Portrait} corner=${true} />`}

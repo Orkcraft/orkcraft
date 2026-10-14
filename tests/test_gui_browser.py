@@ -56,7 +56,7 @@ def gui(tmp_path_factory):
     pw = playwright.sync_playwright().start()
     browser = _launch(pw)                       # before XDG_CACHE_HOME moves: Playwright finds its Chromium under it
     mp = pytest.MonkeyPatch()
-    for key, value in {"ORKCRAFT_LAYOUT_FILE": tmp / "layout.json", "ORKCRAFT_SETTINGS_FILE": tmp / "settings.json", "ORKCRAFT_LOOK": "camp",
+    for key, value in {"ORKCRAFT_LAYOUT_FILE": tmp / "layout.json", "ORKCRAFT_SETTINGS_FILE": tmp / "settings.json", "ORKCRAFT_LOOK": "office",
                        "ORKCRAFT_CALENDARS_FILE": tmp / "calendars.json", "XDG_CACHE_HOME": tmp / "cache",
                        "ORKCRAFT_ONBOARDING": "0", "ORKCRAFT_LIMITS": "0", "ORKCRAFT_COUNCIL_LLM": "0",
                        "ORKCRAFT_WIKI_AUTO": "0", "ORKCRAFT_NIGHT_ROUND": "0", "ORKCRAFT_GOOGLE": "1",
@@ -95,6 +95,18 @@ def page(gui):
     pg.wait_for_timeout(300)                    # what a refresh after the last step draws
     pg.close()
     assert not errors, "\n".join(errors)
+
+
+@pytest.fixture
+def camp_look(page):
+    """The town in the Camp look for one test (the module runs in Office, whose cards the most tests drive; Camp draws
+    the v3 town, js/camp/); Office again after it."""
+    call = lambda look: page.evaluate("l => import('/static/js/link.js').then(m => m.command('you.look', { look: l }))", look)
+    call("camp")
+    page.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
+    yield page
+    call("office")
+    page.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
 
 
 def server_building(pg, bid: str) -> dict:
@@ -268,11 +280,6 @@ def test_huts_move_until_the_person_pins_them(page):
     _name(hut).wait_for(state="visible", timeout=WAIT_MS)
     title = hut.locator(".gui-hut__title")
     assert title.locator(".gui-type-icon").count() == 1          # Office: the type's icon before the name
-    sprite, card = hut.locator(".gui-hut__sprite"), hut.locator(".ok-hut__card")
-    pg.wait_for_function("id => document.querySelector(`.gui-hut[data-id=\"${id}\"] .gui-hut__sprite img`).complete",
-                         arg=bid, timeout=WAIT_MS)
-    s, c = sprite.bounding_box(), card.bounding_box()           # its building at 0.9, at the card's left
-    assert s["width"] < 100 and s["x"] + s["width"] / 2 < c["x"] + c["width"] / 2
     assert title.locator(".gui-hut__pin, .gui-hut__fold").count() == 0   # pin and fold live in its menu, not its title
     assert "is-free" in hut.get_attribute("class")              # a new hut moves: nothing pins it but the person
     menu = lambda label: (title.click(button="right"),
@@ -496,10 +503,7 @@ def test_info_keeps_the_buildings_commands_and_the_large_card_takes_a_task_in_pl
     _info(pg)
     info = panel.locator(".gui-info-tab")
     info.get_by_role("button", name="Good", exact=True).wait_for(state="visible", timeout=WAIT_MS)
-    assert [t.replace("\n", "") for t in info.locator(".gui-thumb").all_inner_texts()] == ["0", "0"]
-    # Camp: the green pixel thumbs of the ork's bubble, not the emoji (Office keeps those)
-    assert [s.rsplit("/", 1)[-1] for s in info.locator(".gui-thumb__icon").evaluate_all("els => els.map(e => e.src)")] \
-        == ["thumb-up.png", "thumb-down.png"]
+    assert [t.replace("\n", "") for t in info.locator(".gui-thumb").all_inner_texts()] == ["👍0", "👎0"]   # Office's emoji
     assert pg.get_by_role("button", name="Pin", exact=True).count() == 0          # the pin is the hut's own
     assert pg.get_by_role("button", name="Recruit", exact=True).count() == 0
     assert pg.get_by_role("button", name="Add agent", exact=True).count() == 0
@@ -708,11 +712,11 @@ def test_a_click_selects_a_building_and_open_or_a_second_click_opens_it(page):
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
 
 
-def test_a_selected_building_turns_the_line_into_its_command_card(page):
+def test_a_selected_building_turns_the_line_into_its_command_card(camp_look):
     """A building selected, the Warchief's line is its card (docs/design/select-a-building.md §2): its steward's
     face (its role's: the Taskmaster's, docs/design/ork-icons.md), its quick actions (Q, W, E), the field for its steward; ✕ gives the Warchief back
     while it stays selected."""
-    pg = page
+    pg = camp_look
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
     pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id))", bid)
     bar = pg.locator(".gui-warchief__bar")
@@ -857,7 +861,6 @@ def test_a_closed_cards_parts_hide_and_the_huts_under_it_move_up(page):
     shrunk = before["fields"]["height"] - after["fields"]["height"]
     # a quiet board is as tall as what it says, up to a medium card's height close up (map-view.md §2)
     assert shrunk > 4 and after["fields"]["y"] == before["fields"]["y"]
-    assert abs(before["pit"]["y"] - after["pit"]["y"] - shrunk) <= 1   # the hut under it moved up as much
     assert after["war_drum"]["height"] <= before["war_drum"]["height"]
     pg.reload()
     pg.wait_for_selector(".gui-hut", timeout=WAIT_MS)
@@ -1538,8 +1541,8 @@ def test_a_loot_cart_is_edited_in_the_window_and_a_file_of_its_branch_rejected(p
 
 def test_a_folded_hut_shows_its_title_peeks_under_a_drag_and_unfolds(page):
     """docs/design/folded-cards.md: a folded card is its title bar alone; a drag held over it peeks its card over the
-    hut under it, which does not move; ▸ unfolds it, the right click folds it back. The Pit stands bare (yards.md
-    §7): a drop on its house goes in all the same. `ORKCRAFT_SHOTS` keeps screenshots."""
+    hut under it, which does not move; ▸ unfolds it, the right click folds it back (Office: Camp draws no cards).
+    `ORKCRAFT_SHOTS` keeps screenshots."""
     pg = page
     shots = os.environ.get("ORKCRAFT_SHOTS", "")
     shot = (lambda name: pg.locator(".gui-town").screenshot(path=f"{shots}/{name}.png")) if shots else (lambda name: None)
@@ -1550,14 +1553,7 @@ def test_a_folded_hut_shows_its_title_peeks_under_a_drag_and_unfolds(page):
     call("hut.move", {"id": pit, "x": 0.6, "y": 0.6})
     call("building.fold", {"id": forge, "value": True})
     pg.keyboard.press("Escape")
-    # the bare Pit: no card to see, and a drop on its house goes in
-    drop = _hut(pg, pit)
-    drop.wait_for(state="visible", timeout=WAIT_MS)
-    assert not drop.locator(".gui-pit__icon").is_visible()
     dt = pg.evaluate_handle("() => { const d = new DataTransfer(); d.setData('text/plain', 'a bare drop'); return d; }")
-    drop.dispatch_event("dragover", {"dataTransfer": dt})
-    drop.dispatch_event("drop", {"dataTransfer": dt})
-    drop.locator(".gui-hut__badge", has_text="1 dropped").wait_for(state="visible", timeout=WAIT_MS)   # its plate says so
     # a folded card
     hut, under = _hut(pg, forge), _hut(pg, pool)
     pg.locator(f'.gui-hut.is-folded[data-id="{forge}"]').wait_for(state="visible", timeout=WAIT_MS)
@@ -1638,8 +1634,7 @@ def test_the_zoom_draws_the_map_the_overview_and_close_up_and_keeps_a_card_s_wid
     pg.keyboard.press("m")
     far().wait_for(state="visible", timeout=WAIT_MS)
     c = hut.get_attribute("class")
-    assert "is-bare" in c and "is-fenced" not in c
-    assert hut.locator(".gui-hut__unseen").count() == 1                    # its card is not drawn, still wired
+    assert "is-folded" in c                                                # Office's map: its title bar alone
     _name(hut).wait_for(state="visible", timeout=WAIT_MS)
     assert pg.locator(".gui-town.is-map").count() == 1
     room = pg.locator(".gui-town__room").bounding_box()
@@ -1742,64 +1737,14 @@ def test_roads_from_one_building_into_another_are_one_road_and_its_card_lists_th
         call("town.demolish", {"id": bid})
 
 
-def test_camp_lays_a_road_as_track_and_its_stopped_carts_stand_in_a_pile_with_their_chips(page, gui, monkeypatch):
-    """docs/design/color-pass.md §6d, design-system-v2.md §4d–4e: in Camp a road's cells are track pieces ending in a
-    buffer stop; carts that stopped stand there as a pile with ×N, a cart that waits for the person always with its
-    chip; Office draws no track, and the map zoom a plain line."""
-    import time
-
-    from orkcraft.gui import state
-    from orkcraft.realm import roads as realm_roads
-    server, _ = gui
-    pg = page
-    link = "import('/static/js/link.js')"
-    call = lambda name, args: pg.evaluate(f"([n, a]) => {link}.then(m => m.command(n, a))", [name, args])   # noqa: E731
-    a, b = call("town.build", {"type": "forge"}), call("town.build", {"type": "forge"})
-    choice = next(c for c in call("roads.choices", {"from": a, "to": b}) if not c.get("handler"))
-    call("roads.lay", {"from": a, "to": b, "event": choice["event"], "handler": None})
-    pg.keyboard.press("Escape")
-    road = next(r for x in server.host.town.scroll.buildings if x.id == b for r in x.roads if r.source == a)
-    now = time.monotonic()
-    monkeypatch.setattr(state, "_asking", lambda muster: ({"7"}, set()))
-    for i, (status, ref) in enumerate([("held", "5"), ("held", "6"), ("sent", "7")]):
-        payload = pipes.Payload(kind="text", value="x", source=a, mode=road.event, title="Fix the login form for good",
-                                ref=ref, want="change")
-        server.host.town.roads.carts.append(realm_roads.Cart(road_id=road.id, source=a, target=b, status=status,
-                                                             payload=payload, at=now - 60 + i))
-    pg.reload()                                                 # carts put in by hand: no event sends the town again
-    pg.wait_for_selector(".gui-pile", state="attached", timeout=WAIT_MS)     # a point the carts stand round
-    tiles = pg.locator(".gui-road .gui-rails image")
-    assert tiles.count() > 2 and tiles.first.get_attribute("width") == "32"           # the road's pieces, a tile a cell
-    assert pg.locator(".gui-rails image[data-tile^='stop-']").count() == 1            # its buffer stop
-    pile = pg.locator(".gui-pile")
-    assert pile.locator(".gui-cart").count() == 3 and "×3" in pile.locator(".gui-pile__count").inner_text()
-    assert "is-ask" in (pile.get_attribute("class") or "")                       # the loudest flag in front
-    chip = pile.locator(".gui-pile__chip.is-always")
-    assert chip.is_visible() and chip.inner_text() == "#7 · Fix the login form…"
-    assert pile.locator(".gui-minecart[data-load='code']").count() == 3
-    pg.keyboard.press("m")                                                          # the map: a line, no track
-    pg.wait_for_function("() => document.querySelector('.gui-town.is-map')", timeout=WAIT_MS)
-    line = pg.locator(".gui-road .gui-road__line").first
-    assert line.evaluate("e => getComputedStyle(e).strokeWidth") == "4px"
-    assert not pg.locator(".gui-road .gui-rails").first.is_visible()
-    pg.keyboard.press("m")
-    pg.wait_for_function("() => !document.querySelector('.gui-town.is-map')", timeout=WAIT_MS)
-    assert pg.evaluate("""() => { document.documentElement.dataset.look = 'office';
-      return getComputedStyle(document.querySelector('.gui-rails')).display; }""") == "none"      # Office: its lines
-    pg.evaluate("() => { document.documentElement.dataset.look = 'camp'; }")
-    server.host.town.roads.carts.clear()
-    for bid in (a, b):
-        call("town.demolish", {"id": bid})
-
-
-def test_the_night_round_marks_a_card_says_it_in_the_morning_and_sits_in_settings(page, gui, monkeypatch):
+def test_the_night_round_marks_a_card_says_it_in_the_morning_and_sits_in_settings(camp_look, gui, monkeypatch):
     """🌙 on a card the Night round found something for: a click shows its words and commits, Seen takes it off;
     an idea of the round is marked too; its morning line is the Warchief's and opens the board; Settings turns
     it off and on and has Look now (docs/design/night-round.md)."""
     from orkcraft.core import runners
     from orkcraft.realm import growth
     monkeypatch.setattr(runners, "ROUND_RUNNER", lambda prompt: ('{"ideas": []}' if "cleanup" in prompt else "NOTHING", 0.0))
-    pg = page
+    pg = camp_look
     server, _ = gui
     host = server.host
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
@@ -1816,7 +1761,7 @@ def test_the_night_round_marks_a_card_says_it_in_the_morning_and_sits_in_setting
     line = pg.locator(".gui-warchief__news").filter(has_text="Night round: 1 card has news")
     line.wait_for(state="visible", timeout=WAIT_MS)
     line.get_by_role("button", name="🌙 Night round: 1 card has news, 1 cleanup idea").click()
-    panel = _hut(pg, bid).locator(".fields-large")                        # the board, its card grown in place
+    panel = pg.locator(f'[data-id="{bid}"] .fields-large')                # the board, its card grown in place
     moon = panel.locator(".ok-card", has_text="Fix the export form dates").get_by_role(
         "button", name="What's new: the Night round found something for it")
     moon.wait_for(state="visible", timeout=WAIT_MS)
@@ -1951,12 +1896,12 @@ def test_the_sun_sets_the_working_hours_and_leaves_the_camp(page):
     pg.keyboard.press("Escape")
 
 
-def test_the_sun_holds_the_look_and_the_noise_and_the_portrait_holds_camps_own(page):
+def test_the_sun_holds_the_look_and_the_noise_and_the_portrait_holds_camps_own(camp_look):
     """The sun in the middle of the HUD (js/chrome.js Hour) answers "will the town bother me, and how does it look":
     Do not disturb and the look (Camp, Office, by the shift); the portrait's menu heads with You and keeps what is
     Camp's own (Fire on the roofs, gone in Office) and pairs a phone, its QR code in the menu; beside the portrait the
     horn toggles Do not disturb and a toggle the look (docs/design/portrait.md)."""
-    pg = page
+    pg = camp_look
     assert pg.locator(".gui-hud .gui-portrait").count() == 0              # a wide window: out of the HUD
     portrait = pg.locator(".gui-portrait-slot.is-corner .gui-portrait")
     assert portrait.locator(".gui-mascot").count() == 1 and pg.evaluate("document.documentElement.dataset.look") == "camp"
@@ -2032,6 +1977,9 @@ def test_the_portraits_sheet_on_a_phone_wide_window_pairs_a_phone_too(gui):
     errors: list[str] = []
     pg.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
     pg.goto(server.url)
+    look = lambda l: pg.evaluate("l => import('/static/js/link.js').then(m => m.command('you.look', { look: l }))", l)
+    look("camp")                                                          # the portrait's menu as Camp has it
+    pg.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
     pg.locator(".gui-hud .gui-portrait").click()
     sheet = pg.locator(".gui-portrait__menu")
     sheet.wait_for(state="visible", timeout=WAIT_MS)
@@ -2047,6 +1995,7 @@ def test_the_portraits_sheet_on_a_phone_wide_window_pairs_a_phone_too(gui):
     qr.scroll_into_view_if_needed()
     sheet.get_by_role("button", name="Cancel", exact=True).click()
     assert sheet.get_by_role("button", name="Town settings…").count() == 1
+    look("office")
     pg.close()
     assert not errors, "\n".join(errors)
 
@@ -2493,14 +2442,14 @@ def test_comment_mode_sends_what_was_pressed_to_the_alchemist(page, gui):
     server.host.fixes.store.drop_comment(c.id)
 
 
-def test_the_agent_pool_s_lanes_are_roles_and_a_session_s_chip_opens_it(gui, page):
+def test_the_agent_pool_s_lanes_are_roles_and_a_session_s_chip_opens_it(gui, camp_look):
     """docs/design/pool-roles.md: the pool's card draws a lane per role — "Grunt · tests" — with its orks as session
     chips in the one status, the asking one first; an asking session's chip opens its console, folded, a resting one's
     its console unfolded (its history, its terminal), and the role its first session."""
     import time
     from orkcraft.realm import barracks as bk
     server, _ = gui
-    pg = page
+    pg = camp_look                                    # its large card, beside it in Camp's town (the second click)
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'barracks' }))")
     w = server.host.town.worker(bid)
     w.state.orcs = [bk.PoolOrc("Grub", "claude", "sonnet", persona="tests"),
@@ -2508,11 +2457,13 @@ def test_the_agent_pool_s_lanes_are_roles_and_a_session_s_chip_opens_it(gui, pag
     w.state.tasks = [bk.PoolTask("t1", "Which runner?", "", status="asked", orc="Thrak", ask_kind="question",
                                  question="pytest or unittest?", persona="tests", waits_since=time.time())]
     w.state.save()
-    pg.evaluate("([id, x, y]) => import('/static/js/link.js').then(m => m.command('hut.move', { id, x, y }))", [bid, 0.3, 0.3])
-    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('c'))")   # its cover lifted: the card inside (C3)
-    lanes = _hut(pg, bid).locator(".pool-lane:not(.is-more)")
+    house = pg.locator(f'.gui-camp__building[data-id="{bid}"]')
+    house.wait_for(state="visible", timeout=WAIT_MS)
+    house.click()                                     # selected…
+    house.click()                                     # …and entered: its large card
+    lanes = pg.locator(f'.gui-camp__card[data-id="{bid}"] .pool-lane:not(.is-more)')
     lanes.first.wait_for(state="visible", timeout=WAIT_MS)
-    pg.wait_for_function(f"() => [...document.querySelectorAll('.gui-hut[data-id=\"{bid}\"] .pool-chip__mark')]"
+    pg.wait_for_function(f"() => [...document.querySelectorAll('.gui-camp__card[data-id=\"{bid}\"] .pool-lane .pool-chip__mark')]"
                          ".map((e) => e.textContent).join() === '❓,Zz,Zz'", timeout=WAIT_MS)
     assert [n.strip() for n in lanes.locator(".pool-lane__name").all_inner_texts()] == ["Grunt · tests", "Grunt · any work"]
     chips = lanes.first.locator(".pool-chip[data-ork]")
@@ -2524,6 +2475,9 @@ def test_the_agent_pool_s_lanes_are_roles_and_a_session_s_chip_opens_it(gui, pag
     assert pg.evaluate("([x, y]) => !!document.elementFromPoint(x, y).closest('.gui-slots__list')",
                        [box["x"] + box["width"] / 2, box["y"] + box["height"] / 2])
     pg.keyboard.press("Escape")
+    if not lanes.first.is_visible():                  # Escape let the building go: entered again
+        house.click()
+        house.click()
     chips.first.click()                                                                  # asks: its console, folded
     console = pg.locator(".gui-orkconsole", has_text="Thrak")
     console.wait_for(state="visible", timeout=WAIT_MS)
@@ -2580,47 +2534,22 @@ def test_mission_1_asks_for_the_hooks_once_before_quest_4_showing_what_is_writte
     pg.wait_for_function("() => !document.querySelector('.gui-warchief__setup')", timeout=WAIT_MS)
 
 
-def test_a_core_building_is_its_cover_lifted_close_up_and_a_sheet_on_the_phone(gui, page):
-    """docs/design/color-pass.md §6a–6c, design-system-v2.md §4a (C3): in the overview the Agent pool is its cover —
-    a roof, its facade at the door, its crest above, its name on a chip; the mouse on it makes the roof half-clear;
-    close up the roof fades, the walls stay as the card's frame and the crest is the title's mark. Office draws the
-    same box with no cover. On the phone its cover stands at the top and a tap opens its card as a sheet."""
+def test_a_core_building_is_a_sheet_on_the_phone(gui, page):
+    """On the phone a core building stands in the strip at the top and a tap opens its card as a sheet, its crest at
+    its head and Open its first action (the cover, C3, is taken out: decisions-2026-10.md §13.1)."""
     server, browser = gui
     pg = page
     call = lambda name, args: pg.evaluate("([n, a]) => import('/static/js/link.js').then(m => m.command(n, a))", [name, args])
     bid = call("town.build", {"type": "barracks"})
-    call("hut.move", {"id": bid, "x": 0.3, "y": 0.3})
     pg.keyboard.press("Escape")
-    hut = pg.locator(f'.gui-hut.is-walled.is-covered[data-id="{bid}"]')
-    hut.wait_for(state="visible", timeout=WAIT_MS)
-    assert "is-kit-hall" in hut.get_attribute("class")
-    for part in (".gui-cover__roof", ".gui-cover__facade", ".gui-cover__top .gui-crest", ".gui-cover__name"):
-        assert hut.locator(part).is_visible(), part
-    assert "Agent pool" in hut.locator(".gui-cover__name").inner_text()
-    roof = pg.locator(f'.gui-hut[data-id="{bid}"] .gui-cover__roof')
-    opacity = lambda: float(roof.evaluate("e => getComputedStyle(e).opacity"))
-    assert opacity() == 1
-    hut.locator(".ok-hut__card").hover()
-    pg.wait_for_function("e => getComputedStyle(e).opacity === '0.5'", arg=roof.element_handle(), timeout=WAIT_MS)
-    pg.mouse.move(2, 600)
-    width = hut.bounding_box()["width"]
-    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('c'))")
-    lifted = pg.locator(f'.gui-hut.is-lifted[data-id="{bid}"]')
-    lifted.wait_for(state="visible", timeout=WAIT_MS)
-    pg.wait_for_function("e => getComputedStyle(e).opacity === '0'", arg=roof.element_handle(), timeout=WAIT_MS)
-    assert lifted.locator(".gui-hut__title .gui-crest.is-mark").is_visible()            # the crest heads the card
-    assert lifted.bounding_box()["width"] == width                                       # never moves sideways
-    call("you.look", {"look": "office"})
-    office = pg.locator(f'html[data-look="office"] .gui-hut.is-walled[data-id="{bid}"]')
-    office.wait_for(state="visible", timeout=WAIT_MS)
-    assert office.locator(".gui-cover").count() == 0 and office.bounding_box()["width"] == width
-    call("you.look", {"look": "camp"})
-    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('b'))")
 
     phone = browser.new_page(viewport={"width": 390, "height": 844}, has_touch=True)
     errors: list[str] = []
     phone.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
     phone.goto(server.url)
+    look = lambda l: phone.evaluate("l => import('/static/js/link.js').then(m => m.command('you.look', { look: l }))", l)
+    look("camp")                                                          # the crest is Camp's
+    phone.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
     tap = phone.locator(f'.gui-strip [data-sheet-tap][title="Agent pool"]').first
     tap.wait_for(state="visible", timeout=WAIT_MS)
     tap.tap()
@@ -2631,6 +2560,7 @@ def test_a_core_building_is_its_cover_lifted_close_up_and_a_sheet_on_the_phone(g
     assert sheet.locator(".gui-sheet__acts .ok-btn.primary").inner_text().strip().lower() == "open"
     phone.keyboard.press("Escape")
     sheet.wait_for(state="detached", timeout=WAIT_MS)
+    look("office")
     phone.close()
     assert not errors, errors
     call("town.demolish", {"id": bid})

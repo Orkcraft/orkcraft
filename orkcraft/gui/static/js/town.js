@@ -31,6 +31,9 @@ const room = signal({ w: 1, h: 1, strip: 0 });
 const pinched = { sum: 0, last: 0, at: 0 };   // the pinch under way (js/town.js Town): its wheel deltas so far
 let numbered = [];                         // the huts' ids in the order of the numbers on their names
 
+/** The buildings' ids in the order of their numbers (Camp's town says them too, js/camp/town.js). */
+export function setNumbered(ids) { numbered = ids; }
+
 // 1–9 select the building with that number on its name (again: open it), from anywhere but a field, a terminal or
 // a dialog.
 window.addEventListener("keydown", (e) => {
@@ -413,16 +416,20 @@ function tidy(buildings, roads) {
   for (const [id, [x, y]] of Object.entries(spots)) command("hut.move", { id, x, y }).catch(() => {});
 }
 
-/** The right click on the bare town: Build here, Tidy up, fold or unfold the huts, the map view, the town's settings. */
-function bareMenu(e, buildings, roads) {
+/** The right click on the bare town: Build here, Tidy up, fold or unfold the huts, the map view, the town's settings.
+ *  Camp's town (js/camp/town.js) lays its buildings out itself: `hut` null, and no Tidy up or folding. */
+export function bareMenu(e, buildings, roads, hut = undefined) {
   if (e.target.closest(".gui-hut, .gui-road")) return;
-  const r = e.currentTarget.querySelector(".gui-town__room").getBoundingClientRect();
-  const hut = spotAt(e.clientX - r.left, e.clientY - r.top);
+  const cards = hut === undefined;
+  if (cards) {
+    const r = e.currentTarget.querySelector(".gui-town__room").getBoundingClientRect();
+    hut = spotAt(e.clientX - r.left, e.clientY - r.top);
+  }
   openMenu(e, [
-    { label: "Build here…", hint: "/build", run: () => { buildOpen.value = { hut }; } },
-    buildings.some((b) => b.id !== CORNER && !b.pinned) && { label: "Tidy up", hint: "along the roads", run: () => tidy(buildings, roads) },
-    buildings.some(quiet) && { label: "Fold the quiet ones", hint: "/fold", run: () => foldQuiet(buildings) },
-    buildings.some((b) => b.folded) && { label: "Unfold all", hint: "/unfold", run: () => unfoldAll(buildings) },
+    { label: cards ? "Build here…" : "Build…", hint: "/build", run: () => { buildOpen.value = hut ? { hut } : true; } },
+    cards && buildings.some((b) => b.id !== CORNER && !b.pinned) && { label: "Tidy up", hint: "along the roads", run: () => tidy(buildings, roads) },
+    cards && buildings.some(quiet) && { label: "Fold the quiet ones", hint: "/fold", run: () => foldQuiet(buildings) },
+    cards && buildings.some((b) => b.folded) && { label: "Unfold all", hint: "/unfold", run: () => unfoldAll(buildings) },
     zoomLevel.value !== "c" && { label: "Zoom in", hint: "⌘+ · pinch", run: () => zoomBy(1) },
     zoomLevel.value !== "a" && { label: "Zoom out", hint: "⌘− · pinch", run: () => zoomBy(-1) },
     { label: mapView.value ? "Leave the map view" : "Map view", hint: "M", run: toggleMap },

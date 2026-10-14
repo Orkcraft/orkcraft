@@ -353,6 +353,40 @@ a larger scale, which v3 does not use. To get F1's fill, the sheets must draw th
 13. **The person's home stands beside the Review gate**, east of it on the upper row: the person is the one who
     approves at the gate. (k2 not yet drawn.)
 
+### 4b. A real town on these rules (I1, built)
+
+The preview places ten buildings by hand; the GUI lays out whatever the town has
+(`orkcraft/gui/static/js/camp/layout.js`, pure, tested in Node by `tests/test_camp_layout.py`; drawn by
+`js/camp/town.js`). A town's roads are a graph between buildings, so:
+
+1. **The work's order.** Each building's depth is the longest chain of roads that reaches it (a source is 0; a loop of
+   roads stops at the number of buildings); buildings sort by depth, then as the town lists them; a building no road
+   touches stands after all the work.
+2. **The wall's two.** The first External listeners stands in the back wall at the way in; the last Publisher stands
+   at the buffer stop against the right wall. A second one of either stands in the rows like any other building.
+3. **Rows.** The rest fill rows of at most five, balanced (nine are 5 + 4, six are 3 + 3), left to right in the work's
+   order, the first row under the back wall. Each row stands on its own line: a building's feet are a short path
+   (24 art px) above its line, its stop where its path meets the line. The Review gate and Research draw their own
+   spur down to the line (the weighbridge, the headframe's track), so they stand on it with no dirt path.
+4. **The loop.** The way in comes down the left column from outside the wall; at each line but the last a junction
+   (c2's north T turned a quarter) sends the track east and on south; the last line turns east (`corner-ne`). With two
+   rows or more, the right column joins the lines (`corner-sw` at line 1, the T turned back at the lines between, the
+   north T as the merge at the last) and the last line runs on to the buffer stop and the catapult. One row has no
+   right column: its line runs straight to the buffer. Lines are whole track tiles apart, so the columns tile.
+5. **A road's carts** go from the source's stop to the building's stop by the shortest way along the track (a search
+   over the tiles by their exits): along a line, down or up a column, along another line. A cart from External
+   listeners comes in from outside the wall. Carts never leave the lines; a stopped cart stands at its building's stop
+   (on the Review gate's weighbridge, the barrier down while it waits for the person), more than three are a pile.
+6. **The Task board** is the dispatcher's booth with a siding of three tiles beside it: its to-do lane's tasks wait on
+   it as carts, five at most and a `+N` chip for the rest.
+7. **The view.** The zoom steps of §3 (`zoomLevel` a · b · c: the overview, the default, close; ⌘± and the wheel), a drag
+   pans, and the default view is centred on the work (the back wall to the last line, between the columns) in the
+   part of the window the panel leaves.
+
+Office draws the same town as its cards where the person put them (`js/town.js`): one town, two drawings, the same
+words. Each building's steward is called by its orkish name (`ork_name` in the snapshot, `orc.<type>` in the
+glossary).
+
 **Layers** (v2 §3, revised): ground · paths and track · buildings · carts · orks · **doors** (the patch over a
 building, sorted with it) · signals · chips · UI. The covers' layer is gone. Shadows stay the product's.
 

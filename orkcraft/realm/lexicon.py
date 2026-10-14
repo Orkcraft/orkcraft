@@ -255,6 +255,11 @@ _PHRASES = {"Into the pit": "Dropped",
 _BY_KEY = {t.key: t for t in TERMS}
 
 
+def known(key: str) -> bool:
+    """Whether the glossary has a word for `key`."""
+    return key in _BY_KEY
+
+
 def term(key: str, many: bool = False) -> str:
     """The word for `key`: `term("road", many=True)` → roads."""
     t = _BY_KEY[key]

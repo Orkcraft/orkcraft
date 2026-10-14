@@ -108,6 +108,8 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "alert": {"id": asking.alert.id, "title": asking.alert.title, "ref": cart_ref(asking.alert.id),
                       "waited": round(time.monotonic() - since, 1) if since else 0.0} if asking else None,
             "has_worker": worker is not None,
+            # its steward by its orkish name (CLAUDE.md, Wording): Camp's town draws it at its stop (js/camp/orks.js)
+            "ork_name": lexicon.term(f"orc.{type_id}") if lexicon.known(f"orc.{type_id}") else lexicon.term("orc.custom"),
             # its work is code: no ork lives in it, one visits (docs/design/yards.md §2); `visit` is the host's
             "yard": bool(spec) and script_first.is_script_first(spec, bs),
             "visit": "",
