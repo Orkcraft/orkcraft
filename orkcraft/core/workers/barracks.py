@@ -50,6 +50,7 @@ from pathlib import Path
 from orkcraft import autonomy
 from orkcraft.core import delivery, timeline
 from orkcraft.core.workers import Worker
+from orkcraft.core.workers.barracks_asks import AsksMixin
 from orkcraft.core.workers.barracks_claims import ClaimsMixin
 from orkcraft.core.workers.barracks_paths import PathsMixin
 from orkcraft.core.workers.barracks_plan import PlanMixin
@@ -117,6 +118,8 @@ class RunOutcome:
     steward_tokens: int = 0
     qa: list[list[str]] = field(default_factory=list)   # questions the steward answered in this run
     asked: str = ""                                      # a question for the operator
+    questions: list[dict] = field(default_factory=list)  # its questions with their options (barracks_asks.py)
+    assumptions: list[str] = field(default_factory=list)  # what the ork assumed and marked
     accepted: bool | None = None                         # None: never reviewed (an error, a question)
     notes: str = ""
     pr: str = ""
@@ -139,7 +142,7 @@ def take_back(town, source_id: str, payload: pipes.Payload) -> str:
     return ""
 
 
-class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
+class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin, Worker):
     TYPE = "barracks"
     TAKES_REWORK = True
     APPROVAL = gate.APPROVAL      # the hop's outcome on a draft that waits for the operator (a Loot always holds it)
@@ -512,7 +515,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
             else:
                 run(prompt, resume)
             for _ in range(0 if by_hand else bk.MAX_STEWARD_ANSWERS + 1):
-                question = bk.question_of(out.text)
+                question = self._asks_of(out, orc, task)
                 if not question:
                     break
                 answer = "" if len(out.qa) >= bk.MAX_STEWARD_ANSWERS else self._steward_answer(task, question, workdir,
@@ -591,8 +594,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
     def _prompt(self, task: bk.PoolTask, orc: bk.PoolOrc, follow: bool, related: bool,
                 extra_qa: list[list[str]] | None = None) -> str:
         sent_back = f"## {self.keeper}, the steward, sent it back\n\n{task.feedback}" if task.feedback else ""
-        ask = ("If you cannot go on without a decision, stop and end your answer with one line `QUESTION: …`; "
-               f"{self.keeper}, the steward, will answer.")
+        ask = self.ask_rule(orc.harness)
         if task.want == pipes.REPLY and not task.publish:
             return self.reply_prompt(task, orc)
         if task.publish:                 # the approved draft goes out
@@ -653,6 +655,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
         task.cost_usd = round((task.cost_usd or 0.0) + out.cost + out.steward_cost, 4)
         task.tokens = (task.tokens or 0) + out.tokens if out.tokens else task.tokens
         task.qa += out.qa
+        self._note_asks(task, orc, out)
         orc.status, orc.task, orc.last = "idle", "", bk.now_iso()
         orc.cost_usd = round(orc.cost_usd + out.cost, 4)
         orc.tokens += out.tokens
@@ -711,7 +714,9 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, Worker):
                 (f" ({out.pr_note})" if out.pr_note and not out.pr else "")
             if note and not where:               # a line of its own, not the end of the report's last line
                 note = f"\n\n_{note.strip()[1:-1]}_"
-            self.emit("pool.done", f"**{task.title}** — {orc.name} ({orc.label})\n\n{out.text}{where}{note}"
+            marks = self.assumptions_md(task)
+            self.emit("pool.done", f"**{task.title}** — {orc.name} ({orc.label})\n\n" + (f"{marks}\n\n" if marks else "")
+                      + f"{out.text}{where}{note}"
                       + self._files_md(task), task.title, trail=self._trail(task, orc, "done"), ref=task.ref, want=task.want)
         else:
             self._rework(task, orc, out.notes)

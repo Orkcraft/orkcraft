@@ -140,6 +140,8 @@ class PoolTask:
     feedback: str = ""              # the steward's last REWORK notes
     qa: list[list[str]] = field(default_factory=list)   # [question, answer, who answered]
     question: str = ""              # the question waiting for the operator (status asked)
+    questions: list[dict] = field(default_factory=list)  # … each with its options ({text, options}), pinned on top
+    assumptions: list[str] = field(default_factory=list)  # what its ork assumed and marked (realm/asking.py)
     pr: str = ""                    # the pull request's URL
     pr_state: str = ""              # MERGED | CLOSED once it was settled (what the operator thought of it)
     scope: str = ""                 # local (no pull request) | external (reviewed, sent as a PR); "" not yet

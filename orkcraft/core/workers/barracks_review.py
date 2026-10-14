@@ -241,6 +241,7 @@ class ReviewMixin:
             return ""
         if not text:
             return ""
+        self._answered(task, text.strip(), who)
         question = task.question.split("\n\n")[0]
         task.qa.append([question, text.strip(), who])
         task.ask_kind = ""

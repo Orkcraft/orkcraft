@@ -112,7 +112,8 @@ def _task(t: bk.PoolTask, full: bool = False, names: dict[str, str] | None = Non
            **_want(t, names or {})}
     if full:
         row.update({"brief": t.text[:KEEP], "report": t.result[:KEEP], "error": t.error, "notes": t.feedback,
-                    "question": t.question, "target": bk.publish_kind(t.target)[1] or t.target,
+                    "question": t.question, "questions": list(t.questions), "assumptions": list(t.assumptions),
+                    "target": bk.publish_kind(t.target)[1] or t.target,
                     "draft_text": t.draft[:KEEP], "decided": t.decided,
                     "files": list(t.files), "qa": [dict(zip(("q", "a", "who"), (list(x) + ["", "", ""])[:3])) for x in t.qa]})
     return row

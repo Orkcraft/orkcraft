@@ -247,17 +247,23 @@ function AnswerHere({ id, data, t }) {
     return html`<div class="pool-task__answer"><span class="ok-tone-fire">${t.ork} ${say(`wants to publish to ${t.target || "a service"}`)}</span>
       <div class="ok-row"><button class="ok-btn primary" onClick=${() => openDialog(id, { kind: "answer", task: t.id })}>${say("Look at the draft")}</button></div></div>`;
   }
-  const send = () => act(id, "answer", { task: t.id, text: answer }).then((rule) => {
+  const send = (said = answer) => act(id, "answer", { task: t.id, text: said }).then((rule) => {
     setAnswer("");
     if (rule) openDialog(id, { kind: "rule", rule });
   }, () => {});
+  // The ork's questions, each with its answers as buttons (ork-console.md §20): one question answers at a press,
+  // several fill the field a line each.
+  const qs = t.questions || [];
+  const pick = (q, o) => (qs.length === 1 ? send(o) : setAnswer((a) => `${a ? `${a}\n` : ""}${q.text} → ${o}`));
   return html`<div class="pool-task__answer">
-    <b class="ok-tone-fire">${data.keeper} ${say("asks")}</b>
-    <pre class="gui-pre">${t.question}</pre>
+    <b class="ok-tone-fire">${t.ork || data.keeper} ${say("asks")}</b>
+    ${qs.length ? qs.map((q, i) => html`<div key=${i} class="pool-task__question"><pre class="gui-pre">${q.text}</pre>
+      ${q.options.length > 0 && html`<div class="ok-row">${q.options.map((o) => html`<button key=${o} class="ok-btn" onClick=${() => pick(q, o)}>${o}</button>`)}</div>`}</div>`)
+      : html`<pre class="gui-pre">${t.question}</pre>`}
     <textarea class="ok-input gui-textarea" rows="2" value=${answer} aria-label=${say("Your answer")} placeholder=${say("Your answer")}
       onInput=${(e) => setAnswer(e.target.value)}
       onKeyDown=${(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && answer.trim()) { e.preventDefault(); send(); } }}></textarea>
-    <div class="ok-row"><button class="ok-btn primary" disabled=${!answer.trim()} onClick=${send}>Answer</button></div>
+    <div class="ok-row"><button class="ok-btn primary" disabled=${!answer.trim()} onClick=${() => send()}>Answer</button></div>
   </div>`;
 }
 
@@ -292,6 +298,8 @@ function TaskDetail({ id, data, t }) {
       <ul class="gui-rows">${t.qa.map((x, i) => html`<li key=${i}><b>${x.q}</b><br />→ ${x.a} <span class="ok-tone-muted">· ${x.who}</span></li>`)}</ul>`}
     ${t.files.length > 0 && html`<p class="ok-detail__section">Files · ${t.files.length}</p>
       <ul class="gui-rows">${t.files.map((f) => html`<li key=${f} class="gui-link" onClick=${() => openInLake({ path: f, from: id })}>${f}</li>`)}</ul>`}
+    ${(t.assumptions || []).length > 0 && html`<p class="ok-detail__section">${say("Assumptions")} · ${t.assumptions.length}</p>
+      <ul class="gui-rows">${t.assumptions.map((a, i) => html`<li key=${i}>${a}</li>`)}</ul>`}
     <${Text} label="Report" text=${t.report} />
     ${t.decided && html`<p class="ok-detail__meta">The foreman: ${t.decided}</p>`}
   </div>`;
