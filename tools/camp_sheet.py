@@ -1,0 +1,610 @@
+"""Cut keyed reference sheets into Camp's v2 sprites (docs/design/design-system-v2.md §11).
+
+    python tools/camp_sheet.py                  cut every sheet in tools/camp_sheets.json
+    python tools/camp_sheet.py --only carts     cut only the sheets whose name contains "carts"
+    python tools/camp_sheet.py --list SHEET     print the pieces found on a sheet (to write its spec)
+    python tools/camp_sheet.py --check DIR      also render each nine-slice kit as a 3 × 3 and a 5 × 4 into DIR
+
+A sheet is a generated image on flat `#FF00FF` drawn in "pixels" of a few screen pixels. The steps, in v2's order:
+
+1. **key** the magenta, and the purple fringe a shadow blended into it (red and blue both well above green);
+2. **snap** the sheet to its own pixel grid (the pitch and phase read from where the colour changes): each cell
+   takes the median of its inner pixels, and a cell less than half covered is transparent;
+3. **find** each sprite as a connected shape on that grid (gaps of `close` cells closed) and take the one nearest
+   the point the spec names (fractions of the sheet, so a spec survives a resized sheet);
+4. a sprite that does not fit its slot is read again from the screen pixels at a coarser cell (one scale for a
+   whole group, so the frames of a strip match); a tile drawn with a dark border is cut inside the border first
+   and read into exactly its size;
+5. **trim**, then **pad** to the slot (a multiple of 8) at its anchor (feet at the bottom centre, tiles at the
+   top left); a nine-slice kit's pieces are cut from the outer side of each piece at the sheet's own scale;
+6. **snap the colours** to the `art-*` / `world-*` tokens and the tones the spec lists for the group, the outline
+   to `art-outline`; only signal sprites may keep `signal-*`;
+7. **write** the PNG (RGBA, no smoothing, no metadata), its row in `manifest.json`, and for the covers the map's
+   half-size copy;
+8. **check:** every size a multiple of 8, no signal hue outside signal sprites; with `--check`, the kits tiled.
+
+Every sprite it writes is a **placeholder** (generated art, docs/design/color-pass.md §10b), to be replaced by the
+commissioned artist's; the manifest says so on every row. Needs `pip install pillow numpy`.
+"""
+from __future__ import annotations
+
+import argparse
+import colorsys
+import json
+import pathlib
+from collections import deque
+
+import numpy as np
+from PIL import Image
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+SPEC = ROOT / "tools" / "camp_sheets.json"
+OUT = ROOT / "design-system" / "sprites" / "camp"
+TOKENS = ROOT / "design-system" / "tokens.json"
+LICENCE = "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)"
+AUTHOR = "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+
+
+# --- 1. key ---------------------------------------------------------------------------------------------------
+
+def load(path: pathlib.Path) -> np.ndarray:
+    return np.asarray(Image.open(path).convert("RGB")).astype(np.int16)
+
+
+def keyed(a: np.ndarray, fringe: int = 60) -> np.ndarray:
+    """True where the sheet is background: the magenta, and the purple a blended shadow left in it."""
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    return ((r - g > fringe) & (b - g > fringe) & (b > r * 0.55)) | ((r > 200) & (b > 200) & (g < 90))
+
+
+# --- 2. the sheet's own grid ----------------------------------------------------------------------------------
+
+def _period(profile: np.ndarray, lo: float = 4.0, hi: float = 12.0) -> tuple[float, float]:
+    """The pitch and phase at which the colour edges along one axis line up best."""
+    n = np.arange(len(profile))
+    best = (0.0, lo, 0.0)
+    for p in np.arange(lo, hi, 0.01):
+        s = (profile * np.exp(2j * np.pi * n / p)).sum()
+        c = abs(s) / max(profile.sum(), 1)
+        if c > best[0]:
+            best = (c, p, (np.angle(s) % (2 * np.pi)) * p / (2 * np.pi))
+    return best[1], best[2]
+
+
+def grid(a: np.ndarray, bg: np.ndarray) -> tuple[float, float, float]:
+    """The pitch (screen px per art px) and the x, y where a cell starts."""
+    lum = 0.3 * a[..., 0] + 0.59 * a[..., 1] + 0.11 * a[..., 2]
+    dx = np.abs(np.diff(lum, axis=1))
+    dx[bg[:, 1:] | bg[:, :-1]] = 0
+    dy = np.abs(np.diff(lum, axis=0))
+    dy[bg[1:] | bg[:-1]] = 0
+    px, ox = _period(dx.sum(0))
+    py, oy = _period(dy.sum(1))
+    pitch = (px + py) / 2
+    # an edge at diff index i lies between pixels i and i+1: a cell starts one pixel after it
+    return pitch, (ox + 1) % pitch, (oy + 1) % pitch
+
+
+def snap(a: np.ndarray, bg: np.ndarray, x0: float, y0: float, cw: float, ch: float, w: int, h: int,
+         samples: int = 4) -> np.ndarray:
+    """Read a w × h grid of cells (cw × ch screen px each, from x0, y0) into RGBA: each cell's median colour over
+    its inner pixels, opaque when at least half of them are not background."""
+    H, W = bg.shape
+    k = np.arange(samples)
+    fx = 0.2 + 0.6 * k / max(samples - 1, 1)                    # the inner 60 % of a cell, away from JPEG bleed
+    xs = np.clip((x0 + (np.arange(w)[:, None] + fx[None]) * cw).astype(int), 0, W - 1)    # w × s
+    ys = np.clip((y0 + (np.arange(h)[:, None] + fx[None]) * ch).astype(int), 0, H - 1)    # h × s
+    yy = ys[:, None, :, None]
+    xx = xs[None, :, None, :]
+    px = a[yy, xx]                                                # h × w × s × s × 3
+    cover = ~bg[yy, xx]
+    flat = px.reshape(h, w, -1, 3).astype(float)
+    mask = cover.reshape(h, w, -1)
+    flat[~mask] = np.nan
+    with np.errstate(all="ignore"):
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            med = np.nanmedian(flat, axis=2)
+    out = np.zeros((h, w, 4), np.uint8)
+    opaque = mask.mean(axis=2) >= 0.5
+    out[..., :3] = np.nan_to_num(med).clip(0, 255).astype(np.uint8)
+    out[..., 3] = np.where(opaque, 255, 0)
+    out[~opaque, :3] = 0
+    return out
+
+
+# --- 3. find each sprite ---------------------------------------------------------------------------------------
+
+def _grow(m: np.ndarray, n: int) -> np.ndarray:
+    out = m.copy()
+    p = np.pad(m, n)
+    h, w = m.shape
+    for dy in range(2 * n + 1):
+        for dx in range(2 * n + 1):
+            out |= p[dy:dy + h, dx:dx + w]
+    return out
+
+
+def label(m: np.ndarray) -> tuple[np.ndarray, int]:
+    """Each 8-connected shape of a mask numbered from 1."""
+    h, w = m.shape
+    lab = np.zeros(m.shape, np.int32)
+    n = 0
+    for y0, x0 in zip(*np.nonzero(m)):
+        if lab[y0, x0]:
+            continue
+        n += 1
+        lab[y0, x0] = n
+        q = deque([(y0, x0)])
+        while q:
+            y, x = q.popleft()
+            for ny in (y - 1, y, y + 1):
+                for nx in (x - 1, x, x + 1):
+                    if 0 <= ny < h and 0 <= nx < w and m[ny, nx] and not lab[ny, nx]:
+                        lab[ny, nx] = n
+                        q.append((ny, nx))
+    return lab, n
+
+
+def pieces(alpha: np.ndarray, close: int = 1, min_cells: int = 12) -> list[tuple[int, int, int, int]]:
+    """Each connected shape's box (x0, y0, x1, y1) on the art grid, gaps of `close` cells closed."""
+    m = alpha > 0
+    lab, n = label(_grow(m, close))
+    out = []
+    for i in range(1, n + 1):
+        ys, xs = np.nonzero(lab == i)
+        box = (xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)
+        if m[box[1]:box[3], box[0]:box[2]].sum() >= min_cells:
+            out.append(box)
+    return out
+
+
+def largest(img: np.ndarray, close: int = 1) -> np.ndarray:
+    """Only the biggest shape (and what lies within `close` of it): a stray speck or smudge of the sheet dropped."""
+    m = img[..., 3] > 0
+    lab, n = label(_grow(m, close))
+    if n < 2:
+        return img
+    sizes = [(m & (lab == i)).sum() for i in range(1, n + 1)]
+    out = img.copy()
+    out[lab != 1 + int(np.argmax(sizes))] = 0
+    return trim(out)
+
+
+class Sheet:
+    def __init__(self, path: pathlib.Path, fringe: int = 60, close: int = 1):
+        self.path = path
+        self.a = load(path)
+        self.bg = keyed(self.a, fringe)
+        self.pitch, self.ox, self.oy = grid(self.a, self.bg)
+        H, W = self.bg.shape
+        self.w, self.h = int((W - self.ox) / self.pitch), int((H - self.oy) / self.pitch)
+        self.art = snap(self.a, self.bg, self.ox, self.oy, self.pitch, self.pitch, self.w, self.h)
+        self.boxes = pieces(self.art[..., 3], close)
+
+    def at(self, fx: float, fy: float) -> tuple[int, int, int, int]:
+        """The piece nearest a point given as fractions of the sheet."""
+        x, y = fx * self.w, fy * self.h
+        def dist(b):
+            dx = max(b[0] - x, 0, x - b[2])
+            dy = max(b[1] - y, 0, y - b[3])
+            return (dx * dx + dy * dy, abs((b[0] + b[2]) / 2 - x) + abs((b[1] + b[3]) / 2 - y))
+        return min(self.boxes, key=dist)
+
+    def box(self, fbox: list[float]) -> tuple[int, int, int, int]:
+        return (int(fbox[0] * self.w), int(fbox[1] * self.h), int(np.ceil(fbox[2] * self.w)),
+                int(np.ceil(fbox[3] * self.h)))
+
+    def screen(self, box) -> tuple[float, float, float, float]:
+        return (self.ox + box[0] * self.pitch, self.oy + box[1] * self.pitch,
+                self.ox + box[2] * self.pitch, self.oy + box[3] * self.pitch)
+
+    def native(self, box) -> np.ndarray:
+        return self.art[box[1]:box[3], box[0]:box[2]].copy()
+
+    def coarse(self, box, scale: float) -> np.ndarray:
+        """The piece read again at `scale` art px of this sheet per new art px."""
+        x0, y0, x1, y1 = self.screen(box)
+        c = self.pitch * scale
+        w, h = int(np.ceil((x1 - x0) / c)), int(np.ceil((y1 - y0) / c))
+        return snap(self.a, self.bg, x0, y0, c, c, w, h)
+
+    def tile(self, box, w: int, h: int, border_lum: int = 70) -> np.ndarray:
+        """A tile cut inside its dark border and read into exactly w × h."""
+        x0, y0, x1, y1 = (int(v) for v in self.screen(box))
+        lum = 0.3 * self.a[..., 0] + 0.59 * self.a[..., 1] + 0.11 * self.a[..., 2]
+        def is_border(ys, xs):
+            sl = lum[ys, xs]
+            bgs = self.bg[ys, xs]
+            return bool(np.median(np.where(bgs, 0, sl)) < border_lum)
+        for _ in range(int(self.pitch * 4)):
+            if is_border(slice(y0, y1), x0):
+                x0 += 1
+            else:
+                break
+        for _ in range(int(self.pitch * 4)):
+            if is_border(slice(y0, y1), x1 - 1):
+                x1 -= 1
+            else:
+                break
+        for _ in range(int(self.pitch * 4)):
+            if is_border(y0, slice(x0, x1)):
+                y0 += 1
+            else:
+                break
+        for _ in range(int(self.pitch * 4)):
+            if is_border(y1 - 1, slice(x0, x1)):
+                y1 -= 1
+            else:
+                break
+        return snap(self.a, self.bg, x0, y0, (x1 - x0) / w, (y1 - y0) / h, w, h)
+
+
+# --- 4–5. trim, pad, anchor ------------------------------------------------------------------------------------
+
+def trim(img: np.ndarray) -> np.ndarray:
+    ys, xs = np.nonzero(img[..., 3])
+    if not len(xs):
+        return img[:0, :0]
+    return img[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+
+
+def feet_x(img: np.ndarray, rows: int = 6) -> float:
+    """The centre of what stands on the ground: the opaque columns of the bottom rows."""
+    a = img[..., 3] > 0
+    bottom = a[-rows:].any(axis=0)
+    xs = np.nonzero(bottom)[0]
+    return (xs.min() + xs.max() + 1) / 2 if len(xs) else img.shape[1] / 2
+
+
+def pad(img: np.ndarray, w: int, h: int, anchor: str, cx: float | None = None) -> np.ndarray:
+    """Place a trimmed sprite into a w × h slot at its anchor, cropping what overflows (said by the caller)."""
+    out = np.zeros((h, w, 4), np.uint8)
+    ih, iw = img.shape[:2]
+    if anchor in ("feet", "bottom-centre"):
+        cx = iw / 2 if cx is None or anchor == "bottom-centre" else cx
+        x = int(round(w / 2 - cx))
+        y = h - ih
+    elif anchor == "bottom-left":
+        x, y = 0, h - ih
+    elif anchor == "centre":
+        x, y = (w - iw) // 2, (h - ih) // 2
+    else:                                                       # top-left
+        x, y = 0, 0
+    sx0, sy0 = max(0, -x), max(0, -y)
+    dx0, dy0 = max(0, x), max(0, y)
+    cw, ch = min(iw - sx0, w - dx0), min(ih - sy0, h - dy0)
+    if cw > 0 and ch > 0:
+        out[dy0:dy0 + ch, dx0:dx0 + cw] = img[sy0:sy0 + ch, sx0:sx0 + cw]
+    return out
+
+
+def up8(n: int) -> int:
+    return -(-n // 8) * 8
+
+
+# --- 6. the palette ---------------------------------------------------------------------------------------------
+
+def palette(extra: list[str] = (), signals: bool = False) -> dict[str, tuple[int, int, int]]:
+    toks = json.loads(TOKENS.read_text(encoding="utf-8"))["color"]["tokens"]
+    names = ("world-", "art-") + (("signal-",) if signals else ())
+    out = {t["name"]: _rgb(t["value"]["camp"]) for t in toks
+           if t["name"].startswith(names) and t["name"] not in ("art-shadow", "art-grid")
+           and len(t["value"]["camp"]) == 7}
+    for hx in extra:
+        out[hx] = _rgb(hx)
+    return out
+
+
+def _rgb(hx: str) -> tuple[int, int, int]:
+    return int(hx[1:3], 16), int(hx[3:5], 16), int(hx[5:7], 16)
+
+
+def _lab(rgb: np.ndarray) -> np.ndarray:
+    c = rgb / 255.0
+    c = np.where(c > 0.04045, ((c + 0.055) / 1.055) ** 2.4, c / 12.92)
+    m = np.array([[0.4124, 0.3576, 0.1805], [0.2126, 0.7152, 0.0722], [0.0193, 0.1192, 0.9505]])
+    xyz = c @ m.T / np.array([0.9505, 1.0, 1.089])
+    f = np.where(xyz > 0.008856, np.cbrt(xyz), 7.787 * xyz + 16 / 116)
+    return np.stack([116 * f[..., 1] - 16, 500 * (f[..., 0] - f[..., 1]), 200 * (f[..., 1] - f[..., 2])], -1)
+
+
+def recolour(img: np.ndarray, pal: dict[str, tuple[int, int, int]]) -> np.ndarray:
+    names = list(pal)
+    cols = np.array([pal[n] for n in names], float)
+    lab = _lab(img[..., :3].astype(float))
+    d = ((lab[..., None, :] - _lab(cols)[None, None]) ** 2).sum(-1)
+    idx = d.argmin(-1)
+    out = img.copy()
+    out[..., :3] = cols[idx].astype(np.uint8)
+    out[img[..., 3] == 0] = 0
+    return out
+
+
+def loud(rgb: tuple[int, int, int]) -> bool:
+    """A signal's yellow or red (the rule of tests/test_design.py for the world tokens)."""
+    h, _, s = colorsys.rgb_to_hls(*(v / 255 for v in rgb))
+    return s > 0.6 and (h * 360 < 15 or h * 360 > 345 or 45 <= h * 360 <= 65)
+
+
+# --- 7. write ----------------------------------------------------------------------------------------------------
+
+def save(img: np.ndarray, rel: str) -> None:
+    path = OUT / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(img, "RGBA").save(path, optimize=True)
+
+
+def half(img: np.ndarray) -> np.ndarray:
+    """The map's half-size copy: each 2 × 2 block's most common opaque colour, opaque when two of four are."""
+    h, w = img.shape[0] // 2, img.shape[1] // 2
+    out = np.zeros((h, w, 4), np.uint8)
+    for y in range(h):
+        for x in range(w):
+            block = img[2 * y:2 * y + 2, 2 * x:2 * x + 2].reshape(4, 4)
+            op = block[block[:, 3] > 0]
+            if len(op) >= 2:
+                vals, counts = np.unique(op[:, :3], axis=0, return_counts=True)
+                out[y, x, :3] = vals[counts.argmax()]
+                out[y, x, 3] = 255
+    return out
+
+
+def strip(frames: list[np.ndarray]) -> np.ndarray:
+    return np.concatenate(frames, axis=1)
+
+
+# --- the spec's groups ---------------------------------------------------------------------------------------
+
+def _extract(sheet: Sheet, item: dict) -> tuple[int, int, int, int]:
+    """The piece's box on the sheet's grid: the shape nearest `at`, or everything inside `box`; then `crop` (fractions
+    of that box) and `rim_of` (only what stands above the top of another piece of the same foot, e.g. a load over the
+    rim of the empty cart, keeping `rim` rows below it)."""
+    b = sheet.box(item["box"]) if "box" in item else sheet.at(*item["at"])
+    if "crop" in item:
+        fx0, fy0, fx1, fy1 = item["crop"]
+        w, h = b[2] - b[0], b[3] - b[1]
+        b = (b[0] + int(fx0 * w), b[1] + int(fy0 * h), b[0] + int(round(fx1 * w)), b[1] + int(round(fy1 * h)))
+    if "rim_of" in item:
+        ref = _trimmed_box(sheet, sheet.at(*item["rim_of"]))
+        own = _trimmed_box(sheet, b)
+        b = (own[0], own[1], own[2], own[3] - (ref[3] - ref[1]) + item.get("rim", 0))
+    return _trimmed_box(sheet, b)
+
+
+def _trimmed_box(sheet: Sheet, b) -> tuple[int, int, int, int]:
+    ys, xs = np.nonzero(sheet.art[b[1]:b[3], b[0]:b[2], 3])
+    if not len(xs):
+        return b
+    return (b[0] + xs.min(), b[1] + ys.min(), b[0] + xs.max() + 1, b[1] + ys.max() + 1)
+
+
+def load_only(loaded: np.ndarray, empty: np.ndarray, rim: int) -> np.ndarray:
+    """What a loaded cart has that the empty one has not: the two put foot to foot, the pixels of the loaded one that
+    differ from the empty one's (or stand where it has none), down to `rim` rows below the empty bin's top, so the
+    load drawn over the cart gives the loaded cart back."""
+    H, W = loaded.shape[:2]
+    h, w = empty.shape[:2]
+    ref = np.zeros_like(loaded)
+    x = (W - w) // 2
+    y = H - h
+    sx0, sy0 = max(0, -x), max(0, -y)
+    ref[max(y, 0):max(y, 0) + h - sy0, max(x, 0):max(x, 0) + w - sx0] = empty[sy0:sy0 + H, sx0:sx0 + W][:H, :W]
+    d = np.sqrt(((_lab(loaded[..., :3].astype(float)) - _lab(ref[..., :3].astype(float))) ** 2).sum(-1))
+    keep = (loaded[..., 3] > 0) & ((ref[..., 3] == 0) | (d > 18))
+    keep[max(y, 0) + rim:] = False
+    keep = _grow(keep, 1)
+    keep = ~_grow(~keep, 1) & (loaded[..., 3] > 0)              # holes where the load matched the bin, closed
+    big = np.zeros_like(keep)
+    for x0, y0, x1, y1 in pieces(keep.astype(np.uint8), close=0, min_cells=10):
+        big[y0:y1, x0:x1] |= keep[y0:y1, x0:x1]                   # slivers of the rim a pixel off, dropped
+    keep = big
+    above = np.nonzero(keep[:max(y, 1)].any(axis=0))[0]          # the load's width is what stands over the rim
+    if len(above):
+        keep[:, :max(above.min() - 1, 0)] = False
+        keep[:, above.max() + 2:] = False
+    out = loaded.copy()
+    out[~keep] = 0
+    return trim(out)
+
+
+def _cut(img: np.ndarray, cut: list) -> np.ndarray:
+    """A repeat unit of w × h out of a longer piece: centred across, from the bottom (a row of posts) or the middle."""
+    w, h, where = cut
+    H, W = img.shape[:2]
+    x = max((W - w) // 2, 0)
+    y = H - h if where == "bottom" else max((H - h) // 2, 0)
+    return img[max(y, 0):max(y, 0) + h, x:x + w]
+
+
+def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) -> None:
+    kind = group.get("kind", "sprite")
+    pal = palette(group.get("tones", []), group.get("signals", False))
+    if kind == "nine":
+        return cut_nine(sheet, group, pal, rows, problems)
+    if kind == "tiles":
+        w, h = group["size"]
+        for item in group["items"]:
+            img = sheet.tile(_extract(sheet, item), w, h)
+            img[..., 3] = 255
+            _write(recolour(img, pal), item["file"], group, rows, problems, (w, h), 1)
+        return
+    w, h = group["size"]
+    boxes = [[_extract(sheet, f) for f in item.get("frames", [item])] for item in group["items"]]
+    scale = group.get("scale")
+    if scale is None:                                            # one scale for the group: the largest piece fits
+        fit = group.get("fit", [w, h])
+        scale = max([1.0] + [max((b[2] - b[0]) / fit[0], (b[3] - b[1]) / fit[1]) for bs in boxes for b in bs])
+    anchor = group.get("anchor", "feet")
+    for item, bs in zip(group["items"], boxes):
+        frames = []
+        read = lambda box: trim(sheet.native(box) if scale == 1 else sheet.coarse(box, scale))  # noqa: E731
+        for b in bs:
+            img = read(b)
+            if "load_of" in item:
+                img = load_only(img, read(_trimmed_box(sheet, sheet.at(*item["load_of"]))), item.get("rim", 6))
+            if item.get("largest", group.get("largest")):
+                img = largest(img)
+            if "cut" in item:
+                img = _cut(img, item["cut"])
+            iw, ih = item.get("size", (w, h))
+            if img.shape[1] > iw or img.shape[0] > ih:
+                problems.append(f"{item['file']}: {img.shape[1]} × {img.shape[0]} cropped to its slot {iw} × {ih}")
+            frame = pad(img, iw, ih, item.get("anchor", anchor), feet_x(img))
+            for fx0, fy0, fx1, fy1 in item.get("clear", []):        # a smudge of the sheet touching the sprite
+                frame[int(fy0 * ih):int(fy1 * ih), int(fx0 * iw):int(fx1 * iw)] = 0
+            frames.append(frame)
+        out = strip(frames) if len(frames) > 1 else frames[0]
+        _write(recolour(out, pal), item["file"], group, rows, problems, frames[0].shape[1::-1], len(frames), scale,
+               anchor=item.get("anchor"))
+
+
+def cut_nine(sheet: Sheet, group: dict, pal, rows: list[dict], problems: list[str]) -> None:
+    """A 3 × 3 kit on the sheet into v2's nine-slice set (§4b): each piece cut from its outer side at the sheet's
+    own scale, so a corner keeps its border on its two outer sides only and an edge on its one; the edges as 8 px
+    repeat units in up to three variants from along the piece; the centre a 32 × 32 field."""
+    names = ("nw", "n", "ne", "w", "c", "e", "sw", "s", "se")
+    d, back, ln, nv = group.get("depth", 24), group.get("back", 32), 8, group.get("variants", 3)
+    prefix = group["prefix"]
+    imgs = {}
+    for name, item in zip(names, group["items"]):
+        imgs[name] = trim(sheet.native(_extract(sheet, item)))
+    def corner(img, w, h, right, bottom):
+        H, W = img.shape[:2]
+        x = W - w if right else 0
+        y = H - h if bottom else 0
+        return pad(img[max(y, 0):max(y, 0) + h, max(x, 0):max(x, 0) + w], w, h, "top-left")
+    out = {
+        "nw": corner(imgs["nw"], d, back, False, False), "ne": corner(imgs["ne"], d, back, True, False),
+        "sw": corner(imgs["sw"], d, d, False, True), "se": corner(imgs["se"], d, d, True, True),
+    }
+    for name, (horizontal, deep, far) in {"n": (True, back, False), "s": (True, d, True),
+                                          "w": (False, d, False), "e": (False, d, True)}.items():
+        img = imgs[name]
+        H, W = img.shape[:2]
+        length = W if horizontal else H
+        starts = [int(length * f) - ln // 2 for f in (0.5, 0.35, 0.65)[:nv]]
+        for i, s in enumerate(starts):
+            if horizontal:
+                piece = img[(H - deep if far else 0):(H if far else deep), s:s + ln]
+                piece = pad(piece, ln, deep, "top-left")
+            else:
+                piece = img[s:s + ln, (W - deep if far else 0):(W if far else deep)]
+                piece = pad(piece, deep, ln, "top-left")
+            out[name if i == 0 else f"{name}-{i}"] = piece
+    c = imgs["c"]
+    H, W = c.shape[:2]
+    out["c"] = pad(c[(H - 32) // 2:(H - 32) // 2 + 32, (W - 32) // 2:(W - 32) // 2 + 32], 32, 32, "top-left")
+    for name, img in out.items():
+        _write(recolour(img, pal), f"{prefix}/{name}.png", group, rows, problems, img.shape[1::-1], 1, 1,
+               anchor="top-left")
+
+
+def _write(img, rel, group, rows, problems, frame, frames, scale=1.0, anchor=None) -> None:
+    h, w = img.shape[:2]
+    if w % 8 or h % 8:
+        problems.append(f"{rel}: {w} × {h} is off the grid of 8")
+    if not group.get("signals"):
+        hues = {tuple(int(v) for v in p) for p in img[img[..., 3] > 0][:, :3]}
+        if any(loud(p) for p in hues):
+            problems.append(f"{rel}: a signal's yellow or red outside a signal sprite")
+    save(img, rel)
+    row = {"file": rel, "size": [w, h], "frame": list(frame), "frames": frames,
+           "anchor": anchor or group.get("anchor", "feet"), "placeholder": True,
+           "source": group["_sheet"], "scale": round(float(scale), 3), "licence": LICENCE, "author": AUTHOR}
+    if frames > 1:
+        row["fps"] = group.get("fps", 8)
+    if group.get("tones"):
+        row["tones"] = group["tones"]
+    if group.get("slots"):
+        row["slots"] = group["slots"]
+    if group.get("map"):
+        m = half(img)
+        mrel = "map/" + rel
+        save(m, mrel)
+        row["map"] = mrel
+    rows.append(row)
+
+
+# --- 8. check ------------------------------------------------------------------------------------------------
+
+def render_kits(rows: list[dict], into: pathlib.Path) -> None:
+    """Each nine-slice kit tiled as a 3 × 3 and a 5 × 4 of its centre, at 4× so a seam shows."""
+    into.mkdir(parents=True, exist_ok=True)
+    kits = sorted({r["file"].rsplit("/", 1)[0] for r in rows if r["file"].endswith("/nw.png")})
+    for kit in kits:
+        p = lambda n: np.asarray(Image.open(OUT / kit / f"{n}.png"))  # noqa: E731
+        for cols, rws in ((3, 3), (5, 4)):
+            iw, ih = cols * 32, rws * 32
+            nw, ne, sw, se = p("nw"), p("ne"), p("sw"), p("se")
+            dl, back = nw.shape[1], nw.shape[0]
+            dd = sw.shape[0]
+            W, H = iw + 2 * dl, ih + back + dd
+            canvas = np.zeros((H, W, 4), np.uint8)
+            def put(img, x, y):
+                h, w = img.shape[:2]
+                sub = canvas[y:y + h, x:x + w]
+                m = img[..., 3:4] > 0
+                canvas[y:y + h, x:x + w] = np.where(m, img, sub)
+            for y in range(back, back + ih, 32):
+                for x in range(dl, dl + iw, 32):
+                    put(p("c"), x, y)
+            variants = lambda e: [v for v in (e, f"{e}-1", f"{e}-2") if (OUT / kit / f"{v}.png").exists()]  # noqa
+            for i, x in enumerate(range(dl, dl + iw, 8)):
+                put(p(variants("n")[i % len(variants("n"))]), x, 0)
+                put(p(variants("s")[i % len(variants("s"))]), x, back + ih)
+            for i, y in enumerate(range(back, back + ih, 8)):
+                put(p(variants("w")[i % len(variants("w"))]), 0, y)
+                put(p(variants("e")[i % len(variants("e"))]), dl + iw, y)
+            put(nw, 0, 0)
+            put(ne, dl + iw, 0)
+            put(sw, 0, back + ih)
+            put(se, dl + iw, back + ih)
+            Image.fromarray(canvas, "RGBA").resize((W * 4, H * 4), Image.NEAREST).save(
+                into / f"{kit.replace('/', '_')}-{cols}x{rws}.png")
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--spec", type=pathlib.Path, default=SPEC)
+    ap.add_argument("--only", default="")
+    ap.add_argument("--list", type=pathlib.Path)
+    ap.add_argument("--check", type=pathlib.Path)
+    args = ap.parse_args()
+    if args.list:
+        s = Sheet(args.list)
+        print(f"pitch {s.pitch:.2f} px, phase {s.ox:.1f}, {s.oy:.1f}; grid {s.w} × {s.h}")
+        for b in sorted(s.boxes, key=lambda b: (b[1] // 20, b[0])):
+            print(f"  at [{(b[0] + b[2]) / 2 / s.w:.3f}, {(b[1] + b[3]) / 2 / s.h:.3f}]  {b[2] - b[0]} × {b[3] - b[1]}")
+        return
+    spec = json.loads(args.spec.read_text(encoding="utf-8"))
+    manifest = OUT / "manifest.json"
+    old = json.loads(manifest.read_text(encoding="utf-8"))["sprites"] if manifest.exists() else []
+    rows: list[dict] = []
+    problems: list[str] = []
+    done = set()
+    for sh in spec["sheets"]:
+        if args.only not in sh["name"]:
+            continue
+        done.add(sh["file"])
+        sheet = Sheet(ROOT / spec["root"] / sh["file"], sh.get("fringe", 60), sh.get("close", 1))
+        print(f"{sh['name']}: pitch {sheet.pitch:.2f} px, {len(sheet.boxes)} pieces")
+        for group in sh["groups"]:
+            group["_sheet"] = sh["file"]
+            cut_group(sheet, group, rows, problems)
+    rows += [r for r in old if r["source"] not in done]
+    rows.sort(key=lambda r: r["file"])
+    manifest.write_text(json.dumps({"note": "Placeholders cut from generated reference sheets by tools/camp_sheet.py; "
+                                            "every row is replaced by the commissioned artist's sprite "
+                                            "(docs/design/design-system-v2.md §11).",
+                                    "sprites": rows}, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"{len(rows)} sprites in {manifest.relative_to(ROOT)}")
+    if args.check:
+        render_kits(rows, args.check)
+    for p in problems:
+        print("  check:", p)
+
+
+if __name__ == "__main__":
+    main()

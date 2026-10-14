@@ -126,6 +126,22 @@ def test_generated_reference_sheets_stay_out_of_the_package():
     assert generated == []
 
 
+def test_the_camps_placeholder_sprites_keep_v2s_grid_and_say_they_are_placeholders():
+    """design-system-v2.md §11: every camp/ sprite has its manifest row, sits on the grid of 8 (a frame of a strip
+    too), and is marked a placeholder until the artist's replaces it (color-pass.md §10b)."""
+    import struct
+    camp = Path(__file__).resolve().parent.parent / "design-system" / "sprites" / "camp"
+    rows = json.loads((camp / "manifest.json").read_text(encoding="utf-8"))["sprites"]
+    files = {p.relative_to(camp).as_posix() for p in camp.rglob("*.png")}
+    listed = {r["file"] for r in rows} | {r["map"] for r in rows if "map" in r}
+    assert files == listed
+    for r in rows:
+        assert r["placeholder"] is True and r["licence"].startswith("placeholder"), r["file"]
+        w, h = struct.unpack(">II", (camp / r["file"]).read_bytes()[16:24])         # the PNG's IHDR
+        assert [w, h] == r["size"] and w == r["frame"][0] * r["frames"], r["file"]
+        assert not (r["frame"][0] % 8 or r["frame"][1] % 8), r["file"]
+
+
 @pytest.mark.parametrize("type_id", sorted(catalog.TYPES))
 def test_every_type_has_a_contract_and_its_default_passes(type_id):
     c = ui.contract(type_id)

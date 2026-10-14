@@ -71,6 +71,9 @@ tiles, doodads, fire, tier marks). The app itself loads the files.
 
 ## v2: `camp/` and how a sheet becomes sprites
 
+`camp/` holds **placeholders** today, cut from the 0.3 sheets by `tools/camp_sheet.py` (`camp/README.md`: the list,
+and where they fall short); the artist's sprites replace them at the same paths.
+
 Drawn at 1× in art pixels, every size a multiple of 8; no `@2x` (the renderer scales by whole numbers); one
 three-quarter top-down projection; a 1 px `art-outline`; **no shadows** (the product draws them); yellow and red only
 in signal sprites. The generated reference sheets (0.3) live in `docs/design/img/references/0.3/`, outside the

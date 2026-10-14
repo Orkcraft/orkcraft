@@ -443,7 +443,8 @@ camp/
 - **Anchors:** standing things at their feet's bottom centre; tiles and nine-slice pieces at the top left; a crest at
   its bottom centre.
 
-**How a sheet becomes sprites** (a tool for C3, `tools/camp_sheet.py`; what this proposal's preview did by hand):
+**How a sheet becomes sprites** (`tools/camp_sheet.py`, its sheets listed in `tools/camp_sheets.json`; the 0.3 sheets
+are cut into `camp/` as **placeholders**, `camp/README.md` says which and where they fall short):
 
 1. **Key** the background: flat `#FF00FF` within a tolerance, and the purple fringe a blended shadow left (red and
    blue both well above green) as background too. A sheet drawn to the brief has neither (no shadows, a clean key).

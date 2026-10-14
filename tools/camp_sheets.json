@@ -1,0 +1,260 @@
+{
+ "note": "What tools/camp_sheet.py cuts from each reference sheet. A piece is named by `at` (a point as fractions of the sheet; `--list SHEET` prints each piece's) or `box`. A new sheet is a new entry; the run rewrites the sprites and manifest rows of the sheets it cuts and keeps the rest.",
+ "root": "docs/design/img/references/0.3",
+ "sheets": [
+  {
+   "name": "orks-round3",
+   "file": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
+   "groups": [
+    {
+     "size": [32, 48], "scale": 1, "anchor": "feet", "fps": 8,
+     "tones": ["#8fb052", "#5a7a34", "#3e5a26", "#6a5240", "#4a3a30", "#8a7a64"],
+     "items": [
+      {"file": "orks/body/walk-down.png", "frames": [{"at": [0.058, 0.105]}, {"at": [0.178, 0.105]}, {"at": [0.309, 0.105]}, {"at": [0.439, 0.105]}, {"at": [0.558, 0.105]}, {"at": [0.686, 0.105]}]},
+      {"file": "orks/body/walk-up.png", "frames": [{"at": [0.058, 0.300]}, {"at": [0.178, 0.300]}, {"at": [0.311, 0.300]}, {"at": [0.441, 0.300]}, {"at": [0.560, 0.300]}, {"at": [0.688, 0.300]}]},
+      {"file": "orks/body/walk-side.png", "frames": [{"at": [0.057, 0.491]}, {"at": [0.177, 0.491]}, {"at": [0.310, 0.491]}, {"at": [0.442, 0.491]}, {"at": [0.558, 0.491]}, {"at": [0.688, 0.491]}]}
+     ]
+    },
+    {
+     "size": [48, 56], "scale": 1, "anchor": "bottom-centre",
+     "slots": ["role"],
+     "tones": ["#8fb052", "#5a7a34", "#3e5a26", "#6a5240", "#4a3a30", "#8a7a64", "#5f7a6a", "#a08a50"],
+     "items": [
+      {"file": "orks/roles/warchief.png", "at": [0.049, 0.890]},
+      {"file": "orks/roles/grunt.png", "at": [0.177, 0.895]},
+      {"file": "orks/roles/mason.png", "at": [0.286, 0.895]},
+      {"file": "orks/roles/alchemist.png", "at": [0.406, 0.895]},
+      {"file": "orks/roles/mechanic.png", "at": [0.523, 0.895]},
+      {"file": "orks/roles/treasurer.png", "at": [0.630, 0.895]},
+      {"file": "orks/roles/seer.png", "at": [0.742, 0.893]},
+      {"file": "orks/roles/quartermaster.png", "at": [0.841, 0.891]},
+      {"file": "orks/roles/pathfinder.png", "at": [0.947, 0.895]}
+     ]
+    }
+   ]
+  },
+  {
+   "name": "orks-round1",
+   "file": "Gemini_Generated_Image_4xw8i84xw8i84xw8.jpeg",
+   "groups": [
+    {
+     "size": [32, 48], "scale": 1.125, "anchor": "feet", "fps": 8,
+     "tones": ["#8fb052", "#5a7a34", "#3e5a26", "#6a5240", "#4a3a30", "#8a7a64"],
+     "items": [
+      {"file": "orks/body/idle.png", "frames": [{"at": [0.068, 0.106]}, {"at": [0.212, 0.106]}, {"at": [0.355, 0.106]}, {"at": [0.497, 0.106]}]}
+     ]
+    },
+    {
+     "size": [48, 48], "scale": 1.125, "anchor": "feet", "fps": 8,
+     "tones": ["#8fb052", "#5a7a34", "#3e5a26", "#6a5240", "#4a3a30", "#8a7a64"],
+     "items": [
+      {"file": "orks/body/work.png", "frames": [{"at": [0.069, 0.512]}, {"at": [0.211, 0.512]}, {"at": [0.362, 0.515]}, {"at": [0.506, 0.513]}, {"at": [0.650, 0.505]}, {"at": [0.792, 0.512]}]},
+      {"file": "orks/body/sit.png", "frames": [{"at": [0.073, 0.899]}, {"at": [0.216, 0.899]}]}
+     ]
+    }
+   ]
+  },
+  {
+   "name": "carts",
+   "file": "Gemini_Generated_Image_qjb9tqjb9tqjb9tq.jpeg",
+   "groups": [
+    {
+     "size": [48, 40], "fit": [48, 48], "anchor": "bottom-centre", "fps": 8,
+     "slots": ["load", "flag"],
+     "items": [
+      {"file": "carts/side.png", "at": [0.081, 0.136]},
+      {"file": "carts/rolling-side.png", "frames": [{"at": [0.153, 0.624]}, {"at": [0.383, 0.624]}, {"at": [0.613, 0.624]}, {"at": [0.841, 0.624]}]},
+      {"file": "carts/front.png", "at": [0.093, 0.894], "size": [48, 48]}
+     ]
+    },
+    {
+     "size": [48, 32], "fit": [48, 48], "anchor": "bottom-centre",
+     "tones": ["#e8dcc0", "#a8946c", "#5a3a2c"],
+     "items": [
+      {"file": "carts/loads/code.png", "at": [0.248, 0.119], "load_of": [0.081, 0.136]},
+      {"file": "carts/loads/asset.png", "at": [0.415, 0.119], "load_of": [0.081, 0.136]},
+      {"file": "carts/loads/message.png", "at": [0.583, 0.124], "load_of": [0.081, 0.136]},
+      {"file": "carts/loads/doc.png", "at": [0.749, 0.126], "load_of": [0.081, 0.136]},
+      {"file": "carts/loads/bundle.png", "at": [0.916, 0.116], "load_of": [0.081, 0.136]},
+      {"file": "carts/loads/code-front.png", "at": [0.254, 0.867], "load_of": [0.093, 0.894], "size": [48, 32]},
+      {"file": "carts/loads/asset-front.png", "at": [0.417, 0.872], "load_of": [0.093, 0.894], "size": [48, 32]},
+      {"file": "carts/loads/message-front.png", "at": [0.580, 0.884], "load_of": [0.093, 0.894], "size": [48, 32]},
+      {"file": "carts/loads/doc-front.png", "at": [0.743, 0.886], "load_of": [0.093, 0.894], "size": [48, 32]},
+      {"file": "carts/loads/bundle-front.png", "at": [0.905, 0.874], "load_of": [0.093, 0.894], "size": [48, 32]}
+     ]
+    },
+    {
+     "size": [40, 32], "fit": [48, 48], "anchor": "bottom-left", "signals": true,
+     "items": [
+      {"file": "carts/flags/ask.png", "at": [0.248, 0.367], "rim_of": [0.081, 0.136]},
+      {"file": "carts/flags/held.png", "at": [0.415, 0.367], "rim_of": [0.081, 0.136]},
+      {"file": "carts/flags/fire.png", "at": [0.581, 0.367], "rim_of": [0.081, 0.136]}
+     ]
+    }
+   ]
+  },
+  {
+   "name": "track",
+   "file": "Gemini_Generated_Image_n9fen2n9fen2n9fe.jpeg",
+   "groups": [
+    {
+     "kind": "tiles", "size": [32, 32], "anchor": "top-left",
+     "items": [
+      {"file": "track/straight-h.png", "at": [0.125, 0.163]},
+      {"file": "track/straight-v.png", "at": [0.375, 0.163]},
+      {"file": "track/corner-nw.png", "at": [0.625, 0.163]},
+      {"file": "track/corner-ne.png", "at": [0.875, 0.163]},
+      {"file": "track/corner-nw-1.png", "at": [0.125, 0.498]},
+      {"file": "track/corner-se.png", "at": [0.375, 0.498]},
+      {"file": "track/switch-e.png", "at": [0.625, 0.498]},
+      {"file": "track/merge-e.png", "at": [0.875, 0.498]},
+      {"file": "track/cross.png", "at": [0.125, 0.836]},
+      {"file": "track/stop-e.png", "at": [0.375, 0.836]},
+      {"file": "track/stop-n.png", "at": [0.625, 0.836]}
+     ]
+    }
+   ]
+  },
+  {
+   "name": "palisade-tower-gate",
+   "file": "Gemini_Generated_Image_13yqkk13yqkk13yq.jpeg",
+   "groups": [
+    {
+     "size": [64, 128], "anchor": "bottom-centre", "map": true, "slots": ["crest", "signal", "count"],
+     "items": [{"file": "covers/tower/lookout.png", "at": [0.186, 0.500]}]
+    },
+    {
+     "size": [128, 96], "anchor": "bottom-centre", "map": true, "slots": ["crest", "signal", "count"],
+     "items": [{"file": "covers/gate/gatehouse.png", "at": [0.758, 0.256]}]
+    },
+    {
+     "kind": "nine", "prefix": "covers/hall/walls-palisade", "depth": 24, "back": 32,
+     "items": [
+      {"at": [0.639, 0.594]}, {"at": [0.753, 0.596]}, {"at": [0.866, 0.594]},
+      {"at": [0.639, 0.758]}, {"at": [0.753, 0.758]}, {"at": [0.866, 0.758]},
+      {"at": [0.638, 0.914]}, {"at": [0.753, 0.915]}, {"at": [0.867, 0.914]}
+     ]
+    }
+   ]
+  },
+  {
+   "name": "roofs-walls",
+   "file": "Gemini_Generated_Image_8ia5998ia5998ia5.jpeg",
+   "groups": [
+    {
+     "kind": "nine", "prefix": "covers/hall/roof-canvas", "depth": 24, "back": 32, "map": true,
+     "items": [
+      {"at": [0.073, 0.087]}, {"at": [0.252, 0.087]}, {"at": [0.431, 0.087]},
+      {"at": [0.073, 0.253]}, {"at": [0.251, 0.253]}, {"at": [0.430, 0.253]},
+      {"at": [0.073, 0.416]}, {"at": [0.252, 0.414]}, {"at": [0.430, 0.416]}
+     ]
+    },
+    {
+     "kind": "nine", "prefix": "covers/hall/roof-thatch", "depth": 24, "back": 32, "map": true,
+     "items": [
+      {"at": [0.574, 0.094]}, {"at": [0.752, 0.091]}, {"at": [0.929, 0.092]},
+      {"at": [0.575, 0.250]}, {"at": [0.751, 0.255]}, {"at": [0.927, 0.250]},
+      {"at": [0.571, 0.413]}, {"at": [0.752, 0.416]}, {"at": [0.930, 0.413]}
+     ]
+    },
+    {
+     "kind": "nine", "prefix": "covers/hall/roof-hide", "depth": 24, "back": 32, "map": true,
+     "items": [
+      {"at": [0.073, 0.577]}, {"at": [0.251, 0.581]}, {"at": [0.430, 0.577]},
+      {"at": [0.071, 0.740]}, {"at": [0.252, 0.742]}, {"at": [0.430, 0.742]},
+      {"at": [0.073, 0.906]}, {"at": [0.252, 0.906]}, {"at": [0.430, 0.906]}
+     ]
+    },
+    {
+     "kind": "nine", "prefix": "covers/hall/walls-stone", "depth": 24, "back": 32,
+     "items": [
+      {"at": [0.571, 0.582]}, {"at": [0.752, 0.582]}, {"at": [0.929, 0.582]},
+      {"at": [0.571, 0.743]}, {"at": [0.752, 0.743]}, {"at": [0.929, 0.743]},
+      {"at": [0.571, 0.908]}, {"at": [0.752, 0.908]}, {"at": [0.929, 0.908]}
+     ]
+    }
+   ]
+  },
+  {
+   "name": "palisade",
+   "file": "Gemini_Generated_Image_g3jn8zg3jn8zg3jn.jpeg",
+   "groups": [
+    {
+     "size": [32, 48], "scale": 1.2, "anchor": "bottom-centre",
+     "items": [
+      {"file": "edge/palisade-h.png", "at": [0.155, 0.190], "cut": [32, 48, "bottom"]},
+      {"file": "edge/palisade-v.png", "at": [0.424, 0.223], "cut": [32, 48, "middle"]},
+      {"file": "edge/palisade-corner-nw.png", "at": [0.643, 0.208], "size": [64, 80]},
+      {"file": "edge/palisade-corner-ne.png", "at": [0.883, 0.208], "size": [64, 80]},
+      {"file": "edge/palisade-corner-sw.png", "at": [0.173, 0.723], "size": [64, 88]},
+      {"file": "edge/palisade-corner-se.png", "at": [0.484, 0.723], "size": [64, 88]},
+      {"file": "edge/palisade-gate-w.png", "at": [0.707, 0.750], "size": [48, 72]},
+      {"file": "edge/palisade-gate-e.png", "at": [0.902, 0.750], "size": [48, 72]}
+     ]
+    }
+   ]
+  },
+  {
+   "name": "crests",
+   "file": "Gemini_Generated_Image_kn37kikn37kikn37.jpeg",
+   "groups": [
+    {
+     "size": [32, 48], "anchor": "bottom-centre", "slots": ["crest"],
+     "tones": ["#a8c0d0", "#9a9a9a"],
+     "items": [
+      {"file": "crests/horn.png", "at": [0.107, 0.262]},
+      {"file": "crests/banner.png", "at": [0.308, 0.228]},
+      {"file": "crests/totem.png", "at": [0.504, 0.238]},
+      {"file": "crests/lens.png", "at": [0.706, 0.287]},
+      {"file": "crests/chimney.png", "box": [0.83, 0.03, 0.97, 0.42]},
+      {"file": "crests/skull.png", "at": [0.109, 0.703]},
+      {"file": "crests/lantern.png", "at": [0.310, 0.705]},
+      {"file": "crests/axes.png", "at": [0.501, 0.735]},
+      {"file": "crests/scrolls.png", "at": [0.704, 0.713]},
+      {"file": "crests/raven.png", "at": [0.897, 0.718]}
+     ]
+    }
+   ]
+  },
+  {
+   "name": "open-ground",
+   "file": "Gemini_Generated_Image_m5j68fm5j68fm5j6.jpeg",
+   "fringe": 30,
+   "groups": [
+    {
+     "size": [128, 80], "anchor": "bottom-centre", "map": true, "largest": true, "slots": ["crest", "signal", "count"],
+     "tones": ["#ffc04d", "#e08a2c", "#8fb052", "#5a7a34"],
+     "items": [
+      {"file": "covers/open/fire-calm.png", "at": [0.257, 0.250]},
+      {"file": "covers/open/fire-warm.png", "box": [0.53, 0.02, 0.97, 0.49], "clear": [[0, 0.7, 0.17, 1]]},
+      {"file": "covers/open/pond.png", "at": [0.744, 0.756]}
+     ]
+    },
+    {
+     "size": [128, 80], "anchor": "bottom-centre", "map": true, "signals": true, "slots": ["signal"],
+     "tones": ["#ffc04d", "#b31b0f", "#e08a2c", "#8fb052", "#5a7a34", "#3a3434"],
+     "items": [
+      {"file": "covers/open/fire-alarm.png", "at": [0.256, 0.741]}
+     ]
+    }
+   ]
+  },
+  {
+   "name": "facades",
+   "file": "Gemini_Generated_Image_ul39dxul39dxul39.jpeg",
+   "groups": [
+    {
+     "size": [96, 48], "anchor": "bottom-centre", "slots": ["door"],
+     "tones": ["#8fb052", "#5a7a34", "#a8c0d0"],
+     "items": [
+      {"file": "facades/fields.png", "at": [0.167, 0.254], "crop": [0.0, 0.0, 1.0, 0.70]},
+      {"file": "facades/barracks.png", "at": [0.505, 0.252], "crop": [0.0, 0.0, 1.0, 0.72]},
+      {"file": "facades/loot_vault.png", "at": [0.833, 0.263], "crop": [0.0, 0.0, 1.0, 0.78]},
+      {"file": "facades/lake.png", "at": [0.239, 0.748], "crop": [0.0, 0.0, 1.0, 0.75]},
+      {"file": "facades/watchtower.png", "at": [0.744, 0.750], "crop": [0.0, 0.0, 1.0, 0.72]}
+     ]
+    }
+   ]
+  }
+ ]
+}
