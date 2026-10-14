@@ -1,6 +1,9 @@
 """🥩 The ork slots (docs/design/ork-console.md §8): the town's one list of orks at work or waiting on the person.
 
     slots.summary(town, muster)   → {"working", "limit", "asks", "fire", "rows"}
+    slots.console(town, muster, key) → the ork's console unfolded (§7): its row, and what its building tells of it —
+                                    its role's sessions, its cart, its answer (§20), its terminal, its history (runs
+                                    with their cost); a building that keeps no such record gives the row alone
 
 One row per ork, in the one status of realm/status.py (§5) — the same marks the town draws — with its building, the
 cart it works on, how long it has been at it (or has waited), its spend, its AI tool, the way to stop it softly (⏹,
@@ -107,3 +110,29 @@ def summary(town, muster: Muster, now: float | None = None) -> dict[str, Any]:
     limit = getattr(getattr(town.scroll, "budget", None), "supply_max_workers", 0) if town.scroll is not None else 0
     return {"working": sum(1 for r in found if r["state"] != status.ASKS), "limit": limit,
             "asks": sum(1 for r in found if r["state"] == status.ASKS), "fire": len(burning), "rows": found}
+
+
+def console(town, muster: Muster, key: str, now: float | None = None) -> dict[str, Any] | None:
+    """The console of the ork `key` (a row's), unfolded: its row (None when it is not at work and not asking) and,
+    from a building that keeps its own orks (`ork_console`, core/workers/barracks_console.py), the rest. An ork at
+    rest still has a console: its history and its terminal."""
+    now = time.time() if now is None else now
+    found, _burning = rows(town, muster, now)
+    row = next((r for r in found if r["key"] == key), None)
+    bid, _, ork = (key or "").partition("/")
+    w = getattr(town, "workers", {}).get(bid) if ork else None
+    more = None
+    if w is not None and hasattr(w, "ork_console"):
+        orc = next((o for o in w.state.orcs if o.name.lower() == ork), None)
+        try:
+            more = w.ork_console(orc.name, now) if orc is not None else None
+        except Exception:                  # a building's record never breaks the console
+            more = None
+    if row is None and more is None:
+        return None
+    if row is None:                        # at rest: its one status from its building
+        st = more["state"]
+        row = {**st, "key": key, "building_id": bid, "since_s": None, "spend": 0.0, "tool": more.get("tool", ""),
+               "stop": None, "answer": None}
+    return {"key": key, "row": row, **(more or {"role": "", "sessions": [], "cart": None, "answer": None,
+                                                 "terminal": None, "history": [], "totals": None})}

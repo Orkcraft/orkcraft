@@ -1092,4 +1092,21 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 .gui-orkconsole > p { margin: 0; }
 .gui-orkconsole__head { display: flex; align-items: baseline; gap: var(--space-2); }
 .gui-orkconsole__line { flex: 1; min-width: 0; }
-@media (max-width: 640px) { .gui-orkconsole { width: auto; flex: 1; } }
+/* Unfolded (ork-console.md §7, js/orkconsole.js): the whole of one ork, risen from the town's foot. */
+.gui-orkconsole.is-unfolded { width: min(640px, 50vw); max-height: 70vh; overflow: auto; }
+.gui-orkconsole__body { display: grid; gap: var(--space-2); }
+.gui-orkconsole__body p { margin: 0; }
+.gui-orkconsole__sessions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.gui-orkconsole__sessions .pool-chip.is-this { border-color: var(--frame-focus); }
+.gui-orkconsole__asks { display: grid; gap: var(--space-1); padding: var(--space-2); border: 1px solid var(--frame); }
+.gui-orkconsole__q { display: grid; gap: var(--space-1); }
+.gui-orkconsole__gist { display: grid; }
+.gui-orkconsole__note { font-size: 0.9em; }
+.gui-orkconsole__fold > summary { cursor: pointer; }
+.gui-orkconsole__text, .gui-orkconsole__draft { max-height: 40vh; overflow: auto; white-space: pre-wrap; }
+.gui-orkconsole__xterm { height: 280px; }
+.gui-orkconsole__xterm > * { height: 100%; }
+.gui-orkconsole__runs { margin: 0; padding: 0; list-style: none; }
+.gui-orkconsole__run { display: grid; grid-template-columns: 1.5em minmax(0, 1fr) auto auto; gap: var(--space-2); align-items: baseline; }
+.gui-orkconsole__run .gui-link { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+@media (max-width: 640px) { .gui-orkconsole, .gui-orkconsole.is-unfolded { width: auto; flex: 1; } }

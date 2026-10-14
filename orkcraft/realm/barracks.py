@@ -142,6 +142,8 @@ class PoolTask:
     question: str = ""              # the question waiting for the operator (status asked)
     questions: list[dict] = field(default_factory=list)  # … each with its options ({text, options}), pinned on top
     assumptions: list[str] = field(default_factory=list)  # what its ork assumed and marked (realm/asking.py)
+    gist: str = ""                  # what its last run did or found, three lines at most (ork-console.md §20)
+    gist_from: str = ""             # "block": its ork gave it · "last paragraph": the answer's own, none given
     pr: str = ""                    # the pull request's URL
     pr_state: str = ""              # MERGED | CLOSED once it was settled (what the operator thought of it)
     scope: str = ""                 # local (no pull request) | external (reviewed, sent as a PR); "" not yet

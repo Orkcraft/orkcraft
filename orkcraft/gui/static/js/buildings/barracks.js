@@ -5,7 +5,7 @@
 // card opens its task over the flow (← back), a tab per ork with its terminal under it, the rules and
 // settings folded to a line — each a pane of its UI document (design/buildings/barracks.json). The worker
 // does it all (core/workers/barracks.py); documents open in Lake, the rules change through the keeper.
-import { signal } from "@preact/signals";
+import { signal, effect } from "@preact/signals";
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, town, details, say } from "../link.js";
@@ -15,7 +15,7 @@ import { openInLake } from "../lake.js";
 import { askKeeper } from "../keeper.js";
 import { usePeek, openBuilding } from "../windows.js";
 import { OrkHead, TierMark } from "../icons.js";
-import { consoleOrk } from "../slots.js";
+import { showConsole, shownCart } from "../slots.js";
 
 const sheet = new URL("./barracks.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -124,21 +124,24 @@ const keep = (e) => e.stopPropagation();          // a press on the card's contr
  *  Resume in the foot: a stopped queue is the one thing to fix here. */
 const LANE_STATE = { working: "busy", resting: "idle", asks: "alert" };
 
-/** A press on a role's name or on one of its sessions (ork-console.md §14): a session at work or asking opens its
- *  console (js/slots.js, the key core/slots.py gives a pool's ork); a resting one opens the pool on its tab (its
- *  terminal, its recent work). The role opens its first session, the asking one first. The rest of the lane is the
- *  hut's, to select or drag it. */
+/** A press on a role's name or on one of its sessions (ork-console.md §14): it opens that session's console (js/slots.js,
+ *  the key core/slots.py gives a pool's ork) — folded for one at work or asking, unfolded for a resting one, whose
+ *  console is its history and its terminal. The role opens its first session, the asking one first. The rest of the
+ *  lane is the hut's, to select or drag it. */
 function openSession(e, id, s) {
   keep(e);
-  if (s.state !== "resting" && s.state !== "stopped") {
-    consoleOrk.value = `${id}/${s.name.toLowerCase()}`;
-    return;
-  }
-  setIn(tabs, id, `ork:${s.name}`);
-  setIn(folded, id, false);
-  setIn(chosen, id, "");
-  openBuilding(id);
+  showConsole(`${id}/${s.name.toLowerCase()}`, s.state === "resting" || s.state === "stopped");
 }
+
+// A console's cart link (ork-console.md §21): the task shown on its pool.
+effect(() => {
+  const want = shownCart.value;
+  const b = want && (town.peek()?.buildings || []).find((x) => x.id === want.building);
+  if (!b || b.type !== "barracks") return;
+  shownCart.value = null;
+  setIn(chosen, b.id, want.id);
+  openBuilding(b.id);
+});
 
 /** Its roles, a lane each (docs/design/pool-roles.md): an ork is a role — "Grunt · tests" — and the orks hired as it
  *  are its sessions, a chip each in the one status (❓ asks, 💭 at work, Zz resting; Office says the word), the asking

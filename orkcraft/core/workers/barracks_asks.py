@@ -7,6 +7,8 @@ more than a day, the rest assumed and marked). Here the block is taken off the o
     questions     the steward answers what its rules settle; the rest wait for the person, pinned on top of the
                   task (`task.questions`, each with its options), until answered
     assumptions   kept on the task (`task.assumptions`) and named on its result: "Done · 2 assumptions"
+    gist          what the run did or found (`task.gist`), read before its whole text; the answer's last paragraph
+                  when the ork gave none, and the console says so (`task.gist_from`)
 
 Every one is counted into the local event log (realm/event_log.py): a question asked, an assumption marked, an
 answer given (by whom, after how long), a run that stopped on a question. Other AI tools keep the one line
@@ -60,6 +62,7 @@ class AsksMixin:
         questions on `out` too; the questions as one paragraph ("" when it asks nothing)."""
         found = asking.parse(out.text)
         out.text = found.body
+        out.gist, out.gist_from = asking.gist_of(found)
         who = dict(ork=orc.name, task=task.id, harness=resolve(orc.harness) if orc.harness else "",
                    at_work=schedule.at_work(self.town.machine))
         for a in found.assumptions:
@@ -75,6 +78,8 @@ class AsksMixin:
         """On the town's thread, when a run ends: the assumptions kept, the questions pinned, the steward's answers
         and a run that stopped on a question counted."""
         task.assumptions = task.assumptions + [a for a in out.assumptions if a not in task.assumptions]
+        if out.gist:
+            task.gist, task.gist_from = out.gist, out.gist_from
         for q, a, _who in out.qa:
             self._count(event_log.ANSWERED, ork=orc.name, task=task.id, who="steward", waited_s=0, text=a)
         if out.asked:

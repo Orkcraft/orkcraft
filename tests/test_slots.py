@@ -66,3 +66,57 @@ def test_an_agent_process_no_one_named_is_a_row_too(fake_repo, monkeypatch):
     host = _host(fake_repo)
     rows = slots.summary(host.town, host.muster)["rows"]
     assert [(r["name"], r["state"], r["stop"]) for r in rows] == [("Miller", "thinking", None)]
+
+
+def test_the_console_unfolded_reads_the_answer_in_order_and_the_history_with_cost(fake_repo, monkeypatch):
+    """ork-console.md §7, §20: its questions pinned, the gist, its assumptions, the text; its runs with their cost."""
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(lambda *a: (BLOCK, 0.4, 10, "s1")))
+    monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
+    host = _host(fake_repo)
+    bid = _raised(host, "barracks", worktrees=False, providers=["claude"])
+    w = host.town.worker(bid)
+    task = host.command("act", {"id": bid, "act": "task", "args": {"title": "Set up the dev server"}})
+    assert _until(lambda: w.state.asked)
+    key = f"{bid}/grub"
+    c = host.command("ork.console", {"key": key})
+    assert c["key"] == key and c["row"]["state"] == "asks" and c["role"] == "Grunt · any work"
+    assert [s["name"] for s in c["sessions"]] == ["Grub"] and c["sessions"][0]["this"]
+    assert c["cart"]["id"] == task and c["cart"]["title"] == "Set up the dev server"
+    a = c["answer"]
+    assert a["questions"] == [{"text": "Which port should the dev server use?", "options": ["8080", "3000"]}]
+    assert (a["gist"], a["gist_from"]) == ("I set up the server.", "last paragraph")
+    assert a["assumptions"] == ["The API keeps its v1 paths.", "Tests run with pytest."]
+    assert a["text"] == "I set up the server."
+    assert c["terminal"]["key"] == f"pool:{bid}/grub" and c["terminal"]["working"] is False
+    assert [(h["id"], h["status"], h["cost"]) for h in c["history"]] == [(task, "asked", 0.415)]
+    assert host.command("ork.console", {"key": f"{bid}/nobody"}) is None
+
+
+def test_a_stopped_task_runs_again_or_is_dropped(fake_repo, monkeypatch):
+    """§9: stopped work waits for Run again (the session goes on) or Drop."""
+    gate = threading.Event()
+
+    def work(harness, prompt, workdir, cancel, model, env, resume):
+        while not cancel.is_set() and not gate.is_set():
+            cancel.wait(0.02)
+        if cancel.is_set():
+            raise InterruptedError("stopped")
+        return "done", 0.0, 0, "s1"
+
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(work))
+    monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
+    host = _host(fake_repo)
+    bid = _raised(host, "barracks", worktrees=False)
+    w = host.town.worker(bid)
+    task = host.command("act", {"id": bid, "act": "task", "args": {"title": "Long work"}})
+    assert _until(lambda: w.state.orcs and w.state.orcs[0].status == "working")
+    w.stop_ork("Grub")
+    assert _until(lambda: (t := w.state.task(task)) is not None and t.status == "failed")
+    c = host.command("ork.console", {"key": f"{bid}/grub"})
+    assert c["row"]["state"] == "resting" and c["cart"]["stopped"] is True
+    assert c["history"][0]["stopped"] is True
+    gate.set()
+    assert host.command("act", {"id": bid, "act": "run_again", "args": {"task": task}}) is True
+    assert _until(lambda: w.state.task(task).status == "done" or w.state.task(task).status == "reviewing"
+                  or w.state.task(task).status == "asked")
+    assert not w.drop(task)                                    # it is not stopped any more

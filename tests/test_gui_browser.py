@@ -2392,8 +2392,8 @@ def test_comment_mode_sends_what_was_pressed_to_the_alchemist(page, gui):
 
 def test_the_agent_pool_s_lanes_are_roles_and_a_session_s_chip_opens_it(gui, page):
     """docs/design/pool-roles.md: the pool's card draws a lane per role — "Grunt · tests" — with its orks as session
-    chips in the one status, the asking one first; an asking session's chip opens its console, a resting one's the
-    pool on its tab, and the role its first session."""
+    chips in the one status, the asking one first; an asking session's chip opens its console, folded, a resting one's
+    its console unfolded (its history, its terminal), and the role its first session."""
     import time
     from orkcraft.realm import barracks as bk
     server, _ = gui
@@ -2414,13 +2414,21 @@ def test_the_agent_pool_s_lanes_are_roles_and_a_session_s_chip_opens_it(gui, pag
     chips = lanes.first.locator(".pool-chip[data-ork]")
     assert [c.get_attribute("data-ork") for c in chips.all()] == ["Thrak", "Grub"]       # the asking one first
     assert [c.locator(".pool-chip__mark").inner_text() for c in chips.all()] == ["❓", "Zz"]
-    chips.first.click()                                                                  # asks: its console
-    pg.locator(".gui-orkconsole", has_text="Thrak").wait_for(state="visible", timeout=WAIT_MS)
-    chips.nth(1).click()                                                                 # resting: the pool, on its tab
-    tab = pg.locator(".gui-panel .pool-orks__bar .ok-tab.is-active")
-    tab.wait_for(state="visible", timeout=WAIT_MS)
-    assert tab.inner_text().strip().lower() == "grub" and "Grunt · tests" in (tab.get_attribute("title") or "")
+    chips.first.click()                                                                  # asks: its console, folded
+    console = pg.locator(".gui-orkconsole", has_text="Thrak")
+    console.wait_for(state="visible", timeout=WAIT_MS)
+    assert "pytest or unittest?" in console.inner_text() and console.locator(".gui-orkconsole__body").count() == 0
+    console.get_by_role("button", name="Unfold").click()                                 # ▴ the whole of it (§7)
+    pg.locator(".gui-orkconsole.is-unfolded .gui-orkconsole__asks", has_text="pytest or unittest?").wait_for(timeout=WAIT_MS)
+    unfolded = pg.locator(".gui-orkconsole.is-unfolded")
+    assert "«Which runner?»" in unfolded.inner_text()                                    # its cart, named
+    assert [c.inner_text().strip() for c in unfolded.locator(".gui-orkconsole__sessions .pool-chip").all()] == ["❓ Thrak", "Zz Grub"]
+    unfolded.get_by_role("button", name="Fold").click()
+    chips.nth(1).click()                                                                 # resting: its console, unfolded
+    pg.locator(".gui-orkconsole.is-unfolded", has_text="Not at work now").wait_for(timeout=WAIT_MS)
+    pg.locator(".gui-orkconsole.is-unfolded", has_text="Open its terminal").wait_for(timeout=WAIT_MS)
+    assert "No runs yet." in pg.inner_text(".gui-orkconsole.is-unfolded")
     lanes.nth(1).locator(".pool-lane__name").click()                                     # the role: its first session
-    pg.wait_for_function("() => (document.querySelector('.gui-panel .pool-orks__bar .ok-tab.is-active') || {}).textContent"
-                         "?.trim().toLowerCase() === 'snaga'", timeout=WAIT_MS)
+    pg.locator(".gui-orkconsole[aria-label=\"snaga's console\"]").wait_for(timeout=WAIT_MS)
+    pg.get_by_role("button", name="Close").last.click()
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)

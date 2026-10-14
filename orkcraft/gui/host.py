@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft.core import bus
-from orkcraft.core import crashes, last_look, running, runners, treasury, usage, wakes
+from orkcraft.core import crashes, last_look, running, runners, slots, treasury, usage, wakes
 from orkcraft.core.night import Night
 from orkcraft.core.roster import Muster
 from orkcraft.core.sessions import Sessions
@@ -83,6 +83,7 @@ class Host:
             "building.open": self._open_building,
             "halt": self._halt,
             "act": self._act,
+            "ork.console": lambda a: slots.console(self.town, self.muster, self._word(a, "key")),   # §7, unfolded
             "sessions.new": lambda a: self._session_call(self.sessions.new, self._word(a, "harness")),
             "sessions.resume": lambda a: self._session_call(self.sessions.resume, self._word(a, "key")),
             "sessions.deploy": self._deploy,

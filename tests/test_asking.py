@@ -100,3 +100,13 @@ def test_the_steward_answers_what_its_rules_settle_and_that_is_counted(fake_repo
     rows = event_log.read(fake_repo)
     assert [r["who"] for r in rows if r["event"] == "question_answered"] == ["steward"]
     assert not any(r["event"] == "run_stopped_on_question" for r in rows)
+
+
+def test_the_gist_is_the_orks_own_else_its_last_paragraph():
+    found = asking.parse("Long text.\n\nThe last word.\n```asks\nGIST: Moved the server.\nGIST: Tests pass.\n"
+                         "GIST: Docs too.\nGIST: one too many\nASSUMED: x\n```")
+    assert asking.gist_of(found) == ("Moved the server.\nTests pass.\nDocs too.", "block")
+    assert found.assumptions == ["x"]
+    assert asking.gist_of(asking.parse(BLOCK)) == ("I set up the server.", "last paragraph")
+    assert asking.gist_of(asking.parse("")) == ("", "")
+    assert "GIST:" in asking.rule("Ugluk")

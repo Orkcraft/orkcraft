@@ -6,25 +6,22 @@
 //                its first row too.
 //   OrkConsole   at the town's foot, beside the Warchief's line: the ork a row picked, folded — its status, its
 //                question with its answers (or Reply), ⏹ Stop, its spend and AI tool. Open shows its building.
+//                ▴ unfolds it (js/orkconsole.js): its sessions, its cart, its answer, its terminal, its history.
 //
 // The list leads to the console, it does not repeat it. ⏹ stops one ork softly; Stop all stops everything at once.
-import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
-import { town, command, act, say } from "./link.js";
+import { town, command, say } from "./link.js";
 import { openBuilding } from "./windows.js";
+import { consoleOrk, unfolded, closeConsole, money, Unfolded, Questions } from "./orkconsole.js";
 
-export const consoleOrk = signal(null);        // the key of the row whose console is shown (folded)
+export { consoleOrk, unfolded, showConsole, shownCart } from "./orkconsole.js";
 
 function since(s) {
   if (s === null || s === undefined) return "";
   if (s < 60) return "0m";
   if (s < 3600) return `${Math.round(s / 60)}m`;
   return `${Math.floor(s / 3600)}h${String(Math.round((s % 3600) / 60)).padStart(2, "0")}`;
-}
-
-function money(v) {
-  return v ? `$${Number(v).toFixed(2)}` : "";
 }
 
 function stop(row) {
@@ -99,49 +96,53 @@ export function SlotsHud({ word, online }) {
   </span>`;
 }
 
-/** The answer in the folded console: its answers as buttons, else a field (Reply). */
+/** A roster ork's question in the console: its answers as buttons (an Agent pool's: js/orkconsole.js `Questions`). */
 function Reply({ r }) {
-  const [text, setText] = useState("");
   const a = r.answer;
-  const done = () => setText("");
-  if (a.kind === "alert") {
-    return html`<div class="ok-row">${a.options.map(([key, label]) => html`<button key=${key} class="ok-btn"
-      onClick=${() => command("orders.answer", { id: a.id, key }).then(done, () => {})}>${label}</button>`)}</div>`;
-  }
-  const send = (said) => act(a.building, "answer", { task: a.task, text: said }).then(done, () => {});
-  const qs = a.questions || [];
-  return html`<div>
-    ${qs.length === 1 && qs[0].options.length > 0 && html`<div class="ok-row">${qs[0].options.map((o) =>
-      html`<button key=${o} class="ok-btn" onClick=${() => send(o)}>${o}</button>`)}</div>`}
-    <div class="ok-row"><input class="ok-input" value=${text} aria-label=${say("Your answer")} placeholder=${say("Reply…")}
-      onInput=${(e) => setText(e.target.value)} onKeyDown=${(e) => { if (e.key === "Enter" && text.trim()) send(text); }} />
-      <button class="ok-btn primary" disabled=${!text.trim()} onClick=${() => send(text)}>${say("Reply")}</button></div>
-  </div>`;
+  return html`<div class="ok-row">${(a.options || []).map(([key, label]) => html`<button key=${key} class="ok-btn"
+    onClick=${() => command("orders.answer", { id: a.id, key }).catch(() => {})}>${label}</button>`)}</div>`;
 }
 
-/** The console of the ork a row picked, folded (§7): its state and line, its question, ⏹ Stop, its spend and tool. */
+/** ▴ / ▾: the console unfolds to the whole of the ork (depth 3), or folds back to its line (depth 2). */
+function FoldButton() {
+  const open = unfolded.value;
+  return html`<button class="gui-toolerr__close" aria-expanded=${open}
+    title=${open ? say("Fold the console") : say("Unfold: its sessions, its answer, its terminal, its history")}
+    aria-label=${open ? say("Fold") : say("Unfold")} onClick=${() => { unfolded.value = !open; }}>${open ? "▾" : "▴"}</button>`;
+}
+
+/** The console of the ork a row picked (§7): folded, its state and line, its question, ⏹ Stop, its spend and tool;
+ *  unfolded, the same head over the whole of it (js/orkconsole.js). An ork at rest has no row: unfolded still shows
+ *  its history and its terminal. */
 export function OrkConsole() {
   const key = consoleOrk.value;
   const s = town.value.slots;
   const r = key && s ? s.rows.find((x) => x.key === key) : null;
+  const open = unfolded.value;
   if (!key) return null;
-  if (!r) {
-    return html`<div class="gui-orkconsole ok-font-status"><span class="ok-tone-muted">${say("That ork is not at work any more.")}</span>
-      <button class="gui-toolerr__close" title=${say("Close")} aria-label=${say("Close")} onClick=${() => { consoleOrk.value = null; }}>×</button></div>`;
+  const close = html`<button class="gui-toolerr__close" title=${say("Close")} aria-label=${say("Close")} onClick=${closeConsole}>×</button>`;
+  if (!r && !open) {
+    return html`<div class="gui-orkconsole ok-font-status"><div class="gui-orkconsole__head">
+      <span class="gui-orkconsole__line ok-tone-muted">${say("That ork is not at work any more.")}</span><${FoldButton} />${close}</div></div>`;
   }
-  return html`<div class="gui-orkconsole ok-font-status" role="region" aria-label=${say(`${r.name}'s console`)}>
+  const pool = r && r.answer && r.answer.kind === "pool";
+  return html`<div class=${cls("gui-orkconsole ok-font-status", { "is-unfolded": open })} role="region"
+      aria-label=${say(`${r ? r.name : key.split("/").pop()}'s console`)}>
     <div class="gui-orkconsole__head">
-      <span class="gui-slots__mark" title=${r.word}>${r.mark}</span>
-      <span class="gui-orkconsole__line">${r.line}</span>
-      <button class="gui-toolerr__close" title=${say("Close")} aria-label=${say("Close")} onClick=${() => { consoleOrk.value = null; }}>×</button>
+      ${r ? html`<span class="gui-slots__mark" title=${r.word}>${r.mark}</span><span class="gui-orkconsole__line">${r.line}</span>`
+        : html`<span class="gui-orkconsole__line ok-tone-muted">${say("Not at work now")}</span>`}
+      <${FoldButton} />${close}
     </div>
-    ${r.answer && html`<p><b>${r.answer.question}</b></p><${Reply} r=${r} />`}
-    ${r.wait && !r.answer && html`<p class="ok-tone-muted">⏳ ${r.wait.line}</p>`}
-    <div class="ok-row">
-      ${r.stop && html`<button class="ok-btn" onClick=${() => stop(r)}>⏹ ${say("Stop")}</button>`}
-      ${r.building_id && html`<button class="ok-btn" title=${say("Its building's window: the whole session, its history")}
+    ${r && r.answer && !(open && pool) && (pool && !open
+      ? html`<${Questions} building=${r.answer.building} a=${r.answer} />`
+      : html`<p><b>${r.answer.question}</b></p><${Reply} r=${r} />`)}
+    ${r && r.wait && !r.answer && !open && html`<p class="ok-tone-muted">⏳ ${r.wait.line}</p>`}
+    ${r && html`<div class="ok-row">
+      ${r.stop && html`<button class="ok-btn" title=${say("Its run ends where it is; its session is kept")} onClick=${() => stop(r)}>⏹ ${say("Stop")}</button>`}
+      ${r.building_id && html`<button class="ok-btn" title=${say("Its building")}
         onClick=${() => openBuilding(r.building_id)}>${say("Open")} ▸</button>`}
       <span class="ok-tone-muted">${[money(r.spend), r.tool, since(r.since_s)].filter(Boolean).join(" · ")}</span>
-    </div>
+    </div>`}
+    ${open && html`<${Unfolded} orkKey=${key} r=${r} />`}
   </div>`;
 }

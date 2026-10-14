@@ -55,6 +55,7 @@ from orkcraft.core.workers.barracks_claims import ClaimsMixin
 from orkcraft.core.workers.barracks_paths import PathsMixin
 from orkcraft.core.workers.barracks_plan import PlanMixin
 from orkcraft.core.workers.barracks_review import ReviewMixin
+from orkcraft.core.workers.barracks_console import ConsoleMixin
 from orkcraft.core.workers.barracks_status import StatusMixin
 from orkcraft.realm import barracks as bk
 from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, settle, steward, tiers
@@ -121,6 +122,8 @@ class RunOutcome:
     asked: str = ""                                      # a question for the operator
     questions: list[dict] = field(default_factory=list)  # its questions with their options (barracks_asks.py)
     assumptions: list[str] = field(default_factory=list)  # what the ork assumed and marked
+    gist: str = ""                                       # what it did or found (barracks_asks.py)
+    gist_from: str = ""                                  # "block" · "last paragraph"
     accepted: bool | None = None                         # None: never reviewed (an error, a question)
     notes: str = ""
     pr: str = ""
@@ -143,7 +146,7 @@ def take_back(town, source_id: str, payload: pipes.Payload) -> str:
     return ""
 
 
-class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin, StatusMixin, Worker):
+class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin, StatusMixin, ConsoleMixin, Worker):
     TYPE = "barracks"
     TAKES_REWORK = True
     APPROVAL = gate.APPROVAL      # the hop's outcome on a draft that waits for the operator (a Loot always holds it)

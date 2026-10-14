@@ -394,10 +394,25 @@ def _stop_ork(w, args: dict) -> bool:
     return True
 
 
+def _run_again(w, args: dict) -> bool:
+    """After a stop (ork-console.md §9): the task goes on, its ork's session resumed."""
+    if not w.run_again(text(args, "task", 100)):
+        raise ActError("That task was not stopped")
+    return True
+
+
+def _drop(w, args: dict) -> bool:
+    """After a stop: the task is closed as dropped."""
+    if not w.drop(text(args, "task", 100)):
+        raise ActError("That task was not stopped")
+    return True
+
+
 def _picked(w, args: dict) -> dict:
     return folders.result(text(args, "token", 40))
 
 
 ACTS = {"task": _new_task, "pause": _pause, "answer": _answer, "add_rule": _add_rule,
-        "diff": _diff, "terminal": _terminal, "take_over": _take_over, "hand_back": _hand_back, "stop_ork": _stop_ork, "wants": _wants, "want_by_source": _want_by_source,
+        "diff": _diff, "terminal": _terminal, "take_over": _take_over, "hand_back": _hand_back, "stop_ork": _stop_ork,
+        "run_again": _run_again, "drop": _drop, "wants": _wants, "want_by_source": _want_by_source,
         "repo": _repo, "pick": _pick, "picked": _picked}
