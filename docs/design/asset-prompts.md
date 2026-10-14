@@ -315,3 +315,15 @@ the same kind as the style reference):
    calm face; waiting with one hand raised and a curious face; slumped with a frown and a small grey smoke puff over
    the head; sitting with arms crossed; sitting and dozing."
 8. **The Warchief and work clothes.** The prompt of "The twist" above.
+
+## The concept frame, v2, with the missing pieces (2026-10-14)
+
+[img/orkline-camp-concept-v2.png](img/orkline-camp-concept-v2.png) (and `-grey`): the owner's second batch put in:
+seamless grass tiles, the quieter track with T-junctions from above and below, furniture inside the Agent pool, the
+new lookout and gatehouse, a covered building (Research, below the line, to show the cover beside the lifted one),
+and **the Publisher's catapult at the line's end with a scroll flying over the wall**: the camp's story from the way
+in to the launch, in one frame.
+
+**Notes on the batch:** the ground tiles carry a thin dark border each (cut inside it to tile); the catapult is drawn
+in side view, a step off the three-quarter projection (acceptable for one machine, the artist evens it); the palisade
+gaps join the track with a curve, good for a way in on the back edge; the hall furniture reads well at a quarter size.
