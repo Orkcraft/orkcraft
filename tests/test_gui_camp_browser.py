@@ -246,3 +246,25 @@ def test_a_launched_cart_flies_with_its_cost_and_the_hud_shows_the_score(camp_lo
     server.host.town.roads.carts.clear()
     for bid in (a, out):
         _call(pg, "town.demolish", {"id": bid})
+
+
+def test_a_buildings_renown_and_goal_show_on_it(camp_look, gui):
+    """growth.md §5, v3-prompts §13.4: no mark before renown; a goal other than balance builds its annex at once;
+    renown I–III a stone footing and a banner on the roof."""
+    server, _ = gui
+    pg = camp_look
+    _clear(pg)
+    forge = _call(pg, "town.build", {"type": "forge"})
+    pg.keyboard.press("Escape")
+    _building(pg, forge).wait_for(state="visible", timeout=WAIT_MS)
+    marks = pg.locator(f'.gui-camp__growth[data-id="{forge}"]')
+    assert marks.count() == 0
+    _call(pg, "building.goal", {"id": forge, "value": "thrift"})
+    pg.wait_for_function("id => [...document.querySelectorAll(`.gui-camp__growth[data-id=\"${id}\"]`)]"
+                         ".some(e => e.src.endsWith('/growth/annex-thrift.png'))", arg=forge, timeout=WAIT_MS)
+    server.host.town.scroll.building(forge).level = 3
+    _call(pg, "building.goal", {"id": forge, "value": "quality"})            # a new snapshot
+    pg.wait_for_function("id => [...document.querySelectorAll(`.gui-camp__growth[data-id=\"${id}\"]`)].map(e => e.src.split('/').pop())"
+                         ".sort().join() === 'annex-quality.png,banner-3.png,footing-3.png'", arg=forge, timeout=WAIT_MS)
+    assert "Renown III" in (marks.first.get_attribute("title") or "") + (marks.nth(1).get_attribute("title") or "")
+    _call(pg, "town.demolish", {"id": forge})

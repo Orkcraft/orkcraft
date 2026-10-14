@@ -120,3 +120,13 @@ const B = [{ id: "a", type: "forge", hut: [0.8, 0.1] }, { id: "b", type: "lab", 
 console.log(JSON.stringify(C.rowsOf(B).map((r) => r.map((b) => b.id))));
 """, tmp_path)
     assert out == [["c", "a", "d"], ["b", "e", "f"]]        # by y into rows, by x along them; the unplaced fill in
+
+
+def test_a_goals_annex_takes_its_room_in_the_row(tmp_path):
+    out = _run("""
+const B = [{ id: "a", type: "forge" }, { id: "b", type: "lab" }];
+const plain = C.lay(B, [], { b: 1, s: 1 }, size), thrift = C.lay([{ ...B[0], goal: "thrift", level: 2 }, B[1]], [], { b: 1, s: 1 }, size);
+console.log(JSON.stringify({ gap: thrift.buildings.b.x - plain.buildings.b.x, g: thrift.buildings.a.growth, none: plain.buildings.a.growth }));
+""", tmp_path)
+    assert out["gap"] == 64 + 2                                               # the lean-to's width and a step
+    assert out["g"] == {"level": 2, "annex": "growth/annex-thrift.png"} and out["none"] == {"level": 0, "annex": ""}

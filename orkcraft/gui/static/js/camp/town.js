@@ -151,6 +151,31 @@ function Building({ b, at, number, raising }) {
   return raising ? html`<div class="gui-town__raising" aria-label=${say(`${b.title}: being built`)}>${el}</div>` : html`${el}${sig}`;
 }
 
+/** Growth on a building (growth.md §5, v3-prompts §13.4): its level I–III as a stone footing by the door and a banner
+ *  on its roof, the banner gaining a crest at III (no gold: yellow is the question's); a goal's annex against its east
+ *  wall (the Thrift lean-to, the Quality crystal). Nothing before its first level but the annex. */
+function Growth({ L, buildings }) {
+  const B = L.step.b, out = [];
+  for (const b of buildings) {
+    const p = L.buildings[b.id], g = p && p.growth;
+    if (!g || p.wall) continue;
+    const put = (file, x, feet, left = false, label = "", under = false) => {
+      const s = sizeOf(file);
+      if (!s) return;
+      const w = s[0] * B, h = s[1] * B;
+      out.push(html`<img class="gui-camp__px gui-camp__growth" src=${V3 + file} alt=${label} title=${label} draggable="false"
+        data-id=${b.id} style=${`left:${left ? x : x - w / 2}px;top:${feet - h}px;width:${w}px;height:${h}px;z-index:${(under ? 9 : 11) + Math.round(p.feet / 8)}`} />`);
+    };
+    const level = ["", "I", "II", "III"][g.level];
+    if (g.level) {
+      put(`growth/footing-${g.level}.png`, p.x + 2 * B, p.feet + 3 * B, true, say(`Renown ${level}`), true);   // under its name
+      put(`growth/banner-${g.level}.png`, p.x + p.w * 0.78, p.y + p.h * 0.32, false, say(`Renown ${level}`));
+    }
+    if (g.annex) put(g.annex, p.x + p.w + 1 * B, p.feet, true, say(b.goal === "thrift" ? "Goal: Thrift" : "Goal: Quality"));
+  }
+  return html`<div class="gui-camp__layer is-growth">${out}</div>`;
+}
+
 /** The Task board's siding: the carts waiting to go (its to-do lane), at most five and "+N" for the rest. */
 function Siding({ L, buildings }) {
   const B = L.step.b;
@@ -218,7 +243,7 @@ export function CampTown({ buildings, roads }) {
   const here = roads.filter((r) => shown.has(r.from) && shown.has(r.to));
   setNumbered(buildings.map((b) => b.id));
   for (const b of buildings) typeModule(b.type, b.page);   // each type's page code (its large card, its small windows)
-  const key = JSON.stringify([!!k, step, buildings.map((b) => [b.id, b.type, b.hut, b.type === "loot" && !!b.alert]), here.map((r) => [r.from, r.to])]);
+  const key = JSON.stringify([!!k, step, buildings.map((b) => [b.id, b.type, b.hut, b.goal, b.level, b.type === "loot" && !!b.alert]), here.map((r) => [r.from, r.to])]);
   if (k && key !== laid.key) laid = { key, L: lay(buildings, here, step, sizeOf, (b) => !!b.alert) };
   const L = k ? laid.L : null;
   const panelW = panelShown() && !opened.value.full ? panelWidth.value : 0;
@@ -274,6 +299,7 @@ export function CampTown({ buildings, roads }) {
         ${buildings.map((b, i) => L.buildings[b.id] && html`<${Building} key=${b.id} b=${b} at=${{ L, p: L.buildings[b.id] }} number=${i + 1}
           raising=${going[b.id] !== undefined} />`)}
       </div>
+      <${Growth} L=${L} buildings=${buildings} />
       <${Siding} L=${L} buildings=${buildings} />
       <${CampCarts} L=${L} roads=${here} carts=${carts} travel=${travel} avg=${averagePerResult(snapshot.value && snapshot.value.score)} />
       <${Stewards} L=${L} buildings=${buildings} roads=${here} out=${outId} soon=${arriving(L, here, carts, travel)}

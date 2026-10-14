@@ -27,7 +27,9 @@ export const DEFAULT_STEP = 1;
 export const WAY_IN = "watchtower";          // stands in the back wall; the track comes in at its foot
 export const WAY_OUT = "catapult";           // stands against the right wall at the line's buffer stop
 export const SIDING = "fields";              // the Task board: the dispatcher's booth and its siding
-const SPUR = new Set(["loot", "mine"]);      // their sprite draws its own track down to the line (gate, headframe)
+const SPUR = new Set(["loot", "mine"]);
+// growth (growth.md §5, v3-prompts §13.4): a goal other than balance builds its annex against the building's east wall
+export const ANNEX = { thrift: "growth/annex-thrift.png", quality: "growth/annex-quality.png" };      // their sprite draws its own track down to the line (gate, headframe)
 
 /** A building's v3 sprite (design-system/sprites/v3/): its type's, the Review gate's barrier up or down. */
 export function spriteOf(b, waiting = false) {
@@ -129,9 +131,12 @@ export function lay(buildings, roads, step, size, waiting = () => false) {
       const w = Math.max(d.w, PATH_W * B);
       const feet = spur ? lineTop + T / 4 : lineTop - PATH_L * B;
       const cx = Math.round(x + w / 2);
+      const annexS = ANNEX[b.goal] && size(ANNEX[b.goal]);
       out.buildings[b.id] = { id: b.id, type: b.type, file: d.file, x: Math.round(x + (w - d.w) / 2), y: Math.round(feet - d.h),
                               w: d.w, h: d.h, cx, feet, row: r, spur, door: { x: cx, y: feet },
-                              stop: { x: cx, y: lineTop + T / 2 } };
+                              stop: { x: cx, y: lineTop + T / 2 },
+                              growth: { level: Math.min(Math.max(b.level || 0, 0), 3), annex: annexS ? ANNEX[b.goal] : "" } };
+      if (annexS) x += annexS[0] * B + 2 * B;
       if (!spur) out.paths.push({ x: Math.round(cx - PATH_W * B / 2), y: Math.round(feet - 6 * B), w: PATH_W * B,
                                   h: Math.round(lineTop - feet + 6 * B + 2) });
       x += w + GAP * B;
