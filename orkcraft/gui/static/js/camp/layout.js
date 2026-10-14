@@ -55,6 +55,30 @@ export function order(buildings, roads) {
   return [...buildings].sort((a, c) => rank(a) - rank(c) || at.get(a.id) - at.get(c.id));
 }
 
+/** The rows, top to bottom, from buildings in the work's order: at most five a row, balanced. A building the person
+ *  placed in Office (`hut`: [x, y] as fractions of the room) takes its row by its y (the top band the top row) and
+ *  its place in the row by its x, so moving a card in Office moves the building in Camp; one never placed fills the
+ *  room left, top row first, in the work's order (decisions-2026-10.md §14). */
+export function rowsOf(list) {
+  const n = Math.max(1, Math.ceil(list.length / ROW_MAX));
+  const per = Math.max(1, Math.ceil(list.length / n));
+  const rows = Array.from({ length: n }, () => []);
+  const placed = list.filter((b) => Array.isArray(b.hut));
+  const band = (b) => Math.min(n - 1, Math.max(0, Math.floor(b.hut[1] * n)));
+  for (const b of [...placed].sort((a, c) => a.hut[1] - c.hut[1] || a.hut[0] - c.hut[0])) {
+    let r = band(b);
+    while (r < n - 1 && rows[r].length >= per) r++;
+    while (rows[r].length >= per && r > 0 && rows[r - 1].length < per) r--;
+    rows[r].push(b);
+  }
+  for (const row of rows) row.sort((a, c) => a.hut[0] - c.hut[0]);
+  for (const b of list.filter((x) => !Array.isArray(x.hut))) {
+    const r = rows.findIndex((row) => row.length < per);
+    rows[r < 0 ? n - 1 : r].push(b);
+  }
+  return rows;
+}
+
 // A tile's ways out (n e s w), turned a quarter clockwise `rot` / 90 times. c2 has no junction with exits north, east
 // and south yet: its north T turned stands in (a flat track from above reads the same turned, §4.1).
 const EXITS = { "straight-h": "ew", "straight-v": "ns", "corner-ne": "ne", "corner-sw": "sw", "corner-se": "se",
@@ -80,9 +104,7 @@ export function lay(buildings, roads, step, size, waiting = () => false) {
   const tower = sorted.find((b) => b.type === WAY_IN) || null;
   const cata = [...sorted].reverse().find((b) => b.type === WAY_OUT) || null;
   const inRows = sorted.filter((b) => b !== tower && b !== cata);
-  const nRows = Math.max(1, Math.ceil(inRows.length / ROW_MAX));
-  const per = Math.max(1, Math.ceil(inRows.length / nRows));
-  const rows = Array.from({ length: nRows }, (_, r) => inRows.slice(r * per, (r + 1) * per));
+  const rows = rowsOf(inRows);
 
   const td = tower ? dims(tower) : null, cd = cata ? dims(cata) : null;
   const M = Math.round(160 * B);                                        // the wilderness round the camp

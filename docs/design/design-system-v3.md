@@ -364,8 +364,11 @@ The preview places ten buildings by hand; the GUI lays out whatever the town has
    touches stands after all the work.
 2. **The wall's two.** The first External listeners stands in the back wall at the way in; the last Publisher stands
    at the buffer stop against the right wall. A second one of either stands in the rows like any other building.
-3. **Rows.** The rest fill rows of at most five, balanced (nine are 5 + 4, six are 3 + 3), left to right in the work's
-   order, the first row under the back wall. Each row stands on its own line: a building's feet are a short path
+3. **Rows.** The rest fill rows of at most five, balanced (nine are 5 + 4, six are 3 + 3), the first row under the
+   back wall. **A building placed in Office takes its row from its Office position** (decisions §14, the PM's call
+   overnight, to confirm): its y picks the band (the top band the top row), its x its place in the row, so moving a
+   card in Office moves the building in Camp; a full row passes the next one down. A building never placed fills the
+   room left, top row first, in the work's order. Nothing is dragged in Camp itself. Each row stands on its own line: a building's feet are a short path
    (24 art px) above its line, its stop where its path meets the line. The Review gate and Research draw their own
    spur down to the line (the weighbridge, the headframe's track), so they stand on it with no dirt path.
 4. **The loop.** The way in comes down the left column from outside the wall; at each line but the last a junction

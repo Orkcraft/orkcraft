@@ -110,3 +110,13 @@ console.log(JSON.stringify({ right: one.cols.right, lines: one.lines.length, emp
 """, tmp_path)
     assert out["right"] is None and out["lines"] == 1 and out["emptyTiles"] > 3
     assert out["route"] and len(out["route"]) == 2                                   # along the one line
+
+
+def test_a_building_placed_in_office_takes_its_row_and_place_from_there(tmp_path):
+    out = _run("""
+const B = [{ id: "a", type: "forge", hut: [0.8, 0.1] }, { id: "b", type: "lab", hut: [0.2, 0.9] },
+           { id: "c", type: "mill", hut: [0.1, 0.05] }, { id: "d", type: "pit" }, { id: "e", type: "horn", hut: [0.5, 0.95] },
+           { id: "f", type: "crag" }];
+console.log(JSON.stringify(C.rowsOf(B).map((r) => r.map((b) => b.id))));
+""", tmp_path)
+    assert out == [["c", "a", "d"], ["b", "e", "f"]]        # by y into rows, by x along them; the unplaced fill in

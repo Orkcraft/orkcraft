@@ -198,7 +198,7 @@ export function CampTown({ buildings, roads }) {
   const here = roads.filter((r) => shown.has(r.from) && shown.has(r.to));
   setNumbered(buildings.map((b) => b.id));
   for (const b of buildings) typeModule(b.type, b.page);   // each type's page code (its large card, its small windows)
-  const key = JSON.stringify([!!k, step, buildings.map((b) => [b.id, b.type, b.type === "loot" && !!b.alert]), here.map((r) => [r.from, r.to])]);
+  const key = JSON.stringify([!!k, step, buildings.map((b) => [b.id, b.type, b.hut, b.type === "loot" && !!b.alert]), here.map((r) => [r.from, r.to])]);
   if (k && key !== laid.key) laid = { key, L: lay(buildings, here, step, sizeOf, (b) => !!b.alert) };
   const L = k ? laid.L : null;
   const panelW = panelShown() && !opened.value.full ? panelWidth.value : 0;
