@@ -224,7 +224,8 @@ ways in join at a merge (Office keeps a gate a road). Camp routes its roads on 3
 its mirror; a switch or merge is its tile and the branch's corner); the map zoom is a 4 px line. `js/carts.js` draws
 a mine cart at its art size from the v2 cart sprites (side, the rolling frames, the load, the flag); a cart that
 stopped (held, stuck, waiting for the person) stands at its road's stop, several as a pile with ×N (`gui/state.py`
-`carts`). Huts still settle 12 px apart, so where two stand closer than a tile the track runs under a card.
+`carts`). In Camp huts stand on the 16 px layout grid and settle a track tile (32 px) apart, so the track runs
+between cards (Office keeps 12 px).
 
 ## 7. Pixel art stays; a painted style like Kingdom Rush is No
 

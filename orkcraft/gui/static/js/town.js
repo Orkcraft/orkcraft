@@ -130,10 +130,15 @@ function place(b, i, size) {
     const r = room.value;
     return { x: Math.max(r.w - size.w - MARGIN, 0), y: Math.max(r.h - size.h - MARGIN - r.strip, 0) };
   }
-  if (dropped.value[b.id]) return dropped.value[b.id];
+  if (dropped.value[b.id]) return snapped(dropped.value[b.id]);
   const [fx, fy] = b.hut || defaultSpot(i);
-  return { x: MARGIN + fx * f.w, y: MARGIN + fy * f.h };
+  return snapped({ x: MARGIN + fx * f.w, y: MARGIN + fy * f.h });
 }
+
+// Camp stands its huts on the 16 px layout grid and a track tile apart (design-system-v2.md §2), so the track runs
+// between two cards rather than under them; Office keeps them as near as before.
+const LAYOUT_PX = 16;
+const snapped = (s) => (camp() ? { x: Math.round(s.x / LAYOUT_PX) * LAYOUT_PX, y: Math.round(s.y / LAYOUT_PX) * LAYOUT_PX } : s);
 
 const SIDE_PX = 8;                          // a hut whose top is this close over another's bottom still stands under it
 
@@ -153,7 +158,7 @@ function lifts(full) {
   return up;
 }
 
-const GAP_PX = 12;                          // the least room between two huts once they settle
+const gapPx = () => (camp() ? TRACK_CELL : 12);   // the least room between two huts once they settle
 const CORNER_ROOM = { x: 0, y: 0, w: 88, h: 62 };   // the big portrait's corner (js/portrait.js): no hut stands under it
 
 /** How far each hut is pushed down so none stands on another: a town of many buildings, a spot kept from a
@@ -162,16 +167,16 @@ const CORNER_ROOM = { x: 0, y: 0, w: 88, h: 62 };   // the big portrait's corner
  * `rects`: id → {x, y, w, h}; `fixed`: ids that never move (the Hall in its corner, the hut being dragged). */
 function settle(rects, fixed = new Set()) {
   const ids = Object.keys(rects).sort((a, b) => rects[a].y - rects[b].y || rects[a].x - rects[b].x);
-  const down = {};
+  const down = {}, gap = gapPx();
   const done = ids.filter((id) => fixed.has(id)).map((id) => rects[id]);
   for (const id of ids) {
     if (fixed.has(id)) { down[id] = 0; continue; }
     const r = { ...rects[id] };
     for (let guard = 0; guard <= done.length; guard++) {
-      const hit = done.find((o) => o.x < r.x + r.w + GAP_PX && r.x < o.x + o.w + GAP_PX
-                                   && o.y < r.y + r.h + GAP_PX && r.y < o.y + o.h + GAP_PX);
+      const hit = done.find((o) => o.x < r.x + r.w + gap && r.x < o.x + o.w + gap
+                                   && o.y < r.y + r.h + gap && r.y < o.y + o.h + gap);
       if (!hit) break;
-      r.y = hit.y + hit.h + GAP_PX;
+      r.y = hit.y + hit.h + gap;
     }
     down[id] = r.y - rects[id].y;
     done.push(r);
@@ -179,10 +184,11 @@ function settle(rects, fixed = new Set()) {
   return down;
 }
 
-/** Where `a` would stand on `o`, kept GAP_PX apart as settle keeps them: the part of `a` it takes, or null. */
+/** Where `a` would stand on `o`, kept gapPx() apart as settle keeps them: the part of `a` it takes, or null. */
 function overlap(a, o) {
-  const x = Math.max(a.x, o.x - GAP_PX), y = Math.max(a.y, o.y - GAP_PX);
-  const r = Math.min(a.x + a.w, o.x + o.w + GAP_PX), b = Math.min(a.y + a.h, o.y + o.h + GAP_PX);
+  const gap = gapPx();
+  const x = Math.max(a.x, o.x - gap), y = Math.max(a.y, o.y - gap);
+  const r = Math.min(a.x + a.w, o.x + o.w + gap), b = Math.min(a.y + a.h, o.y + o.h + gap);
   return r > x && b > y ? { x, y, w: r - x, h: b - y } : null;
 }
 
