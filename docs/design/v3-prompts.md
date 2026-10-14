@@ -253,3 +253,20 @@ left; the HUD bar thin and plain.
 6. **Too many orks idle** (about twenty): in the product an ork is a session; a frame shows four to eight.
 7. **The edges are busy** (crates, bushes in every corner): fewer, so the eye stays on the line.
 8. The interface's placing: the owner's notes go into F2–F5.
+
+**The owner, after the frame: the two buildings that face the world stand in the wall.** The lookout tower
+(External listeners) is **built into the palisade**, the track's way in passing through a gate at its foot; the
+catapult (Publisher) stands **against the palisade** at the line's end and throws over it. The camp's story
+([camp-story.md](camp-story.md)) becomes the layout itself: work comes in at the tower, goes along the line, and
+leaves over the wall. *Proposed rule:* whatever crosses the camp's border stands on the wall — the way in on one
+side, the way out on the other; for now only these two. **F1b**, the frame redrawn with this, is the prompt below.
+
+> "[head of §2] The same camp as the attached frame, the same style, palette and zoom, with these changes: the
+> palisade runs along the top and is lower, of rounded logs. At its left end the wooden lookout tower with the bone
+> horn is **part of the palisade**, its legs in the wall, and the mine-cart track comes in from outside through a
+> wooden gate at the tower's foot. The track runs left to right through the camp. At its right end the catapult
+> stands **against the palisade**, at a buffer stop, its arm pointing up and over the wall, a scroll flying away
+> over the logs. Between them, along the track: the task board, the work hall with the teal canvas roof, the review
+> gate (rougher, timber and stone with bone tusks, no crenellations, the portcullis and the "PR" plate kept). The
+> lower row as before (pond with lens, book tower, workshop, long house). Six orks in all, one with a "?" over it.
+> Fewer crates and bushes at the edges. The top bar says "My camp"."
