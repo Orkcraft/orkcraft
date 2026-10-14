@@ -366,3 +366,22 @@ the tokens), hard alpha, magenta fringe removed. A first try on the Agent pool:
 [img/v3-preview/cut-clean-barracks.png](img/v3-preview/cut-clean-barracks.png) (left: the sheet as it is; right:
 re-pixelised, crisp, every barrel and crate kept). Left to fix: the purple cast where the model blended magenta into
 the floor's shade.
+
+## 8. The owner's answers to design-system-v3 §10 (2026-10-14)
+
+1. **Nunito** for labels: yes.
+2. **The catapult in side view** (the owner: it reads better). Taken: in profile its arm, bucket and throw are seen;
+   the track comes in from the left into its side; one machine at the line's end, the one allowed exception to the
+   single projection. So **the palisade runs down the right edge too**: the catapult stands against it and throws
+   over it, up and to the right — work comes in through the tower in the left wall and leaves over the right one.
+3. **A lane for each row of buildings.** Buildings face the viewer, so a row's doors open downwards: the top row's
+   lane is the track's verge (short paths); each lower row has its own lane under its doors, joined to the main line
+   by short paths between buildings, each joint a stop where the keeper meets the cart. **Carts run on the main line
+   only;** lanes are for orks. More than ten buildings: another row, the same way.
+4. **Office** goes a step larger as well.
+
+The catapult's prompt, for B1's redo: "No shadows. A crude orc wooden catapult **in side view**, facing right, at a
+log buffer stop where a mine-cart track ends coming in from the left, a cow skull on its frame, bone tusks on the
+base, its arm and bucket with a scroll; four frames: resting; pulled back; mid-throw; the scroll flying up and to the
+right. The same style and colours as the attached sheet, front wall of the frame parallel to the image's bottom
+edge."
