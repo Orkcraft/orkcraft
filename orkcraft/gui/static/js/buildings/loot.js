@@ -1,10 +1,10 @@
-// 📦 Loot Vault: the review checkpoint. Closed: how many carts wait (the ones that need you first), the
-// changed files, what the waiting carts cost, what passed last and when. Open, made for the half panel:
-// the counters on one line with Accept all (or Accept files) and the rules; a cart that needs you as a
-// strip with Look; two tabs — the carts as one flow of cards with what passed folded under them, and the
-// changed files of the working tree with what was rejected; a cart or a file opens over them (← back)
-// with its acts, what it is first, why it waits and the chain it came through, and a decision opens the
-// next cart. In the whole town's width the list stays on the left and the chosen one opens beside it.
+// 📦 The Review gate: the review checkpoint. It has no Work window (docs/design/lighter-buildings.md §2): its card
+// does its everyday job, pass or send back a cart. Closed: how many carts wait (the ones that need you first), the
+// changed files, what the waiting carts cost, what passed last and when. Large (opened, grown in place): the counters
+// on one line with Accept all (or Accept files); a cart that needs you as a strip with Look; two tabs — the carts as
+// one flow of cards with what passed folded under them, and the changed files of the working tree with what was
+// rejected; a cart or a file opens over them (← back) with its acts, what it is first, why it waits and the chain it
+// came through, and a decision opens the next cart; a long one goes to the Inspector. Its rules are its Info's.
 // A text cart is edited in the window, or in Lake (its draft file), before it is accepted; a file its task
 // committed on its branch is rejected on its own (put back as the base has it) and brought back, and the
 // rest of the cart goes on; a picture shows in the window. The rules are the keeper's, read out in plain words. The decisions are the worker's (core/workers/loot.py).
@@ -14,10 +14,11 @@
 import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { act, say, toast } from "../link.js";
+import { act, details, say, toast } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 import { KeeperDialog } from "../keeper.js";
+import { usePeek } from "../windows.js";
 
 const sheet = new URL("./loot.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -26,6 +27,8 @@ if (!document.querySelector(`link[href="${sheet}"]`)) {
   link.href = sheet;
   document.head.appendChild(link);
 }
+
+export const work = false;        // no Work window: its large card and its Info (lighter-buildings.md §2)
 
 const chosen = signal({});        // building id → {kind: item | file | rejected | stored, key}
 const reworking = signal({});     // building id → the item sent back, while its dialog is open
@@ -161,9 +164,21 @@ function DropDialog({ id, data }) {
         <button class="ok-btn danger" onClick=${yes}>${say("Drop")}</button>`} />`;
 }
 
-/** Its own small windows over the town: Accept all asked from the closed card waits for its yes there. */
+/** Rework and Drop asked on its card wait for their answer over the town, from its state. */
+function Peeked({ id }) {
+  usePeek(id);
+  const d = details.value[id];
+  const data = d && d.data;
+  if (!data || !data.queue) return null;
+  return html`<${ReworkDialog} id=${id} data=${data} /><${DropDialog} id=${id} data=${data} />`;
+}
+
+/** Its own small windows over the town (never inside its card): Accept all, Rework and Drop wait for their yes. */
 export function overlay() {
-  return html`${Object.keys(accepting.value).filter((id) => accepting.value[id]).map((id) => html`<${AcceptAllDialog} key=${id} id=${id} />`)}`;
+  const ids = new Set([...Object.keys(reworking.value).filter((id) => reworking.value[id]),
+                       ...Object.keys(dropping.value).filter((id) => dropping.value[id])]);
+  return html`${Object.keys(accepting.value).filter((id) => accepting.value[id]).map((id) => html`<${AcceptAllDialog} key=${id} id=${id} />`)}
+    ${[...ids].map((id) => html`<${Peeked} key=${`p${id}`} id=${id} />`)}`;
 }
 
 /** The quick actions in its Info (catalog: Accept all, Accept files). */
@@ -200,8 +215,8 @@ function Acts({ id, it, data, onEdit }) {
   const accept = (label, primary) => html`<button class=${cls("ok-btn", { primary })}
       onClick=${() => act(id, "accept", { item: it.id }).then(() => advance(id, data, it.id), () => {})}>${say(label)}</button>`;
   const fix = (primary) => it.kind === "file"
-    ? html`<button class=${cls("ok-btn", { primary })} onClick=${() => openCart(id, it)}>${say("Open in Lake")}</button>`
-    : it.cut ? html`<button class=${cls("ok-btn", { primary })} onClick=${() => edit(id, it)}>${say("Edit in Lake")}</button>`
+    ? html`<button class=${cls("ok-btn", { primary })} onClick=${() => openCart(id, it)}>${say("Open in the Inspector")}</button>`
+    : it.cut ? html`<button class=${cls("ok-btn", { primary })} onClick=${() => edit(id, it)}>${say("Edit in the Inspector")}</button>`
     : html`<button class=${cls("ok-btn", { primary })} onClick=${onEdit}>${say("Edit")}</button>`;
   if (it.edited) return html`${accept("Accept your version", true)}${fix(false)}`;
   if (it.status === "needs_you") return html`${fix(true)}${accept("Accept as it is", false)}`;
@@ -229,9 +244,8 @@ function CartCard({ id, it }) {
   </button>`;
 }
 
-/** The head: the counters on one line, Accept all, Accept files and the rules; a cart that needs you as a strip. */
+/** The head: the counters on one line, Accept all, Accept files; a cart that needs you as a strip. */
 function Head({ id, data }) {
-  const [rules, setRules] = useState(false);
   const c = data.counts;
   const files = data.files.filter((f) => !f.reviewed).length;
   const asks = data.queue.find((x) => x.status === "needs_you");
@@ -244,7 +258,6 @@ function Head({ id, data }) {
         <span><b>${files}</b> ${say(files === 1 ? "file to review" : "files to review")}</span>
         <span><b>${data.passed}</b> ${say("passed")}</span>`}
       <span class="gui-head__spacer"></span>
-      <button class="ok-btn" title=${data.rules.join("\n")} onClick=${() => setRules(true)}>${say("Rules")}</button>
       ${tabOf(id, data) === "files" ? files > 0 && html`<button class="ok-btn primary" onClick=${() => act(id, "accept_files").catch(() => {})}>${say("Accept files")} · ${files}</button>`
         : c.held > 0 && html`<button class="ok-btn primary" onClick=${() => askAcceptAll(id)}>${say("Accept all")} · ${c.held}</button>`}
     </div>
@@ -253,14 +266,40 @@ function Head({ id, data }) {
       <span class="loot-ask__what" title=${asks.why.join(" · ")}>${asks.label}${asks.why[0] ? ` — ${asks.why[0]}` : ""}</span>
       <button class="ok-btn primary" onClick=${() => choose(id, "item", asks.id)}>${say("Look")}</button>
     </div>`}
-    ${rules && html`<${KeeperDialog} id=${id} title="The rules: what passes by itself, what waits for you" onClose=${() => setRules(false)}>
+  </div>`;
+}
+
+/** Its rules, in its Info (lighter-buildings.md §2): what passes by itself, what waits for you, read out in plain
+ *  words; changed through its steward. */
+function Rules({ id, data }) {
+  const [asking, setAsking] = useState(false);
+  return html`<section class="gui-section loot-rules-part"><h3 class="ok-font-heading">${say("Rules")}</h3>
+    <p class="ok-tone-muted">${say("What passes by itself, what waits for you.")}</p>
+    <ul class="loot-rules">${data.rules.map((r, i) => html`<li key=${i}>${say(r)}</li>`)}</ul>
+    <div class="ok-row"><button class="ok-btn" onClick=${() => setAsking(true)}>${say("Change them")}</button></div>
+    ${asking && html`<${KeeperDialog} id=${id} title="The rules: what passes by itself, what waits for you" onClose=${() => setAsking(false)}>
       <p class="ok-dialog__section">${say("Now")}</p>
       <ul class="loot-rules">${data.rules.map((r, i) => html`<li key=${i}>${say(r)}</li>`)}</ul>
       <p class="ok-dialog__section">${say("Change them")}</p>
     </${KeeperDialog}>`}
-    <${ReworkDialog} id=${id} data=${data} />
-    <${DropDialog} id=${id} data=${data} />
-  </div>`;
+  </section>`;
+}
+
+export function settings(id, data) {
+  if (!data || !data.rules) return null;
+  return html`<${Rules} id=${id} data=${data} />`;
+}
+
+/** Its large card's everyday job (lighter-buildings.md §2): pass or send back a cart, its short diff; a long one to
+ *  the Inspector. A press inside is the card's, never the hut's. */
+function Large({ id }) {
+  usePeek(id);
+  const d = details.value[id];
+  const data = d && d.data;
+  const keep = (e) => e.stopPropagation();
+  if (!data || !data.counts) return html`<p class="ok-tone-muted">${say("Opening…")}</p>`;
+  return html`<div class="loot-large" onPointerDown=${keep} onClick=${keep} onDblClick=${keep}>
+    <${Head} id=${id} data=${data} /><${QueuePane} id=${id} data=${data} /></div>`;
 }
 
 /** Which tab the list shows: the one picked, else the carts — the changed files when no cart is there. */
@@ -366,7 +405,7 @@ function Editor({ id, it, data, onClose }) {
       <button class="ok-btn" onClick=${() => save().then(onClose, () => {})}>${say("Save")}</button>
       <button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
       <span class="gui-head__spacer"></span>
-      <button class="ok-btn" onClick=${() => save().then(() => { onClose(); edit(id, it); }, () => {})}>${say("Edit in Lake")}</button>
+      <button class="ok-btn" onClick=${() => save().then(() => { onClose(); edit(id, it); }, () => {})}>${say("Edit in the Inspector")}</button>
     </div>
   </div>`;
 }
@@ -412,7 +451,7 @@ function ItemDetail({ id, it, data }) {
         ${!editing && html`<${Acts} id=${id} it=${it} data=${data} onEdit=${() => setEditing(true)} />`}
         <span class="gui-head__spacer"></span>
         ${it.edited && html`<button class="ok-btn" onClick=${() => act(id, "discard_edit", { item: it.id }).catch(() => {})}>${say("Forget your edit")}</button>`}
-        ${it.kind !== "file" && html`<button class="ok-btn" onClick=${() => openCart(id, it)}>${say("Open in Lake")}</button>`}
+        ${it.kind !== "file" && html`<button class="ok-btn" onClick=${() => openCart(id, it)}>${say("Open in the Inspector")}</button>`}
         <button class="ok-btn danger" onClick=${() => { dropping.value = { ...dropping.value, [id]: it.id }; }}>${say("Drop")}</button>
       </div>
       ${it.edited && !editing && html`<p class="ok-detail__meta ok-tone-wait">${say("Edited: Accept takes your version.")}</p>`}
@@ -440,10 +479,10 @@ function What({ id, it }) {
     ${w.images.length > 0 && html`<div class="loot-what__pics">${w.images.map((p) => html`<${Thumb} key=${p} id=${id} item=${it.id} path=${p} className="loot-what__pic" />`)}</div>`}
     ${w.html ? html`<div class="gui-prose loot-what__body" dangerouslySetInnerHTML=${{ __html: w.html }}></div>`
       : (it.kind !== "file" || !w.images.length) && html`<pre class="gui-pre loot-what__body">${w.body}</pre>`}
-    ${w.cut && html`<p class="ok-detail__meta">${say("… the rest in Lake")}</p>`}
+    ${w.cut && html`<p class="ok-detail__meta">${say("… the rest in the Inspector")}</p>`}
     ${it.kind !== "file" && w.body.trim() !== it.value.trim() && html`<details class="loot-fold">
       <summary>${say("The whole cart, with the ork's report")}</summary>
-      <pre class="gui-pre">${it.value}${it.cut ? "\n… (the rest in Lake)" : ""}</pre></details>`}
+      <pre class="gui-pre">${it.value}${it.cut ? "\n… (the rest in the Inspector)" : ""}</pre></details>`}
   </div>`;
 }
 
@@ -485,7 +524,7 @@ function Cart({ id, data }) {
       <div class="ok-detail__actions">
         ${!f.reviewed && html`<button class="ok-btn primary" onClick=${() => act(id, "file_accept", { path: f.path }).then(() => advanceFile(id, data, f.path), () => {})}>${say("Accept")}</button>`}
         <button class="ok-btn" onClick=${() => act(id, "file_reject", { path: f.path }).then(() => advanceFile(id, data, f.path), () => {})}>${say("Reject")}</button>
-        ${f.change !== "D" && html`<button class="ok-btn" onClick=${() => openInLake({ path: f.path, title: f.path, from: id })}>${say("Open in Lake")}</button>`}
+        ${f.change !== "D" && html`<button class="ok-btn" onClick=${() => openInLake({ path: f.path, title: f.path, from: id })}>${say("Open in the Inspector")}</button>`}
       </div>
       <${Preview} id=${id} path=${f.path} />
     </div>`;
@@ -500,7 +539,7 @@ function Cart({ id, data }) {
     const x = data.stored.find((s) => s.index === c.key);
     if (x) return html`<div class="ok-detail"><div class="ok-detail__head loot-open__title" title=${x.title}>${x.title}</div>
       <p class="ok-detail__meta">passed ${x.at} · from ${x.source} · ${x.path}</p>
-      <div class="ok-detail__actions"><button class="ok-btn" onClick=${() => openInLake({ path: x.path, title: x.title, from: id })}>${say("Open in Lake")}</button></div>
+      <div class="ok-detail__actions"><button class="ok-btn" onClick=${() => openInLake({ path: x.path, title: x.title, from: id })}>${say("Open in the Inspector")}</button></div>
       <p class="ok-detail__section">The chain it came through</p>
       <${Chain} chain=${x.chain} total=${""} /></div>`;
   }
@@ -519,9 +558,10 @@ function Glance({ id, g, pics }) {
 
 /** Closed: the headline is how many carts wait (fire when one needs you), else that all is reviewed; under it
  *  the changed files and what the waiting carts cost; the foot what passed last and when. */
-export function card(b) {
+export function card(b, level = "s") {
   const c = b.card;
   if (!c) return null;
+  if (level === "l" && !c.error) return html`<div class="gui-hut__body-in"><${Large} id=${b.id} /></div>`;
   if (c.error) return html`<div class="gui-hut__body-in"><div class="gui-hut__big ok-tone-error">✗<small>${say("cannot read the vault")}</small></div>
     <div class="gui-hut__text" title=${c.error}>${c.error}</div></div>`;
   return html`<div class="gui-hut__body-in">
@@ -534,14 +574,4 @@ export function card(b) {
         ${c.at && html`<span class="gui-hut__when">${c.at}</span>`}</div>`
       : html`<div class="gui-hut__foot"><span>${say("Nothing passed yet")}</span></div>`}
   </div>`;
-}
-
-/** The window by its UI document (design/buildings/loot.json). `cart` shows nothing of its own: a cart opens
- *  over the queue (an older document that still has the pane loses nothing). */
-export function panes(id, data) {
-  return {
-    head: () => html`<${Head} id=${id} data=${data} />`,
-    queue: () => html`<${QueuePane} id=${id} data=${data} />`,
-    cart: () => null,
-  };
 }

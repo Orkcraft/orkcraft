@@ -144,3 +144,9 @@
 .loot-branch-file { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
 .loot-branch-file__path { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 12px/18px var(--font-mono); }
 .loot-rejected { display: flex; align-items: center; gap: var(--space-2); min-width: 0; padding: 2px var(--space-1); font: 400 12px/18px var(--font-mono); }
+/* The large card's everyday job (lighter-buildings.md §2): the counters, the carts and the one opened, scrolling in the card. */
+.gui-hut.is-sized > .ok-hut__card > .gui-hut__body > .gui-hut__body-in > .loot-large { flex: 1 1 auto; min-height: 0; overflow: auto;
+  display: flex; flex-direction: column; gap: var(--space-2); white-space: normal; }
+.loot-large .loot-split { display: block; }
+.loot-large .loot-split.has-open .loot-split__list { display: none; }
+.loot-large .loot-split:not(.has-open) .loot-split__open { display: none; }

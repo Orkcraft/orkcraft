@@ -162,7 +162,7 @@ def _info(pg) -> None:
 
 
 # Types with no Work window (docs/design/lighter-buildings.md §2): opened, the card grows to its large size in place.
-WORKLESS = {"barracks", "watchtower"}
+WORKLESS = {"barracks", "watchtower", "loot"}
 
 
 def _three_ways(pg, bid: str, has_view: bool = True, workless: bool = False) -> None:
@@ -1479,7 +1479,7 @@ def test_settings_accounts_open_the_connect_google_wizard(page):
 
 
 def test_a_loot_cart_is_edited_in_the_window_and_a_file_of_its_branch_rejected(page, gui):
-    """A held cart in the whole town's width: a file its task committed on its branch is rejected (it leaves the
+    """A held cart on the Review gate's large card (it has no Work): a file its task committed on its branch is rejected (it leaves the
     branch's list, kept aside) and brought back; its picture shows in the window; Edit writes the person's version
     there, and Accept takes it. `ORKCRAFT_SHOTS` keeps screenshots."""
     from orkcraft.realm import pipes
@@ -1505,9 +1505,9 @@ def test_a_loot_cart_is_edited_in_the_window_and_a_file_of_its_branch_rejected(p
     town.call(lambda: town.worker(bid).receive(cart, "The notes", cart.value))
     pg.keyboard.press("Escape")
     _hut(pg, bid).wait_for(state="visible", timeout=WAIT_MS)     # it asks: a click on it opens its question (yards.md §8)
-    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id))", bid)
-    pg.locator(".gui-panel .gui-panel__full").click()
-    pg.locator(".loot-card", has_text="The notes").click()
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id))", bid)   # its card grows in place
+    pg.locator(f'.gui-hut[data-id="{bid}"] .loot-large .loot-card', has_text="The notes").click()
+    assert pg.locator(".gui-panel").count() == 0                          # no Work window (lighter-buildings.md §2)
     files = pg.locator(".loot-detail .ok-file")
     files.first.wait_for(state="visible", timeout=WAIT_MS)
     files.filter(has_text="shot.svg").click()
@@ -1517,14 +1517,14 @@ def test_a_loot_cart_is_edited_in_the_window_and_a_file_of_its_branch_rejected(p
     pg.locator(".loot-rejected", has_text="notes.md").wait_for(state="visible", timeout=WAIT_MS)
     assert files.filter(has_text="notes.md").count() == 0 and not (wt / "notes.md").exists()
     if shots:
-        pg.locator(".gui-panel").screenshot(path=f"{shots}/loot-1-rejected.png")
+        _hut(pg, bid).screenshot(path=f"{shots}/loot-1-rejected.png")
     pg.locator(".loot-rejected").get_by_role("button", name="Bring it back", exact=True).click()
     files.filter(has_text="notes.md").wait_for(state="visible", timeout=WAIT_MS)
     pg.locator(".loot-detail").get_by_role("button", name="Edit", exact=True).click()
     box = pg.locator(".loot-edit__text")
     box.fill("## Done\n\nthe notes, checked")
     if shots:
-        pg.locator(".gui-panel").screenshot(path=f"{shots}/loot-2-editor.png")
+        _hut(pg, bid).screenshot(path=f"{shots}/loot-2-editor.png")
     pg.get_by_role("button", name="Accept this version", exact=True).click()
     pg.wait_for_function("() => !document.querySelector('.loot-card')", timeout=WAIT_MS)
     stored = town.worker(bid).stored
