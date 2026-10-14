@@ -68,6 +68,25 @@ function Standing({ list, p, L }) {
   </div>`;
 }
 
+/** How long a cart takes along its route: the road's own time, else by its length (2–9 s). */
+export function tripOf(L, pts, travel = 0) {
+  return Math.max(travel || 0, Math.min(Math.max(lengthOf(pts) / (140 * L.step.b), 2), 9));
+}
+
+/** The carts rolling into each building now, and in how many seconds each arrives: building id → [seconds]. */
+export function arriving(L, roads, carts = [], travel = 0) {
+  const byId = Object.fromEntries(roads.map((r) => [r.id, r])), out = {};
+  for (const c of carts) {
+    const r = byId[c.road];
+    if (!r || c.stands || c.state === "back") continue;
+    const pts = L.route(r.from, r.to);
+    if (!pts || pts.length < 2) continue;
+    const at = tripOf(L, pts, travel) - c.age;
+    if (at > -2.5) (out[r.to] = out[r.to] || []).push(at);
+  }
+  return out;
+}
+
 export function CampCarts({ L, roads, carts = [], travel = 0 }) {
   const B = L.step.b;
   const byId = Object.fromEntries(roads.map((r) => [r.id, r]));
@@ -86,8 +105,7 @@ export function CampCarts({ L, roads, carts = [], travel = 0 }) {
     const pts = L.route(r.from, r.to);
     if (!pts || pts.length < 2) continue;
     const feet = L.T * 0.3;
-    const len = lengthOf(pts);
-    const dur = Math.max(travel || 0, Math.min(Math.max(len / (140 * B), 2), 9));
+    const dur = tripOf(L, pts, travel);
     if (c.age > dur + 0.5) continue;
     rolling.push({ c, pts: pts.map(([x, y]) => [Math.round(x), Math.round(y + feet)]), dur });
   }

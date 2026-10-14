@@ -65,7 +65,44 @@
 .gui-camp__ork { position: absolute; image-rendering: pixelated; image-rendering: crisp-edges; pointer-events: auto; }
 
 /* the second click on a type with no Work window: its large card beside it (until I2 draws the inside) */
-.gui-camp__card { position: absolute; z-index: 60; width: 460px; cursor: default; user-select: text; }
+.gui-camp__card { position: absolute; z-index: 2100; width: 460px; cursor: default; user-select: text; }
 .gui-camp__placing { cursor: copy; }
 
 @media (prefers-reduced-motion: reduce) { .gui-camp__badge { animation: none !important; } }
+
+/* the steward out of its door, its thought bubble, the scroll (js/camp/steward.js) */
+.gui-camp__layer.is-out { z-index: 2000; }
+.gui-camp__layer.is-out > * , .gui-camp__layer.is-orks .gui-camp__bubble { pointer-events: auto; }
+.gui-camp__door { position: absolute; image-rendering: pixelated; image-rendering: crisp-edges; background-repeat: no-repeat;
+  animation: gui-camp-door .45s steps(3) both; background-position-x: calc(var(--w) * -3); }
+@keyframes gui-camp-door { from { background-position-x: 0; } to { background-position-x: calc(var(--w) * -3); } }
+.gui-camp__ork.is-out { animation: gui-camp-step .3s ease-out both; }
+@keyframes gui-camp-step { from { transform: translateY(6px); opacity: 0; } }
+.gui-camp__bubble { position: absolute; transform: translate(-50%, -100%); padding: 0; border: 0; background: none; z-index: 45;
+  font: var(--type-camp-caption); color: var(--parchment-ink); cursor: default; }
+.gui-camp__bubble.is-button { cursor: pointer; }
+.gui-camp__bubble-box { display: block; white-space: nowrap; padding: 6px 12px; background: #fff; border: 2px solid var(--art-outline);
+  border-radius: 14px; box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--art-outline) 12%, white); }
+.gui-camp__bubble-dot { position: absolute; background: #fff; border: 2px solid var(--art-outline); border-radius: 50%; }
+.gui-camp__bubble-dot.is-1 { width: 10px; height: 10px; left: calc(50% - 10px); bottom: -12px; }
+.gui-camp__bubble-dot.is-2 { width: 6px; height: 6px; left: calc(50% - 16px); bottom: -20px; }
+.gui-camp__scroll { position: absolute; transform: translate(-50%, -100%); z-index: 55; color: var(--parchment-ink); }
+.gui-camp__scroll-head { width: 472px; height: 76px; box-sizing: border-box; padding: 14px 56px 0; background-size: 472px 76px;
+  image-rendering: pixelated; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  background-color: transparent; }
+.gui-camp__scroll-title { font: var(--type-camp-heading); line-height: 20px; }
+.gui-camp__scroll-line { font: var(--type-camp-caption); margin: 0; max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gui-camp__scroll-body { margin: -10px 40px 0; padding: 14px 16px 12px; background: var(--parchment); border: 3px solid var(--walnut);
+  border-top: 0; box-shadow: inset 0 0 0 1px var(--art-wood-light), 0 6px 0 color-mix(in srgb, var(--art-outline) 25%, transparent);
+  display: flex; flex-direction: column; gap: 4px; }
+.gui-camp__scroll-body .gui-camp__scroll-line { font: var(--type-camp-body); white-space: normal; max-width: none; }
+.gui-camp__scroll-who { margin: 2px 0 0; font: var(--type-camp-caption); opacity: .8; }
+.gui-camp__scroll-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.gui-camp__scroll-acts .ok-btn.primary { background: var(--accent-teal); color: var(--ink); }
+/* a load lifted off a cart that just stopped: the waiting steward gives way to the carrying one for a moment */
+.gui-camp__ork.is-giving-way { animation: gui-camp-away 2.5s steps(1) 1; }
+.gui-camp__ork.is-lifting { visibility: hidden; animation: gui-camp-lift 2.5s steps(1) 1, gui-camp-frames6 .75s steps(6) infinite; }
+@keyframes gui-camp-away { from, to { visibility: hidden; } }
+@keyframes gui-camp-lift { from, to { visibility: visible; } }
+@keyframes gui-camp-frames6 { to { background-position-x: calc(var(--w) * -6); } }
+@media (prefers-reduced-motion: reduce) { .gui-camp__door, .gui-camp__ork.is-out { animation: none; } }

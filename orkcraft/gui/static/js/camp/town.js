@@ -16,7 +16,8 @@ import { zoomLevel, zoomBy, LEVELS } from "../zoom.js";
 import { bareMenu, setNumbered } from "../town.js";
 import { lay, stepsFor, DEFAULT_STEP, SIDING_SHOWN } from "./layout.js";
 import { V3, kit, loadKit, sizeOf } from "./sprites.js";
-import { CampCarts } from "./carts.js";
+import { CampCarts, arriving } from "./carts.js";
+import { hovered, StewardOut } from "./steward.js";
 import { Stewards } from "./orks.js";
 import { Badge } from "./signals.js";
 import { typeModule } from "../types.js";
@@ -121,6 +122,8 @@ function Building({ b, at, number, raising }) {
       data-id=${b.id} data-type=${b.type} style=${`left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px;z-index:${10 + Math.round(p.feet / 8)}`}
       role="button" tabindex="0" aria-label=${say(b.title)} title=${number <= 9 ? say(`${b.title} · press ${number} to select it`) : say(b.title)}
       onClick=${click} onContextMenu=${(e) => buildingMenu(e, b)}
+      onPointerEnter=${(e) => { if (e.pointerType === "mouse" && !raising) hovered.value = b.id; }}
+      onPointerLeave=${() => { if (hovered.value === b.id) hovered.value = null; }}
       onKeyDown=${(e) => { if (e.key === "Enter") click(e); }}>
     ${body}
     <span class="gui-camp__name is-name" style=${`left:${p.w / 2}px;top:${p.wall === "in" ? p.h - 40 * B : p.h - (p.spur ? 64 : 4) * B}px`}>${say(b.title)}</span>
@@ -238,6 +241,10 @@ export function CampTown({ buildings, roads }) {
   };
   const bare = (e) => { if (!panned && !e.target.closest(".gui-camp__building, .gui-camp__card")) { closeBuilding(); letGo(); } };
   const going = constructing.value;
+  const carts = (snapshot.value && snapshot.value.carts) || [], travel = (snapshot.value && snapshot.value.travel) || 0;
+  // the steward out of its door: the selected building's (its scroll grown), else the one under the mouse
+  const outId = L && [selected.value, hovered.value].find((id) => id && L.buildings[id] && going[id] === undefined && buildings.some((b) => b.id === id));
+  const outB = outId && buildings.find((b) => b.id === outId);
   const grown = grownCard.value && buildings.find((b) => b.id === grownCard.value);
   return html`<main ref=${ref} class=${cls("gui-town gui-camp", { "is-panning": panned })} data-step=${L ? `${step.b}/${step.s}` : ""}
       onPointerDown=${down} onWheel=${wheel} onClick=${bare} onContextMenu=${(e) => { if (!e.target.closest(".gui-camp__building")) bareMenu(e, buildings, here, null); }}>
@@ -251,8 +258,10 @@ export function CampTown({ buildings, roads }) {
           raising=${going[b.id] !== undefined} />`)}
       </div>
       <${Siding} L=${L} buildings=${buildings} />
-      <${CampCarts} L=${L} roads=${here} carts=${(snapshot.value && snapshot.value.carts) || []} travel=${(snapshot.value && snapshot.value.travel) || 0} />
-      <${Stewards} L=${L} buildings=${buildings} roads=${here} />
+      <${CampCarts} L=${L} roads=${here} carts=${carts} travel=${travel} />
+      <${Stewards} L=${L} buildings=${buildings} roads=${here} out=${outId} soon=${arriving(L, here, carts, travel)} />
+      ${outB && html`<${StewardOut} b=${outB} p=${L.buildings[outB.id]} L=${L} grown=${selected.value === outB.id}
+        seen=${{ left: -ox, top: -oy + 8, right: -ox + seen }} />`}
       ${grown && L.buildings[grown.id] && html`<${GrownCard} b=${grown} p=${L.buildings[grown.id]} L=${L} />`}
     </div>`}
     ${placing.value && html`<${Placing} p=${placing.value} />`}

@@ -168,3 +168,37 @@ def test_a_buildings_error_or_held_ork_shows_over_it_as_a_badge(camp_look, monke
     _call(pg, "building.fold", {"id": forge, "value": False})
     pg.locator(".gui-camp__badge.is-held svg").wait_for(state="visible", timeout=WAIT_MS)   # ⏳ drawn, not the emoji
     _call(pg, "town.demolish", {"id": forge})
+
+
+def test_the_mouse_brings_the_steward_out_a_click_grows_its_scroll_and_a_second_click_enters(camp_look):
+    """decisions-2026-10.md §13.1: hover — its steward out of the door with a thought bubble, a small scroll with its
+    status; click — the scroll grows, its quick actions at its foot; a second click enters the building."""
+    pg = camp_look
+    _clear(pg)
+    board = _call(pg, "town.build", {"type": "fields"})
+    pg.keyboard.press("Escape")
+    house = _building(pg, board)
+    house.wait_for(state="visible", timeout=WAIT_MS)
+    pg.mouse.move(2, 400)
+    assert pg.locator(".gui-camp__scroll").count() == 0                      # nobody out, no scroll
+    house.hover()
+    scroll = pg.locator(f'.gui-camp__scroll[data-id="{board}"]')
+    scroll.wait_for(state="visible", timeout=WAIT_MS)
+    assert "Task board" in scroll.inner_text() and "is-grown" not in scroll.get_attribute("class")
+    assert pg.locator(".gui-camp__bubble").first.inner_text().strip()       # its thought, in a few words
+    assert pg.locator(".gui-camp__door, .gui-camp__ork.is-out").count() == 1   # its steward out of the door
+    pg.mouse.move(2, 400)
+    scroll.wait_for(state="detached", timeout=WAIT_MS)
+    house.click()                                                            # selected: the scroll grows
+    grown = pg.locator(f'.gui-camp__scroll.is-grown[data-id="{board}"]')
+    grown.wait_for(state="visible", timeout=WAIT_MS)
+    acts = grown.locator(".gui-camp__scroll-acts button")
+    names = [a.get_attribute("aria-label") or a.text_content() for a in acts.all()]
+    assert "New task" in names and "Enter" in names
+    assert "Taskmaster" in grown.inner_text()                                # its steward by its orkish name
+    box = grown.bounding_box()
+    assert box["y"] >= 0                                                     # inside the window
+    house.click()                                                            # the second click enters it
+    pg.locator(f'.gui-camp__card[data-id="{board}"], .gui-panel').first.wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    _call(pg, "town.demolish", {"id": board})
