@@ -129,12 +129,12 @@
   {
    "file": "buildings/fields.png",
    "size": [
-    136,
-    104
+    152,
+    112
    ],
    "frame": [
-    136,
-    104
+    152,
+    112
    ],
    "frames": 1,
    "pitch": 6.0,
@@ -142,7 +142,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "b1-taskboard.png",
-   "scale": 3.0,
+   "scale": 2.6,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
