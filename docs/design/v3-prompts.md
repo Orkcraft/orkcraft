@@ -287,3 +287,26 @@ back on a cart at the stop. On the town, keepers wait only at buildings that tak
 Agent pool, Review gate, Inspector); the lookout and the catapult work the wall. In F1b's prompt: "at the end of the
 paths of the task board, the work hall and the gate, an orc stands by the track waiting, one of them lifting a
 scroll off a stopped cart".
+
+## 6. Round 2: F1b (2026-10-14)
+
+[img/references/v3/f1b-town.jpg](img/references/v3/f1b-town.jpg). **The owner: the grass and the paths look duller
+than F1.** Measured on the two images (the mean of the grass and of the paths' pixels):
+
+| | F1 | F1b |
+|---|---|---|
+| grass | `#70ae43`, saturation 0.62, value 0.68 | `#679a54`, saturation 0.46, value 0.60 |
+| paths | `#8f6144`, saturation 0.52 | `#926d50`, saturation 0.45 |
+
+The image model drifted; the prompt did not ask for it. **F1's colours are v3's**: the palette becomes tokens
+measured from F1, so the product's grass is ours, whatever a later frame drifts to. Every later prompt adds: "keep
+exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #70ae43), the paths
+warm brown (about #8f6144)".
+
+**Holds in F1b:** the keeper at the stop works as a picture (an ork lifting the scroll off the cart at the gate);
+the ❓ ork at the hall's door; nine orks instead of twenty; fewer crates.
+
+**Not taken by the model:** the tower is not in the palisade, the catapult not against it, the gate still a castle,
+the title still copied. **An image model redraws a picture, it does not move buildings in it** (as round 1 of
+asset-prompts already found). So the layout is not iterated in whole frames any more: the sheets are generated one
+building at a time, and the frame is put together from them on the grid — by hand, or by the V3 session's preview.
