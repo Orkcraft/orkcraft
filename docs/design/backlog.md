@@ -17,6 +17,9 @@ Five lanes can run at once; inside a lane, items mostly run in order.
 | **D. The doors and the name** | PyPI, the Claude Code plugin, README, landing | packaging, `docs/`, a new plugin folder |
 | **O. The owner, no code** | the name, the art, the tests on people, the terms | — |
 
+**Lane C builds on one system:** [design-system-v2.md](design-system-v2.md) (sizes, kits, slots, tokens, the sprite
+pipeline) and the preview `design-system/previews/CampKit.html`; the art O3 commissions is [artist-brief.md](artist-brief.md).
+
 **One collision to plan:** C3 (the card as a building) and A3/A4 (status, badges, the 🥩 list) both draw on the
 building's card in `gui/static`; A3's data first, C3's drawing on top, not both at once in the same files.
 

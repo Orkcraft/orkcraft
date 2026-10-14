@@ -39,6 +39,7 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 | [backlog.md](backlog.md) | **the development backlog to the launch**: items with ids, lanes that run in parallel, dependencies, days |
 | [camp-story.md](camp-story.md) | the camp's story: work comes in at the ways in, is refined on the line, and is catapulted over the wall; the GIF ends on a launch; "launched" in the score |
 | [asset-prompts.md](asset-prompts.md) | prompts for reference sprite sheets: the ork body and roles, carts, ground and roads, the building kits, facades and crests |
+| [design-system-v2.md](design-system-v2.md) | **the design system for the new Camp**: the grid and scale ladder, one projection, the layers, the cover kits, track, carts and orks with their slots, signals and chips, the world palette as tokens, the sprite pipeline; its open questions; and [artist-brief.md](artist-brief.md), the commissioned artist's brief made from it |
 | [naming.md](naming.md) | name candidates should Orkcraft be renamed (Q18): criteria, twelve names, the first three, the checks |
 | [distribution.md](distribution.md) | the doors where the audience installs: PyPI and a Claude Code plugin before the launch, a VS Code and Open VSX extension after the testers; a door, never a second face |
 | [launch-prep.md](launch-prep.md) | the week's goal by 18 October; GitHub, the landing page and the materials prepared for the marketing from 19 October |
