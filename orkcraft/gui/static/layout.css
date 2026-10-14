@@ -798,9 +798,16 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 .gui-you__deed.is-ahead { filter: grayscale(1) brightness(.5); }
 .gui-you__camp { font: 600 11px/16px var(--ok-font); color: var(--ink-muted); letter-spacing: .08em; text-transform: uppercase; }
 
-/* The Warchief's crowned face and what grew, said in his line (js/warchief.js). */
-.gui-warchief__face .gui-warchief__crowned { width: auto; height: 30px; }
-.gui-warchief__face.is-steward .gui-warchief__crowned[height="24"] { height: 24px; }   /* a bare ork (no hat): its 8 rows a 3 px */
+/* An ork's face (js/icons.js OrkFace, docs/design/ork-icons.md): pixel art at whole scales; its state's glyph stands
+   beside it, the right 16 px of the state's sprite (40 × 16, the old head on its left). */
+.gui-face { image-rendering: pixelated; vertical-align: middle; }
+.gui-state { display: inline-block; flex: none; width: 16px; height: 16px; vertical-align: middle; image-rendering: pixelated;
+  background: var(--state) -24px 0 / 40px 16px no-repeat; }
+.gui-orkhead { display: inline-flex; align-items: center; gap: 1px; vertical-align: middle; }
+[data-look="camp"] .gui-orkhead__office { display: none; }
+
+/* The Warchief's face, or a steward's, and what grew, said in his line (js/warchief.js). */
+.gui-warchief__crowned { display: inline-flex; align-items: center; }
 .gui-warchief__news { display: inline-flex; gap: var(--space-2); align-items: baseline; }
 .gui-map__state.ok-tone-wait { color: var(--warning); }   /* a paused building in the open orkspace */
 
@@ -1008,7 +1015,7 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 .gui-orkcard { display: flex; gap: var(--space-3); align-items: center; }
 .gui-orkcard__face { flex: none; display: grid; place-items: center; width: 84px; height: 72px; background: var(--panel-inset);
   box-shadow: var(--bevel-sunken); }
-.gui-orkcard__face > img { width: 72px; height: auto; image-rendering: pixelated; }   /* face-*.png: 12 px wide, a pixel 6 CSS pixels (tools/hat_sprites.py) */
+.gui-orkcard__face > img { image-rendering: pixelated; }   /* its face at 2×: 64 × 48 (js/icons.js OrkFace) */
 .gui-orkcard__who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .gui-orkcard__why { margin: 0; white-space: normal; color: var(--ink); }
 .gui-panel .ok-win__bar > .ok-win__title { flex: 0 1 auto; min-width: 4em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1087,11 +1094,12 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 .gui-slots__head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
 .gui-slots__rows { margin: 0; padding: 0; list-style: none; }
 .gui-slots__row { display: flex; align-items: center; gap: var(--space-2); }
-.gui-slots__pick { flex: 1; display: grid; grid-template-columns: 1.5em auto 1fr auto auto; gap: var(--space-2); align-items: baseline;
+.gui-slots__pick { flex: 1; display: grid; grid-template-columns: 1.5em 32px auto 1fr auto auto; gap: var(--space-2); align-items: baseline;
   min-width: 0; padding: var(--space-1); border: 1px solid transparent; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .gui-slots__pick:hover { border-color: var(--frame); }
 .gui-slots__doing { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gui-slots__num { font-variant-numeric: tabular-nums; }
+.gui-slots__pick > .gui-face, .gui-orkconsole__head > .gui-face { align-self: center; }   /* the ork's face (js/icons.js OrkFace) */
 .gui-slots__stop { min-width: 2em; }
 .gui-orkconsole { align-self: flex-end; display: grid; gap: var(--space-2); width: min(420px, 40vw); padding: var(--space-2) var(--space-3);
   background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame); box-shadow: var(--shadow-window); }

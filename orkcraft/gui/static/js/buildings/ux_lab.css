@@ -13,7 +13,7 @@
 .ux-picture__office .gui-type-icon { width: 32px; height: 32px; }
 .ux-picture figcaption { text-align: center; }
 .ux-tool > span { white-space: nowrap; }
-.ux-picture__ork img { width: 72px; height: auto; image-rendering: pixelated; }
+.ux-picture__ork img { width: 64px; height: auto; image-rendering: pixelated; }   /* its face at 2× */
 button.ux-picture { background: none; border: 0; padding: 0; cursor: pointer; color: inherit; font: inherit; }
 button.ux-picture:hover .ux-picture__frame, button.ux-picture:focus-visible .ux-picture__frame { border-color: var(--frame-focus); }
 .ux-picture__icon { width: 48px; height: 48px; image-rendering: pixelated; }

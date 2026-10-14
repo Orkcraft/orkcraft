@@ -1,6 +1,16 @@
 {
  "note": "What tools/camp_sheet.py cuts from each reference sheet. A piece is named by `at` (a point as fractions of the sheet; `--list SHEET` prints each piece's) or `box`. A new sheet is a new entry; the run rewrites the sprites and manifest rows of the sheets it cuts and keeps the rest.",
  "root": "docs/design/img/references/0.3",
+ "faces": {
+  "note": "What tools/camp_faces.py cuts: each role's face from orks/roles/<role>.png (rows: the window over the 48 × 56 body; clear: boxes [x0, y0, x1, y1] emptied first, a held thing touching the head). A role without a body gets the plain head (from `plain`, its headgear taken off) until its body lands. js/icons.js FACES says which ork wears which role's face.",
+  "rows": [3, 27],
+  "plain": "grunt",
+  "clear": {"warchief": [[0, 0, 17, 27], [0, 21, 19, 27]], "seer": [[33, 0, 48, 27]]},
+  "roles": ["warchief", "grunt", "quartermaster", "seer", "mason", "alchemist", "mechanic", "treasurer", "pathfinder",
+            "taskmaster", "lookout", "loader", "farseer", "warder", "artisan",
+            "scavenger", "grot-pointa", "miller", "hornblower", "chieftain", "drummer", "woodcutter", "scroll-scrapper",
+            "bard", "prospector", "smith", "crag-carver", "tinker", "peon"]
+ },
  "sheets": [
   {
    "name": "orks-round3",

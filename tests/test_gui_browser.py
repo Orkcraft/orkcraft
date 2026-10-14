@@ -710,7 +710,7 @@ def test_a_click_selects_a_building_and_open_or_a_second_click_opens_it(page):
 
 def test_a_selected_building_turns_the_line_into_its_command_card(page):
     """A building selected, the Warchief's line is its card (docs/design/select-a-building.md §2): its steward's
-    face under its building's hat, its quick actions (Q, W, E), the field for its steward; ✕ gives the Warchief back
+    face (its role's: the Taskmaster's, docs/design/ork-icons.md), its quick actions (Q, W, E), the field for its steward; ✕ gives the Warchief back
     while it stays selected."""
     pg = page
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
@@ -718,7 +718,7 @@ def test_a_selected_building_turns_the_line_into_its_command_card(page):
     bar = pg.locator(".gui-warchief__bar")
     bar.locator(".gui-warchief__face.is-steward").wait_for(state="visible", timeout=WAIT_MS)
     assert bar.locator(".gui-warchief__act", has_text="New task").count() == 1      # its quick actions
-    assert "steward-clerk" in bar.locator(".gui-warchief__face img").get_attribute("src")   # the Task board's cap
+    assert bar.locator(".gui-warchief__face img").get_attribute("src").endswith("/faces/taskmaster.png")   # its role's face
     assert bar.get_by_role("button", name="Build", exact=True).count() == 0
     ph = pg.locator(".gui-warchief__input").get_attribute("placeholder")
     assert ph.startswith("Tell ") or "about" in ph                    # its steward, or the Warchief about it

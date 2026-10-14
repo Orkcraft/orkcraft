@@ -37,7 +37,7 @@ import { settingsOpen } from "./settings.js";
 import { portraitOpen } from "./portrait.js";
 import { HALL, hallTab } from "./tent.js";
 import { Message } from "./buildings/town_hall.js";
-import { WarchiefHead, StewardHead } from "./icons.js";
+import { WarchiefHead, OrkFace } from "./icons.js";
 import { askKeeper } from "./keeper.js";
 import { ImprovePick, SINCE_UPDATE } from "./improve.js";
 import { fold, foldQuiet, unfoldAll } from "./fold.js";
@@ -600,7 +600,7 @@ export function WarchiefLine() {
     ? html`<button class="gui-warchief__face is-steward" title=${say(`${steward.name}, the steward of ${card.title}: its Info`)}
         aria-label=${say(`${steward.name}: its Info`)} onClick=${() => openBuilding(card.id, "info")}>
         ${office ? html`<span class="gui-warchief__mono" aria-hidden="true">›</span>`
-          : html`<${StewardHead} type=${card.type} coarse=${3} />`}
+          : html`<${OrkFace} who=${card.type} />`}
         ${card.alert && html`<span class="ok-word gui-warchief__ask">?</span>`}</button>`
     : html`<button class="gui-warchief__face" title=${say(`${b.title}: the ${name}'s whole chat, the hall`)} aria-label=${say(b.title)}
         onClick=${() => { hallTab.value = "chat"; openBuilding(HALL, "work"); }}>

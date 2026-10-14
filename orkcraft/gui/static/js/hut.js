@@ -159,14 +159,14 @@ export function buildingMenu(e, b) {
 
 /** The garrison's lead as its head alone, no framed name (it is in the tooltip and the Info), then its harness scheme.
  *  A yard has no ork of its own (docs/design/yards.md §2): its head stands there only while one visits, with the word. */
-function Keeper({ garrison, alert, yard, visit }) {
+function Keeper({ garrison, alert, yard, visit, type }) {
   if (!garrison.length || (yard && !visit)) return null;
   const lead = garrison.find((o) => o.lead) || garrison[0];
   const busy = garrison.some((o) => o.status === "busy");
   const more = garrison.length - 1;
   const doing = alert ? say("asks you") : busy ? say("at work") : say("idle");
   return html`<span class="gui-hut__keeper" title=${`${lead.name}${more > 0 ? ` +${more}` : ""}${visit ? ` · ${say("visiting")}` : ""} · ${doing}`}>
-    <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} />
+    <${OrkHead} o=${busy && lead.status !== "busy" ? { ...lead, status: "busy" } : lead} alert=${!!alert} who=${type} />
     <${Scheme} scheme=${lead.scheme} />${visit && html`<span class="gui-hut__visit">visiting</span>`}</span>`;
 }
 
@@ -505,7 +505,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
       ${busy && html`<span class="gui-hut__spin" role="img" title=${say("Working")} aria-label=${say("Working")}></span>`}
       <${TypeIcon} type=${b.type} />${kit && camp && html`<${Crest} b=${b} kit=${kit} mark=${true} />`}
       <span class="gui-hut__name">${say(b.title)}</span>
-      <${Keeper} garrison=${b.garrison} alert=${b.alert} yard=${!!b.yard} visit=${b.visit || ""} />
+      <${Keeper} garrison=${b.garrison} alert=${b.alert} yard=${!!b.yard} visit=${b.visit || ""} type=${b.type} />
       ${b.alert && html`<span class="ok-word gui-hut__ask">?</span>`}
       ${folded && html`<${Mark} b=${b} quiet=${far} />`}
 </span>`;      // pin and fold live in its menu (right click): the card carries no controls of its own

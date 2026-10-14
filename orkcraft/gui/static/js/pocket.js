@@ -127,7 +127,7 @@ function Row({ b, number }) {
         <${TypeIcon} type=${b.type} />
         <span class="gui-pocket__name">${say(b.title)}</span>
         <span class="gui-pocket__gist">${b.alert ? html`<span class="ok-tone-wait">❓ ${say("asks you")}</span>` : html`<${Gist} b=${b} />`}</span>
-        ${lead && (b.alert || busy) && html`<${OrkHead} o=${lead} alert=${!!b.alert} />`}
+        ${lead && (b.alert || busy) && html`<${OrkHead} o=${lead} alert=${!!b.alert} who=${b.type} />`}
         <span class="gui-pocket__chev" aria-hidden="true">${open ? "▾" : "▸"}</span>
       </div>`}
     ${open && html`<div class="gui-pocket__body">

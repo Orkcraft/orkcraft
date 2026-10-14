@@ -123,22 +123,60 @@ export function HutSprite({ type, biome, goal, level, className = "", onError, b
   </span>`;
 }
 
-// Camp: an ork of a garrison as its head in its state (design-system/sprites/orks/, the ork mark's
-// head); a chain or script as its signpost. Office hides both (`.ok-sprite`) and keeps the words.
-// A state's sprite is wider than the bare head: its glyph (Zz, a gear, `!`, a snowflake, a page) stands
-// beside it, 40 × 16 against the head's 24 × 16 (tools/logo.py).
+// An ork's face says its role, never its building (docs/design/ork-icons.md §2, §6): its head and headgear cut from
+// its role body (design-system/sprites/camp/orks/faces/, tools/camp_faces.py). Every ork of TERMS (its term key,
+// realm/lexicon.py) is listed by its key: a building type's ork, the Town Hall's own. An ork whose role has no body
+// yet has the plain head in its role's file until the body lands and the tool is rerun: never a borrowed face.
+export const FACES = {
+  town_hall: "warchief", barracks: "grunt", loot: "quartermaster", lake: "seer", lab: "mechanic", ux_lab: "alchemist",
+  mason: "mason", treasurer: "treasurer", pathfinder: "pathfinder",
+  // no body yet: the plain head
+  fields: "taskmaster", watchtower: "lookout", catapult: "loader",
+  farseer: "farseer", warder: "warder", artisan: "artisan",
+  pit: "scavenger", signpost: "grot-pointa", mill: "miller", horn: "hornblower", council: "chieftain",
+  war_drum: "drummer", forest: "woodcutter", scrolls: "scroll-scrapper", gramophone: "bard", mine: "prospector",
+  forge: "smith", crag: "crag-carver", workshop: "tinker", custom: "peon",
+};
+FACES.loot_vault = FACES.loot;
+const HALL_ROLES = new Set(["mason", "treasurer", "pathfinder", "farseer", "warder", "artisan"]);
+
+/** Whose face an ork wears: a Town Hall ork by its role (its name: the Mason), any other by its building's type. */
+export function orkKey(type, name = "") {
+  const n = String(name).toLowerCase();
+  return type === "town_hall" && HALL_ROLES.has(n) ? n : type;
+}
+
+/** The key of the ork at work in building `id` (a 🥩 row's, the console's): its building's type, or its role. */
+export function orkAt(id, name = "") {
+  const b = id && town.value && (town.value.buildings || []).find((x) => x.id === id);
+  return b ? orkKey(b.type, name) : "custom";
+}
+
+/** The face file of an ork's key (`barracks`, `mason`); a custom type wears the Peon's. */
+export function faceSrc(who, small = false) {
+  return `/ds/sprites/camp/orks/faces/${FACES[who] || "peon"}${small ? "-16" : ""}.png`;
+}
+
+/** An ork's face: `small` the 16 × 16 for list rows, else the 32 × 24 at `scale` whole CSS px a pixel. */
+export function OrkFace({ who, small = false, scale = 1, title = "" }) {
+  return html`<img class="ok-sprite gui-face" data-face=${FACES[who] || "peon"} src=${faceSrc(who, small)}
+    width=${small ? 16 : 32 * scale} height=${small ? 16 : 24 * scale} alt="" title=${title || null} draggable="false" />`;
+}
+
+// A state stands beside the face, never on it (ork-icons.md rule 4): the glyph of the ork's state sprite (its right
+// 16 px: Zz, a gear, `!`, a snowflake, a page; tools/logo.py), cut by the stylesheet (layout.css .gui-state).
 const ORK_STATE = { busy: "ork-busy", alert: "ork-waiting", idle: "ork-idle", frozen: "ork-frozen", draft: "ork-draft" };
 const ORK_STATE_WORD = { busy: "busy", alert: "waiting", idle: "resting", frozen: "frozen", draft: "draft" };
 
-/** The Warchief: the ork's head under its gold crown (docs/design/growth.md §8); waiting, the crown burns. */
+/** The Warchief: its face; its state's glyph beside it (waiting, busy). */
 export function WarchiefHead({ state = "" }) {
-  const name = state ? `warchief-${state}` : "warchief";
-  return html`<img class="ok-sprite gui-warchief__crowned" src=${`/ds/sprites/orks/${name}.png`}
-    srcset=${`/ds/sprites/orks/${name}@2x.png 2x`} width=${state ? 40 : 24} height="20" alt="" />`;
+  const glyph = { waiting: "ork-waiting", busy: "ork-busy" }[state];
+  return html`<span class="gui-warchief__crowned"><${OrkFace} who="town_hall" />${glyph && html`<i
+    class="gui-state" style=${`--state:url(/ds/sprites/orks/${glyph}.png)`} aria-hidden="true"></i>`}</span>`;
 }
 
-// A steward's hat by the work of its building (tools/hat_sprites.py): its face on the Warchief's line, and the ork
-// that comes out of its building wears it (js/visit.js). A type with none (a custom one) keeps the bare head.
+// The ork that comes out of its building onto the map wears a hat by its building's work (js/visit.js,
+// tools/hat_sprites.py), until it is drawn from its role body on the map. The interface's faces are FACES'.
 export const HATS = {
   scrolls: "scribe", mill: "scribe", gramophone: "scribe", lake: "scribe",
   watchtower: "lookout", horn: "lookout", crag: "lookout",
@@ -147,16 +185,6 @@ export const HATS = {
   barracks: "captain", council: "captain",
   mine: "miner",
 };
-
-/** A building's steward, its head under its role's hat (the bare head for a type with none). */
-export function StewardHead({ type, coarse = 0 }) {   // coarse: CSS px a pixel of its 12-wide grid (face-*.png); 0: the finer sprite
-  const hat = HATS[type];
-  const file = coarse ? `face-${hat || "ork"}` : hat ? `steward-${hat}` : "ork";
-  const rows = hat ? 10 : 8;
-  return html`<img class="ok-sprite gui-warchief__crowned" src=${`/ds/sprites/orks/${file}.png`}
-    srcset=${`/ds/sprites/orks/${file}@2x.png 2x`} width=${coarse ? 12 * coarse : 24} height=${coarse ? rows * coarse : hat ? 20 : 16}
-    alt="" draggable="false" />`;
-}
 
 /** The operator's mascot (docs/design/growth.md §7): its role's head at its stage. */
 export function MascotHead({ sprite, stage, size = 4 }) {  // size: screen px a pixel of its 12 × 11 grid
@@ -235,13 +263,17 @@ export function TierMark({ tier }) {
     srcset=${`/ds/sprites/icons/rank-${r[0]}@2x.png 2x`} width="12" height="12" alt="" draggable="false" />${r[1]}</span>`;
 }
 
-export function OrkHead({ o, alert }) {
+/** An ork in a list: in Camp its face with its state's glyph beside it; Office keeps its own head in its state
+ *  (office.css). A chain or script is its signpost. `who`: the ork's key (orkKey), its building's type at least. */
+export function OrkHead({ o, alert, who = "" }) {
   if (o.kind === "chain" || o.kind === "script") {
     return html`<img class="ok-sprite" data-kind="chain" src="/ds/sprites/icons/chain.png" width="16" height="16" alt="" />`;
   }
   const status = alert ? "alert" : o.status;
   const state = ORK_STATE[status] || "ork";
-  return html`<img class="ok-sprite" data-kind="ork" src=${`/ds/sprites/orks/${state}.png`}
-    srcset=${`/ds/sprites/orks/${state}@2x.png 2x`} width=${state === "ork" ? 24 : 40} height="16"
-    alt="" title=${say(ORK_STATE_WORD[status] || "")} />`;
+  const word = say(ORK_STATE_WORD[status] || "");
+  return html`<span class="gui-orkhead" title=${word || null}><img class="ok-sprite gui-orkhead__office" data-kind="ork"
+    src=${`/ds/sprites/orks/${state}.png`} srcset=${`/ds/sprites/orks/${state}@2x.png 2x`} width=${state === "ork" ? 24 : 40}
+    height="16" alt="" /><${OrkFace} who=${who || o.type || "custom"} small=${true} />${state !== "ork" && html`<i
+    class="gui-state" style=${`--state:url(/ds/sprites/orks/${state}.png)`} aria-hidden="true"></i>`}</span>`;
 }

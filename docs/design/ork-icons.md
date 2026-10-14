@@ -92,3 +92,9 @@ Treasurer (coin-stamped cap, round spectacles, scales, pouch), Alchemist (pointe
 lock against the key); the **Farseer's** pointed hood and the **Alchemist's** pointed hat share a silhouette (dark
 against brown). Told apart by colour today; rule 3 asks for the grey test. If they fail it, the Quartermaster takes
 a ledger and a stamp instead of the helmet, and the Alchemist a round hat.
+
+**Done (2026-10-14):** the faces are cut from the bodies (`tools/camp_faces.py`, `camp/orks/faces/`, 32 × 24 and a
+16 × 16 half); `js/icons.js` `FACES` maps every ork of `TERMS` to its role's face (`OrkFace`, `OrkHead`), the hats by
+building are left only to the ork that walks out onto the map (`js/visit.js`). The roles without a body wear the plain
+head in their own file until their body lands (the second sheet's are not cut into bodies yet: rerunning
+`tools/camp_sheet.py` with them in `tools/camp_sheets.json` gives them their faces). What rule 3 still fails: camp/README.md, The faces.

@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { town, command, act, say } from "./link.js";
 import { openBuilding } from "./windows.js";
+import { OrkFace, orkAt } from "./icons.js";
 import { consoleOrk, unfolded, closeConsole, money, Unfolded, Questions } from "./orkconsole.js";
 import { lit } from "./cover.js";
 
@@ -46,7 +47,7 @@ function Row({ r, onPick }) {
     onPointerLeave=${() => point(false)}>
     <button class="gui-slots__pick" title=${r.line} onClick=${() => onPick(r)}>
       <span class="gui-slots__mark" title=${r.word} aria-label=${r.word}>${r.mark}</span>
-      <b>${r.name}</b>${r.building ? ` · ${r.building}` : ""}
+      <${OrkFace} who=${orkAt(r.building_id, r.name)} /><span><b>${r.name}</b>${r.building ? ` · ${r.building}` : ""}</span>
       <span class="gui-slots__doing ok-tone-muted">${doing(r)}</span>
       <span class="gui-slots__num">${since(r.since_s)}</span>
       <span class="gui-slots__num">${money(r.spend)}</span></button>
@@ -135,7 +136,7 @@ export function OrkConsole() {
   return html`<div class=${cls("gui-orkconsole ok-font-status", { "is-unfolded": open })} role="region"
       aria-label=${say(`${r ? r.name : key.split("/").pop()}'s console`)}>
     <div class="gui-orkconsole__head">
-      ${r ? html`<span class="gui-slots__mark" title=${r.word}>${r.mark}</span><span class="gui-orkconsole__line">${r.line}</span>`
+      ${r ? html`<span class="gui-slots__mark" title=${r.word}>${r.mark}</span><${OrkFace} who=${orkAt(r.building_id, r.name)} /><span class="gui-orkconsole__line">${r.line}</span>`
         : html`<span class="gui-orkconsole__line ok-tone-muted">${say("Not at work now")}</span>`}
       <${FoldButton} />${close}
     </div>

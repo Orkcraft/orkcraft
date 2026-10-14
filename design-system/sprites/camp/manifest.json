@@ -2788,6 +2788,1086 @@
    ]
   },
   {
+   "file": "orks/faces/alchemist-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/alchemist.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/alchemist.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/alchemist.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/artisan-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/artisan.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/bard-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/bard.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/chieftain-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/chieftain.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/crag-carver-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/crag-carver.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/drummer-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/drummer.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/farseer-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/farseer.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/grot-pointa-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/grot-pointa.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/grunt-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/grunt.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/hornblower-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/hornblower.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/loader-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/loader.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/lookout-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/lookout.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/mason-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/mason.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/mason.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/mason.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/mechanic-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/mechanic.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/mechanic.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/mechanic.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/miller-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/miller.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/pathfinder-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/pathfinder.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/pathfinder.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/pathfinder.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/peon-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/peon.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/plain-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/plain.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/prospector-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/prospector.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/quartermaster-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/quartermaster.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/quartermaster.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/quartermaster.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/scavenger-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/scavenger.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/scroll-scrapper-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/scroll-scrapper.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/seer-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/seer.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/seer.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/seer.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/smith-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/smith.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/taskmaster-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/taskmaster.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/tinker-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/tinker.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/treasurer-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/treasurer.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/treasurer.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/treasurer.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/warchief-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/warchief.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/warchief.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/warchief.png",
+   "plain": false,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/warder-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/warder.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/woodcutter-16.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
+   "file": "orks/faces/woodcutter.png",
+   "size": [
+    32,
+    24
+   ],
+   "frame": [
+    32,
+    24
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "orks/roles/grunt.png",
+   "plain": true,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
+  },
+  {
    "file": "orks/roles/alchemist.png",
    "size": [
     48,

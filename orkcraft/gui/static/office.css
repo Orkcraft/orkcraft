@@ -41,7 +41,9 @@
 [data-look="office"] .ok-res img,
 [data-look="office"] .gui-hut__flame,
 [data-look="office"] .gui-hut__doing,
-[data-look="office"] .gui-out { display: none; }
+[data-look="office"] .gui-out,
+[data-look="office"] .gui-orkhead > .gui-face,
+[data-look="office"] .gui-orkhead > .gui-state { display: none; }   /* Office keeps its own head in a list (js/icons.js OrkHead) */
 /* The name takes only its width, so its ork's tool mark (✻) stands right after it, not mid-row; the pin keeps
    the right edge (its margin-left: auto, layout.css) (ui.md U08). */
 [data-look="office"] .gui-hut__title .gui-hut__name { flex: 0 1 auto; }

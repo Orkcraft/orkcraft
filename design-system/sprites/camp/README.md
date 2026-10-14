@@ -11,7 +11,7 @@ artist's PNG drops into the same path and the town does not change. Drawn at 1×
 of 8; the renderer scales by whole numbers (no `@2x`); `map/` holds the half-size copies of the covers for the map
 zoom.
 
-**Recut:** `python tools/camp_sheet.py` (all sheets), `--only <name>` (one sheet), `--check DIR` (each nine-slice kit
+**Recut:** `python tools/camp_sheet.py` (all sheets, then the faces), `--only <name>` (one sheet), `--check DIR` (each nine-slice kit
 tiled 3 × 3 and 5 × 4, at 4×, to look for seams). A new sheet is a new entry in `tools/camp_sheets.json`;
 `--list SHEET` prints the pieces it finds and where.
 
@@ -21,6 +21,7 @@ tiled 3 × 3 and 5 × 4, at 4×, to look for seams). A new sheet is a new entry 
 |---|---|---|---|
 | `orks/body/` | `idle` (4), `walk-down`, `walk-up`, `walk-side` (6 each; mirrored for the other side), `work` (6, the hammer), `sit` (2, on a log) | 32 × 48; `work`, `sit` 48 × 48 | the feet, bottom centre |
 | `orks/roles/` | `warchief`, `grunt`, `mason`, `alchemist`, `mechanic`, `treasurer`, `seer`, `quartermaster`, `pathfinder` | 48 × 56 | bottom centre |
+| `orks/faces/` | `<role>` and `<role>-16` for every role of `faces.roles` in `tools/camp_sheets.json`; `plain` | 32 × 24; `-16` 16 × 16 (the head's half, 16 × 12, at the foot) | bottom centre |
 | `carts/` | `side`, `rolling-side` (4), `front`; `loads/<code\|asset\|message\|doc\|bundle>` and `-front`; `flags/<ask\|held\|fire>` | 48 × 40 (front 48 × 48); loads 48 × 32; flags 40 × 32 | bottom centre (flags: the pole's foot, bottom left) |
 | `track/` | `straight-h`, `straight-v`, `corner-nw` (and `-1`), `corner-ne`, `corner-se`, `cross`, `switch-e`, `merge-e`, `stop-e`, `stop-n` | 32 × 32 | top left |
 | `covers/hall/` | `roof-canvas/`, `roof-thatch/`, `roof-hide/`, `walls-stone/`, `walls-palisade/`: `nw n ne w c e sw s se`, edges with variants `-1 -2` | corners 24 × 24, back 24 × 32; edges 8 long, 24 deep (back 32); `c` 32 × 32 | top left |
@@ -34,6 +35,22 @@ The track tiles have their sheet's grass keyed out (`key_grass`): only the earth
 the ground layer's own grass. A load is what the loaded cart has that the empty one has not, so a load drawn over
 `side.png` (feet together) gives the loaded cart back. Colours are snapped to the `art-*` / `world-*` tokens plus the
 few tones each group lists in the manifest (`tones`); yellow and red only in `carts/flags/` and `fire-alarm`.
+
+## The faces (`orks/faces/`, docs/design/ork-icons.md §6)
+
+The interface's small faces (the 🥩 list, the console, Info's ork card, the Warchief's line, the UX bench's gallery):
+each role's head and headgear cut from its body by `tools/camp_faces.py` (`--sheet DIR` writes the 16 px check, in
+colour and in grey). `js/icons.js` `FACES` says which ork wears which role's face; a role with no body yet has the
+**plain head** (the Grunt's head, its cap turned to skin) in its own file, so its body lands by rerunning the tool,
+with no code changed. On the plain head now: Taskmaster, Lookout, Loader, Farseer, Warder, Artisan, and Scavenger,
+Grot Pointa, Miller, Hornblower, Chieftain, Drummer, Woodcutter, Scroll Scrapper, Bard, Prospector, Smith, Crag
+Carver, Tinker, Peon.
+
+**Rule 3 at 16 px and in grey (2026-10-14):** told apart: the Warchief (horns), the Quartermaster (helmet), the Seer
+(hood), the Pathfinder (fur hat with ear flaps). **Not told apart:** the Treasurer and the Grunt (the same cap, nothing
+else in the head); the Alchemist and the Mechanic (both goggles under the cap); the Mason's bandana reads close to the
+Grunt's cap in grey. Expected until the owner's new sheet: the Treasurer's own headgear and the Alchemist's pointed
+hat. At 32 × 24 all nine are told apart in colour, but the four caps still lean on the face's details.
 
 ## Where the placeholders fall short of v2 (the artist fixes them)
 

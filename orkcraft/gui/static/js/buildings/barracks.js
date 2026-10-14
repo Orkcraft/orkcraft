@@ -145,7 +145,7 @@ effect(() => {
 function Lanes({ id, lanes, more }) {
   return html`<ul class="pool-lanes">${lanes.map((l) => html`<li key=${l.role} class=${cls("pool-lane", `is-${l.state}`)}
       title=${`${say(l.name)} · ${say(l.word)} · ${l.at_work} ${say("at work")}${l.queue ? ` · ${l.queue} ${say("waiting")}` : ""}`}>
-    <span class="pool-lane__head"><${OrkHead} o=${{ name: l.ork, status: LANE_STATE[l.state] }} alert=${l.state === "asks"} /><span
+    <span class="pool-lane__head"><${OrkHead} o=${{ name: l.ork, status: LANE_STATE[l.state] }} alert=${l.state === "asks"} who="barracks" /><span
       class="pool-lane__state">${say(l.word)}</span></span>
     <button type="button" class="pool-lane__name" onPointerDown=${keep} onClick=${(e) => openSession(e, id, l.sessions[0])}>${say(l.name)}</button>
     <span class="pool-lane__how">${l.tier && html`<${TierMark} tier=${l.tier} />`}</span>
@@ -212,7 +212,7 @@ const STATE_TONE = { asked: "ok-tone-fire", reviewing: "ok-tone-wait", working: 
 
 /** An ork's head as its state says: at work it sweats, asking it burns, else it rests. */
 function Head({ ork, asks, working }) {
-  return html`<${OrkHead} o=${{ name: ork, status: working ? "busy" : "idle" }} alert=${!!asks} />`;
+  return html`<${OrkHead} o=${{ name: ork, status: working ? "busy" : "idle" }} alert=${!!asks} who="barracks" />`;
 }
 
 /** Its kind of work and where it was decided: `Reply · from External listeners` (docs/design/barracks-flows.md §9). */

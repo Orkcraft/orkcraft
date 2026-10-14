@@ -21,7 +21,8 @@ A sheet is a generated image on flat `#FF00FF` drawn in "pixels" of a few screen
    to `art-outline`; only signal sprites may keep `signal-*`;
 7. **write** the PNG (RGBA, no smoothing, no metadata), its row in `manifest.json`, and for the covers the map's
    half-size copy;
-8. **check:** every size a multiple of 8, no signal hue outside signal sprites; with `--check`, the kits tiled.
+8. **check:** every size a multiple of 8, no signal hue outside signal sprites; with `--check`, the kits tiled;
+9. **faces:** each ork's face recut from its role body (`tools/camp_faces.py`, the spec's `faces`).
 
 Every sprite it writes is a **placeholder** (generated art, docs/design/color-pass.md §10b), to be replaced by the
 commissioned artist's; the manifest says so on every row. Needs `pip install pillow numpy`.
@@ -617,6 +618,8 @@ def main() -> None:
                                             "(docs/design/design-system-v2.md §11).",
                                     "sprites": rows}, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"{len(rows)} sprites in {manifest.relative_to(ROOT)}")
+    import camp_faces                       # the interface's faces, recut from the role bodies (tools/camp_faces.py)
+    camp_faces.write_manifest(camp_faces.cut(spec))
     if args.check:
         render_kits(rows, args.check)
     for p in problems:

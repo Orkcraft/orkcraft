@@ -10,7 +10,7 @@ import { html, cls } from "../html.js";
 import { act, say, town } from "../link.js";
 import { Card } from "../hut.js";
 import { GROUPS, INTENTS } from "../build.js";
-import { TypeIcon, HATS, BIOMES } from "../icons.js";
+import { TypeIcon, FACES, BIOMES } from "../icons.js";
 import { terrainUrl } from "../terrain.js";
 import { Dialog } from "../dialog.js";
 
@@ -81,7 +81,7 @@ function Gallery({ id, data }) {
   const t = data.target;
   const tile = INTENTS.find((x) => x.type === t);
   const houses = data.biomes.map((g) => ({ g, path: `sprites/buildings/${data.sprite}/header${g === "dirt" ? "" : `-${g}`}.png` }));
-  const ork = HATS[t] ? `sprites/orks/steward-${HATS[t]}.png` : "sprites/orks/ork.png";
+  const ork = `sprites/camp/orks/faces/${FACES[t] || "peon"}.png`;   // its role's face, cut from its body: not painted here
   return html`<div class="ux-gallery">
     <section class="ux-gallery__group"><h3 class="ok-list__head">${say("Icon")}</h3><div class="ux-gallery__row">
       ${tile && html`<${Picture} key=${`i${v(data, `sprites/intents/${tile.id}.png`)}`} label="In Build"
@@ -93,7 +93,7 @@ function Gallery({ id, data }) {
       ${houses.length ? houses.map((h) => html`<${Picture} key=${h.g + v(data, h.path)} label=${GROUND[h.g] || h.g}
           onOpen=${() => setOpen({ path: h.path, label: `Its house on ${GROUND[h.g] || h.g}` })}>${img(data, h.path, "ok-sprite ux-picture__house")}</${Picture}>`)
         : html`<p class="ok-font-status ok-tone-muted">${say("It has no house of its own yet: it wears the plain one.")}</p>`}
-      <${Picture} key=${`o${v(data, ork)}`} label="Its ork" onOpen=${() => setOpen({ path: ork, label: "Its ork" })}>
+      <${Picture} key=${`o${v(data, ork)}`} label="Its ork">
         <span class="ux-picture__ork">${img(data, ork)}</span></${Picture}>
     </div></section>
     ${data.motion && html`<${Motion} data=${data} onOpen=${setOpen} />`}
