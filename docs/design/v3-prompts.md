@@ -309,8 +309,8 @@ measures `#7cbd40` and the paths' sand `#e4b469`.)
 
 Each sheet of §3 is saved into `docs/design/img/references/v3/` under its name in
 [design-system-v3.md](design-system-v3.md) §8 (`b1-core.png`, `o1-body.png`, `c1-carts.png`, …), then
-`python tools/camp_sheet.py --v3` cuts it. Sizes changed by V3: the ork 32 × 32, the cart 32 × 24, a door state a
-32 × 40 patch. The order of the next sheets is in §9 there.
+`python tools/camp_sheet.py --v3` cuts it. The art is shown at its own pixel (×1) and cut as drawn
+(design-system-v3.md §3, §8): an ork about 64 px tall, a cart about 64 wide, a door state a patch about 64 × 80. The order of the next sheets is in §9 there.
 
 **Holds in F1b:** the keeper at the stop works as a picture (an ork lifting the scroll off the cart at the gate);
 the ❓ ork at the hall's door; nine orks instead of twenty; fewer crates.
@@ -366,6 +366,13 @@ the tokens), hard alpha, magenta fringe removed. A first try on the Agent pool:
 [img/v3-preview/cut-clean-barracks.png](img/v3-preview/cut-clean-barracks.png) (left: the sheet as it is; right:
 re-pixelised, crisp, every barrel and crate kept). Left to fix: the purple cast where the model blended magenta into
 the floor's shade.
+
+**Fixed (V3, after round 3):** the cutter no longer resamples or snaps colours: `tools/camp_sheets_v3.json` sets
+`native` and `keep_colours`, the art is shown at ×1 (`art-scale` 1), slots follow what each sheet draws; it only reports
+the signals' hues (round 3: the UX bench's banner). B1–B3 re-cut; before and after:
+[img/v3-preview/agent-pool-before-after.png](img/v3-preview/agent-pool-before-after.png). The re-cut takes each art
+pixel's median over its cell's inner pixels with a hard alpha (the re-pixelising above); reducing a sprite to its own
+few colours and removing the magenta cast are not done yet.
 
 ## 8. The owner's answers to design-system-v3 §10 (2026-10-14)
 

@@ -30,7 +30,10 @@ A sheet is a generated image on flat `#FF00FF` drawn in "pixels" of a few screen
 **v3** (docs/design/design-system-v3.md §8): the sheets of docs/design/v3-prompts.md §3 are drawn "in a neat grid with
 even spacing", so a v3 item names its piece by `order`, its place in reading order (rows top to bottom, each left to
 right, counted from 0), instead of a point; `--list` prints that order. A sheet not yet in the folder is skipped and
-listed as awaited, so the command is the same before and after each sheet arrives.
+listed as awaited, so the command is the same before and after each sheet arrives. The v3 spec sets `native` (each
+sprite cut at the sheet's own art pixel, never re-read coarser; its slot is what the sheet draws, rounded up to the
+grid of 8, and a size in the spec is only the plan) and `keep_colours` (no snap to the tokens: the art keeps its own
+shading; the cutter only reports pixels in a signal's yellow, orange or red).
 
 Every sprite it writes is a **placeholder** (generated art, docs/design/color-pass.md §10b), to be replaced by the
 commissioned artist's; the manifest says so on every row. Needs `pip install pillow numpy`.
@@ -357,6 +360,13 @@ def loud(rgb: tuple[int, int, int]) -> bool:
     return s > 0.6 and (h * 360 < 15 or h * 360 > 345 or 45 <= h * 360 <= 65)
 
 
+def signal_hue(rgb: tuple[int, int, int]) -> bool:
+    """A signal's yellow, orange or red (v3, docs/design/design-system-v3.md §8): saturated and bright, from red to
+    yellow. The honey wood and the sand (saturation about 0.5–0.65) are below it; `#facc15` and `#e8411c` above."""
+    h, s, v = colorsys.rgb_to_hsv(*(c / 255 for c in rgb))
+    return s >= 0.75 and v >= 0.7 and (h * 360 <= 65 or h * 360 >= 340)
+
+
 # --- 7. write ----------------------------------------------------------------------------------------------------
 
 def save(img: np.ndarray, rel: str) -> None:
@@ -474,11 +484,12 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
             img[..., 3] = 255
             if group.get("key_grass"):                           # the tile's grass: the ground layer draws its own
                 img = grass_keyed(img)
-            _write(recolour(img, pal), item["file"], group, rows, problems, (w, h), 1)
+            _write(img if group.get("keep_colours") else recolour(img, pal), item["file"], group, rows, problems,
+                   (w, h), 1)
         return
     w, h = group["size"]
     boxes = [[_extract(sheet, f) for f in item.get("frames", [item])] for item in group["items"]]
-    scale = group.get("scale")
+    scale = 1 if group.get("native") else group.get("scale")
     if scale is None:                                            # one scale for the group: the largest piece fits
         # a group's `fit` (v2), else each piece's own slot (v3's buildings differ in size)
         fits = [group.get("fit") or item.get("size", [w, h]) for item in group["items"]]
@@ -487,6 +498,9 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
     anchor = group.get("anchor", "feet")
     for item, bs in zip(group["items"], boxes):
         frames = []
+        if group.get("native"):                 # v3: the slot is what the sheet draws, on the grid of 8, never resampled
+            imgs = [trim(sheet.native(b)) for b in bs]
+            item = {**item, "size": (up8(max(i.shape[1] for i in imgs)), up8(max(i.shape[0] for i in imgs)))}
         read = lambda box: trim(sheet.native(box) if scale == 1 else sheet.coarse(box, scale))  # noqa: E731
         for b in bs:
             img = read(b)
@@ -504,7 +518,8 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
                 frame[int(fy0 * ih):int(fy1 * ih), int(fx0 * iw):int(fx1 * iw)] = 0
             frames.append(frame)
         out = strip(frames) if len(frames) > 1 else frames[0]
-        _write(recolour(out, pal), item["file"], group, rows, problems, frames[0].shape[1::-1], len(frames), scale,
+        out = out if group.get("keep_colours") else recolour(out, pal)
+        _write(out, item["file"], group, rows, problems, frames[0].shape[1::-1], len(frames), scale,
                anchor=item.get("anchor"))
 
 
@@ -554,8 +569,13 @@ def _write(img, rel, group, rows, problems, frame, frames, scale=1.0, anchor=Non
     if w % 8 or h % 8:
         problems.append(f"{rel}: {w} × {h} is off the grid of 8")
     if not group.get("signals"):
-        hues = {tuple(int(v) for v in p) for p in img[img[..., 3] > 0][:, :3]}
-        if any(loud(p) for p in hues):
+        opaque = img[img[..., 3] > 0][:, :3]
+        if group.get("keep_colours"):           # v3 keeps the art's colours: only the signals' hues are refused
+            n = sum(signal_hue(tuple(int(v) for v in p)) for p in opaque)
+            if n >= 8:
+                problems.append(f"{rel}: {n} px in a signal's yellow, orange or red ({100 * n / max(len(opaque), 1):.1f} %)"
+                                " — redraw it without them")
+        elif any(loud(p) for p in {tuple(int(v) for v in p) for p in opaque}):
             problems.append(f"{rel}: a signal's yellow or red outside a signal sprite")
     save(img, rel)
     row = {"file": rel, "size": [w, h], "frame": list(frame), "frames": frames,
@@ -674,6 +694,8 @@ def main() -> None:
         print(f"{sh['name']}: pitch {sheet.pitch:.2f} px, {len(sheet.boxes)} pieces")
         for group in sh["groups"]:
             group["_sheet"] = sh["file"]
+            for key in ("native", "keep_colours"):              # v3: set once for the whole spec
+                group.setdefault(key, spec.get(key, False))
             cut_group(sheet, group, rows, problems)
     rows += [r for r in old if r["source"] not in done]
     rows.sort(key=lambda r: r["file"])

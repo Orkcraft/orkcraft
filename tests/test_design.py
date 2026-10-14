@@ -119,17 +119,39 @@ def test_a_signal_wins_by_value_not_by_hue_alone():
 
 
 def test_the_v3_scale_fits_ten_buildings_on_a_laptop():
-    """docs/design/design-system-v3.md §3 (v3-prompts §1.3): drawn at half and shown at ×2, a core building is
-    200–260 screen px wide, an ork 56–64 tall, a cart about 64 wide; every sprite size is on the grid of 8."""
+    """docs/design/design-system-v3.md §3 (v3-prompts §1.3, §7): the generated art is shown at its own pixel (×1,
+    never resampled); a core building about 190–260 screen px wide, an ork 56–64 tall, a cart about 64 wide; every
+    slot on the grid of 8."""
     size = {t["name"]: t["value"] for t in tokens.system()["size"]["tokens"]}
     k = int(size["art-scale"])
     px = lambda n: int(size[n].rstrip("px"))                                         # noqa: E731
-    assert k == 2
-    assert 200 <= px("footprint-xl") * k <= 260 and 200 <= px("footprint-l") * k <= 260
+    assert k == 1
+    assert 184 <= px("footprint-xl") * k <= 260
     assert 56 <= px("ork-frame-h") * k <= 64 and 56 <= px("minecart-w") * k <= 72
     for n in ("footprint-xs", "footprint-s", "footprint-m", "footprint-l", "footprint-xl", "ork-frame-w",
               "ork-frame-h", "minecart-w", "minecart-h", "path-w", "palisade-h"):
         assert px(n) % 8 == 0, n
+
+
+def test_v3_sprites_are_cut_at_their_own_pixel_with_their_own_colours():
+    """v3-prompts §7: resampling and the snap to the tokens spoiled the art; the v3 spec cuts natively and keeps the
+    colours, refusing only the signals' hues, which the honey wood and the sand are not."""
+    import importlib.util
+    root = Path(__file__).resolve().parent.parent
+    spec = json.loads((root / "tools" / "camp_sheets_v3.json").read_text(encoding="utf-8"))
+    assert spec["native"] is True and spec["keep_colours"] is True
+    try:
+        mod = importlib.util.spec_from_file_location("camp_sheet", root / "tools" / "camp_sheet.py")
+        cs = importlib.util.module_from_spec(mod)
+        mod.loader.exec_module(cs)
+    except ImportError:
+        pytest.skip("the cutter needs numpy and pillow")
+    rgb = lambda h: tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))                    # noqa: E731
+    camp = {t["name"]: t["value"]["camp"] for t in tokens.system()["color"]["tokens"]}
+    assert cs.signal_hue(rgb(camp["signal-ask"])) and cs.signal_hue(rgb(camp["signal-fire"]))
+    assert cs.signal_hue(rgb("#ff9a1a"))                                              # orange
+    for name in ("art-wood", "art-wood-light", "world-earth", "art-cloth-plum", "art-bone", "world-grass-light"):
+        assert not cs.signal_hue(rgb(camp[name])), name
 
 
 def test_the_v3_preview_awaits_every_sprite_the_v3_sheets_are_cut_into():

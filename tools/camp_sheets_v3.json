@@ -1,7 +1,9 @@
 {
- "note": "v3's sheets (docs/design/v3-prompts.md §3) and the sprites each is cut into (docs/design/design-system-v3.md §8). A sheet goes into `root` under exactly its `file` name; `python tools/camp_sheet.py --v3` cuts every sheet that is there and lists the rest as awaited. A piece is named by `order`: its place in reading order on the sheet (`--list SHEET` prints it); if the image model drew the sheet in another order, change the numbers, not the names. Sizes are art px, drawn at half and shown at ×2.",
+ "note": "v3's sheets (docs/design/v3-prompts.md §3) and the sprites each is cut into (docs/design/design-system-v3.md §8). A sheet goes into `root` under exactly its `file` name; `python tools/camp_sheet.py --v3` cuts every sheet that is there and lists the rest as awaited. A piece is named by `order`: its place in reading order on the sheet (`--list SHEET` prints it); if the image model drew the sheet in another order, change the numbers, not the names. Sizes are the plan in art px; with `native` the slot is what the sheet draws (rounded up to 8), shown at ×1 (docs/design/design-system-v3.md §3), and `keep_colours` keeps the art's own colours.",
  "root": "docs/design/img/references/v3",
  "out": "design-system/sprites/v3",
+ "native": true,
+ "keep_colours": true,
  "manifest_note": "v3 sprites cut from the owner's generated sheets by tools/camp_sheet.py --v3 (docs/design/design-system-v3.md §8). Generated art, kept until the product proves itself (docs/design/decisions-2026-10.md §13.4).",
  "sheets": [
   {

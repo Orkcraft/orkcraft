@@ -4,7 +4,7 @@ How Orkline looks, written down as data so that people, the GUI (the one face) a
 buildings all follow the same rules. Background: [docs/design/gui-migration.md](design/gui-migration.md).
 **Version 2** (2026-10-14) adds the new Camp's world: the card as a building, rails and mine carts, the orks, signals
 and chips (§6–§9). **Version 3** (2026-10-14) makes it the brighter camp the owner approved: F1's palette as the
-world tokens, sprites drawn at half and shown at ×2, one track line with dirt paths, Nunito and a larger type scale
+world tokens, the generated art shown at its own pixel (×1, never resampled), one track line with dirt paths, Nunito and a larger type scale
 (§10). The full proposal, its audit and its open questions: [docs/design/design-system-v2.md](design/design-system-v2.md).
 
 | What | Where |
@@ -172,8 +172,9 @@ art: its `world-*` and `art-*` fall back to its plain greys.
   wood, lilac stone, teal `art-cloth` and plum `art-cloth-plum`, turquoise water). The ground's band is luminance
   0.15–0.55; no art is as light as `signal-ask`; yellow and red stay the signals'. New UI tokens `parchment`,
   `parchment-ink`, `walnut`, `accent-teal` for the keeper's scroll and the panels.
-- **Scale:** sprites drawn at half and shown at ×2 (`art-scale`): a core building 128 art px (256 on screen), an ork
-  32 × 32, a cart 32 × 24; at most ten buildings on 1440 × 900. Map ×1, town ×2, close ×3.
+- **Scale:** the generated art at its own pixel, ×1 (`art-scale`), never resampled; a slot is what the sheet draws: a
+  core building about 190 px, an ork about 64 tall, a cart about 64 wide; at most ten buildings on 1440 × 900. Town
+  ×1, close ×2, map ½. The cutter keeps the art's colours and only reports the signals' hues.
 - **Layout:** one main line; buildings joined to it by dirt paths; carts stop opposite a path, the keeper waits there
   and lifts the load off; the lookout tower in the low palisade with the way in at its foot, the catapult against it
   at the line's end; a building is one sprite with a door.

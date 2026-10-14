@@ -7,7 +7,8 @@
 /* Design system v3 (docs/design/design-system-v3.md): a town laid out on the grid at 1440 × 900, from the sprites that
    exist. Each piece is the v3 sprite (design-system/sprites/v3/, cut by `python tools/camp_sheet.py --v3`) once its
    sheet has arrived, else v2's placeholder (sprites/camp/, shown at ×1 where its art pixel is finer), else a block in
-   v3's tokens. Sizes in the scene are art px × 2 (`--art-scale`); signals and chips are UI, in CSS px. */
+   v3's tokens. A v3 sprite is shown at its own art pixel (`--art-scale: 1`, never resampled); v2's stand-ins at the
+   scale they were drawn for; signals and chips are UI, in CSS px. */
 html,body{margin:0} body{background:var(--canvas);color:var(--ink);font:var(--type-camp-body)}
 main{max-width:1480px;margin:0 auto;padding:16px}
 h1{font:var(--type-camp-title);color:var(--ink-wood);margin:8px 0 4px}
@@ -18,7 +19,7 @@ p,li{color:var(--ink-muted);max-width:920px} code{font:var(--type-code-small);co
 .scroll{overflow-x:auto;padding-bottom:8px}
 .px{image-rendering:pixelated;image-rendering:crisp-edges}
 
-/* the frame: 1440 × 900, a 36 px HUD and the world of 720 × 432 art px at ×2 */
+/* the frame: 1440 × 900, a 36 px HUD and the world of 1440 × 864 (the layout in units of 2 px) */
 .v3-frame{position:relative;width:1440px;height:900px;flex:none;overflow:hidden;border:2px solid var(--bevel-lo);background:var(--world-grass)}
 .v3-frame.is-grey{filter:grayscale(1)}
 .v3-hud{position:absolute;left:0;top:0;right:0;height:36px;background:var(--walnut);display:flex;align-items:center;gap:8px;padding:0 8px;box-sizing:border-box;box-shadow:inset 0 -2px 0 var(--art-outline);z-index:30}
@@ -102,8 +103,8 @@ th{font:var(--type-camp-label);color:var(--ink-wood)}
 </style></head>
 <body><main>
 <h1>Camp kit v3</h1>
-<p>Design system v3 (<code>docs/design/design-system-v3.md</code>): F1's brighter camp as tokens, sprites drawn at half
-and shown at ×2, at most ten buildings on a 1440 × 900 window, one track line with dirt paths, the lookout and the
+<p>Design system v3 (<code>docs/design/design-system-v3.md</code>): F1's brighter camp as tokens, sprites shown at
+their own art pixel (×1, never resampled), at most ten buildings on a 1440 × 900 window, one track line with dirt paths, the lookout and the
 catapult in the wall. Every piece is the v3 sprite once its sheet is cut (<code>python tools/camp_sheet.py --v3</code>),
 else v2's placeholder, else a block in v3's colours.</p>
 <div class="bar">
@@ -316,7 +317,8 @@ const EXPECTED = [
 ];
 const V2 = [["world-grass", "#5e8a4c"], ["world-grass-light", "#6f9a56"], ["world-grass-dark", "#4e7840"], ["world-earth", "#8f7250"], ["world-earth-dark", "#735b4c"], ["world-water", "#2f5a55"], ["world-water-dark", ""], ["art-wood", "#7c5f48"], ["art-wood-light", "#ba9468"], ["art-wood-dark", "#4f3935"], ["art-wood-deep", ""], ["art-stone", "#7d7a74"], ["art-stone-dark", "#4d4848"], ["art-iron", "#4a4b52"], ["art-bone", "#dccaa0"], ["art-cloth", "#6b2a2c"], ["art-cloth-plum", ""], ["art-skin", "#769544"], ["art-outline", "#1c1410"], ["signal-ask", "#facc15"], ["signal-fire", "#e8411c"], ["signal-held", "#8fa3b8"], ["chip", "#1c1712"], ["chip-ink", "#e8e0c8"], ["parchment", ""], ["parchment-ink", ""], ["walnut", ""], ["accent-teal", ""]];
 const HOURGLASS = '<svg viewBox="0 0 10 12" width="14" height="17" aria-label="held"><path d="M1 0h8v2.5L6 6l3 3.5V12H1V9.5L4 6 1 2.5z" fill="currentColor"/></svg>';
-const K = 2;                                          // --art-scale: CSS px per art px
+const K = 2;                                          // the layout's unit: its numbers are half screen px (v2's grid)
+const ART = 1;                                        // --art-scale: a v3 sprite at its own art pixel, never resampled
 const V3 = "../sprites/v3/", CAMP = "../sprites/camp/";
 const world = document.getElementById("world"), frame = document.getElementById("frame");
 const here = new Set();
@@ -345,16 +347,16 @@ async function pick(cands) {
 const LINE_Y = 224;                     // the main line's tile row (32 tall)
 const BUILDINGS = [
   // type, name, box [x, y(top), w, h], v2 stand-in, block look, path: "top" (to the line above) | "lane"
-  ["watchtower", "External listeners", [8, 8, 96, 128], "covers/tower/lookout.png", { roof: "var(--art-bone)" }, "wall"],
-  ["fields", "Task board", [152, 96, 128, 96], "facades/fields.png", { roof: "var(--art-wood-light)" }, "line"],
-  ["barracks", "Agent pool", [296, 80, 128, 112], "facades/barracks.png", { roof: "var(--art-cloth)" }, "line"],
-  ["loot_vault", "Review gate", [440, 80, 128, 112], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, "line"],
-  ["catapult", "Publisher", [576, 144, 128, 112], null, { machine: true, roof: "var(--art-wood)" }, "end"],
-  ["lake", "Inspector", [16, 304, 112, 96], "covers/open/pond.png", { water: true }, "lane"],
-  ["mine", "Research", [160, 288, 96, 128], null, { stone: true, roof: "var(--art-bone)" }, "lane"],
-  ["lab", "Test bench", [288, 320, 96, 96], null, { roof: "var(--art-wood-light)" }, "lane"],
-  ["town_hall", "Town Hall", [416, 288, 128, 128], null, { roof: "var(--art-cloth-plum)" }, "lane"],
-  ["ux_lab", "UX bench", [576, 320, 96, 96], null, { roof: "var(--art-cloth)" }, "lane"],
+  ["watchtower", "External listeners", [72, 4, 40, 64], "covers/tower/lookout.png", { roof: "var(--art-bone)" }, "wall"],
+  ["fields", "Task board", [194, 156, 44, 36], "facades/fields.png", { roof: "var(--art-wood-light)" }, "line"],
+  ["barracks", "Agent pool", [296, 128, 96, 64], "facades/barracks.png", { roof: "var(--art-cloth)" }, "line"],
+  ["loot_vault", "Review gate", [448, 136, 80, 56], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, "line"],
+  ["catapult", "Publisher", [608, 200, 64, 56], null, { machine: true, roof: "var(--art-wood)" }, "end"],
+  ["lake", "Inspector", [40, 348, 64, 52], "covers/open/pond.png", { water: true }, "lane"],
+  ["mine", "Research", [184, 352, 48, 64], null, { stone: true, roof: "var(--art-bone)" }, "lane"],
+  ["lab", "Test bench", [298, 364, 76, 52], null, { roof: "var(--art-wood-light)" }, "lane"],
+  ["town_hall", "Town Hall", [434, 352, 92, 64], null, { roof: "var(--art-cloth-plum)" }, "lane"],
+  ["ux_lab", "UX bench", [592, 360, 64, 56], null, { roof: "var(--art-cloth)" }, "lane"],
 ];
 
 function block(box, look) {
@@ -373,8 +375,8 @@ async function building([type, name, box, v2, look]) {
   const [x, y, w, h] = box;
   el("v3-shadow", x + 6, y + h - 6, w - 12, 10);
   const s = el("v3-slot", x, y, w, h);
-  s.innerHTML = `<span>${type} ${w}×${h}</span>`;
-  const got = await pick([{ src: `${V3}buildings/${type}.png`, scale: K }, ...(v2 ? [{ src: CAMP + v2, scale: K, v2: true }] : [])]);
+  s.innerHTML = `<span>${type} ${w * K}×${h * K}</span>`;
+  const got = await pick([{ src: `${V3}buildings/${type}.png`, scale: ART }, ...(v2 ? [{ src: CAMP + v2, scale: K, v2: true }] : [])]);
   if (!got) return block(box, look);
   if (!got.v2) here.add(`buildings/${type}.png`);
   const i = got.img, iw = i.naturalWidth * got.scale, ih = i.naturalHeight * got.scale;
@@ -393,12 +395,12 @@ function nameChip(name, cx, top) {
 
 async function track() {
   const tile = async (name, x, y, v) => {
-    const got = await pick([{ src: `${V3}track/${name}.png`, scale: K }, { src: `${CAMP}track/${name}.png`, scale: K, v2: true }]);
+    const got = await pick([{ src: `${V3}track/${name}.png`, scale: ART }, { src: `${CAMP}track/${name}.png`, scale: K, v2: true }]);
     if (got) {
       if (!got.v2) here.add(`track/${name}.png`);
       const img = document.createElement("img");
       img.className = "v3-img"; img.src = got.src;
-      img.style.cssText = `left:${x * K}px;top:${y * K}px;width:${32 * K}px;height:${32 * K}px`;
+      img.style.cssText = `left:${x * K}px;top:${y * K}px;width:${got.img.naturalWidth * got.scale}px;height:${got.img.naturalHeight * got.scale}px`;
       world.appendChild(img);
     } else el("v3-at v3-rails" + (v ? " is-v" : ""), x, y, 32, 32);
   };
@@ -425,14 +427,15 @@ function paths() {
 
 async function ork(cx, feetY, opts = {}) {
   const got = await pick([
-    { src: `${V3}orks/body/${opts.anim || "idle"}.png`, scale: K, frames: opts.anim === "work" ? 6 : 4, fw: 32, fh: 32 },
+    { src: `${V3}orks/body/${opts.anim || "idle"}.png`, scale: ART, frames: opts.anim === "work" ? 6 : 4 },
     { src: `${CAMP}orks/body/${opts.anim || "idle"}.png`, scale: 1, frames: opts.anim === "work" ? 6 : 4, fw: opts.anim === "work" ? 48 : 32, fh: 48, v2: true }]);
   el("v3-shadow", cx - 8, feetY - 3, 16, 5);
   const s = el("v3-slot", cx - 16, feetY - 32, 32, 32);
-  s.innerHTML = "<span>ork 32×32</span>";
+  s.innerHTML = "<span>ork 64</span>";
   if (!got) return;
   if (!got.v2) here.add(`orks/body/${opts.anim || "idle"}.png`);
-  const w = got.fw * got.scale, h = got.fh * got.scale;
+  const fw = got.fw || got.img.naturalWidth / got.frames, fh = got.fh || got.img.naturalHeight;   // v3: as the sheet draws
+  const w = fw * got.scale, h = fh * got.scale;
   const d = document.createElement("div");
   d.className = "v3-strip";
   d.style.cssText = `left:${cx * K - w / 2}px;top:${feetY * K - h}px;width:${w}px;height:${h}px;background-image:url(${got.src});
@@ -454,7 +457,7 @@ function badge(kind, cx, topArt) {
 }
 
 async function cart(x, load, opts = {}) {
-  // feet on the line's lower rail; v3: one 32×24 sprite with its load at ×2; v2: bin 48×40 and load at ×1
+  // feet on the line's lower rail; v3: one sprite with its load, as the sheet draws it, at ×1; v2: bin 48×40 and load at ×1
   const feet = LINE_Y + 26;
   const wrap = document.createElement("div");
   wrap.className = "v3-at" + (opts.roll ? " v3-roll" : "");
@@ -462,12 +465,13 @@ async function cart(x, load, opts = {}) {
   world.appendChild(wrap);
   const put = (src, l, t, w, h) => { const i = document.createElement("img"); i.className = "v3-img"; i.src = src;
     i.style.cssText = `left:${l}px;top:${t}px;width:${w}px;height:${h}px`; wrap.appendChild(i); };
-  const got = await pick([{ src: `${V3}carts/${load}.png`, scale: K }, { src: `${CAMP}carts/side.png`, scale: 1, v2: true }]);
+  const got = await pick([{ src: `${V3}carts/${load}.png`, scale: ART }, { src: `${CAMP}carts/side.png`, scale: 1, v2: true }]);
   const slot = document.createElement("div");
   slot.className = "v3-slot"; slot.style.cssText = `left:${-16 * K}px;top:${(feet - 24) * K}px;width:${32 * K}px;height:${24 * K}px`;
-  slot.innerHTML = "<span>cart 32×24</span>"; wrap.appendChild(slot);
+  slot.innerHTML = "<span>cart 64×48</span>"; wrap.appendChild(slot);
   if (!got) return;
-  if (!got.v2) { here.add(`carts/${load}.png`); put(got.src, -32, (feet - 24) * K, 64, 48); }
+  if (!got.v2) { here.add(`carts/${load}.png`); const cw = got.img.naturalWidth, ch = got.img.naturalHeight;
+    put(got.src, -cw / 2, feet * K - ch, cw, ch); }
   else {
     put(got.src, -24, feet * K - 40, 48, 40);
     if (load !== "empty") put(`${CAMP}carts/loads/${load}.png`, -24, feet * K - 40 - 26, 48, 32);

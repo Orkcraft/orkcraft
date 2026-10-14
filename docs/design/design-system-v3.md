@@ -20,9 +20,9 @@ nothing of their UI is built here.
 | the world's palette | a dusk camp: muted grass `#5e8a4c`, grey-brown earth, maroon cloth | F1's sunny camp: meadow `#7cbd40`, sand paths `#e4b469`, honey wood, lilac stone, **teal and plum** cloth, turquoise water (§2) |
 | the ground's value band | luminance 0.12–0.30 | **0.15–0.55**, the main grass and paths at least 7:1 from an outline and a chip (§2.3) |
 | signals | 20 px badges on a dark plate | **28 px** (32 on the phone), plate, outline and a light keyline; nothing in the art as light as the question's yellow (§5) |
-| the scale | art at ×1 at the overview, ×2 close, ½ for the map from half-size copies | art **drawn at half, shown at ×2** in the town; ×1 the map, ×3 close; no derived copies (§3) |
-| the ork | a 32 × 48 frame | **32 × 32** (64 screen px) |
-| the cart | 48 × 40 bin and a 48 × 32 load | **32 × 24** with its load (64 screen px wide) |
+| the scale | art at ×1 at the overview, ×2 close, ½ for the map from half-size copies | the generated art **at its own pixel, ×1**, never resampled; ×2 close; ½ the map (§3) |
+| the ork | a 32 × 48 frame | about **64** screen px tall, as the sheet draws it |
+| the cart | 48 × 40 bin and a 48 × 32 load | about **64 × 48** with its load, as the sheet draws it |
 | a building | a cover kit that lifts (nine-slice roofs and walls, facade, crest) | **one sprite with a door**; the keeper steps out of it (§13.1); the cover kit is superseded |
 | spurs | a rail spur to each building | **one main line**; dirt paths join the buildings to it; carts stop opposite a path (§4) |
 | the camp's edge | a palisade of sharpened 48-px stakes | a **low palisade of rounded logs**, 32 tall; the lookout tower in it, the catapult against it (§4) |
@@ -106,47 +106,48 @@ nearest sibling's there. Forest is the only biome offered (v2 §12, answer 7).
 
 ## 3. The scale
 
-**Sprites are drawn at half and shown at ×2** (`--art-scale: 2`). The grid stays v2's: every sprite a multiple of 8
-art px; ground and track tiles 32 × 32; the layout cell 16.
+**The art is shown at its own pixel, ×1** (`--art-scale: 1`), **never resampled.** Revised after round 3
+([v3-prompts.md](v3-prompts.md) §7): the first draft of v3 asked for sprites drawn at half and shown at ×2, so the cutter
+read the generated sheets at a coarser cell to fit 128-px slots, and snapped their colours to the tokens; the Agent
+pool lost its barrels and crates and its roof's shade turned stone-grey
+([before and after](img/v3-preview/agent-pool-before-after.png)). The sheets come at about 4.2 image px per art px, and
+a core building is drawn about 190 art px wide — already the 200–260 screen px asked. So the art's pixel is the
+screen's pixel, and **a slot is what the sheet draws**, rounded up to the grid of 8; the sizes below are the plan the
+prompts ask for and the layout reserves. Ground and track tiles and the layout cell follow the same rule (the cell
+16, a tile 32 art px as drawn).
 
-**The ladder** (whole numbers only, as in v2 §2.3): **map ×1** (the whole camp, art at its own size — no half-size
-copies any more), **town ×2** (the default, the frame's), **close ×3**. On a fractional `devicePixelRatio` the camera
-picks the nearest whole device scale, as before. The inside of a building is its own screen (I2), drawn at ×2.
+**The ladder** (whole numbers only, as in v2 §2.3): **town ×1** (the default, the frame's), **close ×2**, **map ½**
+from the pipeline's half-size copies (`map` on a group of `tools/camp_sheets_v3.json`, made when the map zoom is
+built; the one derived set). On a fractional `devicePixelRatio` the camera picks the nearest whole device scale, as
+before. The inside of a building is its own screen (I2), at ×1.
 
-**The window: 1440 × 900.** A 36 px HUD, then the world of **720 × 432 art px** at ×2 (1440 × 864).
+**The window: 1440 × 900.** A 36 px HUD, then the world, 1440 × 864.
 
-| piece | art px (drawn) | screen px at ×2 | token |
-|---|---|---|---|
-| a core building on the line (Task board, Agent pool, Review gate, Publisher), the Town Hall | 128 wide, 96–128 tall | 256 | `footprint-xl` |
-| Inspector, Review board | 112 × 96 | 224 | `footprint-l` |
-| External listeners' tower, Research | 96 × 128 | 192 × 256 | `footprint-m` |
-| Wiki, Test bench, UX bench, Transformer, Branches & PRs, output | 96 × 80–96 | 192 | `footprint-m` |
-| Script, Calendar, Audio briefing, a building of one's own | 80 × 80 | 160 | `footprint-s` |
-| Router, Drop file here, Metrics, Sound alerts | 64 × 64–80 | 128 | `footprint-xs` |
-| a door state (a patch over the building at its door) | 32 × 40 | 64 × 80 | — |
-| the ork, one frame | **32 × 32** | **64** | `ork-frame-w/-h` |
-| a mine cart with its load | **32 × 24** (the flag's pole 24 more) | **64** × 48 | `minecart-w/-h` |
-| a ground or track tile | 32 × 32 | 64 | `ground-tile`, `track-tile` |
-| a dirt path's width | 16 | 32 | `path-w` |
-| the palisade's height | 32 | 64 | `palisade-h` |
-| a chip (UI, at every zoom) | — | 24 (28 on the phone) | `chip-h` |
-| a badge ❓ ! ⏳ (UI) | — | 28 (32 on the phone) | `badge`, `badge-touch` |
-
-**Ten buildings on the window** (the preview's town, art px):
-
-| row | buildings, left to right | widths + gaps |
+| piece | as drawn on B1–B3 (art px = screen px) | the plan (token) |
 |---|---|---|
-| the wall and the line's ends | External listeners in the palisade (top left); the Publisher against it at the line's end (right) | 96 · 128 |
-| above the line (taking work from it) | Task board · Agent pool · Review gate | 3 × 128 + 2 × 16, from x 152 |
-| below the line | Inspector · Research · Test bench · Town Hall · UX bench | 112 + 3 × 96 + 128 + gaps of 32 = 664 of 720 |
+| Agent pool, Town Hall | 192 × 128, 184 × 128 | `footprint-xl` 192 |
+| Review gate, Test bench, output | 160 × 112, 152 × 104, 144 × 120 | `footprint-l` 160 |
+| Publisher, Inspector, Wiki, Branches & PRs, UX bench, Review board | 128 × 104–120 (Review board 136) | `footprint-m` 128 |
+| Script, Drop file here, Transformer | 104–112 × 104–120 | `footprint-s` 104 |
+| External listeners' tower, Router, **the Task board** | 80 × 128, 72 × 112, **88 × 72** | `footprint-xs` 80 |
+| Research | 96 × 128 | — |
+| the ork | (o1 not yet drawn) | `ork-frame-w/-h` 64 (56–64 tall) |
+| a mine cart with its load | (c1 not yet drawn) | `minecart-w/-h` 64 × 48 |
+| a dirt path's width | — | `path-w` 32 |
+| the palisade's height | — | `palisade-h` 64 |
+| a chip (UI, at every zoom) | — | `chip-h` 24 (28 on the phone) |
+| a badge ❓ ! ⏳ (UI) | — | `badge` 28 (`badge-touch` 32) |
 
-Heights: the palisade 32, the upper row's feet at 192, paths to the line at 224–256, the lower row's tops from 288,
-its feet and the lane in front of it at 416–432. It fits with no building overlapping another; an eleventh does not
-fit without crowding, as asked.
+**The sizes drift between sheets** (the Task board drawn at 88 px beside a 192-px Agent pool): the next sheets ask each
+building at its planned width, and the Task board is redrawn as a core building (about 160–192 wide).
+
+**Ten buildings on the window:** at ×1 the preview's town holds the ten of §4 — External listeners in the wall; Task
+board, Agent pool, Review gate above the line; the Publisher at its end; Inspector, Research, Test bench, Town Hall,
+UX bench below it — with room to spare (the widest row, below the line, takes about 900 of 1440 px). An eleventh
+fits too, but the rule stays at ten so the camp does not crowd.
 
 **What this supersedes in v2:** §2.3's ladder, §2.4's footprints as cards, §4f's 32 × 48 ork (the owner's answer 4),
-§4e's 48 × 32 cart, the half-size map copies (answer 5), the sizes by S/M/L (answer 8: the core buildings are now one
-size, XL).
+§4e's 48 × 32 cart, the sizes by S/M/L (answer 8: sizes follow what each sheet draws).
 
 ## 4. Layout rules (decided the night of 14 October)
 
@@ -185,7 +186,7 @@ light stone. So signals are **UI drawn by the product** (layer 8), never in the 
   1 px `art-outline` border and a 1 px `chip-ink` keyline inside it, so the plate reads on the bright grass and on the
   dark shade alike; a short tail points at the head or door it marks. ⏳ is drawn, not the emoji (an emoji wears its own
   yellow).
-- **A cart's flag** is outlined in `art-outline` (2 px at ×2) with a darker lower band, and a waiting cart always shows
+- **A cart's flag** is outlined in `art-outline` (2 px) with a darker lower band, and a waiting cart always shows
   its chip (`#42 · Fix login bug`) under it.
 - Nothing in the art is as light as `signal-ask` (§2.3).
 - Order of loudness unchanged (v2 §5.5): ❓ → `!` and 🔥 → a waiting cart's chip → the track → buildings → orks and
@@ -238,9 +239,9 @@ Each piece is drawn from **the v3 sprite** in `design-system/sprites/v3/` once i
 placeholder** (darker, and drawn at ×1 where its art pixel is finer than v3's), else **a block in v3's tokens**.
 Toggles: *Grey test*, *Show v3 slots* (each sprite's slot, dashed, with its size), *Building names*, *Blocks only*.
 
-Screenshots of the preview on 14 October, before any v3 sheet: [the town](img/v3-preview/v3-town.png) (v2's
-stand-ins where they exist), [in grey](img/v3-preview/v3-town-grey.png), [blocks only, with the
-slots](img/v3-preview/v3-town-blocks-slots.png).
+Screenshots of the preview after B1–B3, re-cut at their own pixel (round 3): [the town](img/v3-preview/v3-town.png),
+[in grey](img/v3-preview/v3-town-grey.png), [with the slots](img/v3-preview/v3-town-slots.png), [blocks only, with the
+slots](img/v3-preview/v3-town-blocks-slots.png); before the first sheet: [round 1](img/v3-preview/v3-town-round1.png).
 
 ## 8. The sheets: names, sizes, one command
 
@@ -256,10 +257,17 @@ python tools/camp_sheet.py --list docs/design/img/references/v3/b1-core.png   # 
 The sprites go to `design-system/sprites/v3/` with their `manifest.json` (beside v2's `camp/`, so nothing in the GUI
 moves until I1 switches). The sheets are asked "in a neat grid with even spacing", so a piece is named by its
 **order** (reading order: rows top to bottom, each left to right, from 0), not by a point; if the model drew one out
-of order, the numbers in `tools/camp_sheets_v3.json` change, never the names. A group is read at one scale so that its
-largest piece fits its slot; colours are snapped to the v3 tokens; only the signals' sheet may keep yellow and red.
+of order, the numbers in `tools/camp_sheets_v3.json` change, never the names.
 
-| file | v3-prompts | sprites (art px) |
+**Cut as drawn** (the spec's `native` and `keep_colours`, after round 3): each sprite is read at the sheet's own art
+pixel and never re-read coarser; its slot is what the sheet draws, rounded up to 8 (the sizes below are the plan the
+prompts ask, not a crop); **the art keeps its own colours and shading** — no snap to the tokens. The tokens stay the
+palette the product draws with (ground, paths, chips, its own shapes) and the reference the prompts ask the model to
+keep. The cutter only **reports** pixels in a signal's yellow, orange or red (saturation ≥ 0.75, value ≥ 0.7, hue
+340°–65°; the honey wood and the sand sit well below), and such a sprite is redrawn; only the signals' sheet may have
+them. Round 3's report: the UX bench's banner (1.4 % of its pixels) and a few px of the Review board's fire.
+
+| file | v3-prompts | sprites (planned art px) |
 |---|---|---|
 | `b1-core.png` | §3a B1 | `buildings/` watchtower 96×128, fields 128×96, barracks 128×112, loot_vault 128×112, lake 112×96, catapult 128×112 |
 | `b2-town.png` | §3a B2 | town_hall 128×128, council 112×96, mine 96×128, scrolls 96×96, lab 96×96, ux_lab 96×96 |
