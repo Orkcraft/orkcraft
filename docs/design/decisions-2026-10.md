@@ -203,7 +203,20 @@ has two failures that predate phase 1 or are order-dependent (given to lane B).
 
 | session | items |
 |---|---|
-| A. Asking | A4 the 🥩 list, Stop all, the console folded; then W2 quiet working hours |
+| A. Asking | A4 the 🥩 list, Stop all, the console folded |
 | B. Small fixes | agy out of the Test bench's defaults; the two failing tests; B6 the onboarding cut (B7 Mission 1 after A4) |
 | C. Colour | C2 readability (outlines, signal colours reserved, badges for exceptions, a chip on a waiting cart), tokens additive beside design-system v2 |
 | D. Name | D3 the README's first screen and `docs/github-profile.md`; the switch to orkline.dev listed, not done, until the domain serves the files |
+
+**Widened the same day** (the owner: as many parallel sessions as possible), four new sessions:
+
+| session | items |
+|---|---|
+| W1 | "since your last look": wins first, then questions, problems, cost |
+| W2+W3 | quiet working hours; leaving the camp, the Mac kept awake only while carts work |
+| A6 | the Agent pool's lanes as roles |
+| D4 | a draft of the landing page for orkline.dev, not deployed |
+
+Nine sessions in all with design-system v2. Waiting: B7 Mission 1 (after A4), C3 the card as a building (after
+design-system v2), C4 rails, D1 PyPI and D2 the plugin (after the domain and the PyPI name).
+
