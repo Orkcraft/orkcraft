@@ -14,6 +14,7 @@ import { html, cls } from "./html.js";
 import { town, command, say } from "./link.js";
 import { openBuilding } from "./windows.js";
 import { consoleOrk, unfolded, closeConsole, money, Unfolded, Questions } from "./orkconsole.js";
+import { lit } from "./cover.js";
 
 export { consoleOrk, unfolded, showConsole, shownCart } from "./orkconsole.js";
 
@@ -39,7 +40,10 @@ function doing(r) {
 }
 
 function Row({ r, onPick }) {
-  return html`<li class=${cls("gui-slots__row", { "is-asks": !!r.answer })}>
+  // pointed at, it lights its building and its ork on the town (js/cover.js lit; design-system-v2.md §8)
+  const point = (on) => { lit.value = on ? { key: r.key, building_id: r.building_id } : null; };
+  return html`<li class=${cls("gui-slots__row", { "is-asks": !!r.answer })} onPointerEnter=${() => point(true)}
+    onPointerLeave=${() => point(false)}>
     <button class="gui-slots__pick" title=${r.line} onClick=${() => onPick(r)}>
       <span class="gui-slots__mark" title=${r.word} aria-label=${r.word}>${r.mark}</span>
       <b>${r.name}</b>${r.building ? ` · ${r.building}` : ""}
@@ -58,7 +62,7 @@ export function SlotsHud({ word, online }) {
   const [by, setBy] = useState("attention");
   const ref = useRef(null);
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open) { lit.value = null; return undefined; }       // closed: no row points at the town
     const away = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     const key = (e) => { if (e.key === "Escape") setOpen(false); };
     document.addEventListener("pointerdown", away, true);
@@ -67,7 +71,7 @@ export function SlotsHud({ word, online }) {
   }, [open]);
   const over = s.limit && s.working > s.limit;
   const rows = by === "work" ? [...s.rows].sort((a, b) => (b.since_s || 0) - (a.since_s || 0)) : s.rows;
-  const pick = (r) => { setOpen(false); consoleOrk.value = r.key; if (r.building_id) openBuilding(r.building_id); };
+  const pick = (r) => { setOpen(false); lit.value = null; consoleOrk.value = r.key; if (r.building_id) openBuilding(r.building_id); };
   const waits = s.fire || s.asks;
   return html`<span ref=${ref} class="gui-slots">
     <button class=${cls("ok-res gui-slots__open", { "is-over": over })} aria-expanded=${open}
