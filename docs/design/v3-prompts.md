@@ -300,8 +300,17 @@ than F1.** Measured on the two images (the mean of the grass and of the paths' p
 
 The image model drifted; the prompt did not ask for it. **F1's colours are v3's**: the palette becomes tokens
 measured from F1, so the product's grass is ours, whatever a later frame drifts to. Every later prompt adds: "keep
-exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #70ae43), the paths
-warm brown (about #8f6144)".
+exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #7cbd40), the paths
+warm sand (about #e4b469)". (Corrected by V3, [design-system-v3.md](design-system-v3.md) §2.1: `#70ae43` was the mean
+of every green pixel, bushes and shade included, and `#8f6144` the paths' rims and the track's ties; the open meadow
+measures `#7cbd40` and the paths' sand `#e4b469`.)
+
+## 7. Where the sheets go (V3)
+
+Each sheet of §3 is saved into `docs/design/img/references/v3/` under its name in
+[design-system-v3.md](design-system-v3.md) §8 (`b1-core.png`, `o1-body.png`, `c1-carts.png`, …), then
+`python tools/camp_sheet.py --v3` cuts it. Sizes changed by V3: the ork 32 × 32, the cart 32 × 24, a door state a
+32 × 40 patch. The order of the next sheets is in §9 there.
 
 **Holds in F1b:** the keeper at the stop works as a picture (an ork lifting the scroll off the cart at the gate);
 the ❓ ork at the hall's door; nine orks instead of twenty; fewer crates.

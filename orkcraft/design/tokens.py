@@ -141,6 +141,11 @@ def system_css() -> str:
     for group in ("spacing", "radius", "border", "size", "motion"):
         out += [f"  --{t['name']}: {t['value']};" for t in data[group]["tokens"]]
     out += [f"  --font-{k}: {v};" for k, v in data["type"]["families"].items()]
+    # v3: each type style as a `font` shorthand (`font: var(--type-camp-body)`), so a new component names a style
+    for group in data["type"]["groups"]:
+        for st in group["styles"]:
+            family = st.get("family", group["family"])
+            out.append(f"  --type-{st['name']}: {st['fontWeight']} {st['fontSize']}/{st['lineHeight']} var(--font-{family});")
     return "\n".join(out) + "\n}\n"
 
 

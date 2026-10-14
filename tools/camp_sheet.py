@@ -4,6 +4,9 @@
     python tools/camp_sheet.py --only carts     cut only the sheets whose name contains "carts"
     python tools/camp_sheet.py --list SHEET     print the pieces found on a sheet (to write its spec)
     python tools/camp_sheet.py --check DIR      also render each nine-slice kit as a 3 × 3 and a 5 × 4 into DIR
+    python tools/camp_sheet.py --v3             cut the v3 sheets that have arrived (tools/camp_sheets_v3.json) into
+                                                design-system/sprites/v3/; the rest are listed as awaited
+    python tools/camp_sheet.py --v3 --expect    only list the v3 sheets, their sprites and sizes, and which are there
 
 A sheet is a generated image on flat `#FF00FF` drawn in "pixels" of a few screen pixels. The steps, in v2's order:
 
@@ -23,6 +26,11 @@ A sheet is a generated image on flat `#FF00FF` drawn in "pixels" of a few screen
    half-size copy;
 8. **check:** every size a multiple of 8, no signal hue outside signal sprites; with `--check`, the kits tiled;
 9. **faces:** each ork's face recut from its role body (`tools/camp_faces.py`, the spec's `faces`).
+
+**v3** (docs/design/design-system-v3.md §8): the sheets of docs/design/v3-prompts.md §3 are drawn "in a neat grid with
+even spacing", so a v3 item names its piece by `order`, its place in reading order (rows top to bottom, each left to
+right, counted from 0), instead of a point; `--list` prints that order. A sheet not yet in the folder is skipped and
+listed as awaited, so the command is the same before and after each sheet arrives.
 
 Every sprite it writes is a **placeholder** (generated art, docs/design/color-pass.md §10b), to be replaced by the
 commissioned artist's; the manifest says so on every row. Needs `pip install pillow numpy`.
@@ -193,6 +201,26 @@ class Sheet:
             return (dx * dx + dy * dy, abs((b[0] + b[2]) / 2 - x) + abs((b[1] + b[3]) / 2 - y))
         return min(self.boxes, key=dist)
 
+    def ordered(self) -> list[tuple[int, int, int, int]]:
+        """The pieces in reading order: rows (a piece joins a row when its middle lies within the row's first piece's
+        height), top to bottom, each left to right."""
+        rows: list[list[tuple[int, int, int, int]]] = []
+        for b in sorted(self.boxes, key=lambda b: b[1]):
+            mid = (b[1] + b[3]) / 2
+            for row in rows:
+                if row[0][1] <= mid <= row[0][3]:
+                    row.append(b)
+                    break
+            else:
+                rows.append([b])
+        return [b for row in rows for b in sorted(row, key=lambda b: b[0])]
+
+    def nth(self, n: int) -> tuple[int, int, int, int]:
+        pieces_ = self.ordered()
+        if n >= len(pieces_):
+            raise SystemExit(f"{self.path.name}: piece {n} asked, {len(pieces_)} found (see --list)")
+        return pieces_[n]
+
     def box(self, fbox: list[float]) -> tuple[int, int, int, int]:
         return (int(fbox[0] * self.w), int(fbox[1] * self.h), int(np.ceil(fbox[2] * self.w)),
                 int(np.ceil(fbox[3] * self.h)))
@@ -362,7 +390,7 @@ def _extract(sheet: Sheet, item: dict) -> tuple[int, int, int, int]:
     """The piece's box on the sheet's grid: the shape nearest `at`, or everything inside `box`; then `crop` (fractions
     of that box) and `rim_of` (only what stands above the top of another piece of the same foot, e.g. a load over the
     rim of the empty cart, keeping `rim` rows below it)."""
-    b = sheet.box(item["box"]) if "box" in item else sheet.at(*item["at"])
+    b = sheet.box(item["box"]) if "box" in item else sheet.nth(item["order"]) if "order" in item else sheet.at(*item["at"])
     if "crop" in item:
         fx0, fy0, fx1, fy1 = item["crop"]
         w, h = b[2] - b[0], b[3] - b[1]
@@ -452,8 +480,10 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
     boxes = [[_extract(sheet, f) for f in item.get("frames", [item])] for item in group["items"]]
     scale = group.get("scale")
     if scale is None:                                            # one scale for the group: the largest piece fits
-        fit = group.get("fit", [w, h])
-        scale = max([1.0] + [max((b[2] - b[0]) / fit[0], (b[3] - b[1]) / fit[1]) for bs in boxes for b in bs])
+        # a group's `fit` (v2), else each piece's own slot (v3's buildings differ in size)
+        fits = [group.get("fit") or item.get("size", [w, h]) for item in group["items"]]
+        scale = max([1.0] + [max((b[2] - b[0]) / fit[0], (b[3] - b[1]) / fit[1])
+                             for fit, bs in zip(fits, boxes) for b in bs])
     anchor = group.get("anchor", "feet")
     for item, bs in zip(group["items"], boxes):
         frames = []
@@ -583,9 +613,30 @@ def render_kits(rows: list[dict], into: pathlib.Path) -> None:
                 into / f"{kit.replace('/', '_')}-{cols}x{rws}.png")
 
 
+V3 = ROOT / "tools" / "camp_sheets_v3.json"
+
+
+def expect(spec: dict) -> None:
+    """Every sheet of a spec, whether it is in the folder, and the sprites with their sizes it is cut into."""
+    for sh in spec["sheets"]:
+        p = ROOT / spec["root"] / sh["file"]
+        there = any(q.exists() for q in (p, p.with_suffix(".jpg"), p.with_suffix(".jpeg")))
+        print(f"{'✓' if there else '·'} {sh['file']}  ({sh['name']}{': ' + sh['about'] if sh.get('about') else ''})")
+        for group in sh.get("groups", []):
+            for item in group["items"]:
+                w, h = item.get("size", group["size"])
+                n = len(item.get("frames", [item]))
+                print(f"      {item['file']}  {w} × {h}" + (f" × {n} frames" if n > 1 else ""))
+        if sh.get("later"):
+            print(f"      cut later: {sh['later']}")
+
+
 def main() -> None:
+    global OUT
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--spec", type=pathlib.Path, default=SPEC)
+    ap.add_argument("--v3", action="store_true", help="the v3 sheets (tools/camp_sheets_v3.json)")
+    ap.add_argument("--expect", action="store_true", help="list the spec's sheets and sprites, cut nothing")
     ap.add_argument("--only", default="")
     ap.add_argument("--list", type=pathlib.Path)
     ap.add_argument("--check", type=pathlib.Path)
@@ -593,33 +644,49 @@ def main() -> None:
     if args.list:
         s = Sheet(args.list)
         print(f"pitch {s.pitch:.2f} px, phase {s.ox:.1f}, {s.oy:.1f}; grid {s.w} × {s.h}")
-        for b in sorted(s.boxes, key=lambda b: (b[1] // 20, b[0])):
-            print(f"  at [{(b[0] + b[2]) / 2 / s.w:.3f}, {(b[1] + b[3]) / 2 / s.h:.3f}]  {b[2] - b[0]} × {b[3] - b[1]}")
+        for i, b in enumerate(s.ordered()):
+            print(f"  order {i:2d}  at [{(b[0] + b[2]) / 2 / s.w:.3f}, {(b[1] + b[3]) / 2 / s.h:.3f}]  "
+                  f"{b[2] - b[0]} × {b[3] - b[1]}")
         return
-    spec = json.loads(args.spec.read_text(encoding="utf-8"))
+    spec_path = V3 if args.v3 else args.spec
+    spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    if args.expect:
+        return expect(spec)
+    if spec.get("out"):
+        OUT = ROOT / spec["out"]
     manifest = OUT / "manifest.json"
     old = json.loads(manifest.read_text(encoding="utf-8"))["sprites"] if manifest.exists() else []
     rows: list[dict] = []
     problems: list[str] = []
     done = set()
     for sh in spec["sheets"]:
-        if args.only not in sh["name"]:
+        if args.only not in sh["name"] or not sh.get("groups"):
+            continue
+        path = ROOT / spec["root"] / sh["file"]
+        for other in (path.with_suffix(".jpg"), path.with_suffix(".jpeg")):     # an image model that only gives JPEG
+            if not path.exists() and other.exists():
+                path = other
+        if not path.exists():
+            print(f"{sh['name']}: awaited ({path.relative_to(ROOT)})")
             continue
         done.add(sh["file"])
-        sheet = Sheet(ROOT / spec["root"] / sh["file"], sh.get("fringe", 60), sh.get("close", 1))
+        sheet = Sheet(path, sh.get("fringe", 60), sh.get("close", 1))
         print(f"{sh['name']}: pitch {sheet.pitch:.2f} px, {len(sheet.boxes)} pieces")
         for group in sh["groups"]:
             group["_sheet"] = sh["file"]
             cut_group(sheet, group, rows, problems)
     rows += [r for r in old if r["source"] not in done]
     rows.sort(key=lambda r: r["file"])
-    manifest.write_text(json.dumps({"note": "Placeholders cut from generated reference sheets by tools/camp_sheet.py; "
-                                            "every row is replaced by the commissioned artist's sprite "
-                                            "(docs/design/design-system-v2.md §11).",
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(json.dumps({"note": spec.get("manifest_note") or (
+                                        "Placeholders cut from generated reference sheets by tools/camp_sheet.py; "
+                                        "every row is replaced by the commissioned artist's sprite "
+                                        "(docs/design/design-system-v2.md §11)."),
                                     "sprites": rows}, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"{len(rows)} sprites in {manifest.relative_to(ROOT)}")
-    import camp_faces                       # the interface's faces, recut from the role bodies (tools/camp_faces.py)
-    camp_faces.write_manifest(camp_faces.cut(spec))
+    print(f"{len(rows)} sprites in {manifest}")
+    if "faces" in spec:
+        import camp_faces                   # the interface's faces, recut from the role bodies (tools/camp_faces.py)
+        camp_faces.write_manifest(camp_faces.cut(spec))
     if args.check:
         render_kits(rows, args.check)
     for p in problems:

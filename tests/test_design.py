@@ -81,14 +81,17 @@ def test_an_old_token_name_is_an_alias_with_its_new_names_value():
 
 
 def test_the_new_camps_world_keeps_outlines_chips_and_signals_readable():
-    """docs/design/design-system-v2.md §5, §7: the ground the sprites stand on is a middle value, so a dark outline and
-    a dark chip are seen on it; a chip's words read; yellow and red are only the signals'."""
+    """docs/design/design-system-v3.md §2 (v2 §5, §7 before it): the ground the sprites stand on is F1's brighter
+    meadow, a middle-to-light value (v2's band 0.12–0.30 raised to 0.15–0.55 with the owner's brighter Camp), so a
+    dark outline and a dark chip are seen on it; a chip's words read; yellow and red are only the signals'."""
     import colorsys
     camp = {t["name"]: t["value"]["camp"] for t in tokens.system()["color"]["tokens"]}
     for ground in ("world-grass", "world-grass-light", "world-grass-dark", "world-earth"):
-        assert 0.12 <= _luminance(camp[ground]) <= 0.30, ground
+        assert 0.15 <= _luminance(camp[ground]) <= 0.55, ground
         assert _contrast(camp[ground], camp["art-outline"]) >= 3, ground
         assert _contrast(camp[ground], camp["chip"]) >= 3, ground
+    for ground in ("world-grass", "world-earth"):       # most of the screen: an outline and a plate stand out at once
+        assert _contrast(camp[ground], camp["art-outline"]) >= 7 and _contrast(camp[ground], camp["chip"]) >= 7, ground
     assert _contrast(camp["chip-ink"], camp["chip"]) >= 7
     for signal in ("signal-ask", "signal-fire", "signal-held"):
         assert _contrast(camp[signal], camp["chip"]) >= 3, signal
@@ -99,6 +102,63 @@ def test_the_new_camps_world_keeps_outlines_chips_and_signals_readable():
         h, _, s = colorsys.rgb_to_hls(r, g, b)
         loud = s > 0.6 and (h * 360 < 15 or h * 360 > 345 or 45 <= h * 360 <= 65)
         assert not loud, f"{name} {value}: a signal's yellow or red in the art"
+
+
+def test_a_signal_wins_by_value_not_by_hue_alone():
+    """docs/design/v3-prompts.md §5.2, design-system-v3.md §2: in grey F1's ❓ was small and the stone, the horn and
+    the book were the brightest things. No world or art tone is as light as the question's yellow, and every badge
+    stands on the dark plate, larger than v2's."""
+    camp = {t["name"]: t["value"]["camp"] for t in tokens.system()["color"]["tokens"]}
+    ask = _luminance(camp["signal-ask"])
+    for name, value in camp.items():
+        if name.startswith(("world-", "art-")) and len(value) == 7:
+            assert _luminance(value) < ask - 0.03, f"{name} {value}: as light as a question"
+    sizes = {t["name"]: int(t["value"].rstrip("px")) for t in tokens.system()["size"]["tokens"] if t["name"]
+             in ("badge", "badge-touch", "chip-h")}
+    assert sizes["badge"] >= 28 and sizes["badge-touch"] >= 32 and sizes["chip-h"] >= 24
+
+
+def test_the_v3_scale_fits_ten_buildings_on_a_laptop():
+    """docs/design/design-system-v3.md §3 (v3-prompts §1.3): drawn at half and shown at ×2, a core building is
+    200–260 screen px wide, an ork 56–64 tall, a cart about 64 wide; every sprite size is on the grid of 8."""
+    size = {t["name"]: t["value"] for t in tokens.system()["size"]["tokens"]}
+    k = int(size["art-scale"])
+    px = lambda n: int(size[n].rstrip("px"))                                         # noqa: E731
+    assert k == 2
+    assert 200 <= px("footprint-xl") * k <= 260 and 200 <= px("footprint-l") * k <= 260
+    assert 56 <= px("ork-frame-h") * k <= 64 and 56 <= px("minecart-w") * k <= 72
+    for n in ("footprint-xs", "footprint-s", "footprint-m", "footprint-l", "footprint-xl", "ork-frame-w",
+              "ork-frame-h", "minecart-w", "minecart-h", "path-w", "palisade-h"):
+        assert px(n) % 8 == 0, n
+
+
+def test_the_v3_preview_awaits_every_sprite_the_v3_sheets_are_cut_into():
+    """design-system-v3.md §7–8: tools/camp_sheets_v3.json names each sheet and the sprites it is cut into; the preview
+    lists every one of them as awaited or arrived, so a sheet that lands shows in its slot."""
+    root = Path(__file__).resolve().parent.parent
+    spec = json.loads((root / "tools" / "camp_sheets_v3.json").read_text(encoding="utf-8"))
+    preview = (root / "design-system" / "previews" / "CampKitV3.html").read_text(encoding="utf-8")
+    files = [item["file"] for sh in spec["sheets"] for g in sh.get("groups", []) for item in g["items"]]
+    assert files and len(files) == len(set(files))
+    for f in files:
+        assert f'"{f}"' in preview, f
+    assert spec["out"] == "design-system/sprites/v3" and spec["root"] == "docs/design/img/references/v3"
+    for sh in spec["sheets"]:
+        for g in sh.get("groups", []):
+            for item in g["items"]:
+                w, h = item.get("size", g["size"])
+                assert w % 8 == 0 and h % 8 == 0, item["file"]
+                assert "order" in item or all("order" in f for f in item.get("frames", [])), item["file"]
+
+
+def test_v3_parchment_and_the_teal_accent_read():
+    """design-system-v3.md §2: the keeper's scroll and the panels are cream parchment in walnut, a teal accent."""
+    for theme in ("camp", "office"):
+        c = {t["name"]: t["value"][theme] for t in tokens.system()["color"]["tokens"]}
+        assert _contrast(c["parchment-ink"], c["parchment"]) >= 7, theme
+    camp = {t["name"]: t["value"]["camp"] for t in tokens.system()["color"]["tokens"]}
+    assert _contrast(camp["ink"], camp["accent-teal"]) >= 4.5
+    assert _contrast(camp["parchment"], camp["walnut"]) >= 3
 
 
 def test_camps_titles_are_pixelify_and_the_wordmark_keeps_almendra():

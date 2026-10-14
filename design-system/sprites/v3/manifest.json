@@ -1,0 +1,4 @@
+{
+ "note": "v3 sprites cut from the owner's generated sheets by tools/camp_sheet.py --v3 (docs/design/design-system-v3.md §8). Generated art, kept until the product proves itself (docs/design/decisions-2026-10.md §13.4).",
+ "sprites": []
+}
