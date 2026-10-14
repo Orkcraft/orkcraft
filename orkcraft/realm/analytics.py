@@ -80,7 +80,7 @@ def _row(r: dict) -> str:
 def readme(s: dict) -> str:
     days = [d["day"] for d in s["days"]]
     period = f"{days[0]} – {days[-1]}" if len(days) > 1 else (days[0] if days else "no day")
-    out = [f"# Orkcraft analytics · {period}", "",
+    out = [f"# Orkline analytics · {period}", "",
            "Every model call the town's buildings made in these days, and what they decided. Each",
            "`<day>/<building>/` holds `calls.jsonl` (a line each call: who, what for, model, seconds, tokens, cost,",
            "the tool's usage), `calls/<n>-<who>.json` (the call itself: `prompt` what went in, `stdout` what came out,",

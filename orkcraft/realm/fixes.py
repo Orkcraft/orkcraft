@@ -1,8 +1,8 @@
-"""Comments on the interface and fixes of Orkcraft itself (docs/design/improve-buildings.md §14): what the person said
+"""Comments on the interface and fixes of Orkline itself (docs/design/improve-buildings.md §14): what the person said
 about any part of the window goes to the Alchemist, what the Mechanic found in the logs goes to the Mechanic, and each
-writes its fix in a copy of Orkcraft's source (realm/work_copy.py) that goes to Orkcraft as a pull request.
+writes its fix in a copy of Orkline's source (realm/work_copy.py) that goes to Orkline as a pull request.
 
-Kept on this machine, not in a town: they are about Orkcraft, whichever town shows it (`<state>/improve/fixes.json`).
+Kept on this machine, not in a town: they are about Orkline, whichever town shows it (`<state>/improve/fixes.json`).
 
     store = fixes.Store(folder)
     store.comment(text, where)                 a comment, waiting for the Alchemist
@@ -84,7 +84,7 @@ class Store:
             pass
         for f in self.fixes:                      # a fix being written when the app closed: its agent is gone
             if f.state == "writing":
-                f.state, f.error = "failed", "Orkcraft closed while it was being written: write it again"
+                f.state, f.error = "failed", "Orkline closed while it was being written: write it again"
 
     def save(self) -> None:
         try:
@@ -145,26 +145,26 @@ def comments_about(comments: list[Comment]) -> str:
     return "\n\n".join(f"### Comment {n}\n“{c.text}”\n{where_text(c.where)}" for n, c in enumerate(comments, 1))
 
 
-RULES_WORKTREE = """This folder is a git worktree of Orkcraft's repository at the commit this machine runs. Read CLAUDE.md first
+RULES_WORKTREE = """This folder is a git worktree of Orkline's repository at the commit this machine runs. Read CLAUDE.md first
 and follow it: the wording (ork, orkestration; orks by their orkish names, buildings by what they do), where code goes,
 the design system's roles (docs/design-system.md, orkcraft/design/ui.py RULES) — never a raw colour or font.
 Run the tests of what you touch and the critical ones from this folder, and keep them green:
 `{python} -m pytest -q tests/test_architecture.py tests/test_gui_wording.py <the test files of the modules you change>`.
-When behaviour changes, change or add the test that shows it. Do not commit, push or open a pull request: Orkcraft
+When behaviour changes, change or add the test that shows it. Do not commit, push or open a pull request: Orkline
 shows the person your diff and sends it."""
 
-RULES_PACKAGE = """This folder holds Orkcraft's package as installed (`orkcraft/`): no tests, no docs. Change only `orkcraft/`. The
+RULES_PACKAGE = """This folder holds Orkline's package as installed (`orkcraft/`): no tests, no docs. Change only `orkcraft/`. The
 interface is `orkcraft/gui/static` (Preact with `htm`, no build step: js/*.js, *.css) and `orkcraft/gui/*.py` behind
 it. Words people read: ork, orkestration; orks by their orkish names, buildings by what they do. A window uses the
 design system's roles (orkcraft/design/ui.py RULES), never a raw colour or font. Do not commit or push."""
 
 ASK = {
-    "alchemist": """You change Orkcraft's own interface for the person's comments below. Each says what they want different
+    "alchemist": """You change Orkline's own interface for the person's comments below. Each says what they want different
 in the part of the window they pressed; its place says which element (a CSS path, its text and its markup) and
 which window. Find the code that draws it (grep its classes and words under orkcraft/gui/static and orkcraft/gui),
 make the smallest change that does what each comment asks, in the style of the code around it, and keep every name
 other code uses. A comment you cannot do: leave it and say why.""",
-    "mechanic": """You fix Orkcraft's own code for a finding in its logs, below: what went wrong or cost too much, and the change
+    "mechanic": """You fix Orkline's own code for a finding in its logs, below: what went wrong or cost too much, and the change
 that would fix it. Find the code that makes it, make the smallest change that fixes it, in the style of the code
 around it, and keep every name other code uses. Do not run anything that needs the network.""",
 }
@@ -199,7 +199,7 @@ def title(f: Fix) -> str:
 
 def body(f: Fix, paths: list[str], comments: list[Comment] | None = None, skipped: list[str] | None = None) -> str:
     made = "a git checkout" if f.kind == "worktree" else "the installed package"
-    lines = [f"Written by {WHO[f.who]} in Orkcraft {orkcraft.__version__} (from {made} at `{f.base[:12]}`), "
+    lines = [f"Written by {WHO[f.who]} in Orkline {orkcraft.__version__} (from {made} at `{f.base[:12]}`), "
              "docs/design/improve-buildings.md §14.", ""]
     if comments:
         lines.append("## What the person said")
@@ -213,8 +213,8 @@ def body(f: Fix, paths: list[str], comments: list[Comment] | None = None, skippe
         lines += ["", f"## What {WHO[f.who]} did", f.said.strip()[:3000]]
     lines += ["", "## Files", *[f"- `{p}`" for p in paths]]
     if skipped:
-        lines += ["", "Deleted in the copy but not sent (a pull request from Orkcraft adds and changes files only): "
+        lines += ["", "Deleted in the copy but not sent (a pull request from Orkline adds and changes files only): "
                   + ", ".join(f"`{p}`" for p in skipped)]
-    lines += ["", "_Sent from Orkcraft by the person who asked for it, after they saw this text and the diff; nothing of "
+    lines += ["", "_Sent from Orkline by the person who asked for it, after they saw this text and the diff; nothing of "
               "their town, projects or logs._"]
     return "\n".join(lines)

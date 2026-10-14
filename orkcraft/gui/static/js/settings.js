@@ -29,7 +29,7 @@ function Steps({ label, items, value, onPick }) {
     </span></div>`;
 }
 
-export const USAGE_WHAT = "Which features are used, as counts, and where in Orkcraft's own code something broke — "
+export const USAGE_WHAT = "Which features are used, as counts, and where in Orkline's own code something broke — "
   + "never your code, prompts, paths or project names. Every event: docs/usage-stats.md; crash reports: docs/crash-reports.md.";
 
 const UPDATE_WHAT = {
@@ -47,7 +47,7 @@ function UpdatesField({ s }) {
   return html`<${Steps} label=${say("Updates that install by themselves")} value=${policy}
       items=${[["auto", say("All")], ["critical", say("Critical")], ["ask", say("None")]]} onPick=${pick} />
     <p class="ok-font-status ok-tone-muted">${say(UPDATE_WHAT[policy] || "")}${t && t.update
-      ? say(` Orkcraft ${t.update.version} is out.`) : ""}</p>
+      ? say(` Orkline ${t.update.version} is out.`) : ""}</p>
     <span><button class="ok-btn" onClick=${check}>Check for updates</button></span>`;
 }
 
@@ -57,15 +57,15 @@ function UsageField({ s, onPick }) {
     <p class="ok-font-status ok-tone-muted">${say(s.usage_blocked ? `Off here: ${s.usage_blocked}.` : USAGE_WHAT)}</p>`;
 }
 
-/** Keep the computer awake while Orkcraft is open (gui/awake.py): the screen may turn off, the machine does not
+/** Keep the computer awake while Orkline is open (gui/awake.py): the screen may turn off, the machine does not
  *  sleep by itself. What holds it is the system's own (caffeinate, systemd-inhibit, Windows); where none is, it says so. */
 function AwakeField({ s, onPick }) {
   const what = !s.keep_awake
     ? "The computer sleeps as its power settings say. While it sleeps the orks stop, and a phone cannot reach the town."
     : s.awake_how
       ? "The screen may turn off; the computer does not sleep by itself, so the orks keep working and a phone reaches the town. Closing a laptop's lid still puts it to sleep."
-      : "This computer gives Orkcraft no way to keep it awake here: set its power settings so it does not sleep while the town works.";
-  return html`<${Steps} label=${say("Keep the computer awake while Orkcraft is open")} value=${s.keep_awake}
+      : "This computer gives Orkline no way to keep it awake here: set its power settings so it does not sleep while the town works.";
+  return html`<${Steps} label=${say("Keep the computer awake while Orkline is open")} value=${s.keep_awake}
       items=${[[true, say("On")], [false, say("Off")]]} onPick=${onPick} />
     <p class="ok-font-status ok-tone-muted">${say(what)}</p>`;
 }
@@ -77,7 +77,7 @@ export function UsageAsk() {
   const t = town.value;
   if (done || !t || !t.usage_ask || t.onboarding || settingsOpen.value) return null;
   const answer = (v) => { setDone(true); command("usage.share", { share: v }).catch(() => {}); };
-  return html`<${Dialog} title=${say("Help improve Orkcraft?")} onCancel=${() => setDone(true)}
+  return html`<${Dialog} title=${say("Help improve Orkline?")} onCancel=${() => setDone(true)}
       text=${say(USAGE_WHAT + " You can change this in Settings.")}
       actions=${html`<button class="ok-btn" onClick=${() => answer(false)}>${say("No, thanks")}</button>
         <button class="ok-btn primary" onClick=${() => answer(true)}>${say("Share")}</button>`} />`;
@@ -178,7 +178,7 @@ export function SettingsDialog() {
   const level = s.levels.find((x) => x.id === s.autonomy) || s.levels[0];
   const t = town.value;
   return html`<${Dialog} title=${say("Town settings")} onCancel=${close}
-      actions=${html`<span class="ok-font-status ok-tone-muted gui-settings__version">Orkcraft ${s.version}</span>
+      actions=${html`<span class="ok-font-status ok-tone-muted gui-settings__version">Orkline ${s.version}</span>
         <button class="ok-btn primary" onClick=${close}>${say("Close")}</button>`}>
     <div ref=${box} class="gui-form gui-settings gui-scrolls">
       <span class="gui-you__camp">${say(`Town: ${t.project}`)}</span>

@@ -1,4 +1,4 @@
-"""Since when this machine runs Orkcraft's code as it is now (docs/design/improve-buildings.md §13): the moment the
+"""Since when this machine runs Orkline's code as it is now (docs/design/improve-buildings.md §13): the moment the
 latest change to the code was applied — an update installed, a `git pull` in a checkout — so Improve can read the logs
 of the work done on it, and no older.
 
@@ -27,7 +27,7 @@ def _path() -> Path:
 
 
 def checkout() -> Path | None:
-    """The git checkout Orkcraft runs from, or None."""
+    """The git checkout Orkline runs from, or None."""
     from orkcraft.core import updates
     return updates._checkout(Path(orkcraft.__file__).resolve().parent)
 

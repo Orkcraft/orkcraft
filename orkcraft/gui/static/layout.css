@@ -1028,7 +1028,7 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
   background: none; border: 0; color: var(--ink); cursor: pointer; white-space: nowrap; }
 .gui-toolpick__one:hover, .gui-toolpick__one.is-on { background: var(--selection); }
 
-/* Comment mode and Improve Orkcraft (js/fixes.js, docs/design/improve-buildings.md §14): a bar at the top, a frame
+/* Comment mode and Improve Orkline (js/fixes.js, docs/design/improve-buildings.md §14): a bar at the top, a frame
    round what the pointer is on, a note beside what was pressed; the dialog's comments and fixes. */
 .gui-comment__bar { position: fixed; top: var(--space-2); left: 50%; transform: translateX(-50%); z-index: 9000;
   display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); max-width: calc(100vw - 32px);

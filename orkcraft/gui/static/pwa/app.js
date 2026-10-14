@@ -41,7 +41,7 @@ if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catc
 
 function unpaired(note = "") {
   show(h("section", { class: "card" },
-    h("h1", {}, "Orkcraft"),
+    h("h1", {}, "Orkline"),
     note && h("p", { class: "warn" }, note),
     h("p", {}, "This phone is not paired with a town yet."),
     h("p", { class: "muted" }, "On the computer: Town settings → Phones → Pair a phone, then scan the second QR code, "
@@ -68,7 +68,7 @@ async function pair(pairCode, name, msg, button) {
     const v = await fetch("/api/version", { headers: { Authorization: `Bearer ${pairCode}` } });
     if (!v.ok) throw new Error("The code was not taken: show a new one on the computer and scan it again.");
     const version = await v.json();
-    if (version.api !== API) throw new Error(`This app speaks api ${API}, the town ${version.api}: update Orkcraft.`);
+    if (version.api !== API) throw new Error(`This app speaks api ${API}, the town ${version.api}: update Orkline.`);
     const r = await fetch("/api/pair", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code: pairCode, name }) });
     const body = await r.json().catch(() => ({}));
@@ -96,7 +96,7 @@ function homeScreen() {
   handOff();
   show(h("section", { class: "card" },
     h("h1", {}, `Paired: ${device.name}`),
-    h("p", {}, "Now add it to the Home Screen: Share → Add to Home Screen, then open Orkcraft from there."),
+    h("p", {}, "Now add it to the Home Screen: Share → Add to Home Screen, then open Orkline from there."),
     h("p", { class: "muted" }, "Until then this page’s address holds the phone’s key: do not share it."),
     h("button", { class: "ok-btn", onclick: () => connect() }, "Use it in Safari for now")));
 }
@@ -135,12 +135,12 @@ function banner() {
       banner();                                  // the browser offers it again itself, when it may
     } }, "Add");
     card = h("section", { class: "card install" },
-      h("p", {}, "Add Orkcraft to the Home screen: it opens like an app, without the browser’s bar."),
+      h("p", {}, "Add Orkline to the Home screen: it opens like an app, without the browser’s bar."),
       h("div", { class: "row" }, add, later));
   } else if (IOS) {
     handOff();
     card = h("section", { class: "card install" },
-      h("p", {}, "Add Orkcraft to the Home Screen: tap Share (the square with an arrow up; under ⋯ on newer iOS), "
+      h("p", {}, "Add Orkline to the Home Screen: tap Share (the square with an arrow up; under ⋯ on newer iOS), "
         + "then Add to Home Screen."),
       h("p", { class: "muted" }, "Until it is added, this page’s address holds the phone’s key: do not share it."),
       h("div", { class: "row" }, later));
@@ -322,7 +322,7 @@ function render(s, keptAt = 0) {
       Object.assign(resource("meat", words.supply || "Orks", `${hud.agents_working ?? 0}/${hud.agents ?? 0}`, ""),
         { title: `${hud.agents_working ?? 0} of ${hud.agents ?? 0} orks working` })),
     h("h1", { class: "ok-hud__brand" }, camp && h("img", { class: "mark", src: "icon-192.png", alt: "" }),
-      s.project || "Orkcraft", s.demo ? h("small", {}, " demo") : null));
+      s.project || "Orkline", s.demo ? h("small", {}, " demo") : null));
 
   ui.town.render(s);
   ui.fields.render(s);
@@ -336,7 +336,7 @@ function render(s, keptAt = 0) {
 // How many orks wait, on the app's icon where the phone shows one (the Badging API of an installed app) and in
 // the page's title.
 function badge(n) {
-  document.title = n ? `(${n}) Orkcraft` : "Orkcraft";
+  document.title = n ? `(${n}) Orkline` : "Orkline";
   try {
     if (n && navigator.setAppBadge) navigator.setAppBadge(n).catch(() => {});
     else if (!n && navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});
@@ -351,7 +351,7 @@ function news(items) {
   for (const item of items) {
     flash(item.line);
     if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {
-      navigator.serviceWorker?.ready.then((reg) => reg.showNotification("Orkcraft", { body: item.line, tag: item.id || item.kind, icon: "icon-192.png" }));
+      navigator.serviceWorker?.ready.then((reg) => reg.showNotification("Orkline", { body: item.line, tag: item.id || item.kind, icon: "icon-192.png" }));
     }
   }
   if (items.length && navigator.vibrate) navigator.vibrate(80);

@@ -1,5 +1,5 @@
 // The window's own errors go to the host as crash reports (core/crashes.py, docs/crash-reports.md), which
-// sends them only after a yes and only as file, function and line of Orkcraft's scripts. A few per page.
+// sends them only after a yes and only as file, function and line of Orkline's scripts. A few per page.
 import { command } from "./link.js";
 
 const MAX = 10;

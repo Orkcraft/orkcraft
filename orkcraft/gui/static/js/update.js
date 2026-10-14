@@ -1,4 +1,4 @@
-// A newer Orkcraft (gui/updates.py, core/updates.py, docs/updates.md): asked once per version, loudly
+// A newer Orkline (gui/updates.py, core/updates.py, docs/updates.md): asked once per version, loudly
 // for a critical one; one click installs it with the tool that installed this copy, and the window
 // opens again on it. "Later" hides an ordinary update until the next version, a critical one until the
 // window opens again (and under the default policy it installs by itself then).
@@ -30,7 +30,7 @@ export function UpdateAsk() {
   const busy = u.state === "installing" || u.state === "installed";
   if (!busy && u.state !== "failed" && hidden.value === u.version) return null;
   const notes = u.critical ? u.critical_notes : u.notes;
-  const title = u.critical ? say(`Critical update: Orkcraft ${u.version}`) : say(`Orkcraft ${u.version} is out`);
+  const title = u.critical ? say(`Critical update: Orkline ${u.version}`) : say(`Orkline ${u.version} is out`);
   const close = () => later(u);
   return html`<${Dialog} title=${title} warn=${u.critical} onCancel=${busy ? () => {} : close}
       meta=${say(`You have ${u.current}.`)}
@@ -43,9 +43,9 @@ export function UpdateAsk() {
     ${u.critical && !busy && html`<p class="ok-font-status">
       It fixes something that can lose work or let harm in: install it now.</p>`}
     <p class="ok-font-status ok-tone-muted">${u.can
-      ? html`Orkcraft restarts when it is in: what runs now stops. It installs with <code>${u.how}</code>`
+      ? html`Orkline restarts when it is in: what runs now stops. It installs with <code>${u.how}</code>`
       : html`It cannot install itself here: ${u.how}`}</p>
-    ${u.state === "failed" && html`<p class="ok-font-status ok-tone-error">It did not install. Orkcraft keeps running ${u.current}.</p>
+    ${u.state === "failed" && html`<p class="ok-font-status ok-tone-error">It did not install. Orkline keeps running ${u.current}.</p>
       <pre class="gui-pre gui-orders__context">${u.error}</pre>`}
   </${Dialog}>`;
 }

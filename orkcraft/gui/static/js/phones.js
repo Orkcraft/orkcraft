@@ -6,7 +6,7 @@
 // recipe for Shortcuts or Tasker — a token of its own, shown once, with the call that reports a place.
 // The app in the phone's browser (gui/pwa.py): with Tailscale here and its certificate, the QR code leads the
 // person through it — Tailscale's download while no phone of theirs is in the tailnet, then the app's link,
-// which opens Orkcraft in the phone's browser and pairs it at once.
+// which opens Orkline in the phone's browser and pairs it at once.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, linked } from "./html.js";
 import { command, say } from "./link.js";
@@ -48,11 +48,11 @@ export function useAppStep(offer, left) {
     return { qr: t.install_qr, link: t.install, alt: say("QR code to install Tailscale"), lines: [
       say("1. Scan it with the phone's camera and install Tailscale."),
       say(t.account ? `2. Log in to Tailscale on the phone as ${t.account} and turn it on.` : "2. Log in to Tailscale on the phone with this computer's account and turn it on."),
-      say("3. When the phone is in the tailnet, this code turns into the link that opens Orkcraft on it."),
+      say("3. When the phone is in the tailnet, this code turns into the link that opens Orkline on it."),
       say(`The pairing code is good for ${left} s; show a new one if it runs out.`)] };
   }
-  return { qr: offer.app_qr, link: offer.app_link, alt: say("QR code to open Orkcraft on the phone"), lines: [
-    say(`${phone.name} (${phone.os}) is in the tailnet. Scan it with the phone's camera: Orkcraft opens in its browser and pairs.`),
+  return { qr: offer.app_qr, link: offer.app_link, alt: say("QR code to open Orkline on the phone"), lines: [
+    say(`${phone.name} (${phone.os}) is in the tailnet. Scan it with the phone's camera: Orkline opens in its browser and pairs.`),
     say(phone.os === "iOS" ? "Then Share → Add to Home Screen." : "Then Install app (or Add to Home screen) in the browser's menu."),
     say(`Good for ${left} s, once.`)] };
 }
@@ -144,7 +144,7 @@ export function PairQr({ pairing: { step } }) {
 export function PairNote({ pairing: { offer, paired, pair, cancel, step } }) {
   if (!offer) {
     return html`<span class="gui-you__pair">
-      <button class="ok-btn" title=${say("A QR code to scan with the Orkcraft app. The paired phones and Forget are in Town settings → Phones.")}
+      <button class="ok-btn" title=${say("A QR code to scan with the Orkline app. The paired phones and Forget are in Town settings → Phones.")}
         onClick=${pair}>${say("Pair a phone")}</button>
       ${paired && html`<span class="ok-font-status">${say(`Paired: ${paired}`)}</span>`}</span>`;
   }

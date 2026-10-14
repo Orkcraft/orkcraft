@@ -191,7 +191,7 @@ class Accounts:
             self._detach(ref)
         if not google.disconnect(email):
             raise AccountsError("That Google account is not connected here")
-        self.host.town.toast(f"{email}: disconnected. Google no longer gives Orkcraft access", title="Google")
+        self.host.town.toast(f"{email}: disconnected. Google no longer gives Orkline access", title="Google")
         self.host.on_change()
         return self.list()
 

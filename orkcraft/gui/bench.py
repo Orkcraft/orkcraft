@@ -3,7 +3,7 @@
 The Test bench is a building (core/workers/lab.py): the buildings whose road comes into it are the ones it tests,
 and its window (gui/views/lab.py) draws this for the one picked; each command names that building. Tech runs a case in
 `orkcraft bench`, a process of its own (a run opens a town of its own, and one process holds one town); its
-lines are read as they come. Its reviews, UX's and Product's are agents that only read Orkcraft's source,
+lines are read as they come. Its reviews, UX's and Product's are agents that only read Orkline's source,
 each role in a thread, kept per type in `.orkcraft/bench/reviews/`. The first time a building is opened with
 no review kept, its three tabs are reviewed by themselves; after that only Review again starts them. Make
 tasks sends the ticked findings to an Agent pool of the town, one task each.
@@ -407,7 +407,7 @@ class Bench:
         made = 0
         for f in chosen:
             brief = (f"From the Test bench, {f['role']} ({f['tab']} review) of the {word} (`{type_id}`, building "
-                     f"`{bid}`), Orkcraft {orkcraft.__version__}.\n\n{f['detail']}"
+                     f"`{bid}`), Orkline {orkcraft.__version__}.\n\n{f['detail']}"
                      + (f"\n\nWhere: {f['where']}" if f.get("where") else "") + f"\n\nSeverity: {f['severity']}.")
             title = f"{word}: {f['title']}"
             if (lab.finding(title, brief) if down_roads else worker.new_task(title, brief) is not None):

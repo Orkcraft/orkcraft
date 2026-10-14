@@ -66,7 +66,7 @@ OUTPUTS = _c(("jira", "🟦", "Jira"), ("confluence", "📘", "Confluence"), ("a
              ("linear", "🟪", "Linear"), ("notion", "⬛", "Notion"), ("slack", "💬", "Slack"),
              ("mail", "📨", "Email"), ("gdocs", "📁", "Google Docs / Drive"), ("gsheets", "🟩", "Google Sheets"),
              ("figma", "🎨", "Figma"), ("github", "🐙", "Pull requests"), ("app_store", "🍏", "Store listings"),
-             ("md_reports", "📝", "Reports in the repository"), ("dashboard", "🪨", "A dashboard in Orkcraft"),
+             ("md_reports", "📝", "Reports in the repository"), ("dashboard", "🪨", "A dashboard in Orkline"),
              ("api", "🎯", "A webhook or any API"))
 PAINS = _c(("copy_paste", "📋", "Copying data between tools by hand"), ("reports_slow", "⏳", "Reports take hours"),
            ("missed", "🕳", "Things slip through the cracks"), ("noise", "🔔", "Too many notifications"),

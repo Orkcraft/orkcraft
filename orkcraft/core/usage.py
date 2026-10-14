@@ -2,7 +2,7 @@
 
 Off until the operator says yes (Settings, or `orkcraft usage on`). Then a short closed list of
 events — each with only the properties named in `EVENTS`, each a word from a known set or a bucket —
-goes in batches to Orkcraft's own proxy (tools/usage-worker/), which holds the analytics key and
+goes in batches to Orkline's own proxy (tools/usage-worker/), which holds the analytics key and
 passes them on to Amplitude. No code, prompt, path, file or project name, no text an ork or a person
 wrote, no IP address: the proxy drops it before Amplitude sees the request.
 

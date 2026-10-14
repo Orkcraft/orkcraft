@@ -278,7 +278,7 @@ def test_the_town_is_told_which_houses_move_and_a_layer_not_painted_is_painted_f
 
 def test_what_this_machine_applied_goes_to_orkcraft_as_a_pull_request(fake_repo, isolated_layout_file, monkeypatch):
     """§6.5: a picture, a mascot's head (its grid too, kept over the code's by the tool) and a type's cards, each
-    ticked in the dialog, go as the files of Orkcraft's repository; nothing leaves before Send."""
+    ticked in the dialog, go as the files of Orkline's repository; nothing leaves before Send."""
     from orkcraft.design import mascots
     from orkcraft.realm import card_docs, github_app, ux_pr
     host = _host(fake_repo)

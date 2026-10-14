@@ -459,12 +459,12 @@ def render(g: Gallery) -> str:
     body.append('<h3 class="ork">The town’s windows</h3>')
     body += [_section(b) for b in g.extras]
     maps = "".join(_figure(s) for s in g.maps)
-    return f"""<title>Orkcraft Building Gallery</title>
+    return f"""<title>Orkline Building Gallery</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Titillium+Web:wght@400;600;700&display=swap">
 <style>{STYLE}</style>
 <div class="wrap">
-<h1>Orkcraft Building Gallery</h1>
+<h1>Orkline Building Gallery</h1>
 <p class="lede">Every building of <code>orkcraft gui --demo</code> three ways — closed, command, full
 (<code>docs/design/building-views.md</code>) — taken {_esc(g.made)} in the Office look at {VIEWPORT[0]}×{VIEWPORT[1]}.
 Each view is its own picture, cut to the element at twice the pixels; click one to see it full size.</p>

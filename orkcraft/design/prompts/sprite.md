@@ -1,4 +1,4 @@
-A building's house for Orkcraft, a town of AI agents drawn as an orc war camp (docs/design/building-sprites.md).
+A building's house for Orkline, a town of AI agents drawn as an orc war camp (docs/design/building-sprites.md).
 
 Paint it in the style of the reference picture exactly: the same painted pixel-art look, the same palette (moss and
 dark greens for walls and roofs, ivory for tusks, horns and bones, one small gold accent, near-black for doors and

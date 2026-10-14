@@ -110,7 +110,7 @@ def _toplevel(folder: Path) -> Path | None:
 
 def refusal(folder: Path, town_home: Path | None = None) -> str:
     """"" when the folder may be a project; else why not. Never the whole disk, the home folder or a folder
-    inside another repository (Orkcraft's own `~/Orkcraft` aside: its projects live there)."""
+    inside another repository (Orkline's own `~/Orkcraft` aside: its projects live there)."""
     folder = folder.expanduser()
     if not folder.is_dir():
         return f"There is no folder at {folder}"
@@ -129,7 +129,7 @@ def refusal(folder: Path, town_home: Path | None = None) -> str:
 
 
 def _keep_out_of(top: Path, folder: Path) -> None:
-    """A project inside Orkcraft's own `~/Orkcraft` repository: that repository never takes it in (its local
+    """A project inside Orkline's own `~/Orkcraft` repository: that repository never takes it in (its local
     exclude, nothing committed)."""
     try:
         rel = folder.resolve().relative_to(top)

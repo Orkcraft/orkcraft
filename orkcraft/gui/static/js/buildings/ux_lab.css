@@ -44,7 +44,7 @@ button.ux-picture:hover .ux-picture__frame, button.ux-picture:focus-visible .ux-
 .ux-picture__ground { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
 .ux-picture__mascot { width: 48px; height: 44px; image-rendering: pixelated; }
 .ux-edit__picture img.is-mascot { width: min(100%, 264px); height: auto; }
-/* Sent to Orkcraft as a pull request (§6.5): each item ticked, a picture before and after, a text's diff. */
+/* Sent to Orkline as a pull request (§6.5): each item ticked, a picture before and after, a text's diff. */
 .ux-send { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .ux-send__items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 .ux-send__item { display: flex; align-items: center; gap: var(--space-2); }

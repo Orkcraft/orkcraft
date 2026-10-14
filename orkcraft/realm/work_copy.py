@@ -1,4 +1,4 @@
-"""A copy of Orkcraft's source that an agent changes for one fix (docs/design/improve-buildings.md §14): the installed
+"""A copy of Orkline's source that an agent changes for one fix (docs/design/improve-buildings.md §14): the installed
 app is never changed, and each fix is a pull request of its own.
 
 - **From a git checkout** (bin/orkcraft, `pip install -e`): a `git worktree` of the checkout at the commit it runs —

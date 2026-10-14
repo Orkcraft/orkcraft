@@ -430,7 +430,7 @@ class LabRuns:
         made = 0
         for p in items:
             title = f"{subject['title']}: {p['title']}"
-            body = (f"From the Test bench, for the goal: {w.state['goal'] or '—'} (Orkcraft {orkcraft.__version__}).\n\n"
+            body = (f"From the Test bench, for the goal: {w.state['goal'] or '—'} (Orkline {orkcraft.__version__}).\n\n"
                     f"{p['detail']}\n\nWhere: {p['where'] or '—'}\n\nWhat it should do: {p['effect'] or '—'}\n\n"
                     f"Kind of change: {p['area']}.")
             if pool == "@roads":

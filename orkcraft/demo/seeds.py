@@ -296,7 +296,7 @@ def war_drum_burn(root: Path, now: dt.datetime, building: str = "days") -> None:
 
 def web(root: Path, now: dt.datetime) -> None:
     """The web folder as committed: a page, its styles, a logo."""
-    files = {"index.html": "<!doctype html>\n<title>Orkcraft demo</title>\n<main>\n  <span class=\"price\">€9</span>\n</main>\n",
+    files = {"index.html": "<!doctype html>\n<title>Orkline demo</title>\n<main>\n  <span class=\"price\">€9</span>\n</main>\n",
              "styles.css": ":root { --accent: #3A7CA5; }\n.price { color: var(--accent); }\n",
              "app/main.js": "document.querySelector('.price').title = 'per month';\n",
              "app/cart.js": "export const cart = [];\n"}
@@ -311,7 +311,7 @@ def forest(root: Path, now: dt.datetime) -> None:
     """The web folder after a day of work: two files changed, one new."""
     (root / "web" / "styles.css").write_text(":root { --accent: #E4572E; }\n.price { color: var(--accent); }\n"
                                              ".price--old { text-decoration: line-through; }\n", encoding="utf-8")
-    (root / "web" / "index.html").write_text("<!doctype html>\n<title>Orkcraft demo</title>\n<main>\n"
+    (root / "web" / "index.html").write_text("<!doctype html>\n<title>Orkline demo</title>\n<main>\n"
                                              "  <span class=\"price\">€12</span>\n</main>\n", encoding="utf-8")
     (root / "web" / "pricing.html").write_text("<!doctype html>\n<title>Pricing</title>\n<h1>Plans</h1>\n",
                                                encoding="utf-8")

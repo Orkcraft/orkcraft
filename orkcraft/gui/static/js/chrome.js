@@ -73,7 +73,7 @@ export function Hud() {
   const words = t.resources;
   return html`<header class="ok-hud gui-hud">
     ${narrow.value && html`<${Portrait} />`}
-    <span class="ok-hud__brand">Orkcraft</span>
+    <span class="ok-hud__brand">Orkline</span>
     <button class="gui-hud__project gui-hud__menu" title=${`${t.project}${t.demo ? " (demo)" : ""} — ${say("town settings: how freely the orks decide, how long they wait")}`}
       onClick=${() => { settingsOpen.value = true; }}>${say("Menu")}${t.demo ? " · demo" : ""} ▾</button>
     ${online.value

@@ -1,11 +1,11 @@
-"""Improve Orkcraft in the GUI (docs/design/improve-buildings.md §14): comments on any part of the window for the
-Alchemist, the Mechanic's code findings from the logs, each written as a fix in a copy of Orkcraft's source by this
-machine's main tool, shown, tried in the window (Preview) and sent to Orkcraft as a pull request.
+"""Improve Orkline in the GUI (docs/design/improve-buildings.md §14): comments on any part of the window for the
+Alchemist, the Mechanic's code findings from the logs, each written as a fix in a copy of Orkline's source by this
+machine's main tool, shown, tried in the window (Preview) and sent to Orkline as a pull request.
 
     host.fixes = Fixes(host); host.commands.update(host.fixes.commands())
     host.fixes.preview_dir()      the copy whose page (orkcraft/gui/static) the server shows first, or None
 
-The copies and the list live in `<state>/improve/` (`ORKCRAFT_STATE_DIR`, else ~/.orkcraft): they are about Orkcraft,
+The copies and the list live in `<state>/improve/` (`ORKCRAFT_STATE_DIR`, else ~/.orkcraft): they are about Orkline,
 not a town. The pull request goes through the Orkcraft Improve app (realm/github_app.py), as the benches' do.
 """
 from __future__ import annotations
@@ -83,7 +83,7 @@ class Fixes:
             raise FixError(str(e)) from None
         self._changed()
         n = len(self.store.waiting())
-        return {"said": f"The Alchemist has it ({n} comment{'' if n == 1 else 's'} waiting): Improve Orkcraft writes "
+        return {"said": f"The Alchemist has it ({n} comment{'' if n == 1 else 's'} waiting): Improve Orkline writes "
                         "the fix", "id": c.id}
 
     def drop_comment(self, args: dict) -> dict:
@@ -121,7 +121,7 @@ class Fixes:
                  f"It rests on:\n{cited}")
         f = self.store.fix("mechanic", [g.what], about)
         self._write(f)
-        return {"said": "The Mechanic is writing the fix: Improve Orkcraft shows it when done", "id": f.id}
+        return {"said": "The Mechanic is writing the fix: Improve Orkline shows it when done", "id": f.id}
 
     # -- writing a fix -------------------------------------------------------------------------------------------
 
@@ -131,7 +131,7 @@ class Fixes:
             try:
                 copy = work_copy.make(folder() / "copies" / f.id, checkout)
             except (OSError, RuntimeError) as e:
-                f.state, f.error = "failed", f"The copy of Orkcraft's source could not be made: {e}"[:400]
+                f.state, f.error = "failed", f"The copy of Orkline's source could not be made: {e}"[:400]
                 self.store.save()
                 self._changed()
                 return
@@ -168,7 +168,7 @@ class Fixes:
             word = {"ready": "wrote a fix", "empty": "changed nothing", "failed": "could not write the fix"}[f.state]
             who = fixes.WHO[f.who]
             self.host.town.toast(f"{who[0].upper()}{who[1:]} {word}: {fixes.title(f)}"[:240],
-                                 title="Improve Orkcraft", severity="error" if error else "information")
+                                 title="Improve Orkline", severity="error" if error else "information")
             self._changed()
 
         threading.Thread(target=work, daemon=True, name=f"fix-{f.id}").start()
@@ -195,7 +195,7 @@ class Fixes:
         return self.state()
 
     def show(self, args: dict) -> dict:
-        """Preview: the window's page from the fix's copy (its js and css; its Python runs once Orkcraft takes it)."""
+        """Preview: the window's page from the fix's copy (its js and css; its Python runs once Orkline takes it)."""
         fid = str(args.get("id") or "")
         if fid:
             f = self._fix(args)
@@ -244,10 +244,10 @@ class Fixes:
             self.sending.discard(f.id)
             if error:
                 f.error = error
-                self.host.town.toast(error, title="Improve Orkcraft", severity="error")
+                self.host.town.toast(error, title="Improve Orkline", severity="error")
             else:
                 f.state, f.pr, f.error = "sent", url, ""
-                self.host.town.toast(f"Pull request opened: {url}", title="Improve Orkcraft")
+                self.host.town.toast(f"Pull request opened: {url}", title="Improve Orkline")
             self.store.save()
             self._changed()
 

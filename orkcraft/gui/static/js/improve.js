@@ -3,7 +3,7 @@
 // read (gui/day_review.py, docs/design/improve-buildings.md §13) — again when it was read — and the latest 👎 alone.
 // A day read has its changes: each one tried in the Test bench that tests its building, and measured there
 // (gui/day_try.py); a pull request goes from that bench when its numbers are better, or, for a code change, as a fix
-// the Mechanic writes in a copy of Orkcraft's source (Write the fix: js/fixes.js, gui/fixes.py).
+// the Mechanic writes in a copy of Orkline's source (Write the fix: js/fixes.js, gui/fixes.py).
 import { useState } from "preact/hooks";
 import { html } from "./html.js";
 import { command, say } from "./link.js";

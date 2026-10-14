@@ -1,5 +1,5 @@
-"""What the UX bench sends to Orkcraft as a pull request (docs/design/improve-buildings.md §6.5): what this machine
-has applied, as the files of Orkcraft's repository it changes.
+"""What the UX bench sends to Orkline as a pull request (docs/design/improve-buildings.md §6.5): what this machine
+has applied, as the files of Orkline's repository it changes.
 
     items(window)      -> what may go: [{id, kind, label}] — a picture, a mascot's head, a type's cards, a type's window
     files(ids, window) -> {repository path: (as installed, as changed)} for the items picked (pictures as bytes)
@@ -9,7 +9,7 @@ has applied, as the files of Orkcraft's repository it changes.
   system's in `design-system/`; a moving house's layer is a new file there.
 - **A mascot's head** (`mascot:<role>-<stage>`): its picture and @2x, its grid in `grids.json`, and the grid again in
   `drawn.json`, which tools/growth_sprites.py keeps over the heads its code draws, so a run of the tool keeps it.
-- **A type's cards** (`card:<type>`): this machine's card document as the one Orkcraft ships,
+- **A type's cards** (`card:<type>`): this machine's card document as the one Orkline ships,
   `design-system/cards/<type>.json` (realm/card_docs.py `shipped`).
 - **A type's window** (`window:<type>`): the layout its buildings have here as the type's default, the `default` of
   `orkcraft/design/buildings/<type>.json`.
@@ -25,7 +25,7 @@ import orkcraft
 from orkcraft.design import mascots, tokens, ui
 from orkcraft.realm import card_docs, catalog
 
-SYSTEM = "design-system"                    # where tokens.SYSTEM is in Orkcraft's repository
+SYSTEM = "design-system"                    # where tokens.SYSTEM is in Orkline's repository
 BUILDINGS = Path(ui.__file__).resolve().parent / "buildings"
 TITLE_CHARS = 72
 
@@ -147,7 +147,7 @@ def title(ids: list[str], window: tuple[str, dict] | None = None) -> str:
 
 def body(ids: list[str], window: tuple[str, dict] | None = None, why: dict[str, str] | None = None) -> str:
     picked = [i for i in items(window) if i["id"] in set(ids)]
-    lines = [f"Made in the UX bench of Orkcraft {orkcraft.__version__} (docs/design/improve-buildings.md §6): what "
+    lines = [f"Made in the UX bench of Orkline {orkcraft.__version__} (docs/design/improve-buildings.md §6): what "
              "this machine applied, drawn and laid out there by the Alchemist from the person's words.", ""]
     words = {"picture": "Picture", "mascot": "Mascot", "card": "Cards", "window": "Window"}
     for i in picked:
@@ -156,6 +156,6 @@ def body(ids: list[str], window: tuple[str, dict] | None = None, why: dict[str, 
     if any(i["kind"] == "mascot" for i in picked):
         lines += ["", "A mascot's grid goes into `design-system/sprites/mascots/drawn.json` too, which "
                   "`tools/growth_sprites.py` keeps over the heads its code draws."]
-    lines += ["", "_Sent from Orkcraft: the pictures and documents as they are on the sender's machine; nothing of "
+    lines += ["", "_Sent from Orkline: the pictures and documents as they are on the sender's machine; nothing of "
               "their town or projects._"]
     return "\n".join(lines)

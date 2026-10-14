@@ -1,5 +1,5 @@
 """GitHub for the Improve buildings (docs/design/improve-buildings.md §4): the Orkcraft Improve app's device flow, a
-Test bench's code change sent as a pull request through the API (merged three ways when Orkcraft's main moved), and
+Test bench's code change sent as a pull request through the API (merged three ways when Orkline's main moved), and
 the evidence that decides whether it may go. GitHub itself is a fake here: no request leaves the machine."""
 from __future__ import annotations
 
@@ -143,5 +143,5 @@ def test_a_picture_goes_as_bytes_and_is_refused_when_main_moved_it():
     assert github_app.send(changes, "UX bench: 2 pictures", "b", "improve/ux-1", acct, opener=fine).endswith("/pull/8")
     blobs = [b for m, p, b in fine.seen if p.endswith("/git/blobs")]
     assert len(blobs) == 2 and all(b["encoding"] == "base64" and base64.b64decode(b["content"]) == new for b in blobs)
-    with pytest.raises(github_app.GithubError, match="changed in Orkcraft's main"):
+    with pytest.raises(github_app.GithubError, match="changed in Orkline's main"):
         github_app.send(changes, "t", "b", "br", acct, opener=gh(b"\x89PNG theirs"))

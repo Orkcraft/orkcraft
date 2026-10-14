@@ -88,7 +88,7 @@ def pair(args) -> None:
     fd = os.open(keep, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w") as f:
         json.dump({"addr": addr, "fp": fp, "token": body["token"], "id": body["id"], "name": body["name"]}, f)
-    print(f"Paired as {body['name']!r} with Orkcraft {version['version']} at {addr}")
+    print(f"Paired as {body['name']!r} with Orkline {version['version']} at {addr}")
 
 
 def kept(args) -> dict:

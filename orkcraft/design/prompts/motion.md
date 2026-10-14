@@ -1,4 +1,4 @@
-One layer of a building's house for Orkcraft, a town of AI agents drawn as an orc war camp, that moves while its ork
+One layer of a building's house for Orkline, a town of AI agents drawn as an orc war camp, that moves while its ork
 works (docs/design/building-motion.md). The house is painted as two layers: the house without its moving part, and the
 moving part alone. The town lays them over each other and turns or swings the part in code, so each layer must lie on
 the reference pixel for pixel.

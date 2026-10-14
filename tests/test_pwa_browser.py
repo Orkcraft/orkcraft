@@ -63,10 +63,10 @@ def _working(server, n: int = 2) -> None:
 @pytest.mark.asyncio
 async def test_the_app_pairs_from_its_link_and_says_the_towns_version(fake_repo):
     """Opened from the desktop's link the app pairs, connects and says, quietly by the phone's name, the version
-    of Orkcraft the town runs (`mobile.hello`), at the page's foot, with the look and Unpair here: no More."""
+    of Orkline the town runs (`mobile.hello`), at the page's foot, with the look and Unpair here: no More."""
     async with _phone(fake_repo) as (_, page):
         foot = page.locator("p.foot")
-        await foot.get_by_text(f"Orkcraft {__version__}").wait_for(timeout=WAIT_MS)
+        await foot.get_by_text(f"Orkline {__version__}").wait_for(timeout=WAIT_MS)
         assert "This phone: " in await foot.inner_text()
         phone = page.locator("section.phone")
         assert await phone.get_by_role("button", name="Camp").count() == 1
@@ -273,7 +273,7 @@ async def test_away_from_the_town_the_phone_shows_the_last_town_greyed_and_as_of
         await away.goto(f"{server.phones.address}/app/")
         await away.wait_for_function("() => document.documentElement.classList.contains('offline')", timeout=WAIT_MS)
         assert "As of " in await away.locator(".status").inner_text()
-        assert await away.title() == "(1) Orkcraft"
+        assert await away.title() == "(1) Orkline"
         assert await away.locator(".head h1", has_text="kept town").count() == 1
         assert await away.evaluate("document.querySelector('.asking').inert") is True
         assert await away.evaluate("document.querySelector('section.phone').inert") is False   # Unpair here stays

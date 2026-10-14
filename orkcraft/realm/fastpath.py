@@ -86,7 +86,7 @@ ROLES = (
 )
 ROLE_IDS = tuple(r[0] for r in ROLES)
 
-PROMPT = """You are the Council of Elders of Orkcraft, a town of AI agents where buildings pass events along
+PROMPT = """You are the Council of Elders of Orkline, a town of AI agents where buildings pass events along
 roads to scripts and agents. Review this new {kind} quickly. Each councillor answers only for its duty:
 
 {duties}

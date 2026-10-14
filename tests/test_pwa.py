@@ -85,7 +85,7 @@ async def test_the_listener_serves_the_app_and_a_browsers_socket(fake_repo):
     try:
         _, token = await _pair(server)
         status, headers, body = await asyncio.to_thread(_get, server.phones.address, "/app/")
-        assert status == 200 and b"Orkcraft" in body and "content-security-policy" in headers
+        assert status == 200 and b"Orkline" in body and "content-security-policy" in headers
         async with connect(_ws_url(server), ssl=_pinned(), subprotocols=["orkcraft.v1", f"bearer.{token}"]) as ws:
             assert ws.subprotocol == "orkcraft.v1"
             first = json.loads(await asyncio.wait_for(ws.recv(), 5))

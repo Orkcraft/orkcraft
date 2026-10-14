@@ -165,7 +165,7 @@ def report(results: list[dict], idle: dict | None, budget: dict, tool: str = "ma
             rows.append(f"| {sc.title} | {cid} | {check} | {_pct(j.get('time'))} | {spend} | "
                         f"{'✅' if j['ok'] else '❌'} | {j['why'] or 'within the budget'} |")
     times = "once" if int(budget["repeat"]) == 1 else f"{budget['repeat']} times"
-    out = [f"# Orkcraft check · {at or dt.datetime.now().isoformat(timespec='minutes')}", "",
+    out = [f"# Orkline check · {at or dt.datetime.now().isoformat(timespec='minutes')}", "",
            f"AI tool: {tool}{', ' + budget['tier'] if budget.get('tier') else ''} · each case {times} · budget: passes in ≥ {budget['pass_share']:.0%} "
            f"of runs, no worse than the bare tool, time ≤ {budget['time_over']:+.0%} and spend ≤ "
            f"{budget['spend_over']:+.0%} over it (medians); a picture judged ≥ {budget['picture_score']}/10", ""]

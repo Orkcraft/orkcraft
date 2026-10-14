@@ -275,5 +275,5 @@ def guide(level: int, tools: tuple[str, ...] = ("claude", "agy")) -> str:
         lines.append("The 🏛 Elders answer a routine question for you when it has waited its minutes — at once in "
                      "quiet hours (a one-time yes or no); every answer is in .orkcraft/council/elders.jsonl.")
     else:
-        lines.append("Orkcraft never presses yes for an agent at this level: the Elders only advise.")
+        lines.append("Orkline never presses yes for an agent at this level: the Elders only advise.")
     return "\n".join(lines)

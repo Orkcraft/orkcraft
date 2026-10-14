@@ -118,4 +118,4 @@ def attempt(host, day: str, n: int) -> str:
     day_review.save(root, review)
     return (f"{w.title} is trying it on the virtual {host.town.title_of(f.building)}"
             + (f", then runs its {len(cases)} case{'' if len(cases) == 1 else 's'}" if cases else "")
-            + ". Its window has the numbers, and Send to Orkcraft when they are better")
+            + ". Its window has the numbers, and Send to Orkline when they are better")

@@ -133,7 +133,7 @@ export function makeDock(ctx) {
       for (const b of looks.children) b.classList.toggle("is-active", b.dataset.look === chosen);
     },
     phone(version) {
-      phone.textContent = `This phone: ${ctx.device()?.name || ""}${version ? ` · Orkcraft ${version}` : ""}`;
+      phone.textContent = `This phone: ${ctx.device()?.name || ""}${version ? ` · Orkline ${version}` : ""}`;
     },
     openDrop() { if (ctx.building("pit")) dropSheet.open(); },
   };

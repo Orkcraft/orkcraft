@@ -280,7 +280,7 @@ def email_of(id_token: str) -> str:
         return ""
 
 
-PAGE = ("<!doctype html><meta charset=utf-8><title>Orkcraft</title><body style=\"font:16px system-ui;margin:3em;"
+PAGE = ("<!doctype html><meta charset=utf-8><title>Orkline</title><body style=\"font:16px system-ui;margin:3em;"
         "max-width:36em\"><h1>{title}</h1><p>{text}</p></body>")
 
 
@@ -307,7 +307,7 @@ class Consent:
             def do_GET(self) -> None:                       # noqa: N802 - http.server's name
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
                 if q.get("state", [""])[0] != consent._state:
-                    self._page(404, "Not this sign-in", "This page belongs to another sign-in. Start again in Orkcraft.")
+                    self._page(404, "Not this sign-in", "This page belongs to another sign-in. Start again in Orkline.")
                     return
                 title, text = consent.answer(q.get("code", [""])[0], q.get("error", [""])[0])
                 self._page(200, title, text)
@@ -358,7 +358,7 @@ class Consent:
     def answer(self, code: str, error: str) -> tuple[str, str]:
         """Google's answer: the code is traded for the tokens at once. (title, text) for the browser tab."""
         if self.state != "waiting":
-            return "Already done", "Go back to Orkcraft."
+            return "Already done", "Go back to Orkline."
         if error or not code:
             why = ("You did not allow it, or Google blocked the app." if error == "access_denied"
                    else f"Google said: {error or 'no code'}.")
@@ -377,13 +377,13 @@ class Consent:
         self.state = "done"
         self._done.set()
         names = ", ".join({"gmail": "Gmail", "calendar": "Calendar", "drive": "Drive"}[p] for p in self.account["parts"])
-        return "Connected", f"{self.account['email']}: {names}. You can close this tab and go back to Orkcraft."
+        return "Connected", f"{self.account['email']}: {names}. You can close this tab and go back to Orkline."
 
     def _keep(self, got: dict) -> dict:
         granted = set(str(got.get("scope") or "").split())
         parts = [p for p in self.parts if SCOPES[p] in granted]
         if not got.get("refresh_token"):
-            raise GoogleError("Google gave no lasting sign-in. Remove Orkcraft's access in your Google account "
+            raise GoogleError("Google gave no lasting sign-in. Remove Orkline's access in your Google account "
                               f"({LINKS['access']}) and connect again", "login")
         if not parts:
             raise GoogleError("Google allowed none of Gmail, Calendar or Drive (each has its own tick on Google's "

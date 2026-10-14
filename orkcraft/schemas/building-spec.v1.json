@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://orkcraft.dev/schemas/building-spec.v1.json",
-  "title": "Orkcraft custom building spec (Mason & Artisan)",
+  "title": "Orkline custom building spec (Mason & Artisan)",
   "description": "A declarative building: a typed building (type, size, events, quick actions, config) or panes of whitelisted widgets bound to whitelisted data sources, plus whitelisted Command Card actions. No code, commands or paths outside the repository — orkcraft/realm/masonry.py checks what a schema cannot.",
   "type": "object",
   "required": [

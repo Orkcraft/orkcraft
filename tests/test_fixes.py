@@ -1,5 +1,5 @@
-"""Improve Orkcraft (docs/design/improve-buildings.md §14): comments on any part of the window for the Alchemist and the
-Mechanic's code findings, each written as a fix in a copy of Orkcraft's source — a worktree of the checkout it runs
+"""Improve Orkline (docs/design/improve-buildings.md §14): comments on any part of the window for the Alchemist and the
+Mechanic's code findings, each written as a fix in a copy of Orkline's source — a worktree of the checkout it runs
 from, else the package as installed — shown, previewed and sent as a pull request. No agent and no GitHub run here."""
 from __future__ import annotations
 
@@ -89,7 +89,7 @@ def host(fake_repo, isolated_layout_file, monkeypatch):
     from orkcraft.gui.host import Host
     from orkcraft.realm import checkpoint
     checkpoint.ensure(fake_repo)
-    monkeypatch.setattr(running, "checkout", lambda: fake_repo)      # Orkcraft "runs from" this checkout
+    monkeypatch.setattr(running, "checkout", lambda: fake_repo)      # Orkline "runs from" this checkout
     h = Host(fake_repo, auto_commit=False)
     monkeypatch.setattr(h.town, "call", lambda fn, *a: fn(*a))
     yield h

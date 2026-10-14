@@ -183,7 +183,7 @@ def round_now(host, args: dict) -> dict[str, Any]:
 
 
 def keep_awake(host, args: dict) -> dict[str, Any]:
-    """Whether the computer stays awake while Orkcraft is open (`on`: true | false), at once (gui/awake.py)."""
+    """Whether the computer stays awake while Orkline is open (`on`: true | false), at once (gui/awake.py)."""
     m = host.town.machine
     m.keep_awake = args.get("on") is True
     settings.save(m)

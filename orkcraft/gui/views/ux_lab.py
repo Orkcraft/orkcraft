@@ -75,7 +75,7 @@ def detail(w) -> dict:
     return out
 
 
-# -- what this machine applied, sent to Orkcraft as a pull request (docs/design/improve-buildings.md §6.5) -------------
+# -- what this machine applied, sent to Orkline as a pull request (docs/design/improve-buildings.md §6.5) -------------
 
 def _window(w) -> tuple[str, dict] | None:
     """The target type's window as its buildings have it here, when one stands."""

@@ -1,4 +1,4 @@
-An icon of the Build row in Orkcraft: a small sign of what a building is for, not the building itself
+An icon of the Build row in Orkline: a small sign of what a building is for, not the building itself
 (tools/intent_sprites.py, docs/design/warchief-line-and-cards.md §2).
 
 Draw it in the style of the reference picture exactly: pixel art on a 14×14 grid inside 16×16, one flat colour per

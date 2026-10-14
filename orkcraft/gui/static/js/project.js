@@ -60,7 +60,7 @@ function ProjectDialog({ o, projects, townFolder, onClose }) {
       actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Close")}</button>`}>
     <p class="ok-font-status">${say("Works in")}: ${where}</p>
     ${askGit ? html`<div class="gui-section">
-        <p class="ok-dialog__text">${say("This folder has no history. Start git here, so Orkcraft can take you back to any earlier state? Your files stay as they are.")}</p>
+        <p class="ok-dialog__text">${say("This folder has no history. Start git here, so Orkline can take you back to any earlier state? Your files stay as they are.")}</p>
         <p class="ok-font-status"><code>${askGit}</code></p>
         <div class="gui-form__row">
           <button class="ok-btn primary" onClick=${() => link(askGit, true)}>${say("Start git")}</button>

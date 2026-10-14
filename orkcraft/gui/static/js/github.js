@@ -1,5 +1,5 @@
 // GitHub in the mascot's menu (gui/github.py, docs/design/improve-buildings.md §4): connected once through the
-// Orkcraft Improve app, so a Test bench can send what it improved to Orkcraft as a pull request. Connect shows
+// Orkcraft Improve app, so a Test bench can send what it improved to Orkline as a pull request. Connect shows
 // GitHub's code and opens github.com/login/device; it stands connected once the code is typed there. Not on the
 // person's account yet: Install opens the app's page (it pushes to their fork there).
 import { useEffect, useState } from "preact/hooks";
@@ -24,12 +24,12 @@ export function GithubAccount() {
     <span class="ok-font-label">${say("GitHub")}</span>
     ${g.login ? html`<p class="ok-font-status">${say(`Connected as @${g.login}.`)}
         <button class="gui-link" onClick=${() => command("github.disconnect").then(setG, () => {})}>${say("Disconnect")}</button></p>
-        ${g.installed === false && html`<p class="ok-font-status ok-tone-wait">${say("Install the Orkcraft Improve app on your account: it pushes to your fork of Orkcraft there.")}
+        ${g.installed === false && html`<p class="ok-font-status ok-tone-wait">${say("Install the Orkcraft Improve app on your account: it pushes to your fork of Orkline there.")}
           <a class="gui-link" href=${g.install} target="_blank" rel="noopener">${say("Install")}</a></p>`}`
       : g.waiting ? html`<p class="ok-font-status">${say("Type this code at GitHub:")} <b class="gui-github__code">${g.waiting.code}</b>
           <a class="gui-link" href=${g.waiting.uri} target="_blank" rel="noopener">${say("Open GitHub")}</a>
           <button class="gui-link" onClick=${() => command("github.cancel").then(setG, () => {})}>${say("Cancel")}</button></p>`
-      : html`<p class="ok-font-status ok-tone-muted">${say("The Test bench, the UX bench and Improve Orkcraft send what they improved to Orkcraft as pull requests.")}
+      : html`<p class="ok-font-status ok-tone-muted">${say("The Test bench, the UX bench and Improve Orkline send what they improved to Orkline as pull requests.")}
           <button class="ok-btn" onClick=${connect}>${say("Connect GitHub")}</button></p>`}
     ${g.error && html`<p class="ok-font-status ok-tone-error" role="alert">✗ ${say(g.error)}</p>`}
   </div>`;

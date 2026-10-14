@@ -110,7 +110,7 @@ def recommendations(root: Path, w, subject: dict) -> str:
         found = [(e.get("title") or role, f) for role, e in (kept.get("roles") or {}).items()
                  for f in e.get("findings") or []]
         if found:
-            out += ["", f"## Tech review of the {lexicon.term(kind)} ({kept.get('at', '')}, Orkcraft {kept.get('version', '')})"]
+            out += ["", f"## Tech review of the {lexicon.term(kind)} ({kept.get('at', '')}, Orkline {kept.get('version', '')})"]
             out += [f"- [{f.get('severity', '')}] {who}: {f.get('title', '')}\n  {f.get('detail', '')}"
                     + (f"\n  where: {f['where']}" if f.get("where") else "") for who, f in found]
     items = (w.state["proposals"].get(subject["id"]) or {}).get("items") or []

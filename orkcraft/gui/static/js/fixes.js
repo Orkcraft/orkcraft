@@ -1,7 +1,7 @@
-// Improve Orkcraft (gui/fixes.py, docs/design/improve-buildings.md §14): Comment mode, then a press on any part of the
+// Improve Orkline (gui/fixes.py, docs/design/improve-buildings.md §14): Comment mode, then a press on any part of the
 // window says what should change there, for the Alchemist; the comments, and the Mechanic's code fixes from the logs,
-// are written as fixes in a copy of Orkcraft's source by this machine's main tool, shown, tried here (Preview: the
-// page from the copy) and sent to Orkcraft as a pull request. Comment mode: the mascot's menu, or Ctrl/⌘+Shift+M.
+// are written as fixes in a copy of Orkline's source by this machine's main tool, shown, tried here (Preview: the
+// page from the copy) and sent to Orkline as a pull request. Comment mode: the mascot's menu, or Ctrl/⌘+Shift+M.
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
@@ -84,7 +84,7 @@ export function CommentLayer() {
   return html`<div class="gui-comment">
     <div class="gui-comment__bar ok-font-status" role="status">
       <b>${say("Comment mode")}</b> · ${say("press the part of the window that should change, and say how. Esc leaves.")}
-      <button class="gui-link" onClick=${() => { commentMode.value = false; fixesOpen.value = true; }}>${say(`Improve Orkcraft${f.comments ? ` (${f.comments} waiting)` : ""}`)}</button>
+      <button class="gui-link" onClick=${() => { commentMode.value = false; fixesOpen.value = true; }}>${say(`Improve Orkline${f.comments ? ` (${f.comments} waiting)` : ""}`)}</button>
       <button class="gui-link" onClick=${() => { commentMode.value = false; }}>${say("Done")}</button>
     </div>
     ${(r || hover) && html`<div class="gui-comment__frame" style=${box(r || hover)}></div>`}
@@ -144,9 +144,9 @@ export function FixesDialog() {
   if (!open) return null;
   const close = () => { fixesOpen.value = false; };
   const meta = s && (s.kind === "worktree"
-    ? "Orkcraft runs from a git checkout: each fix is written in a worktree of it, with its CLAUDE.md and its tests."
-    : "Each fix is written in a copy of the package as installed (no tests there). Run Orkcraft from a git checkout to have them run.");
-  return html`<${Dialog} title=${say("Improve Orkcraft")} wide onCancel=${close} meta=${meta && say(meta)}
+    ? "Orkline runs from a git checkout: each fix is written in a worktree of it, with its CLAUDE.md and its tests."
+    : "Each fix is written in a copy of the package as installed (no tests there). Run Orkline from a git checkout to have them run.");
+  return html`<${Dialog} title=${say("Improve Orkline")} wide onCancel=${close} meta=${meta && say(meta)}
       actions=${html`<button class="ok-btn" onClick=${close}>${say("Close")}</button>`}>
     ${!s ? html`<p class="ok-font-status">${say("Loading…")}</p>` : html`
       <section class="gui-fixes">

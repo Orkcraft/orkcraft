@@ -79,8 +79,8 @@ def rules_text(wiki_rel: str, sections: list[tuple[str, str]], inbox: str, topic
     rows = "\n".join(f"- `pages/{n}/` — {w}" if w else f"- `pages/{n}/`" for n, w in sections)
     return f"""# Rules for AI tools: the LLM wiki
 
-This project keeps an LLM wiki ({topic}) at `{wiki_rel}/`, kept by Orkcraft's Wiki from the
-project's sources and checked by its Review board. These rules are written by Orkcraft after each
+This project keeps an LLM wiki ({topic}) at `{wiki_rel}/`, kept by Orkline's Wiki from the
+project's sources and checked by its Review board. These rules are written by Orkline after each
 approved review: edit the wiki's `WIKI.md`, not this file.
 
 ## Where to look

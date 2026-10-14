@@ -123,7 +123,7 @@ CLICK_JS = "(() => {" + HELPERS_JS + r"""
 BANNER_JS = r"""
 (() => { const add = () => { if (document.getElementById('orkcraft-scout') || !document.body) return;
   const d = document.createElement('div'); d.id = 'orkcraft-scout';
-  d.textContent = '🎯 Orkcraft is learning this page — log in, open the form, then close this window';
+  d.textContent = '🎯 Orkline is learning this page — log in, open the form, then close this window';
   d.style.cssText = 'position:fixed;z-index:2147483647;left:8px;bottom:8px;padding:6px 10px;border-radius:6px;'
     + 'background:#222;color:#fff;font:13px sans-serif;opacity:.85;pointer-events:none';
   document.body.appendChild(d); };

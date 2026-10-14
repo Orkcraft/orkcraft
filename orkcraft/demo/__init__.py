@@ -57,7 +57,7 @@ def build(root: Path = DEFAULT_DIR, reset: bool = False, set_name: str = "main")
     root = Path(root).expanduser().resolve()
     if root.exists() and any(root.iterdir()):
         if not (root / MARKER).exists():
-            raise ValueError(f"{root} is not empty and is not an orkcraft demo — choose another folder")
+            raise ValueError(f"{root} is not empty and is not an Orkline demo — choose another folder")
         if not reset and (root / MARKER).read_text(encoding="utf-8") == _stamp(set_name):
             return root
         shutil.rmtree(root)

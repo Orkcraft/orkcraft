@@ -1,13 +1,13 @@
-"""Crash reports (docs/crash-reports.md): where in Orkcraft's code something broke, never what was in it.
+"""Crash reports (docs/crash-reports.md): where in Orkline's code something broke, never what was in it.
 
 One answer with the usage stats (core/usage.py): off until the operator says yes. Then an error
 nobody caught, a command that broke, a part of the town's clock that failed or an error of the window
-goes to Orkcraft's proxy (tools/usage-worker/, `/v1/crash`), which holds the Sentry key and passes
+goes to Orkline's proxy (tools/usage-worker/, `/v1/crash`), which holds the Sentry key and passes
 it on as a Sentry event. Each run is a Sentry session too (ok, exited, crashed, or abnormal when the
 process died without closing), so Sentry can say which share of runs of each version ended well.
 
 What a report holds: the exception's type, its message scrubbed (`scrub`: no paths, URLs, addresses
-or quoted text), and the stack as file, function and line — Orkcraft's files by their path in the
+or quoted text), and the stack as file, function and line — Orkline's files by their path in the
 package, a library's by its own, anything else as `<other>` with no function name. No local
 variables, no prompt, no log, no project or building name.
 
@@ -137,7 +137,7 @@ _JS_FRAME_FF = re.compile(r"^(?P<fn>[^@\s]*)@(?:[a-z]+://[^/\s]+)?/(?P<file>stat
 
 
 def js_frames(stack: str) -> list[dict[str, Any]]:
-    """The window's stack (Chromium's or WebKit's form), only its frames in Orkcraft's own scripts."""
+    """The window's stack (Chromium's or WebKit's form), only its frames in Orkline's own scripts."""
     frames = []
     for raw in str(stack or "").splitlines()[:MAX_FRAMES]:
         line = raw.strip()
@@ -343,7 +343,7 @@ def _alive(pid: Any) -> bool:
 
 
 def _environment() -> str:
-    """`checkout` for a git checkout (the people who work on Orkcraft), else `production`."""
+    """`checkout` for a git checkout (the people who work on Orkline), else `production`."""
     try:
         from orkcraft.core import updates
         return "checkout" if updates._checkout(PACKAGE) is not None else "production"

@@ -101,7 +101,7 @@ TERMS: tuple[Term, ...] = (
     _t("orders", "Answers", "", "Orders"),
     _t("war_raven", "Phone", "Phones", "War Raven", "War Ravens"),   # a phone paired with the town (docs/design/mobile.md)
     _t("place", "place", "places"),                                # an area a phone says it came to or left (docs/design/phone-places.md)
-    _t("update", "update", "updates"),                             # a newer Orkcraft (core/updates.py, docs/updates.md)
+    _t("update", "update", "updates"),                             # a newer Orkline (core/updates.py, docs/updates.md)
     _t("critical_update", "critical update", "critical updates"),  # …that installs by itself when the town opens
     _t("standing_orders", "Instructions", "", "Standing orders"),   # what an ork is told to do
     _t("awaiting_orders", "Awaiting an answer", "", "Awaiting Orders"),
@@ -145,11 +145,11 @@ TERMS: tuple[Term, ...] = (
     _t("claim", "Area in work", "Areas in work"),                   # the files an open task changes, until merged
     _t("overlap", "Overlap", "Overlaps"),                           # a task on another open task's area
     _t("design_brief", "Design brief", "Design briefs"),            # the design a planned task leaves in its PR
-    # Improve Orkcraft: Orkcraft's own changes, from this machine (docs/design/improve-buildings.md §14)
-    _t("improve_orkcraft", "Improve Orkcraft"),                     # the comments and fixes of Orkcraft itself (gui/fixes.py)
+    # Improve Orkline: Orkline's own changes, from this machine (docs/design/improve-buildings.md §14)
+    _t("improve_orkcraft", "Improve Orkline"),                     # the comments and fixes of Orkline itself (gui/fixes.py)
     _t("remark", "Comment", "Comments"),                            # what the person said about a part of the window
     _t("comment_mode", "Comment mode"),                             # a press on any part of the window comments on it
-    _t("fix", "Fix", "Fixes"),                                      # a change to Orkcraft's source, sent as a pull request
+    _t("fix", "Fix", "Fixes"),                                      # a change to Orkline's source, sent as a pull request
     # what is wanted, on the cart: it decides the Agent pool's path (docs/design/barracks-flows.md)
     _t("want", "Kind of work", "Kinds of work"),                    # `want`, set by a building, never by the text
     _t("want.change", "Code change"),                               # a branch and a pull request
@@ -293,7 +293,7 @@ def _alternation() -> str:
     return "|".join(re.escape(n) for n in sorted(set(names), key=len, reverse=True))
 
 
-# A name stands alone: not inside another word (`ork` in `work` or in `Orkcraft`, `town` in `downtown`)
+# A name stands alone: not inside another word (`ork` in `work` or in `Orkline`, `town` in `downtown`)
 # nor in a path (`./loot/`, `loot/screenshots`, `src/roads.py`): those name files, not concepts.
 _WORD = re.compile(rf"(?<![\w\-/\\.])(?:{_alternation()})(?![\w\-/\\]|\.\w)")
 

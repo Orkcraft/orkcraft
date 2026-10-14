@@ -10,7 +10,7 @@ The documents are this machine's look, like its pictures: one file per type unde
 `cards/<type>.json`. The UX bench writes them (one checked model call from the person's words), the hut applies them.
 
     card_docs.load("barracks")            → this machine's document, or None
-    card_docs.current("barracks")         → this machine's, else the one Orkcraft ships (design-system/cards/), or None
+    card_docs.current("barracks")         → this machine's, else the one Orkline ships (design-system/cards/), or None
     card_docs.ask(type, title, current, words, size, part, runner) → (document, problems, cost)
 """
 from __future__ import annotations
@@ -84,7 +84,7 @@ def load(type_id: str) -> dict | None:
 
 
 def shipped(type_id: str) -> dict | None:
-    """The one Orkcraft ships (design-system/cards/<type>.json, sent from a UX bench), or None."""
+    """The one Orkline ships (design-system/cards/<type>.json, sent from a UX bench), or None."""
     return _read(tokens.SYSTEM / "cards" / f"{type_id}.json", type_id)
 
 
@@ -125,7 +125,7 @@ def remove(type_id: str) -> None:
 
 PROMPT = """{who}
 
-You lay out the card of a building of Orkcraft, a town of AI agents: the small card under its house on the map.
+You lay out the card of a building of Orkline, a town of AI agents: the small card under its house on the map.
 The building: {title} ({type}).
 A card has three sizes — small, medium, large — and is drawn from these parts:
 {parts}

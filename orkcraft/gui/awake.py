@@ -1,4 +1,4 @@
-"""Keep the computer awake while Orkcraft runs: the screen may turn off, the machine does not sleep by itself,
+"""Keep the computer awake while Orkline runs: the screen may turn off, the machine does not sleep by itself,
 so the orks go on working and a phone reaches the town (docs/design/mobile.md §10).
 
     awake = Awake()
@@ -24,7 +24,7 @@ import sys
 import threading
 from typing import Callable
 
-WHY = "Orkcraft is open: the orks keep working while the screen is off"
+WHY = "Orkline is open: the orks keep working while the screen is off"
 ES_CONTINUOUS, ES_SYSTEM_REQUIRED = 0x80000000, 0x00000001
 
 
@@ -33,7 +33,7 @@ def _argv(platform: str, pid: int, which: Callable[[str], str | None]) -> tuple[
     if platform == "darwin" and which("caffeinate"):
         return "caffeinate", ["caffeinate", "-i", "-w", str(pid)]
     if platform.startswith("linux") and which("systemd-inhibit") and which("tail"):
-        return "systemd-inhibit", ["systemd-inhibit", "--what=sleep", "--who=Orkcraft", f"--why={WHY}",
+        return "systemd-inhibit", ["systemd-inhibit", "--what=sleep", "--who=Orkline", f"--why={WHY}",
                                    "--mode=block", "tail", f"--pid={pid}", "-f", "/dev/null"]
     return None
 

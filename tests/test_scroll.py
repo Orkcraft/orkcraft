@@ -13,7 +13,7 @@ PRESETS = {
     "limits": {"title": "Treasury (Limits)", "icon": "🏛️", "orc": "Treasurer", "role": "quota", "category": "migrated"},
 }
 
-SPEC_V2 = {  # §11 of the Orkcraft v0.2 spec (a v2 scroll)
+SPEC_V2 = {  # §11 of the Orkline v0.2 spec (a v2 scroll)
     "$schema": "https://orkcraft.dev/schemas/town-scroll.v2.json", "version": "0.2.0",
     "meta": {"project_name": "orkcraft", "tagline": "Work vs Humans", "updated_at": "2026-09-29T10:15:00Z"},
     "budget": {"gold_session_limit_usd": 20.0, "lumber_context_limit_tokens": 131072, "supply_max_workers": 5},

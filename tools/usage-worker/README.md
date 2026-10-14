@@ -1,6 +1,6 @@
 # The usage proxy
 
-A Cloudflare Worker between Orkcraft and Amplitude (usage stats, [docs/usage-stats.md](../../docs/usage-stats.md)) and Sentry (crash reports, [docs/crash-reports.md](../../docs/crash-reports.md)).
+A Cloudflare Worker between Orkline and Amplitude (usage stats, [docs/usage-stats.md](../../docs/usage-stats.md)) and Sentry (crash reports, [docs/crash-reports.md](../../docs/crash-reports.md)).
 
 ```
 orkcraft ──POST /v1/events──▶ Worker ──▶ Amplitude HTTP API v2 (US)
@@ -11,7 +11,7 @@ orkcraft ──POST /v1/events──▶ Worker ──▶ Amplitude HTTP API v2 (
 ```
 
 The repository holds only the proxy's address (`orkcraft/core/usage.py` `ENDPOINT`), never a key.
-Whoever runs the proxy can change the analytics behind it without a release of Orkcraft.
+Whoever runs the proxy can change the analytics behind it without a release of Orkline.
 
 ## Set it up
 
@@ -52,7 +52,7 @@ Whoever runs the proxy can change the analytics behind it without a release of O
      does not always pass it on: its absence proves nothing.
    - A change to `wrangler.toml` counts only after `npx wrangler deploy`.
 
-5. **Point Orkcraft at it**: set `ENDPOINT = "https://…/v1/events"` in `orkcraft/core/usage.py` and
+5. **Point Orkline at it**: set `ENDPOINT = "https://…/v1/events"` in `orkcraft/core/usage.py` and
    release. Until then, try it on your own machine with
    `ORKCRAFT_USAGE_URL=https://…/v1/events orkcraft usage on && orkcraft`.
 
@@ -66,13 +66,13 @@ and deeds). Add the event to [docs/usage-stats.md](../../docs/usage-stats.md) as
 ## Crash reports → Sentry
 
 `POST /v1/crash` takes the app's crash reports and run sessions ([docs/crash-reports.md](../../docs/crash-reports.md)),
-checks each field again (file paths only of Orkcraft, a library or `<other>`; identifiers only) and
+checks each field again (file paths only of Orkline, a library or `<other>`; identifiers only) and
 sends them to Sentry as one envelope. Without the `SENTRY_DSN` secret it answers 204 and drops them.
 
 1. **Sentry.** An account (the free Developer plan is enough; open-source projects can ask for the
    sponsored plan). Create a project, platform **Python**. Project settings → Client Keys (DSN): copy
    the DSN, `https://<key>@o….ingest.<region>.sentry.io/<project>`. The Worker sends to the host the DSN
-   names, so the region is the project's: Orkcraft's is in the EU (`ingest.de.sentry.io`).
+   names, so the region is the project's: Orkline's is in the EU (`ingest.de.sentry.io`).
 2. In the project's **Security & Privacy**: turn on *Prevent Storing of IP Addresses* and keep
    *Data Scrubber* on. Sentry sees only the Worker's address anyway.
 3. Put the DSN in the Worker and deploy:
@@ -110,4 +110,4 @@ to `worker.js`.
 ## Rotate the key
 
 In Amplitude, create a new API key, then `npx wrangler secret put AMPLITUDE_API_KEY` again. No release of
-Orkcraft is needed.
+Orkline is needed.

@@ -114,7 +114,7 @@ class Host:
         self.bench = bench.Bench(self)              # the Test bench's runs and reviews, for its building (gui/bench.py)
         self.commands.update(self.bench.commands())
         self.commands.update(self.day_review.commands())   # Improve: a day's findings tried (gui/day_try.py)
-        self.fixes = fixes.Fixes(self)              # Improve Orkcraft: comments and code fixes as pull requests (gui/fixes.py)
+        self.fixes = fixes.Fixes(self)              # Improve Orkline: comments and code fixes as pull requests (gui/fixes.py)
         self.commands.update(self.fixes.commands())
         self.commands.update(mobile.commands(self))   # what a phone reads (gui/mobile.py, docs/design/mobile.md)
         self.growth = growth.Growth(self)           # levels, deeds, the mascot; the War Map's lands (gui/growth.py)
@@ -158,9 +158,9 @@ class Host:
         snap["growth"] = self.growth.snapshot()            # the news and the operator's mascot (gui/growth.py)
         snap["portrait"] = self.you.snapshot()             # the look, Do not disturb, what gathered (gui/you.py)
         snap["usage_ask"] = self.usage.should_ask()        # the one question about usage stats (js/settings.js)
-        snap["update"] = self.updates.snapshot()           # a newer Orkcraft, if one is out (js/update.js)
+        snap["update"] = self.updates.snapshot()           # a newer Orkline, if one is out (js/update.js)
         snap["improve"] = self.day_review.state()          # the days Improve can read, and the one read now
-        snap["fixes"] = self.fixes.summary()               # Improve Orkcraft: comments waiting, fixes written (js/fixes.js)
+        snap["fixes"] = self.fixes.summary()               # Improve Orkline: comments waiting, fixes written (js/fixes.js)
         snap["onboarding"] = self.onboarding.snapshot()    # the first run's steps and the town going up (js/onboarding.js)
         return snap
 

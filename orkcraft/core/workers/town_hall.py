@@ -50,7 +50,7 @@ DEMO_LIMITS = (Limit("claude", "", "5h session", 0.62, None), Limit("claude", ""
                Limit("agy", "", "daily", 0.4, None), Limit("codex", "plus", "5h", 0.9, None),
                Limit("codex", "plus", "weekly", 0.7, None))
 
-PROMPT = """You are the Warchief, the lead ork of an Orkcraft town. A town is a project: buildings (typed
+PROMPT = """You are the Warchief, the lead ork of an Orkline town. A town is a project: buildings (typed
 modules) take carts (messages) along roads (links) and orks (agents) work in them. The person who runs
 the town asks you; answer briefly and plainly in Markdown, as a guide who knows this town.
 

@@ -1,12 +1,12 @@
-"""GitHub for the Improve buildings (docs/design/improve-buildings.md §4): signed in once through the Orkcraft
-Improve GitHub App's device flow, and a change a Test bench tried sent to Orkcraft as a pull request.
+"""GitHub for the Improve buildings (docs/design/improve-buildings.md §4): signed in once through the Orkline
+Improve GitHub App's device flow, and a change a Test bench tried sent to Orkline as a pull request.
 
 The sign-in: GitHub shows the person a code (`start`), they type it at github.com/login/device, `poll` gets the token
 — no client secret ships, the device flow needs none. The token is kept as a login on this machine (realm/logins.py,
 the keychain when there is one). The app acts only where it is installed: on `orkcraft/orkcraft` by its owner, and
 on the person's own account (for their fork), which `installed` checks and `INSTALL` opens.
 
-A pull request is made with the API only, no clone: the person's fork (made when missing), a branch from Orkcraft's
+A pull request is made with the API only, no clone: the person's fork (made when missing), a branch from Orkline's
 `main` with the changed files (each merged three ways when `main` changed it since the installed version, refused
 when that conflicts; a picture, given as bytes, is refused when `main` changed it to anything else), and the pull
 request into `main`. The Test bench sends code and a type's defaults, the UX bench pictures, cards and windows.
@@ -164,7 +164,7 @@ def _not_installed(acct: dict, opener=None) -> str:
 # -- a pull request ----------------------------------------------------------------------------------------------------
 
 def merged(base: str, mine: str, theirs: str) -> str | None:
-    """`mine` (base → mine, the bench's change) on top of `theirs` (base → theirs, Orkcraft's main since); None when
+    """`mine` (base → mine, the bench's change) on top of `theirs` (base → theirs, Orkline's main since); None when
     the two change the same lines."""
     if theirs == base:
         return mine
@@ -179,7 +179,7 @@ def merged(base: str, mine: str, theirs: str) -> str | None:
 
 
 def _fork(acct: dict, opener=None) -> str:
-    """The person's fork of Orkcraft, made when missing; its full name."""
+    """The person's fork of Orkline, made when missing; its full name."""
     name = f"{acct['login']}/{UPSTREAM.split('/')[1]}"
     code, _got = _call("GET", f"{API}/repos/{name}", token=acct["token"], opener=opener)
     if code == 200:
@@ -190,12 +190,12 @@ def _fork(acct: dict, opener=None) -> str:
         if _call("GET", f"{API}/repos/{name}", token=acct["token"], opener=opener)[0] == 200:
             return name
         time.sleep(1.5)
-    raise GithubError("GitHub is still making your fork of Orkcraft: try again in a minute")
+    raise GithubError("GitHub is still making your fork of Orkline: try again in a minute")
 
 
 def send(changes: dict[str, tuple[str, str] | tuple[bytes, bytes]], title: str, body: str, branch: str,
          acct: dict | None = None, opener=None) -> str:
-    """The changed files ({path: (as installed, as changed)}, text or bytes) as a pull request into Orkcraft's main;
+    """The changed files ({path: (as installed, as changed)}, text or bytes) as a pull request into Orkline's main;
     its URL."""
     acct = acct or account()
     if acct is None:
@@ -213,7 +213,7 @@ def send(changes: dict[str, tuple[str, str] | tuple[bytes, bytes]], title: str, 
         if isinstance(mine, bytes):                   # a picture: no lines to merge, so main must not have moved it
             theirs_b = base64.b64decode(got.get("content") or "") if code == 200 else None
             if theirs_b is not None and theirs_b not in (base, mine):
-                raise GithubError(f"{path} changed in Orkcraft's main since this version: update Orkcraft and draw it "
+                raise GithubError(f"{path} changed in Orkline's main since this version: update Orkline and draw it "
                                   "again")
             blob = _api("POST", f"/repos/{fork}/git/blobs", {"content": base64.b64encode(mine).decode(),
                                                              "encoding": "base64"}, token, opener=opener)
@@ -222,7 +222,7 @@ def send(changes: dict[str, tuple[str, str] | tuple[bytes, bytes]], title: str, 
         theirs = base64.b64decode(got.get("content") or "").decode("utf-8") if code == 200 else ""
         text = merged(base, mine, theirs) if code == 200 else mine
         if text is None:
-            raise GithubError(f"{path} changed in Orkcraft's main where this change does: update Orkcraft and try "
+            raise GithubError(f"{path} changed in Orkline's main where this change does: update Orkline and try "
                               "the change again")
         blob = _api("POST", f"/repos/{fork}/git/blobs", {"content": text, "encoding": "utf-8"}, token, opener=opener)
         entries.append({"path": path, "mode": "100644", "type": "blob", "sha": blob["sha"]})

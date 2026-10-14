@@ -61,7 +61,7 @@ def type_spec(town: Town, type_id: str) -> dict | None:
         bid, n = f"{type_id}_{n}", n + 1
     spec = {"id": bid, "type": type_id, "title": t.title, "icon": t.icon, "summary": t.summary[:200],
             "orc": {"name": t.orc, "role": t.preview[:80]}}
-    shipped = type_defaults.config(type_id)       # the settings Orkcraft ships for the type (a Test bench sent them)
+    shipped = type_defaults.config(type_id)       # the settings Orkline ships for the type (a Test bench sent them)
     return {**spec, "config": shipped} if shipped else spec
 
 

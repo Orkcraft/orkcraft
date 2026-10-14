@@ -249,7 +249,7 @@ class GitLink:
 
 @dataclass
 class Project:
-    """The folder orkspaces work in (docs/design/projects.md §3); `managed`: Orkcraft started its git."""
+    """The folder orkspaces work in (docs/design/projects.md §3); `managed`: Orkline started its git."""
     id: str
     name: str
     path: str

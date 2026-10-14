@@ -449,7 +449,7 @@ function Proposals({ id, d, on }) {
 // -- the virtual building (docs/design/improve-buildings.md §5.3) ---------------------------------------------------
 
 /** The changes tried on the Test bench's copy of the buildings: its runs stand them, the town's do not. Save changes
- *  makes the settings and prompts the buildings' own; code goes to Orkcraft as a pull request. */
+ *  makes the settings and prompts the buildings' own; code goes to Orkline as a pull request. */
 function Virtual({ id, d, on }) {
   const [pr, setPr] = useState(false);
   const changes = d.virtual || [];
@@ -474,7 +474,7 @@ function Virtual({ id, d, on }) {
     </div>
     <div class="gui-bench__row">
       ${d.pr && html`<a class="gui-link ok-font-status" href=${d.pr} target="_blank" rel="noopener">${say("Its pull request")}</a>`}
-      <button class="ok-btn" disabled=${on || d.busy_what === "pr"} onClick=${() => setPr(true)}>${say(d.busy_what === "pr" ? "Sending…" : "Send to Orkcraft as a pull request…")}</button>
+      <button class="ok-btn" disabled=${on || d.busy_what === "pr"} onClick=${() => setPr(true)}>${say(d.busy_what === "pr" ? "Sending…" : "Send to Orkline as a pull request…")}</button>
       <span class="ok-font-status ok-tone-muted">${say(code ? "Code reaches everyone only through a pull request and the update that carries it; settings and prompts go with it as their type's defaults."
         : "Settings and prompts go as the defaults a new building of their type starts with.")}</span></div>
     ${pr && html`<${PullRequest} id=${id} onClose=${() => setPr(false)} />`}
@@ -486,7 +486,7 @@ function PullRequest({ id, onClose }) {
   const [x, setX] = useState(null);
   useEffect(() => { act(id, "pr_preview").then(setX, onClose); }, [id]);
   const send = () => act(id, "pr_send").then(onClose, () => {});
-  return html`<${Dialog} title=${say("A pull request to Orkcraft")} wide=${true} onCancel=${onClose}
+  return html`<${Dialog} title=${say("A pull request to Orkline")} wide=${true} onCancel=${onClose}
       actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
         <button class="ok-btn primary" disabled=${!x || !x.ready || !x.login} onClick=${send}>${say("Send")}</button>`}>
     ${!x ? html`<p class="ok-tone-muted">${say("Looking…")}</p>` : html`

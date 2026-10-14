@@ -38,7 +38,7 @@ def test_build_refuses_a_foreign_folder_and_keeps_an_existing_demo(tmp_path: Pat
     foreign = tmp_path / "work"
     foreign.mkdir()
     (foreign / "notes.md").write_text("mine")
-    with pytest.raises(ValueError, match="not an orkcraft demo"):
+    with pytest.raises(ValueError, match="not an Orkline demo"):
         demo.build(foreign)
     root = demo.build(tmp_path / "demo")
     (root / "extra.md").write_text("x")

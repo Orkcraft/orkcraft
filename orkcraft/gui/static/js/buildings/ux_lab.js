@@ -307,16 +307,16 @@ function LayoutDialog({ id, data, onClose }) {
   </${Dialog}>`;
 }
 
-/** What this machine applied, sent to Orkcraft as a pull request (§6.5): a button when there is something to send,
+/** What this machine applied, sent to Orkline as a pull request (§6.5): a button when there is something to send,
  *  and the last one sent. */
 function SendRow({ id, send }) {
   const [open, setOpen] = useState(false);
   if (!send || (!send.count && !send.sent)) return null;
   return html`<div class="ux-send">
     ${send.count > 0 && html`<button class="ok-btn" disabled=${send.busy} onClick=${() => setOpen(true)}>${say(send.busy
-      ? "Sending…" : `Send to Orkcraft as a pull request… (${send.count})`)}</button>`}
+      ? "Sending…" : `Send to Orkline as a pull request… (${send.count})`)}</button>`}
     ${send.sent && html`<a class="gui-link ok-font-status" href=${send.sent} target="_blank" rel="noopener">${say("Its pull request")}</a>`}
-    <span class="ok-font-status ok-tone-muted">${say("What you applied stays on this machine until Orkcraft takes it in.")}</span>
+    <span class="ok-font-status ok-tone-muted">${say("What you applied stays on this machine until Orkline takes it in.")}</span>
     ${open && html`<${SendDialog} id=${id} onClose=${() => setOpen(false)} />`}
   </div>`;
 }
@@ -335,7 +335,7 @@ function SendDialog({ id, onClose }) {
     setOff(next);
     look(x.items.map((it) => it.id).filter((it) => !next.has(it)));
   };
-  return html`<${Dialog} title=${say("A pull request to Orkcraft")} wide=${true} onCancel=${onClose}
+  return html`<${Dialog} title=${say("A pull request to Orkline")} wide=${true} onCancel=${onClose}
       actions=${html`<button class="ok-btn" onClick=${onClose}>${say("Cancel")}</button>
         <button class="ok-btn primary" disabled=${!x || !x.login || !picked.length}
           onClick=${() => act(id, "send", { ids: picked }).then(onClose, () => {})}>${say("Send")}</button>`}>

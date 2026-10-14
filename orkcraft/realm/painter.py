@@ -89,7 +89,7 @@ def paint(tool: str, model: str, path: str, reference: bytes, words: str, region
 MAX_ATTEMPTS = 2             # a mascot's grid: a wrong answer goes back once
 MASCOT_PROMPT = """{who}
 
-You draw the operator's mascot of Orkcraft, a town of AI agents: a pixel head on a grid of {w} columns × {h} rows,
+You draw the operator's mascot of Orkline, a town of AI agents: a pixel head on a grid of {w} columns × {h} rows,
 one letter a cell, "." a transparent cell. The head: {what}.
 The palette (a letter → its colour and what it is used for):
 {palette}

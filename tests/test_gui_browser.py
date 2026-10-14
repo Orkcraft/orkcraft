@@ -950,7 +950,7 @@ def test_the_huds_menu_sets_the_towns_autonomy_and_stop_all_stands_in_the_hud(pa
     hud.locator(".gui-hud__menu").click()
     modal = pg.locator(".gui-modal")
     modal.wait_for(state="visible", timeout=WAIT_MS)
-    assert modal.locator(".gui-settings__version").inner_text() == f"Orkcraft {orkcraft.__version__}"   # always, quiet
+    assert modal.locator(".gui-settings__version").inner_text() == f"Orkline {orkcraft.__version__}"   # always, quiet
     lit = lambda: modal.locator(".gui-steps__one.is-on").all_inner_texts()        # noqa: E731
     assert any("On the clock" in t or "Apply if unanswered" in t for t in lit()) and "7 min" in lit()
     modal.get_by_role("button", name="15 min", exact=True).click()
@@ -2280,7 +2280,7 @@ def test_the_ux_bench_shows_a_buildings_pictures_and_opens_one_to_change(page, g
 
 
 def test_what_a_ux_bench_applied_is_sent_from_a_dialog_that_shows_it_first(page, gui, monkeypatch, tmp_path):
-    """docs/design/improve-buildings.md §6.5: once a picture is this machine's own, Send to Orkcraft shows; its dialog
+    """docs/design/improve-buildings.md §6.5: once a picture is this machine's own, Send to Orkline shows; its dialog
     shows the picture before and after, ticked, the title and the description, and Send waits for GitHub."""
     from orkcraft.design import tokens
     monkeypatch.setenv("ORKCRAFT_ASSETS_DIR", str(tmp_path / "assets"))
@@ -2292,8 +2292,8 @@ def test_what_a_ux_bench_applied_is_sent_from_a_dialog_that_shows_it_first(page,
     bench = pg.evaluate("t => import('/static/js/link.js').then(m => m.command('town.build', { type: t }))", "ux_lab")
     pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id, 'work'))", bench)
     pg.locator(".ux-pick .gui-build__tile[title='In parallel']").click()
-    pg.locator(".ux-send button", has_text="Send to Orkcraft").click()
-    dialog = pg.locator(".ok-dialog", has_text="A pull request to Orkcraft")
+    pg.locator(".ux-send button", has_text="Send to Orkline").click()
+    dialog = pg.locator(".ok-dialog", has_text="A pull request to Orkline")
     dialog.locator(".ux-send__item").first.wait_for(timeout=WAIT_MS)
     assert dialog.locator(".ux-send__item input:checked").count() == 1
     assert dialog.locator(".ux-send__pair img").count() == 2 and "ux bench: 1 picture" in dialog.inner_text().lower()
@@ -2323,7 +2323,7 @@ def test_the_ux_bench_shows_the_mascots_and_opens_one_to_draw_again(page, gui):
 
 def test_comment_mode_sends_what_was_pressed_to_the_alchemist(page, gui):
     """Ctrl+Shift+M (docs/design/improve-buildings.md §14): a frame follows the pointer, a press opens a note, Send keeps
-    the comment with where it was; Improve Orkcraft lists it."""
+    the comment with where it was; Improve Orkline lists it."""
     server, _browser = gui
     page.keyboard.press("Control+Shift+M")
     page.wait_for_selector(".gui-comment__bar", timeout=WAIT_MS)
@@ -2338,7 +2338,7 @@ def test_comment_mode_sends_what_was_pressed_to_the_alchemist(page, gui):
     page.wait_for_selector(".gui-comment__note", state="detached", timeout=WAIT_MS)
     [c] = server.host.fixes.store.waiting()
     assert c.text == "The Warchief's face could say what it does" and "gui-warchief__face" in c.where["selector"]
-    page.click(".gui-comment__bar .gui-link")                                           # Improve Orkcraft (1 waiting)
+    page.click(".gui-comment__bar .gui-link")                                           # Improve Orkline (1 waiting)
     page.wait_for_selector(".gui-fixes", timeout=WAIT_MS)
     assert page.locator(".gui-comment__bar").count() == 0                                # the mode left for the dialog
     assert "The Warchief's face could say what it does" in page.inner_text(".gui-fixes")

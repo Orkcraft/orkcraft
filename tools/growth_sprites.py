@@ -309,7 +309,7 @@ ROLES = {
 }
 
 
-# Heads drawn again in a UX bench and sent to Orkcraft (orkcraft/realm/ux_pr.py): kept over the ones drawn here.
+# Heads drawn again in a UX bench and sent to Orkline (orkcraft/realm/ux_pr.py): kept over the ones drawn here.
 DRAWN = SPRITES / "mascots" / "drawn.json"
 
 

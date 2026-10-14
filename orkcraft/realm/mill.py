@@ -161,7 +161,7 @@ def script_env(names: list[str] | tuple[str, ...] = ()) -> dict[str, str]:
 
 
 def agent_prompt(ask: str, text: str) -> str:
-    return ("You are the Miller of a Mill in Orkcraft: one step of a pipeline that changes what passes "
+    return ("You are the Miller of a Mill in Orkline: one step of a pipeline that changes what passes "
             "through it. Change the input as asked and answer with the result only — no comments, no code "
             "fences, nothing around it; the next step reads your answer as it is.\n\n"
             f"## What to do\n\n{ask}\n\n## Input\n\n{text}")

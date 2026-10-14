@@ -1,4 +1,4 @@
-"""A building type's defaults that Orkcraft ships (docs/design/improve-buildings.md §5.4): the settings a building
+"""A building type's defaults that Orkline ships (docs/design/improve-buildings.md §5.4): the settings a building
 raised from Build starts with, beyond what its type's code assumes. One file per type,
 `orkcraft/design/defaults/<type>.json`, `{"config": {...}}`. A Test bench sends the settings and prompts it tried on
 its virtual building there, as a pull request (gui/lab_runs.py), so every new building of the type starts with them.

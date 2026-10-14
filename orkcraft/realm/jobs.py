@@ -234,7 +234,7 @@ def _ok(proc: subprocess.CompletedProcess) -> str:
 
 # A folder with no git yet: what its first commit leaves out when it has no .gitignore of its own — secrets, the
 # town's own state, what a build or an install makes again.
-FIRST_IGNORE = """# written by Orkcraft when it started git here: what the first commit left out
+FIRST_IGNORE = """# written by Orkline when it started git here: what the first commit left out
 .env
 .env.*
 *.pem
@@ -270,7 +270,7 @@ def ensure_repo(repo_root: Path) -> str:
             done.append("wrote a .gitignore (.env, keys, caches and .orkcraft/ left out)")
         _ok(_git(repo_root, "add", "-A"))
         who = () if _git(repo_root, "config", "user.email").stdout.strip() else FIRST_AUTHOR
-        _ok(_git(repo_root, *who, "commit", "--allow-empty", "-m", "Orkcraft: the first commit, so agents can work in worktrees"))
+        _ok(_git(repo_root, *who, "commit", "--allow-empty", "-m", "Orkline: the first commit, so agents can work in worktrees"))
         done.append("made a first commit of the files as they are")
     return "; ".join(done)
 

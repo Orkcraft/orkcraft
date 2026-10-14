@@ -19,7 +19,7 @@ The tools the operator leads and how each is paid for, and the quiet hours of th
 docs/design/onboarding.md). There is one look now: `mode`, `office` and `office_days` of older
 settings files still load and are ignored, and are no longer written. `look` is not a mode: it changes
 only how the GUI draws (docs/design/portrait.md §3).
-Orkcraft never stores an API key here: `billing` only says how the CLI is paid for.
+Orkline never stores an API key here: `billing` only says how the CLI is paid for.
 """
 from __future__ import annotations
 
@@ -82,7 +82,7 @@ class MachineSettings:
     agy_warder_checked: bool = False
     usage: bool | None = None     # anonymous usage stats (core/usage.py): None until the operator answers
     install_id: str = ""          # a random id while they share them; forgotten when they stop
-    keep_awake: bool = True       # the computer does not sleep by itself while Orkcraft is open (gui/awake.py)
+    keep_awake: bool = True       # the computer does not sleep by itself while Orkline is open (gui/awake.py)
     fire: bool = True             # flames over a building whose ork has waited a minute or more (the GUI's huts)
     updates: str = "critical"     # which updates install by themselves when the town opens (core/updates.py)
     main_tool: str = ""           # the tool decisions run on (realm/harnesses.py); "" the first one on

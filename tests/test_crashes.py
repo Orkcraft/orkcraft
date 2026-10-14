@@ -1,5 +1,5 @@
 """Crash reports (core/crashes.py, docs/crash-reports.md): sent only after the usage stats' yes, only
-where in Orkcraft's code it broke, each run a Sentry session; the proxy (tools/usage-worker/) checks
+where in Orkline's code it broke, each run a Sentry session; the proxy (tools/usage-worker/) checks
 every field again and writes the Sentry envelope."""
 from __future__ import annotations
 

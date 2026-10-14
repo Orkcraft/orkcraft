@@ -166,7 +166,7 @@ def test_the_test_bench_runs_the_check_and_serves_its_folder(fake_repo, isolated
             folder = fake_repo / check.DIR / "20261011-120000"
             folder.mkdir(parents=True)
             (folder / "results.json").write_text('{"green": false}')
-            (folder / "report.md").write_text("# Orkcraft check\n\n**RED**\n")
+            (folder / "report.md").write_text("# Orkline check\n\n**RED**\n")
             with zipfile.ZipFile(folder / "check.zip", "w") as z:
                 z.writestr("README.md", "read me first")
             (fake_repo / check.DIR / "latest.txt").write_text("20261011-120000")

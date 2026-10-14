@@ -1,4 +1,4 @@
-"""A change to Orkcraft's own code, for a Test bench's runs only (docs/design/improve-buildings.md §5.3).
+"""A change to Orkline's own code, for a Test bench's runs only (docs/design/improve-buildings.md §5.3).
 
 The installed app is never changed. A Test bench that tries a code change gets its own copy of the `orkcraft`
 package beside it (`<state>/code/orkcraft`, the sprites linked, not copied), a git repository whose first commit is
@@ -92,7 +92,7 @@ def drop(state_dir: Path) -> None:
 def code_prompt(title: str, detail: str, where: str, effect: str, files: list[str]) -> str:
     return f"""{agents.persona("mechanic")}
 
-You change Orkcraft's own code (a Python package, here in `orkcraft/`) for one proposed improvement. Make the
+You change Orkline's own code (a Python package, here in `orkcraft/`) for one proposed improvement. Make the
 smallest change that does what the proposal says, in the files that make it; keep every name other code uses, and
 the style of the code around it. Change only `orkcraft/`. Do not run anything that needs the network.
 

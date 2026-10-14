@@ -270,8 +270,8 @@ function Reviews({ s, tab, call, picks, flip }) {
     <div class="gui-bench__row"><h4 class="ok-font-label gui-bench__h">${tab === "tech" ? "Reviews" : "Reviewers"}: ${titles}</h4>
       ${on ? html`<button class="ok-btn" onClick=${() => call("bench.stop", { tab })}>Stop</button>`
         : html`<button class="ok-btn" onClick=${() => call("bench.review", { tab })}>${r.at ? "Review again" : "Review"}</button>`}</div>
-    <p class="ok-font-status ok-tone-muted">${r.at ? `Reviewed ${r.at.replace("T", " ")}, Orkcraft ${r.version}.` : "Not reviewed yet."}
-      ${r.stale ? " The building has changed since: review it again." : ""} Each reviewer is one AI tool run; they only read Orkcraft's code.</p>
+    <p class="ok-font-status ok-tone-muted">${r.at ? `Reviewed ${r.at.replace("T", " ")}, Orkline ${r.version}.` : "Not reviewed yet."}
+      ${r.stale ? " The building has changed since: review it again." : ""} Each reviewer is one AI tool run; they only read Orkline's code.</p>
     ${r.roles.map((role) => html`<div key=${role.id} class="gui-bench__role">
       <div class="gui-bench__row"><b>${role.title}</b>
         ${role.running ? html`<span class="ok-font-status ok-tone-muted"><span class="gui-bench__spin" aria-hidden="true"></span> reading…</span>`

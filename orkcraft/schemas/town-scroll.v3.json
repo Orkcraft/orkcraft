@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://orkcraft.dev/schemas/town-scroll.v3.json",
-  "title": "Orkcraft Town Scroll v3",
-  "description": "Workspace state of Orkcraft (.orkcraft.json): orkspaces (canvases), buildings (windows), incoming roads, garrisons (a steward and road handlers) and budgets. Spec: T1098, design note orkcraft/docs/design/roads-and-orcs.md, decisions C1012.",
+  "title": "Orkline Town Scroll v3",
+  "description": "Workspace state of Orkline (.orkcraft.json): orkspaces (canvases), buildings (windows), incoming roads, garrisons (a steward and road handlers) and budgets. Spec: T1098, design note orkcraft/docs/design/roads-and-orcs.md, decisions C1012.",
   "type": "object",
   "required": [
     "version",

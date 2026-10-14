@@ -8,7 +8,7 @@ tech review is left: the UX and product reviews were taken out (docs/design/impr
     bench_review.write_case(root, "barracks", brief, tool, runner)     a new case, not read yet (`reviewed: false`)
     bench_review.findings(root, "barracks")          every finding of every tab, with its id, for Make tasks
 
-The agents only read (`jobs.run_read`), in Orkcraft's own source, and answer in JSON. A finding is advice: it
+The agents only read (`jobs.run_read`), in Orkline's own source, and answer in JSON. A finding is advice: it
 becomes a task only when the operator ticks it and presses Make tasks (gui/bench.py).
 """
 from __future__ import annotations
@@ -48,7 +48,7 @@ _JSON = re.compile(r"\{.*\}", re.S)
 
 
 def source_dir() -> Path:
-    """Where the agents read: the Orkcraft checkout when this runs from one (its docs too), else the package."""
+    """Where the agents read: the Orkline checkout when this runs from one (its docs too), else the package."""
     pkg = Path(orkcraft.__file__).resolve().parent
     return pkg.parent if (pkg.parent / "docs" / "design").is_dir() else pkg
 
@@ -92,7 +92,7 @@ def prompt(root: Path, type_id: str, tab: str, role: str, runs: str = "") -> str
     rid, title, focus = next(r for r in ROLES[tab] if r[0] == role)
     base = source_dir()
     run = f"\n\n## The last Test bench runs\n\n{runs or _last_run(root, type_id)}"
-    return f"""You are the {title} of Orkcraft, a town of AI agents drawn as a strategy game. {TAB_GOALS[tab]}
+    return f"""You are the {title} of Orkline, a town of AI agents drawn as a strategy game. {TAB_GOALS[tab]}
 
 {context(root, type_id)}
 
@@ -208,7 +208,7 @@ def case_prompt(root: Path, type_id: str, brief: str) -> str:
                  "the tests the case came with were changed (`git diff --quiet $(git rev-list --max-parents=0 HEAD) "
                  "-- tests && …`); `expect` says in words what a good result has.")
         shape = '{"id": "short-id", "title": "…", "task": "…", "files": {"path": "content"}, "check": "…", "expect": "…"}'
-    return f"""You write a test case for Orkcraft's Test bench. It gives the same task to the building and to the bare AI
+    return f"""You write a test case for Orkline's Test bench. It gives the same task to the building and to the bare AI
 tool on the same model, then runs the case's check on each result.
 
 {context(root, type_id)}

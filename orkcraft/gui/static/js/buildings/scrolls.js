@@ -110,7 +110,7 @@ function FolderDialog({ id, onClose }) {
         ${about && !about.exists && html` <span class="ok-tone-error">✗ ${say("no such folder")}</span>`}
         ${about && about.exists && about.outside && html`<div>
           <label class="ok-check" onClick=${() => setRules(!rules)}><i>${rules ? "✓" : ""}</i> ${say("Also tell AI tools working in this folder about the wiki")}</label>
-          <p class="ok-font-status ok-tone-muted">${say("It is outside the project. Without this, Orkcraft only reads it; with it, a short block is added to its CLAUDE.md and AGENTS.md once the wiki is reviewed.")}</p>
+          <p class="ok-font-status ok-tone-muted">${say("It is outside the project. Without this, Orkline only reads it; with it, a short block is added to its CLAUDE.md and AGENTS.md once the wiki is reviewed.")}</p>
         </div>`}
       </div>`}
     </div>

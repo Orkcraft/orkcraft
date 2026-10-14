@@ -61,7 +61,7 @@ class Projects:
 
     def for_new(self, orkspace_id: str, choice: str, opened: str | None, name: str) -> str:
         """The project a new orkspace works in: "" the open orkspace's, "town" the town's folder, "new" a new
-        project of its own (a folder and git, no question: the folder is Orkcraft's), or a project's id.
+        project of its own (a folder and git, no question: the folder is Orkline's), or a project's id.
         What was done, in a sentence ("" when nothing needs saying)."""
         if choice == "town":
             return ""

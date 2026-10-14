@@ -60,7 +60,7 @@ def test_existing_branch_is_reused_and_bad_input_refused(repo: Path):
                               ("x4", "ok", "--upload-pack=evil"), ("../escape", "ok", "HEAD")):
         with pytest.raises(wt.WorktreeError):
             wt.create(repo, oid, branch, base)
-    with pytest.raises(wt.WorktreeError, match="not an orkcraft worktree"):
+    with pytest.raises(wt.WorktreeError, match="not an Orkline worktree"):
         wt.remove(repo, repo)
 
 

@@ -1,4 +1,4 @@
-"""Orkcraft core: HUD, roster and passive ❓ alerts, pins, unit orders, viewports, Halt All."""
+"""Orkline core: HUD, roster and passive ❓ alerts, pins, unit orders, viewports, Halt All."""
 from __future__ import annotations
 
 import stat

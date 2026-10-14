@@ -1,4 +1,4 @@
-// Orkcraft's usage proxy (docs/usage-stats.md): a Cloudflare Worker between the app and Amplitude.
+// Orkline's usage proxy (docs/usage-stats.md): a Cloudflare Worker between the app and Amplitude.
 // It holds the Amplitude key (a secret of the Worker, never in the repository), keeps only the events
 // and properties listed below — the same list as orkcraft/core/usage.py `EVENTS` — limits how often
 // one install may send, and passes the rest on. The person's IP address stays here: Amplitude only

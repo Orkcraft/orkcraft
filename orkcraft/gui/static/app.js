@@ -1,4 +1,4 @@
-// The Orkcraft GUI: the town over the core (gui/server.py), drawn with the design system's markup
+// The Orkline GUI: the town over the core (gui/server.py), drawn with the design system's markup
 // (design-system/components.md). Preact + signals, no build step. A calm town (docs/design/calm-town.md):
 // the HUD, the map, the panel on the right, the War Map of orkspaces at the bottom left and the Warchief's line.
 import { render } from "preact";

@@ -1,4 +1,4 @@
-"""The computer kept awake while Orkcraft is open (gui/awake.py): each system's own way, against idle sleep
+"""The computer kept awake while Orkline is open (gui/awake.py): each system's own way, against idle sleep
 only, ended with the town, and the machine's setting in Town settings."""
 from __future__ import annotations
 

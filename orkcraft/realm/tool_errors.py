@@ -38,7 +38,7 @@ _WORDS: tuple[tuple[str, re.Pattern], ...] = (
 
 # What happened, in one line; {tool} is its title.
 LINES = {
-    MISSING: "{tool} is not installed, or Orkcraft cannot find it on this computer.",
+    MISSING: "{tool} is not installed, or Orkline cannot find it on this computer.",
     LOGIN: "{tool} is not signed in, or its sign-in has expired.",
     LIMIT: "{tool} hit a usage limit or its service is overloaded.",
     NETWORK: "{tool} could not reach its service. Check the internet connection.",

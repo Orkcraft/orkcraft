@@ -30,7 +30,7 @@ def test_the_page_has_a_section_per_building_and_lists_what_was_found():
     g.errors.append({"at": "Calendar · full", "kind": "pageerror", "text": "TypeError: x is undefined"})
     gl.add_notes(g, {"todo": ["command: the lanes overlap"], "days": ["looks fine apart from the hour"]})
     page = gl.render(g)
-    assert page.startswith("<title>Orkcraft Building Gallery</title>")
+    assert page.startswith("<title>Orkline Building Gallery</title>")
     assert 'id="my-day-days"' in page and 'id="my-day-todo"' in page
     assert 'src="shots/my-day-days-closed.png" width="270" height="114"' in page          # each view a file of its own
     assert 'src="shots/my-day-days-command-card.png"' in page and 'src="shots/my-day-days-full.png"' in page

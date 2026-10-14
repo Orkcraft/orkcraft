@@ -110,11 +110,11 @@ export function GoogleWizard() {
   const account = got && a.accounts.find((x) => x.email === got.email);
   const L = a.links;
   return html`<${Dialog} title=${say("Connect Google")} wide=${true} onCancel=${close}
-      meta=${say("For your own Google account: about 6 minutes, once. You make a small client of your own in Google Cloud; Orkcraft has no server and sees nothing on the way.")}
+      meta=${say("For your own Google account: about 6 minutes, once. You make a small client of your own in Google Cloud; Orkline has no server and sees nothing on the way.")}
       actions=${html`<button class="ok-btn" onClick=${close}>${account ? "Later" : "Close"}</button>`}>
     <ol class="gui-acc__steps">
       <${Step} n="1" title=${say("Make a project in Google Cloud")} done=${!!a.client}>
-        <span class="ok-font-status ok-tone-muted">${say("Any name, e.g. Orkcraft. Free: no billing is needed.")}</span>
+        <span class="ok-font-status ok-tone-muted">${say("Any name, e.g. Orkline. Free: no billing is needed.")}</span>
         ${!a.client && html`<span><${Link} href=${L.project}>Create a project</${Link}></span>`}
       </${Step}>
       <${Step} n="2" title=${say("Turn on the Gmail, Calendar and Drive APIs")} done=${!!a.client}>
@@ -122,7 +122,7 @@ export function GoogleWizard() {
         ${!a.client && html`<span><${Link} href=${L.apis}>Turn on the APIs</${Link}></span>`}
       </${Step}>
       <${Step} n="3" title=${say("Name the app and publish it")} done=${!!a.client}>
-        ${!a.client && html`<span class="ok-font-status ok-tone-muted">${say("Branding: an app name (e.g. Orkcraft, mine) and your e-mail. Then Audience: External, and Publish app. Not Testing: in Testing, Google ends the sign-in after 7 days.")}</span>
+        ${!a.client && html`<span class="ok-font-status ok-tone-muted">${say("Branding: an app name (e.g. Orkline, mine) and your e-mail. Then Audience: External, and Publish app. Not Testing: in Testing, Google ends the sign-in after 7 days.")}</span>
           <span><${Link} href=${L.branding}>Branding</${Link}> <${Link} href=${L.audience}>Audience: publish</${Link}></span>`}
       </${Step}>
       <${Step} n="4" title=${say("Make a Desktop client and paste it here")} done=${!!a.client}>
@@ -171,7 +171,7 @@ function Account({ x, setA }) {
       ${say(`Use ${unused.map((p) => NAME[p]).join(", ")} in the town`)}</button>`}
     <button class="ok-btn" onClick=${() => setAsking(true)}>Disconnect</button>
     ${asking && html`<${Dialog} title=${say(`Disconnect ${x.email}?`)} warn=${true} onCancel=${() => setAsking(false)}
-        text=${say("Google takes back Orkcraft's access to this account, and the sign-in is deleted from this machine. Buildings that used it say Sign in again until you connect it again.")}
+        text=${say("Google takes back Orkline's access to this account, and the sign-in is deleted from this machine. Buildings that used it say Sign in again until you connect it again.")}
         actions=${html`<button class="ok-btn" onClick=${() => setAsking(false)}>Cancel</button>
           <button class="ok-btn primary" onClick=${off}>Disconnect</button>`}>
       <label class="ok-check"><input type="checkbox" class="gui-onb__hide" checked=${detach} onChange=${() => setDetach(!detach)} />

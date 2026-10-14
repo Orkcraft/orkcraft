@@ -23,7 +23,7 @@ HEARD = 20                       # carts from the buildings it tests it remember
 TEXT_KEPT = 8000                 # of each cart: what a chain sent is what its run checks
 CHAIN = "chain:"                 # a chain's id: `chain:<first>:<last>`
 CASE_EVENT = "lab.case"          # the road into a chain it tests
-CODE = "code"                    # a change to Orkcraft's code, kept in the bench's copy of the package
+CODE = "code"                    # a change to Orkline's code, kept in the bench's copy of the package
 IMPROVE = ("lab", "ux_lab")      # the Improve buildings: never tested by a Test bench
 
 

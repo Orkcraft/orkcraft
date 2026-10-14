@@ -56,7 +56,7 @@ class Notifier:
             return
         item = None
         if event.topic == bus.TOAST and event.data.get("severity") == "error":
-            title = modes.plain(str(event.data.get("title") or "")) or "Orkcraft"
+            title = modes.plain(str(event.data.get("title") or "")) or "Orkline"
             item = {"kind": "error", "line": f"Something failed: {title}"}
         elif event.topic == bus.TOOL_ERROR:           # an AI tool failed: its title and kind, never its output
             item = {"kind": "error", "line": failures.notice(event.data)}

@@ -676,7 +676,7 @@ MANAGER_SCENARIOS.append({
     ],
     "files": {
         "demo/one_on_one/alex-kim.md": """# 1on1 · Alex Kim · Thu 10:00
-_prefilled by Orkcraft from Calendar, Mail and Jira — edit before the meeting_
+_prefilled by Orkline from Calendar, Mail and Jira — edit before the meeting_
 
 ## Since last time (2 weeks)
 | week | done | in progress | notes |

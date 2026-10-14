@@ -67,7 +67,7 @@ def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict
         purpose = _purpose(building)
         head = [
             f"You are {stew.name if stew else 'the steward'}, the steward of the {building.title} building in "
-            f"Orkcraft, a harness for a Markdown knowledge graph (the current directory). You carry out its "
+            f"Orkline, a harness for a Markdown knowledge graph (the current directory). You carry out its "
             f"road rule \"{orc.name}\": you are re-run on every new event with the latest payload of each road "
             f"the rule listens to.",
             *([f"What the building is for (every rule works toward it):\n{purpose}"] if purpose else []),
@@ -75,7 +75,7 @@ def agent_prompt(orc: ts.OrcSpec, building: ts.BuildingSpec, snapshot: list[dict
         ]
     else:
         head = [
-            f"You are {orc.name}, a handler ork of the {building.title} building in Orkcraft, a terminal "
+            f"You are {orc.name}, a handler ork of the {building.title} building in Orkline, a terminal "
             f"harness for a Markdown knowledge graph (the current directory). You are re-run on every new "
             f"event with the latest payload of each of your incoming roads.",
             f"Your orders:\n{orc.orders or '(none — summarise the input for the operator)'}",

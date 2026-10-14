@@ -36,7 +36,7 @@ PROMPT = """{persona}
 
 ---
 
-You read the logs of Orkcraft, a town of AI agents: its buildings take work in, call AI tools, and pass work on. The
+You read the logs of Orkline, a town of AI agents: its buildings take work in, call AI tools, and pass work on. The
 logs are {day}. Code found its hotspots below; each has an id (H1, H2, …), what is wrong or costly, and an excerpt of
 the call it rests on (its prompt's head and tail, its output).
 

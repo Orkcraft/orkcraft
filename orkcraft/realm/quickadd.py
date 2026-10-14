@@ -63,7 +63,7 @@ ATL_HOW = (("Create an API token (Create API token → any label → Copy)",
 
 SLACK_SCOPES = ("search:read", "channels:history", "groups:history", "im:history", "mpim:history",
                 "channels:read", "groups:read", "users:read")
-SLACK_MANIFEST = {"display_information": {"name": "Orkcraft listener",
+SLACK_MANIFEST = {"display_information": {"name": "Orkline listener",
                                           "description": "Reads your mentions, DMs and the channels you pick, for orkcraft."},
                   "oauth_config": {"scopes": {"user": list(SLACK_SCOPES)}},
                   "settings": {"org_deploy_enabled": False, "socket_mode_enabled": False}}

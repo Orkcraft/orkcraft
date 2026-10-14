@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://orkcraft.dev/schemas/town-scroll.v2.json",
-  "title": "Orkcraft Town Scroll v2",
-  "description": "Workspace state of Orkcraft (.orkcraft.json): orkspaces (canvases), buildings (windows), garrisons, rally points and budgets. Spec: T1093 / Orkcraft v0.2 §11.",
+  "title": "Orkline Town Scroll v2",
+  "description": "Workspace state of Orkline (.orkcraft.json): orkspaces (canvases), buildings (windows), garrisons, rally points and budgets. Spec: T1093 / Orkline v0.2 §11.",
   "type": "object",
   "required": ["version", "active_orkspace_id", "orkspaces", "buildings"],
   "additionalProperties": false,
