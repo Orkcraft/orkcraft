@@ -193,6 +193,9 @@ found. Gathered from the docs of 2026-10-12 and -13.
 - **R2. A way to ask and to mark assumptions in every AI tool**, also run without a terminal: a tool Orkcraft gives
   every ork (MCP), the tool's own question form, or a block at the end of the run ([ork-console.md](ork-console.md)
   §4, §20). Feeds P0.
+  *Answered 2026-10-14* ([asking-r2.md](asking-r2.md)): a block at the end of the run (`asks`: questions with their
+  answers, assumptions), read by the town; Claude Code first, the Stop hook, `--json-schema` and an MCP tool kept for
+  when the counts show the block is not enough.
 - **R3. Files read and tools run, out of each AI tool's trail:** Claude Code's transcript has them; Codex's rollout
   and agy's brain folder to be checked ([cart-waybill.md](cart-waybill.md) §2). Feeds P1 (the waybill).
 - **R4. A cart's id across its stops:** which entries mint one; sub-ids at a split; every id kept at a join (today
