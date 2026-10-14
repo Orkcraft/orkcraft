@@ -2477,6 +2477,7 @@ def test_the_agent_pool_s_lanes_are_roles_and_a_session_s_chip_opens_it(gui, pag
     chips = lanes.first.locator(".pool-chip[data-ork]")
     assert [c.get_attribute("data-ork") for c in chips.all()] == ["Thrak", "Grub"]       # the asking one first
     assert [c.locator(".pool-chip__mark").inner_text() for c in chips.all()] == ["❓", "Zz"]
+    pg.locator(".gui-slots__waits", has_text="❓ 1").wait_for(timeout=WAIT_MS)         # the HUD: one asks
     chips.first.click()                                                                  # asks: its console, folded
     console = pg.locator(".gui-orkconsole", has_text="Thrak")
     console.wait_for(state="visible", timeout=WAIT_MS)

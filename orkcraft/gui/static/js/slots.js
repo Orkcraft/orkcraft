@@ -1,7 +1,7 @@
 // 🥩 The ork slots and the console, folded (docs/design/ork-console.md §7–§9): the town's one list of orks at work
 // or waiting on you, from the host's `slots` (core/slots.py), in the one status of realm/status.py.
 //
-//   SlotsHud     in the HUD: 🥩 working/limit, 🔥 · ❓ when something waits for you, and Stop all beside them as one
+//   SlotsHud     in the HUD: 🥩 working/limit, 🔥 · ❓ · ! when something waits for you, ⏳ what is held for a limit, and Stop all beside them as one
 //                block "what runs". A press opens the list, waiting first, then the longest running; Stop all is
 //                its first row too.
 //   OrkConsole   at the town's foot, beside the Warchief's line: the ork a row picked, folded — its status, its
@@ -72,13 +72,15 @@ export function SlotsHud({ word, online }) {
   const over = s.limit && s.working > s.limit;
   const rows = by === "work" ? [...s.rows].sort((a, b) => (b.since_s || 0) - (a.since_s || 0)) : s.rows;
   const pick = (r) => { setOpen(false); lit.value = null; consoleOrk.value = r.key; if (r.building_id) openBuilding(r.building_id); };
-  const waits = s.fire || s.asks;
+  // What waits for you (🔥 · ❓ · ! errors), then what is held for a limit (⏳): never colour alone, a mark and a count.
+  const marks = [s.fire && ` 🔥 ${s.fire}`, s.asks && ` ❓ ${s.asks}`, s.errors && ` ! ${s.errors}`, s.held && ` ⏳ ${s.held}`].filter(Boolean);
   return html`<span ref=${ref} class="gui-slots">
     <button class=${cls("ok-res gui-slots__open", { "is-over": over })} aria-expanded=${open}
         title=${say("Orks at work and waiting for you")} onClick=${() => setOpen(!open)}>
       <img src="/ds/sprites/icons/res-meat.png" srcset="/ds/sprites/icons/res-meat@2x.png 2x" alt="" />
       <span class="ok-word">${word}</span>${s.working}/${s.limit}
-      ${waits ? html`<span class="gui-slots__waits">${s.fire ? ` 🔥 ${s.fire}` : ""}${s.fire && s.asks ? " ·" : ""}${s.asks ? ` ❓ ${s.asks}` : ""}</span>` : ""}
+      ${marks.length ? html`<span class="gui-slots__waits" title=${say([s.fire && `${s.fire} burning`, s.asks && `${s.asks} asking`,
+        s.errors && `${s.errors} in error`, s.held && `${s.held} held for a limit`].filter(Boolean).join(" · "))}>${marks.join(" ·")}</span>` : ""}
     </button>
     ${online
       ? html`<button class="gui-hud__stop" title=${say("Stop every ork, script and browser at once")} onClick=${haltAll}>Stop all</button>`
