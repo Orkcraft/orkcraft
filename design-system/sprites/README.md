@@ -73,7 +73,8 @@ tiles, doodads, fire, tier marks). The app itself loads the files.
 
 Drawn at 1× in art pixels, every size a multiple of 8; no `@2x` (the renderer scales by whole numbers); one
 three-quarter top-down projection; a 1 px `art-outline`; **no shadows** (the product draws them); yellow and red only
-in signal sprites. `orkcraft 0.3/` holds generated reference sheets: references for the artist, not sprites to ship.
+in signal sprites. The generated reference sheets (0.3) live in `docs/design/img/references/0.3/`, outside the
+package: references for the artist, never shipped.
 
 ```
 camp/

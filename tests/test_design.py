@@ -118,6 +118,14 @@ def test_a_waiting_carts_chip_names_it_by_a_short_ref():
     assert cart_ref("spec:a-very-long-reference-name") == ""
 
 
+def test_generated_reference_sheets_stay_out_of_the_package():
+    """docs/design/design-system-v2.md §12 answer 1, color-pass.md §10: the generated reference sheets live in
+    docs/design/img/references/ (the docs do not ship); nothing under design-system/, which the wheel carries, is one."""
+    system = Path(__file__).resolve().parent.parent / "design-system"
+    generated = [p for p in system.rglob("*") if p.suffix.lower() in (".jpg", ".jpeg") or "Generated_Image" in p.name]
+    assert generated == []
+
+
 @pytest.mark.parametrize("type_id", sorted(catalog.TYPES))
 def test_every_type_has_a_contract_and_its_default_passes(type_id):
     c = ui.contract(type_id)

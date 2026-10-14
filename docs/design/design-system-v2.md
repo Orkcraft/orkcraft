@@ -5,7 +5,7 @@ the new Camp on (backlog C2–C6). What is settled here is written into [../desi
 `design-system/components.md`, `design-system/sprites/README.md` and the tokens. The owner's calls are in §12.
 Builds on [color-pass.md](color-pass.md) §6a–6d and §9c–10c, [town-readability.md](town-readability.md),
 [camp-story.md](camp-story.md), [work-and-play.md](work-and-play.md), [asset-prompts.md](asset-prompts.md),
-[portrait.md](portrait.md) §3. The art it is measured against: `design-system/sprites/orkcraft 0.3/` (ten reference
+[portrait.md](portrait.md) §3. The art it is measured against: `docs/design/img/references/0.3/` (ten reference
 sheets) and the concept frame [img/orkline-camp-concept-v2.png](img/orkline-camp-concept-v2.png) (and `-grey`).
 Preview: `design-system/previews/CampKit.html`. The artist's brief made from it: [artist-brief.md](artist-brief.md).
 

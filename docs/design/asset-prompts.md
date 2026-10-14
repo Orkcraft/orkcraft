@@ -254,7 +254,7 @@ No bright yellow, no bright red, no bright orange. 32 by 32 each, one row."
 
 ## The concept frame from the owner's sprites (2026-10-14)
 
-Put together by hand from the sheets in `design-system/sprites/orkcraft 0.3/` (magenta keyed out, nothing redrawn):
+Put together by hand from the sheets in `docs/design/img/references/0.3/` (magenta keyed out, nothing redrawn):
 [img/orkline-camp-concept.png](img/orkline-camp-concept.png) and its grey version
 [img/orkline-camp-concept-grey.png](img/orkline-camp-concept-grey.png). A concept, not the product's drawing.
 

@@ -2,7 +2,7 @@
 
 Status: 2026-10-14, made from the design system v2 ([design-system-v2.md](design-system-v2.md)). It goes with the
 first letter ([color-pass.md](color-pass.md) §10a–10b): the licence comes first, then the style. The reference
-sheets (`design-system/sprites/orkcraft 0.3/`) and the concept frame
+sheets (`docs/design/img/references/0.3/`) and the concept frame
 ([img/orkline-camp-concept-v2.png](img/orkline-camp-concept-v2.png)) are generated images: **references for the
 silhouettes, the palette and the layout, never to be traced or shipped.** Everything here is to be drawn by hand.
 
