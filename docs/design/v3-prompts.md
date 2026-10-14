@@ -504,3 +504,10 @@ no track; only the palisade of rounded logs: a straight run, a corner, an end po
 
 **u1, the bubble and the scroll — taken:** a white thought bubble as nine pieces with a two-dot tail, a scroll in
 pieces (rolled ends, a stretchable sheet), a long banner scroll, and three teal selection rings (one dashed). For I1.
+
+**The owner: a second line of track under the lower row (2026-10-14).** Each row of buildings gets its own line at
+its doors: the top row's doors open onto the first line, the lower row's (they face down) onto a second line under
+them, which replaces the lower lane. The two lines make **a loop**: the track coming in through the tower splits at a
+switch on the left into the two lines, and they merge on the right before the catapult. Carts for a lower building
+run on the second line and stop at its path; orks still never push or ride carts. More than ten buildings: another
+row, another line, joined the same way. Needs all four curves of c2 and its switch and merge.
