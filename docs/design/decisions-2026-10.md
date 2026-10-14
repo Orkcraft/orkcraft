@@ -368,3 +368,8 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
   I1 steps 3 and 4 merged: the ork's console and the task's history (3546145), the score on the flying cart and in the
   HUD (d085528). Decided: the flying cart shows only what is recorded (tokens, $ on an API key); the per-cart share of
   the limit's window goes to Later (a recorder reading the limit before and after a run).
+- **21:20.** I1's five steps are all on `main` (growth marks: abce1c0); I1 now polishes (the window line dropped,
+  carts turning on the columns, name chips, a steward console for buildings without orks, Office's overlap, Camp's
+  Build… into a row's free slot). **I2 started**: the Task board's inside (the dispatcher's booth), with stand-in art.
+  **For you in the morning:** GEN has the inside's art ready to generate (booth interior, cards, panels) but waits for
+  your yes before spending credits: `python tools/gen_sheets.py u6-inside u6-cards u2-panels -n 3 --max-calls 9`.
