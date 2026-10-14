@@ -12,6 +12,9 @@ import { html, cls } from "./html.js";
 import { command, say, town as snapshot } from "./link.js";
 import { opened, closeBuilding, panelShown, panelWidth, selected, pickBuilding, letGo } from "./windows.js";
 import { plan } from "./roads.js";
+import { lay } from "./rails.js";
+import { RailDefs, Rails, RailMarks } from "./track.js";
+import { Carts } from "./carts.js";
 import { pickedRoad, building as buildOpen, placing, constructing, built, raised } from "./build.js";
 import { openMenu } from "./menu.js";
 import { settingsOpen } from "./settings.js";
@@ -215,21 +218,24 @@ function together(roads) {
   return out;
 }
 
+/** Camp lays its roads as track: the roads by one side of a hut share a gate, and split at a switch or join at a merge. */
+const camp = () => document.documentElement.dataset.look === "camp";
+
 function plannedPaths(rects, roads, ports = rects) {
-  const r = room.value;
-  const key = JSON.stringify([rects, ports, roads.map((x) => [x.id, x.from, x.to]), r.w, r.h]);
+  const r = room.value, bundle = camp();
+  const key = JSON.stringify([rects, ports, roads.map((x) => [x.id, x.from, x.to]), r.w, r.h, bundle]);
   if (key !== planned.key) {
     // Two roads between the same two buildings run as one, with both labels: the later ones take the
     // first one's path (their carts run on it), and only the first is drawn.
     const groups = [...together(roads).values()];
-    const firsts = plan(rects, groups.map((g) => g[0]), r.w, r.h, ports);
+    const firsts = plan(rects, groups.map((g) => g[0]), r.w, r.h, ports, { bundle });
     const byFirst = Object.fromEntries(firsts.map((p) => [p.id, p]));
     const paths = [...firsts];
     for (const g of groups) {
       const p = byFirst[g[0].id];
       if (p) for (const x of g.slice(1)) paths.push({ ...p, id: x.id, mate: g[0].id });
     }
-    planned = { key, paths };
+    planned = { key, paths, track: bundle ? lay(firsts) : null };
   }
   return planned.paths;
 }
@@ -264,43 +270,6 @@ function along(points, frac) {
     left -= lens[i];
   }
   return points[points.length - 1];
-}
-
-// Carts (docs/design/roads-and-orcs.md §4a): each one the town sent lately moves from its road's exit gate
-// to its entry gate once, in the time the road takes (`travel`, else a short trip); a filtered one turns
-// back at the source. A cart is drawn from where it is now: one that left a while ago starts on its way.
-const started = new Map();               // cart id → its animation-delay, fixed when first seen
-const SHORT_TRIP_S = 1.6;
-
-function delayOf(c) {
-  if (!started.has(c.id)) {
-    started.set(c.id, `${-Math.min(c.age, 30)}s`);
-    if (started.size > 400) started.delete(started.keys().next().value);
-  }
-  return started.get(c.id);
-}
-
-// A moving cart's title shows on a dark chip only on the selected building's roads (docs/design/town-readability.md
-// §3: titles are never on for every cart); a stuck one flickers red, a held one glows.
-function Carts({ paths, carts, travel, roads = [] }) {
-  const byRoad = Object.fromEntries(paths.map((p) => [p.id, p]));
-  const ends = Object.fromEntries(roads.map((r) => [r.id, [r.from, r.to]]));
-  const active = selected.value;
-  const trip = travel > 0 ? travel : SHORT_TRIP_S;
-  return html`<div class="gui-carts" aria-hidden="true">
-    ${carts.filter((c) => byRoad[c.road] && c.age < trip + 1).map((c) => {
-      const p = byRoad[c.road];
-      const d = "M" + p.points.map((q) => q.join(" ")).join(" L");
-      const back = c.status === "filtered";
-      const named = !!active && (ends[c.road] || []).includes(active);
-      return html`<div key=${c.id} class=${cls("gui-cart", { "is-back": back, "is-held": c.status === "held", "is-error": c.status === "error" })}
-          style=${`offset-path: path("${d}"); animation-duration: ${back ? SHORT_TRIP_S : trip}s; animation-delay: ${delayOf(c)}`}>
-        <img class="gui-cart__gold" src="/ds/sprites/icons/res-gold.png" srcset="/ds/sprites/icons/res-gold@2x.png 2x"
-          width="8" height="8" alt="" />
-        ${c.title && !back && named && html`<span class="gui-cart__label">${say(c.title)}</span>`}
-      </div>`;
-    })}
-  </div>`;
 }
 
 /** Signs on the roads that wait for a route (a Signpost's, a Clan Fire's that routes) or are named in words: always shown. */
@@ -396,10 +365,12 @@ function Roads({ roads, rects, ports, tints = {} }) {
   // A press on a road picks all of it: its card lists every road that runs as one (js/build.js RoadBar).
   const pick = (g) => { pickedRoad.value = g[0].id; };
   const cards = Object.values(rects), taken = [];
+  const paths = plannedPaths(rects, roads, ports), track = planned.track;
   return html`<svg class=${cls("gui-roads", { "has-focus": !!active && !!rects[active] })} width=${r.w} height=${r.h} aria-hidden="true">
     <defs>${HEADS.map(([id, token]) => html`<marker id=${id} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10"
       markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 Z" style=${`fill: var(${token})`} /></marker>`)}</defs>
-    ${plannedPaths(rects, roads, ports).filter((p) => !p.mate).map((p) => {
+    ${track && html`<defs><${RailDefs} /></defs>`}
+    ${paths.filter((p) => !p.mate).map((p) => {
       const road = byId[p.id];
       const g = groups.get(pair(road)) || [road];
       const out = active === road.from, into = active === road.to;
@@ -410,6 +381,7 @@ function Roads({ roads, rects, ports, tints = {} }) {
                                                          "is-out": out, "is-in": into && !out, "is-live": g.some((x) => !!x.handler),
                                                          "is-return": g.some((x) => x.returns) })}>
         <path d=${d} class="gui-road__halo" />
+        ${track && track.pieces[p.id] && html`<${Rails} pieces=${track.pieces[p.id]} />`}
         <path d=${d} class="gui-road__line" />
         ${MARKS.has(tints[p.id]) && html`<polyline points=${start(p.points)} class="gui-road__tint" style=${`stroke: var(--mark-${tints[p.id]}); stroke-width: 4`} />`}
         <path d=${d} class="gui-road__hit" onClick=${() => pick(g)} />
@@ -417,6 +389,7 @@ function Roads({ roads, rects, ports, tints = {} }) {
         ${label && html`<text x=${spot.x} y=${spot.y} text-anchor=${spot.anchor} class="gui-road__label ok-font-status">${label}</text>`}
       </g>`;
     })}
+    ${track && html`<${RailMarks} track=${track} />`}
     ${pulling.value && html`<line class="gui-road__pull" x1=${pulling.value.sx} y1=${pulling.value.sy}
       x2=${pulling.value.x} y2=${pulling.value.y} />`}
     ${pulling.value && html`<rect class="gui-road__pull-end" x=${Math.round(pulling.value.x) - 3} y=${Math.round(pulling.value.y) - 3}
@@ -700,7 +673,8 @@ export function Town({ buildings, roads }) {
       ${ghost && html`<${Footprint} g=${ghost} />`}
       <${Signs} paths=${paths} roads=${here} />
       <${LooseEnds} buildings=${buildings} rects=${rects} />
-      <${Carts} paths=${paths} carts=${(snap && snap.carts) || []} travel=${(snap && snap.travel) || 0} roads=${here} />
+      <${Carts} paths=${paths} carts=${(snap && snap.carts) || []} travel=${(snap && snap.travel) || 0} roads=${here}
+        asking=${new Set(buildings.filter((b) => b.alert).map((b) => b.id))} />
       ${placing.value && html`<${Placing} p=${placing.value} rects=${rects} />`}
       <${FrameSelect} rects=${rects} />
     </div>

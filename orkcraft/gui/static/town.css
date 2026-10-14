@@ -54,3 +54,73 @@
   background: repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in srgb, var(--frame-focus) 6%, transparent) 10px 14px); }
 .gui-test-frame__label { position: absolute; bottom: -0.9em; left: 12px; padding: 0 6px; background: var(--panel);
   border: 1px solid var(--frame-focus); border-radius: 4px; white-space: nowrap; }
+
+/* Roads as rail track in Camp (js/track.js, docs/design/design-system-v2.md §4d): quiet, a line more than a texture:
+   an earth bed, ties of dark wood (one in four of bone), two wooden rails; a selected road's rails in its gold. The
+   block diagram's line stays under it for a click and comes back at the map zoom as a 4 px line in the ties' wood.
+   Office draws no track. */
+.gui-rails, .gui-rail-marks { display: none; }
+[data-look="camp"] .gui-town:not(.is-map) .gui-rails, [data-look="camp"] .gui-town:not(.is-map) .gui-rail-marks { display: inline; }
+[data-look="camp"] .gui-town:not(.is-map) .gui-road__line { stroke: transparent; marker-end: none; }
+[data-look="camp"] .gui-town:not(.is-map) .gui-road__halo, [data-look="camp"] .gui-town:not(.is-map) .gui-road__out { display: none; }
+[data-look="camp"] .gui-town.is-map .gui-road__line { stroke: var(--art-wood-dark); stroke-width: 4; stroke-dasharray: none; marker-end: none; }
+[data-look="camp"] .gui-town.is-map .gui-road__halo { stroke-width: 8; }
+.gui-rails { --rail-ink: var(--art-wood-light); }
+.gui-road.is-selected .gui-rails { --rail-ink: var(--road-selected); }
+.gui-rail__bed { fill: var(--world-earth); opacity: .55; }
+.gui-rail__bed.is-curve { fill: none; stroke: var(--world-earth); stroke-width: 6px; }
+.gui-rail__tie { fill: var(--art-wood-dark); }
+.gui-rail__tie.is-bone { fill: var(--art-bone); opacity: .6; }
+.gui-rail__rail { fill: var(--rail-ink); }
+.gui-rail__rail.is-curve { fill: none; stroke: var(--rail-ink); stroke-width: 1px; }
+.gui-rail__log { fill: var(--art-wood); stroke: var(--art-outline); stroke-width: .5px; }
+.gui-rail__knob { fill: var(--art-bone); }
+
+/* Carts (js/carts.js, design-system-v2.md §4e): Camp's mine cart with its load and flag; Office's gold rolling and a
+   square standing; at the map zoom a dot in its state's colour. A standing cart's chip (`#42 · title`) is always shown
+   when it waits for the person, else on hover; a pile says ×N. */
+.gui-minecart, .gui-cart__square { display: none; }
+[data-look="camp"] .gui-cart .gui-minecart { display: block; }
+[data-look="camp"] .gui-cart .gui-cart__gold { display: none; }
+[data-look="camp"] .gui-cart.is-rolling { offset-anchor: 10px 14px; }
+.gui-cart.is-standing { transform-origin: 50% 50%; translate: -10px -14px; }
+html:not([data-look="camp"]) .gui-cart.is-standing .gui-cart__gold { display: none; }
+html:not([data-look="camp"]) .gui-cart.is-standing .gui-cart__square { display: block; }
+.gui-cart__square { width: 10px; height: 10px; background: var(--road); box-shadow: 0 0 0 1px var(--canvas); translate: 5px 9px; }
+.gui-cart.is-ask .gui-cart__square { background: var(--signal-ask); }
+.gui-cart.is-stuck .gui-cart__square { background: var(--signal-fire); }
+.gui-cart.is-held .gui-cart__square { background: var(--signal-held); }
+.gui-cart.is-behind { opacity: .85; }
+.gui-town.is-map .gui-cart .gui-minecart, .gui-town.is-map .gui-cart .gui-cart__gold { display: none; }
+.gui-town.is-map .gui-cart .gui-cart__square { display: block; width: 6px; height: 6px; border-radius: 50%; translate: 7px 11px;
+  background: var(--art-wood); }
+.gui-town.is-map .gui-cart.is-ask .gui-cart__square { background: var(--signal-ask); }
+.gui-town.is-map .gui-cart.is-stuck .gui-cart__square { background: var(--signal-fire); }
+.gui-town.is-map .gui-cart.is-held .gui-cart__square { background: var(--signal-held); }
+.gui-town.is-map .gui-cart.is-behind { display: none; }
+.gui-minecart { overflow: visible; }
+.gui-minecart__shadow { fill: var(--art-shadow, rgba(28, 20, 16, .35)); }
+.gui-minecart__bin { fill: var(--art-wood); stroke: var(--art-outline); stroke-width: .8px; }
+.gui-minecart__band { fill: var(--art-iron); }
+.gui-minecart__wheel { fill: var(--art-iron); stroke: var(--art-outline); stroke-width: .6px; }
+.gui-minecart .is-bone { fill: var(--art-bone); stroke: var(--art-outline); stroke-width: .5px; }
+.gui-minecart .is-wood { fill: var(--art-wood-light); stroke: var(--art-outline); stroke-width: .5px; }
+.gui-minecart .is-wood-light { fill: var(--art-wood-light); stroke: var(--art-outline); stroke-width: .5px; }
+.gui-minecart .is-cloth { fill: var(--art-cloth); stroke: var(--art-outline); stroke-width: .5px; }
+.gui-minecart .is-ink { fill: none; stroke: var(--art-outline); stroke-width: .8px; }
+.gui-minecart .is-pole { fill: var(--art-wood-dark); }
+.gui-minecart .is-ask { fill: var(--signal-ask); stroke: var(--art-outline); stroke-width: .5px; }
+.gui-minecart .is-fire { fill: var(--signal-fire); stroke: var(--art-outline); stroke-width: .5px; animation: gui-flag-flicker 1s steps(2) infinite; }
+.gui-minecart .is-held { fill: var(--signal-held); stroke: var(--art-outline); stroke-width: .5px; }
+@keyframes gui-flag-flicker { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .gui-minecart .is-fire { animation: none; } }
+.gui-pile { position: absolute; width: 0; height: 0; pointer-events: auto; z-index: 1; }
+.gui-pile:hover { z-index: 3; }
+.gui-cart__chip { position: absolute; display: none; height: 20px; padding: 0 6px; white-space: nowrap; font-size: 12px; line-height: 18px;
+  font-weight: 600; background: var(--chip); color: var(--chip-ink); border: 1px solid var(--art-outline); border-radius: var(--radius-sm); }
+.gui-pile__chip { left: 50%; bottom: 18px; transform: translateX(-50%); }
+.gui-pile__count { right: 14px; top: -10px; display: block; }   /* behind the pile, back along the track */
+.gui-pile.is-westward .gui-pile__count { right: auto; left: 14px; }
+.gui-pile__chip.is-always, .gui-pile:hover .gui-pile__chip, .gui-town.is-zoom-c .gui-pile__chip { display: block; }
+.gui-town.is-map .gui-pile__count, .gui-town.is-map .gui-pile__chip:not(.is-always) { display: none; }
+.gui-town.is-map .gui-pile:hover .gui-pile__chip:not(.is-always) { display: none; }

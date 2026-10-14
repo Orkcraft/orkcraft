@@ -1744,6 +1744,55 @@ def test_roads_from_one_building_into_another_are_one_road_and_its_card_lists_th
         call("town.demolish", {"id": bid})
 
 
+def test_camp_lays_a_road_as_track_and_its_stopped_carts_stand_in_a_pile_with_their_chips(page, gui, monkeypatch):
+    """docs/design/color-pass.md §6d, design-system-v2.md §4d–4e: in Camp a road's cells are track pieces ending in a
+    buffer stop; carts that stopped stand there as a pile with ×N, a cart that waits for the person always with its
+    chip; Office draws no track, and the map zoom a plain line."""
+    import time
+
+    from orkcraft.gui import state
+    from orkcraft.realm import roads as realm_roads
+    server, _ = gui
+    pg = page
+    link = "import('/static/js/link.js')"
+    call = lambda name, args: pg.evaluate(f"([n, a]) => {link}.then(m => m.command(n, a))", [name, args])   # noqa: E731
+    a, b = call("town.build", {"type": "forge"}), call("town.build", {"type": "forge"})
+    choice = next(c for c in call("roads.choices", {"from": a, "to": b}) if not c.get("handler"))
+    call("roads.lay", {"from": a, "to": b, "event": choice["event"], "handler": None})
+    pg.keyboard.press("Escape")
+    road = next(r for x in server.host.town.scroll.buildings if x.id == b for r in x.roads if r.source == a)
+    now = time.monotonic()
+    monkeypatch.setattr(state, "_asking", lambda muster: ({"7"}, set()))
+    for i, (status, ref) in enumerate([("held", "5"), ("held", "6"), ("sent", "7")]):
+        payload = pipes.Payload(kind="text", value="x", source=a, mode=road.event, title="Fix the login form for good",
+                                ref=ref, want="change")
+        server.host.town.roads.carts.append(realm_roads.Cart(road_id=road.id, source=a, target=b, status=status,
+                                                             payload=payload, at=now - 60 + i))
+    pg.reload()                                                 # carts put in by hand: no event sends the town again
+    pg.wait_for_selector(".gui-pile", state="attached", timeout=WAIT_MS)     # a point the carts stand round
+    assert pg.locator(".gui-road .gui-rails use").count() > 4                       # the road's pieces
+    assert pg.locator(".gui-rail-marks use[data-tile^='stop-']").count() >= 1        # its buffer stop
+    pile = pg.locator(".gui-pile")
+    assert pile.locator(".gui-cart").count() == 3 and "×3" in pile.locator(".gui-pile__count").inner_text()
+    assert "is-ask" in (pile.get_attribute("class") or "")                       # the loudest flag in front
+    chip = pile.locator(".gui-pile__chip.is-always")
+    assert chip.is_visible() and chip.inner_text() == "#7 · Fix the login form…"
+    assert pile.locator(".gui-minecart[data-load='code']").count() == 3
+    pg.keyboard.press("m")                                                          # the map: a line, no track
+    pg.wait_for_function("() => document.querySelector('.gui-town.is-map')", timeout=WAIT_MS)
+    line = pg.locator(".gui-road .gui-road__line").first
+    assert line.evaluate("e => getComputedStyle(e).strokeWidth") == "4px"
+    assert not pg.locator(".gui-road .gui-rails").first.is_visible()
+    pg.keyboard.press("m")
+    pg.wait_for_function("() => !document.querySelector('.gui-town.is-map')", timeout=WAIT_MS)
+    assert pg.evaluate("""() => { document.documentElement.dataset.look = 'office';
+      return getComputedStyle(document.querySelector('.gui-rails')).display; }""") == "none"      # Office: its lines
+    pg.evaluate("() => { document.documentElement.dataset.look = 'camp'; }")
+    server.host.town.roads.carts.clear()
+    for bid in (a, b):
+        call("town.demolish", {"id": bid})
+
+
 def test_the_night_round_marks_a_card_says_it_in_the_morning_and_sits_in_settings(page, gui, monkeypatch):
     """🌙 on a card the Night round found something for: a click shows its words and commits, Seen takes it off;
     an idea of the round is marked too; its morning line is the Warchief's and opens the board; Settings turns

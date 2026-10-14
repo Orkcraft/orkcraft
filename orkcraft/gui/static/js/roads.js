@@ -6,7 +6,7 @@
 // little as they can and run side by side in lanes of their own instead of on top of each other.
 // A road leaves its gate and comes into one straight for STUB cells, so it never bends right at a hut.
 
-const CELL = 8;
+export const CELL = 8;
 const WINDOW_COST = 40;
 const TURN_COST = 3;
 const LANE_COST = 6;
@@ -45,7 +45,7 @@ function gateCell(g, side, i, k) {
   return [Math.min(x, g.w > 2 ? g.x + g.w - 2 : g.x), side === "top" ? g.y : g.y + g.h - 1];
 }
 
-function gates(geoms, roads) {
+function gates(geoms, roads, bundle = false) {
   const slots = new Map();
   for (const r of roads) {
     const a = geoms[r.from], b = geoms[r.to];
@@ -62,9 +62,14 @@ function gates(geoms, roads) {
   const out = {};
   for (const { bid, side, items } of slots.values()) {
     items.sort((p, q) => p.key - q.key || (p.id < q.id ? -1 : p.id > q.id ? 1 : 0) || (p.role < q.role ? -1 : 1));
-    items.forEach((it, i) => {
-      const [x, y] = gateCell(geoms[bid], side, i, items.length);
-      (out[it.id] ||= {})[it.role] = { x, y, side };
+    // Bundled (Camp's track): the roads leaving by one side share one gate and split at a switch, the roads coming
+    // in share another and join at a merge; the two gates by where their roads lie on average.
+    const groups = !bundle ? items.map((it) => [it]) : ["exit", "entry"]
+      .map((role) => items.filter((it) => it.role === role)).filter((g) => g.length)
+      .sort((p, q) => p.reduce((t, x) => t + x.key, 0) / p.length - q.reduce((t, x) => t + x.key, 0) / q.length);
+    groups.forEach((g, i) => {
+      const [x, y] = gateCell(geoms[bid], side, i, groups.length);
+      for (const it of g) (out[it.id] ||= {})[it.role] = { x, y, side };
     });
   }
   return out;
@@ -165,10 +170,29 @@ function corners(points) {
   return out;
 }
 
-/** Every road with both ends on the town: {id, points (px, its corners), exit, entry}. `ports` (default the
+/** A road's cells in order, each once and each next to the one before: a jump (a cell clamped at the room's
+ *  edge) is filled in straight across, then down. */
+function track(cells) {
+  const out = [];
+  for (const [x, y] of cells) {
+    const last = out[out.length - 1];
+    if (last && last[0] === x && last[1] === y) continue;
+    if (last) {
+      let [cx, cy] = last;
+      while (cx !== x) { cx += Math.sign(x - cx); if (cx !== x || cy !== y) out.push([cx, cy]); }
+      while (cy !== y) { cy += Math.sign(y - cy); if (cy !== y) out.push([cx, cy]); }
+    }
+    out.push([x, y]);
+  }
+  return out;
+}
+
+/** Every road with both ends on the town: {id, points (px, its corners), cells, exit, entry}. `ports` (default the
  *  huts themselves) are where gates sit — a hut carries its building's sprite over its card, and roads meet the card;
- *  the huts whole stay what the roads go round. */
-export function plan(rects, roads, roomW, roomH, ports = rects) {
+ *  the huts whole stay what the roads go round. `cells`: every cell the road runs on, from its exit gate to its entry
+ *  gate, each next to the one before (Camp lays its track on them, js/rails.js). `bundle`: roads leaving or entering
+ *  by one side of a hut share one gate (Camp's switches and merges); Office keeps a gate a road. */
+export function plan(rects, roads, roomW, roomH, ports = rects, { bundle = false } = {}) {
   const width = Math.max(Math.ceil(roomW / CELL), 1), height = Math.max(Math.ceil(roomH / CELL), 1);
   const geoms = {};
   for (const [id, r] of Object.entries(ports)) geoms[id] = toCells(r);
@@ -179,7 +203,7 @@ export function plan(rects, roads, roomW, roomH, ports = rects) {
     }
   }
   const clamp = ([x, y]) => [Math.min(Math.max(x, 0), width - 1), Math.min(Math.max(y, 0), height - 1)];
-  const all = gates(geoms, roads);
+  const all = gates(geoms, roads, bundle);
   const taken = new Uint8Array(width * height);
   const out = [];
   for (const r of roads) {
@@ -216,7 +240,8 @@ export function plan(rects, roads, roomW, roomH, ports = rects) {
     const lead = g.exit.side === "left" || g.exit.side === "right" ? [first[0], exit[1]] : [exit[0], first[1]];
     const tail = g.entry.side === "left" || g.entry.side === "right" ? [last[0], entry[1]] : [entry[0], last[1]];
     out.push({ id: r.id, exit, entry, side: g.exit.side, entrySide: g.entry.side,
-               points: corners([exit, lead, ...cells.map(centre), tail, entry]) });
+               points: corners([exit, lead, ...cells.map(centre), tail, entry]),
+               cells: track([[g.exit.x, g.exit.y], ...away, ...cells, ...[...back].reverse(), [g.entry.x, g.entry.y]]) });
   }
   return out;
 }

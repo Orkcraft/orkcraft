@@ -196,27 +196,90 @@ def outcome(report: str) -> str:
 
 
 CART_SHOWN_S = 12.0           # a cart stays in the snapshot this long after it left (the page animates it)
+CART_STANDS_S = 3600.0        # a cart that stopped (held, stuck, waiting for the person) stands at its stop this long
+STANDING_PER_ROAD = 9         # the most carts a road's stop keeps (a pile says ×N)
+CODE_SUFFIXES = frozenset((".py", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs", ".rb", ".java", ".kt", ".swift", ".c",
+                           ".h", ".cpp", ".cs", ".php", ".sh", ".sql", ".css", ".html", ".diff", ".patch"))
+DOC_SUFFIXES = frozenset((".md", ".txt", ".rst", ".adoc", ".pdf", ".docx"))
 
 
-def carts(town: Town, now: float | None = None) -> list[dict[str, Any]]:
+def load_of(payload: pipes.Payload, source_type: str = "") -> str:
+    """What a cart carries, by its kind (docs/design/town-readability.md §3): code, asset, message or doc. Read
+    from what the cart is (its kind of work, its file, the building that sent it), never from what its text says."""
+    if source_type == "watchtower" or payload.want == pipes.REPLY:
+        return "message"
+    if payload.want == pipes.CHANGE:
+        return "code"
+    if payload.want in (pipes.DOC, pipes.KNOW):
+        return "doc"
+    if payload.kind == pipes.FILE:
+        suffix = Path(payload.value or "").suffix.lower()
+        return "code" if suffix in CODE_SUFFIXES else "doc" if suffix in DOC_SUFFIXES else "asset"
+    return "doc" if payload.kind == pipes.TEXT else "asset"
+
+
+def short_ref(ref: str) -> str:
+    """A cart's ref as its chip says it: `#42` from `42`, `#42`, `tasks/todo/42-login.md`; "" when it has no number."""
+    m = re.search(r"(\d+)", Path(str(ref or "")).name)
+    return f"#{m.group(1)}" if m else ""
+
+
+def _asking(muster: Muster | None) -> tuple[set[str], set[str]]:
+    """The refs the open questions are about, and the buildings whose orks ask."""
+    if muster is None:
+        return set(), set()
+    found = list(muster.roster.alerts) + [o.alert for o in muster.roster.orcs if o.alert is not None]
+    return ({a.ref for a in found if a.ref},
+            {o.building for o in muster.roster.orcs if o.alert is not None and o.building})
+
+
+def carts(town: Town, now: float | None = None, muster: Muster | None = None) -> list[dict[str, Any]]:
     """The carts that left lately: on which road, what they carry, how long ago, how long the road takes
-    (`travel`; the page draws each moving from gate to gate). A filtered one turns back at the source."""
+    (`travel`; the page draws each moving from gate to gate). A filtered one turns back at the source.
+    A cart that stopped stands at its road's stop (`stands`) while it waits: held for a limit's reset, stuck on an
+    error, or waiting for the person (its ref is an open question's, or it is the latest into a building that asks);
+    the newest of a ref only, a few a road (docs/design/town-readability.md §3)."""
     from orkcraft.gui.views.watchtower import subject
     engine = getattr(town, "roads", None)
     now = time.monotonic() if now is None else now
-    out = []
-    for c in list(getattr(engine, "carts", []) or [])[-40:]:
+    refs, asking = _asking(muster)
+    every = list(getattr(engine, "carts", []) or [])[-500:]
+    latest_in: dict[str, Any] = {}                   # building → the newest cart into it
+    seen_ref: set[tuple[str, str]] = set()
+    for c in every:
+        latest_in[c.target] = c
+    out, standing = [], {}
+    for c in reversed(every):
         age = now - c.at
-        if age < 0 or age > CART_SHOWN_S:
+        if age < 0:
+            continue
+        key = road_key(c.target, c.road_id)
+        ref = c.payload.ref or ""
+        newer = bool(ref) and (key, ref) in seen_ref
+        if ref:
+            seen_ref.add((key, ref))
+        state = ("back" if c.status == "filtered" else "held" if c.status == "held" else
+                 "stuck" if c.status == "error" else "moving")
+        if state == "moving" and ((ref and ref in refs) or (c.target in asking and latest_in.get(c.target) is c)):
+            state = "ask"
+        stands = state in ("held", "stuck", "ask") and not newer
+        if stands:
+            if age > CART_STANDS_S or standing.get(key, 0) >= STANDING_PER_ROAD:
+                continue
+            standing[key] = standing.get(key, 0) + 1
+        elif age > CART_SHOWN_S:
             continue
         title = c.payload.title or ""
         spec = town.custom_specs.get(c.source)
-        if spec is not None and catalog.type_of(spec).id == "watchtower":
+        source_type = catalog.type_of(spec).id if spec is not None else ""
+        if source_type == "watchtower":
             title = subject(title)                   # the Inbox's card says who sent it and where from
         elif c.payload.mode == "pool.done":
             title = outcome(c.payload.value) or title  # done work reads as what came of it
-        out.append({"id": f"{road_key(c.target, c.road_id)}@{c.at:.3f}", "road": road_key(c.target, c.road_id),
-                    "status": c.status, "title": modes.strip_emoji(title)[:80], "age": round(age, 2)})
+        out.append({"id": f"{key}@{c.at:.3f}", "road": key, "status": c.status, "title": modes.strip_emoji(title)[:80],
+                    "age": round(age, 2), "load": load_of(c.payload, source_type), "ref": short_ref(ref),
+                    "state": state, "stands": stands})
+    out.reverse()
     return out
 
 
@@ -310,7 +373,7 @@ def snapshot(town: Town, muster: Muster, treasury: tr.Treasury, limits: list | N
         "projects": gui_projects.snapshot(town),
         "buildings": buildings(town, muster),
         "roads": roads(town),
-        "carts": carts(town),
+        "carts": carts(town, muster=muster),
         "travel": float(getattr(town, "cart_travel_s", 0.0) or 0.0),
         "hud": hud(town, muster, treasury, limits),
         "slots": slots.summary(town, muster),     # 🥩 the orks at work or asking, one row each (core/slots.py)

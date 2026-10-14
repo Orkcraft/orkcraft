@@ -216,6 +216,16 @@ mine carts running on it.
 4. **Orks work inside buildings:** the cart an ork works on stands at its place inside the building
    ([town-readability.md](town-readability.md) §5); orks walk only between buildings, never with a cart.
 
+**Built (C4, 2026-10-14):** `gui/static/js/rails.js` tiles each road's cells by their neighbours (straight, corner,
+T-junction, crossing; a switch where one road's carts leave two ways, a merge where two join; a buffer stop before
+the building); in Camp the roads by one side of a hut share a gate, so a building's exits split at a switch and its
+ways in join at a merge (Office keeps a gate a road). `js/track.js` draws the tiles as placeholders of plain shapes
+in the world's tokens, named as the sprites that replace them (`sprites/camp/track/`); the map zoom is a 4 px line.
+`js/carts.js` draws a mine cart with its load (code, asset, message, doc, bundle) and flag; a cart that stopped
+(held, stuck, waiting for the person) stands at its road's stop, several as a pile with ×N (`gui/state.py` `carts`).
+The tiles are drawn on the planner's 8 px cells, so the track is narrower than v2's 32 px tile: laying the 32 px
+sprites needs the planner on 16 px cells first.
+
 ## 7. Pixel art stays; a painted style like Kingdom Rush is No
 
 Asked 2026-10-12: move the look toward Kingdom Rush, or keep the pixels?
