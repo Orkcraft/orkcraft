@@ -1783,6 +1783,146 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "homes/elf.png",
+   "size": [
+    120,
+    128
+   ],
+   "frame": [
+    120,
+    128
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "k2-homes.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "homes/gnome.png",
+   "size": [
+    104,
+    88
+   ],
+   "frame": [
+    104,
+    88
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "k2-homes.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "homes/goblin.png",
+   "size": [
+    128,
+    112
+   ],
+   "frame": [
+    128,
+    112
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "k2-homes.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "homes/knight.png",
+   "size": [
+    112,
+    120
+   ],
+   "frame": [
+    112,
+    120
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "k2-homes.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "homes/lich.png",
+   "size": [
+    96,
+    120
+   ],
+   "frame": [
+    96,
+    120
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "k2-homes.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "homes/orc.png",
+   "size": [
+    136,
+    112
+   ],
+   "frame": [
+    136,
+    112
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "k2-homes.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "homes/skeleton.png",
+   "size": [
+    128,
+    104
+   ],
+   "frame": [
+    128,
+    104
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "k2-homes.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
    "file": "orks/body/door.png",
    "size": [
     384,

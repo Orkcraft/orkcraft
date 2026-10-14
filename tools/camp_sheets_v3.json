@@ -1704,6 +1704,13 @@
    "groups": [{"kind": "track", "size": [64, 64], "anchor": "top-left", "tile_from": "track/straight-h.png",
                "items": [{"file": "track/corner-nw.png", "order": 5, "exits": "nw"},
                          {"file": "track/t-e.png", "order": 4, "exits": "nes"}]}]},
+  {"name": "k2-homes", "file": "k2-homes.png", "show": 1,
+   "about": "v3-prompts §13.3 P1: a home per kin (gen_sheets k2-homes #1, picked by the PM session overnight), named by the kin of realm/intents.py ROLES",
+   "groups": [{"size": [128, 128], "anchor": "feet", "items": [
+     {"file": "homes/lich.png", "order": 0}, {"file": "homes/elf.png", "order": 1},
+     {"file": "homes/gnome.png", "order": 2}, {"file": "homes/knight.png", "order": 3},
+     {"file": "homes/skeleton.png", "order": 4}, {"file": "homes/orc.png", "order": 5},
+     {"file": "homes/goblin.png", "order": 6}]}]},
   {"name": "g3-sides", "file": "g3-sides.png", "show": 1,
    "about": "the palisade's sides (round 8, gen_sheets g3-sides #1): the side wall as a column of log tops (0), the corners as a run with one log dropping where the wall turns (3 north-west, 5 north-east, 6 south-west, 1 south-east), an end post (7); 2, 4 and 8 not used",
    "groups": [{"size": [32, 32], "anchor": "feet",
