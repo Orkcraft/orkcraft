@@ -251,3 +251,23 @@ body and style, with small modern work clothes as a joke: the chieftain keeps th
 necktie over his leather vest; the worker wears a bone-white hard hat and a muted brown work vest; the builder a hard
 hat; the treasurer holds a wooden clipboard; the lookout wears a simple headset over the cap; the others unchanged.
 No bright yellow, no bright red, no bright orange. 32 by 32 each, one row."
+
+## The concept frame from the owner's sprites (2026-10-14)
+
+Put together by hand from the sheets in `design-system/sprites/orkcraft 0.3/` (magenta keyed out, nothing redrawn):
+[img/orkline-camp-concept.png](img/orkline-camp-concept.png) and its grey version
+[img/orkline-camp-concept-grey.png](img/orkline-camp-concept-grey.png). A concept, not the product's drawing.
+
+**What it shows:** the work going left to right (External listeners → Task board → Agent pool → Review gate → out
+to the Publisher), a spur of track from each door, mine carts rolling by themselves with their loads (a letter, the
+`</>` scroll, a crate), the Agent pool with its cover lifted and orks at work inside (one cart at an ork's place), the
+Inspector's lake on its own spur below the line, one ork asking (❓, the loudest thing), a cart waiting at the gate for
+the person (a yellow flag and its chip), the Warchief by the gate, words only on dark chips.
+
+**What it teaches:**
+
+- **In grey the ❓ and the chips still lead;** the buildings stand off the grass by their dark outlines.
+- **The track is the strongest line,** as color-pass §6d wants, and a little loud: its ties could be fewer.
+- **The Task board's facade sits on its own island of earth;** the facades are to lose their baked-in ground.
+- **The lifted cover reads at once,** with the walls kit as the frame: color-pass §6a is right.
+- **Missing from the sheets:** the Publisher's catapult, the ways in through the palisade, a table inside the hall.
