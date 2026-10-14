@@ -271,3 +271,47 @@ the person (a yellow flag and its chip), the Warchief by the gate, words only on
 - **The Task board's facade sits on its own island of earth;** the facades are to lose their baked-in ground.
 - **The lifted cover reads at once,** with the walls kit as the frame: color-pass §6a is right.
 - **Missing from the sheets:** the Publisher's catapult, the ways in through the palisade, a table inside the hall.
+
+## What the 0.3 sheets cover, and what is missing (2026-10-14)
+
+**Replacing the sprites is not a swap.** Today's sprites are building headers on cards (`design-system/sprites/buildings/<type>/header*.png`,
+per biome); the 0.3 sheets are a different drawing: a three-quarter camp of covers, walls, rails and mine carts. They
+come into the product with the backlog's C3 (the card as a building), C4 (rails and mine carts) and C2 (badges on
+orks), not before. **What can be done now without code:** cutting the sheets into single transparent sprites, named,
+at their target sizes (1× and 2×), into a new folder beside today's, ready for C3 and C4.
+
+| need | covered by 0.3 | missing |
+|---|---|---|
+| the ork | idle, walk (4 ways), hammer, carry, sit; nine roles | **the state poses** (asking, stuck, held, dozing); the Warchief in a tie and the work clothes |
+| carts | loads, flags, a pile, rolling | — |
+| track | straight, corners, switch, merge, crossing, buffer stops | **a T-junction** (a spur joining from above), **quieter ties** |
+| buildings | tower, gate, walls kit, three roof kits, fire ring (three states), lake, five facades | **the Publisher's catapult** and its launch; **facades without their island of earth**; **tables and workbenches** inside a hall |
+| the camp's edge | palisade pieces, its gate | **a gap where the track comes in and goes out** |
+| ground | — | **seamless grass in three tones and trodden earth** |
+| crests | ten | — |
+
+**Prompts for what is missing** (the shared head first, with "No shadows" as its first line; attach the 0.3 sheet of
+the same kind as the style reference):
+
+1. **The catapult.** "No shadows. A crude orc wooden catapult that is the end of a mine-cart track, three-quarter
+   top-down, 160 by 160 pixels: a throwing arm with a bucket, log frame, rope, tusks on the base. Four frames: resting;
+   the arm pulled back with a scroll in the bucket; mid-throw; the scroll flying away over a palisade. No fire."
+2. **The ways in and out.** "No shadows. The same sharpened-log palisade with a gap in it where a mine-cart track passes
+   through, as 32-pixel pieces: the gap with the track running in from outside, the gap with the track running out, and
+   both with small tusked posts either side."
+3. **Facades without ground.** "No shadows. The same five building fronts as the attached sheet, the lower part with the
+   door, but with no ground, grass or earth under them: only the building, cut straight at the bottom edge, on flat
+   magenta. The lookout tower's front with a bone horn on a stand instead of the metal megaphone."
+4. **Inside a hall.** "No shadows. Furniture seen from three-quarter top-down for the inside of an orc work hall, 64 by
+   48 pixels each: a rough wooden table with scrolls, a workbench with tools, a table with a small anvil, a desk with an
+   open book and a candle, a crate stack, a barrel, a bench."
+5. **The T-junction and quieter track.** "No shadows. The same mine-cart track as the attached sheet, as 32-pixel
+   tiles, with fewer and lower-contrast ties: straight horizontal, straight vertical, a T-junction where a branch joins
+   the horizontal track from above, the same from below, and a crossing."
+6. **Ground.** "No shadows. Seamless ground tiles, 32 by 32 pixels, tileable on every side, in the same palette: three
+   tones of calm grass (plain, with tufts, with a few small flowers); trodden earth in two tones; grass to earth edges
+   and corners. Low contrast, nothing that draws the eye."
+7. **The ork's states.** "No shadows. The same orc worker as the attached sheet, 32 by 32, five poses: working with a
+   calm face; waiting with one hand raised and a curious face; slumped with a frown and a small grey smoke puff over
+   the head; sitting with arms crossed; sitting and dozing."
+8. **The Warchief and work clothes.** The prompt of "The twist" above.
