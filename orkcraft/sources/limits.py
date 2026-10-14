@@ -1,5 +1,6 @@
 """Every AI tool's quota through the bundled `orkcraft.quota` (spends no quota): claude, agy and codex
-always; Hermes and Cursor when they are on PATH; pi keeps no windows (its spend shows in 🪙)."""
+always; Hermes when it is on PATH; pi and Cursor keep no windows here (pi's spend shows in 🪙; Cursor has
+no public way to read its plan, and its stored sign-in token is never read)."""
 from __future__ import annotations
 
 import datetime as dt
@@ -49,9 +50,12 @@ def _hermes(timeout: int) -> list:
     return hermes_quota.get_hermes_quota(path, timeout=timeout) if path else []
 
 
+CURSOR_NOTE = "not read: Cursor has no public way to read its plan; see cursor.com/dashboard"
+
+
 def _cursor(timeout: int) -> list:
-    from orkcraft.quota import cursor_quota
-    return cursor_quota.get_cursor_quota(timeout=timeout) if _on_path("cursor") else []
+    from orkcraft.quota.models import QuotaStatus
+    return [QuotaStatus("cursor", "", "", None, None, None, CURSOR_NOTE)] if _on_path("cursor") else []
 
 
 def _pi(timeout: int) -> list:
@@ -60,8 +64,8 @@ def _pi(timeout: int) -> list:
 
 
 def fetch_limits(repo_root: Path, timeout: int = 30) -> list[Limit]:
-    """Blocking: runs `claude -p /usage`, `agy -p /usage`, `codex app-server` and `hermes usage`, and
-    asks Cursor's API for its plan. Call from a worker thread.
+    """Blocking: runs `claude -p /usage`, `agy -p /usage`, `codex app-server` and `hermes usage`. Call
+    from a worker thread.
 
     `ORKCRAFT_LIMITS=0` turns it off (tests, machines without the CLIs).
     """

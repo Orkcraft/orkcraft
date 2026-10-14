@@ -92,10 +92,10 @@ on; with none on it is Claude Code, as before there was a choice (`builders.main
   price: the plan pays (unpriced in 🪙, never $0).
 - Hooks: `.cursor/hooks.json` (`preToolUse` with `Shell|Read|Write|Grep|Delete`, `sessionStart`,
   `beforeSubmitPrompt`). The CLI is reported to fire only some events: test before relying on it.
-- Limits: the plan's month, from `DashboardService/GetCurrentPeriodUsage` on api2.cursor.sh with the
-  stored login (Linux/Windows `auth.json`; macOS keeps it in the Keychain, not read). Undocumented: an
-  answer it does not expect is a plain row.
-- Login: `CURSOR_API_KEY`, or the stored `accessToken`.
+- Limits: not read. Cursor has no public API for the plan's use; reading the CLI's stored sign-in token
+  to call its private one was removed (2026-10-14, [decisions-2026-10.md](decisions-2026-10.md) §5). ⏳
+  shows a plain row pointing to Cursor's dashboard.
+- Login: `CURSOR_API_KEY`, or the CLI's own sign-in (Orkcraft never reads its token).
 - Onboarding: the CLI found, the editor is not named again; only the editor here, it says to install
   the CLI (`cursor-agent`) to run orks on it.
 

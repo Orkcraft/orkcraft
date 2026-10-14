@@ -1,14 +1,13 @@
-"""🪙 and ⏳ for Hermes, pi and Cursor (sources/telemetry.py, quota/hermes_quota.py, quota/cursor_quota.py)."""
+"""🪙 and ⏳ for Hermes, pi and Cursor (sources/telemetry.py, quota/hermes_quota.py, sources/limits.py)."""
 from __future__ import annotations
 
 import datetime as dt
-import io
 import json
 import sqlite3
 from pathlib import Path
 
-from orkcraft.quota import cursor_quota, hermes_quota
-from orkcraft.sources import telemetry
+from orkcraft.quota import hermes_quota
+from orkcraft.sources import limits, telemetry
 
 
 def _log(repo: Path, *entries: dict) -> None:
@@ -55,24 +54,14 @@ def test_hermes_usage_becomes_windows():
     assert hermes_quota.parse({"windows": [], "unavailable_reason": "no OAuth"})[0].error == "no OAuth"
 
 
-def test_cursor_plan_is_read_with_the_stored_login_only(tmp_path: Path):
-    (tmp_path / ".config" / "cursor").mkdir(parents=True)
-    (tmp_path / ".config" / "cursor" / "auth.json").write_text('{"accessToken": "tok"}')
-    sent = []
-
-    class Resp(io.BytesIO):
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *a):
-            return False
-
-    def opener(req, timeout=0):
-        sent.append(req)
-        return Resp(json.dumps({"billingCycleEnd": "1798761600000",
-                                "planUsage": {"totalPercentUsed": 25, "apiPercentUsed": 10}}).encode())
-    rows = cursor_quota.get_cursor_quota(env={}, home=tmp_path, opener=opener)
-    assert [(r.window, r.remaining_fraction) for r in rows] == [("month", 0.75), ("month · API", 0.9)]
-    assert rows[0].reset_time.year == 2027 and sent[0].get_header("Authorization") == "Bearer tok"
-    assert cursor_quota.get_cursor_quota(env={"CURSOR_API_KEY": "k"}, home=tmp_path, opener=opener)[0].note
-    assert len(sent) == 1                                            # never with a key in place of the login
+def test_cursor_sign_in_token_is_never_read(tmp_path: Path, monkeypatch):
+    """decisions-2026-10.md §5: Cursor's stored login is not read and its private API not called."""
+    import importlib.util
+    assert importlib.util.find_spec("orkcraft.quota.cursor_quota") is None
+    src = Path(limits.__file__).read_text(encoding="utf-8")
+    assert "auth.json" not in src and "cursor.sh" not in src
+    monkeypatch.setattr(limits, "_on_path", lambda h: "/bin/cursor-agent" if h == "cursor" else None)
+    rows = limits._cursor(timeout=1)
+    assert len(rows) == 1 and rows[0].remaining_fraction is None and "not read" in rows[0].note
+    monkeypatch.setattr(limits, "_on_path", lambda h: None)
+    assert limits._cursor(timeout=1) == []
