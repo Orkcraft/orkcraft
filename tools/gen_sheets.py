@@ -21,7 +21,8 @@ the cutter's own code (`tools/camp_sheet.py`: the pieces it finds against those 
 pixels in a signal's hue, the magenta cast). `candidates/index.html` shows them side by side. Nothing here writes a
 cut sheet's name except `--pick`.
 
-The key is on the free tier: calls are throttled (`--interval`), a 429 waits as long as the API says and retries,
+The key's project pays from prepaid credits (round 10's HTTP 402 said so; it was taken for the free tier before): calls
+are throttled (`--interval`), a 429 waits as long as the API says and retries, spent credits (402) stop the run,
 a daily quota stops the run and says so, and a run makes at most `--max-calls` calls (default 20).
 """
 from __future__ import annotations
@@ -271,6 +272,26 @@ SHEETS: dict[str, dict] = {
                   "roof over stacked logs (wide and low); a crystal on a whetstone (tall and narrow).",
         "about": "§13.4: levels I–III as stone footings and roof banners; the goal's two annexes",
     },
+    # round 10
+    "k2-homes": {
+        "kind": "building", "expect": 7, "aspect": "16:9", "refs": ["r03"],
+        "prompt": "Seven small homes, one for each kin of the person who hires the camp, each about the size of a "
+                  "small building of the attached sheet b1-core (64–96 px wide), in one or two rows: 1. a lich's "
+                  "crypt of pale stone; 2. an elf's tree house; 3. a gnome's burrow in a mound with a round door; "
+                  "4. a knight's tent with a crest; 5. a ruined shrine for a ghost; 6. an orc dugout with a log roof; "
+                  "7. a goblin's shack with crates.",
+        "about": "§13.3 P1: a home per kin for the person",
+    },
+    "c2-fix": {
+        "kind": "track", "expect": 2, "aspect": "16:9",
+        "prompt": "Two track tiles drawn on EXACTLY the gauge of the attached sheet c2's straight pieces: the two rails "
+                  "32 art px apart, centred on the tile, running all the way to the tile's edges, the ties spaced as "
+                  "on c2's straights. The last try came with the rails 44 px apart: that is wrong. 1. a curve joining "
+                  "the top side and the left side (north–west); 2. a T-junction with exits north, east and south (a "
+                  "straight from top to bottom with a branch curving off to the right). Each tile the same square "
+                  "size as c2's, magenta round each, apart.",
+        "about": "c2's north-west curve and the N–E–S junction on c2's exact gauge (round 10)",
+    },
     "c2-curves": {
         "kind": "track", "expect": 6, "aspect": "3:2",
         "prompt": "A wooden mine-cart track, 64 × 64 tiles, six pieces in a row with magenta round each: four curves, "
@@ -311,7 +332,7 @@ def build_prompt(name: str) -> str:
 # --- the API --------------------------------------------------------------------------------------------------------
 
 class Stop(Exception):
-    """The run must end: no key, the free tier refuses, a daily quota is spent, the call cap reached."""
+    """The run must end: no key, the API refuses, the credits or a daily quota are spent, the call cap reached."""
 
 
 def api_key() -> str:
@@ -419,6 +440,8 @@ class Client:
                     and "size" in err.get("message", "").lower():
                 body["generationConfig"]["imageConfig"].pop("imageSize", None)      # the free tier's own size
                 continue
+            if status == 402:                       # billing: the project's credits are spent, nothing more today
+                raise Stop(f"the API refused for billing (HTTP 402): {err.get('message', '')[:600]}")
             if status in (401, 403) or (status == 400 and self.calls == 1):
                 raise Stop(f"the API refused (HTTP {status}): {err.get('message', '')[:600]}")
             if status >= 500 or status == 0:
@@ -659,7 +682,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--all", action="store_true", help="every sheet it knows")
     ap.add_argument("-n", type=int, default=3, help="candidates per sheet (default 3)")
     ap.add_argument("--max-calls", type=int, default=20, help="the most calls this run makes (default 20)")
-    ap.add_argument("--interval", type=float, default=12.0, help="seconds between calls (free tier: default 12)")
+    ap.add_argument("--interval", type=float, default=12.0, help="seconds between calls (default 12)")
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--size", default="2K", help="imageSize asked (1K, 2K, 4K; 'none' to leave it to the model)")
     ap.add_argument("--list", action="store_true")

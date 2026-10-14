@@ -159,3 +159,14 @@ def test_a_redrawn_sheet_is_picked_onto_the_sheet_it_redraws(gs):
     assert gs.cut_name("b1-taskboard-s") == "b1-taskboard.png"          # --pick replaces the Task board
     assert gs.cut_name("b2-town") == "b2-town.png"
     assert "b1-taskboard.jpg" in gs.refs_for("b1-taskboard-s") and "g3-palisade.jpg" in gs.refs_for("g3-sides")
+
+
+def test_spent_credits_stop_the_run(gs, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key-not-real")
+    def opener(req, timeout):
+        raise gs.urllib.error.HTTPError(req.full_url, 402, "", {}, _Body({"error": {
+            "message": "Your prepayment credits are depleted."}}))
+    c = gs.Client("m", 5, 0, opener=opener, sleep=lambda s: None)
+    with pytest.raises(gs.Stop, match="billing"):
+        c.generate({})
+    assert c.calls == 1
