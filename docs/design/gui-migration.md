@@ -1,6 +1,6 @@
 # Design — toward a GUI: one core, two faces
 
-Orkcraft draws everything as terminal cells: one monospace font, one grid. A town where a
+Orkline draws everything as terminal cells: one monospace font, one grid. A town where a
 building's name, its status lines and its code each wear their own font needs a real GUI. The
 town itself must change, not just a full-screen view. Rewriting ~20k lines of Textual at once
 would stop all other work, so the move goes in stages. The TUI keeps working the whole way.
@@ -15,7 +15,7 @@ follows is the migration as it went.
 | 2 | no file everybody has to touch | done for `app.py` (§3) |
 | 3 | the design system and the building's UI as JSON | done: tokens, the document, three contracts, `D` (§4) |
 | 4 | Office in the GUI: plain widgets, the same town graph | in progress: the shell, Lake, the keeper and every type stand; the calm town replaced the console ([calm-town.md](calm-town.md)) |
-| 5 | Camp in the GUI: tiles and sprites in the spirit of Warcraft II | paused |
+| 5 | Camp in the GUI: tiles and sprites in the spirit of a 1990s real-time strategy game | paused |
 
 ## 1. Stage 0 — where the core lives
 

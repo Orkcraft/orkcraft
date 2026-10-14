@@ -1,4 +1,4 @@
-# Orkcraft — reference
+# Orkline — reference
 
 _The detailed reference. Start with the [README](../README.md). Old `MGTUI_*` / `ORCRAFT_*` environment variables (from the project's earlier names) still work as fallbacks for `ORKCRAFT_*`._
 
@@ -8,12 +8,12 @@ _The detailed reference. Start with the [README](../README.md). Old `MGTUI_*` / 
 > [design/calm-town.md](design/calm-town.md). The buildings, roads, orks, files and settings below are the same in both.
 
 A terminal harness and orkestrator for multi-agent work in any git project, in an
-RTS (Warcraft) metaphor, built to cut the operator's cognitive load: windows are
+RTS metaphor, built to cut the operator's cognitive load: windows are
 **buildings** with a resident **ork**, agents are the **clan**, the HUD shows
 resources, and agents never pop dialogs — they raise a 🔥 and wait for orders.
 
 ```
-┌─[ 🧌 Orkcraft v0.1 ]──[ ⚙️ Menu (F10) · 🛑 READY ]──── [🪙 $— / $20.00] [🪵 — / 128k] [🥩 0/5] ─┐
+┌─[ 🧌 Orkline v0.1 ]──[ ⚙️ Menu (F10) · 🛑 READY ]──── [🪙 $— / $20.00] [🪵 — / 128k] [🥩 0/5] ─┐
 │ ·   ,   ·   .   "   ·  ↟  ·   ,   .   ·   "   ·   .   ·  ↟  ·   ,   ·   .   "   ·   .   ·   ↟   │
 │ ,  ┌─ 📌 [1] ⚒️ Forge ─── [🧌 Smith 💤] ─────┐  ·  ┌─ [2] 📦 Loot Chest ────────────────────┐   │
 │    │ [TASK-102] AST Parser refactor        │     │ ▾ 📁 wiki/architecture/                    │   │
@@ -30,7 +30,7 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
 └─────────────────────────────┴───────────────────────────────┴─────────────────────────────────────┘
 ```
 
-## Orkcraft core
+## Orkline core
 
 - **HUD**: logo, 🛑 Halt All state, ❓ count, 🪙 Gold (`$— / $20.00` budget limit), 🪵 Lumber
   (`— / 128k` budget limit), 🥩 Supply (running orks / 5). The menu and Halt All share one segment at the left,
@@ -74,7 +74,7 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
   - `T` jumps straight into the session terminal in the War Tent; `C` opens the node card.
   - Answering dispatches input back to the agent session or updates the ticket, advances to the next pending order, and cleanly closes when all questions are resolved (`Esc` cancels).
   - **Question Interception from Claude, AGY & Codex**:
-    1. *Real-time Terminal PTY Screen Scraping (`detect_prompt`)*: Claude Code, AGY and Codex run in virtual pseudo-terminals (`pyte` on PTY). When output goes quiet for 1.0s (`PROMPT_IDLE_S`), Orkcraft scans recent screen lines for numbered option menus (`1.`, `1)`, `[1]`, `(1)`, `1 -`) and yes/no confirmation dialogs (`[y/N]`, `(y/n)`). This intercepts tool execution approvals, question tools, and CLI confirmations without requiring modifications to the underlying agent binaries.
+    1. *Real-time Terminal PTY Screen Scraping (`detect_prompt`)*: Claude Code, AGY and Codex run in virtual pseudo-terminals (`pyte` on PTY). When output goes quiet for 1.0s (`PROMPT_IDLE_S`), Orkline scans recent screen lines for numbered option menus (`1.`, `1)`, `[1]`, `(1)`, `1 -`) and yes/no confirmation dialogs (`[y/N]`, `(y/n)`). This intercepts tool execution approvals, question tools, and CLI confirmations without requiring modifications to the underlying agent binaries.
     2. *Tool & Hook Interception*: AGY's `ask_question` tool invocations and Claude CLI turns record structured parameters in transcripts (`transcript.jsonl` / `sessions.jsonl`), enabling extraction of rich question metadata.
     3. *Warder Security Interceptions*: Guardrail denials from `warder.jsonl` create operator review alerts.
 - **Unit Frame**: every building shows its garrison on the top-right border
@@ -105,7 +105,7 @@ resources, and agents never pop dialogs — they raise a 🔥 and wait for order
   - `[3]` ⌨️ Keybindings Cheat Sheet (two-column scrollable reference; also opened with `?`)
   - `[4]` 🌲 Toggle Terrain (`alt+t`: toggle Dim biome terrain vs pure Black canvas)
   - `[5]` 💾 Save Town Scroll (`.orkcraft.json`)
-  - `[6]` 🚪 Quit Orkcraft (graceful quit)
+  - `[6]` 🚪 Quit Orkline (graceful quit)
 - **Graceful Quit (`q` / menu [6])**: saves the Town Scroll (`.orkcraft.json`); if sessions are actively running in the War Tent, prompts with `QuitConfirm` (`[Y] Quit` / `[N] Stay`), terminates running terminals on confirmation, and cleanly exits.
 
 Buildings (keys `1`–`9`):
@@ -744,7 +744,7 @@ by default (`~/.orkcraft-demo-dashboard`). A sandbox of an older demo is built a
 
 ## AI tools and the main tool
 
-Orkcraft leads Claude Code, Antigravity (agy), Codex, Hermes Agent, pi and Cursor (`cursor-agent`),
+Orkline leads Claude Code, Antigravity (agy), Codex, Hermes Agent, pi and Cursor (`cursor-agent`),
 all through one registry (`orkcraft/realm/harnesses.py`, docs/design/harnesses.md): how each answers
 once, reads, works in a worktree, resumes and opens a terminal, what it prints and costs.
 
@@ -1186,7 +1186,7 @@ pipx install "orkcraft[gui] @ git+https://github.com/Orkcraft/orkcraft"
 
 ## Words and the look
 
-Orkcraft has one vocabulary and, in the GUI, two looks the person picks in the portrait's menu
+Orkline has one vocabulary and, in the GUI, two looks the person picks in the portrait's menu
 (docs/design/portrait.md): **Camp**, the default (sprites, the orks' heads, the mascot, gold, flames), and
 **Office**, calm (monochrome, light or dark as the system says, no sprites, the system font). A look
 changes only how the town is drawn, never a word; it is kept per machine (`settings.json` → `look`). Camp

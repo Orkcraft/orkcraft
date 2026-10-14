@@ -4,7 +4,7 @@ The operator's mascot heads the Settings dialog (growth.md §7.3): a 72 × 68 po
 stage, the next stage and the deeds. Settings is opened rarely, so the mascot is rarely seen, and what
 a person changes most about how the town treats *them* (its look, its noise) has no place at all.
 
-The mascot moves to a **portrait** in the HUD's left corner, as a hero's in Warcraft III: small, always
+The mascot moves to a **portrait** in the HUD's left corner, as a hero's in a real-time strategy game: small, always
 there, a click opens it. Its menu holds the person, not the town: who you are, how the town looks to
 you, and whether it may disturb you.
 

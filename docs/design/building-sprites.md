@@ -2,7 +2,7 @@
 
 The buildings' header sprites are being redrawn in the ork mark's style: flat pixels, no outline, no
 shading, five colours (the mark's green, a darker green, ivory, gold and the dark of the ground), an
-ork touch (tusks, horns, bones) on each. All nineteen catalog buildings have one; the Warcraft 2 headers are gone.
+ork touch (tusks, horns, bones) on each. All nineteen catalog buildings have one; the first headers, in the old 1990s strategy style, are gone.
 Since sheet 5 they are kept as the image model painted them (`tools/painted.py`): a grid and five colours lost
 what made them read (an axe, a palisade, a gear's teeth) at the map's size.
 

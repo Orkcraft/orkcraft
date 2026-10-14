@@ -53,7 +53,7 @@ the Warchief proposed, and a rank and an icon bought with them. We are not doing
 - **Points for reviews corrupt the signal.** A review is not engagement. A 👎 penalises suppliers along
   the roads, and its words go into an `enrich` prompt. Reviews written to farm points would degrade
   the prompts (Goodhart).
-- **Nobody sees a rank.** Orkcraft has one player, so a number has no audience. A character that
+- **Nobody sees a rank.** Orkline has one player, so a number has no audience. A character that
   grows does, because the operator grows attached to it.
 
 What we do instead: show what a review led to (§3), let **buildings mature** from real outcomes (§4),
@@ -318,7 +318,7 @@ A row of small marks under the portrait, each what the camp **learned**, never a
 
 - **About ten, no more.** No "×100", no streaks, no comparison with anyone.
 - **The ones not reached** show as grey silhouettes with a hint ("Join two buildings with a road"), so
-  the row also points at what Orkcraft can do that the operator has not tried.
+  the row also points at what Orkline can do that the operator has not tried.
 
 ### 7.4 How the Warchief addresses the operator
 
@@ -330,7 +330,7 @@ decision." It is one line of wording with no art, so growth shows in the convers
 The mascot may take a temporary form from the camp's state: asleep (a quiet town), sweating (the
 quota is tight, `Camp.tight`), cheering (a pull request merged). A mood passes by itself and never
 touches the stage. Any night form must be earned by the **orks** working in quiet hours while the
-operator sleeps, never by the operator staying up: the point of Orkcraft is that the clan works at
+operator sleeps, never by the operator staying up: the point of Orkline is that the clan works at
 night.
 
 ## 8. The Warchief's crown
@@ -385,6 +385,6 @@ case the thresholds of §4.2 go up, or the flag waits for stage 1's numbers.
 - Whether a building's level should count the operator's own edits at all, or only the orks'.
 - Mascot stage thresholds for a camp with very few buildings (a one-building camp should still reach
   stage 3).
-- `sprites.md` still describes the old Warcraft 2 style (6–8 colours, an outline), while
+- `sprites.md` still describes the old 1990s real-time strategy style (6–8 colours, an outline), while
   building-sprites.md and the sprites' README describe the flat set. Mark the old brief before drawing
   anything new from it.

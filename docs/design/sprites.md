@@ -1,6 +1,6 @@
 # Sprites
 
-This is the brief for Camp's pixel art in the style of Warcraft 2. Office uses none of it.
+This is the brief for Camp's pixel art in the style of a 1990s real-time strategy game. Office uses none of it.
 
 **Principle:** the art is part of the frame, not a picture in it. Buildings and decorations are quiet. They name the place at a glance and never pull the eye away from the cards, the fire and the text.
 
@@ -66,7 +66,7 @@ Files:
 | The Catapult | `buildings/catapult/header.png` | 80×40 | 640×320 | wooden catapult at rest / its throwing arm lowered on a low frame with two wheels / the iron tip of the arm |
 | Workshop | `buildings/workshop/header.png` | 80×40 | 640×320 | small plank workshop shed / a saw-tooth roof / the head of one hammer hanging by the door |
 | Custom | `buildings/custom/header.png` | 80×40 | 640×320 | half-built frame of poles and planks / scaffolding around an empty doorway / one rope binding |
-| Watchtower | `buildings/watchtower/header.png` | 96×48 | 768×384 | short orkish lookout tower of lashed logs on four splayed log legs, in the manner of the Warcraft III Horde watch tower / a lookout platform ringed with sharpened stakes under a pointed hide roof with two curved bone tusks, and a small ragged red war banner / the tip of the roof spike |
+| Watchtower | `buildings/watchtower/header.png` | 96×48 | 768×384 | short orkish lookout tower of lashed logs on four splayed log legs, in the manner of a 1990s real-time strategy watch tower / a lookout platform ringed with sharpened stakes under a pointed hide roof with two curved bone tusks, and a small ragged red war banner / the tip of the roof spike |
 | Task Fields | `buildings/fields/header.png` | 96×48 | 768×384 | small timber barn with a low fence / a tied wheat sheaf leaning by the door / the wheat sheaf |
 | Barracks | `buildings/barracks/header.png` | 96×48 | 768×384 | pair of hide war tents / two tent peaks side by side on wooden poles behind a low log front / the tip of one tent pole |
 | Clan Fire | `buildings/council/header.png` | 96×48 | 768×384 | ring of standing stones around a cold fire pit with no flames / a low log bench in front / one carved rune stone |
@@ -105,7 +105,7 @@ There are **5–7 per screen in all**, scattered by the app.
 
 ## Roads and carts
 
-Roads are subscriptions between buildings, and carts are the events travelling along them. Road tiles lie on the map, so they are drawn **top-down**, like the Warcraft 2 map. Carts are drawn **from the side**, in the same flat 2D view as the building headers. They follow the same quiet rule: they are lower in contrast than the cards, and only the selected road and its carts draw the eye. The UI draws that emphasis, so it is never painted in.
+Roads are subscriptions between buildings, and carts are the events travelling along them. Road tiles lie on the map, so they are drawn **top-down**, like the map of a 1990s real-time strategy game. Carts are drawn **from the side**, in the same flat 2D view as the building headers. They follow the same quiet rule: they are lower in contrast than the cards, and only the selected road and its carts draw the eye. The UI draws that emphasis, so it is never painted in.
 
 ### Road tiles
 
@@ -147,13 +147,13 @@ A cart is one event (a commit, a mail, a dropped file), shown as an orkish **min
 
 **Prompts** (add the shared tail of the decorations, without the magenta line if the generator handles transparency):
 
-> Pixel art in the style of Warcraft II (1995), top-down view of a map tile: **‹a straight packed-dirt road running left to right / a road corner coming in from the right edge and turning down to the bottom edge / a four-way dirt crossroads / a dirt road coming in from the left and ending in a rounded dead end›**. The track is exactly half the tile's height, centred, with darker wheel ruts and a 1px darker verge. Palette only #5c4326 #3f2e1a #a0703c. Seamless: the track meets the tile edges straight on. Square 1:1 canvas, chunky pixels, very low detail, no stones, no grass, no text. Solid flat magenta #ff00ff outside the track.
+> Pixel art in the style of a 1990s real-time strategy game, top-down view of a map tile: **‹a straight packed-dirt road running left to right / a road corner coming in from the right edge and turning down to the bottom edge / a four-way dirt crossroads / a dirt road coming in from the left and ending in a rounded dead end›**. The track is exactly half the tile's height, centred, with darker wheel ruts and a 1px darker verge. Palette only #5c4326 #3f2e1a #a0703c. Seamless: the track meets the tile edges straight on. Square 1:1 canvas, chunky pixels, very low detail, no stones, no grass, no text. Solid flat magenta #ff00ff outside the track.
 
-> Pixel art in the style of Warcraft II (1995): a small orkish mine cart seen exactly from the side, as a flat 2D side profile (orthographic side elevation, no perspective, not top-down, not isometric, not three-quarter). It is a squat, slightly tapered iron tub on two small solid wheels, with a thick riveted gold rim along the top edge and a heap of glowing gold-amber ore rising just above the rim. The wheels sit on one straight base line at the very bottom of the image. The silhouette is stocky, about 4:3, as tall as it is wide or a little wider. The body is dark iron, clearly cooler and darker than brown wood. Palette only #050403 #2a2a2e #55555c #3a3a40 #c99a3e #e8b94a. Chunky pixels, very low detail, 2 shades per material, 1px dark outline, no shadow, no ground, no rails, no text. Solid flat magenta #ff00ff background. Square 1:1 canvas, with the cart centred.
+> Pixel art in the style of a 1990s real-time strategy game: a small orkish mine cart seen exactly from the side, as a flat 2D side profile (orthographic side elevation, no perspective, not top-down, not isometric, not three-quarter). It is a squat, slightly tapered iron tub on two small solid wheels, with a thick riveted gold rim along the top edge and a heap of glowing gold-amber ore rising just above the rim. The wheels sit on one straight base line at the very bottom of the image. The silhouette is stocky, about 4:3, as tall as it is wide or a little wider. The body is dark iron, clearly cooler and darker than brown wood. Palette only #050403 #2a2a2e #55555c #3a3a40 #c99a3e #e8b94a. Chunky pixels, very low detail, 2 shades per material, 1px dark outline, no shadow, no ground, no rails, no text. Solid flat magenta #ff00ff background. Square 1:1 canvas, with the cart centred.
 
 **Moving down (front view):**
 
-> Pixel art in the style of Warcraft II (1995): the same small orkish mine cart seen exactly from the front, coming straight towards the viewer, as a flat 2D front elevation (orthographic, no perspective, not top-down, not isometric, not three-quarter). The squat iron tub is seen from its front end: a slightly tapered trapezoid with a thick riveted gold rim along the top and a heap of glowing gold-amber ore rising just above the rim. Two small solid wheels show at the bottom left and bottom right, seen edge-on as short dark stubs. Everything stands on one straight base line at the very bottom of the image. The silhouette is about as wide as it is tall. The body is dark iron, clearly cooler and darker than brown wood. Palette only #050403 #2a2a2e #55555c #3a3a40 #c99a3e #e8b94a. Chunky pixels, very low detail, 2 shades per material, 1px dark outline, no shadow, no ground, no rails, no text. Solid flat magenta #ff00ff background. Square 1:1 canvas, with the cart centred.
+> Pixel art in the style of a 1990s real-time strategy game: the same small orkish mine cart seen exactly from the front, coming straight towards the viewer, as a flat 2D front elevation (orthographic, no perspective, not top-down, not isometric, not three-quarter). The squat iron tub is seen from its front end: a slightly tapered trapezoid with a thick riveted gold rim along the top and a heap of glowing gold-amber ore rising just above the rim. Two small solid wheels show at the bottom left and bottom right, seen edge-on as short dark stubs. Everything stands on one straight base line at the very bottom of the image. The silhouette is about as wide as it is tall. The body is dark iron, clearly cooler and darker than brown wood. Palette only #050403 #2a2a2e #55555c #3a3a40 #c99a3e #e8b94a. Chunky pixels, very low detail, 2 shades per material, 1px dark outline, no shadow, no ground, no rails, no text. Solid flat magenta #ff00ff background. Square 1:1 canvas, with the cart centred.
 
 **Moving up (back view):** use the same prompt, but with "seen exactly from behind, moving straight away from the viewer" and a plain iron back panel with one gold coupling hook in the middle.
 
@@ -186,7 +186,7 @@ The ork replaces the 🧌 pictograph everywhere in Camp: the roster, the War Map
 
 **Ork prompt:**
 
-> Pixel art in the style of Warcraft II (1995): the head of a tired orkish office worker, drawn as a flat 2D front view (no perspective, not three-quarter). The head is an almost perfect circle with no neck and no body: muted moss-green skin in 3 shades with a soft lighter patch at the top left, a 1px dark green outline. Heavy straight dark-green brows; tired, half-lidded pale-yellow eyes with black pupils and dull purple bags under them. Two pale bone tusks run diagonally up along the lower cheeks from the mouth corners. The mouth is one flat dark line, with a short lighter chin line below it. Nothing below the chin: no tie, no tools, no body. Palette only #12261b #2f5e46 #4f8a45 #6aa84f #93c45a #e6e2b8 #6e5470 #d8c79a #a89470 #1a1a1a. Chunky pixels, very low detail, a calm, deadpan, slightly sleepy expression, no shadow, no ground, no text. Solid flat magenta #ff00ff background. Square 1:1 canvas, with the head centred and filling about 70% of it.
+> Pixel art in the style of a 1990s real-time strategy game: the head of a tired orkish office worker, drawn as a flat 2D front view (no perspective, not three-quarter). The head is an almost perfect circle with no neck and no body: muted moss-green skin in 3 shades with a soft lighter patch at the top left, a 1px dark green outline. Heavy straight dark-green brows; tired, half-lidded pale-yellow eyes with black pupils and dull purple bags under them. Two pale bone tusks run diagonally up along the lower cheeks from the mouth corners. The mouth is one flat dark line, with a short lighter chin line below it. Nothing below the chin: no tie, no tools, no body. Palette only #12261b #2f5e46 #4f8a45 #6aa84f #93c45a #e6e2b8 #6e5470 #d8c79a #a89470 #1a1a1a. Chunky pixels, very low detail, a calm, deadpan, slightly sleepy expression, no shadow, no ground, no text. Solid flat magenta #ff00ff background. Square 1:1 canvas, with the head centred and filling about 70% of it.
 
 For a state variant, keep the prompt and change only the face: **idle** "the eyes are closed as two short flat lines"; **busy** "the brows are drawn together in focus and a single drop of sweat sits on the forehead"; **waiting** "the brows are raised, the eyes wide open, and one small orange flame burns on top of the head".
 
@@ -211,13 +211,13 @@ Generate at 8× the target size (so 768×384 for an M header). Then reduce it wi
 
 **Building header (2:1):**
 
-> Pixel art in the style of Warcraft II (1995): a single small, compact orkish **‹building›**, low and squat, with **‹its one telling element›**. The only gold is **‹gold›**. It is centred and fills the canvas, its base a straight line along the very bottom edge, like a small finial standing on top of a wooden frame. 2:1 canvas, twice as wide as it is high. ‹shared tail›
+> Pixel art in the style of a 1990s real-time strategy game: a single small, compact orkish **‹building›**, low and squat, with **‹its one telling element›**. The only gold is **‹gold›**. It is centred and fills the canvas, its base a straight line along the very bottom edge, like a small finial standing on top of a wooden frame. 2:1 canvas, twice as wide as it is high. ‹shared tail›
 
 **Window version (2:1, 128×64):** use the same prompt with a little more of the same building's shape, and the same palette and level of detail.
 
 **Decoration:**
 
-> Pixel art in the style of Warcraft II (1995): a single tiny **‹pine tree / round bush / icy mountain peak›**, drawn as if for a 16×24 (tree) or 32×24 (mountain) sprite, so only a few big pixel steps,, as a dark silhouette with 2 shades. It is meant to sit almost unnoticed on a dark **‹forest / snow›** ground, with its base on the very bottom edge. Palette: **‹forest: #0a130c #1f3823 #2b4a30 · ice: #070d14 #162736 #2b4763 #8fa3b5 for the snow caps only›**. Chunky pixels, very low detail, 1px darker outline. No glow, no text. Solid flat magenta #ff00ff background. **‹1:1.5 / 4:3›** canvas.
+> Pixel art in the style of a 1990s real-time strategy game: a single tiny **‹pine tree / round bush / icy mountain peak›**, drawn as if for a 16×24 (tree) or 32×24 (mountain) sprite, so only a few big pixel steps,, as a dark silhouette with 2 shades. It is meant to sit almost unnoticed on a dark **‹forest / snow›** ground, with its base on the very bottom edge. Palette: **‹forest: #0a130c #1f3823 #2b4a30 · ice: #070d14 #162736 #2b4763 #8fa3b5 for the snow caps only›**. Chunky pixels, very low detail, 1px darker outline. No glow, no text. Solid flat magenta #ff00ff background. **‹1:1.5 / 4:3›** canvas.
 
 **Post-processing:**
 

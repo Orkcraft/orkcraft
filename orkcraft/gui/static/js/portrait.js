@@ -1,4 +1,4 @@
-// The portrait (docs/design/portrait.md): the person in the HUD's left corner, as a hero's in Warcraft III.
+// The portrait (docs/design/portrait.md): the person in the HUD's left corner, as a hero's in a real-time strategy game.
 // Camp draws the mascot's head at its stage (docs/design/growth.md §7), Office the role's two letters. Its
 // marks: the stage and a dot while an ork asks (the dot opens Answers). Beside the big one stand two quick
 // toggles: the horn (Do not disturb on / off, never shown on the head) and the look (Camp / Office). A click
@@ -104,9 +104,9 @@ function Menu({ y, p }) {
     ${!office && html`<${Steps} label="Card background" value=${cardGround.value} onPick=${setCards}
       items=${[["ground", "Ground"], ["yard", "Yard"]]} />
     <p class="ok-font-status ok-tone-muted">${say("Ground: the cards are drawn on the town's ground, and the selected one in its yard. Yard: inside its fence each card is a step lighter than the ground. This browser only.")}</p>`}
-    <div class="gui-field" aria-label=${say("Improve Orkcraft")}>
-      <span class="ok-font-label">${say("Improve Orkcraft")}</span>
-      <p class="ok-font-status ok-tone-muted">${say("Comment on any part of the window: the Alchemist writes the change on this machine's main tool, you see it, and it goes to Orkcraft as a pull request.")}</p>
+    <div class="gui-field" aria-label=${say("Improve Orkline")}>
+      <span class="ok-font-label">${say("Improve Orkline")}</span>
+      <p class="ok-font-status ok-tone-muted">${say("Comment on any part of the window: the Alchemist writes the change on this machine's main tool, you see it, and it goes to Orkline as a pull request.")}</p>
       <p class="gui-portrait__links">
         <button class="ok-btn" onClick=${() => { portraitOpen.value = false; commentMode.value = true; }}>${say("Comment mode")}</button>
         <button class="gui-link" onClick=${() => { portraitOpen.value = false; fixesOpen.value = true; }}>${say(fixesLine(t.fixes))}</button>

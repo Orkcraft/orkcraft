@@ -1,15 +1,15 @@
-# Orkcraft GUI design system
+# Orkline GUI design system
 
 The files live in [`design-system/`](../../design-system/): `tokens.json` (and the generated `tokens.css`), `components.css`, the sprites and a browser preview of every component. The component notes are in [`design-system/components.md`](../../design-system/components.md); the sprite brief is in [sprites.md](sprites.md) and the building prompts in [building-prompts.md](building-prompts.md).
 
-Orkcraft runs many coding agents in one project as a real-time strategy game. The GUI shows the same town in two looks, built on **one set of semantic tokens**.
+Orkline runs many coding agents in one project as a real-time strategy game. The GUI shows the same town in two looks, built on **one set of semantic tokens**.
 
 - Switch looks by setting `data-theme` on a root element. The markup never changes.
 - This mirrors `realm/modes.py`: the data is identical in both looks, and only the presentation differs.
 
 | Look | Theme ids | References | Feel |
 |---|---|---|---|
-| **Camp** | `camp` (forest, the default), `camp-ice`, `camp-void` | Warcraft 2 × Factorio | Pixel-art header sprites on every building, square bevelled stone and oak panels, gold labels, hard shadows, fire |
+| **Camp** | `camp` (forest, the default), `camp-ice`, `camp-void` | 1990s real-time strategy × Factorio | Pixel-art header sprites on every building, square bevelled stone and oak panels, gold labels, hard shadows, fire |
 | **Office** | `office` | VS Code layout in Camp's colours | Editor chrome: flat panels, hairlines, rounded controls, smooth progress bars, a status bar, no emoji and no sprites but the huts' buildings (smaller, at the left), every concept by its Office name (`realm/lexicon.py`). Its palette is Camp's, calmer: warm dark browns, gold accents, moss green, so switching modes feels like one product |
 
 **Two looks in the GUI, one vocabulary** ([portrait.md](portrait.md) §3). The person picks one in the
@@ -108,7 +108,7 @@ lands' names (`js/warmap.js`, [war-map.md](war-map.md)), the map's pixels in its
   - Camp uses the 2px `border-bevel` for bevels, cards and focus, and the 4px `border-frame` for windows and dialogs.
   - Office uses the 1px `border-hair` everywhere.
 - **Depth.**
-  - Camp has no blur. `bevel-raised` has a lit top/left edge and a dark bottom/right edge, like Warcraft 2 and Factorio buttons. `bevel-sunken` is its reverse, used for wells and presses. `shadow-window` is a keyline plus a hard 4px drop.
+  - Camp has no blur. `bevel-raised` has a lit top/left edge and a dark bottom/right edge, like the buttons of 1990s real-time strategy games and Factorio. `bevel-sunken` is its reverse, used for wells and presses. `shadow-window` is a keyline plus a hard 4px drop.
   - Office is flat. `shadow-window` is a soft widget shadow.
 - **Spacing.**
   - The scale runs from `space-1` to `space-8` (4 to 32px).
@@ -155,7 +155,7 @@ In Office, only the outline and name turn red-orange (`alert-hot`), and `?` foll
 
 ## Iconography and sprites
 
-- **Camp: pixel art in the style of Warcraft 2.** Headers and banners are **flat 2D front views** with a transparent background and no ground strip. The building stands on the top edge of its card or window, its roof rising over the map ground. Frames, selection and fire light only the card, and the selected building glows softly from behind in its frame's colour. Only ground and road tiles are top-down. Each building carries two header sprites:
+- **Camp: pixel art in the style of a 1990s real-time strategy game.** Headers and banners are **flat 2D front views** with a transparent background and no ground strip. The building stands on the top edge of its card or window, its roof rising over the map ground. Frames, selection and fire light only the card, and the selected building glows softly from behind in its frame's colour. Only ground and road tiles are top-down. Each building carries two header sprites:
   - a small, compact building (2:1) centred on its hut card's top edge, from 64×32 to 112×56 by catalog size;
   - a 128×64 version of the same building on its opened window (`banner-w` × `banner-h`).
   - Both are drawn with very little detail in the frame's own muted colours, so they read as part of the frame, not as pictures.
