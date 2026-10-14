@@ -345,3 +345,15 @@ the lookout's hide roof and horn. The art pixel is regular (about 4.2 image px),
 5. **The UX bench** has a yellow-orange banner: no yellow or orange, ever (signals).
 6. **The ground is one flat colour** until g1 (grass tiles) comes; and the palisade is v2's until g3.
 7. Sheets as **PNG** when the tool allows (a JPEG's noise blurs the key).
+
+**The owner: "the images get strangely worse."** True, and it is the cutter, not the sheets:
+[img/v3-preview/cut-loss-barracks.png](img/v3-preview/cut-loss-barracks.png) (left: the Agent pool as drawn, at its
+own art pixel; right: the cut sprite). Three causes, in `tools/camp_sheet.py --v3`:
+
+1. **Downscaled 1.5×:** the hall is drawn 193 art px wide and its slot is 128, so it is re-read at a coarser cell;
+   barrels and crates turn to mush. **The generated art already comes at the screen's size** (193 art px ≈ the
+   200–260 px a core building should take), so v3 shows it at **×1 per art pixel**, cut at its own pixel, never
+   resampled; slots follow the art, not the other way round.
+2. **Colours snapped to the tokens:** the teal roof's shaded half was mapped to the stone's grey, and the shading
+   flattened. Building art keeps its own colours; the cutter only refuses yellow, orange and red (the signals).
+3. **JPEG:** its noise blurs the key; PNG when the tool allows.
