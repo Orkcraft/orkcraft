@@ -393,3 +393,16 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
   test), the cart on any Review gate's weighbridge drawn under the gate, toasts over the quest log's press, the portrait
   menu now scrolls (`test_the_sun_holds…` green). Screens: `img/m1/`. Open, sent to I1: the quest log panel covers the
   camp's bottom line; M1 centres the view at 40% as a stopgap.
+- **22:18.** **M1 wrote Mission 1b** as a design only (first-mission.md §10, 63a1138); nothing is built until the owner has
+  played Mission 1.
+  - The check lives on the Agent pool (its `test_cmd` and rework loop), drawn as a proving siding with a semaphore
+    arm that shows the verdict by position, never by colour.
+  - The waybill gets one row per round.
+  - Three quests: set the check (free); a scripted drill (no model); one real card checked within a $1 budget.
+  - Rewards: a deed per quest and the item "proving stone". No stage is locked behind 1b.
+  - Offered after a gated result later fails its tests; fallback three days after Mission 1.
+  - About 5 days of work, and it starts by moving the quests into data files.
+  - My calls on M1's open points, to confirm:
+    - a project without tests gets a linter as its check, said plainly;
+    - a slow suite gets a narrower command proposed;
+    - a flaky test or a red `main` never counts as the trigger.
