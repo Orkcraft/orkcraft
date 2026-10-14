@@ -97,6 +97,9 @@ body { user-select: text; -webkit-user-select: text; }
 .gui-improve__changes { flex-basis: 100%; margin: 0; padding-left: var(--space-3); display: flex; flex-direction: column; gap: var(--space-1); }
 .gui-warchief__day { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
 .gui-warchief__setup-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+/* Mission 1's hooks, asked once before quest 4: file by file, what is written (js/mission.js). */
+.gui-mission__hooks { margin: 0; padding-left: 1.2em; max-height: 40vh; overflow: auto; }
+.gui-mission__hooks ul { margin: 0; padding-left: 1.2em; }
 .gui-setup__ways { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .gui-warchief__over > .ok-win__frame { max-height: 50vh; display: flex; flex-direction: column; box-sizing: border-box; }
 .gui-warchief__over .ok-win__body { overflow: auto; display: flex; flex-direction: column; gap: var(--space-2); }

@@ -87,6 +87,14 @@ export function UsageAsk() {
         <button class="ok-btn primary" onClick=${() => answer(true)}>${say("Share")}</button>`} />`;
 }
 
+/** The Security reviewer's hooks in this project's AI tool settings: on or off (`orkline hooks remove` does the
+ *  same; they never block a tool when Orkline fails). */
+function HooksField({ s, set }) {
+  if (s.hooks === undefined || s.hooks === null) return null;
+  return html`<${Steps} label=${say("Security reviewer: hooks in this project's AI tool settings")} value=${s.hooks}
+      items=${[[true, say("On")], [false, say("Off (remove the hooks)")]]} onPick=${(v) => set({ hooks: v })} />`;
+}
+
 /** The 🌙 Night round (docs/design/night-round.md): on or off, what its last night found, and Look now. */
 function RoundField({ s, set, setS }) {
   const r = s.round;
@@ -205,6 +213,7 @@ export function SettingsDialog() {
       <${RoundField} s=${s} set=${set} setS=${setS} />
       <${LogsField} s=${s} set=${set} />
       <${ToolsField} s=${s} set=${set} />
+      <${HooksField} s=${s} set=${set} />
       <${AwakeField} s=${s} onPick=${(v) => command("awake.set", { on: v }).then(setS, () => {})} />
       <${UsageField} s=${s} onPick=${(v) => command("usage.share", { share: v }).then(setS, () => {})} />
       ${!s.updates_blocked && html`<${UpdatesField} s=${s} />`}

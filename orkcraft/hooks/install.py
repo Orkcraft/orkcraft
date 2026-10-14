@@ -363,6 +363,35 @@ def install_all(project: Path, agy: bool | None = None) -> list[Path]:
     return paths
 
 
+WHAT = {"SessionStart": "a note in Orkline's session log when a session starts",
+        "UserPromptSubmit": "a note in the session log for each prompt",
+        "PreToolUse": "the Security reviewer looks at each command and file the tool is about to touch",
+        "PreInvocation": "a note in the session log for each turn", "Stop": "a note in the session log when a turn ends",
+        "preToolUse": "the Security reviewer looks at each command and file the tool is about to touch",
+        "sessionStart": "a note in Orkline's session log when a session starts",
+        "beforeSubmitPrompt": "a note in the session log for each prompt"}
+TAKE_BACK = "orkline hooks remove, or Settings → Security reviewer → Remove the hooks"
+FAIL_OPEN = "If Orkline is not there or fails, the hook lets the tool go on: it never blocks your work by itself."
+
+
+def preview(project: Path, agy: bool | None = None) -> list[dict]:
+    """What `install_all(project, agy)` would write, file by file, in plain lines: [{"file", "tool", "lines"}].
+    Writes nothing."""
+    out = [{"file": str(FILES[h]), "tool": harnesses.title(h),
+            "lines": [f"{event}: {WHAT.get(event, event)}" for event in wanted(h)]}
+           for h in FILES if h == "claude" or wants_codex(project)]
+    if wants_agy() if agy is None else agy:
+        out.append({"file": str(AGY_FILE), "tool": harnesses.title("agy"),
+                    "lines": [f"{event}: {WHAT.get(event, event)}" for event in wanted_agy()]})
+    if (Path(project) / ".cursor").is_dir() or _on_path("cursor"):
+        out.append({"file": str(CURSOR_FILE), "tool": harnesses.title("cursor"),
+                    "lines": [f"{event}: {WHAT.get(event, event)}" for event in wanted_cursor()]})
+    if (Path(project) / ".pi").is_dir() or _on_path("pi"):
+        out.append({"file": str(PI_FILE), "tool": harnesses.title("pi"),
+                    "lines": ["an extension that sends each command to the Security reviewer and notes the session"]})
+    return out
+
+
 def wants_hermes() -> bool:
     """Whether to offer Hermes' global hooks: Hermes is on PATH."""
     return _on_path("hermes")

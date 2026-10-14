@@ -103,7 +103,16 @@ def read(host) -> dict[str, Any]:
             "usage": m.usage, "usage_blocked": usage.blocked(), "fire": m.fire,
             "updates": m.updates, "updates_blocked": updates.blocked() or ("the demo" if host.town.demo else ""),
             "version": __version__, "round": _round(host), "logs": _logs(host),
-            "keep_awake": m.keep_awake, "awake_how": host.awake.how, "awake_can": host.awake.can(), **_tools(m)}
+            "keep_awake": m.keep_awake, "awake_how": host.awake.how, "awake_can": host.awake.can(),
+            "hooks": _hooks_on(host), **_tools(m)}
+
+
+def _hooks_on(host) -> bool | None:
+    """Whether the Security reviewer's hooks are in this project's settings (None in the demo)."""
+    if host.town.demo:
+        return None
+    from orkcraft.hooks import install as hooks_install
+    return hooks_install.installed(host.town.repo_root)
 
 
 def change(host, args: dict) -> dict[str, Any]:
@@ -116,6 +125,20 @@ def change(host, args: dict) -> dict[str, Any]:
         m.autonomy_wait = autonomy.wait_of(args.get("wait"))
     if args.get("rebuild") is not None:
         m.rebuild_wait = autonomy.rebuild_of(args.get("rebuild"))
+    if isinstance(args.get("hooks"), bool) and not host.town.demo:    # the Security reviewer's hooks, this project
+        from orkcraft.hooks import install as hooks_install
+        root = host.town.repo_root
+        try:
+            if args["hooks"]:
+                hooks_install.install_all(root, agy=None if m.agy_warder_checked else False)
+            else:
+                hooks_install.uninstall_all(root, agy_global=False)
+        except ValueError as e:
+            from orkcraft.gui.host import CommandError
+            raise CommandError(f"Not changed: {e}") from None
+        host.town.toast("The Security reviewer guards this project" if args["hooks"] else
+                        "The hooks are removed from this project's AI tool settings", title="Security reviewer")
+        return read(host)
     if isinstance(args.get("tools"), dict) or "main_tool" in args:      # the AI tools: said apart
         for t, on in (args.get("tools") or {}).items():
             if t in m.tools and isinstance(on, bool):

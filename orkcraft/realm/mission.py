@@ -40,9 +40,21 @@ QUESTS = (
           "pass it.", "loot", "Set up the Review gate"),
     Quest("office", "Boss, in working hours the camp can look like an office.",
           "Switch to the Office look and back to Camp: the same town, the same carts and orks."),
+    Quest("listen", "Listen to what goes on outside.", "Set up External listeners on GitHub: your notifications "
+          "and open issues of this project become cards on the Task board (without gh: its TODO and FIXME lines). "
+          "Read only.", "watchtower", "Set up External listeners", "free, read only, no model"),
+    Quest("two", "Two at once.", "Two cards go to two orks at once, each on a branch of its own; both results wait "
+          "at the Review gate. Nothing is merged without you.", "", "Send two cards", ""),
 )
 IDS = tuple(q.id for q in QUESTS)
-DONE_SAYS = "The camp stands. By day the office, after work the camp: switch when you like."
+DONE_SAYS = "The camp stands and works. The rest is yours: send cards, answer the orks, pass what is good."
+# Quest 5 is real work: its price is said before the press (core/mission.py `two_cost`).
+TWO_BUDGET_USD = 2.0
+TWO_COST = ("Real work on {tool}: two runs, each on its own branch, with the Security reviewer on. No new run "
+            "starts once the Agent pool has spent ${budget:.2f}; a run under way finishes. On a subscription it "
+            "counts against your plan's limits.")
+# Asked once, before quest 4 (open-questions.md Q16): the hooks the Security reviewer and the session log stand on.
+HOOKS_SAYS = "Before real work: may the Security reviewer guard this project?"
 
 # The drill: a practice task the Grunt "works" by a script (core/workers/barracks.py DRILL), never a model.
 DRILL_TITLE = "Drill: pick the camp's banner"

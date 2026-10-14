@@ -277,8 +277,9 @@ def main(argv: list[str] | None = None) -> int:
     gui_p.add_argument("--demo", nargs="?", const="", default=argparse.SUPPRESS, metavar="DIR",
                        help="Open the showcase sandbox in the window")
     hooks_p = subparsers.add_parser("hooks", help="Every AI tool's hooks: session log and the Warder guard")
-    hooks_p.add_argument("action", choices=("install", "uninstall", "session"),
-                         help="session: the Claude Code plugin's hook (a hook payload on stdin; never fails)")
+    hooks_p.add_argument("action", choices=("install", "uninstall", "remove", "session"),
+                         help="remove: uninstall, in plain words; session: the Claude Code plugin's hook "
+                              "(a hook payload on stdin; never fails)")
     agy_global = hooks_p.add_mutually_exclusive_group()
     agy_global.add_argument("--agy-global", dest="agy_global", action="store_true", default=None,
                             help="Also guard agy's headless steps in ~/.gemini/config/hooks.json, without asking")
@@ -391,7 +392,7 @@ def main(argv: list[str] | None = None) -> int:
             sys.stderr.write(f"orkline error: {e}\n")
             return 1
         for path in paths:
-            print(f"{args.action}ed: {path}")
+            print(f"{'installed' if args.action == 'install' else 'removed'}: {path}")
         if args.action == "install" and any(p.parent.name == ".codex" for p in paths):
             print(hooks_install.CODEX_TRUST)
         if args.action == "install" and any(p.parent.name == ".agents" for p in paths):

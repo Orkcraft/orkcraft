@@ -2,7 +2,7 @@
 Warchief's line shows the quest under way, its one press and the way out (js/mission.js).
 
     face = MissionFace(host)
-    host.commands.update(face.commands())    # mission.raise · mission.leave · mission.seen
+    host.commands.update(face.commands())    # mission.raise · .leave · .seen · .hooks
     face.snapshot()                          # the snapshot's `mission`, None when there is none
     face.tick()                              # from the host's clock: a quest done moves the log on
 """
@@ -26,7 +26,8 @@ class MissionFace:
         return Mission(self.host.town)          # the town may be another after a project switch
 
     def commands(self) -> dict[str, Callable[[dict], Any]]:
-        return {"mission.raise": self.raise_it, "mission.leave": self.leave, "mission.seen": self.seen}
+        return {"mission.raise": self.raise_it, "mission.leave": self.leave, "mission.seen": self.seen,
+                "mission.hooks": self.hooks}
 
     def begin(self) -> None:
         self.mission.begin()
@@ -38,6 +39,17 @@ class MissionFace:
             raise MissionError("Nothing to raise for this quest")
         self.host.on_change()
         return built
+
+    def hooks(self, args: dict) -> list[str]:
+        """Before quest 4: the hooks written (`yes`), or not now. The files written."""
+        if not isinstance(args.get("yes"), bool):
+            raise MissionError("The hooks are written or not: yes is true or false")
+        try:
+            paths = self.mission.hooks(args["yes"])
+        except ValueError as e:                  # a settings file that is not JSON: said, nothing written
+            raise MissionError(f"Not written: {e}") from None
+        self.host.on_change()
+        return paths
 
     def leave(self, args: dict) -> None:
         self.mission.leave()

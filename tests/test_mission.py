@@ -9,7 +9,8 @@ import pytest
 from orkcraft.core.mission import Mission
 from orkcraft.core.workers.barracks import BarracksWorker
 from orkcraft.gui.host import Host
-from orkcraft.realm import checkpoint, event_log, jobs, mission
+from orkcraft.realm import checkpoint, event_log, jobs, mission, mission_work
+from tests.pool_fakes import FakeGit, Steward
 
 
 def _until(check, timeout: float = 8.0) -> bool:
@@ -39,7 +40,7 @@ def test_the_camp_is_raised_quest_by_quest_with_a_drill_and_no_model(fake_repo: 
     assert m.view() is None
     m.begin()
     v = m.view()
-    assert (v["quest"], v["n"], v["of"], v["press"]) == ("board", 1, 4, "Set up the Task board")
+    assert (v["quest"], v["n"], v["of"], v["press"]) == ("board", "1", "5", "Set up the Task board")
 
     board = m.raise_it()                                                     # quest 1: a drill card on the board
     card = town.worker(board).card(m.state["card"])
@@ -69,15 +70,45 @@ def test_the_camp_is_raised_quest_by_quest_with_a_drill_and_no_model(fake_repo: 
     host.command("you.look", {"look": "office"})                             # quest 3½: Office, then Camp
     assert not m.tick()
     host.command("you.look", {"look": "camp"})
-    assert m.tick() and m.view() == {"finished": True, "says": mission.DONE_SAYS}
+    assert m.tick() and m.view()["quest"] == "listen"
+
+    v = m.view()                                                             # before quest 4: the hooks, asked once
+    assert v["press"] == "" and v["hooks"]["files"][0]["file"] == ".claude/settings.json"
+    assert any("Security reviewer" in ln for ln in v["hooks"]["files"][0]["lines"])
+    assert "orkline hooks remove" in v["hooks"]["take_back"] and "never blocks" in v["hooks"]["fail_open"]
+    assert m.raise_it() == "" and not (fake_repo / ".claude" / "settings.json").exists()   # nothing written unasked
+    assert ".claude/settings.json" in host.command("mission.hooks", {"yes": True})
+    assert m.view()["hooks"] is None and m.view()["press"] == "Set up External listeners"
+
+    found = [mission_work.Item("FIXME in src/app.py: the greeting is wrong", "src/app.py:1", 0),
+             mission_work.Item("TODO in docs/notes.md: more notes", "docs/notes.md:3", 1)]
+    monkeypatch.setattr(mission_work, "found", lambda root: ("todo", found))
+    tower = m.raise_it()                                                     # quest 4: read only, cards on the board
+    assert town.scroll.building(tower) is not None
+    assert _until(m.tick) and m.view()["quest"] == "two"
+    b = town.worker(board)
+    assert [c.title for c in b.cards if c.column == "todo" and c.id != m.state["card"]] == [i.title for i in found]
+    assert not b.config.get("send_new")                                      # they wait on the board until sent
+
+    v = m.view()                                                             # quest 5: its price first
+    assert v["press"] == "Send two cards" and "$2.00" in v["cost"] and "Claude Code" in v["cost"]
+    runs = []
+    monkeypatch.setattr(BarracksWorker, "work_runner", staticmethod(
+        lambda harness, prompt, workdir, cancel, model, env, resume: (runs.append(prompt) or "done it", 0.05, 100, "")))
+    monkeypatch.setattr(BarracksWorker, "steward_runner", Steward())
+    monkeypatch.setattr(BarracksWorker, "git", FakeGit())
+    assert m.raise_it() == pool and w.config["max_orcs"] == 2 and w.config["worktrees"] is True
+    assert w.config["budget_usd"] == 2.0 and m.raise_it() == ""             # sent once
+    assert _until(lambda: m.tick(), timeout=15), (m.state, [t.status for t in w.state.tasks])
+    assert len(runs) == 2 and "budget_usd" not in w.config                    # the mission's budget ends with it
+    assert all(g.queue.by_ref(ref) is not None for ref in m.state["two"])  # both wait for the person
+    assert m.view() == {"finished": True, "says": mission.DONE_SAYS}
     m.seen_end()
     assert m.view() is None
 
     got = [(e["event"], e.get("quest")) for e in event_log.read(fake_repo)
            if e["event"].startswith("quest_")]
-    assert got == [("quest_started", "board"), ("quest_done", "board"), ("quest_started", "pool"),
-                   ("quest_done", "pool"), ("quest_started", "gate"), ("quest_done", "gate"),
-                   ("quest_started", "office"), ("quest_done", "office")]
+    assert got == [(f"quest_{x}", q) for q in mission.IDS for x in ("started", "done")]
     assert all(isinstance(e.get("seconds"), (int, float)) for e in event_log.read(fake_repo) if e["event"] == "quest_done")
     host.close()
 
@@ -125,3 +156,53 @@ def test_the_onboarding_offers_the_mission_and_it_starts_when_the_town_opens(fak
     host.command("mission.leave", {})
     assert host.snapshot()["mission"] is None
     host.close()
+
+
+def test_quest_4_reads_github_with_gh_else_the_todo_lines(fake_repo: Path):
+    """Read only, no model: the person's notifications first (a review asked first), then their issues, no doubles;
+    without GitHub, the tracked TODO and FIXME lines, FIXME first."""
+    import json
+    import subprocess
+    from types import SimpleNamespace
+    calls = []
+
+    def gh(cmd, **kw):
+        calls.append(cmd)
+        if cmd[:2] == ["git", "-C"]:
+            return SimpleNamespace(returncode=0, stdout="git@github.com:acme/app.git\n")
+        if cmd[:2] == ["gh", "api"]:
+            return SimpleNamespace(returncode=0, stdout=json.dumps([
+                {"reason": "subscribed", "subject": {"title": "Release notes", "type": "Issue"}},
+                {"reason": "review_requested", "subject": {"title": "Fix login", "type": "PullRequest"}}]))
+        if "--assignee" in cmd:
+            return SimpleNamespace(returncode=0, stdout=json.dumps([{"number": 7, "title": "Fix login", "url": "u"},
+                                                                    {"number": 8, "title": "Dark mode", "url": "u8"}]))
+        return SimpleNamespace(returncode=0, stdout="[]")
+    source, items = mission_work.found(fake_repo, runner=gh, which=lambda b: "/usr/bin/gh")
+    assert source == "github" and [i.title for i in items] == ["Fix login", "Dark mode", "Release notes"]
+    assert all(c[0] in ("git", "gh") and c[1] in ("-C", "api", "issue") for c in calls)
+    assert all(c[2] == "list" for c in calls if c[:2] == ["gh", "issue"])           # read only
+
+    (fake_repo / "src" / "app.py").write_text("print('hello')  # TODO: say it louder\n# FIXME broken greeting\n")
+    subprocess.run(["git", "add", "."], cwd=fake_repo, check=True, capture_output=True)
+    source, items = mission_work.found(fake_repo, which=lambda b: None)         # no gh, no GitHub origin
+    assert source == "todo" and [i.title for i in items] == ["FIXME in src/app.py: broken greeting",
+                                                              "TODO in src/app.py: say it louder"]
+
+
+def test_the_hooks_are_shown_before_they_are_written_and_taken_back_in_settings_or_the_cli(fake_repo: Path, capsys):
+    from orkcraft import cli
+    from orkcraft.hooks import install as hooks_install
+    shown = hooks_install.preview(fake_repo, agy=False)
+    assert shown[0]["file"] == ".claude/settings.json" and shown[0]["tool"] == "Claude Code"
+    assert not (fake_repo / ".claude").exists()                                 # a preview writes nothing
+    checkpoint.ensure(fake_repo)
+    host = Host(fake_repo, auto_commit=False)
+    assert host.command("town.settings", {})["hooks"] is False
+    assert host.command("town.settings.set", {"hooks": True})["hooks"] is True
+    assert hooks_install.installed(fake_repo)
+    assert host.command("town.settings.set", {"hooks": False})["hooks"] is False
+    host.command("town.settings.set", {"hooks": True})
+    host.close()
+    assert cli.main(["--repo", str(fake_repo), "hooks", "remove", "--no-agy-global"]) == 0
+    assert "removed: " in capsys.readouterr().out and not hooks_install.installed(fake_repo)

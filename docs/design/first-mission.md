@@ -3,8 +3,15 @@
 Status: proposal 2026-10-12, the owner's ask. Priority **P0**: it is the first fifteen minutes. **Built 2026-10-14
 (B7): quests 1 to 3½** (`realm/mission.py` the quests and their words, `core/mission.py` the work, `gui/mission.py`
 and `js/mission.js` the quest log in the Warchief's line); offered first on the onboarding's town step ("Set up the
-camp myself"). The drill runs no model: the Agent pool runs it by a script while its `drill.json` is there. Not yet:
-quests 4 and 5, the hooks asked before quest 4, the deeds and the mascot's stage, the class changing the words.
+camp myself"). The drill runs no model: the Agent pool runs it by a script while its `drill.json` is there.
+**Quests 4 and 5 and the hooks, 2026-10-14 (B8):** before quest 4 the hooks are asked for once, file by file what is
+written (`hooks/install.py` `preview`), how to take them back (`orkline hooks remove`, Settings → Security reviewer)
+and that they never block a tool when Orkline fails. Quest 4 reads only, **free, no model** (`realm/mission_work.py`:
+the person's GitHub notifications and issues of this repository through `gh`, else the tracked TODO and FIXME lines,
+sorted by rules, not a model: the ≈ $0.02 sort below is not built); the cards wait on the board (`send_new` off).
+Quest 5 needs the hooks; its price is said first: two runs on the main tool, on branches, no new run once the pool
+spent $2.00 more (its `budget_usd`, taken off when the quest ends); both results wait at the Review gate. Not yet:
+"one asks" in quest 5 (a real ork asks only when it needs to), the deeds and the mascot's stage, the class's words.
 Builds on [gui-onboarding.md](gui-onboarding.md) and [onboarding.md](onboarding.md) (today's steps),
 [growth.md](growth.md) (deeds, the mascot), [ork-console.md](ork-console.md) (❓, the console, the one status),
 [cut-list.md](cut-list.md) (the onboarding row), [dogfood-logs.md](dogfood-logs.md) (the events).
