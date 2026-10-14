@@ -2568,3 +2568,27 @@ def test_a_core_building_is_a_sheet_on_the_phone(gui, page):
     phone.close()
     assert not errors, errors
     call("town.demolish", {"id": bid})
+
+
+def test_office_s_medium_agent_pool_card_keeps_its_session_chips_clear_to_press(gui, page):
+    """Office spells a lane's state and its chips in words: on a medium card the chips take a row of their own, so
+    nothing covers them and a press opens the session's console."""
+    import time
+    from orkcraft.realm import barracks as bk
+    server, _ = gui
+    pg = page
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'barracks' }))")
+    w = server.host.town.worker(bid)
+    w.state.orcs = [bk.PoolOrc("Grub", "claude", "sonnet", persona="tests"), bk.PoolOrc("Thrak", "claude", "sonnet", persona="tests")]
+    w.state.tasks = [bk.PoolTask("t1", "Which runner?", "", status="asked", orc="Thrak", ask_kind="question",
+                                 question="pytest or unittest?", persona="tests", waits_since=time.time())]
+    w.state.save()
+    pg.evaluate("([id, x, y]) => import('/static/js/link.js').then(m => m.command('hut.move', { id, x, y }))", [bid, 0.3, 0.3])
+    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('c'))")
+    chip = _hut(pg, bid).locator(".pool-lane .pool-chip[data-ork='Thrak']")
+    chip.wait_for(state="visible", timeout=WAIT_MS)
+    chip.click()                                                        # nothing intercepts it
+    pg.locator(".gui-orkconsole", has_text="Thrak").wait_for(state="visible", timeout=WAIT_MS)
+    pg.get_by_role("button", name="Close").last.click()
+    pg.evaluate("() => import('/static/js/zoom.js').then(m => m.setZoom('b'))")
+    pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
