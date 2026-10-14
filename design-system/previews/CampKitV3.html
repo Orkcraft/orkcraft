@@ -354,7 +354,7 @@ const HOURGLASS = '<svg viewBox="0 0 10 12" width="14" height="17" aria-label="h
 // little large) and ×3 / ×2 (close); on density 1, ×2 / ×1 by default and ×1 / ×1. The layout's numbers are units of
 // 2 CSS px at L.b = 1, so the grid (paths, gaps) scales with the buildings.
 const STEPS = devicePixelRatio >= 2 ? [{ b: 1, s: 1 }, { b: 1.5, s: 1 }, { b: 3, s: 2 }] : [{ b: 1, s: 1 }, { b: 2, s: 1 }];
-let L = STEPS[1];
+let L = STEPS[Math.min(+(location.hash.match(/zoom=(\d)/) || [0, 1])[1], STEPS.length - 1)];   // #zoom=0 is the overview
 let K = 2 * L.b;
 const SHOW = {"buildings/barracks.png": 1, "buildings/catapult.png": 1, "buildings/council.png": 1, "buildings/crag.png": 1, "buildings/custom.png": 1, "buildings/fields.png": 1, "buildings/forest.png": 1, "buildings/forge.png": 1, "buildings/gramophone.png": 1, "buildings/horn.png": 1, "buildings/lab.png": 1, "buildings/lake.png": 1, "buildings/loot.png": 1, "buildings/loot_vault.png": 1, "buildings/mill.png": 1, "buildings/mine.png": 1, "buildings/pit.png": 1, "buildings/scrolls.png": 1, "buildings/signpost.png": 1, "buildings/town_hall.png": 1, "buildings/ux_lab.png": 1, "buildings/war_drum.png": 1, "buildings/watchtower.png": 1, "buildings/workshop.png": 1, "carts/asset.png": 1, "carts/bundle.png": 1, "carts/code.png": 1, "carts/doc.png": 1, "carts/empty.png": 1, "carts/flag-flag.png": 1, "carts/flag-held.png": 1, "carts/flag-none.png": 1, "carts/message.png": 1, "carts/pile.png": 1, "decor/boulder.png": 1, "decor/brush.png": 1, "decor/bush-small.png": 1, "decor/bush.png": 1, "decor/log-mossy.png": 1, "decor/log.png": 1, "decor/logpile.png": 1, "decor/mushrooms-teal.png": 1, "decor/mushrooms-white.png": 1, "decor/pebbles.png": 1, "decor/pine.png": 1, "decor/reeds-small.png": 1, "decor/reeds-tall.png": 1, "decor/reeds.png": 1, "decor/rock.png": 1, "decor/rocks.png": 1, "decor/stump.png": 1, "decor/tree.png": 1, "edge/palisade-end-e.png": 1, "edge/palisade-end-w.png": 1, "edge/palisade-gap.png": 1, "edge/palisade-h.png": 1, "ground/corner-ne.png": 1, "ground/corner-nw.png": 1, "ground/earth.png": 1, "ground/flowers.png": 1, "ground/inner-ne.png": 1, "ground/rim-e.png": 1, "ground/rim-n.png": 1, "ground/rim-s.png": 1, "ground/rim-w.png": 1, "ground/tufts.png": 1, "orks/body/door.png": 1, "orks/body/idle.png": 1, "orks/body/walk-down.png": 1, "orks/body/walk-side.png": 1, "orks/body/walk-up.png": 1, "orks/body/work.png": 1, "orks/inside/carry.png": 1, "orks/inside/lens.png": 1, "orks/inside/pin.png": 1, "orks/inside/quill.png": 1, "orks/roles/alchemist.png": 1, "orks/roles/grunt.png": 1, "orks/roles/loader.png": 1, "orks/roles/lookout.png": 1, "orks/roles/mechanic.png": 1, "orks/roles/pathfinder.png": 1, "orks/roles/prospector.png": 1, "orks/roles/seer.png": 1, "orks/roles/taskmaster.png": 1, "orks/roles/treasurer.png": 1, "orks/roles/warchief.png": 1, "orks/roles/warder.png": 1, "orks/states/asks.png": 1, "orks/states/doze.png": 1, "orks/states/held.png": 1, "orks/states/stuck.png": 1, "orks/states/working.png": 1, "track/corner-ne.png": 1, "track/corner-se.png": 1, "track/corner-sw.png": 1, "track/cross.png": 1, "track/merge-e.png": 1, "track/stop-e.png": 1, "track/straight-h.png": 1, "track/straight-v.png": 1, "track/switch-e.png": 1, "track/t-n.png": 1, "track/t-s.png": 1, "ui/bubble/c.png": 2, "ui/bubble/e.png": 2, "ui/bubble/n.png": 2, "ui/bubble/ne.png": 2, "ui/bubble/nw.png": 2, "ui/bubble/s.png": 2, "ui/bubble/se.png": 2, "ui/bubble/sw.png": 2, "ui/bubble/tail-1.png": 2, "ui/bubble/tail-2.png": 2, "ui/bubble/w.png": 2, "ui/ring-l.png": 2, "ui/ring-m.png": 2, "ui/ring-s.png": 2, "ui/scroll/a-bottom.png": 2, "ui/scroll/a-sheet.png": 2, "ui/scroll/a-top.png": 2, "ui/scroll/b-bottom.png": 2, "ui/scroll/b-sheet.png": 2, "ui/scroll/b-top.png": 2, "ui/scroll/banner.png": 2, "ui/scroll/c-bottom.png": 2, "ui/scroll/c-sheet.png": 2, "ui/scroll/c-top.png": 2};
 const small = (file) => file.startsWith("orks/") || file.startsWith("track/");
@@ -407,7 +407,7 @@ async function grid() {
   TU = got ? got.img.naturalWidth * got.scale / K : 32;
   LINE2_Y = LINE_Y + Math.ceil((TU + 84) / TU) * TU;
   COL_R = COL_L + Math.round(456 / TU) * TU;
-  WALL_X = COL_R + 128;
+  WALL_X = COL_R + 144;                                           // the catapult (76 wide) against it
   CAMP_W = WALL_X + 16;
   for (const b of BUILDINGS) {
     if (b[5] === 2) b[2][1] = LINE2_Y - 16 - b[2][3];               // the lower row stands just above line 2
@@ -416,11 +416,11 @@ async function grid() {
 }
 const BUILDINGS = [
   // type, name, box [x, y(top), w, h] (the cut sprite's size), v2 stand-in, block look, its line: 1 | 2 | "wall" | "end"
-  ["watchtower", "External listeners", [OX + 12, 0, 40, 64], "covers/tower/lookout.png", { roof: "var(--art-bone)" }, "wall"],
-  ["fields", "Task board", [OX + 174, 76, 44, 36], "facades/fields.png", { roof: "var(--art-wood-light)" }, 1],
-  ["barracks", "Agent pool", [OX + 234, 48, 96, 64], "facades/barracks.png", { roof: "var(--art-cloth)" }, 1],
-  ["loot_vault", "Review gate", [OX + 346, 56, 80, 56], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, 1],
-  ["catapult", "Publisher", [OX + 576, 232, 64, 56], null, { machine: true, roof: "var(--art-wood)" }, "end"],
+  ["watchtower", "External listeners", [OX + 38, -36, 68, 96], "covers/tower/lookout.png", { roof: "var(--art-bone)" }, "wall"],
+  ["fields", "Task board", [OX + 142, 39, 99, 73], "facades/fields.png", { roof: "var(--art-wood-light)" }, 1],
+  ["barracks", "Agent pool", [OX + 257, 48, 96, 64], "facades/barracks.png", { roof: "var(--art-cloth)" }, 1],
+  ["loot_vault", "Review gate", [OX + 369, 56, 80, 56], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, 1],
+  ["catapult", "Publisher", [OX + 576, 232, 76, 48], null, { machine: true, roof: "var(--art-wood)" }, "end"],
   ["lake", "Inspector", [OX + 96, 188, 64, 52], "covers/open/pond.png", { water: true }, 2],
   ["mine", "Research", [OX + 176, 176, 48, 64], null, { stone: true, roof: "var(--art-bone)" }, 2],
   ["lab", "Test bench", [OX + 240, 188, 76, 52], null, { roof: "var(--art-wood-light)" }, 2],
@@ -557,6 +557,29 @@ async function decor() {
   }
 }
 
+// a run of g3's rounded logs from x0 to x1 (units), its foot on the wall's line; an end post at each end
+let EDGE = null;
+async function loadEdge() {
+  const names = ["palisade-h", "palisade-end-w", "palisade-end-e"];
+  const got = await Promise.all(names.map((n) => probe(`${V3}edge/${n}.png`)));
+  EDGE = got.every(Boolean) ? Object.fromEntries(names.map((n, i) => [n, got[i]])) : null;
+}
+function palisade(x0, x1, y) {
+  if (!EDGE) return el("v3-at v3-palisade", x0, y, x1 - x0, 32);
+  const s = sc("edge/palisade-h.png"), h = EDGE["palisade-h"].naturalHeight * s, foot = (y + 32) * K;
+  const run = document.createElement("div");
+  run.className = "v3-img";
+  run.style.cssText = `left:${x0 * K}px;top:${foot - h}px;width:${(x1 - x0) * K}px;height:${h}px;`
+    + `background:url(${EDGE["palisade-h"].src}) 0 0 / ${EDGE["palisade-h"].naturalWidth * s}px ${h}px repeat-x`;
+  world.appendChild(run);
+  for (const [n, x] of [["palisade-end-w", x0 * K], ["palisade-end-e", x1 * K - EDGE["palisade-end-e"].naturalWidth * s]]) {
+    const im = document.createElement("img"), e = EDGE[n];
+    im.className = "v3-img"; im.src = e.src;
+    im.style.cssText = `left:${x}px;top:${foot - e.naturalHeight * s}px;width:${e.naturalWidth * s}px;height:${e.naturalHeight * s}px`;
+    world.appendChild(im);
+  }
+}
+
 function paths() {
   // each row's doors: a short path down to the stop on its own line (open to the grass on its two sides); carts run on
   // the lines, orks on the paths. An eleventh building starts another row with its own line, the same way.
@@ -565,13 +588,15 @@ function paths() {
     if (line === 2) earthPath(x + w / 2 - 8, y + h - 4, 16, LINE2_Y - (y + h) + 4, "we");
   }
   // the low palisade: along the top (a gap where the track comes in at the tower's foot) and down the right side
-  el("v3-at v3-palisade", OX - 40, 0, 96, 32);
-  el("v3-at v3-palisade", OX + 88, 0, WALL_X + 16 - OX - 88, 32);
-  el("v3-at v3-palisade is-v", WALL_X, 32, 16, LINE2_Y + 48);
+  // the low palisade (g3): along the back, open where the track comes in under the lookout, and down the right side
+  palisade(OX - 40, COL_L, 0);
+  palisade(COL_L + TU, WALL_X + 16, 0);
+  el("v3-at v3-palisade is-v", WALL_X, 32, 16, LINE2_Y + 48);   // g3 drew no side pieces yet: drawn plainly
 }
 
 async function ork(cx, feetY, opts = {}) {
   const got = await pick([
+    ...(opts.state ? [{ src: `${V3}orks/states/${opts.state}.png`, scale: sc(`orks/states/${opts.state}.png`), frames: 1 }] : []),
     { src: `${V3}orks/body/${opts.anim || "idle"}.png`, scale: sc(`orks/body/${opts.anim || "idle"}.png`), frames: opts.anim === "work" ? 6 : 4 },
     { src: `${CAMP}orks/body/${opts.anim || "idle"}.png`, scale: L.s, frames: opts.anim === "work" ? 6 : 4, fw: opts.anim === "work" ? 48 : 32, fh: 48, v2: true }]);
   el("v3-shadow", cx - 8, feetY - 3, 16, 5);
@@ -637,6 +662,7 @@ async function scene() {
   await grid();
   placeCamp();
   await loadGround();
+  await loadEdge();
   decals();
   await decor();
   paths();
@@ -647,16 +673,16 @@ async function scene() {
   // on line 2 one rolling and one stopped at the Test bench
   await cart(COL_L + 40, "code", { roll: 400, dur: 18 });
   await cart(COL_L + 40, "message", { roll: 400, dur: 18, delay: -9 });
-  await cart(OX + 196, "asset");
-  await cart(OX + 386, "code", { flag: "#42 · Fix login bug" });
+  await cart(OX + 192, "asset");
+  await cart(OX + 409, "code", { flag: "#42 · Fix login bug" });
   await cart(COL_L + 40, "doc", { roll: 430, dur: 22, delay: -5 }, LINE2_Y);
   await cart(OX + 278, "bundle", {}, LINE2_Y);
   // the keepers wait at the stops; one lifts the load off at the gate; one asks at the Agent pool's door
   await ork(OX + 214, LINE_Y - 2);
-  await ork(OX + 298, LINE_Y - 2);
-  await ork(OX + 406, LINE_Y - 2, { anim: "work" });
+  await ork(OX + 321, LINE_Y - 2);
+  await ork(OX + 429, LINE_Y - 2, { anim: "work" });
   await ork(OX + 146, LINE2_Y - 2);
-  await ork(OX + 264, 112, { badge: "ask" });
+  await ork(OX + 287, 112, { badge: "ask", state: "asks" });
   await ork(OX + 300, LINE2_Y - 2, { anim: "work", flip: true });
   report();
 }

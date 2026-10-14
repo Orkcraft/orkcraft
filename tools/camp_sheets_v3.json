@@ -76,18 +76,100 @@
    ],
    "show": 1
   },
-  {"name": "b1-catapult", "file": "b1-catapult.png", "over": "b1-core", "show": 1,
+  {
+   "name": "b1-catapult",
+   "file": "b1-catapult.png",
+   "over": "b1-core",
+   "show": 1,
    "about": "v3-prompts §8: the Publisher alone, in side view against a low log wall, four frames (rest, pulled back, mid-throw, the scroll away); frame 0 replaces B1's catapult",
-   "groups": [{"size": [160, 128], "anchor": "feet", "slots": ["door", "signal", "count"],
-               "items": [{"file": "buildings/catapult.png", "order": 1, "size": [160, 128]}]}]},
-  {"name": "b1-lookout", "file": "b1-lookout.png", "over": "b1-core", "show": 1,
+   "groups": [
+    {
+     "size": [
+      160,
+      128
+     ],
+     "anchor": "feet",
+     "slots": [
+      "door",
+      "signal",
+      "count"
+     ],
+     "items": [
+      {
+       "file": "buildings/catapult.png",
+       "order": 1,
+       "size": [
+        160,
+        128
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "b1-lookout",
+   "file": "b1-lookout.png",
+   "over": "b1-core",
+   "show": 1,
    "about": "v3-prompts §7.3: the lookout built into a low log wall, the track's gate at its foot; replaces B1's",
-   "groups": [{"size": [128, 160], "anchor": "feet", "slots": ["door", "signal", "count"],
-               "items": [{"file": "buildings/watchtower.png", "order": 1, "size": [128, 160]}]}]},
-  {"name": "b1-taskboard", "file": "b1-taskboard.png", "over": "b1-core", "show": 1,
+   "groups": [
+    {
+     "size": [
+      128,
+      160
+     ],
+     "anchor": "feet",
+     "slots": [
+      "door",
+      "signal",
+      "count"
+     ],
+     "items": [
+      {
+       "file": "buildings/watchtower.png",
+       "order": 1,
+       "size": [
+        128,
+        160
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "b1-taskboard",
+   "file": "b1-taskboard.png",
+   "over": "b1-core",
+   "show": 1,
    "about": "v3-prompts §9: the Task board at core size (160–192 wide); replaces B1's",
-   "groups": [{"size": [176, 128], "anchor": "feet", "slots": ["door", "signal", "count"],
-               "items": [{"file": "buildings/fields.png", "order": 0, "size": [176, 128]}]}]},
+   "groups": [
+    {
+     "size": [
+      176,
+      128
+     ],
+     "anchor": "feet",
+     "slots": [
+      "door",
+      "signal",
+      "count"
+     ],
+     "items": [
+      {
+       "file": "buildings/fields.png",
+       "order": 0,
+       "size": [
+        176,
+        128
+       ]
+      }
+     ],
+     "merge": 2
+    }
+   ]
+  },
   {
    "name": "b2-town",
    "file": "b2-town.png",
@@ -679,7 +761,8 @@
        "file": "orks/states/doze.png",
        "order": 4
       }
-     ]
+     ],
+     "merge": 2
     }
    ]
   },
@@ -917,7 +1000,8 @@
         }
        ]
       }
-     ]
+     ],
+     "merge": 1.5
     }
    ]
   },

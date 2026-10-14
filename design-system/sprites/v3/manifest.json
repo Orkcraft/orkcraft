@@ -129,12 +129,12 @@
   {
    "file": "buildings/fields.png",
    "size": [
-    400,
-    296
+    200,
+    152
    ],
    "frame": [
-    400,
-    296
+    200,
+    152
    ],
    "frames": 1,
    "pitch": 6.0,
@@ -142,7 +142,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "b1-taskboard.png",
-   "scale": 1.0,
+   "scale": 2.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -1654,12 +1654,12 @@
   {
    "file": "orks/inside/carry.png",
    "size": [
-    384,
-    72
+    288,
+    48
    ],
    "frame": [
-    64,
-    72
+    48,
+    48
    ],
    "frames": 6,
    "pitch": 6.0,
@@ -1667,7 +1667,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o5-inside.png",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
@@ -1683,12 +1683,12 @@
   {
    "file": "orks/inside/lens.png",
    "size": [
-    256,
-    72
+    160,
+    48
    ],
    "frame": [
-    64,
-    72
+    40,
+    48
    ],
    "frames": 4,
    "pitch": 6.0,
@@ -1696,7 +1696,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o5-inside.png",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
@@ -1712,12 +1712,12 @@
   {
    "file": "orks/inside/pin.png",
    "size": [
-    352,
-    72
+    224,
+    48
    ],
    "frame": [
-    88,
-    72
+    56,
+    48
    ],
    "frames": 4,
    "pitch": 6.0,
@@ -1725,7 +1725,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o5-inside.png",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
@@ -1741,12 +1741,12 @@
   {
    "file": "orks/inside/quill.png",
    "size": [
-    224,
-    72
+    160,
+    48
    ],
    "frame": [
-    56,
-    72
+    40,
+    48
    ],
    "frames": 4,
    "pitch": 6.0,
@@ -1754,7 +1754,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o5-inside.png",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
@@ -2142,12 +2142,12 @@
   {
    "file": "orks/states/asks.png",
    "size": [
-    64,
-    96
+    32,
+    48
    ],
    "frame": [
-    64,
-    96
+    32,
+    48
    ],
    "frames": 1,
    "pitch": 9.82,
@@ -2155,7 +2155,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o3-states.png",
-   "scale": 1.0,
+   "scale": 2.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [
@@ -2173,12 +2173,12 @@
   {
    "file": "orks/states/doze.png",
    "size": [
-    64,
-    96
+    32,
+    48
    ],
    "frame": [
-    64,
-    96
+    32,
+    48
    ],
    "frames": 1,
    "pitch": 9.82,
@@ -2186,7 +2186,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o3-states.png",
-   "scale": 1.0,
+   "scale": 2.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [
@@ -2204,12 +2204,12 @@
   {
    "file": "orks/states/held.png",
    "size": [
-    56,
-    96
+    32,
+    48
    ],
    "frame": [
-    56,
-    96
+    32,
+    48
    ],
    "frames": 1,
    "pitch": 9.82,
@@ -2217,7 +2217,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o3-states.png",
-   "scale": 1.0,
+   "scale": 2.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [
@@ -2235,12 +2235,12 @@
   {
    "file": "orks/states/stuck.png",
    "size": [
-    56,
-    88
+    32,
+    48
    ],
    "frame": [
-    56,
-    88
+    32,
+    48
    ],
    "frames": 1,
    "pitch": 9.82,
@@ -2248,7 +2248,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o3-states.png",
-   "scale": 1.0,
+   "scale": 2.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [
@@ -2266,12 +2266,12 @@
   {
    "file": "orks/states/working.png",
    "size": [
-    72,
-    104
+    40,
+    56
    ],
    "frame": [
-    72,
-    104
+    40,
+    56
    ],
    "frames": 1,
    "pitch": 9.82,
@@ -2279,7 +2279,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o3-states.png",
-   "scale": 1.0,
+   "scale": 2.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [

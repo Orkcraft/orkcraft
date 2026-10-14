@@ -35,7 +35,8 @@ model drew a box round every cell) has its drawn grid dropped before the pieces 
 runs with the background on both sides, the key's own darkened violet, and a cut along every line drawn across most of
 the sheet (`--degrid --list SHEET` to try it). The v3 spec sets `native` (each
 sprite cut at the sheet's own art pixel, never re-read coarser; its slot is what the sheet draws, rounded up to the
-grid of 8, and a size in the spec is only the plan) and `keep_colours` (no snap to the tokens: the art keeps its own
+grid of 8, and a size in the spec is only the plan; `merge: k` reads k × k of the sheet's pixels as one, their median,
+for a sheet drawn larger than the rest: o3 and the big Task board at 2, o5 at 1.5) and `keep_colours` (no snap to the tokens: the art keeps its own
 shading; the cutter only reports pixels in a signal's yellow, orange or red). The sheets are soft (the model renders
 at about 4.17 image px per art px and smooths it, and JPEG blurs again), so each art pixel is the median of its cell's
 inner pixels, then the magenta cast near the key is removed and the sprite is reduced to its own 24 colours (a median
@@ -792,7 +793,7 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
         return
     w, h = group["size"]
     boxes = [[_extract(sheet, f) for f in item.get("frames", [item])] for item in group["items"]]
-    scale = 1 if group.get("native") else group.get("scale")
+    scale = group.get("merge", 1) if group.get("native") else group.get("scale")
     if scale is None:                                            # one scale for the group: the largest piece fits
         # a group's `fit` (v2), else each piece's own slot (v3's buildings differ in size)
         fits = [group.get("fit") or item.get("size", [w, h]) for item in group["items"]]
@@ -802,7 +803,7 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
     for item, bs in zip(group["items"], boxes):
         frames = []
         if group.get("native"):                 # v3: the slot is what the sheet draws, on the grid of 8, never resampled
-            imgs = [trim(sheet.native(b)) for b in bs]
+            imgs = [trim(sheet.native(b) if scale == 1 else sheet.coarse(b, scale)) for b in bs]
             r8 = (lambda n: n) if group.get("exact") else up8          # `exact`: nine-slice pieces keep their size
             item = {**item, "size": (r8(max(i.shape[1] for i in imgs)), r8(max(i.shape[0] for i in imgs)))}
         read = lambda box: trim(sheet.native(box) if scale == 1 else sheet.coarse(box, scale))  # noqa: E731

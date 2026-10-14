@@ -161,6 +161,21 @@ the same unit (the canvas roof, 156 × 1.5 = 234 px):
 | path width | 0.21 | 48 / 234 = **0.21** |
 | gap between buildings | about 0.18 | 48 / 234 = **0.21** |
 
+**The buildings against F1** (round 8, the owner's picks; same unit; F1 by eye on a 10-px grid):
+
+| building | F1, wide × tall | ratio | preview (cut) | ratio | note |
+|---|---|---|---|---|---|
+| Agent pool | roof 278 | 1.00 | roof 156 | 1.00 | the unit |
+| Review gate | 225 wide | 0.81 | 160 | 1.03 | a little large |
+| Task board | 128 × 105 | 0.46 × 0.38 | 198 × 145 (b1-taskboard read at `merge: 2`) | 1.27 × 0.93 | as the owner asked: a core building, not F1's small notice board |
+| External listeners | 120 × 290 | 0.43 × 1.04 | 130 × 186, its piece of wall included | 0.83 × 1.19 | built into the wall, as decided |
+| Publisher | about 120 wide | 0.43 | 146 × 94 (side view, its own track) | 0.94 | side view, as decided |
+
+**Orks from other sheets at o1's size:** o3 (the states) is drawn at about twice o1's art pixel and is read at `merge: 2`
+(2 × 2 → 1, the median): its orks come out 47–50 px against o1's 44. o5 (inside a building) is drawn at the same
+pixel as o1 but its ork is drawn 1.6× larger (about 70 art px tall); read at `merge: 1.5` (the median over 1.5-px
+cells, the nearest clean rule) it comes out 44–47 px. The asking ork in the preview wears o3's pose.
+
 **The zoom steps keep whole device pixels** (buildings / orks and track): on density 2, **×1.5 / ×1** (default),
 ×3 / ×2 (close), and ×1 / ×1 (an overview: whole, the orks a little large); on density 1, **×2 / ×1** (default) and
 ×1 / ×1. The wheel steps through them, **drag pans**; the default view is centred on the work (the back wall to line 2),
