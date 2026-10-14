@@ -366,7 +366,9 @@ def alerts(town: Town, muster: Muster, night=None) -> list[dict[str, Any]]:
     by_alert = {o.alert.id: o.building for o in muster.roster.orcs if o.alert is not None and o.building}
     return [{"id": a.id, "title": modes.strip_emoji(a.title), "context": list(a.context[-12:]),
              "options": [[k, modes.strip_emoji(label)] for k, label in a.options], "source": a.source, "ref": a.ref,
-             "who": who.get(a.id, ""), "building": by_alert.get(a.id, ""), "advice": _advice(night, a),
+             # a building's own question (a Review gate's carts) names its building, as an ork's names its own
+             "who": who.get(a.id, ""), "building": by_alert.get(a.id) or (a.ref if a.source == "view" else ""),
+             "advice": _advice(night, a),
              "waited": round(now - muster.alert_first_seen.get(a.id, now), 1)} for a in found]
 
 

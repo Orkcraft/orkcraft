@@ -12,7 +12,7 @@ import { busy as busyOf } from "./fold.js";
 import { Card, Mark, QuickTray } from "./hut.js";
 import { runQuick } from "./types.js";
 import { TypeIcon, OrkHead } from "./icons.js";
-import { say, town } from "./link.js";
+import { say, town, command, toast } from "./link.js";
 import { openOrders } from "./orders.js";
 import { coverOf } from "./cover.js";
 import { CampStrip, sheetOf } from "./sheet.js";
@@ -153,15 +153,34 @@ function jump(list) {
   });
 }
 
+/** A question that waits for the person and is not an ork's in a building's card (a Review gate's carts, an ork of
+ *  no building here): who asks, what, and its answers, each one tap (Orders' `orders.answer`). */
+function Question({ a }) {
+  const answer = (key) => command("orders.answer", { id: a.id, key }).catch((e) => toast(String(e.message || e)));
+  return html`<li class="gui-pocket__row ok-hut is-alert gui-pocket__ask">
+    <p class="ok-font-body"><b>${[a.where && say(a.where), a.who && say(a.who)].filter(Boolean).join(" · ")}${a.where || a.who ? ": " : ""}</b>${a.title}</p>
+    ${(a.options || []).length > 0
+      ? html`<div class="ok-row">${a.options.map(([key, label]) => html`<button key=${key} class="ok-btn"
+          onClick=${() => answer(key)}>${label}</button>`)}</div>`
+      : html`<button class="ok-btn" onClick=${openOrders}>${say("Answer")}</button>`}
+  </li>`;
+}
+
 export function Pocket({ buildings }) {
   const numbered = buildings.map((b, i) => ({ b, n: i + 1 }));
-  const asks = numbered.filter((x) => x.b.alert);
-  // What waits for the person, counted as the HUD's Answers counts it: a question need not be a building's
-  // (the Quartermaster's carts), and then the chip opens Answers instead of jumping to a card.
-  const waiting = Math.max(asks.length, ((town.value && town.value.alerts) || []).length);
-  const working = numbered.filter((x) => !x.b.alert && busyOf(x.b));
+  const alerts = (town.value && town.value.alerts) || [];
+  // A building whose ork asks stands with its card (the card says the question); every other question (a Review
+  // gate's carts, an ork of no building here) stands in the list by itself, answerable in one tap.
+  const asking = (b) => !!b.alert;
+  const asks = numbered.filter((x) => asking(x.b));
+  const onCards = new Set(asks.map((x) => x.b.alert.id));
+  const titles = Object.fromEntries(buildings.map((b) => [b.id, b.title]));
+  const loose = alerts.filter((a) => !onCards.has(a.id)).map((a) => ({ ...a, where: titles[a.building] || "" }));
+  // What waits for the person, counted as the HUD's Answers counts it, and the list below shows as many.
+  const waiting = asks.length + loose.length;
+  const working = numbered.filter((x) => !asking(x.b) && busyOf(x.b));
   // The quiet ones by how likely this viewer opens them: the likeliest stand out as "Usually open", the rest fold.
-  const quiet = numbered.filter((x) => !x.b.alert && !busyOf(x.b))
+  const quiet = numbered.filter((x) => !asking(x.b) && !busyOf(x.b))
     .sort((x, y) => likely(y.b) - likely(x.b) || x.n - y.n);
   const usual = quiet.filter((x) => likely(x.b) > 0).slice(0, USUAL);
   const rest = quiet.slice(usual.length);
@@ -176,10 +195,15 @@ export function Pocket({ buildings }) {
       <button class="ok-btn gui-pocket__chip" disabled=${!working.length} onClick=${() => jump(working)}>⚙ ${say("At work")} ${working.length}</button>
     </nav>
     <${CampStrip} buildings=${buildings} />
-    ${asks.length > 0 && html`<section class="gui-pocket__group">${head("Asks you", asks, "ok-tone-wait")}${rows(asks)}</section>`}
+    ${(asks.length > 0 || loose.length > 0) && html`<section class="gui-pocket__group">
+      <h2 class="ok-list__head gui-pocket__group-head">
+        <button class="gui-pocket__jump" onClick=${() => (asks.length ? jump(asks) : openOrders())} title=${say("Open the first one")}>
+          ${say("Asks you")} <span class="ok-tone-wait">${waiting}</span></button></h2>
+      ${loose.length > 0 && html`<ul class="gui-pocket__list">${loose.map((a) => html`<${Question} key=${a.id} a=${a} />`)}</ul>`}
+      ${asks.length > 0 && rows(asks)}</section>`}
     ${working.length > 0 && html`<section class="gui-pocket__group">${head("At work", working, "ok-tone-muted")}${rows(working)}</section>`}
     ${usual.length > 0 && html`<section class="gui-pocket__group">${head("Usually open", usual, "ok-tone-muted")}${rows(usual)}</section>`}
-    ${!asks.length && !working.length && !usual.length && buildings.length > 0
+    ${!asks.length && !loose.length && !working.length && !usual.length && buildings.length > 0
       && html`<p class="ok-font-body ok-tone-muted gui-pocket__calm">${say("Nothing asks you and no ork is at work.")}</p>`}
     ${rest.length > 0 && html`<section class="gui-pocket__group">
       <h2 class="ok-list__head gui-pocket__group-head">

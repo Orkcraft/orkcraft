@@ -1881,6 +1881,47 @@ def test_a_narrow_window_shows_the_buildings_as_a_list_of_cards(gui):
     assert not errors, "\n".join(errors)
 
 
+def test_a_narrow_window_lists_every_question_the_counts_say(gui):
+    """A building's own questions (a Review gate's carts: no ork of its asks) stand in the narrow list, each answered
+    in one tap, as many as the ❓ chip counts: never "Nothing asks you" under a count of three."""
+    server, browser = gui
+    host = server.host
+    real_snapshot, real_answer = host.snapshot, host.commands["orders.answer"]
+    answered = []
+
+    def snapshot():
+        s = real_snapshot()
+        gate = next((b["id"] for b in s["buildings"] if b["type"] == "loot"), "")
+        s["alerts"] = [{"id": f"view:{gate}:{i}", "title": f"Cart {i} waits for review", "who": "Quartermaster",
+                        "building": gate, "options": [["pass", "Pass"], ["back", "Send back"]], "context": [],
+                        "source": "view", "ref": gate, "advice": None, "waited": 5.0} for i in range(3)]
+        return s
+    host.snapshot = snapshot
+    host.commands["orders.answer"] = lambda a: (answered.append(a), True)[1]
+    pg = browser.new_page(viewport={"width": 390, "height": 844}, has_touch=True)
+    try:
+        pg.goto(server.url)
+        pg.wait_for_selector(".gui-pocket", timeout=WAIT_MS)
+        bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'loot' }))")
+        pg.keyboard.press("Escape")
+        asks = pg.locator(".gui-pocket__ask")
+        asks.nth(2).wait_for(timeout=WAIT_MS)
+        assert asks.count() == 3 and "Cart 0 waits for review" in asks.first.inner_text()
+        assert "3" in pg.locator(".gui-pocket__chip", has_text="Asks you").inner_text()
+        assert pg.get_by_text("Nothing asks you and no ork is at work.").count() == 0
+        asks.first.get_by_role("button", name="Pass").click()
+        pg.wait_for_function("() => true")
+        for _ in range(50):
+            if answered:
+                break
+            pg.wait_for_timeout(100)
+        assert answered == [{"id": f"view:{bid}:0", "key": "pass"}]
+        pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
+    finally:
+        host.snapshot, host.commands["orders.answer"] = real_snapshot, real_answer
+        pg.close()
+
+
 def test_the_sun_sets_the_working_hours_and_leaves_the_camp(page):
     """The sun's menu keeps the person's day (js/day.js): the working hours, on with a start and an end, and "I'm off",
     which shows the Warchief's line about the day away and the lid, then the day away with I'm back
