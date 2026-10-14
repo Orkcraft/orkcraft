@@ -254,3 +254,60 @@ devlog post from 19 October; the release 0.3.0 "Orkline".
 
 **Next, by the backlog:** C5 the catapult and the ways in; the old buildings onto the v2 kit; the ground; D5 the GIF;
 then the first three testers.
+
+
+## 13. The owner's review of the day (14 October, night): the keeper instead of the cover, the inside of a building, a brighter Camp
+
+The owner looked at the day's Camp and decided. Each line below changes what it names; the docs it names are
+brought in line by the sessions that build it.
+
+**1. The cover that lifts (C3) did not work. Replaced by the keeper** ([color-pass.md](color-pass.md) §6a–6c is
+superseded here):
+
+- **Hover** on a building (desktop): its keeper ork steps out; over its head a thought bubble with its task (the type
+  and the task's name in 2–3 words); over the building a small scroll with the building's status in one or two lines
+  (what the minimal cards said).
+- **Click** (desktop): the scroll grows, and **quick actions** appear at the bottom for that building. On the phone,
+  the first tap does what hover and click do together.
+- **A second click** (the second tap on the phone) **enters the building** (below).
+- **No combined menu of a building and an ork.** A click on an ork opens **its terminal** at the bottom, with tabs of
+  its history (tokens, its task) — the console of [ork-console.md](ork-console.md). A click on an ork's **bubble** or
+  on a **cart** opens **the task's history**: where it stopped, the tokens it spent, the stations it passed — the
+  minimal waybill of [cart-waybill.md](cart-waybill.md), pulled from P1 into P0 for this.
+
+**2. The inside of a building replaces A5's large card** ([lighter-buildings.md](lighter-buildings.md) §7 is
+superseded for the view, not for the removals):
+
+- A screen of its own. **Left:** the building from inside, scrollable when large; its orks work there, walking, their
+  task in a bubble over them, tools in hand. **Right:** the building's settings as a panel in the manner of a
+  merchant's window in an action RPG; settings keep plain words (CLAUDE.md). An **Exit** always visible.
+- **The Task board first:** cards as large sheets of parchment or stone, to-do's checkbox as a flag. The other core
+  buildings get the same layout with a plainer room until their interiors are drawn.
+- Settings drawn *into* the room instead of the panel: **No** for now (plain words where money and safety are).
+
+**3. A brighter Camp, all old assets replaced.** Brighter and more saturated **than Camp on `main` today**, away from
+the strategy-game colours; every old sprite (buildings, orks, menu items, the biomes' backgrounds), the text sizes and
+the fonts redone for one style. **Scale from "at most ten buildings on the screen".** A cart must be found and
+recognised from far away (checked by the five-second test). **Yellow and red stay reserved for signals**
+([town-readability.md](town-readability.md)); the grey test still passes. This is design system **v3**, built on v2's
+grid and pipeline.
+
+**4. The art stays generated until the product proves itself.** The owner goes to an artist only once the product is
+ready and worth it. So the commission (O3, C6) moves to **Later**; [color-pass.md](color-pass.md) §10's "the art that
+ships is made by people" is suspended; generated art is shown as **a concept** in posts, said so (as before). Q18's
+care still holds: nothing in the art imitates the big strategy game.
+
+**The priorities after this review:**
+
+| id | item | priority | runs |
+|---|---|---|---|
+| S9 | stabilisation: the browser tests and the full suite green; no new features | **P0 now** | ∥ |
+| E1 | a clean install to the end of Mission 1, on a fresh machine; a list of what breaks, fixed | **P0 now** | ∥ |
+| I1 | the keeper, the bubble, the scroll and quick actions; the ork's terminal; the task's history on a bubble or cart; the cover (C3) taken out | **P0** | ∥ |
+| I2 | the inside of a building replacing A5's card; the Task board drawn first | **P0** | ∥ with I1, entering through I1's second click |
+| V3 | design system v3: a reference frame first (approved by the owner), then the tokens, scale, fonts, and generated sheets for every old asset | **P0** | ∥; I1 and I2 draw with v2 until it lands |
+| C5 | the catapult and the ways in | Later | — |
+| O3, C6 | the artist's commission | Later | after the product proves itself |
+
+Then: the GIF (D5) on V3's art, without the catapult; the first three testers. **No** new features until their
+feedback, besides these.
