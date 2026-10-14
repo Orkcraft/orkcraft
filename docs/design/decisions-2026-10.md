@@ -344,3 +344,13 @@ the owner's input. What runs, in order:
 
 Next, after I1: I2 (the Task board's inside — now the dispatcher's booth inside), then the inventory and the portrait's
 growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-mission.md §9).
+
+**For the morning (PM notes):**
+
+- **The Gemini key's credits are spent.** GEN's fourth run (the homes by kin, the track pieces at c2's gauge) got
+  HTTP 402 "Your prepayment credits are depleted" on all 6 calls; no images made. The key's project bills **prepaid
+  credits**, not a free tier as GEN first reported; about 70 images were made across the rounds. To go on: top up the
+  credits in AI Studio (project → billing), then `tools/gen_sheets.py` runs `k2-homes` and `c2-fix` as they are. Until
+  then the homes are missing and the loop's split stays the stand-in.
+- GEN's round 9 picks (dispatcher's booth #2, gate with barrier #2, mine #2, Prospector #1, classes #1, growth marks
+  #1) are cut and on `main` (c149e6b).
