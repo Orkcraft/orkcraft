@@ -31,8 +31,8 @@ const meets = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h &&
 export function blockers(L) {
   const B = L.step.b, c = CELL * B, out = [];
   for (const p of Object.values(L.buildings)) {
-    out.push(grow({ x: p.x, y: p.y, w: p.w, h: Math.max(p.h, p.feet - p.y) }, c));
-    if (p.growth && p.growth.annex) out.push(grow({ x: p.x + p.w, y: p.feet - 64 * B, w: 66 * B, h: 64 * B }, c / 2));
+    out.push({ ...grow({ x: p.x, y: p.y, w: p.w, h: Math.max(p.h, p.feet - p.y) }, c), id: p.id });
+    if (p.growth && p.growth.annex) out.push({ ...grow({ x: p.x + p.w, y: p.feet - 64 * B, w: 66 * B, h: 64 * B }, c / 2), id: p.id });
   }
   if (L.home) out.push(grow(L.home, c));
   for (const p of L.paths) out.push(grow(p, c / 4));
@@ -48,4 +48,14 @@ export function blockers(L) {
 export function fits(L, box, walls, others = []) {
   if (box.x < 0 || box.y < 0 || box.x + box.w > L.w || box.y + box.h > L.h) return false;
   return !walls.some((r) => meets(box, r)) && !others.some((r) => meets(box, r));
+}
+
+/** What a placed item's box meets now that the camp changed: the building that took its cell (its id), "" for
+ *  anything else (a path, the track, the home), null when it still stands on grass. A pixel of slack, so the zoom's
+ *  rounding never moves an item. */
+export function takenBy(L, box, walls) {
+  const inner = grow(box, -1);
+  if (inner.x < 0 || inner.y < 0 || inner.x + inner.w > L.w || inner.y + inner.h > L.h) return "";
+  const hit = walls.find((r) => meets(inner, r));
+  return hit ? hit.id || "" : null;
 }

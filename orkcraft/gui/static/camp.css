@@ -166,6 +166,8 @@
   background: var(--panel); box-shadow: 0 0 0 2px var(--frame), var(--shadow-window); color: var(--ink); }
 .gui-items.is-target { box-shadow: 0 0 0 2px var(--frame-focus), var(--shadow-window); }
 .gui-items__hint { margin: 0 0 var(--space-2); }
+.gui-items__note { margin: 0 0 var(--space-2); padding-bottom: var(--space-2); border-bottom: 1px solid var(--frame); }
+.gui-items__who { font-weight: 600; }
 .gui-items__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--space-1); }
 .gui-items__row { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1); cursor: grab; touch-action: none;
   user-select: none; }

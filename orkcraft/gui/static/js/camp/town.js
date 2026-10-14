@@ -352,7 +352,7 @@ export function CampTown({ buildings, roads }) {
       <${Paths} L=${L} />
       <${Track} L=${L} />
       <${Palisade} L=${L} />
-      <${Placed} L=${L} items=${you && snapshot.value.growth.items} />
+      <${Placed} L=${L} items=${you && snapshot.value.growth.items} buildings=${buildings} />
       <div class="gui-camp__layer is-buildings">
         ${buildings.map((b, i) => L.buildings[b.id] && html`<${Building} key=${b.id} b=${b} at=${{ L, p: L.buildings[b.id] }} number=${i + 1}
           raising=${going[b.id] !== undefined} />`)}

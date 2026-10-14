@@ -92,3 +92,19 @@ def test_placed_items_are_kept_in_the_town_file_and_an_earned_one_stands_once(tm
     assert [(p["item"], p["x"], p["y"]) for p in again.items] == [("tree", 4, -1), ("tree", 5, -2), ("first-cart", 1, 1)]
     items.remove(again, cart["id"])                                           # back to the inventory
     assert items.place(again, tmp_path, "first-cart", "main", 2, 2)["item"] == "first-cart"
+
+
+def test_an_item_a_building_takes_the_cell_of_goes_back_quietly_with_a_note_for_the_panel(tmp_path: Path):
+    """The PM, 2026-10-14: a new building or a row change takes a placed item's cell → back to the inventory, keeping
+    why it was earned; one line waits for the Items panel, cleared once seen."""
+    town = _town("barracks")
+    items.earn(tmp_path, "level3-barracks", "Barracks at III")
+    p = items.place(town, tmp_path, "level3-barracks", "main", 2, 3)
+    assert items.notes(tmp_path) == []
+    assert items.back(town, tmp_path, p["id"], "Test bench") == "The Anvil went back to your items when the Test bench was built"
+    assert town.items == []
+    row = next(r for r in items.inventory(town, tmp_path) if r["id"] == "level3-barracks")
+    assert row["left"] == 1 and row["why"].startswith("Earned: Barracks at III")
+    assert items.notes(tmp_path) == ["The Anvil went back to your items when the Test bench was built"]
+    items.seen(tmp_path)
+    assert items.notes(tmp_path) == []

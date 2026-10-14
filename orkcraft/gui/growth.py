@@ -106,7 +106,7 @@ class Growth:
         """The inventory (what the person may place) and what stands on the open orkspace's grass."""
         town = self.host.town
         here = town.scroll.active_orkspace.id
-        return {"inventory": items.inventory(town.scroll, town.repo_root),
+        return {"inventory": items.inventory(town.scroll, town.repo_root), "notes": items.notes(town.repo_root),
                 "placed": [dict(p) for p in town.scroll.items if p["orkspace"] == here]}
 
     def snapshot(self) -> dict[str, Any]:
@@ -189,7 +189,16 @@ class Growth:
     def _put_back(self, args: dict) -> None:
         self._items(lambda: items.remove(self.host.town.scroll, str(args.get("id", ""))))
 
+    def _back(self, args: dict) -> str:
+        town = self.host.town
+        because = str(args.get("because", ""))[:80]
+        return self._items(lambda: items.back(town.scroll, town.repo_root, str(args.get("id", "")), because))
+
+    def _seen_items(self, args: dict) -> None:
+        items.seen(self.host.town.repo_root)
+        self.host.on_change()
+
     def commands(self) -> dict[str, Callable[[dict], Any]]:
         return {"growth.seen": self._seen, "orkspace.biome": self._biome, "orkspace.rename": self._rename,
                 "orkspace.remove": self._remove, "items.place": self._place, "items.move": self._move,
-                "items.remove": self._put_back}
+                "items.remove": self._put_back, "items.back": self._back, "items.seen": self._seen_items}

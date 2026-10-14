@@ -621,8 +621,10 @@ GEN. Order: the score and the stages first (they give the items), then the inven
   (`js/camp/grass.js`: never on track, paths, stops, the palisade, the wilderness's own decor, another item, or within
   a cell of a building or the home); a placed one drags to move, or back to the panel (or its right click) to put it
   away. Drawn under the buildings' layer, so ❓, `!`, carts and flags stand over it; Office draws none.
-- **Not yet:** the second chapter's sundial (Mission 2 is not built); a placed item whose cell a new building later
-  takes stays in the file but may stand against it until moved.
+- **A cell taken later** (the PM): when a new building, or a row moving, takes a placed item's cell, the item goes back
+  to the inventory quietly, keeping why it was earned (`items.back`); one line waits in the Items panel only, said
+  once it is opened ("The Anvil went back to your items when the Test bench was built", `items.seen` on closing).
+- **Not yet:** the second chapter's sundial (Mission 2 is not built).
 
 ## 15. GEN's rounds 9–10, overnight (2026-10-14, night)
 

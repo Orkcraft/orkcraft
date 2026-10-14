@@ -3,13 +3,15 @@
 // dragged onto the camp snaps to the grid of js/camp/grass.js, which shows while dragging where it fits — on grass
 // only. A placed one is dragged again to move it, or back onto the panel (or its right click) to put it back. Items
 // stand under every signal, cart and flag, in their own calm colours; Office draws none (only Camp draws this). Nothing
-// nags: no count, no badge, no "items to place".
+// nags: no count, no badge, no "items to place". When a building (or a row moving) takes a placed item's cell, the
+// item goes back to the inventory quietly, and one line waits in the panel ("The Anvil went back to your items when
+// the Test bench was built"), said once it is opened.
 import { signal } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { command, say } from "../link.js";
 import { openMenu } from "../menu.js";
-import { boxAt, blockers, cellAt, fits, grid } from "./grass.js";
+import { boxAt, blockers, cellAt, fits, grid, takenBy } from "./grass.js";
 
 export const inventoryOpen = signal(false);
 const drag = signal(null);        // {item, size, sprite, placed?, gx, gy, ok, over: "world" | "panel" | ""}
@@ -84,10 +86,30 @@ function Fit({ L }) {
   return html`<canvas ref=${ref} class="gui-items__grid" width=${L.w} height=${L.h} style=${`width:${L.w}px;height:${L.h}px`}></canvas>`;
 }
 
-/** The placed items on the open orkspace's grass, and the dragged one where it would land. In the world's frame. */
-export function Placed({ L, items }) {
+const sentBack = new Set();        // asked to go back once; the next snapshot no longer has them
+let known = null;                  // the buildings drawn last time: a new one is what moved the camp
+
+/** The placed items on the open orkspace's grass, and the dragged one where it would land. In the world's frame.
+ *  One whose cell a building took goes back to the inventory, not drawn against it. */
+export function Placed({ L, items, buildings }) {
   const rows = rowsById(items && items.inventory);
-  const placed = (items && items.placed) || [];
+  const all = (items && items.placed) || [];
+  const walls = blockers(L);
+  const taken = all.filter((p) => rows[p.item] && takenBy(L, boxAt(L, rows[p.item].size, p.x, p.y), walls) !== null);
+  const ids = (buildings || []).map((b) => b.id);
+  const fresh = known ? (buildings || []).find((b) => !known.includes(b.id)) : null;
+  useEffect(() => {
+    known = ids;
+    for (const p of taken) {
+      if (sentBack.has(p.id)) continue;
+      sentBack.add(p.id);
+      const by = takenBy(L, boxAt(L, rows[p.item].size, p.x, p.y), walls);
+      // the building that stands there now, else the one just built that moved the row (the home, a path)
+      const b = (by && (buildings || []).find((x) => x.id === by)) || fresh;
+      command("items.back", { id: p.id, because: b ? b.title : "" }).catch(() => {});
+    }
+  });
+  const placed = all.filter((p) => !taken.includes(p));
   here = { L, placed, rows };
   const d = drag.value;
   const putBack = (p) => (e) => openMenu(e, [{ label: "Put back in the inventory", run: () => command("items.remove", { id: p.id }).catch(() => {}) }]);
@@ -115,13 +137,19 @@ export function Placed({ L, items }) {
  *  here; an earned one placed already says so. */
 export function Inventory({ items }) {
   const rows = (items && items.inventory) || [];
+  const notes = (items && items.notes) || [];
   const open = inventoryOpen.value;
+  useEffect(() => {                          // a note is said once the panel is open; closing it marks them seen
+    if (!open || !notes.length) return undefined;
+    return () => command("items.seen").catch(() => {});
+  }, [open, notes.length]);
   return html`<div class="gui-items-slot" onPointerDown=${(e) => e.stopPropagation()} onClick=${(e) => e.stopPropagation()}>
     <button class=${cls("gui-items__toggle ok-btn", { "is-on": open })} aria-expanded=${open}
         title=${say("Items: things you earned and the starter set, to place on the camp's grass")}
         onClick=${() => { inventoryOpen.value = !open; }}>${say("Items")}</button>
     ${open && html`<section class=${cls("gui-items", { "is-target": drag.value && drag.value.placed && drag.value.over === "panel" })}
         role="region" aria-label=${say("Items")}>
+      ${notes.map((n, k) => html`<p key=${k} class="ok-font-body gui-items__note"><span class="gui-items__who">${say("Warchief")}:</span> ${say(n)}</p>`)}
       <p class="ok-font-status ok-tone-muted gui-items__hint">${say("Drag one onto the camp's grass: the grid shows where it fits. Drag a placed one back here to put it away.")}</p>
       <ul class="gui-items__list">${rows.map((r) => {
         const out = r.left === 0;

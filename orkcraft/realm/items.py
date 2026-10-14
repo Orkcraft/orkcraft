@@ -12,6 +12,8 @@ and land in the inventory quietly: no news, no badge, nothing owed.
     items.inventory(scroll, root)           what the inventory panel lists: each item, why, how many are left
     items.place(scroll, root, "tree", "main", 4, 7)        a copy on the grass, in the town file (`scroll.items`)
     items.move(scroll, placed_id, 5, 7) / items.remove(scroll, placed_id)
+    items.back(scroll, root, placed_id, "Test bench")   a building took its cell: back to the inventory, with a note
+    items.notes(root) / items.seen(root)                the notes, said only in the Items panel
 
 Where an item may stand (grass only: never on track, paths, stops, or against a building) is the camp's layout's
 to say (js/camp/grass.js); here a placement is a cell of 16 art px from the camp's corner. No face.
@@ -231,3 +233,41 @@ def remove(scroll, placed_id: str) -> None:
     """Back to the inventory (an earned one can be placed again)."""
     row = _placed(scroll, placed_id)
     scroll.items.remove(row)
+
+
+def _save(root: Path, data: dict) -> None:
+    path = Path(root) / STATE
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+        tmp.replace(path)
+    except OSError:
+        pass
+
+
+def back(scroll, root: Path, placed_id: str, because: str = "") -> str:
+    """A building (or a row moving) took a placed item's cell: it goes back to the inventory quietly, keeping why it
+    was earned, and a note waits for the Items panel. The note's words."""
+    row = _placed(scroll, placed_id)
+    scroll.items.remove(row)
+    item = catalog().get(row["item"])
+    name = item.name if item else row["item"]
+    who = name if name.startswith("The ") else f"The {name}"
+    text = (f"{who} went back to your items when the {because} was built" if because
+            else f"{who} went back to your items: something now stands where it was")
+    data = _load(root)
+    data["notes"] = ([n for n in data.get("notes") or [] if isinstance(n, str)] + [text])[-5:]
+    _save(root, data)
+    return text
+
+
+def notes(root: Path) -> list[str]:
+    got = _load(root).get("notes")
+    return [n for n in got if isinstance(n, str)] if isinstance(got, list) else []
+
+
+def seen(root: Path) -> None:
+    data = _load(root)
+    if data.pop("notes", None) is not None:
+        _save(root, data)

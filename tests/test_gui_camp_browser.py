@@ -430,3 +430,38 @@ def test_an_item_dragged_from_the_inventory_snaps_to_the_grass_and_stays_after_a
     assert not [x for x in server.host.town.scroll.items if x["item"] == "tree"]
     pg.get_by_role("button", name="Items", exact=True).click()
     _call(pg, "town.demolish", {"id": pool})
+
+
+def test_a_building_that_takes_an_items_cell_sends_it_back_with_a_line_in_the_panel(camp_look, gui):
+    """The PM, 2026-10-14: a new building takes a placed item's cell → the item goes back to the inventory quietly; a
+    line waits in the Items panel only, said once it is opened."""
+    server, _ = gui
+    pg = camp_look
+    _clear(pg)
+    pool = _call(pg, "town.build", {"type": "barracks"})
+    pg.keyboard.press("Escape")
+    _building(pg, pool).wait_for(state="visible", timeout=WAIT_MS)
+    pg.get_by_role("button", name="Items", exact=True).click()
+    r, b = pg.locator('.gui-items__row[data-item="bush-small"]').bounding_box(), _building(pg, pool).bounding_box()
+    pg.mouse.move(r["x"] + 20, r["y"] + 20)
+    pg.mouse.down()
+    h = pg.locator(".gui-camp__home").bounding_box()
+    pg.mouse.move(h["x"] + h["width"] + 90, b["y"] + b["height"] - 40, steps=6)   # the row's grass past the home
+    pg.locator(".gui-items__ghost.is-ok").wait_for(state="visible", timeout=WAIT_MS)
+    pg.mouse.up()
+    pg.locator('.gui-items__placed[data-item="bush-small"]').wait_for(state="visible", timeout=WAIT_MS)
+    pg.get_by_role("button", name="Items", exact=True).click()                   # closed
+    bench = _call(pg, "town.build", {"type": "lab"})                              # joins the row: the home moves on
+    pg.keyboard.press("Escape")
+    _building(pg, bench).wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator('.gui-items__placed[data-item="bush-small"]').wait_for(state="detached", timeout=WAIT_MS)
+    assert not [p for p in server.host.town.scroll.items if p["item"] == "bush-small"]
+    assert pg.locator(".gui-items__note").count() == 0                          # nothing said until the panel opens
+    pg.get_by_role("button", name="Items", exact=True).click()
+    note = pg.locator(".gui-items__note")
+    note.wait_for(state="visible", timeout=WAIT_MS)
+    assert "The Small bush went back to your items when the Test bench was built" in note.inner_text()
+    pg.get_by_role("button", name="Items", exact=True).click()                   # seen once closed
+    pg.wait_for_function("() => import('/static/js/link.js').then(m => !m.town.value.growth.items.notes.length)", timeout=WAIT_MS)
+    for bid in (pool, bench):
+        _call(pg, "town.demolish", {"id": bid})
