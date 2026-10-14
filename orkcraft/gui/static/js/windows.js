@@ -17,7 +17,7 @@ import { Layout } from "./layout.js";
 import { HALL } from "./tent.js";
 import { openOrders } from "./orders.js";
 import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
-import { typeModule } from "./types.js";
+import { typeModule, typeReady, typeSettled } from "./types.js";
 import { lake, tabs as docTabs, DocTab, DocBody } from "./lake.js";
 import { InfoTab, OrkView, RuleView } from "./console.js";
 import { setupBack } from "./setup.js";
@@ -101,6 +101,8 @@ export function leaveInside() {
 
 export function openBuilding(id, tab) {
   const b = town.value && town.value.buildings.find((x) => x.id === id);
+  // its page code says how it opens (an inside, a large card, the panel): wait for it once rather than guess
+  if (b && b.page && !typeSettled(b.type)) { typeReady(b.type).then(() => openBuilding(id, tab)); return; }
   if ((!tab || tab === "work") && hasInside(b) && !narrow.value && document.documentElement.dataset.look === "camp") {
     selected.value = id;
     closeBuilding();

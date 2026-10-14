@@ -68,7 +68,7 @@ def test_the_night_checks_once_in_turn_and_says_it_in_the_morning(host, monkeypa
     assert started == [["mail", "todos"]] and night.busy
     improved = []
     monkeypatch.setattr(host.nightly.improve, "tick", lambda *a, **k: improved.append(1))
-    host.nightly.tick(True)
+    host.nightly.tick(True, now=3000.0)       # the test's clock: the real one would put "last looked" in its future
     assert improved == []                                       # the night's improvements wait for the check
     job.done = True
     monkeypatch.setattr(host.bench.check, "last", lambda: {

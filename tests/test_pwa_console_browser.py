@@ -83,6 +83,8 @@ async def test_it_opens_on_since_your_last_look_over_the_camp_with_the_camera_on
           const b = document.querySelector(".camp-hut[data-b='{far}']").getBoundingClientRect();
           return b.left >= v.left - 1 && b.right <= v.right + 1 && b.top >= v.top - 1 && b.bottom <= v.bottom + 1; }}""")
         assert inside
+        await page.wait_for_function(f"() => document.querySelector(\".camp-hut[data-b='{far}'] .camp-sprite\").complete",
+                                     timeout=WAIT_MS)                     # its art loaded (under load it comes late)
         sizes = await page.evaluate(f"""() => {{
           const sig = document.querySelector(".camp-hut[data-b='{far}'] .camp-sig").getBoundingClientRect();
           const hut = document.querySelector(".camp-hut[data-b='{far}']").getBoundingClientRect();

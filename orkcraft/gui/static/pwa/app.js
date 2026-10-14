@@ -236,9 +236,9 @@ async function flush() {
   try {
     for (const item of outbox.all()) {
       if (!ws || ws.readyState !== 1) break;
+      if (!outbox.claim(item.key)) continue;          // taken by another page of the app: never sent twice
       const r = await send(item.name, item.args);
-      if (!r.ok && (r.error === "Not connected to the town" || r.error === "The town went away")) break;
-      outbox.remove(item.key);
+      if (!r.ok && (r.error === "Not connected to the town" || r.error === "The town went away")) { outbox.restore(item); break; }
       flash(r.ok ? `Sent: ${item.label}` : `Not sent: ${item.label}. ${r.error}`);
     }
   } finally {

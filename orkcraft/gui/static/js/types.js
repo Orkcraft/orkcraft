@@ -25,20 +25,31 @@ import { html } from "./html.js";
 import { command, town } from "./link.js";
 
 const modules = signal({});                // type → its module (false: it has none, or it failed)
-const loading = new Set();
+const loading = new Map();                 // type → the promise of its module, settled once
 
 /** The type's module, or null while it loads or when it has none (a signal: the caller redraws). */
 export function typeModule(type, page = true) {
   const have = modules.value[type];
   if (have !== undefined || !page || !/^[a-z_]+$/.test(type || "")) return have || null;
-  if (!loading.has(type)) {
-    loading.add(type);
-    import(`./buildings/${type}.js`).then(
-      (m) => { modules.value = { ...modules.value, [type]: m }; },
-      () => { modules.value = { ...modules.value, [type]: false }; });
-  }
+  typeReady(type);
   return null;
 }
+
+/** The type's module once it has loaded (null when it has none): what a decision that reads the module awaits — opening
+ *  a building grows its card or enters its inside only by what its module says, never by how fast it came. */
+export function typeReady(type) {
+  if (modules.value[type] !== undefined) return Promise.resolve(modules.value[type] || null);
+  if (!/^[a-z_]+$/.test(type || "")) return Promise.resolve(null);
+  if (!loading.has(type)) {
+    loading.set(type, import(`./buildings/${type}.js`).then(
+      (m) => { modules.value = { ...modules.value, [type]: m }; return m; },
+      () => { modules.value = { ...modules.value, [type]: false }; return null; }));
+  }
+  return loading.get(type);
+}
+
+/** Whether the type's module has settled (loaded, or known to be none). */
+export const typeSettled = (type) => modules.value[type] !== undefined;
 
 /** A quick action of a building: its type does it on the page when it can, else the host. */
 export function runQuick(b, action) {

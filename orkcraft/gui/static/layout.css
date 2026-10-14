@@ -766,6 +766,9 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
   text-align: center; }
 .gui-portrait__asks { position: absolute; left: -2px; bottom: 0; width: 11px; height: 11px; padding: 0; border: 2px solid var(--panel-raised);
   border-radius: var(--radius-full); background: var(--alert); cursor: pointer; }
+/* never taller than the window: its foot (Town settings…) stays in reach, the menu scrolls. It is fixed inside the
+   corner's slot, which stands under the HUD and the portrait (about 56 px lower than the window's top), hence the room. */
+.gui-portrait__menu { box-sizing: border-box; max-height: calc(100vh - var(--bar-hud) - 80px); overflow-y: auto; overscroll-behavior: contain; }
 .gui-portrait__menu { position: fixed; left: var(--space-2); top: calc(var(--bar-hud) + 8px); z-index: 60; width: 340px; display: flex;
   flex-direction: column; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--panel);
   box-shadow: 0 0 0 2px var(--frame-focus), var(--shadow-window); color: var(--ink); cursor: auto;

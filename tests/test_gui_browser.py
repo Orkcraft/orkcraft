@@ -718,7 +718,7 @@ def test_a_selected_building_turns_the_line_into_its_command_card(camp_look):
     while it stays selected."""
     pg = camp_look
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
-    pg.evaluate("id => import('/static/js/windows.js').then(m => m.openBuilding(id))", bid)
+    pg.evaluate("id => import('/static/js/windows.js').then(m => m.pickBuilding(id))", bid)   # selected, not entered
     bar = pg.locator(".gui-warchief__bar")
     bar.locator(".gui-warchief__face.is-steward").wait_for(state="visible", timeout=WAIT_MS)
     assert bar.locator(".gui-warchief__act", has_text="New task").count() == 1      # its quick actions
@@ -1832,11 +1832,13 @@ def test_a_narrow_window_lists_every_question_the_counts_say(gui):
     server, browser = gui
     host = server.host
     real_snapshot, real_answer = host.snapshot, host.commands["orders.answer"]
-    answered = []
+    answered, built = [], []
 
-    def snapshot():
+    def snapshot():                     # the questions of the gate this test builds (another test's may still stand)
         s = real_snapshot()
-        gate = next((b["id"] for b in s["buildings"] if b["type"] == "loot"), "")
+        if not built:
+            return s
+        gate = built[0]
         s["alerts"] = [{"id": f"view:{gate}:{i}", "title": f"Cart {i} waits for review", "who": "Quartermaster",
                         "building": gate, "options": [["pass", "Pass"], ["back", "Send back"]], "context": [],
                         "source": "view", "ref": gate, "advice": None, "waited": 5.0} for i in range(3)]
@@ -1848,6 +1850,8 @@ def test_a_narrow_window_lists_every_question_the_counts_say(gui):
         pg.goto(server.url)
         pg.wait_for_selector(".gui-pocket", timeout=WAIT_MS)
         bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'loot' }))")
+        built.append(bid)
+        host.command("building.fold", {"id": bid, "value": False})     # a snapshot with its questions
         pg.keyboard.press("Escape")
         asks = pg.locator(".gui-pocket__ask")
         asks.nth(2).wait_for(timeout=WAIT_MS)

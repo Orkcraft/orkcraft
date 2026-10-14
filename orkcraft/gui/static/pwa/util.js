@@ -36,6 +36,19 @@ export const outbox = {
   remove(key) {
     try { localStorage.setItem(OUTBOX, JSON.stringify(outbox.all().filter((x) => x.key !== key))); } catch { /* kept */ }
   },
+  /** Take an item to send: true when it was still there (another page of the app, or this one before a reload, may
+   *  have taken it already: then it is not sent twice). */
+  claim(key) {
+    if (!outbox.all().some((x) => x.key === key)) return false;
+    outbox.remove(key);
+    return true;
+  },
+  /** An item taken but not sent (no signal): back where it was. */
+  restore(item) {
+    const all = outbox.all();
+    if (!all.some((x) => x.key === item.key)) all.unshift(item);
+    try { localStorage.setItem(OUTBOX, JSON.stringify(all.slice(-50))); } catch { /* this run only */ }
+  },
   clear() { try { localStorage.removeItem(OUTBOX); } catch { /* nothing kept */ } },
 };
 
