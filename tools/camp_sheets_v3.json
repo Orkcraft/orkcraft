@@ -74,7 +74,8 @@
      ]
     }
    ],
-   "show": 1
+   "show": 1,
+   "wood_pull": true
   },
   {
    "name": "b1-catapult",
@@ -105,7 +106,8 @@
       }
      ]
     }
-   ]
+   ],
+   "wood_pull": true
   },
   {
    "name": "b1-lookout",
@@ -136,7 +138,8 @@
       }
      ]
     }
-   ]
+   ],
+   "wood_pull": true
   },
   {
    "name": "b1-taskboard",
@@ -168,7 +171,8 @@
      ],
      "merge": 2
     }
-   ]
+   ],
+   "wood_pull": true
   },
   {
    "name": "b2-town",
@@ -239,7 +243,8 @@
      ]
     }
    ],
-   "show": 1
+   "show": 1,
+   "wood_pull": true
   },
   {
    "name": "b3-plumbing",
@@ -309,7 +314,8 @@
      ]
     }
    ],
-   "show": 1
+   "show": 1,
+   "wood_pull": true
   },
   {
    "name": "b4-others",
@@ -379,7 +385,8 @@
      ]
     }
    ],
-   "show": 1
+   "show": 1,
+   "wood_pull": true
   },
   {
    "name": "b5-doors",
@@ -481,7 +488,8 @@
      ]
     }
    ],
-   "show": 1
+   "show": 1,
+   "wood_pull": true
   },
   {
    "name": "o1-body",
@@ -1206,6 +1214,42 @@
    "degrid": true
   },
   {
+   "name": "c2-curves",
+   "file": "c2-curves.png",
+   "over": "c2-track",
+   "degrid": true,
+   "show": 1,
+   "about": "§3c.2 the curves redrawn (round 8, gen_sheets #1): a south-east curve and a larger one, a south-west, a north-east, a switch, a crossing; fitted to c2's tile and gauge (`tile_from`); its three curves replace c2's. Still no north-west curve and no junction north-east-south, so the loop's split stays a stand-in",
+   "groups": [
+    {
+     "kind": "track",
+     "size": [
+      64,
+      64
+     ],
+     "anchor": "top-left",
+     "tile_from": "track/straight-h.png",
+     "items": [
+      {
+       "file": "track/corner-se.png",
+       "order": 0,
+       "exits": "se"
+      },
+      {
+       "file": "track/corner-sw.png",
+       "order": 2,
+       "exits": "sw"
+      },
+      {
+       "file": "track/corner-ne.png",
+       "order": 3,
+       "exits": "ne"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "name": "g1-ground",
    "file": "g1-ground.png",
    "about": "§3d.1 the forest ground (round 6): row 1 plain grass, tufts, flowers, an inner corner, an earth fill; row 2 three more fills; rows 3–4 the grass-to-earth edges and corners. Plain grass is the token `world-grass` itself; the sheet's grass and earth are moved onto the tokens'",
@@ -1376,7 +1420,8 @@
      ]
     }
    ],
-   "show": 1
+   "show": 1,
+   "wood_pull": true
   },
   {
    "name": "g3-palisade",

@@ -206,7 +206,8 @@ const CAMP_H = 308;
 let OY = 0;                             // the wilderness above the back wall, in units (set by placeCamp)
 let panX = 0, panY = 0;                 // the drag's offset, in CSS px
 function placeCamp() {                  // the default view is centred on the work: the loop's middle
-  const cx = (COL_L + COL_R + TU) / 2, cy = (16 + LINE2_Y + TU) / 2;      // from the back wall to line 2
+  const whole = (WALL_X + 16 - (OX - 40)) * K <= 1440;     // the whole camp fits (the overview): centre on it
+  const cx = whole ? (OX - 40 + WALL_X + 16) / 2 : (COL_L + COL_R + TU) / 2, cy = (16 + LINE2_Y + TU) / 2;
   const left = Math.round(720 - cx * K + panX), top = Math.round(432 - cy * K + panY);
   world.style.left = left + "px"; world.style.top = top + "px";
   OY = top / K;
@@ -394,6 +395,20 @@ function palisade(x0, x1, y) {
   }
 }
 
+// the side wall: g3 drew no corner or side pieces (front-on, a wall going away is not seen), so — a stand-in — the
+// end posts stand in a column down the right edge, the back wall's own end post the corner where the two runs meet
+function palisadeDown(x, y0, y1) {
+  if (!EDGE) return el("v3-at v3-palisade is-v", x, y0 + 32, 16, y1 - y0 - 32);
+  const e = EDGE["palisade-end-w"], s = sc("edge/palisade-end-w.png"), w = e.naturalWidth * s, h = e.naturalHeight * s;
+  const step = Math.round(h * 0.45);
+  for (let y = (y0 + 32) * K - h + step; y <= y1 * K - h; y += step) {
+    const im = document.createElement("img");
+    im.className = "v3-img"; im.src = e.src;
+    im.style.cssText = `left:${x * K + 16 * K - w}px;top:${y}px;width:${w}px;height:${h}px`;
+    world.appendChild(im);
+  }
+}
+
 function paths() {
   // each row's doors: a short path down to the stop on its own line (open to the grass on its two sides); carts run on
   // the lines, orks on the paths. An eleventh building starts another row with its own line, the same way.
@@ -405,7 +420,7 @@ function paths() {
   // the low palisade (g3): along the back, open where the track comes in under the lookout, and down the right side
   palisade(OX - 40, COL_L, 0);
   palisade(COL_L + TU, WALL_X + 16, 0);
-  el("v3-at v3-palisade is-v", WALL_X, 32, 16, LINE2_Y + 48);   // g3 drew no side pieces yet: drawn plainly
+  palisadeDown(WALL_X, 0, LINE2_Y + 80);
 }
 
 async function ork(cx, feetY, opts = {}) {

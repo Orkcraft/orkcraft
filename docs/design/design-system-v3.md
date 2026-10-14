@@ -176,6 +176,17 @@ the same unit (the canvas roof, 156 × 1.5 = 234 px):
 pixel as o1 but its ork is drawn 1.6× larger (about 70 art px tall); read at `merge: 1.5` (the median over 1.5-px
 cells, the nearest clean rule) it comes out 44–47 px. The asking ork in the preview wears o3's pose.
 
+**Round 8, the rest:** the lookout and the Task board drew wood more orange than F1's honey (saturation ≥ 0.75,
+value ≥ 0.7, where a signal's orange is). The check is not loosened; on building and decor sheets (`wood_pull`) those
+pixels are pulled back into the wood family — each keeps its value and takes the hue and saturation of the nearest
+`art-wood*` token — and the cutter reports how many: the lookout 1 348 px, the Task board 1 378. **c2-curves** (a
+south-east curve and a larger one, a south-west, a north-east, a switch, a crossing) is fitted to c2's set with
+`tile_from` (its rails 41 art px apart against the set's 32 → ×0.78, the 64-px tile) and its three curves replace c2's;
+they join the straights. It has **no north-west curve and no junction north–east–south**, so the loop's split stays the
+stand-in (c2's north T turned a quarter). **g3** drew no corners or side pieces (front-on, a wall going away is not
+seen): the back wall is its straight run with end posts; down the right edge — a stand-in — its end posts stand in a
+column, meeting the back wall at its end post.
+
 **The zoom steps keep whole device pixels** (buildings / orks and track): on density 2, **×1.5 / ×1** (default),
 ×3 / ×2 (close), and ×1 / ×1 (an overview: whole, the orks a little large); on density 1, **×2 / ×1** (default) and
 ×1 / ×1. The wheel steps through them (or `#zoom=0` · `1` · `2` in the page's address), **drag pans**; the default view is centred on the work (the back wall to line 2),

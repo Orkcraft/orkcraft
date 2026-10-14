@@ -2305,12 +2305,12 @@
     64
    ],
    "frames": 1,
-   "pitch": 6.24,
+   "pitch": 6.77,
    "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "c2-track.png",
-   "scale": 1.067,
+   "source": "c2-curves.png",
+   "scale": 0.78,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -2325,12 +2325,12 @@
     64
    ],
    "frames": 1,
-   "pitch": 6.24,
+   "pitch": 6.77,
    "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "c2-track.png",
-   "scale": 1.067,
+   "source": "c2-curves.png",
+   "scale": 0.78,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -2345,12 +2345,12 @@
     64
    ],
    "frames": 1,
-   "pitch": 6.24,
+   "pitch": 6.77,
    "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "c2-track.png",
-   "scale": 1.067,
+   "source": "c2-curves.png",
+   "scale": 0.78,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },

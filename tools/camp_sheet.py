@@ -467,6 +467,22 @@ def own_palette(img: np.ndarray, n: int = 24) -> np.ndarray:
     return out
 
 
+def pull_to_wood(img: np.ndarray) -> tuple[np.ndarray, int]:
+    """A building's or decor's pixels in a signal's hue pulled back into the wood family (v3, round 8): each keeps its
+    value and takes the hue and saturation of the nearest `art-wood*` token. The check itself is not loosened."""
+    woods = [colorsys.rgb_to_hsv(*(c / 255 for c in rgb)) for name, rgb in palette().items() if name.startswith("art-wood")]
+    out, n = img.copy(), 0
+    for y, x in zip(*np.nonzero(img[..., 3] > 0)):
+        rgb = tuple(int(v) for v in img[y, x, :3])
+        if not signal_hue(rgb):
+            continue
+        h, s_, v = colorsys.rgb_to_hsv(*(c / 255 for c in rgb))
+        wh, ws, _ = min(woods, key=lambda w: (min(abs(w[0] - h), 1 - abs(w[0] - h))) ** 2 + (w[1] - s_) ** 2)
+        out[y, x, :3] = [int(round(c * 255)) for c in colorsys.hsv_to_rgb(wh, ws, v)]
+        n += 1
+    return out, n
+
+
 def signal_hue(rgb: tuple[int, int, int]) -> bool:
     """A signal's yellow, orange or red (v3, docs/design/design-system-v3.md §8): saturated and bright, from red to
     yellow. The honey wood and the sand (saturation about 0.5–0.65) are below it; `#facc15` and `#e8411c` above."""
@@ -625,6 +641,8 @@ def cut_track(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
     so that ties keep their rhythm across every seam; a straight is one tie spacing repeated, so it joins itself exactly. Each piece is placed so that the rails cross each of its `exits`
     at the tile's middle, and a rail that stops short of an edge is carried on to it."""
     pieces_ = {item["file"]: trim(sheet.native(_extract(sheet, item))) for item in group["items"]}
+    if group.get("tile_from"):                  # a sheet of extra pieces (c2-curves): c2's tile and rail gauge
+        return cut_track_like(pieces_, group, rows, problems)
     straight = next(img for f, img in pieces_.items() if f.endswith("straight-h.png"))
     a = straight[..., 3] > 0
     rails, mid = _rails(straight, 0)
@@ -761,6 +779,64 @@ def cut_ground(sheet: Sheet, group: dict, rows: list[dict], problems: list[str])
         _write(img, item["file"], group, rows, problems, img.shape[1::-1], 1, 1, anchor="top-left")
 
 
+def _gauge_at(img: np.ndarray, side: str) -> float | None:
+    """The distance between the outer rails where they cross one side of a piece."""
+    a = img[..., 3] > 0
+    rgb = img[..., :3].astype(float)
+    dark = a & ((0.3 * rgb[..., 0] + 0.59 * rgb[..., 1] + 0.11 * rgb[..., 2]) < 90)
+    line = {"n": dark[:3].any(0), "s": dark[-3:].any(0), "w": dark[:, :3].any(1), "e": dark[:, -3:].any(1)}[side]
+    idx = np.nonzero(line)[0]
+    return float(idx.max() - idx.min() + 1) if len(idx) else None
+
+
+def cut_track_like(pieces_: dict, group: dict, rows: list[dict], problems: list[str]) -> None:
+    """Extra track pieces fitted to a set already cut (`tile_from`, its straight): the tile is that set's, and each piece
+    is scaled so its rails are as far apart as the straight's (nearest-neighbour, by the ratio of the gauges), then
+    placed by its exits as `cut_track` does."""
+    ref = np.asarray(Image.open(OUT / group["tile_from"]).convert("RGBA"))
+    T = ref.shape[1]
+    ref_g = _gauge_at(ref, "w")
+    gauges = [g for item in group["items"] for side in item["exits"] if (g := _gauge_at(pieces_[item["file"]], side))]
+    f = ref_g / float(np.median(gauges))
+    problems.append(f"{group['_sheet']}: rails {np.median(gauges):.0f} art px apart against the set's {ref_g:.0f} → ×{f:.3f}, "
+                    f"tile {T} × {T}")
+    sub = {**group, "tile_from": None, "_T": T, "_f": f}
+    for item in group["items"]:
+        img = pieces_[item["file"]]
+        h, w = img.shape[:2]
+        img = np.asarray(Image.fromarray(img, "RGBA").resize((max(1, round(w * f)), max(1, round(h * f))), Image.NEAREST))
+        out = _place(img, item["exits"], T * item.get("span", [1, 1])[0], T * item.get("span", [1, 1])[1],
+                     item.get("span", [1, 1]))
+        out = own_palette(decast(out), group.get("colours", 24)) if group.get("keep_colours") else out
+        _write(out, item["file"], sub, rows, problems, out.shape[1::-1], 1, f, anchor="top-left")
+
+
+def _place(img: np.ndarray, exits: str, W: int, H: int, span) -> np.ndarray:
+    """A piece in a W × H tile: its rails across each exit at the tile's middle, carried on to the edge if short."""
+    sw, sh_ = span
+    out = np.zeros((H, W, 4), np.uint8)
+    ns = next((e for e in "ns" if e in exits), None)
+    we = next((e for e in "we" if e in exits), None)
+    c = _edge_centre(img, ns) if ns and sw == 1 else None
+    dx = int(round(W / 2 - c)) if c is not None else (0 if "w" in exits else W - img.shape[1])
+    c = _edge_centre(img, we) if we and sh_ == 1 else None
+    dy = int(round(H / 2 - c)) if c is not None else (0 if "n" in exits else H - img.shape[0])
+    ys, xs = max(0, -dy), max(0, -dx)
+    yd, xd = max(0, dy), max(0, dx)
+    hh, ww = min(img.shape[0] - ys, H - yd), min(img.shape[1] - xs, W - xd)
+    out[yd:yd + hh, xd:xd + ww] = img[ys:ys + hh, xs:xs + ww]
+    for side in exits:
+        if side == "w" and xd > 0:
+            out[:, :xd] = out[:, xd:xd + 1]
+        if side == "e" and xd + ww < W:
+            out[:, xd + ww:] = out[:, xd + ww - 1:xd + ww]
+        if side == "n" and yd > 0:
+            out[:yd] = out[yd:yd + 1]
+        if side == "s" and yd + hh < H:
+            out[yd + hh:] = out[yd + hh - 1:yd + hh]
+    return out
+
+
 def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) -> None:
     kind = group.get("kind", "sprite")
     if kind == "ground":
@@ -828,6 +904,10 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
         out = strip(frames) if len(frames) > 1 else frames[0]
         if group.get("keep_colours"):           # v3: re-pixelised in its own colours, the magenta cast removed
             out = decast(out)
+            if group.get("wood_pull"):                  # buildings and decor: a too-orange wood back into the wood family
+                out, moved = pull_to_wood(out)
+                if moved:
+                    problems.append(f"{item['file']}: {moved} px pulled into the wood family")
             if not group.get("signals"):        # checked before the palette, which could average a banner's orange away
                 opaque = out[out[..., 3] > 0][:, :3]
                 n = sum(signal_hue(tuple(int(v) for v in p)) for p in opaque)
@@ -1024,6 +1104,7 @@ def main() -> None:
             group["_show"] = group.get("show", sh.get("show") or shown(sheet, sh.get("target")))
             for key in ("native", "keep_colours"):              # v3: set once for the whole spec
                 group.setdefault(key, spec.get(key, False))
+            group.setdefault("wood_pull", sh.get("wood_pull", False))
             cut_group(sheet, group, rows, problems)
     # a one-building sheet (`over`, listed after the sheet it overrides) replaces that sheet's sprite of the same name
     rows = list({r["file"]: r for r in rows}.values())
