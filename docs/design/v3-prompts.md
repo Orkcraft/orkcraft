@@ -224,3 +224,32 @@ inside; the door open with the keeper half out (the keeper of §3b).
   scale into the grid, and only then I1 (the keeper, the scroll, quick actions, the terminal, the waybill) and I2
   (the Task board's inside) are built.
 - The sheets are keyed and cut by the existing sprite pipeline ([design-system-v2.md](design-system-v2.md) §11).
+
+## 5. Round 1: F1, the town — taken as v3's direction (2026-10-14)
+
+[img/references/v3/f1-town.jpg](img/references/v3/f1-town.jpg) (and `-grey`). **The owner: "this is what it has to
+be"**; the placing of the interface is still to be worked on.
+
+**Holds:** bright, saturated and still a middle value; a game to open in the evening, not a dashboard; nine
+buildings fit at the 1440-wide window; the track is the clearest line and the carts read from far away with their
+loads (`</>`, crate, letter); the teal canvas and the plum banners carry the camp away from the strategy game's
+colours; our round orks; the "PR" plate and `</>` as the developer's tells; one way in through the palisade on the
+left; the HUD bar thin and plain.
+
+**To fix in the next frames and sheets:**
+
+1. **"Grom's camp" must never be used:** Grom is a named character of the big strategy game (Q18). The town's name
+   in every frame is neutral ("My camp", the project's name).
+2. **In grey the signals do not lead:** the yellow flag turns into a white flag and the ❓ is small, while the light
+   stone gate, the tusk on the tower and the open book are the brightest things. Signals must win by **value**, not
+   by hue alone: the product draws ❓, `!` and ⏳ as UI (layer 8) larger, on a dark plate with an outline; the cart's
+   flag gets a dark outline and a chip. The gate's stone and the book a step darker.
+3. **Spurs are dirt paths, not track:** the carts stay on one main line and stop opposite a door. **Proposed:** keep
+   it — simpler to read and to build than a switch per building; the cart stops at the path, the keeper walks to it.
+   (Owner to confirm.)
+4. **The gate reads as a human castle** (crenellations): rougher, timber-and-stone, tusks or a bone arch, the
+   portcullis kept.
+5. **The palisade is sharpened and tall:** lower, rounded logs, as asked.
+6. **Too many orks idle** (about twenty): in the product an ork is a session; a frame shows four to eight.
+7. **The edges are busy** (crates, bushes in every corner): fewer, so the eye stays on the line.
+8. The interface's placing: the owner's notes go into F2–F5.
