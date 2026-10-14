@@ -522,3 +522,33 @@ scales, the Alchemist's flask, the Pathfinder's map and lantern, the painter's b
 (§10). The owner's own `o3-states-r1.jpg` and `o5-inside-r1.jpg` are drawn with this ork and become its states and
 its inside poses; GEN's o3 #3 and o5 #1 (bald) step back. Missing for it: the ork stepping out of a door (o1 had it) —
 one sheet, generated with `roles-2.jpg` attached.
+
+## 13. The setting played natively; the person in the camp; growth and the goal in v3 (2026-10-14, evening)
+
+The owner, all confirmed:
+
+1. **Buildings as stations on the line** (their look, not their words; the names stay):
+   - **Task board → a dispatcher's booth with a siding.** A small wooden booth on stilts at the line's start, a big
+     board of work orders on its side, a lever and a semaphore arm; in front, **a siding where the carts waiting to go
+     stand** — the backlog seen as carts (a cart is a task, one id for life; at most ~5 shown, a chip "+35" for the
+     rest). The Taskmaster pulls the lever and the next cart rolls onto the line.
+   - **Review gate → the same gate with a boom barrier and a weighbridge:** a cart waits on the scale, the barrier is
+     down until the person decides — "waiting for you" without a badge.
+   - **Research → a mine with a headframe** (its type is `mine`, its ork the Prospector).
+   - Later: the Agent pool as a long shed over the track; the Router as a switchman's hut; Branches & PRs as a roundhouse.
+2. **The door:** o6-door #2.
+3. **The user's classes stay, names and split** (`realm/intents.py` ROLES, 11 classes in 7 kins). **The person is in
+   the camp as their class:** the ork camp is hired by a Jira Lich, a Gradient-Sick Elf, an Indie Knight… The person's
+   figure stands **at the Review gate's barrier** when a cart waits there (hand raised), otherwise rests by **their
+   home**. P0: the 11 figures in v3's style (the onboarding's first screen and the town). P1: a home per kin (a lich's
+   crypt, an elf's tree house, a gnome's burrow, a knight's tent, a ruin for the ghost, a dugout for the ork, a goblin's
+   shack with crates); a click on it opens "since your last look", the profile and settings. Later: the four stages of
+   growth on the figure.
+4. **Growth and the goal, visible in v3** ([growth.md](growth.md) built them in v2's look; they must not vanish):
+   - a building's **level I–III** as a footing of stone courses and a banner on its roof that turns gold at III; the
+     **goal** (🪙 Thrift · ⚖️ Balance · 💎 Quality) as an **annex** beside it: a lean-to over stacked logs (wide, low)
+     and a crystal on a whetstone (tall, narrow) — redrawn in v3. Later: the core buildings drawn anew at each level.
+   - **the score made visible** ([the-score.md](the-score.md), P0 since §13 of the decisions): every cart the catapult
+     launches shows its cost as it flies (wood and % of the window), green when below the town's average; the HUD shows
+     the town's cost per accepted result with its trend arrow; a building's scroll (I1) shows its own; the quality guard
+     (👎 and reworks per result) beside it, so a cheaper week with worse quality never reads as a win.
