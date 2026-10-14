@@ -61,7 +61,9 @@ def test_a_session_runs_its_cli_and_the_roster_reads_its_question(fake_repo, tmp
     assert muster.answer(alert, "1", sessions.write)
     _until(lambda: not s.running)
     assert any("You chose 1" in line for line in s.text_lines())
-    assert b"You chose 1" in s.replay() and b"".join(out).endswith(s.replay()[-len(out[-1]):])
+    assert b"You chose 1" in s.replay()
+    # the reader thread hands its last chunk to on_output after the replay keeps it: wait for it, never race it
+    _until(lambda: out and b"".join(out).endswith(s.replay()[-len(out[-1]):]))
     assert events == ["opened", "exited"] and s.exit_code == 0
     with pytest.raises(ValueError):
         sessions.new("bash")

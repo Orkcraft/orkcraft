@@ -105,6 +105,9 @@ def run_building(case: bench.Case, project: Path, base: str, template: dict, too
                 w.stop()
                 break
             time.sleep(POLL_S)
+        # a decision taken between the last read and the task settling (its accept, most often) is said too
+        for d in _in_order(w.state)[heard:]:
+            say(f"+{_clock(time.monotonic() - start)} {_line(d)}")
         side.seconds = round(time.monotonic() - start, 1)
         _read(w, root_id, how, side, started)
         if side.error:

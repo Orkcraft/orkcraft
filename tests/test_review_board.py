@@ -260,7 +260,9 @@ def test_a_stopped_review_is_kept_turn_by_turn_and_goes_on_after_the_app_closed(
     assert _until(lambda: not w2.busy and w2.current.outcome == "approved")
     assert calls[2] == (tm.GO_ON[:40], sid, True)                            # its own session, reopened
     assert len(calls) == 4 and calls[3][0].startswith("You are the steward")  # the critic was not asked again
-    assert w2.current.turns[1].note == tm.WENT_ON and [p.mode for p in sent if p.mode == "team.routed"]
+    assert w2.current.turns[1].note == tm.WENT_ON
+    # its exit is sent after its outcome is set, on the worker's thread: wait for it rather than race it
+    assert _until(lambda: [p.mode for p in sent if p.mode == "team.routed"])
 
 
 def test_a_claude_reading_turn_names_its_session_and_reopens_it(monkeypatch, tmp_path):

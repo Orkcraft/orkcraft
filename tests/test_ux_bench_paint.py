@@ -233,7 +233,8 @@ def test_a_mascot_is_drawn_again_as_its_grid_and_kept_on_this_machine(fake_repo,
     monkeypatch.setattr(jobs, "run_work", lambda *a, **k: pytest.fail("a mascot is never painted by the image tool"))
     act("paint", path=MASCOT, words="a green hood", region={"x": 0.0, "y": 0.0, "w": 1.0, "h": 0.2})
     got = {}
-    assert _until(lambda: got.update(act("draft", path=MASCOT)) or got["src"].startswith("data:image/png;base64,"))
+    # painted on a worker thread: two answers and a picture drawn, slow on a loaded machine
+    assert _until(lambda: got.update(act("draft", path=MASCOT) or {}) or str(got.get("src", "")).startswith("data:image/png;base64,"), 15.0)
     assert got["why"] == "a green hood" and "Wandering Ghost" in prompts[0] and "Change ONLY rows 0–2" in prompts[0]
     assert "REJECTED" in prompts[1] and "not in the palette" in prompts[1]          # the wrong grid went back once
 

@@ -188,7 +188,12 @@ async def test_what_was_given_with_no_signal_is_sent_when_the_town_answers(fake_
         await page.evaluate("""() => localStorage.setItem('orkcraft.outbox', JSON.stringify([
           { key: 'k1', name: 'orders.answer', args: { id: 'q1', key: 'y' }, label: 'Grunt: Yes', at: 0 }]))""")
         await page.reload()
-        await _flash(page, "Sent: Grunt: Yes")
+        # sent once, by whichever page of the app took it first (the one before the reload may: outbox.claim)
+        for _ in range(100):
+            if answered:
+                break
+            await page.wait_for_timeout(100)
+        await page.wait_for_timeout(500)
         assert answered == [{"id": "q1", "key": "y"}]
         assert await page.evaluate("JSON.parse(localStorage.getItem('orkcraft.outbox'))") == []
 
