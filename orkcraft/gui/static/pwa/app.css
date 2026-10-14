@@ -249,3 +249,61 @@ p { margin: 0 0 8px; }
 .offline .asking, .offline .widget, .offline .quiet { opacity: .5; filter: grayscale(.6); }
 
 @media (prefers-reduced-motion: reduce) { .lighting [data-b] { transition: none; } .stop.holding::before { transition: none; } }
+
+/* -- since your last look (look.js): the line the camp opens under ------------------------------------------- */
+.look .look-line { font-size: 1rem; font-weight: 600; margin: 0 0 6px; }
+.look-list { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 0; }
+.look-open { all: unset; cursor: pointer; display: flex; align-items: center; min-height: 44px; line-height: 1.3;
+  color: var(--ink); text-decoration: underline; text-decoration-color: var(--frame-strong); }
+.look-open:focus-visible { outline: 2px solid var(--frame-focus); }
+.look .row { margin-top: 4px; }
+
+/* -- the living camp (camp.js): the art at 1× (whole-number scaling on the screen), the signals as UI ----------- */
+.camp { border-radius: var(--ok-radius-lg); overflow: hidden; border: 2px solid var(--frame); background: var(--canvas)
+  var(--terrain-image, none) repeat; background-size: 480px 432px; }
+:root[data-theme="office"] .camp { border-width: 1px; background: var(--panel-inset); }
+.camp-view { overflow: auto; overscroll-behavior: contain; touch-action: pan-x pan-y; scrollbar-width: none; }
+.camp-view::-webkit-scrollbar { display: none; }
+.camp-world { position: relative; }
+.camp-roads { position: absolute; inset: 0; pointer-events: none; }
+.camp-roads .road { stroke: var(--frame-strong); stroke-width: 3; stroke-dasharray: 6 6; stroke-linecap: round; }
+.camp-roads .road.busy { stroke: var(--success); stroke-dasharray: none; }
+.camp-hut { all: unset; position: absolute; width: 96px; min-height: 92px; display: flex; flex-direction: column;
+  align-items: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.camp-hut:focus-visible { outline: 2px solid var(--frame-focus); outline-offset: 2px; }
+.camp-art { width: 82px; height: 67px; display: flex; align-items: center; justify-content: center; }
+/* each sprite at its own size (1×): never stretched to a box, so a 2× or 3× screen scales it by whole numbers */
+.camp-art { align-items: flex-end; }
+.camp-art .mark-sprite { width: auto; height: auto; max-width: none; max-height: none; image-rendering: pixelated; }
+.camp-art .mark-line { width: 36px; height: 36px; fill: none; stroke: var(--ink); stroke-width: 1.2; stroke-linecap: round;
+  stroke-linejoin: round; }
+:root[data-theme="office"] .camp-art { width: 56px; height: 56px; margin: 6px 0 5px; background: var(--panel);
+  border: 1px solid var(--frame); border-radius: 10px; }
+.camp-name { font-family: var(--font-name); font-size: 0.75rem; line-height: 1.1; text-align: center; max-width: 96px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 2px 4px; border-radius: 4px;
+  background: rgb(0 0 0 / .45); color: #fff; }
+:root[data-theme="office"] .camp-name { background: none; color: var(--ink); }
+/* ❓ and 🔥: at least 24 px high, whatever the art's scale (color-pass.md §6c) */
+.camp-sig { position: absolute; top: -4px; right: 2px; min-width: 28px; height: 28px; padding: 0 6px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; font-size: 1rem; line-height: 1; font-weight: 700;
+  background: var(--alert); color: #1a1206; box-shadow: 0 0 0 2px var(--canvas); }
+.camp-sig.fire { background: var(--danger); color: #fff; }
+.camp-hut.work .camp-name { box-shadow: inset 0 -2px 0 var(--success); }
+.camp-ork { position: absolute; width: 32px; height: 48px; pointer-events: none; image-rendering: pixelated;
+  background: url("camp/ork-walk.png") 0 0 / 192px 48px no-repeat; }
+.camp-name { position: relative; z-index: 1; }
+
+/* -- 🥩 in the head opens the orks at work (slots.js) --------------------------------------------------------- */
+.head .meat { all: unset; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; cursor: pointer; }
+.head .meat:focus-visible { outline: 2px solid var(--frame-focus); }
+.meat-sig { font-size: 0.875rem; font-weight: 700; }
+.slots { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.slot { display: flex; align-items: center; gap: 8px; }
+.slot-line { all: unset; flex: 1 1 auto; min-height: 44px; display: flex; gap: 8px; align-items: center; cursor: pointer; font-size: 0.875rem; }
+.slot-mark { flex: 0 0 auto; min-width: 24px; text-align: center; }
+.slots-stop { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+
+/* -- the pinned context of an ork's question, and the bar's Idea ------------------------------------------------ */
+.question .pinned { font-size: 0.875rem; padding: 6px 8px; background: var(--inset); border-left: 3px solid var(--alert); }
+.question.pool .pool-q h3 { margin-top: 8px; }
+.dock .idea { flex: 1.1 1 0; }

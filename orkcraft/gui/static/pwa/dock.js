@@ -9,8 +9,30 @@ const FILE_LIMIT = 5 * 1024 * 1024;     // as views/pit.py FILE_LIMIT
 const HOLD_MS = 1200;                    // Stop all held this long stops every ork
 export const LOOKS = [["camp", "Camp"], ["office", "Office"], ["shift", "By the shift"]];
 
-/** `ctx`: {send, flash, building(type), device(), unpair(), shared} — what the app gives the bar and the foot. */
+/** `ctx`: {send, deliver, flash, building(type), ideas(), device(), unpair(), shared} — what the app gives the bar
+ *  and the foot. */
 export function makeDock(ctx) {
+  // -- an idea, in one press (cut-list.md §3a): into the Task board's Ideas lane; with no signal, kept and sent
+  // when it returns. Voice is the phone's own dictation, on its keyboard. --
+  const idea = h("textarea", { id: "idea", class: "ok-input", rows: "3", maxlength: "20000", enterkeyhint: "done",
+    "aria-label": "The idea", placeholder: "An idea…" });
+  const ideaWhere = h("p", { class: "muted hint" });
+  const ideaBtn = h("button", { class: "ok-btn primary", type: "button" }, "Drop it");
+  ideaBtn.addEventListener("click", async () => {
+    const text = idea.value.trim();
+    const to = ctx.ideas();
+    if (!text || !to) return;
+    ideaBtn.disabled = true;
+    const short = text.length > 40 ? `${text.slice(0, 40)}…` : text;
+    const r = await ctx.deliver("act", { id: to.id, act: "add", args: { text, lane: to.lane, client_id: randomId() } },
+      `the idea “${short}”`);
+    ideaBtn.disabled = false;
+    if (!r.ok) { ctx.flash(r.error); return; }
+    idea.value = "";
+    ideaSheet.close();
+    ctx.flash(r.kept ? "Idea kept: it is sent when the signal returns." : `Idea dropped into ${to.label}.`);
+  });
+  const ideaSheet = sheet("Drop an idea", idea, ideaWhere, h("div", { class: "row" }, ideaBtn));
   // -- the Warchief --
   const chat = h("div", { class: "chat", "aria-live": "polite" });
   const ask = h("input", { id: "ask", class: "ok-input", placeholder: "Ask the Warchief…", maxlength: "2000",
@@ -112,22 +134,29 @@ export function makeDock(ctx) {
   // A tap (or a screen reader's activation) asks first, with its button up the screen, away from this one.
   stop.addEventListener("click", () => { if (held) { held = false; return; } stopSheet.open(); });
 
+  const ideaBtnDock = h("button", { class: "ok-btn primary idea", type: "button", onclick: () => {
+    const to = ctx.ideas();
+    ideaWhere.textContent = to ? `Into ${to.label} on the Task board, for later. Speak it with the keyboard’s microphone.` : "";
+    ideaSheet.open();
+    idea.focus();
+  } }, "Idea");
   const askBtnDock = h("button", { class: "ok-btn", type: "button", onclick: () => { askSheet.open(); readChat(); } }, "Ask");
   const dropBtnDock = h("button", { class: "ok-btn", type: "button", onclick: () => dropSheet.open() }, "Drop");
-  const el = h("nav", { class: "dock", "aria-label": "Actions" }, h("div", { class: "dock-in" }, askBtnDock, dropBtnDock, stop));
+  const el = h("nav", { class: "dock", "aria-label": "Actions" }, h("div", { class: "dock-in" }, ideaBtnDock, askBtnDock, dropBtnDock, stop));
 
   return {
     el,
     foot,
-    sheets: [askSheet.el, dropSheet.el, stopSheet.el],
+    sheets: [ideaSheet.el, askSheet.el, dropSheet.el, stopSheet.el],
     render(town) {
+      ideaBtnDock.hidden = !town.ideas;
       askBtnDock.hidden = !ctx.building("town_hall");
       dropBtnDock.hidden = !ctx.building("pit");
       // Nothing to stop while no ork works: the button leaves the bar, and its sheet with it.
       const working = (town.hud?.agents_working || 0) > 0;
       stop.hidden = !working;
       if (!working) stopSheet.close();
-      el.hidden = askBtnDock.hidden && dropBtnDock.hidden && stop.hidden;
+      el.hidden = ideaBtnDock.hidden && askBtnDock.hidden && dropBtnDock.hidden && stop.hidden;
       document.documentElement.classList.toggle("no-dock", el.hidden);
       const chosen = town.portrait?.look || town.look;
       for (const b of looks.children) b.classList.toggle("is-active", b.dataset.look === chosen);

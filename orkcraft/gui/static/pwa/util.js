@@ -23,6 +23,22 @@ export const kept = {
   clear() { try { localStorage.removeItem(KEPT); } catch { /* nothing kept */ } },
 };
 
+// What the person gave with no signal (an answer, an idea), kept on this phone until the town answers again
+// (app.js `deliver`); wiped with the pairing.
+const OUTBOX = "orkcraft.outbox";
+export const outbox = {
+  all() { try { return JSON.parse(localStorage.getItem(OUTBOX)) || []; } catch { return []; } },
+  add(item) {
+    const all = outbox.all();
+    all.push({ ...item, key: randomId() });
+    try { localStorage.setItem(OUTBOX, JSON.stringify(all.slice(-50))); } catch { /* this run only */ }
+  },
+  remove(key) {
+    try { localStorage.setItem(OUTBOX, JSON.stringify(outbox.all().filter((x) => x.key !== key))); } catch { /* kept */ }
+  },
+  clear() { try { localStorage.removeItem(OUTBOX); } catch { /* nothing kept */ } },
+};
+
 export const clock = (ms) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
 // The orkspace this phone shows (town.js `chosenSpace`): the phone's own pick, so it never moves the desktop's.
@@ -31,7 +47,7 @@ export const SPACE = "orkcraft.orkspace";
 export const store = {
   get() { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } },
   set(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* private mode: this run only */ } },
-  clear() { try { localStorage.removeItem(KEY); localStorage.removeItem(SPACE); } catch { /* nothing kept */ } kept.clear(); },
+  clear() { try { localStorage.removeItem(KEY); localStorage.removeItem(SPACE); } catch { /* nothing kept */ } kept.clear(); outbox.clear(); },
 };
 
 export const minutes = (s) => (s < 60 ? `${Math.round(s)} s` : s < 5400 ? `${Math.round(s / 60)} min` : `${Math.round(s / 3600)} h`);
@@ -56,6 +72,21 @@ export function sheet(title, ...body) {
   const close = () => { if (el.close) el.close(); else el.removeAttribute("open"); };
   shut.addEventListener("click", close);
   el.addEventListener("click", (e) => { if (e.target === el) close(); });   // the backdrop
+  // A swipe down from its head puts it back (color-pass.md §6c).
+  let y0 = null;
+  const inner = el.firstChild;
+  inner.firstChild.addEventListener("touchstart", (e) => { y0 = e.touches[0].clientY; }, { passive: true });
+  inner.firstChild.addEventListener("touchmove", (e) => {
+    if (y0 === null) return;
+    const dy = Math.max(0, e.touches[0].clientY - y0);
+    inner.style.transform = dy ? `translateY(${dy}px)` : "";
+  }, { passive: true });
+  inner.firstChild.addEventListener("touchend", (e) => {
+    const dy = y0 === null ? 0 : e.changedTouches[0].clientY - y0;
+    y0 = null;
+    inner.style.transform = "";
+    if (dy > 80) close();
+  });
   return { el, open, close, title(text) { head.textContent = text; el.setAttribute("aria-label", text); } };
 }
 

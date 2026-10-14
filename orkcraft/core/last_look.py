@@ -6,6 +6,10 @@
     look.beat()          # the face is in front of the person (a look): it may begin a new look and greet them
     look.snapshot()      # the greeting to draw, or None
     look.done()          # the person went back to the camp
+    look.beat(face="phone")   # the same person's look, from the phone: it greets the phone, not the desktop
+
+One person, one look: the desktop and the phone beat the same look, so a look on the phone counts on the desktop
+too. The greeting belongs to the face that began the new look (`face`), and each face says it is done with its own.
 
 Everything is written to the town's own folder (the local event log and `.orkcraft/usage/last_look.json`), never
 sent; nothing in the demo. It changes no building and shows nothing itself: it publishes `bus.LOOK` and a face draws.
@@ -55,7 +59,12 @@ class LastLook:
         self.town, self.muster, self.limits, self.subscriptions = town, muster, limits, subscriptions
         self.root = _root(town)
         self.look = last_look.load(self.root)
-        self.greeting: dict[str, Any] | None = None     # since, the log's lines then, used, seen; None: none shown
+        self.greetings: dict[str, dict[str, Any]] = {}  # face → since, the log's lines then, used, seen
+
+    @property
+    def greeting(self) -> dict[str, Any] | None:
+        """The desktop's greeting (since, the log's lines then, used, seen); None: none shown."""
+        return self.greetings.get("gui")
 
     # -- what stands now --------------------------------------------------------------------------------
 
@@ -130,26 +139,26 @@ class LastLook:
 
     # -- the look ------------------------------------------------------------------------------------------
 
-    def beat(self, now: dt.datetime | None = None) -> bool:
-        """The face was in front of the person for a while. True when it began a new look and greets them."""
+    def beat(self, now: dt.datetime | None = None, face: str = "gui") -> bool:
+        """The face was in front of the person for a while. True when it began a new look and greets them there."""
         now = now or dt.datetime.now().astimezone()
         look, ended = last_look.beat(self.look, now)
         greets = False
         if ended is not None:
             event_log.record(self.root, event_log.LOOKED, started=ended.start, seconds=last_look.seconds(ended))
             if last_look.away_s(ended, now) >= last_look.AWAY_S:
-                self.greeting = {"since": ended.end, "rows": event_log.read(self.root, ended.end) if self.root else [],
+                self.greetings[face] = {"since": ended.end, "rows": event_log.read(self.root, ended.end) if self.root else [],
                                  "used": dict(ended.used), "seen": list(ended.seen)}
                 greets = True
         look.used, look.seen = self.used_now(), self._seen()
         self.look = look
         last_look.save(self.root, look)
         if greets:
-            self.town.publish(bus.LOOK, greets=True)
+            self.town.publish(bus.LOOK, greets=True, face=face)
         return greets
 
-    def snapshot(self, now: dt.datetime | None = None) -> dict[str, Any] | None:
-        g = self.greeting
+    def snapshot(self, now: dt.datetime | None = None, face: str = "gui") -> dict[str, Any] | None:
+        g = self.greetings.get(face)
         if g is None:
             return None
         now = now or dt.datetime.now().astimezone()
@@ -162,7 +171,6 @@ class LastLook:
                 item["building"] = ""
         return d
 
-    def done(self) -> None:
-        if self.greeting is not None:
-            self.greeting = None
-            self.town.publish(bus.LOOK, greets=False)
+    def done(self, face: str = "gui") -> None:
+        if self.greetings.pop(face, None) is not None:
+            self.town.publish(bus.LOOK, greets=False, face=face)

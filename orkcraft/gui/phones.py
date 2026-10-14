@@ -316,7 +316,7 @@ class Listener:
             self.on_push(None)
 
     def compact(self) -> dict:
-        return mobile.compact(self.host.snapshot())
+        return mobile.phone_snapshot(self.host)
 
     def push(self, snap: dict | None = None) -> dict:
         snap = snap or self.compact()

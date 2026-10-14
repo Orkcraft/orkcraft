@@ -7,6 +7,8 @@ host's own command table, so the GUI's page and tests reach it today the same wa
     host.command("mobile.snapshot")                  # the town, small: HUD, questions, buildings
     host.command("mobile.snapshot", {"since": rev})  # {"v", "rev", "same": True} when nothing changed
     host.command("mobile.chat")                      # the Town Hall's last messages, Markdown as plain text
+    host.command("mobile.beat")                      # the phone is in front of the person: a beat of their look
+    host.command("mobile.look_done")                 # the person read "since your last look" on the phone
     host.command("audio.fetch", {"building": "g", "episode": "1a2b3c4d", "offset": 0})   # an episode, in chunks
     news(before, after)                              # what a push would say between two snapshots
 
@@ -38,6 +40,8 @@ COMMANDS: dict[str, Any] = {
     "mobile.hello": None,
     "mobile.snapshot": None,
     "mobile.chat": None,
+    "mobile.beat": None,         # "since your last look" (core/last_look.py), the phone's face
+    "mobile.look_done": None,
     "orders.answer": None,
     "orders.follow": None,
     "halt": None,
@@ -48,7 +52,8 @@ COMMANDS: dict[str, Any] = {
     # a building's quick action, as the desktop's card presses it: only one `quick` names (docs/design/mobile.md §10)
     "building.input": None,
     # Task Fields: a to-do, a note or a task written on the phone (the widget, docs/design/mobile.md §10)
-    "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",), "fields": ("add",)},
+    # an Agent pool: its ork's question answered (A2's, pinned on its task) and one ork stopped from the 🥩 list
+    "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",), "fields": ("add",), "barracks": ("answer", "stop_ork")},
 }
 _BY_BUILDING = {"act", "building.input"}    # the commands `allowed` checks against the building they name
 
@@ -91,7 +96,22 @@ def allowed(host, name: str, args: dict | None = None) -> bool:
         spec = host.town.spec_of(bid)
         card = [{"id": a.id, "label": a.label} for a in catalog.quick_actions_of(spec)] if spec else []
         return str(args.get("input", "")) in {q["id"] for q in quick(card)}
-    return str(args.get("act", "")) in acts.get(host.type_of(bid), ())
+    act = str(args.get("act", ""))
+    if act not in acts.get(host.type_of(bid), ()):
+        return False
+    if host.type_of(bid) == "barracks" and act == "answer":
+        return _pool_question(host, bid, args.get("args"))
+    return True
+
+
+def _pool_question(host, bid: str, args) -> bool:
+    """An Agent pool's answer from a phone only to an ork's own question (its `asks` block, ork-console.md §4): never
+    a draft's yes (it posts outside the camp), a new persona's, nor a plan the steward sends back."""
+    task_id = str((args if isinstance(args, dict) else {}).get("task", ""))
+    w = host.town.worker(bid)
+    task = w.state.task(task_id) if task_id and w is not None and hasattr(w, "state") else None
+    return (task is not None and task.status == "asked" and task.ask_kind == "question" and not task.draft
+            and not task.persona_waits)
 
 
 def guard(name: str, args: dict, device: dict | None = None) -> dict:
@@ -127,9 +147,17 @@ def _alert(a: dict) -> dict[str, Any]:
             "waited": a.get("waited", 0.0)}
 
 
+def _spot(hut) -> list[float] | None:
+    """Where the person put the building on the desktop's town, as fractions of the room (the camp the phone draws)."""
+    try:
+        return [round(float(hut[0]), 2), round(float(hut[1]), 2)] if hut else None
+    except (TypeError, ValueError, IndexError):
+        return None
+
+
 def _building(b: dict) -> dict[str, Any]:
     return {"id": b["id"], "title": b["title"], "title_plain": modes.plain(b["title"]),
-            "type": b["type"], "state": b.get("state", ""),
+            "type": b["type"], "state": b.get("state", ""), "spot": _spot(b.get("hut")),
             "alert": (b.get("alert") or {}).get("id") or None,
             "quick": quick(b.get("quick") or [])}     # the card's own pick (gui/state.py)
 
@@ -178,6 +206,80 @@ def _widget(full: dict) -> dict[str, Any] | None:
             "sends": {"task": goes("tasks."), "note": goes("notes.")}}
 
 
+SLOT_ROWS = 20           # of the 🥩 list, the most rows a phone gets
+
+
+def _slots(full: dict) -> dict[str, Any]:
+    """🥩 The ork slots (core/slots.py) as a phone lists them: each ork at work or asking, its line, how long, its
+    spend; `stop` only where a phone may stop it (an Agent pool's ork: `stop_ork`), never a terminal's interrupt."""
+    s = full.get("slots") or {}
+    rows = []
+    for r in (s.get("rows") or [])[:SLOT_ROWS]:
+        stop = r.get("stop") or {}
+        args = stop.get("args") or {}
+        can = stop.get("command") == "act" and args.get("act") == "stop_ork"
+        rows.append({"key": r.get("key", ""), "name": r.get("name", ""), "state": r.get("state", ""),
+                     "mark": r.get("mark", ""), "word": r.get("word", ""), "line": r.get("line", ""),
+                     "building": r.get("building_id", ""), "since_s": r.get("since_s"), "spend": r.get("spend", 0.0),
+                     "tool": r.get("tool", ""), "asks": bool(r.get("answer")),
+                     "stop": {"id": args.get("id", ""), "ork": (args.get("args") or {}).get("ork", "")} if can else None})
+    return {"working": s.get("working", 0), "limit": s.get("limit", 0), "asks": s.get("asks", 0),
+            "fire": s.get("fire", 0), "rows": rows}
+
+
+def _pool_questions(full: dict) -> list[dict[str, Any]]:
+    """An Agent pool ork's questions (A2: its `asks` block, pinned on top of its task) as a phone answers them: the
+    task they are pinned on and why it waits are their context; each question's answers are one tap, or a line."""
+    out = []
+    for r in (full.get("slots") or {}).get("rows") or []:
+        a = r.get("answer") or {}
+        if a.get("kind") != "pool":
+            continue
+        qs = [{"text": str(q.get("text", "")), "options": [str(o) for o in q.get("options") or []]}
+              for q in a.get("questions") or [] if isinstance(q, dict)]
+        if not qs and a.get("question"):
+            qs = [{"text": str(a["question"]), "options": []}]
+        out.append({"id": f"pool:{a.get('building', '')}:{a.get('task', '')}", "building": a.get("building", ""),
+                    "task": a.get("task", ""), "who": r.get("name", ""), "cart": r.get("cart", ""),
+                    "wait": (r.get("wait") or {}).get("line", ""), "assumptions": r.get("assumptions", 0),
+                    "waited": float(r.get("since_s") or 0), "questions": qs})
+    return out
+
+
+def _last_look(d: dict[str, Any] | None) -> dict[str, Any] | None:
+    """"Since your last look" (realm/last_look.py `digest`) as the phone's first line: the questions stand in Answers,
+    so only how many came; what was built, the problems and the cost as they are (each list at most three)."""
+    if not d:
+        return None
+    q = d.get("questions") or {}
+    items = q.get("items") or []
+    return {"since": d.get("since", ""), "at": d.get("at", ""), "away": d.get("away", ""), "empty": bool(d.get("empty")),
+            "headline": d.get("headline", ""), "working": d.get("working", ""),
+            "built": {"items": [{"line": i.get("line", ""), "kind": i.get("kind", ""), "building": i.get("building", "")}
+                                for i in (d.get("built") or {}).get("items") or []],
+                      "more": (d.get("built") or {}).get("more", 0), "summary": (d.get("built") or {}).get("summary", ""),
+                      "moved": (d.get("built") or {}).get("moved", 0)},
+            "questions": {"count": len(items) + q.get("more", 0), "new": sum(1 for i in items if i.get("new"))},
+            "problems": {"items": [{"id": p.get("id", ""), "line": p.get("line", ""), "title": p.get("title", ""),
+                                    "waits": p.get("waits", ""), "building": p.get("building", "")}
+                                   for p in (d.get("problems") or {}).get("items") or []],
+                         "more": (d.get("problems") or {}).get("more", 0)},
+            "cost": [c.get("line", "") for c in d.get("cost") or []]}
+
+
+def _ideas(full: dict) -> dict[str, Any] | None:
+    """Where an idea dropped on the phone goes (cut-list.md §3a): the first Task board's Ideas lane (its first lane of
+    notes), its title as it is and plain. None when the town has no working Task board."""
+    for b in full.get("buildings") or []:
+        c = b.get("card") or {}
+        if b.get("type") != "fields" or c.get("error") or not c.get("note_lane"):
+            continue
+        lane = next((n for n in c.get("notes") or [] if n.get("id") == c["note_lane"]), None)
+        return {"id": b["id"], "lane": c["note_lane"], "label": (lane or {}).get("label") or "Ideas",
+                "title": b.get("title", ""), "title_plain": modes.plain(b.get("title", ""))}
+    return None
+
+
 def _hud(h: dict) -> dict[str, Any]:
     keys = ("gold", "gold_level", "show_gold", "quota", "quota_level", "agents_working", "agents",
             "alerts", "quiet", "hour_plain")
@@ -198,10 +300,11 @@ def _episodes(buildings: list[dict]) -> list[dict[str, Any]]:
     return sorted(out, key=lambda e: e.get("at", ""), reverse=True)
 
 
-def compact(full: dict[str, Any]) -> dict[str, Any]:
+def compact(full: dict[str, Any], last_look: dict[str, Any] | None = None) -> dict[str, Any]:
     """The page's snapshot, small enough for a phone on a slow link: the HUD's spend and quota, the
-    questions that wait (the longest first), each building as its title, type, state and question,
-    and how many sessions run. `rev` names this content: the same town, the same `rev`."""
+    questions that wait (the longest first), each building as its title, type, state, question and spot,
+    the 🥩 list, and how many sessions run; `last_look`: the phone's own greeting (core/last_look.py, face
+    "phone"). `rev` names this content: the same town, the same `rev`."""
     out = {
         "v": API,
         "project": full.get("project", ""),
@@ -215,18 +318,28 @@ def compact(full: dict[str, Any]) -> dict[str, Any]:
         "orkspaces": _orkspaces(full),
         "active_orkspace": full.get("active_orkspace", ""),
         "widget": _widget(full),
+        "ideas": _ideas(full),
         "roads": _roads(full),
         "sessions_running": sum(1 for s in full.get("sessions") or [] if s.get("running")),
         "episodes": _episodes(full.get("buildings") or []),
+        "slots": _slots(full),
+        "pool_questions": _pool_questions(full),
+        "last_look": _last_look(last_look),
     }
     out["rev"] = hashlib.sha256(json.dumps(out, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
     return out
 
 
+def phone_snapshot(host) -> dict[str, Any]:
+    """The compact town as a phone gets it: with the phone's own "since your last look"."""
+    look = getattr(host, "last_look", None)
+    return compact(host.snapshot(), look.snapshot(face="phone") if look is not None else None)
+
+
 def snapshot(host, args: dict | None = None) -> dict[str, Any]:
     """`mobile.snapshot`: the compact town, or only `{"v", "rev", "same": True}` when the phone's
     `since` is still the town's `rev` (a phone that comes back asks with what it had)."""
-    snap = compact(host.snapshot())
+    snap = phone_snapshot(host)
     since = (args or {}).get("since")
     if isinstance(since, str) and since == snap["rev"]:
         return {"v": API, "rev": snap["rev"], "same": True}
@@ -324,4 +437,6 @@ def commands(host) -> dict[str, Callable[[dict], Any]]:
     """The host's commands this module adds (`Host.commands`)."""
     return {"mobile.hello": lambda a: hello(host), "mobile.snapshot": lambda a: snapshot(host, a),
             "mobile.chat": lambda a: chat(host, a), "place.report": lambda a: gui_places.report(host, a),
-            "audio.fetch": lambda a: audio_fetch(host, a)}
+            "audio.fetch": lambda a: audio_fetch(host, a),
+            "mobile.beat": lambda a: host.last_look.beat(face="phone"),
+            "mobile.look_done": lambda a: host.last_look.done(face="phone")}

@@ -9,6 +9,7 @@
 import { h, minutes, sheet, fenced, SPACE } from "./util.js";
 import { mark } from "./icons.js";
 import { chains, links } from "./links.js";
+import { makeCamp } from "./camp.js";
 
 const TROUBLE = new Set(["ERROR", "NO WIKI"]);
 const AT_WORK = new Set(["WORKING", "BUSY", "PENDING", "EDITING"]);
@@ -23,7 +24,8 @@ export function kind(b, asked) {
   return "quiet";
 }
 
-// The questions answered from this phone (id → what was said), till the town's update takes them away.
+// The questions answered from this phone (id → {said, kept}), till the town's update takes them away. `kept`: given
+// with no signal, kept on the phone and sent when it returns (app.js `deliver`).
 const answered = new Map();
 
 /** The orkspace the phone shows: the one picked on this phone, else the desktop's open one. The pick is the
@@ -39,8 +41,10 @@ function pickSpace(id) {
   try { localStorage.setItem(SPACE, id); } catch { /* this run only: the next town update forgets it */ }
 }
 
-/** `ctx`: {send, flash, rerender}. Returns the parts the app lays out and `render(town)`. */
+/** `ctx`: {send, deliver, flash, rerender}. Returns the parts the app lays out, `render(town)` and `open(id)`: a
+ *  building's card as a sheet from the foot. */
 export function makeTown(ctx) {
+  const camp_ = makeCamp({ open: (b) => about(b), name: (b) => name(b) });
   const summary = h("p", { class: "summary" });
   const tiles = h("div", { class: "tiles" });
   const answers = fenced({ class: "asking", "aria-labelledby": "answers-h" }, h("h2", { id: "answers-h" }, "Answers"), summary, tiles);
@@ -58,13 +62,19 @@ export function makeTown(ctx) {
   let camp = true;
   let byId = new Map();
   let roads = { into: new Map(), from: new Map() };
+  let asks = new Map();                  // building id → its questions: its sheet answers them too
 
+  // A building's card as a sheet from the foot (color-pass.md §6c), headed by its mark, over the dimmed camp.
+  let shown = { id: "", key: "" };       // the building whose sheet is open, and its questions then
+  const sheetKey = (id) => (asks.get(id) || []).map((a) => `${a.id}:${answered.has(a.id)}`).join(",");
   function about(b) {
-    info.title(camp ? b.title : (b.title_plain || b.title));
-    const k = kind(b, new Set());
+    info.title(b.title_plain || b.title);
+    shown = { id: b.id, key: sheetKey(b.id) };
+    const k = kind(b, asks);
     infoBody.replaceChildren(
       h("div", { class: "info-mark" }, mark(b.type, camp)),
       h("p", {}, k === "quiet" ? "Quiet: nothing waits on it now." : `Now: ${(b.state || k).toLowerCase()}.`),
+      ...(asks.get(b.id) || []).map((a) => (a.questions ? poolQuestion(a, ctx, false) : question(a, ctx, true))),
       ...near(b.id).map(([label, ids]) => h("p", {}, h("b", {}, label), ids.map((id) => name(byId.get(id))).join(", "))),
       ...quick(b),
       h("p", { class: "muted" }, "Its window opens on the computer."));
@@ -161,7 +171,7 @@ export function makeTown(ctx) {
     return el;
   }
 
-  const name = (b) => (camp ? b.title : (b.title_plain || b.title));
+  const name = (b) => (b.title_plain || b.title);
 
   // A tile per building that asks, and one per question of no building the phone knows (its ork's name and
   // the Barracks' mark); `key` keeps which one is open across the town's updates.
@@ -178,7 +188,8 @@ export function makeTown(ctx) {
             : `waiting ${minutes(longest)}`)),
       h("span", { class: "chev", "aria-hidden": "true" }, isOpen ? "▾" : "▸"));
     return h("article", { class: `tile asks${isOpen ? " is-open" : ""}` }, head,
-      isOpen && h("div", { class: "tile-body" }, ...(alerts.length ? alerts.map((a) => question(a, ctx, alerts.length > 1 || !b))
+      isOpen && h("div", { class: "tile-body" }, ...(alerts.length ? alerts.map((a) => (a.questions ? poolQuestion(a, ctx, alerts.length > 1 || !b)
+        : question(a, ctx, alerts.length > 1 || !b)))
         : [h("p", { class: "muted" }, "It asks at the computer.")])));
   }
 
@@ -191,7 +202,7 @@ export function makeTown(ctx) {
 
   function render(s) {
     camp = s.look !== "office";
-    const alerts = s.alerts || [];
+    const alerts = [...(s.alerts || []), ...(s.pool_questions || [])];
     const buildings = s.buildings || [];
     for (const id of answered.keys()) if (!alerts.some((a) => a.id === id)) answered.delete(id);
     byId = new Map(buildings.map((b) => [b.id, b]));
@@ -205,11 +216,17 @@ export function makeTown(ctx) {
       } else loose.push(a);
     }
     for (const b of buildings) if (kind(b, asking) === "asks" && !asking.has(b.id)) asking.set(b.id, []);
+    asks = asking;
+    // An open sheet follows its building's questions (one answered there, one come or gone), nothing else: what is
+    // typed in it stays.
+    if (info.el.open && shown.id && byId.has(shown.id) && sheetKey(shown.id) !== shown.key) about(byId.get(shown.id));
     const entries = [...loose.map((a) => [`a:${a.id}`, null, [a]]), ...[...asking].map(([id, qs]) => [id, byId.get(id), qs])]
       .sort((x, y) => Math.max(0, ...y[2].map((a) => a.waited || 0)) - Math.max(0, ...x[2].map((a) => a.waited || 0)));
     if (open === null || (open && !entries.some(([key]) => key === open))) open = entries[0]?.[0] || null;
+    const space = chosenSpace(s);
 
     const n = alerts.length;
+    camp_.render(s, buildings.filter((b) => !(space && (s.orkspaces || []).length > 1) || new Set(space.buildings).has(b.id)), asking);
     const longest = Math.max(0, ...alerts.map((a) => a.waited || 0));
     summary.textContent = n ? `${n === 1 ? "An ork waits" : `${n} orks wait`} on you, the longest ${minutes(longest)}.`
       : "No ork is waiting on you.";
@@ -220,7 +237,6 @@ export function makeTown(ctx) {
 
     // The orkspace's buildings (every building, in a town of one or of none known); the questions stay the
     // whole town's, whatever orkspace they come from.
-    const space = chosenSpace(s);
     const all = s.orkspaces || [];
     spaces.hidden = all.length < 2;
     spaces.replaceChildren(...(all.length < 2 ? [] : all.map((o) => h("button", { class: `ok-tab${o === space ? " is-active" : ""}`,
@@ -256,26 +272,15 @@ export function makeTown(ctx) {
       }))));
   }
 
-  return { parts: [answers.el, town.el, info.el], render };
+  const openId = (id) => { const b = byId.get(id); if (b) about(b); };
+  return { parts: [camp_.el, answers.el, town.el, info.el], render, open: openId };
 }
 
 /** A question, its last lines and its answers; `who` says who asks and how long (a tile of one question of
  *  a building says it in its head already). */
 export function question(a, ctx, who = true) {
   const msg = h("p", { class: "warn", hidden: true });
-  const answer = async (name, args, said, buttons) => {
-    buttons.forEach((b) => { b.disabled = true; });
-    const r = await ctx.send(name, args);
-    if (!r.ok) {
-      msg.textContent = r.error;
-      msg.hidden = false;
-      buttons.forEach((b) => { b.disabled = false; });
-      return;
-    }
-    answered.set(a.id, said);            // said at once; the question leaves with the town's next update
-    ctx.flash?.(`Answered: ${said}`);
-    ctx.rerender?.();
-  };
+  const answer = (name, args, said, buttons) => give(a, ctx, name, args, said, buttons, msg);
   const buttons = [];
   for (const [key, label] of a.options || []) {
     buttons.push(h("button", { class: "ok-btn", type: "button",
@@ -285,14 +290,62 @@ export function question(a, ctx, who = true) {
     buttons.push(h("button", { class: "ok-btn primary", type: "button",
       onclick: () => answer("orders.follow", { id: a.id }, "as the Advisor suggests", buttons) }, "Follow the Advisor"));
   }
-  if (answered.has(a.id)) {
-    return h("div", { class: "question" }, h("h3", { class: "title" }, a.title),
-      h("p", { class: "done", role: "status" }, `Answered: ${answered.get(a.id)}. The ork goes on.`));
-  }
+  if (answered.has(a.id)) return said(a.id, h("h3", { class: "title" }, a.title));
   return h("div", { class: "question" },
     who && h("p", { class: (a.waited || 0) > LONG_WAIT_S ? "warn" : "muted" }, `${a.who || "An ork"} · waiting ${minutes(a.waited || 0)}`),
     h("h3", { class: "title" }, a.title),
     (a.context || []).length > 0 && h("pre", {}, a.context.join("\n")),
     a.advice && h("p", { class: "advice" }, `The Advisor suggests ${a.advice.key}: ${a.advice.why}`),
     h("div", { class: "answers" }, buttons), msg);
+}
+
+// An answer given: sent now, or kept on the phone with no signal and sent when it returns (app.js `deliver`).
+async function give(a, ctx, name, args, said, buttons, msg) {
+  buttons.forEach((b) => { b.disabled = true; });
+  const r = ctx.deliver ? await ctx.deliver(name, args, `${a.who || "An ork"}: ${said}`) : await ctx.send(name, args);
+  if (!r.ok) {
+    msg.textContent = r.error;
+    msg.hidden = false;
+    buttons.forEach((b) => { b.disabled = false; });
+    return;
+  }
+  answered.set(a.id, { said, kept: Boolean(r.kept) });   // said at once; the question leaves with the town's next update
+  ctx.flash?.(r.kept ? `Kept: ${said}. It is sent when the signal returns.` : `Answered: ${said}`);
+  ctx.rerender?.();
+}
+
+function said(id, ...head) {
+  const { said: what, kept } = answered.get(id);
+  return h("div", { class: "question" }, ...head, h("p", { class: kept ? "warn" : "done", role: "status" },
+    kept ? `Kept: ${what}. It is sent when the signal returns.` : `Answered: ${what}. The ork goes on.`));
+}
+
+/** An Agent pool ork's questions (A2: pinned on top of its task), with their context: the task they are pinned
+ *  on, why it waits (and when the steward decides it), the assumptions the ork made. Each question's answers are
+ *  one tap (one question) or picked into the line; the line is sent as the answer. */
+export function poolQuestion(q, ctx, who = true) {
+  const msg = h("p", { class: "warn", hidden: true });
+  const head = [
+    who && h("p", { class: (q.waited || 0) > LONG_WAIT_S ? "warn" : "muted" }, `${q.who || "An ork"} · waiting ${minutes(q.waited || 0)}`),
+    q.cart && h("p", { class: "pinned" }, h("b", {}, "On: "), q.cart),
+  ];
+  if (answered.has(q.id)) return said(q.id, ...head);
+  const line = h("input", { class: "ok-input", maxlength: "2000", enterkeyhint: "send", "aria-label": "Your answer", placeholder: "Reply…" });
+  const reply = h("button", { class: "ok-btn primary", type: "button" }, "Reply");
+  const buttons = [reply];
+  const send = (text) => give(q, ctx, "act", { id: q.building, act: "answer", args: { task: q.task, text } }, text, buttons, msg);
+  const one = q.questions.length === 1;
+  const blocks = q.questions.map((x) => h("div", { class: "pool-q" }, h("h3", { class: "title" }, x.text),
+    x.options.length > 0 && h("div", { class: "answers" }, ...x.options.map((o) => {
+      const b = h("button", { class: "ok-btn", type: "button",
+        onclick: () => (one ? send(o) : (line.value = `${line.value ? `${line.value}\n` : ""}${x.text} → ${o}`)) }, o);
+      buttons.push(b);
+      return b;
+    }))));
+  reply.addEventListener("click", () => { if (line.value.trim()) send(line.value.trim()); });
+  line.addEventListener("keydown", (e) => { if (e.key === "Enter" && line.value.trim()) send(line.value.trim()); });
+  return h("div", { class: "question pool" }, ...head, ...blocks,
+    q.wait && h("p", { class: "muted" }, q.wait),
+    q.assumptions ? h("p", { class: "muted" }, `${q.assumptions} assumption${q.assumptions === 1 ? "" : "s"} marked: read them at the computer.`) : null,
+    h("div", { class: "row" }, line, reply), msg);
 }

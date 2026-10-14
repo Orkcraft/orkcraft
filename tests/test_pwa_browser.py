@@ -135,7 +135,8 @@ async def test_no_answers_while_nobody_asks_and_every_target_is_a_thumbs_size(fa
         buttons = await page.evaluate("""() => [...document.querySelectorAll('button')].filter((b) => b.offsetParent)
             .map((b) => [b.textContent, b.getBoundingClientRect().height, b.className])""")
         assert buttons and [b[0] for b in buttons if b[1] < 44] == []
-        assert [b[0] for b in buttons if "ok-" not in b[2] and b[2] not in ("cell", "w-work", "tile-head")] == []   # the design system's
+        # the design system's, but for the map's own pieces: a building on the camp, a cell, 🥩 in the head
+        assert [b[0] for b in buttons if "ok-" not in b[2] and b[2].split()[0] not in ("cell", "w-work", "tile-head", "camp-hut", "meat")] == []
 
 
 @pytest.mark.asyncio
@@ -143,7 +144,7 @@ async def test_the_quiet_buildings_stand_as_a_grid_of_marks_and_a_tap_says_what_
     async with _phone(fake_repo) as (server, page):
         bid = server.host.command("town.build", {"type": "pit"})
         title = server.host.command("mobile.snapshot")["buildings"]
-        title = next(b["title"] for b in title if b["id"] == bid)
+        title = next(b["title_plain"] for b in title if b["id"] == bid)      # today's word, in either look
         cell = page.locator(".grid .cell", has_text=title)
         await cell.wait_for(timeout=WAIT_MS)
         assert await cell.locator("img.mark-sprite").get_attribute("src") == "sprites/pit.png"     # Camp: the sprite
@@ -244,7 +245,7 @@ async def test_a_long_press_lights_a_buildings_neighbours_and_a_tap_names_them(f
         await page.mouse.down()
         await page.wait_for_timeout(700)
         assert await page.evaluate("document.documentElement.classList.contains('lighting')")
-        near = await page.evaluate("[...document.querySelectorAll('.is-near')].map((e) => e.textContent)")
+        near = await page.evaluate("[...document.querySelectorAll('.blocks .is-near')].map((e) => e.textContent)")
         assert sorted(near) == ["Inbox", "Replies"]
         assert "Takes from: Inbox · Sends to: Replies" in await page.locator("#probe .lit").inner_text()
         await page.mouse.up()
@@ -260,7 +261,8 @@ async def test_a_long_press_lights_a_buildings_neighbours_and_a_tap_names_them(f
 @pytest.mark.asyncio
 async def test_away_from_the_town_the_phone_shows_the_last_town_greyed_and_as_of(fake_repo):
     """Opened where the town does not answer (here: a token it never gave), the app shows the town it kept,
-    greyed and dated, with how many orks wait in its title, and acts on none of it; More stays usable."""
+    greyed and dated, with how many orks wait in its title, and acts on none of it but Answers: an answer given
+    there is kept on the phone and sent when the town answers again (audience.md §2a). The page's foot stays."""
     import json
     async with _phone(fake_repo) as (server, page):
         state = {"look": "camp", "project": "kept town", "hud": {}, "roads": [], "widget": None,
@@ -275,8 +277,13 @@ async def test_away_from_the_town_the_phone_shows_the_last_town_greyed_and_as_of
         assert "As of " in await away.locator(".status").inner_text()
         assert await away.title() == "(1) Orkline"
         assert await away.locator(".head h1", has_text="kept town").count() == 1
-        assert await away.evaluate("document.querySelector('.asking').inert") is True
+        assert await away.evaluate("document.querySelector('.camp').inert") is True
+        assert await away.evaluate("document.querySelector('.asking').inert") is False
         assert await away.evaluate("document.querySelector('section.phone').inert") is False   # Unpair here stays
+        await away.locator(".asking .question").get_by_role("button", name="Yes").click()
+        await away.locator(".asking .warn", has_text="Kept: Yes. It is sent when the signal returns.").wait_for(timeout=WAIT_MS)
+        kept = await away.evaluate("JSON.parse(localStorage.getItem('orkcraft.outbox'))")
+        assert [(k["name"], k["args"]) for k in kept] == [("orders.answer", {"id": "q", "key": "y"})]
 
 
 @pytest.mark.asyncio
@@ -321,7 +328,7 @@ async def test_a_buildings_sheet_presses_its_quick_actions(fake_repo):
         pressed = []
         server.host.commands["building.input"] = lambda a: (pressed.append((a["input"], a.get("value", ""))), True)[1]
         cat = server.host.command("town.build", {"type": "catapult"})
-        title = next(b["title"] for b in server.host.command("mobile.snapshot")["buildings"] if b["id"] == cat)
+        title = next(b["title_plain"] for b in server.host.command("mobile.snapshot")["buildings"] if b["id"] == cat)
         await page.locator(".grid .cell", has_text=title).click()
         sheet = page.locator("dialog.sheet[open]")
         await sheet.get_by_role("button", name="Fire").click()
@@ -330,7 +337,7 @@ async def test_a_buildings_sheet_presses_its_quick_actions(fake_repo):
         await sheet.get_by_role("button", name="Cancel").click()
         await sheet.get_by_role("button", name="Close").click()
         wiki = server.host.command("town.build", {"type": "scrolls"})
-        title = next(b["title"] for b in server.host.command("mobile.snapshot")["buildings"] if b["id"] == wiki)
+        title = next(b["title_plain"] for b in server.host.command("mobile.snapshot")["buildings"] if b["id"] == wiki)
         await page.locator(".row-b, .cell", has_text=title).click()           # a row while it has no wiki yet
         await sheet.get_by_role("button", name="Quick note").click()
         await sheet.locator(".q-form textarea").fill("Fix the login page")
@@ -353,7 +360,7 @@ async def test_the_phone_shows_one_orkspace_at_a_time_without_moving_the_desktop
         server.host.command("orkspace.new", {"name": "Lab", "biome": "ice"})
         lab = server.host.command("mobile.snapshot")["active_orkspace"]
         server.host.command("orkspace.select", {"id": first})
-        title = next(b["title"] for b in server.host.command("mobile.snapshot")["buildings"] if b["id"] == pit)
+        title = next(b["title_plain"] for b in server.host.command("mobile.snapshot")["buildings"] if b["id"] == pit)
         tabs = page.locator(".spaces .ok-tab")
         await tabs.nth(1).wait_for(timeout=WAIT_MS)
         assert await page.locator(".spaces .ok-tab.is-active").inner_text() != "Lab"

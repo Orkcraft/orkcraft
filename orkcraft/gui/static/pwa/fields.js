@@ -21,7 +21,7 @@ const KINDS = {
  *  that leave the board for it, or waits on the board. */
 export function goes(kind, w, camp = true) {
   if (kind === "todo") return "A to-do is yours: it starts nothing.";
-  const to = ((w.sends || {})[kind] || []).map((b) => (camp ? b.title : (b.title_plain || b.title)));
+  const to = ((w.sends || {})[kind] || []).map((b) => (b.title_plain || b.title));
   const what = kind === "task" ? "The task" : "The note";
   if (!to.length) return kind === "task" ? "The task waits in To Do for an ork to take it." : "The note is kept on the board.";
   return `${what} goes down the road to ${to.join(", ")}. The work it starts there is paid from Spend.`;
@@ -64,7 +64,7 @@ export function makeFields(ctx) {
     const now = Date.now();
     const short = value.length > 40 ? `${value.slice(0, 40)}…` : value;
     trail = { until: now + TRAIL_MS, to: to.map((b) => b.id), last: new Map(), steps: [[now, `${what} added: ${short}`],
-      [now, to.length ? `It went down the road to ${to.map((b) => (camp ? b.title : (b.title_plain || b.title))).join(", ")}.`
+      [now, to.length ? `It went down the road to ${to.map((b) => (b.title_plain || b.title)).join(", ")}.`
         : kind === "task" ? "It waits in To Do for an ork." : "It is kept on the board."]] };
     for (const id of trail.to) {
       const b = buildings.find((x) => x.id === id);
@@ -80,7 +80,7 @@ export function makeFields(ctx) {
       const k = stateOf(b, new Set());
       if (trail.last.get(id) !== k) {
         trail.last.set(id, k);
-        trail.steps.push([now, `${camp ? b.title : (b.title_plain || b.title)}: ${STATE_WORDS[k]}.`]);
+        trail.steps.push([now, `${b.title_plain || b.title}: ${STATE_WORDS[k]}.`]);
         trail.until = now + TRAIL_MS;
       }
     }
@@ -106,7 +106,7 @@ export function makeFields(ctx) {
     if (!w) return;
     const b = (s.buildings || []).find((x) => x.id === w.id) || { title: "Task Fields", type: "fields" };
     name.previousElementSibling.replaceChildren(mark("fields", camp));
-    name.textContent = camp ? b.title : (b.title_plain || b.title);
+    name.textContent = b.title_plain || b.title;
     if (w.error) {
       yard.replaceChildren(h("p", { class: "warn" }, `The board cannot be read: ${w.error}`));
       return;

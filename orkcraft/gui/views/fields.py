@@ -3,6 +3,8 @@ person's own to-dos (a checklist) and the notes (ideas, questions). Every act is
 (core/workers/fields.py): it changes the board file and sends what changed down the roads."""
 from __future__ import annotations
 
+import time
+
 from orkcraft.core.workers.fields import card_text
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import catalog, lexicon, pipes, settle, tasklist
@@ -104,9 +106,25 @@ def _title(args: dict) -> str:
     return title
 
 
+CLIENT_ID_S = 3600       # a card's client id is remembered this long (a phone's queue sends again after a lost reply)
+
+
 def _add(w, args: dict) -> str:
     """A card written as one `text` (on the board at once by its first words; a light model renames it in a
-    moment), or a `title` with a `body` (a to-do of the person's own). The card's id."""
+    moment), or a `title` with a `body` (a to-do of the person's own). The card's id. A `client_id` (a phone's
+    offline queue: an idea dropped underground) writes it once: the same id again gets the first card's id."""
+    cid = args.get("client_id")
+    if not isinstance(cid, str) or not cid:
+        return _write(w, args)
+    now = time.monotonic()
+    made = {k: v for k, v in (getattr(w, "_client_ids", None) or {}).items() if now - v[0] < CLIENT_ID_S}
+    if cid[:64] not in made:
+        made[cid[:64]] = (now, _write(w, args))
+    w._client_ids = made
+    return made[cid[:64]][1]
+
+
+def _write(w, args: dict) -> str:
     lane = text(args, "lane", 200) or "todo"
     written = text(args, "text", 20_000).strip()
     if written:

@@ -1,6 +1,6 @@
 # Design — the town in your pocket: a mobile client
 
-Status: a plan, written 2026-10-06; stage 0 of §9 is built (`orkcraft/gui/mobile.py`,
+Status: a plan, written 2026-10-06; the phone as the console is built (§11); stage 0 of §9 is built (`orkcraft/gui/mobile.py`,
 `GET /api/version` in `orkcraft/gui/server.py`, `tests/test_mobile.py`); stage 1 and 2 are built on the
 host's side (the listener `gui/phones.py`, pairing `gui/pairing.py`, the certificate `gui/phone_tls.py`,
 Settings → Phones `gui/static/js/phones.js`, `mobile.chat`, the notifier `gui/notify.py`;
@@ -128,6 +128,9 @@ are not on it.
 | `mobile.chat` | `limit` (at most 20) | the hall's last messages: `who`, `text` (plain), `ts`, `error`, `offer` | new (stage 2) |
 | `place.report` | `id`, `place`, `change`, `at` | `{"outcome"}`: the phone came to a place or left it ([phone-places.md](phone-places.md)); also `POST /api/place` | new (places, stage 1) |
 | `building.input` | `id`, `input`, `value` | as the act: one of the building's quick actions its compact snapshot names (`quick`), pressed by the person (`mobile.guard`) | yes |
+| `mobile.beat` | — | `true` when a new look began and the phone is greeted: the phone is in front of the person (§11) | new (console) |
+| `mobile.look_done` | — | — : the person read "since your last look" on the phone | new (console) |
+| `act` on an Agent pool | `answer` {`task`, `text`}; `stop_ork` {`ork`} | an ork's own question answered (never a draft's yes, a persona's or a plan sent back: `mobile._pool_question`); one ork stopped from the 🥩 list | yes (console) |
 
 The Warchief's answer arrives in the Town Hall's `detail` (`chat`), which the phone listener does
 not send; stage 2 adds `mobile.chat` (the last messages of the hall's chat, Markdown as plain text)
@@ -212,8 +215,9 @@ on iOS, FCM on Android).
   answers `{"same": true}` in a few bytes. Then it waits for pushes on the socket as the page does.
 - **Answers are idempotent by the question's id.** An answer sent twice, or for a question already
   answered at the desk, gets `That question was answered already` (`Host._answer`); the app says
-  so and drops it. It never queues answers while offline: an ork's question may be stale by the time
-  the phone is back.
+  so and drops it. **Answers given with no signal are kept** (since 2026-10-14, audience.md §2a.3: the metro
+  between two stations) and sent when the town answers again (§11); one stale by then is refused as above and
+  the app says "Not sent: … That question was answered already".
 - A drop into The Pit taken while offline is queued on the phone (it is the person's own content,
   never stale) and sent once with an id, so a retry after a lost `reply` does not drop it twice
   (stage 2: `drop` takes an optional client id the worker remembers for an hour).
@@ -342,8 +346,7 @@ mark or a row lights the building's neighbours, dims the rest and says at the fo
   reach, it shows the kept one the same way.
 - *An answer*: the tile says "Answered: Yes. The ork goes on." at once, and the news line "Answered: Yes",
   till the town's update takes the question away.
-- *How many wait*: on the app's icon where the phone shows a badge (the Badging API of an installed app), and in
-  the page's title, "(3) Orkline".
+- *How many wait*: in the page's title, "(3) Orkline" (no badge on the app's icon since §11: no dot to clear).
 - *A card's trail*: after a task or a note is written on the phone, the widget keeps for 10 minutes where it
   went ("It went down the road to Daily Brief.", or that it waits in To Do) and each change of the buildings
   down the road since ("Daily Brief: at work."). It says what those buildings do, not that it is this card.
@@ -406,3 +409,46 @@ Web Push too.
 
 Not tried on a real phone yet: the iOS hand-over of the token, and the Android install prompt.
 
+## 11. The phone as the console (P1, built 2026-10-14)
+
+The first P1 ([audience.md](audience.md) §2a, [cut-list.md](cut-list.md) §3a–3b,
+[color-pass.md](color-pass.md) §6c): a look between two work tasks, pulled never pushed, under a minute and a half.
+The phone stays a layout of the same app (§10), no second one.
+
+- **Since your last look** (`pwa/look.js`): W1's service with a face (`core/last_look.py` `beat(face="phone")`).
+  One person, one look: the phone and the desktop beat the same look, so a look on the phone counts on the
+  desktop; the greeting goes to the face that began the new look. The phone beats as the desktop does
+  (`LOOK_MIN_S`, `BEAT_S`, `mobile.beat`); the compact snapshot's `last_look` is the digest made small (the
+  questions only counted: they stand in Answers). What was built first, then the problems with what each
+  waits for, the cost; "Back to the camp" (`mobile.look_done`) puts it away. Honest when nothing changed.
+- **The living camp** (`pwa/camp.js`), under it: the shown orkspace's buildings where the person put them
+  (`spot`, the hut's fractions, so a hut moved on the desktop now changes the phone's `rev`), snapped to a grid of
+  cells that fits the screen, more cells (and the camp pans) when it does not: never squeezed. Each building's
+  sprite at its own 1× size (`image-rendering: pixelated`), so a 2× or 3× screen scales it by whole numbers;
+  Office draws its line icon in a card. The roads are lines, solid while the building they leave works. An ork
+  walks by each building at work (`sprites/camp/orks/body/walk-side.png`, served as `camp/ork-walk.png`), about
+  six frames a second, stopped while the page is hidden or the person asks for less motion. ❓ and 🔥 are UI
+  chips at least 24 px high on a building at least 44 px wide. **The camera** goes to the first building that asks
+  (else the first in trouble) and stays where the person pans it until that changes; with nothing waiting, the
+  camp from its corner, fitted when it fits.
+- **A building tapped** opens its card as a sheet from the foot (`util.sheet`; a swipe down from its head puts it
+  back), headed by its mark, with its questions answerable there: from the home screen to an answer in two taps.
+- **The questions** (`pwa/town.js`): Orders' as before, and an Agent pool ork's own (A2: its `asks` block,
+  pinned on top of its task), from the 🥩 list's rows (`mobile._pool_questions`): their context is the task they
+  are pinned on, why it waits (and when the steward decides it), how many assumptions the ork marked. One
+  question: an answer is one tap; several: the taps fill the line, sent as the answer; a line is always there.
+- **Kept with no signal** (`app.js` `deliver`, `util.outbox`): an answer or an idea given while the town does not
+  answer is kept on the phone ("Kept: Yes. It is sent when the signal returns.") and sent once the socket opens;
+  Answers and the bar stay usable while the rest of the kept town is `inert`. An idea carries a client id, so a
+  retry after a lost reply writes it once (`views/fields.py` `_add`).
+- **Drop an idea** (`pwa/dock.js`): the bar's first button, a sheet with one field, "Drop it": a card in the
+  first Task board's Ideas lane (the compact snapshot's `ideas`: its first lane of notes). Voice is the phone's own
+  dictation, on its keyboard: the sheet says so.
+- **🥩 and Stop all** (`pwa/slots.js`): 🥩 in the head (working/limit, ❓ and 🔥 counts) opens the orks at work
+  or asking (`slots`, at most 20 rows), Stop all first (two taps), ⏹ Stop where a phone may stop one ork (an Agent
+  pool's: `stop_ork`, never a terminal's interrupt). A row opens its building's sheet.
+- **No hooks of a feed.** No push for a question in the working hours (W2: `you.hold_push`); no badge on the
+  app's icon any more (how many wait stays in the page's title); no streaks, no counters to clear.
+- **Names.** A building's name on the phone is today's word in both looks (`title_plain`), as CLAUDE.md asks.
+
+Checked by `tests/test_phone_console.py` and, in Chromium at 390 px, `tests/test_pwa_console_browser.py`.

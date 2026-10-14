@@ -6,11 +6,13 @@
 // task on Task Fields. Nothing else, whatever
 // this page sends: the listener refuses the rest.
 
-import { h, store, kept, clock, guessName } from "./util.js";
+import { h, store, kept, outbox, clock, guessName } from "./util.js";
 import { makeDock } from "./dock.js";
 import { makeTown, chosenSpace } from "./town.js";
 import { wearGround } from "./ground.js";
 import { makeFields } from "./fields.js";
+import { makeLook } from "./look.js";
+import { makeSlots } from "./slots.js";
 
 const PROTOCOL = "orkcraft.v1";
 const API = 1;
@@ -172,7 +174,7 @@ function connect() {
   }
   opened = false;
   ws = new WebSocket(`wss://${location.host}/ws`, [PROTOCOL, `bearer.${device.token}`]);
-  ws.onopen = () => { opened = true; retry = 1; status(""); hello(); };
+  ws.onopen = () => { opened = true; retry = 1; status(""); hello(); flush(); };
   ws.onmessage = (e) => {
     let msg;
     try { msg = JSON.parse(e.data); } catch { return; }
@@ -197,7 +199,9 @@ function connect() {
 }
 
 // Away from the town the phone shows what it last saw, greyed and said "as of", and acts on none of it: every
-// button waits for a reply the town sends (docs/design/mobile.md §6). More (and Unpair here) stays usable.
+// button waits for a reply the town sends (docs/design/mobile.md §6). The page's foot (and Unpair here) stays
+// usable, and so do Answers and the bar's Idea: an answer or an idea given with no signal is kept and sent when it
+// returns (`deliver`).
 let seenAt = 0;
 function offline(at, why) {
   if (!ui) return;
@@ -209,6 +213,37 @@ function offline(at, why) {
 function online() {
   document.documentElement.classList.remove("offline");
   for (const el of ui?.content() || []) el.inert = false;
+}
+
+// -- kept with no signal: answers and ideas (audience.md §2a.3) ----------------------------------------------
+
+/** Send now, or with no signal keep it on the phone (`outbox`) and send it when the town answers again: an answer
+ *  (the town says so if it was answered at the desk meanwhile) or an idea (a client id writes it once). `label`
+ *  says what it was, when it is sent. {ok, kept, error, result}. */
+async function deliver(name, args, label) {
+  if (ws && ws.readyState === 1) {
+    const r = await send(name, args);
+    if (r.ok || r.error !== "The town went away") return r;
+  }
+  outbox.add({ name, args, label, at: Date.now() });
+  return { ok: true, kept: true };
+}
+
+let flushing = false;
+async function flush() {
+  if (flushing) return;
+  flushing = true;
+  try {
+    for (const item of outbox.all()) {
+      if (!ws || ws.readyState !== 1) break;
+      const r = await send(item.name, item.args);
+      if (!r.ok && (r.error === "Not connected to the town" || r.error === "The town went away")) break;
+      outbox.remove(item.key);
+      flash(r.ok ? `Sent: ${item.label}` : `Not sent: ${item.label}. ${r.error}`);
+    }
+  } finally {
+    flushing = false;
+  }
 }
 
 function send(name, args = {}) {
@@ -237,13 +272,16 @@ function layout() {
     head: h("header", { class: "ok-hud head" }),
     news: h("div", { class: "news", "aria-live": "polite" }),
   };
-  parts.town = makeTown({ send, flash, rerender: () => { if (town) { parts.town.render(town); ground(town); } } });
+  parts.town = makeTown({ send, deliver, flash, rerender: () => { if (town) { parts.town.render(town); ground(town); } } });
+  parts.look = makeLook({ send, open: (id) => parts.town.open(id) });
   parts.fields = makeFields({ send, flash });
-  parts.dock = makeDock({ send, flash, building, device: () => device, unpair: unpairHere, shared });
-  const [answers, buildings, info] = parts.town.parts;
-  parts.content = () => [answers, parts.fields.el, buildings];   // the town's parts, not its sheet
-  show(parts.status, parts.install, parts.head, parts.news, answers, parts.fields.el, buildings, info,
-    parts.dock.foot, parts.dock.el, ...parts.dock.sheets, parts.fields.sheet);
+  parts.slots = makeSlots({ send, flash, open: (id) => parts.town.open(id) });
+  parts.dock = makeDock({ send, deliver, flash, building, ideas: () => town?.ideas, device: () => device, unpair: unpairHere, shared });
+  const [camp, answers, buildings, info] = parts.town.parts;
+  // The town's parts acted on only while it answers (not its sheets, not Answers: an answer is kept offline).
+  parts.content = () => [camp, parts.fields.el, buildings, parts.look.el];
+  show(parts.status, parts.install, parts.head, parts.news, parts.look.el, camp, answers, parts.fields.el, buildings, info,
+    parts.dock.foot, parts.dock.el, ...parts.dock.sheets, parts.fields.sheet, parts.slots.sheet);
   return parts;
 }
 
@@ -307,7 +345,7 @@ function render(s, keptAt = 0) {
   town = s;
   seenAt = keptAt || Date.now();
   if (!keptAt) kept.set(s);
-  badge((s.alerts || []).length);
+  badge((s.alerts || []).length + (s.pool_questions || []).length);
   applyLook(s.look);
   ground(s);
   const camp = s.look !== "office";
@@ -319,13 +357,14 @@ function render(s, keptAt = 0) {
     h("div", { class: "hud" },
       hud.quota && resource("quota", words.quota || "Quota", hud.quota, hud.quota_level),
       hud.show_gold && hud.gold && resource("gold", words.gold || "Spend", hud.gold, hud.gold_level),
-      Object.assign(resource("meat", words.supply || "Orks", `${hud.agents_working ?? 0}/${hud.agents ?? 0}`, ""),
-        { title: `${hud.agents_working ?? 0} of ${hud.agents ?? 0} orks working` })),
+      meat(resource("meat", words.supply || "Orks", `${hud.agents_working ?? 0}/${hud.agents ?? 0}`, ""), hud, s)),
     h("h1", { class: "ok-hud__brand" }, camp && h("img", { class: "mark", src: "icon-192.png", alt: "" }),
       s.project || "Orkline", s.demo ? h("small", {}, " demo") : null));
 
+  ui.look.render(s);
   ui.town.render(s);
   ui.fields.render(s);
+  ui.slots.render(s);
   ui.dock.render(s);
   if (first) {
     phoneLine();
@@ -333,14 +372,20 @@ function render(s, keptAt = 0) {
   }
 }
 
-// How many orks wait, on the app's icon where the phone shows one (the Badging API of an installed app) and in
-// the page's title.
+// 🥩 The orks at work of all of them, as the desktop's HUD: a tap opens the list of orks at work or asking, with
+// Stop all as its first row (slots.js; ork-console.md §8).
+function meat(res, hud, s) {
+  const sl = s.slots || {};
+  const n = `${hud.agents_working ?? 0} of ${hud.agents ?? 0} orks working`;
+  return h("button", { class: "meat", type: "button", "aria-label": `${n}: the orks at work`, title: n,
+    onclick: () => ui.slots.open() }, res, sl.asks ? h("span", { class: "meat-sig" }, `❓${sl.asks}`) : null,
+    sl.fire ? h("span", { class: "meat-sig" }, `🔥${sl.fire}`) : null);
+}
+
+// How many orks wait, in the page's title only: no badge on the app's icon, no dot to clear (audience.md §2a).
 function badge(n) {
   document.title = n ? `(${n}) Orkline` : "Orkline";
-  try {
-    if (n && navigator.setAppBadge) navigator.setAppBadge(n).catch(() => {});
-    else if (!n && navigator.clearAppBadge) navigator.clearAppBadge().catch(() => {});
-  } catch { /* no badge here */ }
+  try { navigator.clearAppBadge?.().catch(() => {}); } catch { /* no badge here */ }
 }
 
 const building = (type) => (town?.buildings || []).find((b) => b.type === type);
