@@ -242,5 +242,4 @@ Sans — are under the SIL Open Font License 1.1; their licences sit beside them
 
 ---
 
-<sub>Orkline is an independent open-source project, not affiliated with or endorsed by Blizzard
-Entertainment, Microsoft, Games Workshop or any other game publisher.</sub>
+<sub>Orkline is an independent open-source project, not affiliated with any game publisher.</sub>
