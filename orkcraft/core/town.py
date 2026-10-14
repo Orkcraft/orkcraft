@@ -92,8 +92,10 @@ class Town:
 
     # -- telling the faces -----------------------------------------------------------------------
 
-    def toast(self, message: str, title: str = "", severity: str = "information", timeout: float | None = None) -> None:
-        self.bus.publish(b.TOAST, message=message, title=title, severity=severity, timeout=timeout)
+    def toast(self, message: str, title: str = "", severity: str = "information", timeout: float | None = None,
+              kind: str = "") -> None:
+        """`kind` "question": an ork's question, which waits in the person's working hours (gui/you.py)."""
+        self.bus.publish(b.TOAST, message=message, title=title, severity=severity, timeout=timeout, kind=kind)
 
     def tool_failed(self, error: tool_errors.ToolError, where: str = "", retry: str = "",
                     broken: tuple[str, ...] = ()) -> dict[str, Any]:

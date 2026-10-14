@@ -12,6 +12,7 @@ its text.
 
     found = asking.parse(text)       # Asks(questions, assumptions, body): `body` is the text without the block
     asking.rule("Ugluk")             # what the ork's prompt says about it (Claude Code first; others keep `QUESTION:`)
+    asking.rule("Ugluk", "19:00")    # … in the person's working hours: assume and mark unless a wrong guess costs a day
     asking.question_line(found)      # the questions as one paragraph, as a pool keeps its task's question
 
 An ork asks only when it cannot go on without the person (a costly or irreversible choice); a choice that can be
@@ -88,11 +89,21 @@ def question_line(found: Asks) -> str:
     return "\n".join(q.text for q in found.questions)
 
 
-def rule(steward: str = "") -> str:
-    """What an ork's prompt says about asking and marking (Claude Code first, decisions §8)."""
+def at_work(until: str) -> str:
+    """What the rule adds in the person's working hours (audience.md §2a): an ork must not stand all day on one
+    question, so it waits only where a wrong guess costs more than a day."""
+    return (f"The person is at work until {until} and will not answer before then. Do not stop for a question "
+            "unless a wrong guess would cost more than a day's work to undo, or cannot be undone at all; otherwise "
+            "make the likeliest choice, mark it as an assumption, and go on.\n\n")
+
+
+def rule(steward: str = "", work_until: str = "") -> str:
+    """What an ork's prompt says about asking and marking (Claude Code first, decisions §8); `work_until`: the
+    person's working hours hold until then (schedule.py `work_ends`)."""
     who = f"{steward}, the steward, or the person" if steward else "the person"
     return (
         "## Questions and assumptions\n\n"
+        + (at_work(work_until) if work_until else "") +
         "When you are unsure, do one of three things:\n"
         "- a costly or irreversible choice you cannot make without the person: stop and ask;\n"
         "- a choice that can be undone but is not obvious: make it, go on, and mark it as an assumption;\n"

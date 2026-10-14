@@ -29,12 +29,17 @@ PATH = Path(".orkcraft") / "usage" / "events.jsonl"
 TEXT_MAX = 2_000
 
 # The way to ask (ork-console.md §4, §20): what an ork asked, marked, was answered, and where a run stopped.
-ASKED = "question_asked"          # building, ork, task, harness, text, options, via ("block" | "line")
-ASSUMED = "assumption_marked"     # building, ork, task, harness, text
+ASKED = "question_asked"          # building, ork, task, harness, text, options, via ("block" | "line"), at_work
+ASSUMED = "assumption_marked"     # building, ork, task, harness, text, at_work (the person's working hours held)
 ANSWERED = "question_answered"    # building, ork, task, who ("person" | "steward" | "timer"), waited_s, text
 STOPPED = "run_stopped_on_question"   # building, ork, task, harness: the run ended to wait for the person
 # A wait the person skipped (ork-console.md §19): which wait, and how long it had lasted.
 WAIT_SKIPPED = "wait_skipped"     # building, task, wait, waited_s
+# Quiet working hours (audience.md §2a): a question's toast or push held for "since your last look".
+HELD_AT_WORK = "question_held_at_work"   # how ("toast" | "push"), title
+# Leaving the camp (audience.md §2a): "I'm off", and back (by the person, at evening, or the work done).
+CAMP_LEFT = "camp_left"           # carts, first, cap_pct, until, on_power
+CAMP_BACK = "camp_back"           # why ("person" | "evening"), minutes, window_pct, capped, carts_left
 # Mission 1 (first-mission.md): a quest started, done or skipped.
 QUEST_STARTED = "quest_started"   # quest
 QUEST_DONE = "quest_done"         # quest, seconds
@@ -44,8 +49,8 @@ BUILT = "result_built"            # building, kind ("passed" | "launched" | "don
 CART_MOVED = "cart_moved"         # source, target, title: a cart delivered along a road
 LOOKED = "look"                   # started, seconds: the GUI in front of the person (looks a day, their length)
 
-EVENTS = (ASKED, ASSUMED, ANSWERED, STOPPED, WAIT_SKIPPED, QUEST_STARTED, QUEST_DONE, QUEST_SKIPPED,
-          BUILT, CART_MOVED, LOOKED)
+EVENTS = (ASKED, ASSUMED, ANSWERED, STOPPED, WAIT_SKIPPED, HELD_AT_WORK, CAMP_LEFT, CAMP_BACK, QUEST_STARTED,
+          QUEST_DONE, QUEST_SKIPPED, BUILT, CART_MOVED, LOOKED)
 
 _LOCK = threading.Lock()
 

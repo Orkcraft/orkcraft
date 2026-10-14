@@ -1,12 +1,19 @@
 """You in the GUI (docs/design/portrait.md): what the portrait's menu sets for the person, per machine —
-the look (camp | office), Do not disturb and the fire on the roofs (`fire`) — and what gathered while Do not disturb held, said once
-when it ends: in the Warchief's line (`summary`) and to the phones that are open (`on_news`).
+the look (camp | office), Do not disturb, the working hours and the fire on the roofs (`fire`) — and what gathered
+while Do not disturb or the working hours held, said once when they end: in the Warchief's line (`summary`) and to
+the phones that are open (`on_news`).
+
+The working hours (docs/design/audience.md §2a) are quiet for the person's own project: an ork's question raises no
+toast and no push while they hold (it stays pinned in Answers, gathered for "since your last look"), each one held
+is counted into the local event log, and the orks are told to assume and mark where that is safe
+(core/workers/barracks_asks.py). Outside them, as before.
 
     you = You(host)                  # sets `town.hushed`: the Horn keeps quiet while it holds
     host.commands.update(you.commands())
     you.tick()                       # from the host's clock: a timed Do not disturb that ran out
     you.hold_toast(data)             # True: a toast the page does not show now (counted)
     you.hold_push(item)              # True: a line the phones do not get now (counted)
+    you.at_work()                    # the working hours hold: a question's toast and push wait
     you.snapshot()                   # {"look", "mono", "fire", "dnd": {...}, "summary": {...} | None}
 """
 from __future__ import annotations
@@ -16,7 +23,7 @@ from typing import Any, Callable
 
 from orkcraft import disturb, schedule, settings
 from orkcraft.gui import state
-from orkcraft.realm import intents, jobs
+from orkcraft.realm import event_log, intents, jobs
 
 # The role's two letters, the portrait in Office (docs/design/portrait.md §1).
 MONOGRAMS = {"engineer": "SE", "qa": "QA", "eng_manager": "EM", "product_manager": "PM", "designer": "PD",
@@ -37,6 +44,8 @@ class You:
         self.on_news: Callable[[dict], None] = lambda item: None    # gui/notify.py: one line to the phones
         self.summary: dict | None = None
         self._start()
+        self.work_held = 0                     # questions held in today's working hours (said when they end)
+        self._was_at_work = self.at_work()
         host.town.hushed = self.holds
 
     @property
@@ -46,6 +55,14 @@ class You:
     def holds(self) -> bool:
         return disturb.holds(self.machine)
 
+    def at_work(self, now: dt.datetime | None = None) -> bool:
+        return schedule.at_work(self.machine, now)
+
+    def _held_at_work(self, how: str, title: str) -> None:
+        self.work_held += 1
+        root = None if getattr(self.host.town, "demo", False) else self.host.town.repo_root
+        event_log.record(root, event_log.HELD_AT_WORK, how=how, title=title)
+
     # -- what gathers while it holds ------------------------------------------------------------------
 
     def _start(self) -> None:
@@ -53,7 +70,10 @@ class You:
         self.since = jobs.now_iso()
 
     def hold_toast(self, data: dict) -> bool:
-        """An error still shows (and is counted); any other toast waits."""
+        """An error still shows (and is counted); any other toast waits. In the working hours a question's waits."""
+        if data.get("kind") == "question" and data.get("severity") != "error" and self.at_work():
+            self._held_at_work("toast", str(data.get("title_plain") or data.get("title") or ""))
+            return True
         if not self.holds():
             return False
         if data.get("severity") == "error":
@@ -63,7 +83,11 @@ class You:
         return True
 
     def hold_push(self, item: dict) -> bool:
-        """Every line to the phones waits but one: the spend over its limit, the budget spent."""
+        """Every line to the phones waits but one: the spend over its limit, the budget spent. In the working hours
+        an ork's question waits (the phone's Answers still has it when the person looks)."""
+        if item.get("kind") == "alert" and self.at_work():
+            self._held_at_work("push", str(item.get("title") or ""))
+            return True
         if not self.holds() or (item.get("kind") == "gold" and item.get("level") == "over"):
             return False
         self.held["pushes"] += 1
@@ -81,7 +105,7 @@ class You:
             n += k
         return n, first
 
-    def _end(self) -> None:
+    def _end(self, lead: str = "While you were away") -> None:
         """It ended: everything that gathered, as one line in the Warchief's line and one to the phones."""
         questions = len(self.host.muster.roster.alerts)
         sounds, horn_id = self._kept()
@@ -99,7 +123,7 @@ class You:
         hud = state.hud(self.host.town, self.host.muster, self.host.treasury, self.host.limits())
         if hud.get("show_gold") and hud.get("gold_level") in ("warn", "over"):
             parts.append(f"spend at {hud['gold']}")
-        text = "While you were away: " + (", ".join(parts) if parts else "nothing came") + "."
+        text = f"{lead}: " + (", ".join(parts) if parts else "nothing came") + "."
         self.summary = {"id": self.since, "text": text, "open": "orders" if questions else ("horn" if sounds else ""),
                         "building": horn_id if not questions else ""}
         self.on_news({"kind": "dnd", "line": text})
@@ -107,10 +131,23 @@ class You:
 
     # -- the clock ------------------------------------------------------------------------------------
 
-    def tick(self) -> None:
+    def tick(self, now: dt.datetime | None = None) -> None:
         if disturb.ended(self.machine):
             settings.save(self.machine)
             self._end()
+            self.host.on_change()
+        working = self.at_work(now)
+        if self._was_at_work and not working:
+            self._work_over()
+        self._was_at_work = working
+
+    def _work_over(self) -> None:
+        """The working day ended: the questions that wait are said once, unless nothing was held and none waits."""
+        held, self.work_held = self.work_held, 0
+        if not held and not self.host.muster.roster.alerts:
+            return
+        if not self.holds():
+            self._end("Your working day is over")
             self.host.on_change()
 
     # -- what the page sees ---------------------------------------------------------------------------
@@ -121,11 +158,13 @@ class You:
         morning = disturb.morning(m, now)
         role = intents.role(str((m.profile or {}).get("role") or "")).id
         return {"look": settings.look_now(m, now), "look_choice": m.look,
-                "shift": f"{schedule.fmt(settings.SHIFT[0])}–{schedule.fmt(settings.SHIFT[1])}",
+                "shift": settings.shift(m).label(),
                 "mono": MONOGRAMS.get(role, "··"), "role": role if role in MONOGRAMS else "",
                 "fire": m.fire,
                 "dnd": {"on": disturb.holds(m, now), "choice": disturb.choice(m, now), "label": disturb.label(m, now),
                         "morning": schedule.fmt(morning.hour * 60 + morning.minute)},
+                "work": {"set": m.work is not None, "on": self.at_work(now), "held": self.work_held,
+                         **(m.work or schedule.DEFAULT_WORK).to_dict()},
                 "summary": self.summary}
 
     # -- the page's commands --------------------------------------------------------------------------
@@ -157,6 +196,20 @@ class You:
         self.host.on_change()
         return self.snapshot()
 
+    def _work(self, args: dict) -> dict[str, Any]:
+        """The working hours: {"start": "10:00", "end": "19:00"} sets them, {"on": false} turns them off."""
+        if args.get("on") is False:
+            self.machine.work = None
+        else:
+            span = schedule.Span.parse(str(args.get("start", "")), str(args.get("end", "")))
+            if span is None:
+                raise YouError("Working hours are a start and an end, half an hour apart at least")
+            self.machine.work = span
+        settings.save(self.machine)
+        self._was_at_work = self.at_work()
+        self.host.on_change()
+        return self.snapshot()
+
     def _dnd(self, args: dict) -> dict[str, Any]:
         what = args.get("dnd")
         if what not in disturb.CHOICES:
@@ -178,4 +231,4 @@ class You:
 
     def commands(self) -> dict[str, Callable[[dict], Any]]:
         return {"you.look": self._look, "you.dnd": self._dnd, "you.fire": self._fire, "you.seen": self._seen,
-                "you.quiet": self._quiet}
+                "you.quiet": self._quiet, "you.work": self._work}

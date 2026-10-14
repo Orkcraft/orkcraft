@@ -178,7 +178,7 @@ class Host:
 
     def _event(self, event: bus.Event) -> None:
         if event.topic == bus.TOAST:
-            data = {k: event.data.get(k) for k in ("message", "title", "severity", "timeout")}
+            data = {k: event.data.get(k) for k in ("message", "title", "severity", "timeout", "kind")}
             data["message_plain"] = modes.plain(str(data["message"] or ""))
             data["title_plain"] = modes.plain(str(data["title"] or ""))
             if not self.you.hold_toast(data):          # Do not disturb: only an error shows

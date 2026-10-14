@@ -3,6 +3,7 @@
     s = settings.load()              # never raises; defaults for anything missing or broken
     s.tools["claude"].billing        # "subscription" | "api"
     s.quiet                          # 🌙 do-not-disturb hours (schedule.py)
+    s.work                           # the person's working hours: quiet for questions (schedule.py `at_work`)
     s.autonomy                       # 0 ⛓️ in chains · 1 🕰 on the clock · 2 ⛓️‍💥 unchained (autonomy.py)
     s.autonomy_wait                  # minutes a question waits for the operator (1..60)
     s.rebuild_wait                   # hours (the operator around) a rebuild waits (1..48)
@@ -57,7 +58,12 @@ def look_now(s: "MachineSettings", now=None) -> str:
         return s.look
     import datetime as dt
     t = now or dt.datetime.now()
-    return "office" if SHIFT[0] <= t.hour * 60 + t.minute < SHIFT[1] else "camp"
+    return "office" if shift(s).contains(t.hour * 60 + t.minute) else "camp"
+
+
+def shift(s: "MachineSettings") -> Span:
+    """The work day the look follows: the person's working hours once set, else 09:00–17:00."""
+    return s.work or Span(SHIFT[0], SHIFT[1] - SHIFT[0])
 RECENT_FOLDERS = 8                       # the recent folders a Wiki's picker offers               # the GUI's two looks; camp the default
 
 
@@ -72,6 +78,7 @@ class MachineSettings:
     tools: dict[str, ToolChoice] = field(default_factory=lambda: {t: ToolChoice() for t in TOOLS})
     onboarded: bool = False       # the machine's part of onboarding is done
     quiet: Span | None = None     # 🌙 do-not-disturb hours; None = off
+    work: Span | None = None      # the person's working hours (no push or toast for questions); None = not set
     autonomy: int = autonomy_.DEFAULT_LEVEL   # 0 chains · 1 clock · 2 free; kept as a word (autonomy.py)
     autonomy_wait: int = autonomy_.DEFAULT_WAIT   # a question: minutes
     rebuild_wait: int = autonomy_.DEFAULT_REBUILD   # a rebuild: hours the operator is around
@@ -82,7 +89,7 @@ class MachineSettings:
     agy_warder_checked: bool = False
     usage: bool | None = None     # anonymous usage stats (core/usage.py): None until the operator answers
     install_id: str = ""          # a random id while they share them; forgotten when they stop
-    keep_awake: bool = True       # the computer does not sleep by itself while Orkline is open (gui/awake.py)
+    keep_awake: bool = True       # the computer does not sleep by itself while carts are in work, on power (gui/away.py)
     fire: bool = True             # flames over a building whose ork has waited a minute or more (the GUI's huts)
     updates: str = "critical"     # which updates install by themselves when the town opens (core/updates.py)
     main_tool: str = ""           # the tool decisions run on (realm/harnesses.py); "" the first one on
@@ -102,6 +109,7 @@ class MachineSettings:
             "tools": {t: {"enabled": c.enabled, "billing": c.billing} for t, c in self.tools.items()},
             "onboarded": self.onboarded,
             "quiet": self.quiet.to_dict() if self.quiet else None,
+            "work": self.work.to_dict() if self.work else None,
             "autonomy": autonomy_.word(self.autonomy),
             "autonomy_wait": self.autonomy_wait,
             "rebuild_wait": self.rebuild_wait,
@@ -133,6 +141,7 @@ class MachineSettings:
                                         billing=billing if billing in BILLINGS else "subscription")
         s.onboarded = bool(data.get("onboarded", False))
         s.quiet = Span.from_dict(data.get("quiet"))
+        s.work = Span.from_dict(data.get("work"))
         s.autonomy = autonomy_.of(data.get("autonomy"))
         s.autonomy_wait = autonomy_.wait_of(data.get("autonomy_wait"))
         s.rebuild_wait = autonomy_.rebuild_of(data.get("rebuild_wait"))

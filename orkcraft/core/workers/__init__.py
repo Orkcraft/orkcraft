@@ -212,8 +212,8 @@ class Worker:
         return bool(self.town.emit_typed(self.building_id, event_id, value, title, tuple(trail), ref, *args, **kw))
 
     def toast(self, message: str, title: str = "", severity: str = "information",
-              timeout: float | None = None) -> None:
-        self.town.call(self.town.toast, message, title or self.title, severity, timeout)
+              timeout: float | None = None, kind: str = "") -> None:
+        self.town.call(self.town.toast, message, title or self.title, severity, timeout, kind)
 
     def out_of_gold(self, what: str = "") -> bool:
         """The run's 🪙 limit is reached: no model call starts (the person is told when `what` says what waits)."""

@@ -1,7 +1,8 @@
 """❓ An Agent pool's way to ask and to mark (docs/design/ork-console.md §4, §20; decisions §8, Claude Code first).
 
 An ork on Claude Code is told to end its run with an `asks` block (realm/asking.py): its questions, each with the
-answers to pick from, and the assumptions it made. Here the block is taken off the ork's report and read:
+answers to pick from, and the assumptions it made (in the person's working hours: only where a wrong guess costs
+more than a day, the rest assumed and marked). Here the block is taken off the ork's report and read:
 
     questions     the steward answers what its rules settle; the rest wait for the person, pinned on top of the
                   task (`task.questions`, each with its options), until answered
@@ -15,6 +16,7 @@ from __future__ import annotations
 
 import time
 
+from orkcraft import schedule
 from orkcraft.realm import asking, event_log
 from orkcraft.realm import barracks as bk
 from orkcraft.realm.road_agents import resolve
@@ -31,11 +33,19 @@ class AsksMixin:
     def _count(self, event: str, **fields) -> None:
         event_log.record(self._events_root(), event, building=self.building_id, **fields)
 
+    def _work_until(self) -> str:
+        """"19:00" while the person's working hours hold (schedule.py), else ""."""
+        ends = schedule.work_ends(self.town.machine)
+        return schedule.fmt(ends.hour * 60 + ends.minute) if ends else ""
+
     def ask_rule(self, harness: str) -> str:
-        """What the ork's prompt says about asking: the block for Claude Code, the one line for the others."""
+        """What the ork's prompt says about asking: the block for Claude Code, the one line for the others. In the
+        person's working hours both say to assume and mark unless a wrong guess costs more than a day."""
+        until = self._work_until()
         if self._block_tool(harness):
-            return asking.rule(self.keeper)
-        return ("If you cannot go on without a decision, stop and end your answer with one line `QUESTION: …`; "
+            return asking.rule(self.keeper, until)
+        return ((asking.at_work(until) if until else "") +
+                "If you cannot go on without a decision, stop and end your answer with one line `QUESTION: …`; "
                 f"{self.keeper}, the steward, will answer.")
 
     @staticmethod
@@ -50,7 +60,8 @@ class AsksMixin:
         questions on `out` too; the questions as one paragraph ("" when it asks nothing)."""
         found = asking.parse(out.text)
         out.text = found.body
-        who = dict(ork=orc.name, task=task.id, harness=resolve(orc.harness) if orc.harness else "")
+        who = dict(ork=orc.name, task=task.id, harness=resolve(orc.harness) if orc.harness else "",
+                   at_work=schedule.at_work(self.town.machine))
         for a in found.assumptions:
             if a not in out.assumptions:
                 out.assumptions.append(a)

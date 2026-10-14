@@ -455,7 +455,7 @@ class CouncilWorker(Worker):
                 except OSError:
                     pass
         elif d.outcome == "asked":
-            self.toast(f"{d.title[:60]}: {d.question[:200]}", title=f"🔥 {ICON} Clan Fire asks")
+            self.toast(f"{d.title[:60]}: {d.question[:200]}", title=f"🔥 {ICON} Clan Fire asks", kind="question")
         if d.outcome != "asked":
             delivery.ran(self.town, roads.HandlerRun(self.building_id, "clan", "team", d.id, 0.0, 0.0,
                                                      outcome="error" if d.outcome == "error" else "done",
