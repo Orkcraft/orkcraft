@@ -1598,6 +1598,27 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "orks/body/door.png",
+   "size": [
+    384,
+    168
+   ],
+   "frame": [
+    96,
+    168
+   ],
+   "frames": 4,
+   "pitch": 7.43,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o6-door.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8
+  },
+  {
    "file": "orks/body/idle.png",
    "size": [
     160,

@@ -915,6 +915,10 @@
    },
    "retired": true
   },
+  {"name": "o6-door", "file": "o6-door.png", "degrid": true, "show": 1,
+   "about": "v3-prompts §13.2: the capped ork stepping out of a wooden door (gen_sheets o6-door #2), four frames: closed, opening, half out, out",
+   "groups": [{"size": [96, 176], "anchor": "feet", "fps": 8,
+               "items": [{"file": "orks/body/door.png", "frames": [{"order": 0}, {"order": 1}, {"order": 2}, {"order": 3}]}]}]},
   {
    "name": "o3-states",
    "file": "o3-states-r1.png",

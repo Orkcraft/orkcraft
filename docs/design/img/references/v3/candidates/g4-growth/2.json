@@ -1,0 +1,71 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "prompt": "No shadows. Pixel-art sprite sheet in exactly the style and palette of the attached image. Crisp hard pixels on a strict grid, no anti-aliasing, no blur, no gradients, each sprite with a dark 1-pixel outline, drawn at its final size with no finer detail than that size can hold. One three-quarter top-down projection, never isometric. Sprites in a neat grid with even spacing on a flat solid #FF00FF magenta background, nothing touching, no ground under them, no text unless asked. Bright yellow and bright red appear nowhere.\n\nGrowth marks for the buildings of the attached sheet b1-core, eight pieces in two rows: a footing of stone courses under a building, one course, two courses, three courses (wide and low, about the work hall's width); a cloth banner for a roof on a short pole in ivory; the same ivory banner on a taller pole; a teal-and-plum banner with a crest on the tallest pole (no gold); a lean-to roof over stacked logs (wide and low); a crystal on a whetstone (tall and narrow).\n\nEvery building faces the viewer: its front wall parallel to the bottom edge of the image, the door in the middle of the front, seen slightly from above, exactly like the task board in the attached sheet b1-core. Never turned at an angle, never isometric.\n\nNo ground under the building: no patch of grass, no base square, no plinth of earth.\n\nNo frames, no boxes, no grid lines, no borders between sprites; each sprite floats alone on the magenta.\n\nNo shadows, no smoke, no glow.\n\nKeep exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #7cbd40), the paths warm sand (about #e4b469); warm honey wood, light cool stone, teal and plum cloth, cream bone.\n\nNo yellow, no orange and no red anywhere: those colours are reserved for the product's signals. The wood a muted honey brown, never orange.\n\nOutput the sheet as a PNG image.\n\nAttached, in order: f1-town, b1-core, roles-2. F1 is the approved frame: its style and colours rule.",
+ "sheet": "g4-growth",
+ "file": "2.jpg",
+ "image": [
+  2752,
+  1536
+ ],
+ "pitch": 11.46,
+ "art_px": 62,
+ "art_range": [
+  48,
+  260
+ ],
+ "grid": [
+  239,
+  133
+ ],
+ "pieces": 9,
+ "expected": 8,
+ "sizes": [
+  [
+   31,
+   20
+  ],
+  [
+   72,
+   34
+  ],
+  [
+   73,
+   40
+  ],
+  [
+   68,
+   56
+  ],
+  [
+   75,
+   63
+  ],
+  [
+   25,
+   37
+  ],
+  [
+   26,
+   61
+  ],
+  [
+   30,
+   62
+  ],
+  [
+   34,
+   53
+  ]
+ ],
+ "degrid": false,
+ "signal_px": 0,
+ "signal_pct": 0.0,
+ "cast_px": 96,
+ "cast_pct": 0.68,
+ "ok": false,
+ "issues": [
+  "9 pieces found, 8 expected"
+ ]
+}

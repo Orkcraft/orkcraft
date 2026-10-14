@@ -1,0 +1,19 @@
+No shadows. Pixel-art sprite sheet in exactly the style and palette of the attached image. Crisp hard pixels on a strict grid, no anti-aliasing, no blur, no gradients, each sprite with a dark 1-pixel outline, drawn at its final size with no finer detail than that size can hold. One three-quarter top-down projection, never isometric. Sprites in a neat grid with even spacing on a flat solid #FF00FF magenta background, nothing touching, no ground under them, no text unless asked. Bright yellow and bright red appear nowhere.
+
+Eleven player characters, one each, front-facing, full body, in two rows, funny and friendly and readable at small size: 1. Burnout Peon: a tired orc in a hoodie with a coffee mug. 2. Bug Ork: an orc with a magnifying glass and a bug jar. 3. The Jira Lich: a lich in a robe holding a ticket board. 4. Roadmap Mummy: a mummy holding a long rolled roadmap. 5. Gradient-Sick Elf: a dizzy elf with a colour palette. 6. Lore Elf: an elf with a big book of lore. 7. Keyword Gnome: a gnome with a magnifier over word tags. 8. Growth-Hack Gnome: a gnome with a megaphone-shaped bone horn and a rising chart. 9. Data-Mining Goblin: a goblin with a pickaxe and glowing teal data crystals. 10. Indie Knight: a small knight with a laptop as a shield. 11. Wandering Ghost: a friendly ghost with a lantern, its light teal-white.
+
+Drawn with exactly the same pixel size as the orcs of the attached sheet roles-2, each figure about as tall as one of them, the same dark outline.
+
+No frames, no boxes, no grid lines, no borders between sprites; each sprite floats alone on the magenta.
+
+No shadows, no smoke, no glow.
+
+Keep exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #7cbd40), the paths warm sand (about #e4b469); warm honey wood, light cool stone, teal and plum cloth, cream bone.
+
+No yellow, no orange and no red anywhere: those colours are reserved for the product's signals. The wood a muted honey brown, never orange.
+
+Output the sheet as a PNG image.
+
+Attached, in order: f1-town, roles-2, b1-core. F1 is the approved frame: its style and colours rule.
+
+References: f1-town.jpg, ../0.3/roles-2.jpg, b1-core.jpg

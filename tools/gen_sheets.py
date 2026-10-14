@@ -78,6 +78,10 @@ ORK = [
     "shirt and trousers.",
     "Legs and arms clearly swing in every walk; the same facing in every frame of a row.",
 ]
+CHARACTER = [
+    "Drawn with exactly the same pixel size as the orcs of the attached sheet roles-2, each figure about as tall as "
+    "one of them, the same dark outline.",
+]
 CAPPED = [                                  # the main ork since v3-prompts §12: the capped ork of the 0.3 sheets
     "The same orc as the attached sheets roles-2 and o3-states-r1: a cloth cap, a leather apron over a shirt, a tool "
     "belt, olive-moss skin, small tusks; the same pixel size and proportions as in them, the same outline.",
@@ -215,6 +219,58 @@ SHEETS: dict[str, dict] = {
                   "viewer.",
         "about": "v3-prompts §12: the capped ork stepping out of a door (o1 had it), 4 frames",
     },
+    # round 9, v3-prompts §13: buildings as stations on the line, the person's class, growth in v3
+    "st-dispatch": {
+        "kind": "building", "expect": 1, "aspect": "4:3", "refs": ["r03"],
+        "prompt": "Task board as a station: a dispatcher's booth on wooden stilts at the start of a mine-cart line, a "
+                  "large board of pinned work-order sheets on its side, a big lever and a semaphore arm; in front of "
+                  "it a short siding of track with three mine carts waiting in a row. About the width of the work "
+                  "hall with the teal roof in the attached sheet b1-core. One picture, alone on the magenta.",
+        "about": "§13.1: the Task board as a dispatcher's booth with a siding of waiting carts",
+    },
+    "st-gate": {
+        "kind": "building", "expect": 2, "aspect": "16:9", "refs": ["r03"],
+        "prompt": "Review gate as a station: the rough timber-and-stone gate with bone tusks, plum banners and the "
+                  "small wooden \"PR\" plate of the attached sheet b1-core, now with a wooden boom barrier across the "
+                  "track that runs through it and a weighbridge plate set in the track before it. Two frames side by "
+                  "side: the barrier down; the barrier up.",
+        "about": "§13.1: the Review gate with a boom barrier (down, up) and a weighbridge",
+    },
+    "st-mine": {
+        "kind": "building", "expect": 1, "aspect": "4:3", "refs": ["r03"],
+        "prompt": "Research as a station: a small mine entrance in a rocky mound, a wooden headframe with a wheel on "
+                  "top, a mine-cart track running into the entrance. One picture, alone on the magenta.",
+        "about": "§13.1: Research as a mine with a headframe (type `mine`)",
+    },
+    "o7-prospector": {
+        "kind": "ork-capped", "expect": 4, "aspect": "21:9", "refs": ["r03", "o3r", "b1"],
+        "prompt": "The worker orc as the Prospector (the keeper of the mine), four poses in one row: standing facing "
+                  "the viewer; walking; swinging a pick; holding up a small sack. A miner's lamp on the cap, its "
+                  "light teal-white (never yellow), a pick, a small sack.",
+        "about": "§13.1: the capped ork as the Prospector, keeper of the mine",
+    },
+    "k1-classes": {
+        "kind": "character", "expect": 11, "aspect": "16:9", "refs": ["r03", "b1"],
+        "prompt": "Eleven player characters, one each, front-facing, full body, in two rows, funny and friendly and "
+                  "readable at small size: 1. Burnout Peon: a tired orc in a hoodie with a coffee mug. 2. Bug Ork: an "
+                  "orc with a magnifying glass and a bug jar. 3. The Jira Lich: a lich in a robe holding a ticket "
+                  "board. 4. Roadmap Mummy: a mummy holding a long rolled roadmap. 5. Gradient-Sick Elf: a dizzy elf "
+                  "with a colour palette. 6. Lore Elf: an elf with a big book of lore. 7. Keyword Gnome: a gnome with "
+                  "a magnifier over word tags. 8. Growth-Hack Gnome: a gnome with a megaphone-shaped bone horn and a "
+                  "rising chart. 9. Data-Mining Goblin: a goblin with a pickaxe and glowing teal data crystals. "
+                  "10. Indie Knight: a small knight with a laptop as a shield. 11. Wandering Ghost: a friendly ghost "
+                  "with a lantern, its light teal-white.",
+        "about": "§13.3: the person's eleven classes as figures in the camp",
+    },
+    "g4-growth": {
+        "kind": "building", "expect": 8, "aspect": "16:9", "refs": ["r03"],
+        "prompt": "Growth marks for the buildings of the attached sheet b1-core, eight pieces in two rows: a footing "
+                  "of stone courses under a building, one course, two courses, three courses (wide and low, about "
+                  "the work hall's width); a cloth banner for a roof on a short pole in ivory; the same ivory banner "
+                  "on a taller pole; a teal-and-plum banner with a crest on the tallest pole (no gold); a lean-to "
+                  "roof over stacked logs (wide and low); a crystal on a whetstone (tall and narrow).",
+        "about": "§13.4: levels I–III as stone footings and roof banners; the goal's two annexes",
+    },
     "c2-curves": {
         "kind": "track", "expect": 6, "aspect": "3:2",
         "prompt": "A wooden mine-cart track, 64 × 64 tiles, six pieces in a row with magenta round each: four curves, "
@@ -242,7 +298,8 @@ def build_prompt(name: str) -> str:
     if sh["kind"] == "signals":                  # the one sheet that may have them
         head = head.replace("Bright yellow and bright red appear nowhere.", SIGNALS)
     lines = [head, sh["prompt"]]
-    lines += {"building": BUILDING, "ork": ORK, "ork-capped": CAPPED, "track": TRACK}.get(sh["kind"], [])
+    lines += {"building": BUILDING, "ork": ORK, "ork-capped": CAPPED, "character": CHARACTER,
+              "track": TRACK}.get(sh["kind"], [])
     if sh["expect"] == 1:                       # one building alone: the model draws it as large as the image
         lines.append(ALONE)
     lines += [s for s in ALL if not (sh["kind"] == "signals" and s.startswith("No yellow"))]
