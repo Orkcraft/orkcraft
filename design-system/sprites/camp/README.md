@@ -20,7 +20,7 @@ tiled 3 × 3 and 5 × 4, at 4×, to look for seams). A new sheet is a new entry 
 | folder | sprites | frame | anchor |
 |---|---|---|---|
 | `orks/body/` | `idle` (4), `walk-down`, `walk-up`, `walk-side` (6 each; mirrored for the other side), `work` (6, the hammer), `sit` (2, on a log) | 32 × 48; `work`, `sit` 48 × 48 | the feet, bottom centre |
-| `orks/roles/` | `warchief`, `grunt`, `mason`, `alchemist`, `mechanic`, `treasurer`, `seer`, `quartermaster`, `pathfinder` | 48 × 56 | bottom centre |
+| `orks/roles/` | `warchief`, `grunt`, `mason`, `mechanic`, `seer`, `quartermaster`, `pathfinder` (orks-round3); `taskmaster`, `lookout`, `loader`, `farseer`, `warder`, `artisan`, `treasurer`, `alchemist` (roles-2) | 48 × 56; roles-2 72 × 56 (what they hold reaches wide) | bottom centre |
 | `orks/faces/` | `<role>` and `<role>-16` for every role of `faces.roles` in `tools/camp_sheets.json`; `plain` | 32 × 24; `-16` 16 × 16 (the head's half, 16 × 12, at the foot) | bottom centre |
 | `carts/` | `side`, `rolling-side` (4), `front`; `loads/<code\|asset\|message\|doc\|bundle>` and `-front`; `flags/<ask\|held\|fire>` | 48 × 40 (front 48 × 48); loads 48 × 32; flags 40 × 32 | bottom centre (flags: the pole's foot, bottom left) |
 | `track/` | `straight-h`, `straight-v`, `corner-nw` (and `-1`), `corner-ne`, `corner-se`, `cross`, `switch-e`, `merge-e`, `stop-e`, `stop-n` | 32 × 32 | top left |
@@ -42,15 +42,17 @@ The interface's small faces (the 🥩 list, the console, Info's ork card, the Wa
 each role's head and headgear cut from its body by `tools/camp_faces.py` (`--sheet DIR` writes the 16 px check, in
 colour and in grey). `js/icons.js` `FACES` says which ork wears which role's face; a role with no body yet has the
 **plain head** (the Grunt's head, its cap turned to skin) in its own file, so its body lands by rerunning the tool,
-with no code changed. On the plain head now: Taskmaster, Lookout, Loader, Farseer, Warder, Artisan, and Scavenger,
-Grot Pointa, Miller, Hornblower, Chieftain, Drummer, Woodcutter, Scroll Scrapper, Bard, Prospector, Smith, Crag
-Carver, Tinker, Peon.
+with no code changed. On the plain head now (no body yet): Scavenger, Grot Pointa, Miller, Hornblower, Chieftain,
+Drummer, Woodcutter, Scroll Scrapper, Bard, Prospector, Smith, Crag Carver, Tinker, Peon.
 
-**Rule 3 at 16 px and in grey (2026-10-14):** told apart: the Warchief (horns), the Quartermaster (helmet), the Seer
-(hood), the Pathfinder (fur hat with ear flaps). **Not told apart:** the Treasurer and the Grunt (the same cap, nothing
-else in the head); the Alchemist and the Mechanic (both goggles under the cap); the Mason's bandana reads close to the
-Grunt's cap in grey. Expected until the owner's new sheet: the Treasurer's own headgear and the Alchemist's pointed
-hat. At 32 × 24 all nine are told apart in colour, but the four caps still lean on the face's details.
+**Rule 3 at 16 px and in grey (2026-10-14, with the second roles sheet):** told apart: the Warchief (horns), the
+Seer (dark hood), the Mason (bandana), the Alchemist (now its pointed hat, apart from the Mechanic), the Artisan
+(straw hat), the Farseer (a narrow dark hood with its charm, apart from the Alchemist's wide brown brim, if only just),
+the Taskmaster (a dark flat cap against the Grunt's light one). **Not told apart:** the **Warder and the
+Quartermaster** (the same iron helmet: one grey blob; ork-icons.md §6 proposes a ledger and stamp for the
+Quartermaster); the **Treasurer and the Mechanic** (now both a cap over round lenses); the **Loader and the
+Pathfinder** (both a cap with ear flaps); the Lookout's hood leans on its spyglass to part from the Seer's. At
+32 × 24 in colour all fifteen are told apart.
 
 ## Where the placeholders fall short of v2 (the artist fixes them)
 

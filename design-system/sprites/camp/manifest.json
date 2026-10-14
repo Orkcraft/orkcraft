@@ -2836,8 +2836,8 @@
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "orks/roles/grunt.png",
-   "plain": true,
+   "source": "orks/roles/artisan.png",
+   "plain": false,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
   },
@@ -2854,8 +2854,8 @@
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "orks/roles/grunt.png",
-   "plain": true,
+   "source": "orks/roles/artisan.png",
+   "plain": false,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
   },
@@ -3016,8 +3016,8 @@
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "orks/roles/grunt.png",
-   "plain": true,
+   "source": "orks/roles/farseer.png",
+   "plain": false,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
   },
@@ -3034,8 +3034,8 @@
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "orks/roles/grunt.png",
-   "plain": true,
+   "source": "orks/roles/farseer.png",
+   "plain": false,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
   },
@@ -3160,8 +3160,8 @@
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "orks/roles/grunt.png",
-   "plain": true,
+   "source": "orks/roles/loader.png",
+   "plain": false,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
   },
@@ -3178,8 +3178,8 @@
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "orks/roles/grunt.png",
-   "plain": true,
+   "source": "orks/roles/loader.png",
+   "plain": false,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
   },
@@ -3196,8 +3196,8 @@
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "orks/roles/grunt.png",
-   "plain": true,
+   "source": "orks/roles/lookout.png",
+   "plain": false,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
   },
@@ -3214,8 +3214,8 @@
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "orks/roles/grunt.png",
-   "plain": true,
+   "source": "orks/roles/lookout.png",
+   "plain": false,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
   },
@@ -3664,8 +3664,8 @@
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "orks/roles/grunt.png",
-   "plain": true,
+   "source": "orks/roles/taskmaster.png",
+   "plain": false,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
   },
@@ -3682,8 +3682,8 @@
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "orks/roles/grunt.png",
-   "plain": true,
+   "source": "orks/roles/taskmaster.png",
+   "plain": false,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
   },
@@ -3808,8 +3808,8 @@
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "orks/roles/grunt.png",
-   "plain": true,
+   "source": "orks/roles/warder.png",
+   "plain": false,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
   },
@@ -3826,8 +3826,8 @@
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "orks/roles/grunt.png",
-   "plain": true,
+   "source": "orks/roles/warder.png",
+   "plain": false,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_faces.py"
   },
@@ -3870,18 +3870,80 @@
   {
    "file": "orks/roles/alchemist.png",
    "size": [
-    48,
+    72,
     56
    ],
    "frame": [
-    48,
+    72,
     56
    ],
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
-   "scale": 1.0,
+   "source": "roles-2.jpg",
+   "scale": 1.315,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64",
+    "#5f7a6a",
+    "#a08a50"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/artisan.png",
+   "size": [
+    72,
+    56
+   ],
+   "frame": [
+    72,
+    56
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "roles-2.jpg",
+   "scale": 1.315,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64",
+    "#5f7a6a",
+    "#a08a50"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/farseer.png",
+   "size": [
+    72,
+    56
+   ],
+   "frame": [
+    72,
+    56
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "roles-2.jpg",
+   "scale": 1.315,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [
@@ -3913,6 +3975,68 @@
    "placeholder": true,
    "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
    "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64",
+    "#5f7a6a",
+    "#a08a50"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/loader.png",
+   "size": [
+    72,
+    56
+   ],
+   "frame": [
+    72,
+    56
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "roles-2.jpg",
+   "scale": 1.315,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64",
+    "#5f7a6a",
+    "#a08a50"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/lookout.png",
+   "size": [
+    72,
+    56
+   ],
+   "frame": [
+    72,
+    56
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "roles-2.jpg",
+   "scale": 1.315,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [
@@ -4085,20 +4209,51 @@
    ]
   },
   {
-   "file": "orks/roles/treasurer.png",
+   "file": "orks/roles/taskmaster.png",
    "size": [
-    48,
+    72,
     56
    ],
    "frame": [
-    48,
+    72,
     56
    ],
    "frames": 1,
    "anchor": "bottom-centre",
    "placeholder": true,
-   "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
-   "scale": 1.0,
+   "source": "roles-2.jpg",
+   "scale": 1.315,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64",
+    "#5f7a6a",
+    "#a08a50"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/treasurer.png",
+   "size": [
+    72,
+    56
+   ],
+   "frame": [
+    72,
+    56
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "roles-2.jpg",
+   "scale": 1.315,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [
@@ -4130,6 +4285,37 @@
    "placeholder": true,
    "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
    "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "tones": [
+    "#8fb052",
+    "#5a7a34",
+    "#3e5a26",
+    "#6a5240",
+    "#4a3a30",
+    "#8a7a64",
+    "#5f7a6a",
+    "#a08a50"
+   ],
+   "slots": [
+    "role"
+   ]
+  },
+  {
+   "file": "orks/roles/warder.png",
+   "size": [
+    72,
+    56
+   ],
+   "frame": [
+    72,
+    56
+   ],
+   "frames": 1,
+   "anchor": "bottom-centre",
+   "placeholder": true,
+   "source": "roles-2.jpg",
+   "scale": 1.315,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [

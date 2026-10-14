@@ -11,7 +11,8 @@ ROOT = Path(__file__).resolve().parent.parent
 ICONS = (ROOT / "orkcraft/gui/static/js/icons.js").read_text(encoding="utf-8")
 FACES_DIR = ROOT / "design-system/sprites/camp/orks/faces"
 SPEC = json.loads((ROOT / "tools/camp_sheets.json").read_text(encoding="utf-8"))["faces"]
-BODIES = ["warchief", "grunt", "quartermaster", "seer", "mason", "alchemist", "mechanic", "treasurer", "pathfinder"]
+BODIES = ["warchief", "grunt", "quartermaster", "seer", "mason", "alchemist", "mechanic", "treasurer", "pathfinder",
+          "taskmaster", "lookout", "loader", "farseer", "warder", "artisan"]
 
 
 def size(path: Path) -> tuple[int, int]:
@@ -37,7 +38,7 @@ def test_every_face_is_cut_and_its_files_exist():
         assert size(FACES_DIR / f"{role}-16.png") == (16, 16)
 
 
-def test_the_nine_bodies_have_their_own_faces_and_no_role_borrows_one():
+def test_the_bodies_have_their_own_faces_and_no_role_borrows_one():
     plain = (FACES_DIR / "plain.png").read_bytes()
     for role in BODIES:
         assert (ROOT / f"design-system/sprites/camp/orks/roles/{role}.png").exists()

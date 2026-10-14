@@ -96,5 +96,8 @@ a ledger and a stamp instead of the helmet, and the Alchemist a round hat.
 **Done (2026-10-14):** the faces are cut from the bodies (`tools/camp_faces.py`, `camp/orks/faces/`, 32 × 24 and a
 16 × 16 half); `js/icons.js` `FACES` maps every ork of `TERMS` to its role's face (`OrkFace`, `OrkHead`), the hats by
 building are left only to the ork that walks out onto the map (`js/visit.js`). The roles without a body wear the plain
-head in their own file until their body lands (the second sheet's are not cut into bodies yet: rerunning
-`tools/camp_sheet.py` with them in `tools/camp_sheets.json` gives them their faces). What rule 3 still fails: camp/README.md, The faces.
+head in their own file until their body lands. The second sheet is cut too (`roles-2` in `tools/camp_sheets.json`;
+its Treasurer and Alchemist replace the first ones): fifteen roles have their own face. The grey test at 16 px: the
+Warder and the Quartermaster are **not** told apart (as feared), the Farseer and the Alchemist are, just; new close
+pairs are the Treasurer and the Mechanic (cap over round lenses) and the Loader and the Pathfinder (ear flaps).
+Details: camp/README.md, The faces.

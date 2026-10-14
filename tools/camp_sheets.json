@@ -5,7 +5,7 @@
   "note": "What tools/camp_faces.py cuts: each role's face from orks/roles/<role>.png (rows: the window over the 48 × 56 body; clear: boxes [x0, y0, x1, y1] emptied first, a held thing touching the head). A role without a body gets the plain head (from `plain`, its headgear taken off) until its body lands. js/icons.js FACES says which ork wears which role's face.",
   "rows": [3, 27],
   "plain": "grunt",
-  "clear": {"warchief": [[0, 0, 17, 27], [0, 21, 19, 27]], "seer": [[33, 0, 48, 27]]},
+  "clear": {"warchief": [[0, 0, 17, 27], [0, 21, 19, 27]], "seer": [[33, 0, 48, 27]], "treasurer": [[43, 0, 72, 27]]},
   "roles": ["warchief", "grunt", "quartermaster", "seer", "mason", "alchemist", "mechanic", "treasurer", "pathfinder",
             "taskmaster", "lookout", "loader", "farseer", "warder", "artisan",
             "scavenger", "grot-pointa", "miller", "hornblower", "chieftain", "drummer", "woodcutter", "scroll-scrapper",
@@ -33,12 +33,31 @@
       {"file": "orks/roles/warchief.png", "at": [0.049, 0.890]},
       {"file": "orks/roles/grunt.png", "at": [0.177, 0.895]},
       {"file": "orks/roles/mason.png", "at": [0.286, 0.895]},
-      {"file": "orks/roles/alchemist.png", "at": [0.406, 0.895]},
       {"file": "orks/roles/mechanic.png", "at": [0.523, 0.895]},
-      {"file": "orks/roles/treasurer.png", "at": [0.630, 0.895]},
       {"file": "orks/roles/seer.png", "at": [0.742, 0.893]},
       {"file": "orks/roles/quartermaster.png", "at": [0.841, 0.891]},
       {"file": "orks/roles/pathfinder.png", "at": [0.947, 0.895]}
+     ]
+    }
+   ]
+  },
+  {
+   "name": "roles-2",
+   "file": "roles-2.jpg",
+   "groups": [
+    {
+     "size": [72, 56], "fit": [200, 54], "anchor": "bottom-centre",
+     "slots": ["role"],
+     "tones": ["#8fb052", "#5a7a34", "#3e5a26", "#6a5240", "#4a3a30", "#8a7a64", "#5f7a6a", "#a08a50"],
+     "items": [
+      {"file": "orks/roles/taskmaster.png", "at": [0.070, 0.500]},
+      {"file": "orks/roles/lookout.png", "at": [0.208, 0.500]},
+      {"file": "orks/roles/loader.png", "at": [0.341, 0.500]},
+      {"file": "orks/roles/farseer.png", "at": [0.467, 0.500]},
+      {"file": "orks/roles/warder.png", "at": [0.592, 0.500]},
+      {"file": "orks/roles/artisan.png", "at": [0.716, 0.500]},
+      {"file": "orks/roles/treasurer.png", "at": [0.845, 0.500]},
+      {"file": "orks/roles/alchemist.png", "at": [0.954, 0.500]}
      ]
     }
    ]
