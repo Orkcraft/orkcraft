@@ -124,3 +124,6 @@
 .fields-outgoing { margin: 0; padding: var(--space-2); max-height: 30vh; overflow: auto; white-space: pre-wrap;
   overflow-wrap: anywhere; background: var(--panel-inset); box-shadow: var(--bevel-sunken); }
 .fields-plan { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: var(--space-1); }
+/* The large card's everyday job (lighter-buildings.md §2): the whole board, scrolling in the card. */
+.gui-hut.is-sized > .ok-hut__card > .gui-hut__body > .gui-hut__body-in > .fields-large { flex: 1 1 auto; min-height: 0; overflow: auto;
+  white-space: normal; }

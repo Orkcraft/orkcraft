@@ -162,7 +162,7 @@ def _info(pg) -> None:
 
 
 # Types with no Work window (docs/design/lighter-buildings.md §2): opened, the card grows to its large size in place.
-WORKLESS = {"barracks", "watchtower", "loot"}
+WORKLESS = {"barracks", "watchtower", "loot", "fields"}
 
 
 def _three_ways(pg, bid: str, has_view: bool = True, workless: bool = False) -> None:
@@ -681,9 +681,10 @@ def test_build_grows_the_line_by_a_row_of_icons_and_a_double_press_builds_at_onc
 
 def test_a_click_selects_a_building_and_open_or_a_second_click_opens_it(page):
     """docs/design/select-a-building.md §1: a click selects (its card in the line, no window); Open on the card or a
-    second click opens its Work; Escape closes the window, and again lets the building go."""
+    second click opens its Work; Escape closes the window, and again lets the building go. (The Calendar: a type that
+    keeps its Work window.)"""
     pg = page
-    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
+    bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'war_drum' }))")
     title = _hut(pg, bid).locator(".gui-hut__title")
     title.click()
     bar = pg.locator(".gui-warchief__bar")
@@ -728,7 +729,7 @@ def test_a_selected_building_turns_the_line_into_its_command_card(page):
     bar.locator(".gui-warchief__back").click()                       # the Warchief again, it stays open
     bar.get_by_role("button", name="Build", exact=True).wait_for(state="visible", timeout=WAIT_MS)
     assert bar.locator(".gui-warchief__act").count() == 0
-    assert pg.evaluate("() => import('/static/js/windows.js').then(m => m.opened.value.active)") == bid
+    assert pg.evaluate("() => import('/static/js/windows.js').then(m => m.selected.value)") == bid   # its card grown, still selected
     pg.evaluate("() => import('/static/js/windows.js').then(m => m.closeBuilding())")
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('town.demolish', { id }))", bid)
     _hut(pg, bid).wait_for(state="detached", timeout=WAIT_MS)
@@ -993,7 +994,9 @@ def test_listen_asks_in_words_and_lays_the_road_the_steward_offers(page, monkeyp
         {"from": tower, "event": "mail.received", "match": "(?i)unread", "say": "When unread mail comes, a to-do"}]}), 0.01))
     _hut(pg, fields).wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
-    _hut(pg, fields).locator(".gui-hut__title").dblclick()
+    _hut(pg, fields).locator(".gui-hut__title").dblclick()                 # its card grows in place (no Work)
+    _hut(pg, fields).locator(".fields-large").wait_for(state="visible", timeout=WAIT_MS)
+    _hut(pg, fields).locator(".gui-hut__title").click()                    # opened again: its Info
     _info(pg)
     pg.locator(".gui-steward-part .gui-steward__group summary button").first.click()    # + Listen
     modal = pg.locator(".gui-modal")
@@ -1682,21 +1685,22 @@ def test_a_task_that_settles_says_when_it_goes_and_what_joined_it(page, gui):
     w.add("New design for the CSV export: the button on the right", "todo")
     w.add("Fix the login bug", "todo")
     w.add("Login page design", "todo")
-    _hut(pg, bid).locator(".gui-hut__title").dblclick()
-    _panel(pg, "Work")
-    panel = pg.locator(".gui-panel")
+    _hut(pg, bid).get_by_text("waiting to go").first.wait_for(state="visible", timeout=WAIT_MS)   # the closed card says it
+    _hut(pg, bid).locator(".gui-hut__title").dblclick()                    # the board on its card, grown in place
+    panel = _hut(pg, bid).locator(".fields-large")
     settling = panel.locator(".fields-settle")
     settling.filter(has_text="goes at").filter(has_text="+1 added").wait_for(state="visible", timeout=WAIT_MS)
     joined = settling.filter(has_text="↳ with “Make the CSV export”")
     joined.wait_for(state="visible", timeout=WAIT_MS)
     settling.filter(has_text="Looks like").wait_for(state="visible", timeout=WAIT_MS)
-    assert "waiting to go" in _hut(pg, bid).inner_text()
     if os.environ.get("ORKCRAFT_SHOTS"):
         pg.screenshot(path=str(Path(os.environ["ORKCRAFT_SHOTS"]) / "settle.png"), full_page=True)
     joined.get_by_role("button", name="Split off").click()
     joined.wait_for(state="detached", timeout=WAIT_MS)
     assert w.held(first.id) and not w.joined_cards(first.id)
-    wait = panel.get_by_label("When new tasks go to the orks")
+    _hut(pg, bid).locator(".gui-hut__title").click()                       # when new tasks go: its Info
+    _info(pg)
+    wait = pg.locator(".gui-panel").get_by_label("When new tasks go to the orks")
     assert wait.input_value() == "120"
     wait.select_option("0")                                   # at once: what waited goes now
     settling.filter(has_text="goes at").first.wait_for(state="detached", timeout=WAIT_MS)
@@ -1811,8 +1815,7 @@ def test_the_night_round_marks_a_card_says_it_in_the_morning_and_sits_in_setting
     line = pg.locator(".gui-warchief__news").filter(has_text="Night round: 1 card has news")
     line.wait_for(state="visible", timeout=WAIT_MS)
     line.get_by_role("button", name="🌙 Night round: 1 card has news, 1 cleanup idea").click()
-    _panel(pg, "Work")
-    panel = pg.locator(".gui-panel")
+    panel = _hut(pg, bid).locator(".fields-large")                        # the board, its card grown in place
     moon = panel.locator(".ok-card", has_text="Fix the export form dates").get_by_role(
         "button", name="What's new: the Night round found something for it")
     moon.wait_for(state="visible", timeout=WAIT_MS)

@@ -14,6 +14,7 @@
 //   infoPage(b, p)   a page of its own drawn over its Info while one is open (js/infopage.js)
 //   work = false     no Work window (docs/design/lighter-buildings.md §2): `card(b, "l")` does its everyday job,
 //                    opening it grows its card in place (js/windows.js); on the phone its panel shows that card
+//   grown = {w, h}   the size its card grows to when opened, when the large size (js/hut.js LEVEL_L) is too small
 //   settings(id, d)  its own settings drawn in its Info, from its state `d` (what its Work held)
 //
 // A type that exports none of them still draws: its status lines in Work, its Info.

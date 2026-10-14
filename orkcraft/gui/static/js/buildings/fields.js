@@ -6,8 +6,10 @@
 // (never sent to a model) — docs/design/fields-board.md §5b — and 🌙 what the Night round found for a card
 // that lies (docs/design/night-round.md). A task that waits to go says when (⏳, 🐢 when
 // Not urgent), what joined it and what it looks like (docs/design/settle-and-join.md). The closed card shows
-// all three parts at a glance; a checkbox over them hides any one (js/parts.js). The worker writes the
-// board file (core/workers/fields.py).
+// all three parts at a glance; a checkbox over them hides any one (js/parts.js). It has no Work window
+// (docs/design/lighter-buildings.md §2): opened, its card grows in place to the whole board, where a card is opened
+// and edited (its windows ask over the town, never inside the card); New note writes on the card; when new tasks go
+// and New note folder are its Info's. The worker writes the board file (core/workers/fields.py).
 import { signal } from "@preact/signals";
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
@@ -15,9 +17,13 @@ import { act, say, details } from "../link.js";
 import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 import { PartToggles, shown, hidden } from "../parts.js";
-import { usePeek, openBuilding } from "../windows.js";
+import { usePeek, showOnCard } from "../windows.js";
+
+export const grown = { w: 760, h: 520 };   // the whole of it needs the room
+export const work = false;         // no Work window: its large card and its Info (lighter-buildings.md §2)
 
 const selected = signal({});       // building id → card id
+const dialogs = signal({});        // building id → the board's window up: {card} | {lane} | {remove} | {folder} | {context|plan|join|news} | {preview, of}
 const asking = signal(null);       // {id, lane, kind}: a New task / note / chore asked from its Info's quick actions
 const writing = signal(null);      // {id, lane}: a new note written in the panel on the right, the whole of it
 // The closed card's three parts, each one the person may hide (js/parts.js).
@@ -80,7 +86,7 @@ function CardDialog({ id, card, lane, onClose }) {
  *  opens there with the writer in its place (+ Note on the board's card, + New note in a lane of notes). */
 export function writeNote(id, lane) {
   writing.value = { id, lane };
-  openBuilding(id, "work");
+  showOnCard(id);                   // written on its card, grown in place
 }
 
 /** The writer: one text, as a card is written (a short line is its title, a longer text gets one), the folder
@@ -381,9 +387,9 @@ function PlanDialog({ id, card, onPlan, onClose }) {
   </${Dialog}>`;
 }
 
-/** The counters on one line: the orks' lanes, my to-dos open of all, the notes; New note folder quiet on
- *  the right. How the mouse works is its tooltip: a click selects a card and its strip says the rest. */
-function Head({ id, data, setDialog }) {
+/** The counters on one line: the orks' lanes, my to-dos open of all, the notes. How the mouse works is its
+ *  tooltip: a click selects a card and its strip says the rest. */
+function Head({ id, data }) {
   const lanes = data.lanes.filter((ln) => (data.todos ? ln.kind === "task" : true));
   const notes = data.todos ? data.lanes.filter((ln) => ln.kind === "note").reduce((n, ln) => n + ln.cards.length, 0) : 0;
   const open = data.todos ? data.todos.cards.filter((c) => !c.done).length : 0;
@@ -391,11 +397,55 @@ function Head({ id, data, setDialog }) {
     ${lanes.map((ln) => html`<span key=${ln.id}><b>${ln.cards.length}</b> ${ln.label}</span>`)}
     ${data.todos && html`<span><b>${open}</b>/${data.todos.cards.length} ${say("to-dos open")}</span>
       <span><b>${notes}</b> ${say("notes")}</span>`}
-    <span class="fields-head__spacer"></span>
-    <${SettleSelect} id=${id} data=${data} />
-    <button class="ok-act" title=${say("A lane of its own for notes")} onClick=${() => setDialog({ folder: true })}>
-      <span class="ok-act__label">${say("New note folder")}</span></button>
   </div>`;
+}
+
+/** Its settings, in its Info (lighter-buildings.md §2): when new tasks go, and New note folder. */
+export function settings(id, data) {
+  if (!data || !data.lanes) return null;
+  return html`<section class="gui-section fields-settings"><h3 class="ok-font-heading">${say("The board")}</h3>
+    <div class="ok-row"><${SettleSelect} id=${id} data=${data} />
+      <button class="ok-btn" title=${say("A lane of its own for notes")} onClick=${() => setDialog(id, { folder: true })}>
+        ${say("New note folder")}</button></div></section>`;
+}
+
+const setDialog = (id, d) => { dialogs.value = { ...dialogs.value, [id]: d }; };
+
+/** Plan: what leaves is shown first, unless the person said once not to ask on this board. */
+function planCard(id, card) {
+  return act(id, "plan_preview", { card: card.id }).then((preview) => {
+    if (!preview) return;
+    if (preview.allowed && !preview.asked) act(id, "plan", { card: card.id }).then(() => setDialog(id, { plan: card.id }), () => {});
+    else setDialog(id, { preview, of: card.id });
+  }, () => {});
+}
+
+/** Every card of the board, each with the lane it stands in. */
+function allCards(data) {
+  return (data.lanes || []).flatMap((ln) => ln.cards.map((c) => ({ ...c, column: ln.id })))
+    .concat(data.todos ? data.todos.cards.map((c) => ({ ...c, column: data.todos.id })) : []);
+}
+
+/** The board's windows, over the town (its overlay), never inside its card: a hut is a layer of its own. */
+function BoardDialogs({ id, data }) {
+  const dialog = dialogs.value[id];
+  if (!dialog || !data.lanes) return null;
+  const cards = allCards(data);
+  const byId = (cid) => cards.find((c) => c.id === cid);
+  const close = () => setDialog(id, null);
+  const plan = (card) => planCard(id, card);
+  return html`
+    ${dialog.remove && html`<${Confirm} title=${`Delete “${dialog.remove.title.slice(0, 60)}”?`}
+      text="It goes from the file too (git keeps it)." yes="Delete"
+      onYes=${() => act(id, "remove", { card: dialog.remove.id }).catch(() => {})} onClose=${close} />`}
+    ${dialog.folder && html`<${FolderDialog} id=${id} onClose=${close} />`}
+    ${dialog.join && byId(dialog.join) && html`<${JoinDialog} id=${id} card=${byId(dialog.join)} cards=${cards} onClose=${close} />`}
+    ${dialog.news && byId(dialog.news) && html`<${NewsDialog} id=${id} card=${byId(dialog.news)} onClose=${close} />`}
+    ${dialog.context && byId(dialog.context) && html`<${ContextDialog} id=${id} card=${byId(dialog.context)} onClose=${close} />`}
+    ${dialog.plan && byId(dialog.plan) && html`<${PlanDialog} id=${id} card=${byId(dialog.plan)} onPlan=${plan} onClose=${close} />`}
+    ${dialog.preview && byId(dialog.of) && html`<${PreviewDialog} id=${id} card=${byId(dialog.of)} preview=${dialog.preview}
+      onClose=${close} onSent=${() => setDialog(id, { plan: dialog.of })} />`}
+    ${(dialog.card || dialog.lane) && html`<${CardDialog} id=${id} card=${dialog.card} lane=${dialog.lane} onClose=${close} />`}`;
 }
 
 const waitLabel = (s) => (s === 0 ? "at once" : s < 60 ? `after ${s} s` : `after ${s / 60} min`);
@@ -415,34 +465,26 @@ function SettleSelect({ id, data }) {
 }
 
 function Board({ id, data }) {
-  const [dialog, setDialog] = useState(null);      // {card} | {lane} | {remove: card} | {folder: true} | {context|plan|join|news: id} | {preview, of}
   useEffect(() => { act(id, "seen").catch(() => {}); }, [id]);
   const parts = !!data.todos;                       // board mode: the three parts
-  const cards = data.lanes.flatMap((ln) => ln.cards.map((c) => ({ ...c, column: ln.id })))
-    .concat(parts ? data.todos.cards.map((c) => ({ ...c, column: data.todos.id })) : []);
+  const cards = allCards(data);
   const found = cards.find((c) => c.id === selected.value[id]);
   const sel = found && { ...found, mine: parts };
-  const close = () => setDialog(null);
-  const open = (card) => setDialog({ card });
-  const mark = (what, card) => setDialog({ [what]: card.id });
-  // Plan: what leaves is shown first, unless the person said once not to ask on this board.
-  const plan = (card) => act(id, "plan_preview", { card: card.id }).then((preview) => {
-    if (!preview) return;
-    if (preview.allowed && !preview.asked) act(id, "plan", { card: card.id }).then(() => setDialog({ plan: card.id }), () => {});
-    else setDialog({ preview, of: card.id });
-  }, () => {});
-  const byId = (cid) => cards.find((c) => c.id === cid);
+  const open = (card) => setDialog(id, { card });
+  const mark = (what, card) => setDialog(id, { [what]: card.id });
+  const plan = (card) => planCard(id, card);
+  const set = (d) => setDialog(id, d);
   const lanes = (list) => html`<div class="ok-board" style=${`--lanes:${list.length}`}>
       ${list.map((ln) => html`<${Lane} key=${ln.id} id=${id} lane=${ln} sel=${sel && sel.id}
-        onOpen=${open} onMark=${mark} onAdd=${(lane) => (lane.kind === "note" ? writeNote(id, lane.id) : setDialog({ lane }))} />`)}
+        onOpen=${open} onMark=${mark} onAdd=${(lane) => (lane.kind === "note" ? writeNote(id, lane.id) : set({ lane }))} />`)}
     </div>`;
   if (data.error) return html`<p class="ok-tone-error">⚠ ${data.error}</p>`;
   const w = writing.value;
   if (w && w.id === id) return html`<${Writer} id=${id} data=${data} lane=${w.lane} />`;
   const todoOpen = parts ? data.todos.cards.filter((c) => !c.done).length : 0;
   return html`<div class="gui-fields">
-    <${Head} id=${id} data=${data} setDialog=${setDialog} />
-    ${sel && html`<${Acts} id=${id} sel=${sel} lanes=${data.lanes.filter((ln) => ln.kind === "task")} setDialog=${setDialog} onPlan=${plan} wiki=${data.wiki}
+    <${Head} id=${id} data=${data} />
+    ${sel && html`<${Acts} id=${id} sel=${sel} lanes=${data.lanes.filter((ln) => ln.kind === "task")} setDialog=${set} onPlan=${plan} wiki=${data.wiki}
       sendsItself=${data.settle !== null && data.settle !== undefined} />`}
     ${parts ? html`
       <div class="gui-fields__lower">
@@ -453,18 +495,17 @@ function Board({ id, data }) {
       </div>
       <section class="gui-fields__part"><h3 class="ok-font-heading">Ork work</h3>
         ${lanes(data.lanes.filter((ln) => ln.kind === "task"))}</section>` : lanes(data.lanes)}
-    ${dialog && dialog.remove && html`<${Confirm} title=${`Delete “${dialog.remove.title.slice(0, 60)}”?`}
-      text="It goes from the file too (git keeps it)." yes="Delete"
-      onYes=${() => act(id, "remove", { card: dialog.remove.id }).catch(() => {})} onClose=${close} />`}
-    ${dialog && dialog.folder && html`<${FolderDialog} id=${id} onClose=${close} />`}
-    ${dialog && dialog.join && byId(dialog.join) && html`<${JoinDialog} id=${id} card=${byId(dialog.join)} cards=${cards} onClose=${close} />`}
-    ${dialog && dialog.news && byId(dialog.news) && html`<${NewsDialog} id=${id} card=${byId(dialog.news)} onClose=${close} />`}
-    ${dialog && dialog.context && byId(dialog.context) && html`<${ContextDialog} id=${id} card=${byId(dialog.context)} onClose=${close} />`}
-    ${dialog && dialog.plan && byId(dialog.plan) && html`<${PlanDialog} id=${id} card=${byId(dialog.plan)} onPlan=${plan} onClose=${close} />`}
-    ${dialog && dialog.preview && byId(dialog.of) && html`<${PreviewDialog} id=${id} card=${byId(dialog.of)} preview=${dialog.preview}
-      onClose=${close} onSent=${() => setDialog({ plan: dialog.of })} />`}
-    ${dialog && (dialog.card || dialog.lane) && html`<${CardDialog} id=${id} card=${dialog.card} lane=${dialog.lane} onClose=${close} />`}
   </div>`;
+}
+
+/** Its large card's everyday job (lighter-buildings.md §2): the whole board — open and edit a card, see where it goes
+ *  next and why it waits — or a new note written there. A press inside is the card's, never the hut's. */
+function Large({ id }) {
+  usePeek(id);
+  const d = details.value[id];
+  const data = d && d.data;
+  if (!data || !data.lanes) return html`<p class="ok-tone-muted">${say("Opening…")}</p>`;
+  return html`<div class="fields-large" onPointerDown=${keep} onClick=${keep} onDblClick=${keep}><${Board} id=${id} data=${data} /></div>`;
 }
 
 const mark = (m, t, i) => html`<span key=${i} class="gui-fhut__item"><span class="gui-fhut__mark">${m}</span>${t}</span>`;
@@ -477,7 +518,7 @@ function Adds({ id, c }) {
   const btn = (label, title, run) => html`<button class="ok-act gui-fhut__add" title=${say(title)} onPointerDown=${keep}
       onDblClick=${keep} onClick=${(e) => { keep(e); run(); }}><span class="ok-act__label">${say(label)}</span></button>`;
   return html`<div class="gui-fhut__adds">
-    ${btn("+ Note", "Write a note: it opens in the panel on the right", () => writeNote(id, c.note_lane))}
+    ${btn("+ Note", "Write a note: on its card, grown in place", () => writeNote(id, c.note_lane))}
     ${c.todos && btn("+ To-do", "A to-do of my own", () => { asking.value = { id, lane: c.todo_lane || "mine", kind: "mine" }; })}
   </div>`;
 }
@@ -495,6 +536,7 @@ export function card(b, level = "s") {
   const c = b.card;
   if (!c) return null;
   if (c.error) return html`<span class="ok-tone-fire">${c.error}</span>`;
+  if (level === "l") return html`<div class="gui-hut__body-in"><${Large} id=${b.id} /></div>`;
   const counter = (l) => html`<span key=${l.label} class="gui-counter">
     <span class="ok-tone-muted">${say(l.label)}</span> <b>${l.count}</b>${l.new ? "*" : ""}</span>`;
   const notes = c.notes || [];
@@ -573,16 +615,15 @@ function noteLane(id) {
   return lane ? lane.id : "notes";
 }
 
-export function panes(id, data) {
-  return { board: () => html`<${Board} id=${id} data=${data} />` };
-}
-
 function Peeked({ id }) {
   usePeek(id);
-  return html`<${Asking} id=${id} data=${(details.value[id] || {}).data || {}} />`;
+  const data = (details.value[id] || {}).data || {};
+  return html`<${Asking} id=${id} data=${data} /><${BoardDialogs} id=${id} data=${data} />`;
 }
 
-/** Its New task / note / chore window, over the town, whether the board is open or not (js/types.js). */
+/** Its windows over the town (js/types.js): New task / note / chore asked from its quick actions, and every window
+ *  its board asks for, whether its card is grown or not. */
 export function overlay() {
-  return asking.value ? html`<${Peeked} key=${asking.value.id} id=${asking.value.id} />` : null;
+  const ids = new Set([...(asking.value ? [asking.value.id] : []), ...Object.keys(dialogs.value).filter((id) => dialogs.value[id])]);
+  return html`${[...ids].map((id) => html`<${Peeked} key=${id} id=${id} />`)}`;
 }

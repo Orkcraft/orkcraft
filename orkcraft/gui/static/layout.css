@@ -278,6 +278,8 @@ body { user-select: text; -webkit-user-select: text; }
 .gui-parts { display: flex; flex-wrap: wrap; gap: 0 var(--space-3); padding-bottom: var(--space-1); border-bottom: 1px solid var(--frame); }
 .gui-hut .gui-fhut > .gui-parts { grid-column: 1 / -1; margin-bottom: var(--space-1); }
 .gui-town__room > .gui-hut:hover, .gui-town__room > .gui-hut:focus-within { z-index: 2; }
+/* Grown in place to its large size (lighter-buildings.md §2, js/windows.js showOnCard): over its neighbours. */
+.gui-town__room > .gui-hut.is-grown { z-index: 3; }
 .gui-parts .ok-check.gui-parts__one { gap: var(--space-1); font-size: 12px; line-height: 18px; white-space: nowrap; cursor: pointer; }
 .gui-parts .ok-check.gui-parts__one i { width: 12px; height: 12px; font-size: 10px; }
 .gui-parts .ok-check.is-off { color: var(--ink-muted); }

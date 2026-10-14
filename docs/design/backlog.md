@@ -44,7 +44,7 @@ building's card in `gui/static`; A3's data first, C3's drawing on top, not both 
 | id | item | lane | days | runs | where |
 |---|---|---|---|---|---|
 | A4 | the 🥩 list with 🔥 · ❓, Stop all; the console folded | A | 2 | after A3 | ork-console §7, §8 |
-| A5 | the console unfolded, and the Work panels it replaces removed | A | 3 | after A4 | ork-console §15; lighter-buildings |
+| A5 | the console unfolded, and the Work panels it replaces removed — **built 2026-10-14** (lighter-buildings §7) | A | 3 | after A4 | ork-console §15; lighter-buildings |
 | A6 | the Agent pool's lanes as roles | A | 1.5 | ∥ after A3 | ork-console §11 |
 | W1 | "since your last look" (and on opening the laptop), wins first | A | 2 | after A0, A3 | audience §2a |
 | W2 | quiet working hours (asked in the onboarding), questions gathered, assume-and-mark where safe | A | 1.5 | after A2 | audience §2a |

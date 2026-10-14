@@ -28,6 +28,7 @@ if (!document.querySelector(`link[href="${sheet}"]`)) {
   document.head.appendChild(link);
 }
 
+export const grown = { w: 640, h: 480 };   // the whole of it needs the room
 export const work = false;        // no Work window: its large card and its Info (lighter-buildings.md §2)
 
 const chosen = signal({});        // building id → {kind: item | file | rejected | stored, key}

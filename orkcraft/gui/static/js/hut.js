@@ -477,8 +477,9 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
   // bench's sizes, js/buildings/ux_lab.js SIZE_PX). A size the person gave shows close up only.
   const mine = b.size || auto;
   const big = grown;
-  const wide = Math.max(mine ? mine[0] : 0, big ? LEVEL_L.w : LEVEL_M.w);
-  const tall = big ? Math.max(mine && mine[1] ? mine[1] : 0, LEVEL_L.h)
+  const room = big ? { ...LEVEL_L, ...((b.page && typeModule(b.type) && typeModule(b.type).grown) || {}) } : null;  // a type's own (js/types.js)
+  const wide = Math.max(mine ? mine[0] : 0, big ? room.w : LEVEL_M.w);
+  const tall = big ? Math.max(mine && mine[1] ? mine[1] : 0, room.h)
     : lvl === "c" && mine && mine[1] ? Math.max(mine[1], LEVEL_M.h) : null;
   const own = b.id === CORNER ? mine : folded || bare || roomy ? null : [wide, tall];
   const cap = b.id === CORNER || !own || tall ? 0 : lvl === "c" ? LEVEL_M.h : LEVEL_S_H;
@@ -503,7 +504,7 @@ export function Hut({ b, spot, number, dim = false, fresh = false, auto = null, 
                                         "is-alert": !!b.alert, "is-broken": !!broken, "is-hot": hot, "is-paused": !!b.paused, "is-dragging": !!drag, "is-dim": dim,
                                         "is-free": free, "is-target": pulling.value?.over === b.id,
                                         "is-fresh": fresh, "is-folded": folded, "is-peek": peek,
-                                        "is-sized": !!sized, [`is-size-${level}`]: !!sized, [`is-renown-${Math.min(Math.max(b.level || 0, 1), 3)}`]: true,
+                                        "is-sized": !!sized, [`is-size-${level}`]: !!sized, "is-grown": grown, [`is-renown-${Math.min(Math.max(b.level || 0, 1), 3)}`]: true,
                                         "is-resizing": resizing.value?.id === b.id })}
       onPointerDown=${down} onContextMenu=${(e) => buildingMenu(e, b)} onDragEnter=${dragIn} onDragLeave=${dragOut}
 >

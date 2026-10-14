@@ -189,6 +189,11 @@ The line at the town's foot, today the Warchief's or the selected building's com
 | a building | its command card (built) and a row of **its orks' portraits** with their state (§5) | the ork waiting on the person, if one is; else the building's steward; else empty |
 | an ork (on the town or a portrait) | its building's command card | **that ork's console** |
 
+**Built (A5, 2026-10-14):** folded and unfolded, for an Agent pool's ork in full and for any other ork its row
+(js/slots.js, js/orkconsole.js; the data from core/slots.py `console`). The live terminal is the ork's own session,
+opened on Take over or Resume; pinned is not built (the console stays until closed anyway). Gists come from a
+`GIST:` line in the ork's `asks` block (§20).
+
 **The console has three sizes:**
 
 - **folded** (depth 2): its state, its last question or output, Reply, Stop, the session's spend and AI tool;
