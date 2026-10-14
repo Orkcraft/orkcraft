@@ -190,6 +190,36 @@ def test_a_selected_buildings_ork_walks_out_onto_the_plinth_and_its_bubble_rates
     assert days.locator(".gui-out").count() == 0                                  # a yard: no ork lives there (§8)
 
 
+def test_an_ork_stopped_on_its_error_or_held_for_a_limit_comes_out_with_its_badge(demo_page, monkeypatch):
+    """docs/design/town-readability.md §4: an ork's own error is a red `!` over it, held for a limit ⏳; only while
+    the host says so (the building's `signal`, gui/state.py). A press opens its console."""
+    from orkcraft.gui import state
+    said: dict = {}
+
+    def signals(found, rows):
+        for b in found:
+            b["signal"] = said.get(b["id"])
+
+    monkeypatch.setattr(state, "signals", signals)
+    pg = demo_page
+    _call(pg, "orkspace.select", {"id": "my_day"})
+    hut = pg.locator('.gui-hut[data-id="todo"]')
+    hut.wait_for(state="visible", timeout=WAIT_MS)
+    assert hut.locator(".gui-out").count() == 0                                    # nothing to say: nobody out
+    said["todo"] = {"kind": "error", "key": "todo/grunt", "name": "Grunt",
+                    "line": "Grunt · error: claude exited with 1: boom"}
+    _call(pg, "orkspace.select", {"id": "my_day"})                                 # a new snapshot
+    bubble = hut.locator(".gui-out__bubble.is-error")
+    bubble.wait_for(state="visible", timeout=WAIT_MS)
+    assert bubble.inner_text() == "!" and "is-stuck" in (hut.locator(".gui-out").get_attribute("class") or "")
+    said["todo"] = {**said["todo"], "kind": "held", "line": "Grunt · held for a limit"}
+    _call(pg, "orkspace.select", {"id": "my_day"})
+    hut.locator(".gui-out__bubble.is-held").wait_for(state="visible", timeout=WAIT_MS)
+    assert hut.locator(".gui-out__bubble").inner_text() == "⏳"
+    hut.locator(".gui-out").click()
+    pg.locator(".gui-orkconsole").wait_for(state="visible", timeout=WAIT_MS)       # its console (not at work: says so)
+
+
 def test_the_road_gate_comes_where_the_mouse_nears_the_edge_and_the_corner_resizes(demo_page):
     """docs/design/yards.md §3g: near a card's edge the road handle — a small gate — stands under the mouse on the fence, a road is
     pulled out of it there; inside the card and at the corner, which resizes, it is gone. (A card: the Drop stands
