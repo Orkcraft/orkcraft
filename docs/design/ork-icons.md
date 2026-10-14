@@ -58,3 +58,27 @@ and the **Quartermaster** (Review gate).
   role's face.
 - `tools/hat_sprites.py` draws the role's headgear and held thing on the house head, at the sizes it makes today.
 - The old hats' names stay loadable where a setting or a town names them (CLAUDE.md, Wording).
+
+## 6. With the new art (2026-10-14)
+
+**What exists:** nine role bodies cut from the owner's sheet into `design-system/sprites/camp/orks/roles/` (48 × 56):
+warchief, grunt, mason, alchemist, mechanic, treasurer, seer, quartermaster (the helmet, shield and key look, the
+Review gate's ork), pathfinder. They draw the orks **on the map**.
+
+**What does not match yet:** every small face in the interface (the 🥩 list, the console, a card's header, the
+Warchief's line, the mascot) still uses the old head under six hats chosen by **building** (`js/icons.js` `HATS`,
+`sprites/orks/face-*`): the old style, and against rule 1 above.
+
+**Decided:**
+
+1. **Faces come from the bodies, not a second drawing:** the head and headgear cropped from each role body, checked at
+   16 px and in grey (rule 3). One look for an ork on the map and in the interface.
+2. **Generated only where a body is missing or two heads are alike:**
+   - missing, seen in Mission 1 and the GIF: **Taskmaster** (Task board), **Lookout** (External listeners), **Loader**
+     (Publisher); missing among the Town Hall's: **Farseer**, **Warder**, **Artisan**;
+   - alike: the **Treasurer** wears the Grunt's cap (needs its own headgear); the **Alchemist** and the **Mechanic**
+     both wear goggles (the Alchemist's pointed hat, already asked for).
+3. **The other building orks** (Scavenger, Miller, Hornblower, Drummer, Woodcutter, Bard, Prospector, Smith, Tinker,
+   Crag Carver, Scroll Scrapper, Grot Pointa, Chieftain, Peon) keep a plain head until their building's turn (P1),
+   never a borrowed role's face.
+4. The commissioned artist redraws all of them from these references ([artist-brief.md](artist-brief.md)).
