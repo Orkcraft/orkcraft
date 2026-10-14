@@ -439,3 +439,29 @@ board under a shingle roof on two posts, big scrolls and stone slabs pinned to i
 24 colours; [img/v3-preview/agent-pool-repixelised.png](img/v3-preview/agent-pool-repixelised.png)); §8's answers are in
 design-system-v3.md §4, §6, §10 and the preview (the catapult against the right wall, a lane per row, Office larger).
 
+
+## 10. Round 5: c1 carts, c2 track, o5 inside (2026-10-14)
+
+`c1-carts.jpg` and `c2-track.jpg` saved under their cut names; `o5-inside-r1.jpg` as a reference. (o1 came again,
+the same image as `o1-body-r1.jpg`.)
+
+**c1, the carts — taken.** Front-on, the loads oversized and readable from far away (`</>`, crate, a letter with a
+teal seal, a book, bundles), the flag in teal and plum (the product recolours it for a signal), the hourglass, four
+carts at a log buffer stop. The rolling row turns to three-quarter: the first frame is enough until the track
+needs a rolling cart.
+
+**c2, the track — taken.** Flat from above, dark iron rails on honey-wood ties, the ties evenly spaced, clean pixels:
+straights, curves, both T-junctions, a switch, a merge, a crossing, a buffer stop. One extra piece (a vertical switch).
+
+**o5, inside the building — not taken as drawn:** it is **another ork** — taller, in a cap, shirt and trousers,
+brighter green — the ork of o3, not of o1/o2. The poses are right (carrying a slab, the magnifying glass, writing at
+a lectern, pinning a sheet); the lens has a magenta cast; one frame of the pinning row stands idle.
+
+**Two things learned:**
+
+1. **Each sheet comes at its own pixel size:** an art pixel is 4.2 image px on the buildings, 5 on the orks, 6.2 on
+   the track, 8.3 on the carts. Cut at its own pixel and shown at ×1, a cart would be ~36 px beside a 192-px hall.
+   So each sheet is cut at its own pixel and shown at the **whole multiple** (×1, ×2) that brings it nearest its
+   target size (cart ~64 px, ork ~48–64, track tile ~48–64); pixels of two sizes side by side are accepted.
+2. **Two orks exist now:** the bald, round one of o1/o2 (the roles are drawn on it) and the capped, taller one of
+   o3/o5. One must be chosen; the other sheets are regenerated with it attached.
