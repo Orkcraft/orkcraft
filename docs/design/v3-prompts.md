@@ -270,3 +270,20 @@ side, the way out on the other; for now only these two. **F1b**, the frame redra
 > gate (rougher, timber and stone with bone tusks, no crenellations, the portcullis and the "PR" plate kept). The
 > lower row as before (pond with lens, book tower, workshop, long house). Six orks in all, one with a "?" over it.
 > Fewer crates and bushes at the edges. The top bar says "My camp"."
+
+**The owner: the spurs stay paths, and an ork waits for the cart at the stop.** Carts run on one main line and stop
+opposite a building's path; **the building's keeper stands at the end of its path**, waiting for the cart, and can be
+clicked on its own (its terminal, §13.1). Where the keeper stands says its state at a glance, with no badge:
+
+| where the keeper is | what it means |
+|---|---|
+| at the stop, looking down the line | waiting for work (nothing for it yet) |
+| taking the load off a stopped cart and carrying it inside | work arrived |
+| inside (not seen on the town), its bubble over the roof | working |
+| at its door with ❓ | asking the person |
+
+**Orks still never push or ride carts:** the keeper only lifts the load off and carries it in, and puts the result
+back on a cart at the stop. On the town, keepers wait only at buildings that take work from the line (Task board,
+Agent pool, Review gate, Inspector); the lookout and the catapult work the wall. In F1b's prompt: "at the end of the
+paths of the task board, the work hall and the gate, an orc stands by the track waiting, one of them lifting a
+scroll off a stopped cart".
