@@ -28,6 +28,7 @@ import { Pocket, narrow } from "./js/pocket.js";
 import { Portrait } from "./js/portrait.js";
 import { watchErrors } from "./js/crashes.js";
 import { CommentLayer, FixesDialog } from "./js/fixes.js";
+import { LastLook } from "./js/lastlook.js";
 
 function App() {
   const t = town.value;
@@ -67,6 +68,7 @@ function App() {
     <${HistoryAsked} />
     <${Menu} />
     <${Onboarding} />
+    ${!t.onboarding && html`<${LastLook} />`}
     <${FixesDialog} />
     <${CommentLayer} />
   </div>`;

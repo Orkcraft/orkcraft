@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft.core import bus
-from orkcraft.core import crashes, running, runners, usage, wakes
+from orkcraft.core import crashes, last_look, running, runners, treasury, usage, wakes
 from orkcraft.core.night import Night
 from orkcraft.core.roster import Muster
 from orkcraft.core.sessions import Sessions
@@ -138,6 +138,11 @@ class Host:
         self.commands.update(self.updates.commands())
         self.onboarding = onboarding.Onboarding(self)   # a project with no town yet opens on it (gui/onboarding.py)
         self.commands.update(self.onboarding.commands())
+        # "Since your last look" (core/last_look.py): the page beats while it is in front of the person
+        self.last_look = last_look.LastLook(self.town, self.muster, self.limits,
+                                            lambda: treasury.subscriptions(self.town.machine))
+        self.commands["look.beat"] = lambda a: self.last_look.beat()
+        self.commands["look.done"] = lambda a: self.last_look.done()
         lake_view.attach(self.town)                # Lake is the town's window: old Lake buildings leave the map
         for bs in self.town.scroll.buildings:      # a building with a worker works from the start
             if not bs.demolished:
@@ -162,6 +167,7 @@ class Host:
         snap["improve"] = self.day_review.state()          # the days Improve can read, and the one read now
         snap["fixes"] = self.fixes.summary()               # Improve Orkline: comments waiting, fixes written (js/fixes.js)
         snap["onboarding"] = self.onboarding.snapshot()    # the first run's steps and the town going up (js/onboarding.js)
+        snap["last_look"] = self.last_look.snapshot()      # what greets the person back (js/lastlook.js)
         return snap
 
     def limits(self) -> list:
