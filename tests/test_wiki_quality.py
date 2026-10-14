@@ -110,7 +110,10 @@ def test_the_check_runs_on_its_schedule_and_fixes_what_rules_found(fake_repo: Pa
 
 
 def _wait(w, seconds: float = 5.0) -> None:
+    """Until the run is over, its pages recorded as checked: `finish` clears `running` before it refreshes and calls
+    `checked()`, all on the town's thread in the app, but on the run's own thread here (`town.call` calls at once)."""
     import time
     end = time.monotonic() + seconds
-    while w.running and time.monotonic() < end:
+    while (w.running or w._checking) and time.monotonic() < end:
         time.sleep(0.02)
+    assert not w.running and not w._checking, "the run did not end"

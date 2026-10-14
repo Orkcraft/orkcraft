@@ -14,6 +14,8 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import os
+import threading
 
 from orkcraft.realm import wikicheck
 
@@ -51,7 +53,9 @@ class QualityMixin:
     def _save_quality(self, data: dict) -> None:
         path = self._quality_file()
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(data, indent=1), encoding="utf-8")
+        tmp = path.with_name(f"{path.name}.{threading.get_ident()}.tmp")     # whole or not at all: read from two threads
+        tmp.write_text(json.dumps(data, indent=1), encoding="utf-8")
+        os.replace(tmp, path)
 
     def rule_problems(self) -> list[wikicheck.Problem]:
         key = tuple((n.path, n.mtime) for n in self.pages)
@@ -89,13 +93,23 @@ class QualityMixin:
         return self._start_check("manual", self.clock())
 
     def _start_check(self, trigger: str, now: dt.datetime) -> bool:
+        # recorded before the run starts: a run that ends at once calls `checked()` before `lint` returns
+        state = self.load_quality()
+        was = state.get("last")
+        state["last"] = now.isoformat(timespec="seconds")
+        self._save_quality(state)
+        self._checking = True
         started = self.lint(trigger)
         if started:
             self._ingested = False
+        else:                                              # it did not start: as it was
+            self._checking = False
             state = self.load_quality()
-            state["last"] = now.isoformat(timespec="seconds")
+            if was is None:
+                state.pop("last", None)
+            else:
+                state["last"] = was
             self._save_quality(state)
-            self._checking = True
         return started
 
     def checked(self) -> None:
