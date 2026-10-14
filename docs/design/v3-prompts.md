@@ -357,3 +357,12 @@ own art pixel; right: the cut sprite). Three causes, in `tools/camp_sheet.py --v
 2. **Colours snapped to the tokens:** the teal roof's shaded half was mapped to the stone's grey, and the shading
    flattened. Building art keeps its own colours; the cutter only refuses yellow, orange and red (the signals).
 3. **JPEG:** its noise blurs the key; PNG when the tool allows.
+
+**And the sheet itself is soft** (the owner: "even the left one is smoothed"). True: the image model renders its
+pixel art at a fractional scale (one art pixel ≈ 4.17 image px) and smooths it up, and the JPEG blurs again; inside
+one art pixel the colour still varies (a median deviation of ~25 of 255). So the cutter **re-pixelises**: each art
+pixel takes the median of its cell's inner pixels, then the sprite is reduced to its **own** 24 or so colours (not
+the tokens), hard alpha, magenta fringe removed. A first try on the Agent pool:
+[img/v3-preview/cut-clean-barracks.png](img/v3-preview/cut-clean-barracks.png) (left: the sheet as it is; right:
+re-pixelised, crisp, every barrel and crate kept). Left to fix: the purple cast where the model blended magenta into
+the floor's shade.
