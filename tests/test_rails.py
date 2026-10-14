@@ -22,7 +22,7 @@ JS = Path(__file__).resolve().parents[1] / "orkcraft" / "gui" / "static" / "js"
 def _node(body: str, tmp_path: Path):
     script = tmp_path / "run.mjs"
     script.write_text(f'import {{ lay, tileOf }} from "{(JS / "rails.js").as_uri()}";\n'
-                      f'import {{ plan }} from "{(JS / "roads.js").as_uri()}";\n{body}', encoding="utf-8")
+                      f'import {{ plan, TRACK_CELL }} from "{(JS / "roads.js").as_uri()}";\n{body}', encoding="utf-8")
     return json.loads(subprocess.run(["node", str(script)], capture_output=True, text=True, check=True, timeout=30).stdout)
 
 
@@ -34,9 +34,12 @@ const rects = { a: { x: 40, y: 200, w: 120, h: 64 }, b: { x: 400, y: 80, w: 120,
 const roads = [{ id: "ab", from: "a", to: "b" }, { id: "ac", from: "a", to: "c" },
                { id: "bd", from: "b", to: "d" }, { id: "cd", from: "c", to: "d" }];
 const camp = plan(rects, roads, 1000, 500, rects, { bundle: true }), office = plan(rects, roads, 1000, 500, rects);
+const tiles = plan(rects, roads, 1000, 500, rects, { bundle: true, cell: TRACK_CELL });
+const big = { cell: tiles[0].cell, junctions: lay(tiles).junctions.map((j) => j.tile).sort(),
+  stops: Object.values(lay(tiles).pieces).map((ps) => ps.filter((x) => x.stop).length) };
 const t = lay(camp);
 const steps = camp.every((p) => p.cells.every((c, i) => !i || Math.abs(c[0] - p.cells[i - 1][0]) + Math.abs(c[1] - p.cells[i - 1][1]) === 1));
-console.log(JSON.stringify({ junctions: t.junctions.map((j) => j.tile), stops: t.stops.map((x) => [x.road, x.dir]),
+console.log(JSON.stringify({ big, junctions: t.junctions.map((j) => j.tile), stops: t.stops.map((x) => [x.road, x.dir]),
   tiles: [...new Set(t.tiles.map((x) => x.tile))], steps, exits: office.map((p) => p.exit.join()),
   campExits: camp.map((p) => p.exit.join()),
   kinds: [tileOf(new Set("ew"), new Set("w"), new Set("e")), tileOf(new Set("nesw"), new Set("ws"), new Set("en")),
@@ -44,6 +47,7 @@ console.log(JSON.stringify({ junctions: t.junctions.map((j) => j.tile), stops: t
           tileOf(new Set("esw"), new Set("es"), new Set("ws")), tileOf(new Set("nw"), new Set("n"), new Set("w"))] }));
 """, tmp_path)
     assert out["steps"]                                           # every cell next to the one before
+    assert out["big"] == {"cell": 32, "junctions": ["merge-e", "switch-e"], "stops": [1, 1, 1, 1]}   # a v2 tile a cell
     assert sorted(out["junctions"]) == ["merge-e", "switch-e"]    # a's two exits split, d's two entries join
     assert [r for r, _ in out["stops"]] == ["ab", "ac", "bd"] and {d for _, d in out["stops"]} == {"e"}
     assert {"straight-h", "straight-v"} <= set(out["tiles"]) and any(t.startswith("corner-") for t in out["tiles"])

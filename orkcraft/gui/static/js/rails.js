@@ -3,8 +3,7 @@
 // A cell's links (n e s w) pick its tile: straight, corner, a T-junction, a crossing; where one road's carts come
 // in and leave two ways it is a switch, where two come in and leave one way a merge; the last cell before a
 // building is a buffer stop, where carts that wait stand. Tiles never rotate: each direction is its own name, as
-// the sprites are (design-system/sprites/camp/track/). Until those land, js/town.js draws each tile as a quiet
-// placeholder of its own (two rails on ties over an earth bed). The words stay: a road is a road.
+// the sprites are (design-system/sprites/camp/track/; js/track.js lays them). The words stay: a road is a road.
 
 const OPPOSITE = { n: "s", s: "n", e: "w", w: "e" };
 const ORDER = "nesw";
@@ -39,7 +38,8 @@ export function tileOf(links, ins, outs) {
   return m === "h" ? "straight-h" : m === "v" ? "straight-v" : `corner-${m}`;
 }
 
-/** The track of every road: each road's pieces (`pieces[road id]`: {x, y, move}), every cell's tile ({x, y, tile}),
+/** The track of every road: each road's pieces (`pieces[road id]`: {x, y, move, stop?}), every cell's tile ({x, y,
+ *  tile}, and `at`: "x,y" → tile),
  *  the switches and merges, the crossings, and the buffer stops ({x, y, dir, road}: the last cell before the road's
  *  building, `dir` the way the cart rolls into it). `paths` as js/roads.js plans them (each with `cells`). */
 export function lay(paths) {
@@ -62,6 +62,7 @@ export function lay(paths) {
     });
     if (cs.length >= 2) {
       const [x, y] = cs[cs.length - 2], dir = sideOf(cs[cs.length - 2], cs[cs.length - 1]);
+      if (dir) pieces[p.id][cs.length - 2].stop = dir;
       if (dir && !stops.has(`${x},${y}`)) stops.set(`${x},${y}`, { x, y, dir, road: p.id });
     }
   }
@@ -69,6 +70,7 @@ export function lay(paths) {
   return {
     pieces,
     tiles,
+    at: new Map(tiles.map((t) => [`${t.x},${t.y}`, t.tile])),
     junctions: tiles.filter((t) => /^(switch|merge|cross)/.test(t.tile)),
     stops: [...stops.values()],
   };

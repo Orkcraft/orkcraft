@@ -1768,8 +1768,9 @@ def test_camp_lays_a_road_as_track_and_its_stopped_carts_stand_in_a_pile_with_th
                                                              payload=payload, at=now - 60 + i))
     pg.reload()                                                 # carts put in by hand: no event sends the town again
     pg.wait_for_selector(".gui-pile", state="attached", timeout=WAIT_MS)     # a point the carts stand round
-    assert pg.locator(".gui-road .gui-rails use").count() > 4                       # the road's pieces
-    assert pg.locator(".gui-rail-marks use[data-tile^='stop-']").count() >= 1        # its buffer stop
+    tiles = pg.locator(".gui-road .gui-rails image")
+    assert tiles.count() > 2 and tiles.first.get_attribute("width") == "32"           # the road's pieces, a tile a cell
+    assert pg.locator(".gui-rails image[data-tile^='stop-']").count() == 1            # its buffer stop
     pile = pg.locator(".gui-pile")
     assert pile.locator(".gui-cart").count() == 3 and "×3" in pile.locator(".gui-pile__count").inner_text()
     assert "is-ask" in (pile.get_attribute("class") or "")                       # the loudest flag in front

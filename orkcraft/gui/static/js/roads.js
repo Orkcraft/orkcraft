@@ -1,22 +1,23 @@
 // Where roads run on the town: gates on the huts and orthogonal paths between them, as the TUI
 // lays them (wm/roadmap.py, ported: the page plans them itself, so a road follows a hut while it is
 // dragged). Gates sit on the side of a hut that faces the other end, several on one side spread
-// evenly; paths are A* on a grid of CELL px where a step under a hut costs WINDOW_COST, a turn
+// evenly; paths are A* on a grid of cells (CELL px, Camp's track TRACK_CELL) where a step under a hut costs WINDOW_COST, a turn
 // TURN_COST and a step on a cell an earlier road took LANE_COST, so roads keep to the gaps, turn as
 // little as they can and run side by side in lanes of their own instead of on top of each other.
-// A road leaves its gate and comes into one straight for STUB cells, so it never bends right at a hut.
+// A road leaves its gate and comes into one straight for STUB_PX, so it never bends right at a hut.
 
 export const CELL = 8;
+export const TRACK_CELL = 32;               // Camp's track: one v2 track tile a cell (design-system-v2.md §2, §4d)
 const WINDOW_COST = 40;
 const TURN_COST = 3;
 const LANE_COST = 6;
-const STUB = 6;                            // cells a road runs straight out of a gate before it may turn
+const STUB_PX = 48;                        // how far a road runs straight out of a gate before it may turn
 const STEP = { left: [-1, 0], right: [1, 0], top: [0, -1], bottom: [0, 1] };
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
-function toCells(r) {
-  const x = Math.floor(r.x / CELL), y = Math.floor(r.y / CELL);
-  return { x, y, w: Math.max(Math.ceil((r.x + r.w) / CELL) - x, 1), h: Math.max(Math.ceil((r.y + r.h) / CELL) - y, 1) };
+function toCells(r, cell) {
+  const x = Math.floor(r.x / cell), y = Math.floor(r.y / cell);
+  return { x, y, w: Math.max(Math.ceil((r.x + r.w) / cell) - x, 1), h: Math.max(Math.ceil((r.y + r.h) / cell) - y, 1) };
 }
 
 /** The side of `a` that faces `b` (cells are square here: no aspect to make up for). */
@@ -145,11 +146,11 @@ export function route(start, end, under, width, height, taken = null) {
   return [start, end];
 }
 
-const centre = ([x, y]) => [x * CELL + CELL / 2, y * CELL + CELL / 2];
+const centre = ([x, y], cell) => [x * cell + cell / 2, y * cell + cell / 2];
 
 /** Where a gate meets its hut, in px: the middle of the hut's edge cell, on the edge itself. */
-function edgePoint(g, rect) {
-  const [cx, cy] = centre([g.x, g.y]);
+function edgePoint(g, rect, cell) {
+  const [cx, cy] = centre([g.x, g.y], cell);
   if (g.side === "left") return [rect.x, cy];
   if (g.side === "right") return [rect.x + rect.w, cy];
   if (g.side === "top") return [cx, rect.y];
@@ -191,13 +192,15 @@ function track(cells) {
  *  huts themselves) are where gates sit — a hut carries its building's sprite over its card, and roads meet the card;
  *  the huts whole stay what the roads go round. `cells`: every cell the road runs on, from its exit gate to its entry
  *  gate, each next to the one before (Camp lays its track on them, js/rails.js). `bundle`: roads leaving or entering
- *  by one side of a hut share one gate (Camp's switches and merges); Office keeps a gate a road. */
-export function plan(rects, roads, roomW, roomH, ports = rects, { bundle = false } = {}) {
-  const width = Math.max(Math.ceil(roomW / CELL), 1), height = Math.max(Math.ceil(roomH / CELL), 1);
+ *  by one side of a hut share one gate (Camp's switches and merges); Office keeps a gate a road. `cell`: the grid's
+ *  size in px (Camp's track TRACK_CELL, one tile a cell); each path says it. */
+export function plan(rects, roads, roomW, roomH, ports = rects, { bundle = false, cell = CELL } = {}) {
+  const STUB = Math.max(Math.round(STUB_PX / cell), 1);
+  const width = Math.max(Math.ceil(roomW / cell), 1), height = Math.max(Math.ceil(roomH / cell), 1);
   const geoms = {};
-  for (const [id, r] of Object.entries(ports)) geoms[id] = toCells(r);
+  for (const [id, r] of Object.entries(ports)) geoms[id] = toCells(r, cell);
   const under = new Uint8Array(width * height);
-  for (const g of Object.values(rects).map(toCells)) {
+  for (const g of Object.values(rects).map((r) => toCells(r, cell))) {
     for (let y = Math.max(g.y, 0); y < Math.min(g.y + g.h, height); y++) {
       under.fill(1, y * width + Math.max(g.x, 0), y * width + Math.min(g.x + g.w, width));
     }
@@ -234,13 +237,13 @@ export function plan(rects, roads, roomW, roomH, ports = rects, { bundle = false
     const away = stub(g.exit), back = stub(g.entry);
     const cells = route(away[away.length - 1], back[back.length - 1], under, width, height, taken);
     for (const [x, y] of [...away, ...cells, ...back]) taken[y * width + x] = 1;
-    const exit = edgePoint(g.exit, ports[r.from]), entry = edgePoint(g.entry, ports[r.to]);
+    const exit = edgePoint(g.exit, ports[r.from], cell), entry = edgePoint(g.entry, ports[r.to], cell);
     // From the edge straight out along the gate's side, then cell by cell, then straight in.
-    const first = centre(cells[0]), last = centre(cells[cells.length - 1]);
+    const first = centre(cells[0], cell), last = centre(cells[cells.length - 1], cell);
     const lead = g.exit.side === "left" || g.exit.side === "right" ? [first[0], exit[1]] : [exit[0], first[1]];
     const tail = g.entry.side === "left" || g.entry.side === "right" ? [last[0], entry[1]] : [entry[0], last[1]];
     out.push({ id: r.id, exit, entry, side: g.exit.side, entrySide: g.entry.side,
-               points: corners([exit, lead, ...cells.map(centre), tail, entry]),
+               cell, points: corners([exit, lead, ...cells.map((c) => centre(c, cell)), tail, entry]),
                cells: track([[g.exit.x, g.exit.y], ...away, ...cells, ...[...back].reverse(), [g.entry.x, g.entry.y]]) });
   }
   return out;

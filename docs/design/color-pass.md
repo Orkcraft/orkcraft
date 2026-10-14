@@ -219,13 +219,12 @@ mine carts running on it.
 **Built (C4, 2026-10-14):** `gui/static/js/rails.js` tiles each road's cells by their neighbours (straight, corner,
 T-junction, crossing; a switch where one road's carts leave two ways, a merge where two join; a buffer stop before
 the building); in Camp the roads by one side of a hut share a gate, so a building's exits split at a switch and its
-ways in join at a merge (Office keeps a gate a road). `js/track.js` draws the tiles as placeholders of plain shapes
-in the world's tokens, named as the sprites that replace them (`sprites/camp/track/`); the map zoom is a 4 px line.
-`js/carts.js` draws a mine cart from the v2 cart sprites (side, the rolling frames, the load, the flag; at half size
-while the track runs on 8 px cells); a cart that stopped
-(held, stuck, waiting for the person) stands at its road's stop, several as a pile with ×N (`gui/state.py` `carts`).
-The tiles are drawn on the planner's 8 px cells, so the track is narrower than v2's 32 px tile: laying the 32 px
-sprites needs the planner on 16 px cells first.
+ways in join at a merge (Office keeps a gate a road). Camp routes its roads on 32 px cells, one v2 track tile a cell
+(`js/roads.js` `TRACK_CELL`); `js/track.js` lays the tiles from `sprites/camp/track/` (a direction the set lacks yet is
+its mirror; a switch or merge is its tile and the branch's corner); the map zoom is a 4 px line. `js/carts.js` draws
+a mine cart at its art size from the v2 cart sprites (side, the rolling frames, the load, the flag); a cart that
+stopped (held, stuck, waiting for the person) stands at its road's stop, several as a pile with ×N (`gui/state.py`
+`carts`). Huts still settle 12 px apart, so where two stand closer than a tile the track runs under a card.
 
 ## 7. Pixel art stays; a painted style like Kingdom Rush is No
 

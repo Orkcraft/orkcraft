@@ -11,9 +11,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, say, town as snapshot } from "./link.js";
 import { opened, closeBuilding, panelShown, panelWidth, selected, pickBuilding, letGo } from "./windows.js";
-import { plan } from "./roads.js";
+import { plan, TRACK_CELL } from "./roads.js";
 import { lay } from "./rails.js";
-import { RailDefs, Rails, RailMarks } from "./track.js";
+import { Rails } from "./track.js";
 import { Carts } from "./carts.js";
 import { pickedRoad, building as buildOpen, placing, constructing, built, raised } from "./build.js";
 import { openMenu } from "./menu.js";
@@ -228,7 +228,7 @@ function plannedPaths(rects, roads, ports = rects) {
     // Two roads between the same two buildings run as one, with both labels: the later ones take the
     // first one's path (their carts run on it), and only the first is drawn.
     const groups = [...together(roads).values()];
-    const firsts = plan(rects, groups.map((g) => g[0]), r.w, r.h, ports, { bundle });
+    const firsts = plan(rects, groups.map((g) => g[0]), r.w, r.h, ports, bundle ? { bundle, cell: TRACK_CELL } : {});
     const byFirst = Object.fromEntries(firsts.map((p) => [p.id, p]));
     const paths = [...firsts];
     for (const g of groups) {
@@ -369,7 +369,6 @@ function Roads({ roads, rects, ports, tints = {} }) {
   return html`<svg class=${cls("gui-roads", { "has-focus": !!active && !!rects[active] })} width=${r.w} height=${r.h} aria-hidden="true">
     <defs>${HEADS.map(([id, token]) => html`<marker id=${id} viewBox="0 0 10 10" refX="10" refY="5" markerWidth="10"
       markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 Z" style=${`fill: var(${token})`} /></marker>`)}</defs>
-    ${track && html`<defs><${RailDefs} /></defs>`}
     ${paths.filter((p) => !p.mate).map((p) => {
       const road = byId[p.id];
       const g = groups.get(pair(road)) || [road];
@@ -381,7 +380,7 @@ function Roads({ roads, rects, ports, tints = {} }) {
                                                          "is-out": out, "is-in": into && !out, "is-live": g.some((x) => !!x.handler),
                                                          "is-return": g.some((x) => x.returns) })}>
         <path d=${d} class="gui-road__halo" />
-        ${track && track.pieces[p.id] && html`<${Rails} pieces=${track.pieces[p.id]} />`}
+        ${track && track.pieces[p.id] && html`<${Rails} pieces=${track.pieces[p.id]} tiles=${track.at} cell=${p.cell} />`}
         <path d=${d} class="gui-road__line" />
         ${MARKS.has(tints[p.id]) && html`<polyline points=${start(p.points)} class="gui-road__tint" style=${`stroke: var(--mark-${tints[p.id]}); stroke-width: 4`} />`}
         <path d=${d} class="gui-road__hit" onClick=${() => pick(g)} />
@@ -389,7 +388,6 @@ function Roads({ roads, rects, ports, tints = {} }) {
         ${label && html`<text x=${spot.x} y=${spot.y} text-anchor=${spot.anchor} class="gui-road__label ok-font-status">${label}</text>`}
       </g>`;
     })}
-    ${track && html`<${RailMarks} track=${track} />`}
     ${pulling.value && html`<line class="gui-road__pull" x1=${pulling.value.sx} y1=${pulling.value.sy}
       x2=${pulling.value.x} y2=${pulling.value.y} />`}
     ${pulling.value && html`<rect class="gui-road__pull-end" x=${Math.round(pulling.value.x) - 3} y=${Math.round(pulling.value.y) - 3}

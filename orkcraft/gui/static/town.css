@@ -55,26 +55,17 @@
 .gui-test-frame__label { position: absolute; bottom: -0.9em; left: 12px; padding: 0 6px; background: var(--panel);
   border: 1px solid var(--frame-focus); border-radius: 4px; white-space: nowrap; }
 
-/* Roads as rail track in Camp (js/track.js, docs/design/design-system-v2.md §4d): quiet, a line more than a texture:
-   an earth bed, ties of dark wood (one in four of bone), two wooden rails; a selected road's rails in its gold. The
-   block diagram's line stays under it for a click and comes back at the map zoom as a 4 px line in the ties' wood.
-   Office draws no track. */
-.gui-rails, .gui-rail-marks { display: none; }
-[data-look="camp"] .gui-town:not(.is-map) .gui-rails, [data-look="camp"] .gui-town:not(.is-map) .gui-rail-marks { display: inline; }
+/* Roads as rail track in Camp (js/track.js, docs/design/design-system-v2.md §4d): the v2 track tiles at their art size,
+   a selected road's track lit in its gold. The block diagram's line stays under it for a click and comes back at the
+   map zoom as a 4 px line in the ties' wood. Office draws no track. */
+.gui-rails { display: none; }
+[data-look="camp"] .gui-town:not(.is-map) .gui-rails { display: inline; }
 [data-look="camp"] .gui-town:not(.is-map) .gui-road__line { stroke: transparent; marker-end: none; }
 [data-look="camp"] .gui-town:not(.is-map) .gui-road__halo, [data-look="camp"] .gui-town:not(.is-map) .gui-road__out { display: none; }
 [data-look="camp"] .gui-town.is-map .gui-road__line { stroke: var(--art-wood-dark); stroke-width: 4; stroke-dasharray: none; marker-end: none; }
 [data-look="camp"] .gui-town.is-map .gui-road__halo { stroke-width: 8; }
-.gui-rails { --rail-ink: var(--art-wood-light); }
-.gui-road.is-selected .gui-rails { --rail-ink: var(--road-selected); }
-.gui-rail__bed { fill: var(--world-earth); opacity: .55; }
-.gui-rail__bed.is-curve { fill: none; stroke: var(--world-earth); stroke-width: 6px; }
-.gui-rail__tie { fill: var(--art-wood-dark); }
-.gui-rail__tie.is-bone { fill: var(--art-bone); opacity: .6; }
-.gui-rail__rail { fill: var(--rail-ink); }
-.gui-rail__rail.is-curve { fill: none; stroke: var(--rail-ink); stroke-width: 1px; }
-.gui-rail__log { fill: var(--art-wood); stroke: var(--art-outline); stroke-width: .5px; }
-.gui-rail__knob { fill: var(--art-bone); }
+.gui-rails image { image-rendering: pixelated; }
+.gui-roads.has-focus .gui-road.is-selected .gui-rails image { filter: drop-shadow(0 0 2px var(--road-selected)); }
 
 /* Carts (js/carts.js, design-system-v2.md §4e): Camp's mine cart with its load and flag; Office's gold rolling and a
    square standing; at the map zoom a dot in its state's colour. A standing cart's chip (`#42 · title`) is always shown
@@ -83,9 +74,9 @@
 [data-look="camp"] .gui-cart .gui-minecart { display: block; }
 
 [data-look="camp"] .gui-cart .gui-cart__gold { display: none; }
-[data-look="camp"] .gui-cart.is-rolling { offset-anchor: 12px 17px; }
+[data-look="camp"] .gui-cart.is-rolling { offset-anchor: 24px 34px; }
 .gui-cart.is-standing { transform-origin: 50% 50%; translate: -10px -14px; }
-[data-look="camp"] .gui-cart.is-standing { translate: -12px -17px; }
+[data-look="camp"] .gui-cart.is-standing { translate: -24px -34px; }
 html:not([data-look="camp"]) .gui-cart.is-standing .gui-cart__gold { display: none; }
 html:not([data-look="camp"]) .gui-cart.is-standing .gui-cart__square { display: block; }
 .gui-cart__square { width: 10px; height: 10px; background: var(--road); box-shadow: 0 0 0 1px var(--canvas); translate: 5px 9px; }
@@ -100,16 +91,16 @@ html:not([data-look="camp"]) .gui-cart.is-standing .gui-cart__square { display: 
 .gui-town.is-map .gui-cart.is-stuck .gui-cart__square { background: var(--signal-fire); }
 .gui-town.is-map .gui-cart.is-held .gui-cart__square { background: var(--signal-held); }
 .gui-town.is-map .gui-cart.is-behind { display: none; }
-.gui-minecart { position: relative; width: 24px; height: 20px; flex: none; isolation: isolate; }
-.gui-minecart > span { position: absolute; background-repeat: no-repeat; background-size: 100% 100%; }
-.gui-minecart::after { content: ""; position: absolute; left: 3px; right: 3px; bottom: -1px; height: 3px; border-radius: 50%;
+.gui-minecart { position: relative; width: 48px; height: 40px; flex: none; isolation: isolate; }
+.gui-minecart > span { position: absolute; background-repeat: no-repeat; background-size: 100% 100%; image-rendering: pixelated; }
+.gui-minecart::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: -2px; height: 5px; border-radius: 50%;
   background: color-mix(in srgb, var(--art-outline) 35%, transparent); z-index: -1; }      /* the product's shadow */
 .gui-minecart__bin { inset: 0; background-image: url(/ds/sprites/camp/carts/side.png); }
 .gui-minecart.is-rolling .gui-minecart__bin { background-image: url(/ds/sprites/camp/carts/rolling-side.png); background-size: 400% 100%;
   animation: gui-minecart-roll .5s steps(4) infinite; }
 @keyframes gui-minecart-roll { to { background-position-x: 133.333%; } }
-.gui-minecart__load { left: 0; top: -13px; width: 24px; height: 16px; }   /* its foot behind the rim */
-.gui-minecart__flag { left: -1px; top: -15px; width: 20px; height: 16px; }
+.gui-minecart__load { left: 0; top: -26px; width: 48px; height: 32px; }   /* its foot behind the rim */
+.gui-minecart__flag { left: -2px; top: -30px; width: 40px; height: 32px; }
 .gui-minecart[data-state="stuck"] .gui-minecart__flag { animation: gui-flag-flicker 1s steps(2) infinite; }
 @keyframes gui-flag-flicker { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .gui-minecart.is-rolling .gui-minecart__bin, .gui-minecart[data-state="stuck"] .gui-minecart__flag { animation: none; } }
@@ -117,9 +108,9 @@ html:not([data-look="camp"]) .gui-cart.is-standing .gui-cart__square { display: 
 .gui-pile:hover { z-index: 3; }
 .gui-cart__chip { position: absolute; display: none; height: 20px; padding: 0 6px; white-space: nowrap; font-size: 12px; line-height: 18px;
   font-weight: 600; background: var(--chip); color: var(--chip-ink); border: 1px solid var(--art-outline); border-radius: var(--radius-sm); }
-.gui-pile__chip { left: 50%; bottom: 34px; transform: translateX(-50%); }
-.gui-pile__count { right: 14px; top: -10px; display: block; }   /* behind the pile, back along the track */
-.gui-pile.is-westward .gui-pile__count { right: auto; left: 14px; }
+.gui-pile__chip { left: 50%; bottom: 64px; transform: translateX(-50%); }
+.gui-pile__count { right: 28px; top: -20px; display: block; }   /* behind the pile, back along the track */
+.gui-pile.is-westward .gui-pile__count { right: auto; left: 28px; }
 .gui-pile__chip.is-always, .gui-pile:hover .gui-pile__chip, .gui-town.is-zoom-c .gui-pile__chip { display: block; }
 .gui-town.is-map .gui-pile__count, .gui-town.is-map .gui-pile__chip:not(.is-always) { display: none; }
 .gui-town.is-map .gui-pile:hover .gui-pile__chip:not(.is-always) { display: none; }
