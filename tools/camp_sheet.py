@@ -30,7 +30,10 @@ A sheet is a generated image on flat `#FF00FF` drawn in "pixels" of a few screen
 **v3** (docs/design/design-system-v3.md §8): the sheets of docs/design/v3-prompts.md §3 are drawn "in a neat grid with
 even spacing", so a v3 item names its piece by `order`, its place in reading order (rows top to bottom, each left to
 right, counted from 0), instead of a point; `--list` prints that order. A sheet not yet in the folder is skipped and
-listed as awaited, so the command is the same before and after each sheet arrives. The v3 spec sets `native` (each
+listed as awaited, so the command is the same before and after each sheet arrives. A sheet with `degrid` (the ork sheets: the
+model drew a box round every cell) has its drawn grid dropped before the pieces are found: long, thin, dark straight
+runs with the background on both sides, the key's own darkened violet, and a cut along every line drawn across most of
+the sheet (`--degrid --list SHEET` to try it). The v3 spec sets `native` (each
 sprite cut at the sheet's own art pixel, never re-read coarser; its slot is what the sheet draws, rounded up to the
 grid of 8, and a size in the spec is only the plan) and `keep_colours` (no snap to the tokens: the art keeps its own
 shading; the cutter only reports pixels in a signal's yellow, orange or red). The sheets are soft (the model renders
@@ -70,6 +73,52 @@ def keyed(a: np.ndarray, fringe: int = 60) -> np.ndarray:
     """True where the sheet is background: the magenta, and the purple a blended shadow left in it."""
     r, g, b = a[..., 0], a[..., 1], a[..., 2]
     return ((r - g > fringe) & (b - g > fringe) & (b > r * 0.55)) | ((r > 200) & (b > 200) & (g < 90))
+
+
+def _runs(m: np.ndarray) -> np.ndarray:
+    """For each True pixel, the length of the horizontal run of True it lies in."""
+    out = np.zeros(m.shape, np.int32)
+    for y in range(m.shape[0]):
+        row = m[y].astype(np.int8)
+        d = np.diff(np.concatenate(([0], row, [0])))
+        starts, ends = np.nonzero(d == 1)[0], np.nonzero(d == -1)[0]
+        for a, b in zip(starts, ends):
+            out[y, a:b] = b - a
+    return out
+
+
+def degrid(a: np.ndarray, bg: np.ndarray, length: int = 120, thick: int = 14, dark: int = 90) -> np.ndarray:
+    """The background with a drawn grid added to it: the boxes or lines an image model draws round each cell (thin
+    dark straight runs at least `length` px long and at most `thick` px across), so they no longer join the sprites.
+    A sprite's own outline is shorter, or lies against a dark area of the sprite (thicker than `thick`)."""
+    lum = 0.3 * a[..., 0] + 0.59 * a[..., 1] + 0.11 * a[..., 2]
+    d = ~bg & (lum < dark)
+    h_run, v_thick = _runs(d), _runs(d.T).T
+    v_run, h_thick = v_thick, h_run
+    # a drawn line has the background on both sides; a sprite's own straight outline has the sprite on one side
+    def near_bg(dy: int, dx: int) -> np.ndarray:
+        out = np.zeros_like(bg)
+        for k in range(1, thick + 4):
+            out |= np.roll(bg, (dy * k, dx * k), axis=(0, 1))
+        return out
+    across_v = near_bg(1, 0) & near_bg(-1, 0)          # background above and below: a horizontal line
+    across_h = near_bg(0, 1) & near_bg(0, -1)          # left and right: a vertical one
+    line = (h_run >= length) & (v_thick <= thick) & across_v | (v_run >= length) & (h_thick <= thick) & across_h
+    # where a sprite touches a drawn line the run is thicker; the line's own colour is the key darkened (a violet with
+    # blue at least red: the plum cloth, bluer than red never, is kept), so that goes too
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    violet = ~bg & (lum < 110) & (r - g > 40) & (b - g > 40) & (b * 20 >= r * 19)
+    out = bg | _grow(line, 2) | violet
+    # a line drawn across most of the sheet is a cut between cells, whatever smudge crosses it (cut wide enough that
+    # the closing of small gaps, a cell or two, does not bridge it)
+    lines = line | violet
+    for axis in (0, 1):
+        full = lines.mean(axis=axis) >= 0.6
+        if axis == 0:
+            out[:, _grow(full[None], 8)[0]] = True
+        else:
+            out[_grow(full[:, None], 8)[:, 0], :] = True
+    return out
 
 
 # --- 2. the sheet's own grid ----------------------------------------------------------------------------------
@@ -188,11 +237,13 @@ def largest(img: np.ndarray, close: int = 1) -> np.ndarray:
 
 
 class Sheet:
-    def __init__(self, path: pathlib.Path, fringe: int = 60, close: int = 1):
+    def __init__(self, path: pathlib.Path, fringe: int = 60, close: int = 1, grid_lines: bool = False):
         self.path = path
         self.a = load(path)
         self.bg = keyed(self.a, fringe)
         self.pitch, self.ox, self.oy = grid(self.a, self.bg)
+        if grid_lines:                          # a drawn box or line round every cell: background too (after the
+            self.bg = degrid(self.a, self.bg)   # pitch, which the sprites' own edges set either way)
         H, W = self.bg.shape
         self.w, self.h = int((W - self.ox) / self.pitch), int((H - self.oy) / self.pitch)
         self.art = snap(self.a, self.bg, self.ox, self.oy, self.pitch, self.pitch, self.w, self.h)
@@ -715,9 +766,10 @@ def main() -> None:
     ap.add_argument("--only", default="")
     ap.add_argument("--list", type=pathlib.Path)
     ap.add_argument("--check", type=pathlib.Path)
+    ap.add_argument("--degrid", action="store_true", help="with --list: drop a grid the model drew round the cells")
     args = ap.parse_args()
     if args.list:
-        s = Sheet(args.list)
+        s = Sheet(args.list, grid_lines=args.degrid)
         print(f"pitch {s.pitch:.2f} px, phase {s.ox:.1f}, {s.oy:.1f}; grid {s.w} × {s.h}")
         for i, b in enumerate(s.ordered()):
             print(f"  order {i:2d}  at [{(b[0] + b[2]) / 2 / s.w:.3f}, {(b[1] + b[3]) / 2 / s.h:.3f}]  "
@@ -745,7 +797,7 @@ def main() -> None:
             print(f"{sh['name']}: awaited ({path.relative_to(ROOT)})")
             continue
         done.add(sh["file"])
-        sheet = Sheet(path, sh.get("fringe", 60), sh.get("close", 1))
+        sheet = Sheet(path, sh.get("fringe", 60), sh.get("close", 1), sh.get("degrid", spec.get("degrid", False)))
         print(f"{sh['name']}: pitch {sheet.pitch:.2f} px, {len(sheet.boxes)} pieces")
         for group in sh["groups"]:
             group["_sheet"] = sh["file"]

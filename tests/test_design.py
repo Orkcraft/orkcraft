@@ -173,6 +173,43 @@ def test_the_v3_preview_awaits_every_sprite_the_v3_sheets_are_cut_into():
                 assert "order" in item or all("order" in f for f in item.get("frames", [])), item["file"]
 
 
+def test_a_drawn_grid_round_the_cells_is_dropped_before_the_pieces_are_found(tmp_path):
+    """design-system-v3.md §8 (v3-prompts §9): an image model drew a box round every cell, joining the sprites; with
+    `degrid` the boxes go and each sprite is its own piece, a building's own straight outline stays."""
+    import importlib.util
+    root = Path(__file__).resolve().parent.parent
+    try:
+        import numpy as np
+        from PIL import Image
+        mod = importlib.util.spec_from_file_location("camp_sheet", root / "tools" / "camp_sheet.py")
+        cs = importlib.util.module_from_spec(mod)
+        mod.loader.exec_module(cs)
+    except ImportError:
+        pytest.skip("the cutter needs numpy and pillow")
+    a = np.zeros((400, 600, 3), np.uint8)
+    a[:] = (255, 0, 255)
+    for r in range(2):
+        for c in range(3):
+            x0, y0 = c * 200, r * 200
+            for t in range(6):                                  # the drawn box, 6 px thick, touching its neighbours'
+                a[y0 + t, x0:x0 + 200] = a[y0 + 199 - t, x0:x0 + 200] = (60, 0, 70)
+                a[y0:y0 + 200, x0 + t] = a[y0:y0 + 200, x0 + 199 - t] = (60, 0, 70)
+            a[y0 + 40:y0 + 160, x0 + 60:x0 + 140] = (28, 20, 16)  # a sprite with long straight outlines
+            a[y0 + 45:y0 + 155, x0 + 65:x0 + 135] = (120, 150, 60)
+            a[y0 + 45:y0 + 155:10, x0 + 65:x0 + 135] = (90, 110, 50)
+    a[150:165, 175:225] = (230, 120, 170)                       # a smudge across a line
+    path = tmp_path / "framed.png"
+    Image.fromarray(a).save(path)
+    assert len(cs.Sheet(path).boxes) != 6                       # the boxes read as pieces, or join the sprites
+    assert len(cs.Sheet(path, grid_lines=True).boxes) == 6
+    img = cs.load(path)
+    bg = cs.keyed(img)
+    dropped = cs.degrid(img, bg) & ~bg
+    for r in range(2):
+        for c in range(3):                                      # the sprites' own outlines stay
+            assert not dropped[r * 200 + 40:r * 200 + 160, c * 200 + 60:c * 200 + 140].any()
+
+
 def test_v3_parchment_and_the_teal_accent_read():
     """design-system-v3.md §2: the keeper's scroll and the panels are cream parchment in walnut, a teal accent."""
     for theme in ("camp", "office"):

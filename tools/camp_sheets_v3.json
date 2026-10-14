@@ -1,5 +1,5 @@
 {
- "note": "v3's sheets (docs/design/v3-prompts.md §3) and the sprites each is cut into (docs/design/design-system-v3.md §8). A sheet goes into `root` under exactly its `file` name; `python tools/camp_sheet.py --v3` cuts every sheet that is there and lists the rest as awaited. A piece is named by `order`: its place in reading order on the sheet (`--list SHEET` prints it); if the image model drew the sheet in another order, change the numbers, not the names. Sizes are the plan in art px; with `native` the slot is what the sheet draws (rounded up to 8), shown at ×1 (docs/design/design-system-v3.md §3), and `keep_colours` keeps the art's own colours.",
+ "note": "v3's sheets (docs/design/v3-prompts.md §3) and the sprites each is cut into (docs/design/design-system-v3.md §8). A sheet goes into `root` under exactly its `file` name; `python tools/camp_sheet.py --v3` cuts every sheet that is there and lists the rest as awaited. A piece is named by `order`: its place in reading order on the sheet (`--list SHEET` prints it); if the image model drew the sheet in another order, change the numbers, not the names. Sizes are the plan in art px; with `native` the slot is what the sheet draws (rounded up to 8), shown at ×1 (docs/design/design-system-v3.md §3), and `keep_colours` keeps the art's own colours. `degrid` (set on the ork sheets, whose first round came with a box drawn round every cell) drops a drawn grid before the pieces are found; it is off for the others, where it would eat a building's own straight outlines.",
  "root": "docs/design/img/references/v3",
  "out": "design-system/sprites/v3",
  "native": true,
@@ -387,6 +387,7 @@
    "name": "o1-body",
    "file": "o1-body.png",
    "about": "§3b.1 the ork's body, 32 × 32, rows: idle 4, walk down 6, walk up 6, walk right 6, work 6, out of a door 4",
+   "degrid": true,
    "groups": [
     {
      "size": [
@@ -538,6 +539,7 @@
    "name": "o2-roles",
    "file": "o2-roles.png",
    "about": "§3b.2 the twelve roles on the same body, 32 × 32, one row",
+   "degrid": true,
    "groups": [
     {
      "size": [
@@ -613,6 +615,7 @@
    "name": "o3-states",
    "file": "o3-states.png",
    "about": "§3b.3 the five state poses, 32 × 32",
+   "degrid": true,
    "groups": [
     {
      "size": [
@@ -660,6 +663,7 @@
    "name": "o4-faces",
    "file": "o4-faces.png",
    "about": "§3b.4 the twelve heads: a row at 16 × 16, a row at 24 × 24",
+   "degrid": true,
    "groups": [
     {
      "size": [
@@ -797,6 +801,7 @@
    "name": "o5-inside",
    "file": "o5-inside.png",
    "about": "§3b.5 the worker inside a building (I2): carrying a slab 6, a magnifying glass 4, a quill at a lectern 4, pinning a parchment 4",
+   "degrid": true,
    "groups": [
     {
      "size": [

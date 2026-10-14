@@ -141,10 +141,14 @@ before. The inside of a building is its own screen (I2), at ×1.
 **The sizes drift between sheets** (the Task board drawn at 88 px beside a 192-px Agent pool): the next sheets ask each
 building at its planned width, and the Task board is redrawn as a core building (about 160–192 wide).
 
-**Ten buildings on the window:** at ×1 the preview's town holds the ten of §4 — External listeners in the wall; Task
-board, Agent pool, Review gate above the line; the Publisher at its end; Inspector, Research, Test bench, Town Hall,
-UX bench below it — with room to spare (the widest row, below the line, takes about 900 of 1440 px). An eleventh
-fits too, but the rule stays at ten so the camp does not crowd.
+**Ten buildings on the window, at F1's density:** the preview packs the ten of §4 as F1 does — two rows close to the
+line (the upper row's doors a 32-px path above the track, the lower row's roofs just under it, its lane under its
+doors), about one path's width (32 px) between buildings, sand strips no wider than a path. At ×1 the camp inside its
+walls is about 990 × 580 px and stands in the middle of the 1440 × 864 world, wilderness round it; the buildings cover
+about 12 % of the window and 26 % of the camp. **F1 draws its buildings about 1.6–1.7× larger** (its work hall is
+about 330 px wide at 1440 against the cut Agent pool's 192), so at ×1 the camp cannot fill the window as F1 does without
+a larger scale, which v3 does not use. To get F1's fill, the sheets must draw the buildings larger — fewer to a sheet
+(three or four instead of six), so the model gives each more pixels — or the camp stays compact in its wilderness.
 
 **What this supersedes in v2:** §2.3's ladder, §2.4's footprints as cards, §4f's 32 × 48 ork (the owner's answer 4),
 §4e's 48 × 32 cart, the sizes by S/M/L (answer 8: sizes follow what each sheet draws).
@@ -177,9 +181,11 @@ fits too, but the rule stays at ten so the camp does not crowd.
 7. **A building is one sprite with a door** (§13.1): no lifting cover, no nine-slice roof, no facade or crest slot.
    The door is in the lower middle of its front; its three states (closed; open, warm light; the keeper half out) are
    a 32 × 40 patch drawn over it. The cover kit (v2 §4a–4c) stays only until I1 takes it out.
-8. **Few orks:** an ork is a session; a camp shows four to eight. Edges are quiet (few crates and bushes) so the eye
+8. **Dense, as F1:** two rows hugging the line, about one path's width between buildings, sand no wider than a path;
+   the camp is as large as its buildings at ×1 and the wilderness round it takes the rest of the window.
+9. **Few orks:** an ork is a session; a camp shows four to eight. Edges are quiet (few crates and bushes) so the eye
    stays on the line.
-9. The town's name is the person's (the project's name, "My camp" in the previews), never a character's.
+10. The town's name is the person's (the project's name, "My camp" in the previews), never a character's.
 
 **Layers** (v2 §3, revised): ground · paths and track · buildings · carts · orks · **doors** (the patch over a
 building, sorted with it) · signals · chips · UI. The covers' layer is gone. Shadows stay the product's.
@@ -274,6 +280,13 @@ palette the product draws with (ground, paths, chips, its own shapes) and the re
 keep. The cutter only **reports** pixels in a signal's yellow, orange or red (saturation ≥ 0.75, value ≥ 0.7, hue
 340°–65°; the honey wood and the sand sit well below), and such a sprite is redrawn; only the signals' sheet may have
 them. Round 3's report: the UX bench's banner (1.4 % of its pixels) and a few px of the Review board's fire.
+
+**A drawn grid** (round 4: the model drew a box round every cell of the ork sheets, which joined the sprites): a sheet
+with `degrid` (set on o1–o5) has the grid dropped before the pieces are found — long (≥ 120 px), thin (≤ 14 px) dark
+straight runs with the background on both sides, the key's own darkened violet, and a cut along any line drawn across
+most of the sheet, so a smudge across a line cannot join two cells. Tried with `--degrid --list` on the round-4
+references: o1 reads 32 pieces in rows of 4/6/6/6/6/4 (45 without), o2 two rows of 11 (11 blobs without). It stays off
+for the building sheets, where it would eat a building's own straight outlines (B1's catapult was lost in the test).
 
 **Re-pixelised** (the sheets are soft: the model renders at about 4.17 image px per art px and smooths it, and the
 JPEG blurs again — inside one art pixel the colour varies by about 25 of 255): each art pixel is the **median of its

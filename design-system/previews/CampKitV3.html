@@ -124,7 +124,7 @@ else v2's placeholder, else a block in v3's colours.</p>
     <span class="v3-gap"></span>
     <button class="v3-button" type="button">Stop all</button>
   </div>
-  <div class="v3-world" id="world"><div class="v3-tufts"></div></div>
+  <div class="v3-world"><div class="v3-tufts"></div><div class="v3-at" id="world" style="left:0;top:144px;width:1440px;height:576px"></div></div>
 </div></div>
 
 <h2>The palette: v2 → v3</h2>
@@ -344,20 +344,25 @@ async function pick(cands) {
 }
 
 // --- the layout (art px): docs/design/design-system-v3.md §4 ------------------------------------------------
-const LINE_Y = 224;                     // the main line's tile row (32 tall)
-const LANE_Y = 344;                     // the lower row's lane, under its doors
+// F1's density (round 4): two rows close to the line, about one path's width between buildings; the camp is as wide
+// as its buildings at ×1 and stands in the middle of the window, wilderness round it. Numbers in layout units (2 px).
+const OX = 150;                         // the camp's left edge
+const OY = 72;                          // the wilderness above the back wall (#world sits OY units down)
+const LINE_Y = 128;                     // the main line's tile row (32 tall)
+const LANE_Y = 232;                     // the lower row's lane, under its doors
+const WALL_X = OX + 440;                // the right wall, the catapult against it
 const BUILDINGS = [
-  // type, name, box [x, y(top), w, h], v2 stand-in, block look, path: "top" (to the line above) | "lane"
-  ["watchtower", "External listeners", [72, 4, 40, 64], "covers/tower/lookout.png", { roof: "var(--art-bone)" }, "wall"],
-  ["fields", "Task board", [194, 156, 44, 36], "facades/fields.png", { roof: "var(--art-wood-light)" }, "line"],
-  ["barracks", "Agent pool", [296, 128, 96, 64], "facades/barracks.png", { roof: "var(--art-cloth)" }, "line"],
-  ["loot_vault", "Review gate", [448, 136, 80, 56], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, "line"],
-  ["catapult", "Publisher", [640, 200, 64, 56], null, { machine: true, roof: "var(--art-wood)" }, "end"],
-  ["lake", "Inspector", [40, 292, 64, 52], "covers/open/pond.png", { water: true }, "lane"],
-  ["mine", "Research", [184, 280, 48, 64], null, { stone: true, roof: "var(--art-bone)" }, "lane"],
-  ["lab", "Test bench", [298, 292, 76, 52], null, { roof: "var(--art-wood-light)" }, "lane"],
-  ["town_hall", "Town Hall", [434, 280, 92, 64], null, { roof: "var(--art-cloth-plum)" }, "lane"],
-  ["ux_lab", "UX bench", [592, 288, 64, 56], null, { roof: "var(--art-cloth)" }, "lane"],
+  // type, name, box [x, y(top), w, h] (the cut sprite's size), v2 stand-in, block look, path: "line" | "lane" | …
+  ["watchtower", "External listeners", [OX + 12, 0, 40, 64], "covers/tower/lookout.png", { roof: "var(--art-bone)" }, "wall"],
+  ["fields", "Task board", [OX + 100, 76, 44, 36], "facades/fields.png", { roof: "var(--art-wood-light)" }, "line"],
+  ["barracks", "Agent pool", [OX + 160, 48, 96, 64], "facades/barracks.png", { roof: "var(--art-cloth)" }, "line"],
+  ["loot_vault", "Review gate", [OX + 272, 56, 80, 56], "covers/gate/gatehouse.png", { stone: true, roof: "var(--art-stone)" }, "line"],
+  ["catapult", "Publisher", [OX + 376, 104, 64, 56], null, { machine: true, roof: "var(--art-wood)" }, "end"],
+  ["lake", "Inspector", [OX + 16, 180, 64, 52], "covers/open/pond.png", { water: true }, "lane"],
+  ["mine", "Research", [OX + 96, 168, 48, 64], null, { stone: true, roof: "var(--art-bone)" }, "lane"],
+  ["lab", "Test bench", [OX + 160, 180, 76, 52], null, { roof: "var(--art-wood-light)" }, "lane"],
+  ["town_hall", "Town Hall", [OX + 252, 168, 92, 64], null, { roof: "var(--art-cloth-plum)" }, "lane"],
+  ["ux_lab", "UX bench", [OX + 360, 176, 64, 56], null, { roof: "var(--art-cloth)" }, "lane"],
 ];
 
 function block(box, look) {
@@ -406,10 +411,10 @@ async function track() {
     } else el("v3-at v3-rails" + (v ? " is-v" : ""), x, y, 32, 32);
   };
   // the way in: from outside the wall at the tower's foot, down to the line, then left to right to the catapult
-  for (let y = 0; y < LINE_Y; y += 32) await tile("straight-v", 112, y, true);
-  await tile("corner-ne", 112, LINE_Y);
-  for (let x = 144; x < 608; x += 32) await tile("straight-h", x, LINE_Y);
-  await tile("stop-e", 608, LINE_Y);
+  for (let y = -OY; y < LINE_Y; y += 32) await tile("straight-v", OX + 56, y, true);   // in from outside the wall
+  await tile("corner-ne", OX + 56, LINE_Y);
+  for (let x = OX + 88; x < OX + 344; x += 32) await tile("straight-h", x, LINE_Y);
+  await tile("stop-e", OX + 344, LINE_Y);
 }
 
 function paths() {
@@ -421,12 +426,12 @@ function paths() {
   // a lane per row of buildings (the owner's answer, v3-prompts §8): the upper row's lane is the track's verge; the
   // lower row's runs under its doors, joined to the line by short paths between buildings, each joint a stop.
   // Carts stay on the line; lanes are for orks. An eleventh building starts another row and lane below, the same way.
-  el("v3-at v3-path", 16, LANE_Y, 656, 16);
-  for (const x of [136, 400, 560]) el("v3-at v3-path", x, LINE_Y + 32, 16, LANE_Y - LINE_Y - 32);
+  el("v3-at v3-path", OX + 8, LANE_Y, 424, 16);
+  for (const x of [OX + 80, OX + 236, OX + 344]) el("v3-at v3-path", x, LINE_Y + 32, 16, LANE_Y - LINE_Y - 32);
   // the low palisade: along the top (a gap where the track comes in at the tower's foot) and down the right side
-  el("v3-at v3-palisade", 0, 0, 112, 32);
-  el("v3-at v3-palisade", 144, 0, 576, 32);
-  el("v3-at v3-palisade is-v", 704, 32, 16, 400);
+  el("v3-at v3-palisade", OX - 40, 0, 96, 32);
+  el("v3-at v3-palisade", OX + 88, 0, WALL_X + 16 - OX - 88, 32);
+  el("v3-at v3-palisade is-v", WALL_X, 32, 16, LANE_Y + 24);
 }
 
 async function ork(cx, feetY, opts = {}) {
@@ -494,20 +499,20 @@ async function scene() {
   paths();
   await track();
   for (const b of BUILDINGS) await building(b);
-  for (const [, name, [x, y, w, h]] of BUILDINGS) nameChip(name, x + w / 2, y + h + (y + h > LINE_Y ? 12 : 2));
+  for (const [, name, [x, y, w, h], , , kind] of BUILDINGS) nameChip(name, x + w / 2, kind === "lane" ? y + h + 12 : kind === "wall" ? y + h + 2 : y - 14);
   // carts: two rolling, one stopped at the Task board's path, one held at the gate with the yellow flag and its chip
-  await cart(150, "code", { roll: 444, dur: 20 });
-  await cart(150, "message", { roll: 444, dur: 20, delay: -10 });
-  await cart(216, "asset");
-  await cart(504, "code", { flag: "#42 · Fix login bug" });
+  await cart(OX + 96, "code", { roll: 240, dur: 14 });
+  await cart(OX + 96, "message", { roll: 240, dur: 14, delay: -7 });
+  await cart(OX + 116, "asset");
+  await cart(OX + 304, "code", { flag: "#42 · Fix login bug" });
   // the keepers wait at the stops (Task board, Agent pool, Review gate, Inspector); one lifts the load off at the gate;
   // one asks at the Agent pool's door; one works in the lane
-  await ork(232, 220);
-  await ork(376, 220);
-  await ork(492, 220, { anim: "work" });
-  await ork(126, 272);
-  await ork(330, 196, { badge: "ask" });
-  await ork(470, 358, { anim: "work", flip: true });
+  await ork(OX + 136, LINE_Y - 2);
+  await ork(OX + 224, LINE_Y - 2);
+  await ork(OX + 320, LINE_Y - 2, { anim: "work" });
+  await ork(OX + 96, LINE_Y + 50);
+  await ork(OX + 190, 112, { badge: "ask" });
+  await ork(OX + 300, LANE_Y + 14, { anim: "work", flip: true });
   report();
 }
 
