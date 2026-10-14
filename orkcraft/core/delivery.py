@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from orkcraft import scroll
-from orkcraft.core import bus
+from orkcraft.core import bus, last_look
 from orkcraft.realm import catalog, feedback, metrics, pipes, regressions, roads
 
 
@@ -23,13 +23,20 @@ def engine(town) -> roads.Engine:
         on_output=lambda *a: output(town, *a),
         on_run=lambda run: ran(town, run),
         meta=lambda payload: meta(town, payload),
-        on_cart=lambda cart: town.publish(bus.CART, cart=cart),
+        on_cart=lambda cart: cart_went(town, cart),
         budget_ok=lambda: bool(town.budget_ok()),
         call=lambda fn, *a: town.call(fn, *a),
         run_env={"ORKCRAFT_RUN": town.run_id},
         travel=lambda: getattr(town, "cart_travel_s", 0.0),
         aim=lambda building_id: aim_now(town, building_id),
     )
+
+
+def cart_went(town, cart) -> None:
+    """A cart set off, arrived or was held: the faces draw it (`CART`), one that arrived is kept for "since your
+    last look" (core/last_look.py)."""
+    last_look.moved(town, cart)
+    town.publish(bus.CART, cart=cart)
 
 
 def aim_now(town, building_id: str) -> str | None:
@@ -145,6 +152,7 @@ def emit(town, building_id: str, event_id: str, value: str, title: str = "",
     ev = catalog.type_of(spec).event(event_id) if spec else None
     if ev is not None:
         feedback.record_output(town.repo_root, building_id, event_id, value)      # what 👍 / 👎 rate
+        last_look.built(town, building_id, event_id, title, ref)                  # a result, for the next look
         if getattr(town, "lake", None) is not None:          # a road of it once went into a Lake building
             town.lake.follow(building_id, event_id, ev.kind, value, title)
     if ev is None or town.scroll is None:

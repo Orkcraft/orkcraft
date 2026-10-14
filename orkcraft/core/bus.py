@@ -35,6 +35,7 @@ TOOL_ERROR = "tool_error"  # harness, tool, kind, title, line, action, detail, s
                           # AI tool failed (realm/tool_errors.py report); a face shows Switch, Retry and Details
 ORDER = "order"      # kind, building, source, order, card: the Warchief gave an order a face runs as its job
                      # (a road for the road planner, an ork for the Recruiter, a change for a keeper)
+LOOK = "look"        # the greeting of "since your last look" changed (core/last_look.py): a face draws it again
 
 
 @dataclass(frozen=True)
