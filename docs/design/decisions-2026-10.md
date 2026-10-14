@@ -329,3 +329,18 @@ feedback, besides these.
 9. S9 and E1 wait; the new look comes first.
 
 The prompts for the frames and for every asset to replace: [v3-prompts.md](v3-prompts.md).
+
+
+## 14. Overnight, 14–15 October: the owner delegated to the PM session
+
+The owner, going to sleep: run everything in order, decide as needed, talk in the morning; GEN and V3 must not need
+the owner's input. What runs, in order:
+
+| session | does | picks |
+|---|---|---|
+| GEN | cuts the six picks of round 9; a fourth run: the person's homes by kin (k2), the track pieces at c2's gauge | round 4 picked by the PM session by stated rules, written in v3-prompts.md for the owner to change |
+| V3 | wires the stations (dispatcher's booth and siding, the barrier and weighbridge, the mine), the Prospector, the class figures, the homes, the growth marks into the preview; writes design-system-v3.md's final state | — |
+| I1 | brings the real Camp onto v3: the town drawn in v3 (the line per row, the loop, the stations, zoom and pan), the steward and the scroll and quick actions, the ork's terminal and the cart's history, the score made visible, the growth marks | — |
+
+Next, after I1: I2 (the Task board's inside — now the dispatcher's booth inside), then the inventory and the portrait's
+growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-mission.md §9).
