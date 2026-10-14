@@ -21,7 +21,7 @@ body { user-select: text; -webkit-user-select: text; }
 }
 .gui-loading { display: grid; place-items: center; height: 100%; color: var(--ink-muted); }
 
-.gui-hud { grid-area: hud; }
+.gui-hud { grid-area: hud; position: relative; z-index: 9; }   /* its lists (the 🥩 list) open over the town and the panel */
 .gui-hud__project { color: var(--ink-muted); }
 /* The project's name opens the town's settings (js/settings.js); Halt All stands where Ready was. */
 .gui-hud__menu, .gui-hud__stop { padding: 1px var(--space-2); border: 1px solid transparent; border-radius: var(--radius-sm, 0);
@@ -1088,7 +1088,8 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 .gui-slots { position: relative; display: inline-flex; align-items: center; gap: var(--space-2); }
 .gui-slots__open { border: 1px solid transparent; background: none; color: inherit; font: inherit; cursor: pointer; padding: 1px var(--space-1); }
 .gui-slots__open:hover { border-color: var(--frame); }
-.gui-slots__list { position: absolute; top: 100%; right: 0; margin-top: var(--space-2); width: min(560px, calc(100vw - 32px)); z-index: 30;
+/* Fixed under the bar: the HUD clips what overflows it (.ok-hud), and the list opens over the town and the panel. */
+.gui-slots__list { position: fixed; top: calc(var(--bar-hud) + var(--space-1)); right: var(--space-2); width: min(560px, calc(100vw - 32px)); z-index: 30;
   max-height: 60vh; overflow: auto; padding: var(--space-3); background: var(--panel); border: var(--ok-stroke, 2px) solid var(--frame);
   box-shadow: var(--shadow-window); white-space: normal; }
 .gui-slots__head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }

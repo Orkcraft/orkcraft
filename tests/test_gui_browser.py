@@ -2519,6 +2519,11 @@ def test_the_agent_pool_s_lanes_are_roles_and_a_session_s_chip_opens_it(gui, pag
     assert [c.get_attribute("data-ork") for c in chips.all()] == ["Thrak", "Grub"]       # the asking one first
     assert [c.locator(".pool-chip__mark").inner_text() for c in chips.all()] == ["❓", "Zz"]
     pg.locator(".gui-slots__waits", has_text="❓ 1").wait_for(timeout=WAIT_MS)         # the HUD: one asks
+    pg.locator(".gui-slots__open").click()                                              # the 🥩 list opens over the town
+    box = pg.locator(".gui-slots__list").bounding_box()
+    assert pg.evaluate("([x, y]) => !!document.elementFromPoint(x, y).closest('.gui-slots__list')",
+                       [box["x"] + box["width"] / 2, box["y"] + box["height"] / 2])
+    pg.keyboard.press("Escape")
     chips.first.click()                                                                  # asks: its console, folded
     console = pg.locator(".gui-orkconsole", has_text="Thrak")
     console.wait_for(state="visible", timeout=WAIT_MS)
