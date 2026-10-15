@@ -642,3 +642,16 @@ build flow; **Not now** turns the plot back to grass for 14 days.
 - The Workchief may name a plot once in its line when it appears.
 P1, with §20's layout; not started.
 
+**The main line and the person's quarter (the owner, same day; amends §20).** So as not to take the camp's making
+away from the person:
+- **Row 1 is the main line, laid out by the product:** the flow every camp shares, in order: the Task board's booth,
+  the depot, the work stations (Research's mine, the benches), the checks (Review board, Inspector), the Review gate
+  before the end; the heralds on the wall above it (§4f). Always in good order, the same in every camp.
+- **Rows 2 and on are the person's quarter:** the person arranges them as they like, **in Camp, by dragging** a
+  building onto another place in these rows (it snaps to the place; the track, the lines and the loop stay the
+  product's, §4c rule 4). A new building that is not on the main line lands in the first free place there, and stays
+  where the person puts it. The Wiki's place on the grass and the plots follow the same split: plots for main-line
+  buildings appear in row 1, the others in the quarter, where the person may move them.
+- Return pairs across the two parts are not forced together; the round trip shows as it is (§4c rule 9).
+- Decor and items stay the person's everywhere on the grass.
+
