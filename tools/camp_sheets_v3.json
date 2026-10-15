@@ -201,14 +201,6 @@
        ]
       },
       {
-       "file": "buildings/council.png",
-       "order": 1,
-       "size": [
-        112,
-        96
-       ]
-      },
-      {
        "file": "buildings/mine.png",
        "order": 2,
        "size": [
@@ -622,10 +614,6 @@
        "order": 7
       },
       {
-       "file": "people/data_analyst.png",
-       "order": 8
-      },
-      {
        "file": "people/founder.png",
        "order": 9
       },
@@ -641,7 +629,7 @@
    "name": "k3-stages",
    "file": "k3-stages.png",
    "show": 1,
-   "about": "round 12 (v3-prompts §18, gen_sheets k3-stages #3): the portrait's stages 2–4 (growth.md §7.2), a row per stage, ten heads a row in k1's order without the Growth-Hack Gnome (k3-marketing draws it). Framed as the first stage's heads: a square of 44 sheet px on the face, its chin at the bottom, read at merge 1.1 into 40 × 40 (the face's centre and chin read off a ruler); the hats cut at the top as the first stage's; the arrow drawn under the Keyword Gnome's beard at 4 left out; specks of the neighbours dropped (`largest`), but the ghost's crest of tabs at 4 kept (its frame raised to hold it)",
+   "about": "round 12 (v3-prompts §18, gen_sheets k3-stages #3): the portrait's stages 2–4 (growth.md §7.2), a row per stage, ten heads a row in k1's order without the Growth-Hack Gnome (k3-marketing draws it). Framed as the first stage's heads: a square of 44 sheet px on the face, its chin at the bottom, read at merge 1.1 into 40 × 40 (the face's centre and chin read off a ruler); the hats cut at the top as the first stage's; the arrow drawn under the Keyword Gnome's beard at 4 left out; specks of the neighbours dropped (`largest`), but the ghost's crest of tabs at 4 kept (its frame raised to hold it); the Data-Mining Goblin's stages are k4-goblin's since round 13",
    "groups": [
     {
      "size": [
@@ -718,16 +706,6 @@
         0.0634,
         0.7083,
         0.2276
-       ],
-       "largest": true
-      },
-      {
-       "file": "people/stages/data_analyst-2.png",
-       "box": [
-        0.7083,
-        0.0522,
-        0.8,
-        0.2164
        ],
        "largest": true
       },
@@ -822,16 +800,6 @@
        "largest": true
       },
       {
-       "file": "people/stages/data_analyst-3.png",
-       "box": [
-        0.7042,
-        0.4067,
-        0.7958,
-        0.5709
-       ],
-       "largest": true
-      },
-      {
        "file": "people/stages/founder-3.png",
        "box": [
         0.8083,
@@ -918,16 +886,6 @@
         0.7388,
         0.7083,
         0.903
-       ],
-       "largest": true
-      },
-      {
-       "file": "people/stages/data_analyst-4.png",
-       "box": [
-        0.7042,
-        0.7649,
-        0.7958,
-        0.9291
        ],
        "largest": true
       },
@@ -2239,7 +2197,8 @@
        "order": 12,
        "exits": "w"
       }
-     ]
+     ],
+     "steel": true
     }
    ],
    "degrid": true
@@ -2276,7 +2235,8 @@
        "order": 3,
        "exits": "ne"
       }
-     ]
+     ],
+     "steel": true
     }
    ]
   },
@@ -2618,36 +2578,294 @@
      "anchor": "feet",
      "items": [
       {
-       "file": "edge/palisade-h.png",
-       "order": 0,
-       "size": [
-        32,
-        32
-       ]
-      },
-      {
-       "file": "edge/palisade-end-w.png",
-       "order": 2,
-       "size": [
-        32,
-        32
-       ]
-      },
-      {
-       "file": "edge/palisade-end-e.png",
-       "order": 3,
-       "size": [
-        32,
-        32
-       ]
-      },
-      {
        "file": "edge/palisade-gap.png",
        "order": 1,
        "size": [
         32,
         32
        ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "b6-houses",
+   "file": "b6-houses.png",
+   "show": 1,
+   "wood_pull": true,
+   "about": "round 13 (v3-prompts §19, gen_sheets b6-houses #2; decisions §17.4): the Review board as a round timber hall under a teal roof (it replaces B2's campfire) and the person's homes by kin as whole houses in the common palette (they replace k2's): lich crypt, elf tree house, gnome mound, knight cottage, the ghost's chapel, orc log house, goblin shack",
+   "groups": [
+    {
+     "size": [
+      136,
+      80
+     ],
+     "anchor": "feet",
+     "slots": [
+      "door",
+      "signal",
+      "count"
+     ],
+     "merge": 1.4,
+     "items": [
+      {
+       "file": "buildings/council.png",
+       "order": 0
+      }
+     ]
+    },
+    {
+     "size": [
+      120,
+      96
+     ],
+     "anchor": "feet",
+     "merge": 1.1,
+     "items": [
+      {
+       "file": "homes/lich.png",
+       "order": 1
+      },
+      {
+       "file": "homes/elf.png",
+       "order": 2
+      },
+      {
+       "file": "homes/gnome.png",
+       "order": 3
+      },
+      {
+       "file": "homes/knight.png",
+       "order": 4
+      },
+      {
+       "file": "homes/skeleton.png",
+       "order": 5
+      },
+      {
+       "file": "homes/orc.png",
+       "order": 6
+      },
+      {
+       "file": "homes/goblin.png",
+       "order": 7
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "g6-wild",
+   "file": "g6-wild.png",
+   "show": 1,
+   "wood_pull": true,
+   "about": "round 13 (gen_sheets g6-wild #1; decisions §17.3): the wilderness round the camp: four trees, three pines, three bushes, two clusters of rocks, a mossy log (merge 1.5), a pond and its jetty (merge 1)",
+   "groups": [
+    {
+     "size": [
+      56,
+      56
+     ],
+     "anchor": "feet",
+     "merge": 1.5,
+     "items": [
+      {
+       "file": "decor/wild/tree-1.png",
+       "order": 0
+      },
+      {
+       "file": "decor/wild/tree-2.png",
+       "order": 1
+      },
+      {
+       "file": "decor/wild/tree-3.png",
+       "order": 2
+      },
+      {
+       "file": "decor/wild/tree-4.png",
+       "order": 3
+      },
+      {
+       "file": "decor/wild/pine-1.png",
+       "order": 4
+      },
+      {
+       "file": "decor/wild/pine-2.png",
+       "order": 5
+      },
+      {
+       "file": "decor/wild/pine-3.png",
+       "order": 6
+      },
+      {
+       "file": "decor/wild/bush-1.png",
+       "order": 7
+      },
+      {
+       "file": "decor/wild/bush-2.png",
+       "order": 8
+      },
+      {
+       "file": "decor/wild/bush-3.png",
+       "order": 9
+      },
+      {
+       "file": "decor/wild/rocks-1.png",
+       "order": 12
+      },
+      {
+       "file": "decor/wild/rocks-2.png",
+       "order": 13
+      },
+      {
+       "file": "decor/wild/log.png",
+       "order": 14
+      }
+     ]
+    },
+    {
+     "size": [
+      112,
+      80
+     ],
+     "anchor": "feet",
+     "items": [
+      {
+       "file": "decor/wild/pond.png",
+       "order": 10
+      },
+      {
+       "file": "decor/wild/jetty.png",
+       "order": 11
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "k4-goblin",
+   "file": "k4-goblin.png",
+   "show": 1,
+   "about": "round 13 (gen_sheets k4-goblin #2; the PM, 15 October): the Data-Mining Goblin redrawn to read as a goblin (big ears, a long nose, no tusks, cool grey-green): its figure (merge 1.5, k1's size) and its heads framed as k3's stages (a square on the face, the chin at the bottom) at merge 2.2 so its ears stay in the frame; the first stage's head is cut here too (people_heads.py leaves it)",
+   "groups": [
+    {
+     "size": [
+      96,
+      112
+     ],
+     "anchor": "feet",
+     "merge": 1.5,
+     "items": [
+      {
+       "file": "people/data_analyst.png",
+       "order": 0
+      }
+     ]
+    },
+    {
+     "size": [
+      40,
+      40
+     ],
+     "anchor": "feet",
+     "merge": 2.2,
+     "items": [
+      {
+       "file": "people/heads/data_analyst.png",
+       "box": [
+        0.3146,
+        0.5373,
+        0.4979,
+        0.8657
+       ],
+       "largest": true
+      },
+      {
+       "file": "people/stages/data_analyst-2.png",
+       "box": [
+        0.3146,
+        0.0858,
+        0.4979,
+        0.4142
+       ],
+       "largest": true
+      },
+      {
+       "file": "people/stages/data_analyst-3.png",
+       "box": [
+        0.5646,
+        0.5373,
+        0.7479,
+        0.8657
+       ],
+       "largest": true
+      },
+      {
+       "file": "people/stages/data_analyst-4.png",
+       "box": [
+        0.7833,
+        0.0896,
+        0.9667,
+        0.4179
+       ],
+       "largest": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "g3-stakes",
+   "file": "g3-stakes-2.png",
+   "show": 1,
+   "wood_pull": true,
+   "about": "round 13 (gen_sheets g3-stakes-2 #1; decisions §17.5): the palisade of sharpened stakes, thinner and lower than g3's: the run (3), its west end (the gateway's right half, 1), its east end and a post (the gateway's left half, 0), the side running down (5). Its first round (g3-stakes) drew no side and is not used",
+   "groups": [
+    {
+     "size": [
+      120,
+      48
+     ],
+     "anchor": "feet",
+     "items": [
+      {
+       "file": "edge/palisade-h.png",
+       "order": 3
+      },
+      {
+       "file": "edge/palisade-end-w.png",
+       "order": 1,
+       "crop": [
+        0,
+        0,
+        0.3,
+        1
+       ]
+      },
+      {
+       "file": "edge/palisade-end-e.png",
+       "order": 0,
+       "crop": [
+        0.7,
+        0,
+        1,
+        1
+       ]
+      },
+      {
+       "file": "edge/palisade-post.png",
+       "order": 0,
+       "crop": [
+        0.84,
+        0,
+        1,
+        1
+       ]
+      },
+      {
+       "file": "edge/palisade-v.png",
+       "order": 5
       }
      ]
     }
@@ -2674,7 +2892,8 @@
        "order": 5,
        "exits": "nw"
       }
-     ]
+     ],
+     "steel": true
     }
    ]
   },
@@ -2709,7 +2928,8 @@
        ],
        "exits": "we"
       }
-     ]
+     ],
+     "steel": true
     },
     {
      "size": [
@@ -2777,36 +2997,7 @@
       128
      ],
      "anchor": "feet",
-     "items": [
-      {
-       "file": "homes/lich.png",
-       "order": 0
-      },
-      {
-       "file": "homes/elf.png",
-       "order": 1
-      },
-      {
-       "file": "homes/gnome.png",
-       "order": 2
-      },
-      {
-       "file": "homes/knight.png",
-       "order": 3
-      },
-      {
-       "file": "homes/skeleton.png",
-       "order": 4
-      },
-      {
-       "file": "homes/orc.png",
-       "order": 5
-      },
-      {
-       "file": "homes/goblin.png",
-       "order": 6
-      }
-     ]
+     "items": []
     }
    ]
   },
@@ -2823,14 +3014,6 @@
      ],
      "anchor": "feet",
      "items": [
-      {
-       "file": "edge/palisade-v.png",
-       "order": 0,
-       "size": [
-        40,
-        120
-       ]
-      },
       {
        "file": "edge/palisade-corner-nw.png",
        "order": 3,
@@ -2860,14 +3043,6 @@
        "order": 1,
        "size": [
         40,
-        56
-       ]
-      },
-      {
-       "file": "edge/palisade-post.png",
-       "order": 7,
-       "size": [
-        16,
         56
        ]
       }

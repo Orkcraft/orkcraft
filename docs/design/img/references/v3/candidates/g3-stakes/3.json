@@ -1,0 +1,69 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "prompt": "No shadows. Pixel-art sprite sheet in exactly the style and palette of the attached image. Crisp hard pixels on a strict grid, no anti-aliasing, no blur, no gradients, each sprite with a dark 1-pixel outline, drawn at its final size with no finer detail than that size can hold. One three-quarter top-down projection, never isometric. Sprites in a neat grid with even spacing on a flat solid #FF00FF magenta background, nothing touching, no ground under them, no text unless asked. Bright yellow and bright red appear nowhere.\n\nA palisade of sharpened wooden stakes in the manner of the attached target frame target-camp, thinner and lower than the attached sheet g3-palisade: stakes about 40 px tall, each a narrow log with a pointed top, set close side by side, honey-brown wood with a dark outline. Front-on. Six pieces with magenta round each: 1. a straight run of eight stakes (it repeats left to right); 2. a gap in the run (a gateway two stakes wide); 3. the run's left end; 4. its right end; 5. the palisade seen running top to bottom, from the side (it repeats downward); 6. one corner post.\n\nNo frames, no boxes, no grid lines, no borders between sprites; each sprite floats alone on the magenta.\n\nNo shadows, no smoke, no glow.\n\nKeep exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #7cbd40), the paths warm sand (about #e4b469); warm honey wood, light cool stone, teal and plum cloth, cream bone.\n\nNo yellow, no orange and no red anywhere: those colours are reserved for the product's signals. The wood a muted honey brown, never orange.\n\nOutput the sheet as a PNG image.\n\nAttached, in order: f1-town, target-camp, g3-palisade. F1 is the approved frame: its style and colours rule.",
+ "sheet": "g3-stakes",
+ "file": "3.jpg",
+ "image": [
+  2752,
+  1536
+ ],
+ "pitch": 5.73,
+ "art_px": 116,
+ "art_range": [
+  20,
+  96
+ ],
+ "grid": [
+  480,
+  268
+ ],
+ "pieces": 8,
+ "expected": 6,
+ "sizes": [
+  [
+   143,
+   72
+  ],
+  [
+   108,
+   72
+  ],
+  [
+   126,
+   72
+  ],
+  [
+   125,
+   71
+  ],
+  [
+   222,
+   71
+  ],
+  [
+   80,
+   81
+  ],
+  [
+   37,
+   73
+  ],
+  [
+   57,
+   69
+  ]
+ ],
+ "degrid": false,
+ "signal_px": 0,
+ "signal_pct": 0.0,
+ "cast_px": 2161,
+ "cast_pct": 4.34,
+ "ok": false,
+ "issues": [
+  "8 pieces found, 6 expected",
+  "pieces about 116 art px, the taken sheets' 20–96: another pixel size",
+  "magenta cast on 4.3 % of the art"
+ ]
+}

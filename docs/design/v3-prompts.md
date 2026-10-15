@@ -735,3 +735,25 @@ Calls spent of the queue's 30: 23 (P0 12, P1 9, k3-marketing 2); the logo 3 of i
 
 Calls spent of the queue's 30: 27 (P0 12, P1 9, k3-marketing 2, g5 4); the logo 3 of its 6.
 
+## 19. Round 13: towards the v4 target (2026-10-15)
+
+The owner's yes on the whole queue (decisions §17): 21 calls (15 + 6 for a second round of two sheets); all spent.
+
+- **The track in steel** (§17.2). Neither round of `c4-steel` gives a set that tiles (the first draws curves wider
+  than a tile and a cross for the junction; the second fills each tile with gravel and draws two curves off-centre).
+  So the camp keeps c2's geometry, which tiles and holds the gauge, and the cutter recolours every track piece by
+  the target's manner (`steel` on the track groups, `camp_sheet.steel`): the rails a ramp of steel greys, the
+  sleepers dark brown, their shadows darker; the outline and every shape stay. The candidates stay in `candidates/`.
+- **g3-stakes-2 #1** (§17.5): the palisade of sharpened stakes, about 40 px: `edge/palisade-h`, `end-w`, `end-e`,
+  `post`, `v` (the side running down). The first round drew no side; #3 of the second has orks baked in.
+- **b6-houses #2** (§17.4): the Review board as a round timber hall under a teal roof (`buildings/council.png`, in
+  place of B2's campfire) and the homes by kin as whole houses (`homes/<kin>.png`, in place of k2's: the ghost's is a
+  chapel, no longer a ruin). #3 bakes their names in; #1 casts magenta under the tree house.
+- **g6-wild #1** (§17.3): `decor/wild/` four trees, three pines, three bushes, two rocks, a log, a pond and its jetty,
+  for LOOP to scatter round the camp.
+- **k4-goblin #2** (the PM): the Data-Mining Goblin redrawn as a goblin — big ears, a long nose, no tusks, cool
+  grey-green: `people/data_analyst.png`, its first head `people/heads/data_analyst.png` (cut here; `people_heads.py`
+  leaves it) and `people/stages/data_analyst-2|3|4.png` framed as the stages, its ears kept in.
+
+The camp after the round: `img/v3-preview/camp-round13.png`.
+

@@ -1,0 +1,104 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "prompt": "No shadows. Pixel-art sprite sheet in exactly the style and palette of the attached image. Crisp hard pixels on a strict grid, no anti-aliasing, no blur, no gradients, each sprite with a dark 1-pixel outline, drawn at its final size with no finer detail than that size can hold. One three-quarter top-down projection, never isometric. Sprites in a neat grid with even spacing on a flat solid #FF00FF magenta background, nothing touching, no ground under them, no text unless asked. Bright yellow and bright red appear nowhere.\n\nThe wilderness round a camp in the manner of the attached target frame target-camp, each piece alone on magenta, at the scale of the attached sheet g2-decor: 1.–4. four leafy trees, round dark-green crowns with lighter leaves, different shapes; 5.–6. two pines; 7.–9. three bushes, small to large; 10. a small pond of bright turquoise water with a grassy, earthy rim, about 128 px wide; 11. a short wooden jetty for its edge; 12.–13. two clusters of grey rocks; 14. a fallen log with moss.\n\nEvery building faces the viewer: its front wall parallel to the bottom edge of the image, the door in the middle of the front, seen slightly from above, exactly like the task board in the attached sheet b1-core. Never turned at an angle, never isometric.\n\nNo ground under the building: no patch of grass, no base square, no plinth of earth.\n\nNo frames, no boxes, no grid lines, no borders between sprites; each sprite floats alone on the magenta.\n\nNo shadows, no smoke, no glow.\n\nKeep exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #7cbd40), the paths warm sand (about #e4b469); warm honey wood, light cool stone, teal and plum cloth, cream bone.\n\nNo yellow, no orange and no red anywhere: those colours are reserved for the product's signals. The wood a muted honey brown, never orange.\n\nOutput the sheet as a PNG image.\n\nAttached, in order: f1-town, b1-core, target-camp, g2-decor. F1 is the approved frame: its style and colours rule.",
+ "sheet": "g6-wild",
+ "file": "2.jpg",
+ "image": [
+  2752,
+  1536
+ ],
+ "pitch": 11.47,
+ "art_px": 39,
+ "art_range": [
+  48,
+  260
+ ],
+ "grid": [
+  238,
+  133
+ ],
+ "pieces": 17,
+ "expected": 14,
+ "sizes": [
+  [
+   34,
+   39
+  ],
+  [
+   34,
+   39
+  ],
+  [
+   30,
+   39
+  ],
+  [
+   32,
+   40
+  ],
+  [
+   30,
+   41
+  ],
+  [
+   29,
+   40
+  ],
+  [
+   30,
+   43
+  ],
+  [
+   30,
+   43
+  ],
+  [
+   23,
+   19
+  ],
+  [
+   54,
+   39
+  ],
+  [
+   50,
+   39
+  ],
+  [
+   24,
+   22
+  ],
+  [
+   36,
+   28
+  ],
+  [
+   31,
+   25
+  ],
+  [
+   32,
+   25
+  ],
+  [
+   35,
+   28
+  ],
+  [
+   34,
+   23
+  ]
+ ],
+ "degrid": false,
+ "signal_px": 0,
+ "signal_pct": 0.0,
+ "cast_px": 1,
+ "cast_pct": 0.01,
+ "ok": false,
+ "issues": [
+  "17 pieces found, 14 expected",
+  "pieces about 39 art px, the taken sheets' 48–260: another pixel size"
+ ]
+}

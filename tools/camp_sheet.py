@@ -976,7 +976,33 @@ def cut_nine(sheet: Sheet, group: dict, pal, rows: list[dict], problems: list[st
                anchor="top-left")
 
 
+# The track in steel (decisions-2026-10.md §17.2, the owner's v4 target): the rails' low-saturation browns become a
+# ramp of steel greys by their lightness, the sleepers' honey becomes dark brown and their maroon shadows darker; the
+# outline and every piece's shape stay, so the set still tiles and keeps c2's gauge.
+STEEL = [(78, 86, 96), (112, 122, 134), (150, 160, 172), (190, 198, 206)]
+SLEEPER, SLEEPER_SHADE = (104, 72, 48), (62, 40, 28)
+
+
+def steel(img: np.ndarray) -> np.ndarray:
+    out = img.copy()
+    rgb = img[..., :3].astype(float) / 255
+    mx, mn = rgb.max(-1), rgb.min(-1)
+    sat = np.where(mx > 0, (mx - mn) / np.maximum(mx, 1e-6), 0)
+    lum = 0.3 * rgb[..., 0] + 0.59 * rgb[..., 1] + 0.11 * rgb[..., 2]
+    green = (rgb[..., 1] > rgb[..., 0]) & (rgb[..., 1] > rgb[..., 2])
+    opaque = img[..., 3] > 0
+    rail = opaque & ~green & (sat < 0.3) & (lum > 0.12)
+    wood = opaque & ~green & ~rail & (lum > 0.12)
+    for i, (lo, hi) in enumerate(((0, 0.33), (0.33, 0.42), (0.42, 0.5), (0.5, 2))):
+        out[rail & (lum >= lo) & (lum < hi), :3] = STEEL[i]
+    out[wood & (lum >= 0.33), :3] = SLEEPER
+    out[wood & (lum < 0.33), :3] = SLEEPER_SHADE
+    return out
+
+
 def _write(img, rel, group, rows, problems, frame, frames, scale=1.0, anchor=None) -> None:
+    if group.get("steel"):
+        img = steel(img)
     h, w = img.shape[:2]
     if w % 8 or h % 8:
         problems.append(f"{rel}: {w} × {h} is off the grid of 8")

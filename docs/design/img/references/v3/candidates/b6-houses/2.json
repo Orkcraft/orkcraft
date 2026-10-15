@@ -1,0 +1,67 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "prompt": "No shadows. Pixel-art sprite sheet in exactly the style and palette of the attached image. Crisp hard pixels on a strict grid, no anti-aliasing, no blur, no gradients, each sprite with a dark 1-pixel outline, drawn at its final size with no finer detail than that size can hold. One three-quarter top-down projection, never isometric. Sprites in a neat grid with even spacing on a flat solid #FF00FF magenta background, nothing touching, no ground under them, no text unless asked. Bright yellow and bright red appear nowhere.\n\nEight small houses in the common palette of the attached target frame target-camp (teal cloth and roofs, rust-red wood, light grey stone, honey wood), each alone on magenta, front-on, the door in the middle: 1. the Review board: a round timber meeting hall with a teal cloth roof and a carved table seen through its open front, about as large as the work hall of the attached sheet b1-core; then seven homes, each smaller (about 96 px wide), one for each kin of the person: 2. a lich's home: a grey-stone crypt house with a teal door; 3. an elf's home: a timber house in a tree with a teal roof; 4. a gnome's home: a round-doored house in a grassy mound; 5. a knight's home: a stone cottage with a teal banner; 6. a ghost's home: a small old chapel of grey stone, whole, not a ruin; 7. an orc's home: a log house with a rust roof; 8. a goblin's home: a shack of rust planks and crates with a teal awning.\n\nEvery building faces the viewer: its front wall parallel to the bottom edge of the image, the door in the middle of the front, seen slightly from above, exactly like the task board in the attached sheet b1-core. Never turned at an angle, never isometric.\n\nNo ground under the building: no patch of grass, no base square, no plinth of earth.\n\nNo frames, no boxes, no grid lines, no borders between sprites; each sprite floats alone on the magenta.\n\nNo shadows, no smoke, no glow.\n\nKeep exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #7cbd40), the paths warm sand (about #e4b469); warm honey wood, light cool stone, teal and plum cloth, cream bone.\n\nNo yellow, no orange and no red anywhere: those colours are reserved for the product's signals. The wood a muted honey brown, never orange.\n\nOutput the sheet as a PNG image.\n\nAttached, in order: f1-town, b1-core, target-camp. F1 is the approved frame: its style and colours rule.",
+ "sheet": "b6-houses",
+ "file": "2.jpg",
+ "image": [
+  2752,
+  1536
+ ],
+ "pitch": 5.73,
+ "art_px": 112,
+ "art_range": [
+  48,
+  260
+ ],
+ "grid": [
+  480,
+  268
+ ],
+ "pieces": 8,
+ "expected": 8,
+ "sizes": [
+  [
+   186,
+   109
+  ],
+  [
+   68,
+   91
+  ],
+  [
+   110,
+   102
+  ],
+  [
+   173,
+   65
+  ],
+  [
+   110,
+   80
+  ],
+  [
+   61,
+   82
+  ],
+  [
+   119,
+   81
+  ],
+  [
+   113,
+   59
+  ]
+ ],
+ "degrid": false,
+ "signal_px": 0,
+ "signal_pct": 0.0,
+ "cast_px": 1601,
+ "cast_pct": 3.01,
+ "ok": false,
+ "issues": [
+  "magenta cast on 3.0 % of the art"
+ ]
+}

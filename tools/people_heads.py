@@ -17,6 +17,7 @@ SIDE = 40            # the square's side, art px: legible in the HUD's 28-px slo
 TOP_ROWS = 22        # the rows read for the head's middle, below the figure's top
 # The gnomes' tall caps and held props put the face far from the figure's top: their square set by hand (left, top).
 AT = {"aso_manager": (2, 18), "marketing": (12, 18)}
+CUT = {"data_analyst"}   # its head is cut from its own sheet (camp_sheets_v3.json k4-goblin), never cropped here
 
 
 def crop(img: Image.Image, at: tuple[int, int] | None = None) -> Image.Image:
@@ -38,6 +39,8 @@ def crop(img: Image.Image, at: tuple[int, int] | None = None) -> Image.Image:
 def main() -> None:
     (PEOPLE / "heads").mkdir(exist_ok=True)
     for f in sorted(PEOPLE.glob("*.png")):
+        if f.stem in CUT:
+            continue
         crop(Image.open(f), AT.get(f.stem)).save(PEOPLE / "heads" / f.name)
 
 

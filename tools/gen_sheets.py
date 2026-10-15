@@ -100,7 +100,8 @@ REF = {"f1": "f1-town.jpg", "b1": "b1-core.jpg", "o1": "o1-body.jpg", "o2": "o2-
        "g3": "g3-palisade.jpg", "tb": "b1-taskboard.jpg",       # the owner's picks of round 7
        "r03": "../0.3/roles-2.jpg", "o3r": "o3-states-r1.jpg",  # the capped ork (§12)
        "std": "st-dispatch.jpg",                                 # the picked dispatcher's booth (§13)
-       "k1": "k1-classes.jpg", "o7": "o7-prospector.jpg", "k3": "k3-stages.jpg"}        # the picked classes and Prospector (§15)
+       "k1": "k1-classes.jpg", "o7": "o7-prospector.jpg", "k3": "k3-stages.jpg",
+       "v4": "../v4/target-camp.jpg"}                            # the owner's v4 target (decisions §17)        # the picked classes and Prospector (§15)
 
 # the sheets: kind (building, ork, track, edge, signals), the prompt (v3-prompts §3, as the reviews redid it), the
 # pieces the cutter should find, the image's aspect, and the cut name `--pick` copies it to
@@ -438,6 +439,89 @@ SHEETS: dict[str, dict] = {
                   "pick raised, swung down, struck, pulled back; 3. carrying a small sack on the shoulder, walking to "
                   "the right.",
         "about": "the Prospector's walk, dig and carry (§13.1)",
+    },
+    # round 13 (v3-prompts §19, decisions §17): towards the owner's v4 target frame
+    "c4-steel": {
+        "kind": "track", "expect": 11, "aspect": "16:9", "refs": ["v4"],
+        "prompt": "Mine-cart track pieces in the manner of the attached target frame target-camp: thin steel-grey rails "
+                  "(light grey with a darker grey edge, never brown) on dark brown wooden sleepers, on a narrow bed of "
+                  "grey-brown gravel only a little wider than the sleepers. Exactly the gauge of the attached sheet "
+                  "c2: the two rails 32 px apart, centred on the tile, reaching the tile's edges. Every piece one "
+                  "64 × 64 tile with magenta round it, in a grid: 1. straight left–right; 2. straight top–bottom; "
+                  "3.–6. the four curves: top–right, right–bottom, bottom–left, left–top; 7. a junction top–right–"
+                  "bottom; 8. a junction left–right–top; 9. a junction left–right–bottom; 10. a buffer stop at the "
+                  "right end of a straight; 11. a level crossing: wooden planks laid between and beside the rails of "
+                  "a straight left–right.",
+        "about": "decisions §17.2: the track in steel on a narrow bed, every piece the camp lays",
+    },
+    "c4-steel-2": {
+        "kind": "track", "expect": 8, "aspect": "16:9", "refs": ["v4"], "cut": "c4-steel.png",
+        "prompt": "Mine-cart track tiles, seen flat from straight above: thin steel-grey rails (light grey, a darker "
+                  "grey edge) on dark brown sleepers, on a narrow strip of grey-brown gravel a little wider than the "
+                  "sleepers. Exactly the gauge of the attached sheet c2: the rails 32 px apart and centred, so every "
+                  "piece's rails cross a tile's edge at exactly the same place, at the middle of that edge. EVERY "
+                  "piece is exactly ONE square tile of 64 × 64 px, no piece larger, eight tiles in one row with a "
+                  "magenta gap between them: 1. straight left–right; 2. straight top–bottom; 3. a curve from the "
+                  "middle of the top edge to the middle of the right edge, turning inside the one tile (a quarter "
+                  "circle of radius 32 px round the tile's top-right corner); 4. the same curve right–bottom; "
+                  "5. bottom–left; 6. left–top; 7. a T: a straight top–bottom with a branch curving off to the "
+                  "middle of the right edge, inside the tile; 8. a buffer stop: a straight from the left edge ending "
+                  "at a small timber stop.",
+        "about": "c4-steel again (its first round drew curves wider than a tile): every piece one tile, curves inside it",
+    },
+    "g3-stakes-2": {
+        "kind": "edge", "expect": 3, "aspect": "16:9", "refs": ["v4"],
+        "prompt": "Three more pieces for the palisade of sharpened stakes of the attached frame target-camp (narrow logs "
+                  "with pointed tops, honey-brown, a dark outline, about 40 px tall), each alone on magenta: 1. a "
+                  "gateway: the run of stakes with a two-stake opening in its middle, the stakes either side of it "
+                  "a little taller; 2. the palisade running from the top of the image to the bottom, seen from "
+                  "above and a little in front: a column of stake tops one stake wide, that repeats downward; "
+                  "3. a corner where the front run meets that column.",
+        "about": "g3-stakes' gateway, its side running down and its corner",
+    },
+    "g3-stakes": {
+        "kind": "edge", "expect": 6, "aspect": "16:9", "refs": ["v4", "g3"],
+        "prompt": "A palisade of sharpened wooden stakes in the manner of the attached target frame target-camp, "
+                  "thinner and lower than the attached sheet g3-palisade: stakes about 40 px tall, each a narrow "
+                  "log with a pointed top, set close side by side, honey-brown wood with a dark outline. Front-on. "
+                  "Six pieces with magenta round each: 1. a straight run of eight stakes (it repeats left to right); "
+                  "2. a gap in the run (a gateway two stakes wide); 3. the run's left end; 4. its right end; 5. the "
+                  "palisade seen running top to bottom, from the side (it repeats downward); 6. one corner post.",
+        "about": "decisions §17.5: the palisade sharpened, thinner and lower",
+    },
+    "b6-houses": {
+        "kind": "building", "expect": 8, "aspect": "16:9", "refs": ["v4"],
+        "prompt": "Eight small houses in the common palette of the attached target frame target-camp (teal cloth and "
+                  "roofs, rust-red wood, light grey stone, honey wood), each alone on magenta, front-on, the door in "
+                  "the middle: 1. the Review board: a round timber meeting hall with a teal cloth roof and a carved "
+                  "table seen through its open front, about as large as the work hall of the attached sheet b1-core; "
+                  "then seven homes, each smaller (about 96 px wide), one for each kin of the person: 2. a lich's "
+                  "home: a grey-stone crypt house with a teal door; 3. an elf's home: a timber house in a tree with a "
+                  "teal roof; 4. a gnome's home: a round-doored house in a grassy mound; 5. a knight's home: a stone "
+                  "cottage with a teal banner; 6. a ghost's home: a small old chapel of grey stone, whole, not a "
+                  "ruin; 7. an orc's home: a log house with a rust roof; 8. a goblin's home: a shack of rust planks "
+                  "and crates with a teal awning.",
+        "about": "decisions §17.4: the Review board and the person's homes as houses in the common palette",
+    },
+    "g6-wild": {
+        "kind": "building", "expect": 14, "aspect": "16:9", "refs": ["v4", "g2"],
+        "prompt": "The wilderness round a camp in the manner of the attached target frame target-camp, each piece alone "
+                  "on magenta, at the scale of the attached sheet g2-decor: 1.–4. four leafy trees, round dark-green "
+                  "crowns with lighter leaves, different shapes; 5.–6. two pines; 7.–9. three bushes, small to large; "
+                  "10. a small pond of bright turquoise water with a grassy, earthy rim, about 128 px wide; 11. a "
+                  "short wooden jetty for its edge; 12.–13. two clusters of grey rocks; 14. a fallen log with moss.",
+        "about": "decisions §17.3: the camp's edges as wilderness, a pond with a jetty",
+    },
+    "k4-goblin": {
+        "kind": "character", "expect": 4, "aspect": "16:9", "refs": ["r03", "k1", "k3"],
+        "prompt": "The Data-Mining Goblin of the attached sheet k1-classes redrawn so it never reads as an orc, even at "
+                  "16 px: a goblin, much bigger and longer ears (clearly wider than its head), a smaller head, a thin "
+                  "body, NO tusks, a long pointed nose, bigger eyes, cool pale grey-green skin (no yellow); it still "
+                  "carries a pickaxe and glowing teal data crystals. Four pieces in one row, each alone on magenta: "
+                  "1. full body, front-facing, the size of the figures of k1-classes; then its head and shoulders, "
+                  "the size of the heads of the attached sheet k3-stages, at three stages of growth: 2. a miner's "
+                  "lamp on its head; 3. a pickaxe on its shoulder; 4. a top hat and a monocle, its eyes glowing teal.",
+        "about": "the PM, 15 October: the Data-Mining Goblin redrawn to read as a goblin, not an orc",
     },
     "c2-curves": {
         "kind": "track", "expect": 6, "aspect": "3:2",

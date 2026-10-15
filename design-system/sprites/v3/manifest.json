@@ -54,20 +54,20 @@
   {
    "file": "buildings/council.png",
    "size": [
-    128,
-    96
+    136,
+    80
    ],
    "frame": [
-    128,
-    96
+    136,
+    80
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "b2-town.png",
-   "scale": 1.0,
+   "source": "b6-houses.png",
+   "scale": 1.4,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -1328,6 +1328,306 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "decor/wild/bush-1.png",
+   "size": [
+    32,
+    32
+   ],
+   "frame": [
+    32,
+    32
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/bush-2.png",
+   "size": [
+    48,
+    40
+   ],
+   "frame": [
+    48,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/bush-3.png",
+   "size": [
+    56,
+    48
+   ],
+   "frame": [
+    56,
+    48
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/jetty.png",
+   "size": [
+    56,
+    40
+   ],
+   "frame": [
+    56,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/log.png",
+   "size": [
+    56,
+    24
+   ],
+   "frame": [
+    56,
+    24
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/pine-1.png",
+   "size": [
+    40,
+    56
+   ],
+   "frame": [
+    40,
+    56
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/pine-2.png",
+   "size": [
+    40,
+    56
+   ],
+   "frame": [
+    40,
+    56
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/pine-3.png",
+   "size": [
+    40,
+    56
+   ],
+   "frame": [
+    40,
+    56
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/pond.png",
+   "size": [
+    112,
+    72
+   ],
+   "frame": [
+    112,
+    72
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/rocks-1.png",
+   "size": [
+    48,
+    32
+   ],
+   "frame": [
+    48,
+    32
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/rocks-2.png",
+   "size": [
+    48,
+    40
+   ],
+   "frame": [
+    48,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/tree-1.png",
+   "size": [
+    48,
+    56
+   ],
+   "frame": [
+    48,
+    56
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/tree-2.png",
+   "size": [
+    48,
+    56
+   ],
+   "frame": [
+    48,
+    56
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/tree-3.png",
+   "size": [
+    48,
+    56
+   ],
+   "frame": [
+    48,
+    56
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "decor/wild/tree-4.png",
+   "size": [
+    56,
+    56
+   ],
+   "frame": [
+    56,
+    56
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "g6-wild.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
    "file": "depot/doors.png",
    "size": [
     56,
@@ -1470,19 +1770,19 @@
   {
    "file": "edge/palisade-end-e.png",
    "size": [
-    24,
-    56
+    16,
+    40
    ],
    "frame": [
-    24,
-    56
+    16,
+    40
    ],
    "frames": 1,
-   "pitch": 11.57,
+   "pitch": 11.47,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "g3-palisade.png",
+   "source": "g3-stakes-2.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
@@ -1490,19 +1790,19 @@
   {
    "file": "edge/palisade-end-w.png",
    "size": [
-    24,
-    56
+    16,
+    48
    ],
    "frame": [
-    24,
-    56
+    16,
+    48
    ],
    "frames": 1,
-   "pitch": 11.57,
+   "pitch": 11.47,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "g3-palisade.png",
+   "source": "g3-stakes-2.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
@@ -1530,19 +1830,19 @@
   {
    "file": "edge/palisade-h.png",
    "size": [
-    80,
-    48
+    120,
+    40
    ],
    "frame": [
-    80,
-    48
+    120,
+    40
    ],
    "frames": 1,
-   "pitch": 11.57,
+   "pitch": 11.47,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "g3-palisade.png",
+   "source": "g3-stakes-2.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
@@ -1550,19 +1850,19 @@
   {
    "file": "edge/palisade-post.png",
    "size": [
-    16,
-    56
+    8,
+    40
    ],
    "frame": [
-    16,
-    56
+    8,
+    40
    ],
    "frames": 1,
-   "pitch": 11.62,
+   "pitch": 11.47,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "g3-sides.png",
+   "source": "g3-stakes-2.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
@@ -1570,19 +1870,19 @@
   {
    "file": "edge/palisade-v.png",
    "size": [
-    40,
-    120
+    32,
+    128
    ],
    "frame": [
-    40,
-    120
+    32,
+    128
    ],
    "frames": 1,
-   "pitch": 11.62,
+   "pitch": 11.47,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "g3-sides.png",
+   "source": "g3-stakes-2.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
@@ -2190,140 +2490,140 @@
   {
    "file": "homes/elf.png",
    "size": [
-    120,
-    128
+    104,
+    96
    ],
    "frame": [
-    120,
-    128
+    104,
+    96
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "k2-homes.png",
-   "scale": 1.0,
+   "source": "b6-houses.png",
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "homes/gnome.png",
    "size": [
-    104,
-    88
+    160,
+    64
    ],
    "frame": [
-    104,
-    88
+    160,
+    64
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "k2-homes.png",
-   "scale": 1.0,
+   "source": "b6-houses.png",
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "homes/goblin.png",
    "size": [
-    128,
-    112
+    104,
+    56
    ],
    "frame": [
-    128,
-    112
+    104,
+    56
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "k2-homes.png",
-   "scale": 1.0,
+   "source": "b6-houses.png",
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "homes/knight.png",
    "size": [
-    112,
-    120
+    104,
+    72
    ],
    "frame": [
-    112,
-    120
+    104,
+    72
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "k2-homes.png",
-   "scale": 1.0,
+   "source": "b6-houses.png",
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "homes/lich.png",
    "size": [
-    96,
-    120
+    64,
+    88
    ],
    "frame": [
-    96,
-    120
+    64,
+    88
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "k2-homes.png",
-   "scale": 1.0,
+   "source": "b6-houses.png",
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "homes/orc.png",
    "size": [
-    136,
-    112
+    112,
+    72
    ],
    "frame": [
-    136,
-    112
+    112,
+    72
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "k2-homes.png",
-   "scale": 1.0,
+   "source": "b6-houses.png",
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "homes/skeleton.png",
    "size": [
-    128,
-    104
+    56,
+    80
    ],
    "frame": [
-    128,
-    104
+    56,
+    80
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "k2-homes.png",
-   "scale": 1.0,
+   "source": "b6-houses.png",
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -3697,19 +3997,19 @@
    "file": "people/data_analyst.png",
    "size": [
     88,
-    104
+    112
    ],
    "frame": [
     88,
-    104
+    112
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "k1-classes.png",
-   "scale": 1.0,
+   "source": "k4-goblin.png",
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -3810,6 +4110,26 @@
    "placeholder": true,
    "source": "k1-classes.png",
    "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "people/heads/data_analyst.png",
+   "size": [
+    40,
+    32
+   ],
+   "frame": [
+    40,
+    32
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "k4-goblin.png",
+   "scale": 2.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -3956,20 +4276,20 @@
   {
    "file": "people/stages/data_analyst-2.png",
    "size": [
-    48,
-    40
+    40,
+    48
    ],
    "frame": [
-    48,
-    40
+    40,
+    48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "k3-stages.png",
-   "scale": 1.1,
+   "source": "k4-goblin.png",
+   "scale": 2.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -3977,19 +4297,19 @@
    "file": "people/stages/data_analyst-3.png",
    "size": [
     48,
-    40
+    48
    ],
    "frame": [
     48,
-    40
+    48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "k3-stages.png",
-   "scale": 1.1,
+   "source": "k4-goblin.png",
+   "scale": 2.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -3997,19 +4317,19 @@
    "file": "people/stages/data_analyst-4.png",
    "size": [
     48,
-    48
+    40
    ],
    "frame": [
     48,
-    48
+    40
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "k3-stages.png",
-   "scale": 1.1,
+   "source": "k4-goblin.png",
+   "scale": 2.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },

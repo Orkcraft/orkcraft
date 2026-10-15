@@ -1,0 +1,51 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "prompt": "No shadows. Pixel-art sprite sheet in exactly the style and palette of the attached image. Crisp hard pixels on a strict grid, no anti-aliasing, no blur, no gradients, each sprite with a dark 1-pixel outline, drawn at its final size with no finer detail than that size can hold. One three-quarter top-down projection, never isometric. Sprites in a neat grid with even spacing on a flat solid #FF00FF magenta background, nothing touching, no ground under them, no text unless asked. Bright yellow and bright red appear nowhere.\n\nMine-cart track pieces in the manner of the attached target frame target-camp: thin steel-grey rails (light grey with a darker grey edge, never brown) on dark brown wooden sleepers, on a narrow bed of grey-brown gravel only a little wider than the sleepers. Exactly the gauge of the attached sheet c2: the two rails 32 px apart, centred on the tile, reaching the tile's edges. Every piece one 64 × 64 tile with magenta round it, in a grid: 1. straight left–right; 2. straight top–bottom; 3.–6. the four curves: top–right, right–bottom, bottom–left, left–top; 7. a junction top–right–bottom; 8. a junction left–right–top; 9. a junction left–right–bottom; 10. a buffer stop at the right end of a straight; 11. a level crossing: wooden planks laid between and beside the rails of a straight left–right.\n\nFlat from above, exactly like the attached track sheet c2: dark iron rails on honey-wood ties, the ties evenly spaced.\n\nNo frames, no boxes, no grid lines, no borders between sprites; each sprite floats alone on the magenta.\n\nNo shadows, no smoke, no glow.\n\nKeep exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #7cbd40), the paths warm sand (about #e4b469); warm honey wood, light cool stone, teal and plum cloth, cream bone.\n\nNo yellow, no orange and no red anywhere: those colours are reserved for the product's signals. The wood a muted honey brown, never orange.\n\nOutput the sheet as a PNG image.\n\nAttached, in order: f1-town, c2-track, target-camp. F1 is the approved frame: its style and colours rule.",
+ "sheet": "c4-steel",
+ "file": "2.jpg",
+ "image": [
+  2752,
+  1536
+ ],
+ "pitch": 11.47,
+ "art_px": 71,
+ "art_range": [
+  41,
+  75
+ ],
+ "grid": [
+  238,
+  133
+ ],
+ "pieces": 4,
+ "expected": 11,
+ "sizes": [
+  [
+   47,
+   29
+  ],
+  [
+   235,
+   133
+  ],
+  [
+   95,
+   36
+  ],
+  [
+   41,
+   40
+  ]
+ ],
+ "degrid": true,
+ "signal_px": 0,
+ "signal_pct": 0.0,
+ "cast_px": 4,
+ "cast_pct": 0.02,
+ "ok": false,
+ "issues": [
+  "4 pieces found, 11 expected"
+ ]
+}
