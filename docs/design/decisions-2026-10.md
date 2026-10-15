@@ -745,7 +745,9 @@ since the words do not change between looks. Spec 13.
    junction ("Lay a new line"), not by a building; the Router keeps its own job (routing rules).
 5. **One way round, clockwise from the board:** down the left column, east along the processing lines, up the right
    column to the Review gate; passed → the catapult; **sent back → west along line 0.5 to the Task board**, which is
-   the return line. *PM's proposal against "the last line carries the carts back": with the gate at the top right,
-   a return line at the bottom would make the right column run both ways; the return along line 0.5 keeps every
-   track one-way and shows a rework going back to the dispatcher. To confirm with the owner.*
+   the return line (**confirmed by the owner**): every track stays one-way and a rework visibly goes back to the
+   dispatcher; there is no return line at the bottom.
+6. **The lookout and Metrics stand side by side on the wall, joined by a road** (the owner: "the first", not
+   merged): what comes in from outside also becomes figures (issues opened and closed, mail, webhooks a week). Two
+   buildings, one expertise each.
 
