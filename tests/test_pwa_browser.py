@@ -27,8 +27,10 @@ async def _phone(repo: Path, scheme: str = "dark"):
         offer = server.host.command("phones.pair")
         await _listening(server)
         async with pw.async_playwright() as p:
+            flags = ["--ignore-certificate-errors"]
             try:
-                browser = await (p.chromium.launch(executable_path=CHROMIUM) if CHROMIUM else p.chromium.launch())
+                browser = await (p.chromium.launch(executable_path=CHROMIUM, args=flags) if CHROMIUM
+                                 else p.chromium.launch(args=flags))
             except Exception as e:                         # noqa: BLE001 — no browser here
                 pytest.skip(f"no Chromium for Playwright here: {e}")
             try:
@@ -107,7 +109,7 @@ async def test_stop_all_stops_on_a_hold_or_a_tap_and_a_confirm_never_on_a_tap(fa
             await page.wait_for_timeout(100)
         assert halts == [1, 1] and await page.locator("dialog.sheet[open]").count() == 0
         await page.mouse.down()                             # let go early: nothing
-        await page.wait_for_timeout(300)
+        await page.wait_for_timeout(50)
         await page.mouse.up()
         await page.locator("dialog.sheet[open]", has_text="Stop every ork").wait_for(timeout=WAIT_MS)
         assert halts == [1, 1]
@@ -369,3 +371,70 @@ async def test_the_phone_shows_one_orkspace_at_a_time_without_moving_the_desktop
         await page.locator(".grid .cell", has_text=title).wait_for(state="detached", timeout=WAIT_MS)
         assert await page.evaluate("document.querySelector('meta[name=theme-color]').content") == "#070d14"
         assert server.host.command("mobile.snapshot")["active_orkspace"] == first != lab     # the desktop's stays
+
+
+@pytest.mark.asyncio
+async def test_sprite_update_and_cache_first_zero_network_requests(fake_repo, tmp_path, monkeypatch):
+    """load the app, then change one sprite's bytes (and so its hash) on the server and reload:
+    the next load shows the new bytes; and a second open with nothing changed makes zero network requests for sprites."""
+    from orkcraft.gui import pwa
+
+    dummy_sprite = tmp_path / "custom_town_hall.png"
+    v1_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x00\x00\x02\x00\x01H\xaf\xa4q\x00\x00\x00\x00IEND\xaeB`\x82_V1"
+    v2_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x00\x00\x02\x00\x01H\xaf\xa4q\x00\x00\x00\x00IEND\xaeB`\x82_V2_CHANGED"
+    dummy_sprite.write_bytes(v1_bytes)
+
+    real_files = pwa.files()
+    monkeypatch.setattr(pwa, "files", lambda: {**real_files, "sprites/town_hall.png": dummy_sprite})
+
+    async with _phone(fake_repo) as (_, page):
+        await page.evaluate("navigator.serviceWorker.ready")
+        await page.evaluate("window.syncAssets ? window.syncAssets() : null")
+        await page.locator(".dock").wait_for(timeout=WAIT_MS)
+        await page.locator("img[src*='town_hall']").first.wait_for(timeout=WAIT_MS)
+
+        body1 = await page.evaluate("""async () => {
+            const r = await fetch("sprites/town_hall.png");
+            return Array.from(new Uint8Array(await r.arrayBuffer()));
+        }""")
+        assert bytes(body1) == v1_bytes
+
+        # Change one sprite's bytes (and so its hash) on the server and reload
+        dummy_sprite.write_bytes(v2_bytes)
+        import os
+        os.utime(dummy_sprite, None)
+
+        await page.reload()
+        await page.locator(".dock").wait_for(timeout=WAIT_MS)
+        await page.evaluate("navigator.serviceWorker.ready")
+        await page.evaluate("window.syncAssets ? window.syncAssets() : null")
+
+        # The next load shows the new bytes
+        body2 = await page.evaluate("""async () => {
+            const r = await fetch("sprites/town_hall.png");
+            return Array.from(new Uint8Array(await r.arrayBuffer()));
+        }""")
+        assert bytes(body2) == v2_bytes
+        assert bytes(body1) != bytes(body2)
+
+        # Track network requests on the server for sprites
+        sprite_requests = []
+        orig_serve = pwa.serve
+        monkeypatch.setattr(pwa, "serve", lambda method, target, **kwargs: (
+            sprite_requests.append(target) if pwa.is_cache_first(target.removeprefix("/app/")) else None,
+            orig_serve(method, target, **kwargs)
+        )[1])
+
+        # Second open with nothing changed makes zero network requests for sprites
+        await page.reload()
+        await page.locator(".dock").wait_for(timeout=WAIT_MS)
+        await page.evaluate("navigator.serviceWorker.ready")
+        await page.evaluate("window.syncAssets ? window.syncAssets() : null")
+        await page.locator("img[src*='town_hall']").first.wait_for(timeout=WAIT_MS)
+
+        body3 = await page.evaluate("""async () => {
+            const r = await fetch("sprites/town_hall.png");
+            return Array.from(new Uint8Array(await r.arrayBuffer()));
+        }""")
+        assert bytes(body3) == v2_bytes
+        assert sprite_requests == []

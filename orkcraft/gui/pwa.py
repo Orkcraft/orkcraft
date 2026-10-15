@@ -30,6 +30,7 @@ import asyncio
 import hashlib
 import json
 import re
+import threading
 import time
 from http import HTTPStatus
 from pathlib import Path
@@ -108,6 +109,7 @@ def is_cache_first(name: str) -> bool:
     return name.startswith(CACHE_PREFIXES) or name.endswith((".png", ".webp"))
 
 
+_HASH_LOCK = threading.Lock()
 _HASH_CACHE: dict[str, tuple[float, int, str]] = {}
 
 
@@ -115,20 +117,21 @@ def assets() -> dict[str, str]:
     """A map {path: short content hash} of the cache-first files (first 10 hex of sha1)."""
     all_files = files()
     out: dict[str, str] = {}
-    for name, path in all_files.items():
-        if not is_cache_first(name):
-            continue
-        try:
-            st = path.stat()
-            cached = _HASH_CACHE.get(name)
-            if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
-                out[name] = cached[2]
-            else:
-                h = hashlib.sha1(path.read_bytes()).hexdigest()[:10]
-                _HASH_CACHE[name] = (st.st_mtime, st.st_size, h)
-                out[name] = h
-        except OSError:
-            pass
+    with _HASH_LOCK:
+        for name, path in all_files.items():
+            if not is_cache_first(name):
+                continue
+            try:
+                st = path.stat()
+                cached = _HASH_CACHE.get(name)
+                if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
+                    out[name] = cached[2]
+                else:
+                    h = hashlib.sha1(path.read_bytes()).hexdigest()[:10]
+                    _HASH_CACHE[name] = (st.st_mtime, st.st_size, h)
+                    out[name] = h
+            except OSError:
+                pass
     return out
 
 

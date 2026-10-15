@@ -34,6 +34,7 @@ import json
 import os
 import socket
 import ssl
+import threading
 import time
 from http import HTTPStatus
 from pathlib import Path
@@ -45,18 +46,23 @@ from websockets.http11 import Request
 from websockets.server import ServerProtocol
 
 from orkcraft import env
-from orkcraft.gui import mobile, phone_tls, pwa, tailnet
+from orkcraft.gui import mobile, phone_http, phone_tls, pwa, tailnet
 from orkcraft.gui import places as places_http
 from orkcraft.gui.host import CommandError
 from orkcraft.gui.pairing import Bucket, PairError, Pairing, clean_name
+from orkcraft.gui.phone_http import (
+    BODY_LIMIT,
+    HEAD_LIMIT,
+    HEAD_S,
+    IDLE_S,
+    KEEP_ALIVE_MAX,
+    _json,
+    _parse_head,
+    _response,
+)
 from orkcraft.realm import places
 
 PUSH_S = 2.0             # a phone gets the compact snapshot at most this often, and only when its rev changed
-HEAD_LIMIT = 16 * 1024   # an HTTP request's head
-HEAD_S = 10.0            # …and how long it may take to come
-IDLE_S = 15.0            # keep-alive: how long to wait for the next request on an open connection
-KEEP_ALIVE_MAX = 100     # at most this many requests on one connection
-BODY_LIMIT = 4096        # POST /api/pair's body
 MAX_FRAME = 8 * 2**20    # as the page's socket: a dropped file comes base64 in one frame
 HOST_ENV = "PHONE_HOST"  # ORKCRAFT_PHONE_HOST: the address to listen on, when the LAN's own is not the one
 
@@ -95,41 +101,6 @@ def qr_data_uri(text: str) -> str | None:
     buf = io.BytesIO()
     segno.make(text, error="m").save(buf, kind="svg", scale=6, border=2, dark="#000", light="#fff", xmldecl=False)
     return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
-
-
-def _response(status: HTTPStatus, body: bytes = b"", content_type: str = "text/plain; charset=utf-8",
-              keep_alive: bool = False) -> bytes:
-    body = body or status.phrase.encode()
-    conn = "Connection: keep-alive" if keep_alive else "Connection: close"
-    head = (f"HTTP/1.1 {status.value} {status.phrase}\r\nContent-Type: {content_type}\r\n"
-            f"Content-Length: {len(body)}\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\n"
-            f"{conn}\r\n\r\n")
-    return head.encode("ascii") + body
-
-
-def _json(status: HTTPStatus, data: Any, keep_alive: bool = False) -> bytes:
-    return _response(status, json.dumps(data, ensure_ascii=False).encode("utf-8"), "application/json",
-                     keep_alive=keep_alive)
-
-
-def _parse_head(head: bytes) -> tuple[str, str, dict[str, str]] | None:
-    """(method, target, headers by lower-case name) of a request's head; None when it is not HTTP/1.1."""
-    try:
-        lines = head.decode("latin-1").split("\r\n")
-        method, target, version = lines[0].split(" ")
-    except ValueError:
-        return None
-    if version not in ("HTTP/1.1", "HTTP/1.0"):
-        return None
-    headers: dict[str, str] = {}
-    for line in lines[1:]:
-        if not line:
-            continue
-        name, sep, value = line.partition(":")
-        if not sep:
-            return None
-        headers.setdefault(name.strip().lower(), value.strip())
-    return method, target, headers
 
 
 def _bearer(value: str) -> str:
@@ -209,15 +180,7 @@ class Listener:
         try:
             if os.name != "nt":                    # on Windows it would let another program take the port
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                if hasattr(socket, "SO_REUSEPORT"):
-                    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-            try:
-                sock.bind((ip, port))
-            except OSError as e:
-                if getattr(e, "errno", None) == 49 and ip.startswith("127."):
-                    sock.bind(("127.0.0.1", port))
-                else:
-                    raise
+            sock.bind((ip, port))
             sock.listen(16)
         except OSError:
             sock.close()
@@ -230,6 +193,7 @@ class Listener:
         port is the one phones were given; a `move` (a new pairing) takes another when that one is taken."""
         if self.listening:
             return
+        threading.Thread(target=pwa.assets, name="orkcraft-assets", daemon=True).start()
         ip = self.bind or lan_ip()
         tail = None if self.bind else self.tail_find()
         if not ip and tail is None:
@@ -352,51 +316,7 @@ class Listener:
     # -- HTTP ----------------------------------------------------------------------------------------
 
     async def _conn(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-        try:
-            for req_count in range(KEEP_ALIVE_MAX):
-                timeout = HEAD_S if req_count == 0 else IDLE_S
-                try:
-                    head = await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), timeout)
-                except (asyncio.IncompleteReadError, asyncio.LimitOverrunError, TimeoutError, ConnectionError,
-                        ssl.SSLError, OSError):
-                    return
-                parsed = _parse_head(head)
-                if parsed is None:
-                    writer.write(_response(HTTPStatus.BAD_REQUEST, keep_alive=False))
-                    return
-                method, target, headers = parsed
-                path = urlsplit(target).path
-                if path == "/ws":
-                    if method != "GET":
-                        writer.write(_response(HTTPStatus.METHOD_NOT_ALLOWED, keep_alive=False))
-                        return
-                    await self._websocket(head, headers, reader, writer)
-                    return
-                close_conn = headers.get("connection", "").lower() == "close"
-                is_last = (req_count == KEEP_ALIVE_MAX - 1) or close_conn
-                keep = not is_last
-                if path == "/api/version":
-                    writer.write(self._version(method, headers, keep_alive=keep))
-                elif path == "/api/pair":
-                    writer.write(await self._pair(method, headers, reader, keep_alive=keep))
-                elif path == "/api/place":
-                    writer.write(await self._place(method, headers, reader, keep_alive=keep))
-                elif pwa.wants(path):
-                    writer.write(pwa.serve(method, target, keep_alive=keep))
-                else:
-                    writer.write(_response(HTTPStatus.NOT_FOUND, keep_alive=keep))
-                if is_last:
-                    return
-                await writer.drain()
-        except Exception:                          # one phone's broken request never stops the listener
-            pass
-        finally:
-            try:
-                if not writer.is_closing():
-                    await asyncio.wait_for(writer.drain(), HEAD_S)
-                writer.close()
-            except Exception:
-                pass
+        await phone_http.handle_conn(self, reader, writer)
 
     def _version(self, method: str, headers: dict[str, str], keep_alive: bool = False) -> bytes:
         if method != "GET":
@@ -411,39 +331,36 @@ class Listener:
         return _json(HTTPStatus.OK, {"name": "orkcraft", "version": __version__, "protocol": PROTOCOL,
                                      "api": mobile.API}, keep_alive=keep_alive)
 
-    async def _pair(self, method: str, headers: dict[str, str], reader: asyncio.StreamReader,
-                    keep_alive: bool = False) -> bytes:
+    async def _pair(self, method: str, headers: dict[str, str], reader: asyncio.StreamReader) -> bytes:
         if method != "POST":
-            return _response(HTTPStatus.METHOD_NOT_ALLOWED, keep_alive=keep_alive)
+            return _response(HTTPStatus.METHOD_NOT_ALLOWED)
         if headers.get("content-type", "").split(";")[0].strip().lower() != "application/json":
-            return _response(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, keep_alive=keep_alive)
+            return _response(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
         try:
             length = int(headers.get("content-length", ""))
         except ValueError:
-            return _response(HTTPStatus.LENGTH_REQUIRED, keep_alive=keep_alive)
+            return _response(HTTPStatus.LENGTH_REQUIRED)
         if not 0 < length <= BODY_LIMIT or "transfer-encoding" in headers:
-            return _response(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, keep_alive=keep_alive)
+            return _response(HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
         if not self.pairing.attempt():
             self._locked()
-            return _json(HTTPStatus.TOO_MANY_REQUESTS, {"error": "Pairing is locked: show a new code on the desktop"},
-                         keep_alive=keep_alive)
+            return _json(HTTPStatus.TOO_MANY_REQUESTS, {"error": "Pairing is locked: show a new code on the desktop"})
         try:
             body = json.loads(await asyncio.wait_for(reader.readexactly(length), HEAD_S))
         except (ValueError, asyncio.IncompleteReadError, TimeoutError):
-            return _json(HTTPStatus.BAD_REQUEST, {"error": "Not a pairing request"}, keep_alive=keep_alive)
+            return _json(HTTPStatus.BAD_REQUEST, {"error": "Not a pairing request"})
         if not isinstance(body, dict):
-            return _json(HTTPStatus.BAD_REQUEST, {"error": "Not a pairing request"}, keep_alive=keep_alive)
+            return _json(HTTPStatus.BAD_REQUEST, {"error": "Not a pairing request"})
         try:
             device_id, token, name = self.pairing.pair(body.get("code"), clean_name(body.get("name")))
         except PairError as e:
-            return _json(HTTPStatus.FORBIDDEN, {"error": str(e)}, keep_alive=keep_alive)
+            return _json(HTTPStatus.FORBIDDEN, {"error": str(e)})
         self.host.town.toast(f"{name} is paired: it can answer the orks' questions and stop all",
                              title="Phone paired")
-        return _json(HTTPStatus.OK, {"id": device_id, "token": token, "name": name}, keep_alive=keep_alive)
+        return _json(HTTPStatus.OK, {"id": device_id, "token": token, "name": name})
 
-    async def _place(self, method: str, headers: dict[str, str], reader: asyncio.StreamReader,
-                     keep_alive: bool = False) -> bytes:
-        return await places_http.post(self, method, headers, reader, keep_alive=keep_alive)
+    async def _place(self, method: str, headers: dict[str, str], reader: asyncio.StreamReader) -> bytes:
+        return await places_http.post(self, method, headers, reader)
 
     def _locked(self) -> None:
         if not self._said_locked:

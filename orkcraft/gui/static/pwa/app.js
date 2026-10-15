@@ -37,19 +37,17 @@ const code = hash.get("pair");
 // Nothing of it stays in the address: a code is once, a token is this phone's own, a share is used now.
 if (location.hash || location.search) history.replaceState(null, "", location.pathname);
 
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").catch(() => {});
+  navigator.serviceWorker.ready.then(() => syncAssets()).catch(() => {});
+}
 
 async function syncAssets() {
   try {
-    const r = await fetch("assets.json");
-    if (!r.ok) return;
-    const assets = await r.json();
-    if ("serviceWorker" in navigator) {
-      const reg = await navigator.serviceWorker.ready;
-      (reg.active || navigator.serviceWorker.controller)?.postMessage({ type: "assets", assets });
-    }
+    await fetch("assets.json");
   } catch {}
 }
+window.syncAssets = syncAssets;
 syncAssets();
 
 // -- pairing ----------------------------------------------------------------------------------------

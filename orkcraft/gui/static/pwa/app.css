@@ -97,7 +97,7 @@ p { margin: 0 0 8px; }
   text-shadow: 0 1px 0 #000, 0 0 6px #000; }
 :root[data-theme="camp"] .fenced > .yard { position: relative; padding: 31px 23px 33px; image-rendering: pixelated;
   background: linear-gradient(var(--yard), var(--yard)) 7px 24px / calc(100% - 14px) calc(100% - 38px) no-repeat; }
-:root[data-theme="camp"] .fenced > .yard > *:not(.lit) { position: relative; z-index: 1; }
+:root[data-theme="camp"] .fenced > .yard > * { position: relative; z-index: 1; }
 :root[data-theme="camp"] .fenced > .yard::before { content: ""; position: absolute; left: 0; right: 0; top: 27px; bottom: 14px;
   pointer-events: none; image-rendering: pixelated; background:
     var(--fence-side) left top / 15px 27px no-repeat space,
