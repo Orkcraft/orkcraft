@@ -49,7 +49,7 @@ changes with it. The owner works on the tasks in parallel while looking for the 
 
 ## 3. The order of work
 
-**The calendar (the owner, 2026-10-13):** until the end of the week of 12 October, the backlog's tasks; from 19 October,
+**The calendar (the owner, 2026-10-13; moved 2026-10-15, §15: no date, the launch is the owner's "ready"):** until the end of the week of 12 October, the backlog's tasks; from 19 October,
 marketing and community work starts (posts, a devlog, finding testers), in parallel with the work. **This week's
 goal** and the preparation started now (materials, the landing page, GitHub for search): [launch-prep.md](launch-prep.md).
 
@@ -493,11 +493,23 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
   The full suite passed twice at `-n auto` (2150). All sessions are idle; the morning summary is at the top of this
   section, and the check-ins have stopped.
 
-## 15. Loops on the line (15 October, with the owner)
+## 15. Loops on the line; the launch date moved (15 October, with the owner)
 
-The line shows the flow; an agent's own loop is drawn inside the session (its bubble, the building's inside). Between
-buildings: **returns** ride back as the same cart wearing `↩`, the pair standing as neighbours; **services** (the Wiki)
-stand in a **back row along the palisade** with no track, an ork walking to them by a path. The person's Office places
-win over neighbours (the owner: "it is their right"); what is guaranteed is the track: fixed topology, full-width lines,
-no crossings, whatever is moved. Full rules and priorities: [design-system-v3.md](design-system-v3.md) §4c. P0: the
-return cart on a send-back; the rest P1.
+**The line.** The line shows the flow; an agent's own loop is drawn inside the session (its bubble, the building's
+inside). Between buildings:
+
+- **Every cart runs one way round.** A return (a send-back, the brief to the Calendar) goes on, back along a **return
+  line** under the lowest row, and in again: it never backs along a line, so carts never meet head-on.
+- **Small switch stands** at every fork throw as a cart comes, so a return reads as "round again".
+- **Carts keep their distance and wait in a pocket** beside their building's stop, never on the main line.
+- **Services** (the Wiki) stand in a **back row along the palisade** with no track; an ork walks to them by a path.
+
+The person's Office places win over neighbours (the owner: "it is their right"). What is guaranteed is the track:
+fixed topology, full-width lines, no crossings, whatever is moved.
+
+Full rules: [design-system-v3.md](design-system-v3.md) §4c. Priority: one way round, switches and pockets are P0
+with Mission 1b; the back row and neighbours are P1.
+
+**The launch date moved.** 19 October is off and there is no new date: the launch is the owner's "ready" (§13.1–2).
+The devlog, Discord, the posts and the testers all wait for it together, since an empty room reads as a dead project.
+The materials in `docs/marketing/` stay drafts.

@@ -411,7 +411,7 @@ track. Between buildings, three kinds of link, three drawings:
 | link | examples | drawn as |
 |---|---|---|
 | **flow**: the work changes hands | Task board → Agent pool → Review gate → catapult | carts on the line (§4) |
-| **return**: the answer goes back to who asked (`returns: true`, a send-back) | the Calendar → Agent pool → the brief back; the Review gate's send-back to the pool; 1b's rework | **the same cart** (one id) rolls back along the line wearing `↩` and what it brings (`↩ brief · Standup`); a frequent loop gets a siding of its own, as 1b's proving siding, never the main line |
+| **return**: the answer goes back to who asked (`returns: true`, a send-back) | the Calendar → Agent pool → the brief back; the Review gate's send-back to the pool | the same cart (one id) goes **round again**: on along its line, back along the **return line**, in again at the left column to the building that asked (rules 5–7). Never backwards on a line. A frequent loop gets a siding of its own, as 1b's proving siding |
 | **service**: consulted, never passed through | the Wiki read by an Agent pool (`notes`); later the Town Hall | **no track.** It stands in the **back row** along the palisade; an ork walks the path to it with a scroll before the run and back with the excerpt: one walk per run, never one per `wiki_search` |
 
 **Rules:**
@@ -420,8 +420,8 @@ track. Between buildings, three kinds of link, three drawings:
    column and the lookout stay clear. A path runs from a service down to each building that reads it, through the
    gaps between the upper row's buildings (a gap is one path wide, §4.8). A path to the lower row crosses line 1 at a
    **level crossing** (planks between the rails, square to the line). Paths never run along the track.
-2. **Neighbours.** Two buildings joined by a return road stand in the same row, at most one place apart, so the cart
-   backs a short way. A service stands above its busiest reader.
+2. **Neighbours.** Two buildings joined by a return road stand in the same row, at most one place apart, so the round
+   trip is short. A service stands above its busiest reader.
 3. **The person's places win.** A building the person placed in Office keeps its row and place; neighbours and the
    back row place only buildings never placed. A far placement costs a longer trip, shown as it is. The Warchief may
    say once, as a 💡 improvement, never forced: "The brief rides across the whole camp. Put the Calendar next to the
@@ -435,9 +435,30 @@ track. Between buildings, three kinds of link, three drawings:
    - rows hold at most five; a sixth placed in a full row passes to the next, as today;
    - stations keep their track (§4.11) wherever their row is.
 
-**Priority:** the return cart on a send-back is **P0** (Mission 1 and 1b show it); the back row, the neighbours, the
-ork's walk to the Wiki and the 💡 line are **P1** (the owner's own town; Mission 1 has no Wiki or Calendar). **No:**
-drawing each tool call or MCP read of an agent as a cart or a flash.
+5. **One way round.** Every cart runs one way: east along the lines, down the right column, **west along the return
+   line** under the lowest row, up the left column. No cart ever runs backwards, so two carts never meet head-on. The
+   return line is the loop's own bottom edge: the camp grows one track tile (64 units) taller; whether both lines and
+   the return line fit the default ×1.5 at 1440 × 900 is checked in the preview first (else the return line shows at
+   the overview and its edge at the default).
+6. **Switches say where a cart goes.** Every point where a cart can take one of two ways (into a line from the left
+   column, out to the return line or on to the buffer stop on the right, into a pocket) has a small **switch stand**
+   beside the track: a lever and a target arm, read by position, never by colour. It throws as a cart comes near and
+   the cart takes the way it shows, so a return reads from across the camp: the switch at the right throws to the
+   return line and the cart goes round again. Switches still for a cart going on.
+7. **Carts keep their distance and wait off the line.** On one line carts follow one another a cart apart and never
+   overtake; one that catches up waits behind, and the reason stands in front of it. **A cart never waits on the main
+   line:** each building has a **pocket**, one track tile beside its stop and parallel to the line, entered and left by
+   a switch; the cart stands there while the ork works, and a pile of more than three stands as the pile there.
+   Stations keep their own (the Task board's siding, the Review gate's weighbridge, the mine's shaft). This amends
+   §4.1's "no rail spurs" for pockets only: one tile, parallel, never a branch to a building.
+
+**Priority:** one way round with the return line, the switches, the pockets and the queue are **P0, built with Mission
+1b** (its rework and the gate's send-back need them), after the owner has played Mission 1: about 2–3 days. The back
+row, the neighbours, the ork's walk to the Wiki and the 💡 line are **P1**. **No:** a cart backing along a line; each
+tool call or MCP read of an agent drawn as a cart or a flash.
+
+**Art wanted:** the switch stand (a lever and a target arm, two positions, about 16 × 24 art px); the pocket's
+switches on c2's gauge, with the north–east–south junction still owed (§0).
 
 ## 5. Signals win by value
 

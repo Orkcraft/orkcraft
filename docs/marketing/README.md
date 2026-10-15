@@ -1,6 +1,6 @@
 # Marketing materials for the launch of Orkline
 
-Drafts for the owner, ready from 19 October ([docs/design/launch-prep.md](../design/launch-prep.md)). Written in
+Drafts for the owner. The launch has no date (decisions-2026-10.md §15): nothing goes out before the owner says the product is ready. Once planned from 19 October ([docs/design/launch-prep.md](../design/launch-prep.md)). Written in
 English for the posts; the owner edits the voice before anything goes out. Nothing here is published by itself.
 
 | file | what |
