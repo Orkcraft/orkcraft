@@ -526,3 +526,7 @@ ork (`max_orcs`, three by default), so busy and free bays read from across the c
 is its exit track. Its name and words stay. Carts for other buildings pass it on the line. P0, built by LOOP next,
 art `st-depot` by the art session. Full rules: [design-system-v3.md](design-system-v3.md) §4d.
 
+**Ground (the owner, same day).** All track stands on a bed of path earth, never grass; building paths narrower (24
+art px from 32); grass and earth drawn from several tiles by a fixed hash, all inner corners added. P0 after the
+depot; art `g5-ground`. Rules: [design-system-v3.md](design-system-v3.md) §4e.
+

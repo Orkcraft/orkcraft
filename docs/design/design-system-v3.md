@@ -501,6 +501,28 @@ open bay; the exit's semaphore with the proving siding. Calm colours, no yellow 
 **Priority: P0**, the next work of the LOOP session after its fixes and before its step 4 (they share `layout.js` and
 `track.js`); about 2 days. The pool's old building sprite stays for Office's card if wanted.
 
+### 4e. Ground: a track bed under every rail, narrower paths, varied tiles (the owner, 15 October; not built)
+
+1. **A track bed under all track.** Every track tile (lines, columns, the return line, sidings, pockets, the depot's
+   tracks, the stations' spurs) stands on **earth**, not grass: a band of path earth one track tile wide with the
+   path's grass rims along both sides, following the track round its curves and junctions. The camp reads as worn
+   ground where carts run; grass is where nothing does. Items never stand on it (v3-prompts §14 rule 1, already).
+2. **Narrower building paths.** `PATH_W` goes from 32 to **24** art px (about an ork and a half wide at the default):
+   the paths are the orks' footways, the track bed is the wide earth. The gap between buildings stays 32 (§4.8).
+3. **Varied tiles, never one stamp.** Grass and earth each get several tiles chosen by a fixed hash of the cell (the
+   same camp always draws the same), so no pattern repeats in rows:
+   - grass: 4 plain variants, 2 with a few tufts, 1 with small flowers (the decor stays sparse, §4.9);
+   - earth: 3 plain variants, 1 with small stones, 1 with old cart ruts (track bed only);
+   - rims and corners: all four outer and **all four inner** corners (only `inner-ne` exists), for earth on grass,
+     so a path meeting the track bed joins cleanly.
+4. Calm values: the earth stays the paths' warm sand (about #e4b469), a step darker under the rails so the sleepers
+   read; nothing as light as `signal-ask` (§5).
+
+**Art (GEN):** `g5-ground`: the tiles of rule 3 at 64 × 64 (grass, earth) and the rims and corners at the path's
+gauge; the track bed's curve and junction pieces to match c2's curves and c3's junction. **Code (LOOP):** the bed,
+`PATH_W` 24 and the hashed variants, with today's `earth.png` and rims standing in until g5 lands. **Priority: P0**
+(the look comes first, decisions §13.1–2), after the depot.
+
 ## 5. Signals win by value
 
 The grey test of F1 (v3-prompts §5.2) showed the yellow flag turning into a white flag and the ❓ smaller than the
