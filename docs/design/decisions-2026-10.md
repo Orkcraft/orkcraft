@@ -430,3 +430,5 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
     returns.
   - Phone screenshots are in `img/i1/phone-390-*`, `phone-430-*`.
   - Last item for I1 tonight: the quest log covering the camp's bottom line.
+- **00:22.** Check-in. I1 has the quest-log fix done locally and is not blocked. Before it merges, it is reading
+  intermittent load errors in the drag and Warchief tests.
