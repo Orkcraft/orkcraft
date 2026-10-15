@@ -44,6 +44,7 @@ def test_the_town_stands_on_rows_and_lines_with_the_lookout_and_the_catapult_in_
     pg.keyboard.press("Escape")
     for bid in (tower, board, pool, out):
         _building(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
+    assert _building(pg, "town_hall").count() == 0                          # no Town Hall in Camp (spec 13)
     assert pg.locator(".gui-hut").count() == 0                              # no cards in Camp: v3's sprites
     src = _building(pg, pool).locator("img").get_attribute("src")
     assert src.endswith("/ds/sprites/v3/buildings/depot.png")                 # the Agent pool is the depot (§4d)
@@ -386,7 +387,7 @@ def test_the_persons_home_stands_by_the_review_gate_and_opens_their_own(camp_loo
     home.click()
     menu = pg.locator(".gui-menu")
     assert menu.locator(".gui-menu__item").all_inner_texts() == ["Since your last look", "You: profile and deeds",
-                                                                 "Town settings…"]
+                                                                 "Items", "The Workchief's council", "Town settings…"]
     menu.get_by_text("Since your last look").click()
     pg.locator(".gui-lastlook").wait_for(state="visible", timeout=WAIT_MS)
     pg.locator(".gui-lastlook").get_by_role("button", name="Back to the camp").click()
@@ -395,6 +396,23 @@ def test_the_persons_home_stands_by_the_review_gate_and_opens_their_own(camp_loo
     menu.get_by_text("You: profile and deeds").click()
     pg.locator(".gui-portrait__menu").wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
+    home.click()
+    menu.get_by_text("Items").click()
+    pg.locator(".gui-items").wait_for(state="visible", timeout=WAIT_MS)
+    pg.keyboard.press("Escape")
+    home.click()
+    menu.get_by_text("The Workchief's council").click()
+    panel = pg.locator(".gui-panel")
+    panel.wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator(".ok-win__title").inner_text().strip() == "Town Hall"
+    pg.keyboard.press("Escape")
+    # With a charter set (spec 03), the home's menu has the six entries
+    pg.evaluate(f"() => {LINK}.then(m => {{ m.town.value = {{ ...m.town.value, charter: {{ goal: 'Build the camp' }} }}; }})")
+    home.click()
+    assert menu.locator(".gui-menu__item").all_inner_texts() == ["Since your last look", "You: profile and deeds",
+                                                                 "Items", "The Workchief's council", "The charter", "Town settings…"]
+    pg.keyboard.press("Escape")
+    pg.evaluate(f"() => {LINK}.then(m => {{ const t = {{ ...m.town.value }}; delete t.charter; m.town.value = t; }})")
     _call(pg, "town.demolish", {"id": gate})
 
 
@@ -409,7 +427,8 @@ def test_an_item_dragged_from_the_inventory_snaps_to_the_grass_and_stays_after_a
     pg.keyboard.press("Escape")
     _building(pg, pool).wait_for(state="visible", timeout=WAIT_MS)
     assert pg.locator(".gui-items").count() == 0                         # closed: nothing nags
-    pg.get_by_role("button", name="Items", exact=True).click()
+    pg.locator(".gui-camp__home").click()
+    pg.locator(".gui-menu").get_by_text("Items").click()
     row = pg.locator('.gui-items__row[data-item="tree"]')
     row.wait_for(state="visible", timeout=WAIT_MS)
     b, r = _building(pg, pool).bounding_box(), row.bounding_box()
@@ -447,7 +466,8 @@ def test_an_item_dragged_from_the_inventory_snaps_to_the_grass_and_stays_after_a
     assert pg.locator(".gui-items__placed").count() == 0 and pg.get_by_role("button", name="Items", exact=True).count() == 0
     _call(pg, "you.look", {"look": "camp"})
     placed.wait_for(state="visible", timeout=WAIT_MS)
-    pg.get_by_role("button", name="Items", exact=True).click()
+    pg.locator(".gui-camp__home").click()
+    pg.locator(".gui-menu").get_by_text("Items").click()
     panel = pg.locator(".gui-items")
     panel.wait_for(state="visible", timeout=WAIT_MS)
     p = panel.bounding_box()
@@ -457,7 +477,7 @@ def test_an_item_dragged_from_the_inventory_snaps_to_the_grass_and_stays_after_a
     pg.mouse.up()
     placed.wait_for(state="detached", timeout=WAIT_MS)                         # put back in the inventory
     assert not [x for x in server.host.town.scroll.items if x["item"] == "tree"]
-    pg.get_by_role("button", name="Items", exact=True).click()
+    pg.keyboard.press("Escape")
     _call(pg, "town.demolish", {"id": pool})
 
 
@@ -470,7 +490,8 @@ def test_a_building_that_takes_an_items_cell_sends_it_back_with_a_line_in_the_pa
     pool = _call(pg, "town.build", {"type": "barracks"})
     pg.keyboard.press("Escape")
     _building(pg, pool).wait_for(state="visible", timeout=WAIT_MS)
-    pg.get_by_role("button", name="Items", exact=True).click()
+    pg.locator(".gui-camp__home").click()
+    pg.locator(".gui-menu").get_by_text("Items").click()
     r = pg.locator('.gui-items__row[data-item="bush-small"]').bounding_box()
     pg.mouse.move(r["x"] + 20, r["y"] + 20)
     pg.mouse.down()
@@ -479,18 +500,19 @@ def test_a_building_that_takes_an_items_cell_sends_it_back_with_a_line_in_the_pa
     pg.locator(".gui-items__ghost.is-ok").wait_for(state="visible", timeout=WAIT_MS)
     pg.mouse.up()
     pg.locator('.gui-items__placed[data-item="bush-small"]').wait_for(state="visible", timeout=WAIT_MS)
-    pg.get_by_role("button", name="Items", exact=True).click()                   # closed
+    pg.keyboard.press("Escape")                                                  # closed
     bench = _call(pg, "town.build", {"type": "lab"})                              # joins the row: the home moves on
     pg.keyboard.press("Escape")
     _building(pg, bench).wait_for(state="visible", timeout=WAIT_MS)
     pg.locator('.gui-items__placed[data-item="bush-small"]').wait_for(state="detached", timeout=WAIT_MS)
     assert not [p for p in server.host.town.scroll.items if p["item"] == "bush-small"]
     assert pg.locator(".gui-items__note").count() == 0                          # nothing said until the panel opens
-    pg.get_by_role("button", name="Items", exact=True).click()
+    pg.locator(".gui-camp__home").click()
+    pg.locator(".gui-menu").get_by_text("Items").click()
     note = pg.locator(".gui-items__note")
     note.wait_for(state="visible", timeout=WAIT_MS)
     assert "The Small bush went back to your items when the Test bench was built" in note.inner_text()
-    pg.get_by_role("button", name="Items", exact=True).click()                   # seen once closed
+    pg.keyboard.press("Escape")                                                  # seen once closed
     pg.wait_for_function("() => import('/static/js/link.js').then(m => !m.town.value.growth.items.notes.length)", timeout=WAIT_MS)
     for bid in (pool, bench):
         _call(pg, "town.demolish", {"id": bid})

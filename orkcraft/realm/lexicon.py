@@ -75,6 +75,9 @@ TERMS: tuple[Term, ...] = (
     _t("look.camp", "Camp"),                                       # the default look: sprites, the mascot, flames
     _t("look.office", "Office"),                                   # the calm look: monochrome, no sprites
     _t("dnd", "Do not disturb"),                                   # sounds, pushes, the Workchief's news wait
+    _t("charter", "charter", "charters"),
+    _t("item", "item", "items"),
+    _t("warchief_council", "The Workchief's council", was="The Warchief's council"),
     # -- what a thing does, costs or risks: plain words ---------------------------------------------
     _t("ghost", "preview"),                                        # Build's placing outline; "ghost" is no old spelling
                                                                    # any more: the ghosts are a kin (Wandering Ghost)
@@ -251,7 +254,9 @@ _ALSO = {"lake": ("Lake",), "pit": ("Pit",), "mill": ("Mill",), "horn": ("Horn",
 # Whole phrases first: where a word for word would read wrong.
 _PHRASES = {"Into the pit": "Dropped",
             "Not enough food": "No ork slots left", "Treasury empty": "Budget spent",
-            "Halt All Operations": "Stop all", "Halt All": "Stop all"}
+            "Halt All Operations": "Stop all", "Halt All": "Stop all",
+            "The Warchief's Council": "The Workchief's council",
+            "The Workchief's Council": "The Workchief's council"}
 
 _BY_KEY = {t.key: t for t in TERMS}
 

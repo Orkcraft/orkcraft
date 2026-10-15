@@ -7,7 +7,7 @@
 //
 // Pure: no page (tests/test_camp_layout.py runs it in Node). Numbers are CSS px in the world's frame.
 
-export const SERVICES = new Set(["scrolls"]);       // the Wiki; later the Town Hall
+export const SERVICES = new Set(["scrolls"]);       // the Wiki (the Town Hall is no building in Camp: spec 13, decisions §20)
 export const FOOTPATH = 16;                          // a service's footpath, art px wide: narrower than a building's
 const placed = (b) => Array.isArray(b.hut);
 
