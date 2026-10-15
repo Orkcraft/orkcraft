@@ -363,6 +363,19 @@ def test_a_new_orkspace_picks_a_folder_and_is_asked_before_git_starts(page, tmp_
     pg.evaluate("id => import('/static/js/link.js').then(m => m.command('orkspace.remove', { id }))", made["id"])
 
 
+def _leave(pg, here: str, made: str) -> None:
+    """A test that made an orkspace goes back to the one it began in and takes its own down: the next test on this
+    page builds in the town's own project, not in a map a test left open."""
+    link = "import('/static/js/link.js')"
+    pg.keyboard.press("Escape")
+    pg.evaluate(f"id => {link}.then(m => m.command('orkspace.select', {{ id }}))", here)
+    pg.evaluate(f"""id => {link}.then(async (m) => {{
+      for (const b of (m.town.value.orkspaces.find(o => o.id === id) || {{ buildings: [] }}).buildings) await m.command('town.demolish', {{ id: b }}).catch(() => {{}});   // one already down
+      await m.command('orkspace.remove', {{ id }}); }})""", made)
+    pg.wait_for_function(f"([h, m]) => {link}.then(({{ town }}) => town.value.active_orkspace === h && !town.value.orkspaces.some(o => o.id === m))",
+                         arg=[here, made], timeout=WAIT_MS)
+
+
 def test_a_building_is_copied_to_another_orkspace_from_its_menu(page):
     """docs/design/projects.md §5: the hut's menu → Copy to orkspace… → the map picked; the copy stands there."""
     pg = page
@@ -373,19 +386,22 @@ def test_a_building_is_copied_to_another_orkspace_from_its_menu(page):
     pg.evaluate(f"id => {link}.then(m => m.command('orkspace.select', {{ id }}))", here)
     pg.wait_for_function(f"([s, h]) => {link}.then(({{ town }}) => town.value.active_orkspace === h && town.value.orkspaces.some(o => o.id === s))",
                          arg=[shop, here], timeout=WAIT_MS)              # the menu offers the copy once the snapshot has the map
-    hut = _hut(pg, bid)
-    hut.wait_for(state="visible", timeout=WAIT_MS)
-    hut.click(button="right")
-    pg.get_by_role("menuitem", name="Copy to orkspace…").click()
-    dialog = pg.locator(".ok-dialog", has_text="Copy")
-    dialog.get_by_role("button", name="Copy to Copy target").click()
-    dialog.wait_for(state="hidden", timeout=WAIT_MS)
-    pg.wait_for_function(f"() => {link}.then(({{ town }}) => town.value.orkspaces.find(o => o.name === 'Copy target').buildings.length === 1)",
-                         timeout=WAIT_MS)
-    pg.locator(".ok-toast", has_text="copied to Copy target").first.wait_for(state="visible", timeout=WAIT_MS)
-    copy = pg.evaluate(f"() => {link}.then(({{ town }}) => town.value.orkspaces.find(o => o.name === 'Copy target').buildings[0])")
-    for x in (copy, bid):
-        pg.evaluate(f"id => {link}.then(m => m.command('town.demolish', {{ id }}))", x)
+    try:
+        hut = _hut(pg, bid)
+        hut.wait_for(state="visible", timeout=WAIT_MS)
+        hut.click(button="right")
+        pg.get_by_role("menuitem", name="Copy to orkspace…").click()
+        dialog = pg.locator(".ok-dialog", has_text="Copy")
+        dialog.get_by_role("button", name="Copy to Copy target").click()
+        dialog.wait_for(state="hidden", timeout=WAIT_MS)
+        pg.wait_for_function(f"() => {link}.then(({{ town }}) => town.value.orkspaces.find(o => o.name === 'Copy target').buildings.length === 1)",
+                             timeout=WAIT_MS)
+        pg.locator(".ok-toast", has_text="copied to Copy target").first.wait_for(state="visible", timeout=WAIT_MS)
+        copy = pg.evaluate(f"() => {link}.then(({{ town }}) => town.value.orkspaces.find(o => o.name === 'Copy target').buildings[0])")
+        for x in (copy, bid):
+            pg.evaluate(f"id => {link}.then(m => m.command('town.demolish', {{ id }}))", x)
+    finally:
+        _leave(pg, here, shop)
 
 
 def test_a_maps_history_takes_it_back_from_the_war_map(page):
@@ -393,20 +409,24 @@ def test_a_maps_history_takes_it_back_from_the_war_map(page):
     and the building raised since comes down."""
     pg = page
     link = "import('/static/js/link.js')"
+    here = pg.evaluate(f"() => {link}.then(({{ town }}) => town.value.active_orkspace)")
     shop = pg.evaluate(f"() => {link}.then(m => m.command('orkspace.new', {{ name: 'History map', project: 'town' }}))")
-    bid = pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'pit' }}))")
-    pg.keyboard.press("Escape")
-    pg.locator(f'.gui-map__land[data-id="{shop}"]').click(button="right")
-    pg.get_by_role("menuitem", name="History…").click()
-    dialog = pg.locator(".ok-dialog", has_text="History: History map")
-    dialog.locator(".gui-history__row").nth(1).wait_for(state="visible", timeout=WAIT_MS)
-    assert "now" in dialog.locator(".gui-history__row").first.inner_text()
-    dialog.locator(".gui-history__row").nth(1).get_by_role("button", name="Back to this").click()
-    dialog.get_by_role("button", name="Go back").click()
-    pg.locator(".ok-toast", has_text="is back to").first.wait_for(state="visible", timeout=WAIT_MS)
-    pg.wait_for_function(f"() => {link}.then(({{ town }}) => !town.value.buildings.some(b => b.id === '{bid}'))",
-                         timeout=WAIT_MS)
-    pg.keyboard.press("Escape")
+    try:
+        bid = pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'pit' }}))")
+        pg.keyboard.press("Escape")
+        pg.locator(f'.gui-map__land[data-id="{shop}"]').click(button="right")
+        pg.get_by_role("menuitem", name="History…").click()
+        dialog = pg.locator(".ok-dialog", has_text="History: History map")
+        dialog.locator(".gui-history__row").nth(1).wait_for(state="visible", timeout=WAIT_MS)
+        assert "now" in dialog.locator(".gui-history__row").first.inner_text()
+        dialog.locator(".gui-history__row").nth(1).get_by_role("button", name="Back to this").click()
+        dialog.get_by_role("button", name="Go back").click()
+        pg.locator(".ok-toast", has_text="is back to").first.wait_for(state="visible", timeout=WAIT_MS)
+        pg.wait_for_function(f"() => {link}.then(({{ town }}) => !town.value.buildings.some(b => b.id === '{bid}'))",
+                             timeout=WAIT_MS)
+        pg.keyboard.press("Escape")
+    finally:
+        _leave(pg, here, shop)
 
 
 def test_the_history_takes_the_projects_files_back(page, tmp_path):
@@ -417,29 +437,33 @@ def test_the_history_takes_the_projects_files_back(page, tmp_path):
     folder = tmp_path / "shop"
     folder.mkdir()
     (folder / "app.py").write_text("print('v1')\n", encoding="utf-8")
+    here = pg.evaluate(f"() => {link}.then(({{ town }}) => town.value.active_orkspace)")
     oid = pg.evaluate(f"() => {link}.then(m => m.command('orkspace.new', {{ name: 'Files map', project: 'town' }}))")
-    pg.evaluate(f"([o, p]) => {link}.then(m => m.command('project.link', {{ orkspace: o, path: p, git: true }}))", [oid, str(folder)])
-    snapshots.take(folder, oid, "before Grom: Login form")
-    pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'pit' }}))")
-    pg.keyboard.press("Escape")
-    (folder / "app.py").write_text("print('broken')\n", encoding="utf-8")
-    snapshots.take(folder, oid, "after Grom: Login form")
-    pg.evaluate(f"() => import('/static/js/history.js').then(m => {{ m.historyFor.value = '{oid}'; }})")
-    dialog = pg.locator(".ok-dialog", has_text="History: Files map")
-    built = dialog.locator(".gui-history__row", has_text="raise pit")
-    built.wait_for(state="visible", timeout=WAIT_MS)
-    built.get_by_role("button", name="Back to this").click()
-    for choice in ("The map", "The files", "Both"):                     # its moment had a snapshot of the files
-        assert built.get_by_role("button", name=choice).is_visible()
-    built.get_by_role("button", name="Cancel").click()
-    row = dialog.locator(".gui-history__row", has_text="before Grom")
-    row.wait_for(state="visible", timeout=WAIT_MS)
-    assert "1 file changed" in dialog.locator(".gui-history__row", has_text="after Grom").inner_text()
-    row.get_by_role("button", name="Back to this").click()
-    row.get_by_role("button", name="Files back").click()
-    pg.locator(".ok-toast", has_text="the files are back").first.wait_for(state="visible", timeout=WAIT_MS)
-    assert (folder / "app.py").read_text(encoding="utf-8") == "print('v1')\n"
-    pg.keyboard.press("Escape")
+    try:
+        pg.evaluate(f"([o, p]) => {link}.then(m => m.command('project.link', {{ orkspace: o, path: p, git: true }}))", [oid, str(folder)])
+        snapshots.take(folder, oid, "before Grom: Login form")
+        pg.evaluate(f"() => {link}.then(m => m.command('town.build', {{ type: 'pit' }}))")
+        pg.keyboard.press("Escape")
+        (folder / "app.py").write_text("print('broken')\n", encoding="utf-8")
+        snapshots.take(folder, oid, "after Grom: Login form")
+        pg.evaluate(f"() => import('/static/js/history.js').then(m => {{ m.historyFor.value = '{oid}'; }})")
+        dialog = pg.locator(".ok-dialog", has_text="History: Files map")
+        built = dialog.locator(".gui-history__row", has_text="raise pit")
+        built.wait_for(state="visible", timeout=WAIT_MS)
+        built.get_by_role("button", name="Back to this").click()
+        for choice in ("The map", "The files", "Both"):                     # its moment had a snapshot of the files
+            assert built.get_by_role("button", name=choice).is_visible()
+        built.get_by_role("button", name="Cancel").click()
+        row = dialog.locator(".gui-history__row", has_text="before Grom")
+        row.wait_for(state="visible", timeout=WAIT_MS)
+        assert "1 file changed" in dialog.locator(".gui-history__row", has_text="after Grom").inner_text()
+        row.get_by_role("button", name="Back to this").click()
+        row.get_by_role("button", name="Files back").click()
+        pg.locator(".ok-toast", has_text="the files are back").first.wait_for(state="visible", timeout=WAIT_MS)
+        assert (folder / "app.py").read_text(encoding="utf-8") == "print('v1')\n"
+        pg.keyboard.press("Escape")
+    finally:
+        _leave(pg, here, oid)
 
 
 def test_the_lake_window_shows_text_markdown_and_code(page):
