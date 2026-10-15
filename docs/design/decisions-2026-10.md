@@ -568,7 +568,9 @@ Sessions: **V4** (the UI), **LOOP** (track bed, scale, density), the **art sessi
 wilderness, the UI kit's textures if V4 asks).
 6. **Density target (the owner):** at the default view a MacBook's screen holds **three rows of six buildings**,
    with their lines and the return line. This replaces §13.3's "at most ten buildings on the screen" and v3's rows of
-   five: a row holds up to six (the depot counts as two). LOOP measures it at 1512 × 982 (a 14-inch MacBook's default)
+   five: a row holds up to six (the depot counts as two). **Then "maybe even eight" (the owner):** rows hold up to
+   eight; 3 × 6 must fit the default view, 3 × 8 at least the overview, and LOOP reports whether 3 × 8 fits the default
+   with carts' chips and orks' bubbles still legible. LOOP measures it at 1512 × 982 (a 14-inch MacBook's default)
    and 1470 × 956 (a 13-inch Air), and tightens gaps, path lengths and the lines' spacing before it shrinks anything;
    if a smaller default step is still needed, it says by how much.
 
