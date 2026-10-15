@@ -750,4 +750,15 @@ since the words do not change between looks. Spec 13.
 6. **The lookout and Metrics stand side by side on the wall, joined by a road** (the owner: "the first", not
    merged): what comes in from outside also becomes figures (issues opened and closed, mail, webhooks a week). Two
    buildings, one expertise each.
+7. **Many readers, many Wikis (the PM, on the owner's question):**
+   - **One Wiki, many readers** (line 1, the quarter): footpaths only to its **three heaviest readers** (reads in
+     the last 7 days), crossing a line on a level crossing; the others get no path, so the grass never fills with
+     paths. **Hovering (or tapping) the Wiki lights all its readers** for as long as the pointer stays: the whole
+     relation on demand, nothing permanent. Later: 📖 in a reader's bubble while it reads.
+   - **Several Wikis** (the project's docs from the charter, a game design's, personal notes): each its own
+     building. The first stands on line 0.5's grass as the camp's library; every other one stands on free grass at
+     the point closest to **its own** readers (the same rule), wherever they are; two that want the same spot take
+     the next nearest. Each draws paths to its own three heaviest readers.
+   - **Wikis are on the grass, so the person may move them** like decor (drag, snapping to free grass, never on
+     track, bed, paths or against a building); a moved Wiki keeps its paths, redrawn to its readers.
 

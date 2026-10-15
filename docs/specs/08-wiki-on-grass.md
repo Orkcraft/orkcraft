@@ -12,6 +12,12 @@ In `js/camp/layout.js` and `js/camp/services.js`:
 3. A 16-art-px footpath runs from its door to each of up to three readers (the heaviest), crossing a line only on a
    level crossing (`track/crossing.png`) at a plain straight.
 4. No fitting grass: today's rule (beside its busiest reader).
+5. **Several Wikis:** the first stands on line 0.5's grass between the Task board and the Review gate; each other
+   Wiki by rule 1 for its own readers; when two want the same spot, the later one takes the next nearest.
+6. **Hover or tap a Wiki:** all its readers get a soft outline (the kit's teal, never yellow or red) while the
+   pointer stays; nothing else changes.
+7. **The person may drag a Wiki** to another free grass spot, as items are dragged (`js/camp/items.js`, `grass.js`
+   for where it fits); the spot is saved in the town file; its paths are redrawn.
 
 ## Tests
 Critical tests, plus `tests/test_camp_layout.py` (inside the loop; never on track/bed/path; up to three paths;
