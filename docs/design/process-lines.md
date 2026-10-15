@@ -32,8 +32,8 @@ cost. No stage has a track of its own.
 
 ## 3. Debates after a stage: an annex, not another building
 
-"I want debates after every stage" is a **property of a station**, drawn as its **council annex**: a small ring of
-logs with a fire beside the hut (the growth annexes' place, design-system-v3 §4.12). With it on, the stage's result
+"I want debates after every stage" is a **property of a station**, drawn as its **council annex**: a campfire built of parts, **one log seat per critic (1 to 6)**, each critic
+an ork sitting on its seat while it argues, beside the station (the growth annexes' place, design-system-v3 §4.12). With it on, the stage's result
 is argued by two or three critic roles (the Review board's members, reused) **in place** before the cart moves on;
 the fire burns while they argue; the verdict and the debate's cost are rows on the waybill. No detour to a Review
 board building, no second track.
