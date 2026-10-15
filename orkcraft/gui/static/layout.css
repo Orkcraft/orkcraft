@@ -303,9 +303,10 @@ body { user-select: text; -webkit-user-select: text; }
 .gui-info-tab { display: flex; flex-direction: column; gap: var(--space-3); }
 .gui-info-tab > .gui-section { margin: 0; }
 .gui-info { display: flex; flex-direction: column; gap: var(--space-2); }
-.gui-info__row { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
-.gui-info__text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gui-info__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); min-width: 0; }
+.gui-info__text { flex: 1 1 12em; min-width: 0; overflow-wrap: break-word; }     /* wraps, never cut inside a word */
 .gui-info__about { margin: 0; }
+.gui-info__more { margin-left: 2px; font-weight: 600; color: var(--action); text-decoration: underline; }
 .gui-info__acts { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .gui-info__back { align-self: flex-start; color: var(--ink-muted); }
 .gui-info__back:hover { color: var(--ink); }

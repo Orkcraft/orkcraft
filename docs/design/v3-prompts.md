@@ -662,6 +662,12 @@ Picked in the art session by the rules of §15 (front-on, no text baked in, no m
 The Task board's inside draws them by `.has-art` (`js/buildings/fields_inside.css`); its CSS stand-ins stay for a
 manifest that cannot be read. Screens: `img/i2/inside-v3.png`.
 
+I2b: the boards hang on the booth's wall above its floor line, the booth drawn at the whole multiple that fills the
+room; the floor stays in sight and the Taskmaster and the orks at work walk on it. A notes lane sits narrower beside
+the boards, folded to its plaque while empty. The settings' description folds at a word with "more"; the runs line
+wraps. Screens: `img/i2/inside-v3b-1440x900.png`, `img/i2/inside-v3b-1280x800-dpr2.png`,
+`img/i2/inside-v3b-1440x900-many.png`.
+
 ## 17. Round 12: the queue after I2 (written 2026-10-15)
 
 The owner, through the PM session: write the queue's prompts, then generate it, P0 first, within **30 calls** for the

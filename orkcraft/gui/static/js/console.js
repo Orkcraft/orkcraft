@@ -141,6 +141,18 @@ function Row({ text, children, title }) {
   return html`<div class="gui-info__row"><span class="gui-info__text" title=${title || ""}>${text}</span>${children}</div>`;
 }
 
+const FOLD = 180;                             // what the description shows folded, in characters
+
+/** Why it is here, folded at a word (never inside one) with "more" when long; "less" folds it again. */
+function About({ text }) {
+  const [all, setAll] = useState(false);
+  const t = String(text || "");
+  const cut = t.length > FOLD ? t.slice(0, t.lastIndexOf(" ", FOLD) > 0 ? t.lastIndexOf(" ", FOLD) : FOLD).replace(/[\s,;:·—-]+$/, "") : t;
+  return html`<p class="ok-font-body gui-info__about">${all || cut === t ? t : `${cut}… `}${cut !== t && html`
+    <button type="button" class="gui-link gui-info__more" aria-expanded=${all ? "true" : "false"}
+      onClick=${() => setAll(!all)}>${say(all ? "less" : "more")}</button>`}</p>`;
+}
+
 function BuildingInfo({ b, i, redo, open }) {
   const run = (name, args = {}) => command(name, { id: b.id, ...args }).then(redo, () => {});
   const w = i.week;
@@ -158,7 +170,7 @@ function BuildingInfo({ b, i, redo, open }) {
       <${Thumb} up count=${i.likes} title=${say("Good: its last result becomes a reference")} onClick=${() => run("building.like")} />
       <${Thumb} count=${i.dislikes} title=${say("Bad: what went wrong?")} onClick=${() => open("dislike")} />
     </${Row}>
-    <p class="ok-font-body gui-info__about">${i.about_plain}</p>
+    <${About} text=${i.about_plain} />
     <${Row} text=${say(runs)} title=${runs}>
       <${Act} label=${say("History")} title=${say("Its chronicles")} onClick=${() => open("history")} />
       <a class="ok-act" href=${logOf(b.id)} download
@@ -180,7 +192,7 @@ function OrkInfo({ b, o, i, redo, open }) {
       ${i.garrison && !i.lead && html`<${Act} label=${say("Dismiss")} title=${say("It leaves the garrison (a steward stays)")}
         onClick=${() => command("ork.dismiss", { id: b.id, ork: o.ref }).then(() => selectOrk(null), () => {})} />`}
     </${Row}>
-    <p class="ok-font-body gui-info__about">${i.about_plain}</p>
+    <${About} text=${i.about_plain} />
     <${Row} text=${say(runs)} title=${runs}>
       <${Act} label=${say("History")} title=${say("Its runs and chronicles")} onClick=${() => open("history")} />
     </${Row}>

@@ -267,8 +267,23 @@ def test_the_task_board_is_entered_its_cards_move_between_boards_and_exit_goes_b
     assert room.locator(".fields-in__ork.is-steward").count() == 1
     assert "Taskmaster" in room.locator(".fields-in__ork.is-steward").inner_text()
     assert room.locator(".fields-in__ork.is-steward .fields-in__bubble").inner_text().strip()
+    # the boards hang on the wall above the floor; the floor stays in sight and the Taskmaster walks on it, in the room
+    pane = room.locator(".gui-inside__room").bounding_box()
+    boards = room.locator(".fields-in__boards").bounding_box()
+    floor = room.locator(".fields-in__floor").bounding_box()
+    steward = room.locator(".fields-in__ork.is-steward").bounding_box()
+    assert boards["y"] + boards["height"] <= floor["y"] + 1 and floor["height"] >= 100
+    assert floor["y"] + floor["height"] <= pane["y"] + pane["height"] + 1               # no scrolling to find the floor
+    assert steward["x"] >= pane["x"] and steward["x"] + steward["width"] <= pane["x"] + pane["width"]
+    assert floor["y"] - 60 <= steward["y"] and steward["y"] + steward["height"] <= pane["y"] + pane["height"] + 1
     shop = room.locator(".gui-inside__shop")
     assert "Settings" in shop.inner_text() and "Task board" in shop.inner_text()
+    # the description folds at a word with "more" and unfolds whole; the runs line wraps, never cut
+    about = shop.locator(".gui-info__about").first
+    assert about.inner_text().rstrip().endswith("more")
+    about.get_by_role("button", name="more").click()
+    assert "moving into a status lane" in about.inner_text()
+    assert all(t.evaluate("e => e.scrollWidth <= e.clientWidth") for t in shop.locator(".gui-info__text").all())
     exit_ = room.get_by_role("button", name="Exit")
     box, frame = exit_.bounding_box(), room.bounding_box()
     assert box["x"] + box["width"] > frame["x"] + frame["width"] - 40 and box["y"] < frame["y"] + 40   # top right

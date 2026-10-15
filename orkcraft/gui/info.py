@@ -62,11 +62,14 @@ def spend_of(town: Town, orc: Orc) -> unit_info.Spend:
 
 
 def _about(town: Town, building_id: str) -> str:
-    """Why the building is here: its own summary, else its type's, else its role."""
+    """Why the building is here: its own summary, else its type's, else its role. A summary that is only its type's
+    cut short (a building keeps the first 200 characters of it, core/buildings.py) says the type's whole."""
     spec = town.spec_of(building_id)
     about = (spec or {}).get("summary") or ""
-    if not about and spec:
-        about = catalog.type_of(spec).summary
+    if spec:
+        whole = catalog.type_of(spec).summary
+        if not about or whole.startswith(about):
+            about = whole
     bs = town.scroll.building(building_id)
     return about or getattr(bs, "role", "") or "No description yet."
 

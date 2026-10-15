@@ -1,15 +1,16 @@
 // 🌾 The Task board from inside (decisions-2026-10.md §13.2, I2): the dispatcher's booth, entered from Camp
 // (js/inside.js). Three boards on its back wall — To do, Doing, Done — with the board's real cards pinned to them: the
 // orks' tasks as parchment sheets, the person's own to-dos as light stone slabs whose checkbox is a small cloth flag
-// (lowered on To do, raised on Done: a press on it ticks the to-do off or puts it back). The notes have a shelf of
-// their own under them. A card dragged to another board does what moving a card does on the card (`move`); a to-do
-// dragged to Done is ticked off, back to To do put back. A click selects a card (its acts over the boards, as on the
+// (lowered on To do, raised on Done: a press on it ticks the to-do off or puts it back). The notes hang beside them,
+// narrower, folded to their plaque while empty. The boards hang on the wall, above the floor line; the floor stays in
+// sight. A card dragged to another board does what moving a card does on the card (`move`); a to-do dragged to Done
+// is ticked off, back to To do put back. A click selects a card (its acts over the boards, as on the
 // card), a double click opens it. The Taskmaster and the orks at work walk between the boards, tools in hand (the
 // inside poses: carry, lens, quill, pin), a bubble over each with its task in two or three words.
 // Art: v3's sprites (design-system-v3.md §8): the booth's backdrop and a board's frame from u6-inside, the parchment
 // sheet, the stone slab, the bone pin and the cloth flag from u6-cards, the orks from o5. Each piece is one element with
 // its own class, so a sprite drops in by CSS alone (`.has-art`); while the manifest is not read, CSS draws them.
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say, details } from "../link.js";
 import { V3, kit, loadKit, has } from "../camp/sprites.js";
@@ -32,6 +33,27 @@ const ART = { booth: "booth", board: "board", sheet: "sheet", slab: "slab", pin:
   "flag-down": "flag-down", "flag-half": "flag-half", "flag-up": "flag-up" };
 const artStyle = () => Object.keys(ART).map((k) => `--in-${k}:url(${V3}inside/${ART[k]}.png)`).join(";");          // what an ork does at a board; it carries between them
 const STEP_MS = 2600;                            // a walk from one board to the next
+// the booth's backdrop in art pixels (u6-inside #2), its floor from this line down: the boards hang above it, the orks
+// walk below it
+const BOOTH = { w: 200, h: 109, floor: 78 };
+
+/** The whole multiple of the art pixel that fills the room (its height first, then its width), never under ×2. */
+function useScale(ref) {
+  const [s, setS] = useState(4);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const fit = () => {
+      const r = el.parentElement ? el.parentElement.getBoundingClientRect() : el.getBoundingClientRect();
+      if (r.width && r.height) setS(Math.max(2, Math.floor(r.height / BOOTH.h), Math.ceil(r.width / BOOTH.w)));
+    };
+    const ro = new ResizeObserver(fit);
+    ro.observe(el.parentElement || el);
+    fit();
+    return () => ro.disconnect();
+  }, []);
+  return s;
+}
 
 const cut = (s, n = 3) => {
   const w = String(s || "").replace(/\s+/g, " ").trim().split(" ");
@@ -86,18 +108,29 @@ function Pinned({ id, card, laneId, todo, sel, onOpen, onMark, tilt }) {
 const tiltOf = (cid) => { let h = 0; for (const ch of cid) h = (h * 31 + ch.charCodeAt(0)) | 0; return ((h % 5) + 5) % 5 - 2; };
 
 /** One board on the back wall: its plaque, its cards, + New at its foot. */
-function Board({ id, lane, todos, mine, sel, onOpen, onMark, onAdd, addLabel, notes }) {
+function Board({ id, lane, todos, mine, sel, onOpen, onMark, onAdd, addLabel, notes, folded, onFold, children }) {
   const [over, drop] = useBoardDrop(id, lane, todos);
   const cards = lane.cards.map((c) => ({ c, todo: false })).concat(mine.map((c) => ({ c, todo: true })));
+  const word = say(WORD[lane.id] || lane.label);
+  if (folded) {
+    return html`<section class=${cls("fields-in__board is-notes is-folded", { "gui-drop": over })} data-lane=${lane.id} ...${drop}
+        aria-label=${word}>
+      <button type="button" class="fields-in__plaque fields-in__fold" aria-expanded="false" title=${say(`Unfold ${word}`)}
+        onClick=${onFold}><span>${word}</span><b>${cards.length}</b></button>
+    </section>`;
+  }
   return html`<section class=${cls("fields-in__board", { "is-notes": notes, "gui-drop": over })} data-lane=${lane.id} ...${drop}
-      aria-label=${say(WORD[lane.id] || lane.label)}>
-    <header class="fields-in__plaque"><span>${say(WORD[lane.id] || lane.label)}</span><b>${cards.length}</b></header>
+      aria-label=${word}>
+    <header class="fields-in__plaque"><span>${word}</span>${onFold && html`<button type="button" class="fields-in__fold-btn"
+      aria-expanded="true" title=${say(`Fold ${word}`)} aria-label=${say(`Fold ${word}`)} onClick=${onFold}>‹</button>`}<b>${cards.length}</b></header>
     <div class="fields-in__cards">
       ${cards.map(({ c, todo }) => html`<${Pinned} key=${c.id} id=${id} card=${{ ...c, column: todo ? todos.id : lane.id }} laneId=${lane.id}
         todo=${todo} sel=${c.id === sel} onOpen=${onOpen} onMark=${onMark} tilt=${tiltOf(c.id)} />`)}
       ${!cards.length && html`<p class="fields-in__empty">${say(notes ? "No notes yet" : "Nothing here")}</p>`}
     </div>
-    ${onAdd && html`<button type="button" class="fields-in__add" onClick=${onAdd}>${say(addLabel)}</button>`}
+    <div class="fields-in__foot">
+      ${onAdd && html`<button type="button" class="fields-in__add" onClick=${onAdd}>${say(addLabel)}</button>`}${children}
+    </div>
   </section>`;
 }
 
@@ -147,7 +180,7 @@ function orksOf(b, data) {
       task: doing[i] ? doing[i].title : o.status === "busy" ? "At work" : "Waiting for work" }))];
 }
 
-/** The room: the selected card's acts, the three boards, the notes' shelf, the floor the orks walk. */
+/** The room: the selected card's acts, the three boards and the notes on its wall, the floor the orks walk. */
 export function Room(b) {
   loadKit();
   return html`<${Booth} b=${b} />`;
@@ -155,11 +188,14 @@ export function Room(b) {
 
 function Booth({ b }) {
   const id = b.id;
+  const ref = useRef(null);
+  const scale = useScale(ref);
+  const [unfolded, setUnfolded] = useState({});
   useEffect(() => { act(id, "seen").catch(() => {}); }, [id]);
   const d = details.value[id];
   const data = d && d.data;
-  if (!data || !data.lanes) return html`<p class="fields-in__opening">${say("Opening…")}</p>`;
-  if (data.error) return html`<p class="ok-tone-error">⚠ ${data.error}</p>`;
+  if (!data || !data.lanes) return html`<p class="fields-in__opening" ref=${ref}>${say("Opening…")}</p>`;
+  if (data.error) return html`<p class="ok-tone-error" ref=${ref}>⚠ ${data.error}</p>`;
   const parts = !!data.todos;
   const cards = allCards(data);
   const found = cards.find((c) => c.id === selected.value[id]);
@@ -183,23 +219,29 @@ function Booth({ b }) {
     return null;
   };
   const art = has("inside/booth.png") && has("inside/sheet.png");
-  return html`<div class=${cls("fields-in", { "has-art": art })} data-id=${id} style=${art ? artStyle() : undefined}>
+  // a notes lane sits narrow by the boards, folded to its plaque while it is empty (a press unfolds or folds it)
+  const isFolded = (ln) => (ln.id in unfolded ? !unfolded[ln.id] : !ln.cards.length);
+  const fold = (ln) => setUnfolded({ ...unfolded, [ln.id]: isFolded(ln) });
+  const shelf = tasks.length ? notes : [];
+  const cols = boards.map(() => "minmax(0, 1fr)").concat(shelf.map((ln) => (isFolded(ln) ? "44px" : "minmax(0, 0.75fr)"))).join(" ");
+  const mineBtn = todos && tasks.length > 0 && html`<button type="button" class="fields-in__add is-mine"
+    onClick=${() => setDialog(id, { lane: { id: todos.id, label: todos.label, kind: "mine" } })}>${say("+ My to-do")}</button>`;
+  const geo = `--s:${scale};--floor:${(BOOTH.h - BOOTH.floor) * scale}px;--booth-w:${BOOTH.w * scale}px;--booth-h:${BOOTH.h * scale}px`;
+  return html`<div class=${cls("fields-in", { "has-art": art })} data-id=${id} ref=${ref}
+      style=${art ? `${artStyle()};${geo}` : geo}>
     <div class="fields-in__wall">
       ${sel && html`<${Acts} id=${id} sel=${sel} lanes=${tasks} setDialog=${(x) => setDialog(id, x)}
         onPlan=${(card) => planCard(id, card)} wiki=${data.wiki} sendsItself=${data.settle !== null && data.settle !== undefined} />`}
-      <div class="fields-in__boards" style=${`--boards:${boards.length}`}>
+      <div class="fields-in__boards" style=${`grid-template-columns:${cols}`}>
         ${boards.map((ln, k) => {
           const add = addOn(ln, k);
           return html`<${Board} key=${ln.id} id=${id} lane=${ln} todos=${todos} mine=${mineOn(ln, k)} sel=${sel && sel.id}
-            onOpen=${open} onMark=${mark} onAdd=${add && add.run} addLabel=${add && add.label} />`;
+            onOpen=${open} onMark=${mark} onAdd=${add && add.run} addLabel=${add && add.label}>${k === 0 && mineBtn}</${Board}>`;
         })}
-      </div>
-      ${(todos || notes.length > 0) && tasks.length > 0 && html`<div class="fields-in__shelf">
-        ${todos && html`<button type="button" class="fields-in__add is-mine"
-          onClick=${() => setDialog(id, { lane: { id: todos.id, label: todos.label, kind: "mine" } })}>${say("+ My to-do")}</button>`}
-        ${notes.map((ln) => html`<${Board} key=${ln.id} id=${id} lane=${ln} todos=${todos} mine=${[]} sel=${sel && sel.id} notes=${true}
+        ${shelf.map((ln) => html`<${Board} key=${ln.id} id=${id} lane=${ln} todos=${todos} mine=${[]} sel=${sel && sel.id} notes=${true}
+          folded=${isFolded(ln)} onFold=${() => fold(ln)}
           onOpen=${open} onMark=${mark} onAdd=${() => setDialog(id, { lane: ln })} addLabel="+ New note" />`)}
-      </div>`}
+      </div>
     </div>
     <${Walkers} orks=${orksOf(b, data)} boards=${boards.length} />
   </div>`;

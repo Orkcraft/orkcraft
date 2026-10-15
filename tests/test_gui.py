@@ -646,6 +646,17 @@ def test_the_look_is_the_persons_camp_until_they_pick_office(fake_repo):
         cli.main(["gui", "--look", "camp"])                         # set in the window, not on the command line
 
 
+def test_a_buildings_description_is_its_types_whole_summary_never_its_cut(fake_repo, isolated_layout_file):
+    """A building keeps its type's summary cut at 200 characters (core/buildings.py); its Info says the whole one,
+    so no description ends inside a word (I2b)."""
+    from orkcraft.realm import catalog
+    host = _host(fake_repo)
+    bid = host.command("town.build", {"type": "fields"})
+    whole = catalog.TYPES["fields"].summary
+    assert len(whole) > 200 and host.town.spec_of(bid)["summary"] == whole[:200]
+    assert host.command("info", {"id": bid})["about"] == whole
+
+
 def test_the_console_info_of_a_building_and_its_orks(fake_repo, isolated_layout_file):
     """What the TUI's console says (screens/console/), as data: Info, the listens, the Inventory."""
     host = _host(fake_repo)
