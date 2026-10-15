@@ -68,4 +68,6 @@ Run tests with: `uv run --extra gui --extra dev pytest -q <files>` (browser test
 | 07 | [the person's quarter: drag in Camp](07-quarter-drag.md) | after 06 | flash |
 | 08 | [the Wiki on the grass](08-wiki-on-grass.md) | after 06 | flash |
 | 09 | [plots](09-plots.md) | after 07 | flash |
+| 14 | [the modular depot (an ork in every bay), the small campfire and barrier](14-modular-depot-and-small-pieces.md) (art card + code) | after Halloween | flash |
+| 15 | [the BMAD line template](15-bmad-line.md) | after 06 and 14 (medium priority) | pro |
 | 11 | [Mission 1b](11-mission-1b.md) (three parts) | after the testers' feedback | pro |
