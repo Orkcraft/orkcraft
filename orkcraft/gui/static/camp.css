@@ -210,3 +210,4 @@
   50% { transform: translateX(var(--dx)) scaleX(-1); } 99.9% { transform: translateX(0) scaleX(-1); } }
 @keyframes gui-camp-carry { from { transform: translateX(0); } to { transform: translateX(var(--dx)); } }
 @media (prefers-reduced-motion: reduce) { .gui-camp__ork.is-moving { animation: none; } }
+.gui-camp__over { position: absolute; left: 0; top: 0; width: 0; height: 0; }

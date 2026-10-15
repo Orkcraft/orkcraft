@@ -18,7 +18,7 @@ import { lay, stepsFor, DEFAULT_STEP, SIDING_SHOWN, PATH_W } from "./layout.js";
 import { V3, kit, loadKit, sizeOf } from "./sprites.js";
 import { grassOf, earthOf, shiftOf, bedOf, hash, STAND_IN } from "./ground.js";
 import { CampCarts, Finale, Switches, arriving, leaving } from "./carts.js";
-import { hovered, StewardOut } from "./steward.js";
+import { hovered, StewardOut, Bubble, thought } from "./steward.js";
 import { Stewards } from "./orks.js";
 import { Badge } from "./signals.js";
 import { typeModule } from "../types.js";
@@ -253,18 +253,25 @@ function Home({ L, you }) {
 /** How many of a building's orks are at work now (the depot's busy bays, §4d). */
 export const busyBays = (b) => (b.garrison || []).filter((o) => o.status === "busy").length || (busyOf(b) ? 1 : 0);
 
-/** The depot's bays (§4d): a busy bay holds the cart a Grunt is at work on; a free one has its shutters closed
- *  (`depot/doors.png`); more at work than its three bays a `+N` chip; the semaphore at its east gateway, where its exit
- *  track (Mission 1b's proving siding) begins. Over the shed, sorted with it. */
-function Depot({ L, buildings }) {
+/** The depot's bays (§4d): a busy bay holds the cart a Grunt is at work on, the Grunt's bubble over it; a free one has
+ *  its shutters closed (`depot/doors.png`); more at work than its three bays a `+N` chip; the semaphore at its east
+ *  gateway, where its exit track (Mission 1b's proving siding) begins. The line runs under the shed (its gateways open
+ *  onto it). Over the shed, sorted with it. */
+function Depot({ L, buildings, onBubble = null }) {
   const B = L.step.b, T = L.T, out = [];
   for (const b of buildings) {
     const p = L.buildings[b.id];
     if (!p || !p.depot) continue;
     const busy = busyBays(b), z = 11 + Math.round(p.feet / 8);
+    const grunts = (b.garrison || []).filter((o) => o.status === "busy");          // each bay's Grunt, its bubble its own
     const doors = sizeOf("depot/doors.png"), cart = sizeOf("carts/code.png") || [40, 48];
     p.bays.forEach((x, i) => {
-      if (i < busy) out.push(img("carts/code.png", x - (cart[0] * B) / 2, p.rail + T * 0.3 - cart[1] * B, cart[0] * B, cart[1] * B, `z-index:${z}`));
+      if (i < busy) {
+        out.push(img("carts/code.png", x - (cart[0] * B) / 2, p.rail + T * 0.3 - cart[1] * B, cart[0] * B, cart[1] * B, `z-index:${z}`));
+        out.push(html`<div class="gui-camp__over" style=${`z-index:${z + 1}`}>
+          <${Bubble} x=${x} y=${p.y + (i % 2 ? 40 : 60) * B} text=${grunts[i] ? say(`${grunts[i].name} at work`) : thought(b)}
+            onClick=${onBubble ? () => onBubble(b) : null} /></div>`);
+      }
       else if (doors) out.push(img("depot/doors.png", x - (doors[0] * B) / 2, p.y + 60 * B, doors[0] * B, doors[1] * B, `z-index:${z}`));
     });
     if (busy > p.bays.length) {
@@ -439,7 +446,7 @@ export function CampTown({ buildings, roads }) {
       </div>
       <${Growth} L=${L} buildings=${buildings} />
       <${Siding} L=${L} buildings=${buildings} />
-      <${Depot} L=${L} buildings=${buildings} />
+      <${Depot} L=${L} buildings=${buildings} onBubble=${onBubble} />
       <${CampCarts} L=${L} roads=${here} bays=${Object.fromEntries(buildings.map((b) => [b.id, busyBays(b)]))} carts=${carts} travel=${travel} avg=${averagePerResult(snapshot.value && snapshot.value.score)} />
       <${Stewards} L=${L} buildings=${buildings} roads=${here} out=${outId} soon=${arriving(L, here, carts, travel)} left=${leaving(here, carts)}
         onOrk=${onOrk} onBubble=${onBubble} />

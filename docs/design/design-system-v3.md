@@ -537,7 +537,8 @@ shutters, and the semaphore in two positions (`depot/semaphore-0|1`).
 - **Bays.** A cart for the pool rolls in at the west gateway to its first free bay and stops on the through track; a
   cart behind it waits. With every bay busy it stops on the line before the gateway. A cart for a building beyond
   rolls through.
-- **Busy or free.** Busy bays (its Grunts at work) show the cart in hand, free ones their shutters
+- **Busy or free.** The line runs under the shed (780747a: no drawn rails, dark bay floors). Busy bays (its Grunts at
+  work) show the cart in hand in the opening, that Grunt's bubble over it; free ones their shutters
   (`depot/doors.png`), more than three a `+N` chip.
 - **The exit.** `depot/semaphore-0` stands at the east gateway where the exit track begins. Raising it, the verdict
   and the shunt back into a bay are Mission 1b's.
