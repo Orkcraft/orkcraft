@@ -47,6 +47,10 @@ function place(c) {
   if (!c.el) return;
   const p = pointAt(c.pts, c.s);
   c.el.style.transform = `translate(${Math.round(p.x)}px,${Math.round(p.y)}px)`;
+  if (c.chip) {                                         // its chip rides with it, in the chips' layer over the orks (§4)
+    c.chip.style.transform = c.el.style.transform;
+    c.chip.classList.toggle("is-gone", c.done !== null && c.done > GONE_S);
+  }
   c.el.classList.toggle("is-west", p.face < 0);
   c.el.classList.toggle("is-gone", c.done !== null && c.done > GONE_S);
 }
@@ -88,12 +92,12 @@ export function Switches({ L }) {
 }
 
 function Rolling({ c, way, B }) {
-  const ref = useRef(null);
+  const ref = useRef(null), chip = useRef(null);
   const m = moving.get(c.id);
   useEffect(() => {
     const e = moving.get(c.id);
-    if (e) { e.el = ref.current; place(e); wake(); }
-    return () => { const x = moving.get(c.id); if (x && x.el === ref.current) x.el = null; };
+    if (e) { e.el = ref.current; e.chip = chip.current; place(e); wake(); }
+    return () => { const x = moving.get(c.id); if (x && x.el === ref.current) { x.el = null; x.chip = null; } };
   }, [c.id]);
   const p = m ? pointAt(m.pts, m.s) : { x: way.pts[0][0], y: way.pts[0][1], face: 1 };
   return html`<div ref=${ref} class=${cls("gui-camp__cart is-driven", { "is-west": p.face < 0, "is-back": !!c.back })} data-load=${loadOf(c)}
@@ -102,8 +106,9 @@ function Rolling({ c, way, B }) {
       onClick=${(e) => { e.stopPropagation(); waybillOf.value = { cart: c.id }; }}
       style=${`transform:translate(${Math.round(p.x)}px,${Math.round(p.y)}px)`}>
     <${Bin} c=${c} B=${B} />
-    ${c.back && html`<span class="gui-camp__launch-chip is-round" style=${`top:${-48 * B - 30}px`}>${roundWord(c)}</span>`}
-  </div>`;
+  </div>
+  ${c.back && html`<div ref=${chip} class="gui-camp__cart-chip" style=${`transform:translate(${Math.round(p.x)}px,${Math.round(p.y)}px)`}>
+    <span class="gui-camp__launch-chip is-round" style=${`top:${-48 * B - 30}px`}>${roundWord(c)}</span></div>`}`;
 }
 
 /** A cart going round again wears its round and what the round before cost (§4c rule 8): `round 2 · 🪵 18k`, `$` on an

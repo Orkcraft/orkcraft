@@ -211,3 +211,6 @@
 @keyframes gui-camp-carry { from { transform: translateX(0); } to { transform: translateX(var(--dx)); } }
 @media (prefers-reduced-motion: reduce) { .gui-camp__ork.is-moving { animation: none; } }
 .gui-camp__over { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+/* a rolling cart's chip (its round's price): with the chips, over orks and buildings (§4 layers) */
+.gui-camp__cart-chip { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 1500; pointer-events: none; }
+.gui-camp__cart-chip.is-gone { display: none; }

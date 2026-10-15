@@ -168,6 +168,7 @@ function Palisade({ L }) {
 /** Where a building's name stands, clear of its door and its steward: on the facade's top in the upper row (and the
  *  wall's two), under its foot left of its path in a lower row. In the building's own box. */
 function nameAt(p, B) {
+  if (p.depot) return { cl: "is-top", style: `left:${p.w / 2}px;top:${Math.round(-16 * B)}px` };   // above its ridge: its bays' bubbles below
   if (p.wall || p.depot || p.row === 0) return { cl: "is-top", style: `left:${p.w / 2}px;top:${Math.round(p.h * 0.14)}px` };
   return { cl: "is-under", style: `left:${p.cx - p.x - (PATH_W / 2 + 4) * B}px;top:${p.h + 6 * B}px` };
 }
@@ -269,7 +270,7 @@ function Depot({ L, buildings, onBubble = null }) {
       if (i < busy) {
         out.push(img("carts/code.png", x - (cart[0] * B) / 2, p.rail + T * 0.3 - cart[1] * B, cart[0] * B, cart[1] * B, `z-index:${z}`));
         out.push(html`<div class="gui-camp__over" style=${`z-index:${z + 1}`}>
-          <${Bubble} x=${x} y=${p.y + (i % 2 ? 40 : 60) * B} text=${grunts[i] ? say(`${grunts[i].name} at work`) : thought(b)}
+          <${Bubble} x=${x} y=${p.y + (i % 2 ? 50 : 64) * B} text=${grunts[i] ? say(`${grunts[i].name} at work`) : thought(b)}
             onClick=${onBubble ? () => onBubble(b) : null} /></div>`);
       }
       else if (doors) out.push(img("depot/doors.png", x - (doors[0] * B) / 2, p.y + 60 * B, doors[0] * B, doors[1] * B, `z-index:${z}`));
