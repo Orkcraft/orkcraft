@@ -680,3 +680,26 @@ Mission 2 forward), or *just looking* (a sandbox). The goal hangs as a banner on
 points; later missions and the quarter's plots are offered by what the goal's real work shows. P0 for activation,
 after the owner plays Mission 1. Not started.
 
+## 22. The timeline to the testers and Halloween (15 October, the owner and the PM)
+
+The account's weekly usage limit resets **Wednesday 21 October, 11:00 UTC**; until then code sessions run only when
+the owner says so, and as few at once as possible.
+
+| when | who | what | gate |
+|---|---|---|---|
+| Thu 15 – Sun 18 | owner | plays **Mission 1** on the desktop to the end, notes what breaks or bores; uses the phone over Tailscale; sends the **written IP confirmation** request (the project is personal, predates the job) | — |
+| Thu 15 – Sun 18 | PM (docs only) | the testers' package refreshed (guide, invite, questions), the **E1 clean-install checklist**, the Halloween devlog draft | — |
+| Mon 19 – Tue 20 | one dev session | fixes from the owner's Mission 1 notes (blockers only); **the phone's first load** (§19) | owner says "go" |
+| Wed 21 – Thu 22 | one or two dev sessions | **the charter**, "My project" path only (§21; the routine path later); **E1**: a fresh macOS user, install → end of Mission 1, every break fixed | — |
+| Thu 22 | dev | **release 0.3.0 "Orkline"**: `__version__`, `updates.json`, plain notes | — |
+| **Fri 23** | owner + PM | **go / no-go for testers:** the owner finished Mission 1 alone; E1 passes; 0.3.0 out; no P0 open | go → testers |
+| Sat 24 – Fri 30 | 3–5 testers | developers from the owner's own circle, personal machines, their own projects; Mission 1 and a week of use | — |
+| Fri 30 | owner + PM | **go / no-go for marketing:** at least 3 testers finished Mission 1, no blocker | go → launch |
+| **Sat 31 (Halloween)** | owner | **marketing starts:** the devlog's first post, Discord opened, the places' posts by hand (docs/marketing/); a Halloween touch in the camp (seasonal decor items, one small art sheet) as the hook | — |
+| 1 – 14 November | all | feedback gathered, fixes; measured: Mission 1 finished, back within 7 days | — |
+| from ~16 November | owner | **inside the company**, only after the written IP confirmation: a 20-minute demo, then volunteers on personal machines | written confirmation |
+
+**Cut until after Halloween (P1/Later):** the three bands' auto-layout and the person's quarter, plots, the Wiki on
+the grass, Mission 1b, the phone's v4 screen and landscape view, the charter's routine path. The look stays as it is
+on `main`. launch-prep.md §4's measures move to about 1 December.
+
