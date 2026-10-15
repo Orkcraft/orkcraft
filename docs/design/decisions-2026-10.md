@@ -655,3 +655,13 @@ away from the person:
 - Return pairs across the two parts are not forced together; the round trip shows as it is (§4c rule 9).
 - Decor and items stay the person's everywhere on the grass.
 
+**Three bands, made precise (the owner, same day; supersedes the two bullets above where they differ):**
+1. **The wall band, laid out by the product:** along the palisade, the buildings that speak to the person — the
+   lookout (External listeners), the Calendar, other buildings that bring notices, and Metrics (the camp's figures)
+   if it is built. Their notices open upwards (§4f). No line of its own; their stops reach line 1 by short spurs.
+2. **Line 1 and its row, laid out by the product: the processing.** The core work every camp shares — the Task
+   board's booth, the depot (Agent pool), the Review board, the stations, the Review gate before the end.
+3. **Line 2 and its row: the person's quarter.** Empty at first except for plots (at most two); the person builds
+   and arranges it themselves by dragging, the track staying the product's. Further rows join the quarter.
+The Wiki stands on the grass among its readers (§4c rule 1) wherever they are.
+
