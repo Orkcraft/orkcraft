@@ -432,7 +432,7 @@ track. Between buildings, three kinds of link, three drawings:
    crossing (planks, square to the line) stays for any path that must cross one.
 2. **Neighbours.** Two buildings joined by a return road stand in the same row, at most one place apart, so the round
    trip is short. A service stands beside its busiest reader (rule 1).
-3. **The person's places win.** A building the person placed in Office keeps its row and place; neighbours place only
+3. **Superseded 15 October (decisions §20): the camp lays out its buildings itself; the person places decor and items only.** Was: **The person's places win.** A building the person placed in Office keeps its row and place; neighbours place only
    buildings never placed. A far placement costs a longer trip, shown as it is (and only shown:
    rule 9). Later, perhaps: the Workchief says once, as a 💡 improvement, never forced, "The brief rides across the
    whole camp. Put the Calendar next to the Agent pool?"

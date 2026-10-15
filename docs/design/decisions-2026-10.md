@@ -608,3 +608,23 @@ among its readers (the depot, the Calendar, the Review board), with short footpa
 the loop's empty middle. design-system-v3 §4c rule 1 amended. P1, after §19 and the phone; not started (the owner
 asked that nothing is launched until he says so).
 
+## 20. The camp lays out its buildings itself; the person places decor and items (15 October, the owner)
+
+Replaces "the person's places win" (design-system-v3 §4c rule 3, §4b.3 "a building placed in Office takes its row
+from its Office position"). **In Camp nobody places buildings: the product lays them out in good order.** The person
+places only decor and earned items (v3-prompts §14), which is where a camp becomes theirs. Office keeps its cards
+where the person put them: that is the work look's own drawing and does not move Camp.
+
+**The order (to be specified in design-system-v3 §4g when built):**
+1. **By zones along the flow:** the way in (the lookout, and the inputs beside it: Drop file here, Router; the
+   Calendar on the wall, §4f) → the work (the Task board's booth at line 1's start, the depot, Research's mine, the
+   benches) → the checks (Review board, Inspector, the Review gate near the end) → the way out (the Publisher's
+   catapult at the buffer stop).
+2. **Pairs stand together:** return pairs as neighbours (§4c rule 2); services on the grass among their readers (the
+   Wiki, §4c rule 1).
+3. **Stable:** a new building takes the free place in its zone and the others move as little as possible, so the
+   person's map of the camp holds from day to day.
+4. Stations, heralds and the 3 × 6 density rules stay as they are.
+
+P1 with the Wiki on the grass (one pass over `layout.js`); not started (nothing is launched until the owner says so).
+
