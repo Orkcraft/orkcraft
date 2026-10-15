@@ -611,6 +611,29 @@ gauge; the track bed's curve and junction pieces to match c2's curves and c3's j
   - The palisade runs along the back only, with a short end of wall behind the catapult.
   - Shots beside the target at its width: `img/loop/scale-fd|r18-1512|1470.jpg`.
 
+### 4f. The heralds: buildings that bring news stand on the back wall (the owner, 15 October; not built)
+
+Some buildings speak to the person on their own, not because a cart waits: **External listeners** (the lookout: a
+mail, an issue, a webhook came in) and the **Calendar** (a meeting soon, an event added). Their news needs more room
+than a chip, and a bubble over a building in the rows covers its neighbours. So:
+
+1. **The heralds stand on the back wall.** The lookout already stands in it at the way in; the **Calendar** stands on
+   the wall too (on the wall walk, right of the lookout), above the rows. Their stops reach line 1 by a short spur, as
+   the stations do (§4.11). A second herald of a kind stands in the rows like any building.
+2. **The notice opens upwards,** over the band of wilderness between the wall and the HUD, never over the camp's
+   buildings: a parchment notice from the V4 kit, wider than a bubble (up to ~360 px), with the details (a meeting's
+   title, time and who; a mail's sender and subject; an issue's title) and its actions (Open · Prepare · Dismiss).
+3. **What stays until dismissed, and what folds.** Calm by default (decisions §1 rule 3), so a notice stays only when
+   it asks something of the person (a meeting starting within the hour with no brief yet, an item the listeners
+   could not route). Everything else shows for about a minute and folds into a small count on the herald ("3 new"),
+   opened by a click. One notice per herald at a time; more stack behind it as "+2". Never yellow unless it is a
+   question (§5).
+4. **The catapult stays at the line's end** (it is where carts leave); what it launched is told in "since your last
+   look" and on the flying cart, not as a notice.
+5. The phone shows the same notices in its list, not over the town.
+
+**Priority: P1**, after V4's chrome and LOOP's current queue; the notice is a V4 kit piece, the placement is LOOP's.
+
 ## 5. Signals win by value
 
 The grey test of F1 (v3-prompts §5.2) showed the yellow flag turning into a white flag and the ❓ smaller than the

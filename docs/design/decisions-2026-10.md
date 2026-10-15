@@ -588,3 +588,8 @@ phone is paired and the computer is on power — carts or not. The display still
 plain words in Town settings. A laptop with its lid closed still sleeps unless a display is attached (macOS's rule):
 said in the setting's hint. P0, small (about half a day).
 
+**The heralds (the owner, same day).** External listeners and the Calendar stand on the back wall, above the rows;
+their notices open upwards over the wilderness with full details, never covering a building. A notice that asks
+something of the person stays until dismissed; the rest fold into a count after about a minute (the PM's call, to
+keep the town calm). The catapult stays at the line's end. P1. Rules: design-system-v3 §4f.
+
