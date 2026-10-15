@@ -161,7 +161,7 @@ function Palisade({ L }) {
 /** Where a building's name stands, clear of its door and its steward: on the facade's top in the upper row (and the
  *  wall's two), under its foot left of its path in a lower row. In the building's own box. */
 function nameAt(p, B) {
-  if (p.wall || p.back || p.depot || p.row === 0) return { cl: "is-top", style: `left:${p.w / 2}px;top:${Math.round(p.h * 0.14)}px` };
+  if (p.wall || p.depot || p.row === 0) return { cl: "is-top", style: `left:${p.w / 2}px;top:${Math.round(p.h * 0.14)}px` };
   return { cl: "is-under", style: `left:${p.cx - p.x - (PATH_W / 2 + 4) * B}px;top:${p.h + 6 * B}px` };
 }
 

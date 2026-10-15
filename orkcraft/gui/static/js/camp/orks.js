@@ -16,7 +16,7 @@ const LIFT_S = 2.5;                        // a load lifted off and carried in
 /** Where a building's steward stands, and in what pose: null when the building has none on the line. */
 export function stewardAt(b, p, L, takesWork) {
   if (!p || p.wall || !takesWork) return null;
-  const B = L.step.b, S = L.step.s, lineTop = p.back ? p.feet + L.T / 2 : p.stop.y - L.T / 2;   // the back row: on its path
+  const B = L.step.b, S = L.step.s, lineTop = p.service ? p.feet + 6 * L.step.b : p.stop.y - L.T / 2;   // a service: by its door
   if (p.depot) return { x: p.gates[0] - 18 * B, y: p.door.y - 2 * S, pose: b.alert ? "asks" : "waits" };   // by the west doors (§4d)
   if (b.alert) return { x: p.door.x + 14 * B, y: p.feet + 2 * B, pose: "asks" };
   if (busyOf(b)) return { x: p.cx, y: p.y + 10 * B, pose: "inside" };

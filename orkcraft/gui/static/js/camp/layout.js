@@ -9,7 +9,7 @@
 // `step.s` (the layers at their own whole multiple, §3).
 
 import { loop, cellsOf, path, throwsOn, simplify, lengthOf, exitsOf } from "./track.js";
-import { backOf, neighbours, readersOf, spread, pathTo } from "./backrow.js";
+import { SERVICES, FOOTPATH, neighbours, readersOf, footpath } from "./services.js";
 
 export { exitsOf, simplify, lengthOf };
 export const TILE = 64;          // a track tile, art px (c2's 64 × 64), shown at step.s
@@ -126,9 +126,8 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   const tower = sorted.find((b) => b.type === WAY_IN) || null;
   const cata = [...sorted].reverse().find((b) => b.type === WAY_OUT) || null;
   const inRows = sorted.filter((b) => b !== tower && b !== cata);
-  // the back row (§4c rule 1): services never placed stand along the palisade; return pairs as neighbours (rule 2)
-  const backs = backOf(inRows);
-  const rows = neighbours(rowsOf(inRows.filter((b) => !backs.includes(b))), roads, ROW_MAX);
+  // a service never placed beside its busiest reader, the two ends of a road back as neighbours (§4c rules 1–2)
+  const rows = neighbours(rowsOf(inRows), roads, ROW_MAX, (b) => (b.type === DEPOT ? 2 : 1));
 
   const td = tower ? dims(tower) : null, cd = cata ? dims(cata) : null;
   const M = Math.round(160 * B);                                        // the wilderness round the camp
@@ -151,8 +150,6 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   // by a T on the line, so a building's slot is centred on a tile and its pocket's three tiles (the curve in, the
   // pocket, the curve out) never meet the next one's. A station keeps its own track and has no pocket.
   const pockets = [];
-  const backD = backs.map((b) => ({ b, d: dims(b) }));
-  const backFeet = wallY - 24 * B + Math.max(0, ...backD.map(({ d }) => d.h));
   let lineTop = 0, right = colL + 3 * T;
   const style = POCKET.style;
   // how far above the line's top an ordinary building's path ends: at the pocket's top, or above a waiting cart
@@ -163,11 +160,10 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
     const band = Math.max(64 * B, ...ds.map(({ d, spur, own, depot }) => (depot ? DEPOT_RAIL * B - T / 2
       : spur ? d.h - T / 4 : d.h + PATH_L * B + (own ? 0 : lift))),
                           r === homeRow ? homeS[1] * B + PATH_L * B : 0);
-    if (r === 0) lineTop = Math.max((backs.length ? backFeet + PATH_W * B + 12 * B : wallY - 24 * B) + band, wallY + T);
+    if (r === 0) lineTop = Math.max(wallY - 24 * B + band, wallY + T);
     else {
       const prev = out.lines[r - 1];
-      const cross = backs.length ? PATH_W * B + 8 * B : 0;                 // room under the line for a path across (§4c)
-      lineTop = prev + Math.ceil((T + 8 * B + cross + band) / T) * T;
+      lineTop = prev + Math.ceil((T + 8 * B + band) / T) * T;
     }
     out.lines.push(lineTop);
     pockets.push([]);
@@ -175,7 +171,8 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
     for (const { b, d, spur, own, depot } of ds) {
       const w = Math.max(d.w, PATH_W * B);
       let cx;
-      const pocketed = !own && style !== "none";
+      const svc = SERVICES.has(b.type);                                  // a service: no stop on the line, no path to it
+      const pocketed = !own && !svc && style !== "none";
       if (own || !pocketed) {
         x = Math.max(x, free);
         cx = Math.round(x + w / 2);
@@ -195,6 +192,7 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
                               w: d.w, h: d.h, cx, feet, row: r, spur, door: { x: cx, y: feet }, pocket: pocketed,
                               stop: { x: cx, y: pocketed ? pocketY : lineTop + T / 2 }, waitAt: { x: cx, y: pocketed ? pocketY : lineTop },
                               growth: { level: Math.min(Math.max(b.level || 0, 0), 3), annex: annexS ? ANNEX[b.goal] : "" } };
+      if (svc) Object.assign(out.buildings[b.id], { service: true, stop: { x: cx, y: feet }, waitAt: null });
       if (depot) {                                                       // its bays along the through track, its gateways
         const p = out.buildings[b.id], at = (v) => Math.round(p.x + v * B);
         Object.assign(p, { depot: true, spur: false, bays: DEPOT_BAYS.map(at), gates: DEPOT_DOORS.map(at),
@@ -202,7 +200,7 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
                            rail: lineTop + T / 2, semaphore: { x: at(DEPOT_DOORS[1]) + Math.round(24 * B), y: lineTop + T } });
       }
       if (annexS) x += annexS[0] * B + 2 * B;
-      if (!spur && !depot) out.paths.push({ x: Math.round(cx - PATH_W * B / 2), y: Math.round(feet - 6 * B), w: PATH_W * B,
+      if (!spur && !depot && !svc) out.paths.push({ x: Math.round(cx - PATH_W * B / 2), y: Math.round(feet - 6 * B), w: PATH_W * B,
                                   h: Math.round((pocketed ? lineTop - lift : lineTop) - feet + 6 * B + 2) });
       x += w + GAP * B;
       if (!pocketed) free = Math.max(free, x - GAP * B);
@@ -217,19 +215,6 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
     if (r === homeRow && !out.home) { x = Math.max(x, free); x += putHome(x, lineTop, r); free = x; }
     right = Math.max(right, x - GAP * B, free);
   });
-  // each service over its busiest reader, none over another, clear of the way in and the lookout
-  const here = new Set(Object.keys(out.buildings));
-  const xs = spread(backD.map(({ b, d }) => {
-    const r = readersOf(b.id, roads, here)[0];
-    return { id: b.id, w: d.w, over: r ? out.buildings[r].cx : null };
-  }), colL + T + GAP * B, GAP * B);
-  for (const { b, d } of backD) {
-    const x = xs[b.id], cx = Math.round(x + d.w / 2);
-    out.buildings[b.id] = { id: b.id, type: b.type, file: d.file, x, y: Math.round(backFeet - d.h), w: d.w, h: d.h, cx,
-                            feet: backFeet, row: -1, back: true, spur: false, pocket: false, door: { x: cx, y: backFeet },
-                            stop: { x: cx, y: backFeet }, growth: { level: Math.min(Math.max(b.level || 0, 0), 3), annex: "" } };
-    right = Math.max(right, x + d.w);
-  }
   const last = out.lines.length - 1, multi = out.lines.length > 1;
   const colR = colL + Math.ceil((right + GAP * B - colL) / T) * T;      // the right column (the merge), or the line's end
 
@@ -274,15 +259,13 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   out.w = Math.round(wallX + 24 * B + M);
   out.h = Math.round(foot + 48 * B + M);
   // the work: from the back wall to the return line, between the columns (the default view is centred on it)
-  // a path from each service to each building that reads it, crossing lines on planks (§4c rule 1)
+  // a service's one footpath to its busiest reader beside it (§4c rule 1); none for one the person placed
   out.crossings = [];
-  for (const { b } of backD) {
-    for (const id of readersOf(b.id, roads, here)) {
-      const way = out.buildings[id] && !out.buildings[id].back && pathTo(out.buildings[b.id], out.buildings[id], out, PATH_W * B);
-      if (!way) continue;
-      out.paths.push(...way.boxes);
-      out.crossings.push(...way.crossings);
-    }
+  const here = new Set(Object.keys(out.buildings));
+  for (const b of inRows.filter((x) => SERVICES.has(x.type) && !Array.isArray(x.hut))) {
+    const s = out.buildings[b.id], r = readersOf(b.id, roads, here)[0];
+    const way = s && r && footpath(s, out.buildings[r], FOOTPATH * B);
+    if (way) out.paths.push(way);
   }
   out.work = { x: colL, y: wallY - 24 * B, w: track.xs + 2 * T - colL, h: foot - wallY + 24 * B };
   out.decor = decorAround(out, B);

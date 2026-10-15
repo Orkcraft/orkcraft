@@ -339,55 +339,50 @@ const R = [["in", "board"], ["board", "pool"], ["pool", "gate"], ["gate", "out"]
 """
 
 
-def test_a_service_stands_in_the_back_row_with_paths_to_its_readers_and_no_track(tmp_path):
-    """design-system-v3.md §4c rule 1: the Wiki, never placed, stands between the back wall and the upper row, above its
-    busiest reader (the Agent pool), clear of the way in; no line, no stop, no cart's way; a dirt path runs from it to
-    each reader, down a gap, crossing line 1 on planks for a reader below it, never along the track."""
+def test_a_service_stands_beside_its_busiest_reader_with_one_short_footpath_and_no_track(tmp_path):
+    """design-system-v3.md §4c rule 1 (the back row taken out, the owner): the Wiki, never placed, stands in its busiest
+    reader's row next to it (the Agent pool, two roads), with no stop on the line, no path down to it and no cart's
+    way; one short footpath (16 art px, narrower than a building's) joins its door to its reader; a reader further away
+    (one road) gets no path."""
     out = _run(SERVICE_TOWN + """
+C.POCKET.style = "none";
 const L = C.lay(B, R, { b: 1.5, s: 1 }, size);
-const w = L.buildings.wiki, pool = L.buildings.pool, talk = L.buildings.talk, T = L.T;
-const upper = Object.values(L.buildings).filter((p) => p.row === 0);
-const meets = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-const mine = L.paths.filter((p) => p.service === "wiki");
-const track = L.tiles.filter((t) => !t.siding).map((t) => ({ x: t.x, y: t.y, w: T, h: T, t }));
-const onTrack = mine.flatMap((p) => track.filter((t) => meets(p, t)).map((t) => [p.reader, t.t.name, t.y]));
-console.log(JSON.stringify({ rowOf: Object.fromEntries(Object.values(L.buildings).map((p) => [p.id, p.row])), wiki: w, poolCx: pool.cx, colL: L.cols.left, line0: L.lines[0], upperTop: Math.min(...upper.map((p) => p.y)),
-  readers: [...new Set(mine.map((p) => p.reader))].sort(), onTrack, crossings: L.crossings, route: L.route("pool", "wiki"),
-  inBuilding: mine.filter((p) => Object.values(L.buildings).some((q) => q.id !== "wiki" && q.id !== p.reader && meets(p, q))).length }));
+const w = L.buildings.wiki, pool = L.buildings.pool, line = L.lines[w.row];
+const row = Object.values(L.buildings).filter((p) => p.row === w.row && !p.wall).sort((a, c) => a.x - c.x).map((p) => p.id);
+const mine = L.paths.filter((p) => p.x <= w.cx && w.cx <= p.x + p.w && !p.foot);
+console.log(JSON.stringify({ w, pool, line, row, down: mine.some((p) => p.y + p.h >= line - 4),
+  feet: L.paths.filter((p) => p.service === "wiki"), route: L.route("pool", "wiki"), crossings: L.crossings }));
 """, tmp_path)
-    w = out["wiki"]
-    assert w["back"] and w["row"] == -1 and w["feet"] < out["upperTop"]          # between the wall and the upper row
-    assert abs(w["cx"] - out["poolCx"]) < 4 and w["x"] >= out["colL"] + 64       # over its busiest reader, clear of the way in
-    assert out["route"] is None                                                   # no track: no cart's way
-    assert out["readers"] == ["pool", "talk"]                                     # a path to each reader
-    assert out["inBuilding"] == 0                                                 # through the gaps
-    lower = {r for r in out["readers"] if out["rowOf"][r] > 0}
-    assert lower and {r for r, _, _ in out["onTrack"]} == lower                   # only a lower reader's path crosses,
-    assert {n for _, n, _ in out["onTrack"]} == {"straight-h"}                    # on a straight, never a switch or pocket,
-    assert all(y == out["line0"] for _, _, y in out["onTrack"])                   # of line 1, square to it
-    assert len(out["crossings"]) == len(lower) and all(c["y"] == out["line0"] for c in out["crossings"])   # on planks
+    w, pool, row = out["w"], out["pool"], out["row"]
+    assert w["service"] and w["row"] == pool["row"] and abs(row.index("wiki") - row.index("pool")) == 1   # beside it
+    assert out["route"] is None and out["down"] is False                          # no stop, no path to the line
+    [foot] = out["feet"]                                                           # one footpath, to the pool only
+    assert foot["reader"] == "pool" and foot["w"] == 16 * 1.5 and foot["x"] < w["door"]["x"] < foot["x"] + foot["w"]
+    assert foot["y"] <= w["feet"] and foot["y"] + foot["h"] == pool["door"]["y"]   # down to the depot's line
+    assert out["crossings"] == []
 
 
-def test_the_persons_places_win_over_the_back_row_and_the_neighbours(tmp_path):
-    """§4c rules 2–3: a Wiki placed in Office keeps its row; two buildings joined by a road back stand in one row, at most
-    one place apart, when the person never placed them; a placed one stays where it was put."""
+def test_the_persons_places_win_over_the_neighbours_and_a_placed_service_gets_no_path(tmp_path):
+    """§4c rules 1–3: two buildings joined by a road back stand in one row, at most one place apart, when the person
+    never placed one of them; a placed one stays where it was put; a Wiki placed in Office keeps its row and gets no
+    footpath."""
     out = _run("""
 const roads = [{ id: "a", from: "pool", to: "cal" }, { id: "b", from: "cal", to: "pool", returns: true }];
-const list = (cal) => [{ id: "board", type: "fields" }, { id: "pool", type: "barracks" }, { id: "x", type: "forge" },
+const list = (cal) => [{ id: "board", type: "fields" }, { id: "pool", type: "lake" }, { id: "x", type: "forge" },
   { id: "y", type: "lab" }, { id: "z", type: "mill" }, { id: "q", type: "pit" }, cal, { id: "w", type: "crag" }];
 const rowsOf = (L) => { const r = {}; for (const p of Object.values(L.buildings)) (r[p.row] = r[p.row] || []).push([p.x, p.id]);
   return Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v.sort((a, c) => a[0] - c[0]).map((x) => x[1])])); };
 const free = rowsOf(C.lay(list({ id: "cal", type: "war_drum" }), roads, { b: 1, s: 1 }, size));
 const kept = rowsOf(C.lay(list({ id: "cal", type: "war_drum", hut: [0.9, 0.9] }), roads, { b: 1, s: 1 }, size));
-const wiki = C.lay([{ id: "wiki", type: "scrolls", hut: [0.5, 0.9] }, { id: "pool", type: "barracks" }, { id: "y", type: "lab" }],
-                   [{ id: "r", from: "pool", to: "wiki" }], { b: 1, s: 1 }, size).buildings.wiki;
-console.log(JSON.stringify({ free, kept, wiki: [wiki.back || false, wiki.row] }));
+const W = C.lay([{ id: "wiki", type: "scrolls", hut: [0.5, 0.9] }, { id: "pool", type: "forge" }, { id: "y", type: "lab" }],
+                [{ id: "r", from: "pool", to: "wiki" }], { b: 1, s: 1 }, size), wiki = W.buildings.wiki;
+console.log(JSON.stringify({ free, kept, wiki: [wiki.service, wiki.row, W.paths.filter((p) => p.service).length] }));
 """, tmp_path)
     row = next(r for r in out["free"].values() if "pool" in r)
     assert "cal" in row and abs(row.index("cal") - row.index("pool")) <= 2      # neighbours: one place apart at most
     low = out["kept"]["1"]                                                       # the placed one keeps its row;
     assert "cal" in low and "pool" in low and abs(low.index("cal") - low.index("pool")) == 1   # the one never placed joins it
-    assert out["wiki"] == [False, 1]                                             # placed: it keeps its row
+    assert out["wiki"] == [True, 1, 0]                                           # placed: its row, and no footpath
 
 
 def test_with_no_pocket_track_a_cart_waits_on_its_path_end_and_the_line_stays_clear(tmp_path):

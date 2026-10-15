@@ -486,13 +486,15 @@ switches on c2's gauge, with the north–east–south junction still owed (§0).
   Stations keep their own track.
 - **Send-backs.** A rework handed straight back is kept by the road engine (`sent_back`) and wears
   `round N · 🪵 …` (`gui/state.py`).
-- **Back row and neighbours.** `js/camp/backrow.js` stands an unplaced Wiki in the back row with paths to its
-  readers: down a gap, across a line on c3's `track/crossing`, a jog under the line when no gap runs straight
-  through. It also makes
-  return pairs among unplaced buildings neighbours.
+- **Services and neighbours.** `js/camp/services.js` (the back row was built, then taken out by the owner) stands a
+  Wiki the person never placed in its busiest reader's row beside it, with no stop and no path to the line. One
+  footpath (16 art px) joins its door to that reader: along the row's front, or straight down to the line by the
+  depot's gateway. Other readers get no path; their 📖 is not built, since no reading phase reaches the camp yet. A
+  Wiki the person placed keeps its place and gets no path. Return pairs among unplaced buildings become neighbours, a
+  building already settled beside its partner staying. Level crossings (c3's `track/crossing`) stay for a path that
+  must cross a line; none does now.
 - **The fit.** Both lines and the return line do not fit the default ×1.5 at 1440 × 900: the return line shows at its
-  edge there and whole at the overview. A back row adds its height and a path's room under each line above a lower
-  row. Shots: [img/loop/](img/loop/).
+  edge there and whole at the overview. Shots: [img/loop/](img/loop/).
 
 ### 4d. The Agent pool as the depot (the owner, 15 October; not built)
 
