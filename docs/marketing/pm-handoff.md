@@ -16,6 +16,9 @@ The state a new product-and-marketing session starts from. Update it when you ha
 - No model identifiers in commits, docs or anything pushed.
 - Art: never re-pixelate generated images (CLAUDE.md "Art").
 
+- **Who builds** (decisions §26): the PM marks each spec agy or Claude when writing it; the owner starts both in the
+  evening; the PM reviews every branch in the morning (specs/README.md "Who builds").
+
 ## Where things are
 - Decisions: `docs/design/decisions-2026-10.md` §15–§25 (the camp's shape §20, timeline §22, process lines §23,
   negative feedback §24, settlement §25). Design system v3: `docs/design/design-system-v3.md`. Phone: `mobile.md` §13.

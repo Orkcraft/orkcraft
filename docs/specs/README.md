@@ -53,24 +53,40 @@ At the end, print: the commits, the tests run and their result, anything you cou
 Run tests with: `uv run --extra gui --extra dev pytest -q <files>` (browser tests need Playwright's Chromium:
 `uv run --extra gui --extra dev --extra browser playwright install chromium` once).
 
+## Who builds: agy or Claude (decided 15 October, the owner and the PM; decisions §26)
+
+Every spec says in its header who builds it, set by the PM when the spec is written:
+- **agy** (the owner's Google quota): small specs in one area, with the files named and the tests listed — UI moves,
+  wording, decor items, layout tweaks, release notes.
+- **Claude** (a Claude Code session): caching, networking, security, data that can be lost, and every pro or
+  multi-module, design-heavy spec. A flash miss there costs more review rounds than it saves.
+
+**The night run.** In the evening the owner starts agy on its specs and one Claude session on its spec, never two
+runs on the same files. In the morning the PM session reviews every branch the same way (diff against the spec,
+critical and browser tests, screenshots) and merges or writes a fix list for a second round. Claude's own branch
+gets a lighter review: it runs its tests itself.
+
+Every spec carries two lines, for agy above all: **"Change nothing outside these files"** (the files named), and
+**a browser test that proves the behaviour**, not only strings.
+
 ## The list, in the order of decisions §22
 
-| # | spec | when | model |
-|---|---|---|---|
-| 01 | [the phone's fast first load](01-phone-fast-load.md) | before the testers | flash |
-| 10 | [the phone's new UX](10-phone-v4.md) (four parts: cards, motion, full view, v4 look) | right after 01 (the owner) | pro / flash |
-| 02 | [Mission 1 blockers](02-mission1-blockers.md) (filled after the owner plays it) | before the testers | flash |
-| 03 | [the charter: "My project"](03-charter.md) | before the testers | pro |
-| 04 | [Halloween decor](04-halloween-decor.md) (art card + items) | before 31 October | flash |
-| 12 | [the v4 kit on the remaining screens](12-v4-remaining-screens.md) (audit, then move) | before the testers | flash |
-| 05 | [release 0.3.0](05-release-0.3.0.md) | Thu 22 October | flash-low |
-| E1 | [the clean-install check](e1-clean-install.md) (the owner runs it, no agy) | Wed 21 October | — |
-| 13 | [no Town Hall in the camp; the home's menu](13-home-instead-of-town-hall.md) | before the testers | flash |
-| 06 | [three bands: the camp lays itself out](06-three-bands.md) | after Halloween | pro |
-| 07 | [the person's quarter: drag in Camp](07-quarter-drag.md) | after 06 | flash |
-| 08 | [the Wiki on the grass](08-wiki-on-grass.md) | after 06 | flash |
-| 09 | [plots](09-plots.md) | after 07 | flash |
-| 14 | [the modular depot (an ork in every bay), the small campfire and barrier](14-modular-depot-and-small-pieces.md) (art card + code) | after Halloween | flash |
-| 16 | [every ork at a glance: state, phase icon, task on hover; tools in the building](16-ork-at-a-glance.md) | with 14 (medium) | pro |
-| 15 | [the BMAD line template](15-bmad-line.md) | after 06 and 14 (medium priority) | pro |
-| 11 | [Mission 1b](11-mission-1b.md) (three parts) | after the testers' feedback | pro |
+| # | spec | when | model | who builds |
+|---|---|---|---|---|
+| 01 | [the phone's fast first load](01-phone-fast-load.md) | before the testers | flash | agy (round 2); Claude if the cache fix misses |
+| 10 | [the phone's new UX](10-phone-v4.md) (four parts: cards, motion, full view, v4 look) | right after 01 (the owner) | pro / flash | Claude (pro part) · agy (flash parts) |
+| 02 | [Mission 1 blockers](02-mission1-blockers.md) (filled after the owner plays it) | before the testers | flash | agy |
+| 03 | [the charter: "My project"](03-charter.md) | before the testers | pro | **Claude** |
+| 04 | [Halloween decor](04-halloween-decor.md) (art card + items) | before 31 October | flash | agy |
+| 12 | [the v4 kit on the remaining screens](12-v4-remaining-screens.md) (audit, then move) | before the testers | flash | agy |
+| 05 | [release 0.3.0](05-release-0.3.0.md) | Thu 22 October | flash-low | agy |
+| E1 | [the clean-install check](e1-clean-install.md) (the owner runs it, no agy) | Wed 21 October | — | owner |
+| 13 | [no Town Hall in the camp; the home's menu](13-home-instead-of-town-hall.md) | before the testers | flash | agy (round 2) |
+| 06 | [three bands: the camp lays itself out](06-three-bands.md) | after Halloween | pro | **Claude** |
+| 07 | [the person's quarter: drag in Camp](07-quarter-drag.md) | after 06 | flash | agy |
+| 08 | [the Wiki on the grass](08-wiki-on-grass.md) | after 06 | flash | agy |
+| 09 | [plots](09-plots.md) | after 07 | flash | agy |
+| 14 | [the modular depot (an ork in every bay), the small campfire and barrier](14-modular-depot-and-small-pieces.md) (art card + code) | after Halloween | flash | agy |
+| 16 | [every ork at a glance: state, phase icon, task on hover; tools in the building](16-ork-at-a-glance.md) | with 14 (medium) | pro | **Claude** |
+| 15 | [the BMAD line template](15-bmad-line.md) | after 06 and 14 (medium priority) | pro | **Claude** |
+| 11 | [Mission 1b](11-mission-1b.md) (three parts) | after the testers' feedback | pro | **Claude** |
