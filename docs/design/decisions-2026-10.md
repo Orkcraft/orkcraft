@@ -547,3 +547,23 @@ depot; art `g5-ground`. Rules: [design-system-v3.md](design-system-v3.md) §4e.
 - **Gemini's monthly spending cap is reached** (HTTP 429, 15 October). `g5-ground` (the varied grass and earth, the
   track bed's curves) waits until the owner raises the cap in AI Studio; the camp uses today's tiles meanwhile.
 
+## 17. Towards the v4 targets (15 October, the owner)
+
+The owner brought two target frames (`img/references/v4/target-camp.jpg`, `target-ui.jpg`). What is missing, in
+order, and decided:
+
+1. **The interface: design system v4** (P0, its own session). Camp's UI in the target's manner: thick wooden frames
+   with a teal inner border, parchment panels, square bevelled icon buttons, a column of icon tabs at a panel's side,
+   counters in frames, tab headers on teal plates. **A pixel font for headings, numbers and buttons only**; settings,
+   waybills, consoles and any long text keep the readable text face (the owner: yes). The wordmark stays New Rocker.
+   Office is not changed. Words follow CLAUDE.md (the target's "ORC LIST" is only a picture).
+2. **The track:** a narrow bed just wider than the sleepers, steel-grey rails (design-system-v3 §4e rule 1).
+3. **Grass and edges:** g5's grass is in (c6b753a); the camp's edges get wilderness (trees, bushes, a pond with a
+   jetty), sparse inside the palisade.
+4. **Scale and density:** orks about ×1.3 against buildings; rows tighter, the loop's empty middle filled; the Review
+   board's campfire and the Home's pale ruin redrawn as houses in the common palette (teal, rust, grey stone).
+5. **The palisade sharpened**, thinner and lower (the owner: as the PM advised; design-system-v3 §4.6 amended).
+
+Sessions: **V4** (the UI), **LOOP** (track bed, scale, density), the **art session** (steel track, palisade, houses,
+wilderness, the UI kit's textures if V4 asks).
+
