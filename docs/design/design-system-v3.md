@@ -471,6 +471,36 @@ tool call or MCP read of an agent drawn as a cart or a flash.
 **Art wanted:** the switch stand (a lever and a target arm, two positions, about 16 × 24 art px); the pocket's
 switches on c2's gauge, with the north–east–south junction still owed (§0).
 
+### 4d. The Agent pool as the depot (the owner, 15 October; not built)
+
+The Agent pool is the camp's heart: the orks build the person's project there. So it becomes **a station, the
+depot**, drawn as an engine shed over the track; carts roll **into** it. Its words do not change (Agent pool; its
+orks are Grunts and their steward); this is its look, as the booth, the weighbridge and the mine are (§4.11).
+
+1. **On its own track, not across the line.** The depot stands over a **through siding** parallel to its line,
+   entered by a switch before it and left by a switch after it (§4c rule 6). A cart for the pool turns in at the first
+   switch and rolls in through the depot's west doors; carts for other buildings keep to the line and pass it by, so a
+   cart seen leaving the depot has always been worked on.
+2. **A bay per ork.** The depot has as many bays as the pool's `max_orcs` (3 by default, drawn at most 3; more is a
+   `+N` chip): one track and one pair of doors each. A cart in a bay is a Grunt at work on it, its bubble over that
+   bay; an empty bay with its doors shut is free room. **Busy or free reads from across the camp without a badge.**
+   A cart waiting for a free bay waits on the siding before the doors (the queue of §4c rule 7).
+3. **Out the east doors.** Done, the cart rolls out and back onto the line at the second switch, towards the Review
+   gate. With Mission 1b's check on, the **proving siding** (first-mission.md §10.1) is the depot's exit track: the
+   semaphore arm at its mouth; a failed check sends the cart back into its bay from the exit side (shunting on the
+   depot's own track, never on the main line), `round 2 · tests failed` on its chip.
+4. **No pocket and no path** (§4c rule 7 does not apply to stations): the bays are where its carts wait.
+5. **Size.** About two buildings wide (it is the largest building, and should be); a row counts it as two of its five
+   places. In Office its card is unchanged.
+6. **Its steward** stands by the west doors, where carts come in (§4.3).
+
+**Art (GEN):** `st-depot`: a timber engine shed with a pitched roof and a vent ridge, three arched bays side by side,
+front-on, doors open and shut (per bay), rails running into each bay at c2's gauge, room for a c1 cart inside each
+open bay; the exit's semaphore with the proving siding. Calm colours, no yellow or red.
+
+**Priority: P0**, the next work of the LOOP session after its fixes and before its step 4 (they share `layout.js` and
+`track.js`); about 2 days. The pool's old building sprite stays for Office's card if wanted.
+
 ## 5. Signals win by value
 
 The grey test of F1 (v3-prompts §5.2) showed the yellow flag turning into a white flag and the ❓ smaller than the

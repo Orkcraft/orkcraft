@@ -518,3 +518,11 @@ price are P0, built now by the LOOP session; the back row and neighbours are P1.
 **The launch date moved.** 19 October is off and there is no new date: the launch is the owner's "ready" (§13.1–2).
 The devlog, Discord, the posts and the testers all wait for it together, since an empty room reads as a dead project.
 The materials in `docs/marketing/` stay drafts.
+
+## 16. The Agent pool becomes the depot (15 October, the owner)
+
+The Agent pool is drawn as a **depot**: an engine shed on its own through siding, carts rolling into it, a bay per
+ork (`max_orcs`, three by default), so busy and free bays read from across the camp; the proving siding of Mission 1b
+is its exit track. Its name and words stay. Carts for other buildings pass it on the line. P0, built by LOOP next,
+art `st-depot` by the art session. Full rules: [design-system-v3.md](design-system-v3.md) §4d.
+
