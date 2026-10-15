@@ -715,4 +715,9 @@ Calls spent of the queue's 30: 12 (c3 3, c1 3, st-depot 6).
 - **i1-items #1**: all sixteen asked, in order (#2 repeats and drops some, #3 fills the beetle's glass with magenta).
   Cut into `items/<id>.png`; the fourteen earned items' files point at them and are no longer stand-ins;
   `items/sundial.png` and `items/proving-stone.png` wait for their item files (Mission 2, Mission 1b).
+- **o7-moves #2**: three clean rows of six (#1 grows a lantern mid-walk, #3 draws eight a row with motion lines).
+  Cut at `merge: 1.17` to the standing Prospector's size: `orks/prospector/walk`, `dig`, `carry`, six frames each.
+  Not yet drawn by the GUI (the Prospector stands by the shaft; its walk to the Wiki is §4c's P1).
+
+Calls spent of the queue's 30: 23 (P0 12, P1 9, k3-marketing 2); the logo 3 of its 6.
 

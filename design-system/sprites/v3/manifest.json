@@ -2851,6 +2851,69 @@
    ]
   },
   {
+   "file": "orks/prospector/carry.png",
+   "size": [
+    240,
+    56
+   ],
+   "frame": [
+    40,
+    56
+   ],
+   "frames": 6,
+   "pitch": 7.57,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o7-moves.png",
+   "scale": 1.17,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8
+  },
+  {
+   "file": "orks/prospector/dig.png",
+   "size": [
+    288,
+    56
+   ],
+   "frame": [
+    48,
+    56
+   ],
+   "frames": 6,
+   "pitch": 7.57,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o7-moves.png",
+   "scale": 1.17,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8
+  },
+  {
+   "file": "orks/prospector/walk.png",
+   "size": [
+    240,
+    56
+   ],
+   "frame": [
+    40,
+    56
+   ],
+   "frames": 6,
+   "pitch": 7.57,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "o7-moves.png",
+   "scale": 1.17,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8
+  },
+  {
    "file": "orks/roles/alchemist.png",
    "size": [
     40,

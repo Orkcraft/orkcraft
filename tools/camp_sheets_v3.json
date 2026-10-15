@@ -452,6 +452,94 @@
    ]
   },
   {
+   "name": "o7-moves",
+   "file": "o7-moves.png",
+   "show": 1,
+   "about": "round 12 (v3-prompts §18, gen_sheets o7-moves #2): the Prospector walking right, digging (the pick raised, swung, struck, pulled back) and carrying a sack, six frames each; read at merge 1.17 to the standing Prospector's size",
+   "groups": [
+    {
+     "size": [
+      40,
+      56
+     ],
+     "anchor": "feet",
+     "fps": 8,
+     "merge": 1.17,
+     "items": [
+      {
+       "file": "orks/prospector/walk.png",
+       "frames": [
+        {
+         "order": 0
+        },
+        {
+         "order": 1
+        },
+        {
+         "order": 2
+        },
+        {
+         "order": 3
+        },
+        {
+         "order": 4
+        },
+        {
+         "order": 5
+        }
+       ]
+      },
+      {
+       "file": "orks/prospector/dig.png",
+       "frames": [
+        {
+         "order": 6
+        },
+        {
+         "order": 7
+        },
+        {
+         "order": 8
+        },
+        {
+         "order": 9
+        },
+        {
+         "order": 10
+        },
+        {
+         "order": 11
+        }
+       ]
+      },
+      {
+       "file": "orks/prospector/carry.png",
+       "frames": [
+        {
+         "order": 12
+        },
+        {
+         "order": 13
+        },
+        {
+         "order": 14
+        },
+        {
+         "order": 15
+        },
+        {
+         "order": 16
+        },
+        {
+         "order": 17
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
    "name": "k1-classes",
    "file": "k1-classes.png",
    "show": 1,
