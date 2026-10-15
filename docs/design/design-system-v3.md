@@ -580,6 +580,18 @@ gauge; the track bed's curve and junction pieces to match c2's curves and c3's j
 - **Not yet.** The bed's curves and junctions are squares until g5 draws them.
 - Shot: `img/loop/depot-and-bed.png`.
 
+**Built again (LOOP, 15 October, after decisions §17).**
+- **The bed.** It is narrow: earth about 1.25× the sleepers (40 of a tile's 64 art px) along each tile's ways out,
+  with a soft edge and no rims. Building paths run on to its edge.
+- **The orks.** They have their own zoom step, `o`, the nearest whole device pixel above ×1.3 the track's: ×1.5 at
+  the default on density 2, ×1.25 close, ×4⁄3 on a phone, and unchanged on density 1.
+- **Density.** Lines stand as close as their rows allow (no rounding to whole tiles). The track links each tile to
+  its nearest neighbour each way.
+- **The wilderness.** g2's decor is thick round the palisade, mostly trees and bushes, chosen by a hash. The way in
+  and the inside are left clear.
+- Shots: `img/loop/v4-before|after.png`, `density-before|after.png`, `wilderness-after.png`.
+- **Not mine.** The steel-grey rails await the art session's track (the names stay).
+
 ## 5. Signals win by value
 
 The grey test of F1 (v3-prompts §5.2) showed the yellow flag turning into a white flag and the ❓ smaller than the

@@ -429,3 +429,18 @@ console.log(JSON.stringify(n));
 """, tmp_path)
     assert abs(out["tufts"] / 10000 - 1 / 8) < 0.02 and abs(out["flowers"] / 10000 - 1 / 20) < 0.015
     assert out["plain"] > 0.75 * 10000
+
+
+def test_the_wilderness_is_thick_outside_the_palisade_and_clear_of_the_camp_and_the_way_in(tmp_path):
+    """decisions §17.3: g2's decor thick round the palisade (trees and bushes most), fixed by a hash; none inside the
+    camp, none on the way in down to the lookout."""
+    out = _run(TOWN + """
+const L = C.lay(B, R, { b: 1.5, s: 1 }, size), c = L.camp;
+const inside = L.decor.filter((d) => d.x > c.x && d.x < c.x + c.w && d.y > c.y && d.y < c.y + c.h).length;
+const way = L.decor.filter((d) => d.x > L.cols.left && d.x < L.cols.left + L.T && d.y < L.wall.y).length;
+const again = JSON.stringify(C.lay(B, R, { b: 1.5, s: 1 }, size).decor) === JSON.stringify(L.decor);
+const green = L.decor.filter((d) => /pine|tree|bush/.test(d.name)).length;
+console.log(JSON.stringify({ n: L.decor.length, inside, way, again, green }));
+""", tmp_path)
+    assert out["n"] >= 40 and out["inside"] == 0 and out["way"] == 0 and out["again"]
+    assert out["green"] > out["n"] / 2                                               # trees and bushes the most

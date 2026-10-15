@@ -10,7 +10,7 @@
 
 import { loop, cellsOf, link, path, throwsOn, simplify, lengthOf, exitsOf } from "./track.js";
 import { SERVICES, FOOTPATH, neighbours, readersOf, footpath } from "./services.js";
-import { BED } from "./ground.js";
+import { BED, hash } from "./ground.js";
 
 export { exitsOf, simplify, lengthOf };
 export const TILE = 64;          // a track tile, art px (c2's 64 × 64), shown at step.s
@@ -258,17 +258,26 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   return out;
 }
 
-// g2's decor, a little, only in the wilderness round the camp (never in the work area, §4.9): fixed spots, so every
-// shot of the same town is the same.
-const DECOR = ["pine", "tree", "bush", "rock", "mushrooms-teal", "stump", "logpile", "reeds", "boulder", "pebbles",
-               "log-mossy", "bush-small", "rocks", "mushrooms-white"];
+// g2's decor (decisions §17.3): the wilderness round the palisade thick with trees and bushes, a few rocks, logs and
+// mushrooms between, chosen by a fixed hash of the cell (every shot of the same town the same); nothing on the way in
+// down to the lookout. Inside the palisade it stays sparse (§4.9): the grass's own tufts and flowers only.
+const WILD = ["pine", "pine", "tree", "tree", "bush", "bush", "bush-small", "pine", "tree", "bush", "rock", "stump",
+              "logpile", "reeds", "boulder", "pebbles", "log-mossy", "rocks", "mushrooms-teal", "mushrooms-white"];
 function decorAround(out, B) {
-  const c = out.camp, list = [];
-  let k = 0;
-  const put = (x, y) => list.push({ name: DECOR[k++ % DECOR.length], x: Math.round(x), y: Math.round(y) });
-  for (let y = c.y + 80 * B; y < c.y + c.h; y += 120 * B) { put(c.x - 60 * B - (k % 2) * 40 * B, y); put(c.x + c.w + 50 * B + (k % 3) * 20 * B, y + 40 * B); }
-  for (let x = c.x + 40 * B; x < c.x + c.w; x += 150 * B) { put(x + (k % 2) * 30 * B, c.y + c.h + 50 * B + (k % 3) * 18 * B); }
-  return list;
+  const c = out.camp, C = Math.round(44 * B), list = [], pad = 18 * B;
+  const way = [out.cols.left - 24 * B, out.cols.left + out.T + 24 * B];
+  for (let gy = 0; gy * C < out.h; gy++) {
+    for (let gx = 0; gx * C < out.w; gx++) {
+      const h = hash(gx, gy, 11), x = gx * C + (h % 5) * 6 * B, y = gy * C + C + ((h >>> 3) % 5) * 5 * B;
+      const inside = x > c.x - pad && x < c.x + c.w + pad && y > c.y - pad && y < c.y + c.h + 40 * B;
+      if (inside || (x > way[0] && x < way[1] && y < out.wall.y + 8 * B)) continue;
+      // thicker near the palisade, thinning out towards the world's edge
+      const edge = Math.min(Math.abs(x - c.x), Math.abs(x - c.x - c.w), Math.abs(y - c.y), Math.abs(y - c.y - c.h));
+      if (h % 100 >= (edge < 120 * B ? 55 : 30)) continue;
+      list.push({ name: WILD[(h >>> 7) % WILD.length], x: Math.round(x), y: Math.round(y) });
+    }
+  }
+  return list.sort((a, d) => a.y - d.y);
 }
 
 /** A road's way for its carts: from its source's stop to its building's stop (or to `toId` a place: `{ stop }`) along
