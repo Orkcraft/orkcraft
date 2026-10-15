@@ -85,11 +85,16 @@
 /* the steward out of its door, its thought bubble, the scroll (js/camp/steward.js) */
 .gui-camp__layer.is-out { z-index: 2000; }
 .gui-camp__layer.is-out > * , .gui-camp__layer.is-orks .gui-camp__bubble { pointer-events: auto; }
-.gui-camp__door { position: absolute; image-rendering: pixelated; image-rendering: crisp-edges; background-repeat: no-repeat;
-  animation: gui-camp-door .45s steps(3) both; background-position-x: calc(var(--w) * -3); }
-@keyframes gui-camp-door { from { background-position-x: 0; } to { background-position-x: calc(var(--w) * -3); } }
-.gui-camp__ork.is-out { animation: gui-camp-step .3s ease-out both; }
-@keyframes gui-camp-step { from { transform: translateY(6px); opacity: 0; } }
+/* out of its building: from the darkness of the real doorway (clipped to it and below its sill), or from behind the foot */
+.gui-camp__exit { position: absolute; cursor: pointer; }
+.gui-camp__ork.is-out { animation: gui-camp-step .6s ease-out both; }
+@keyframes gui-camp-step { from { transform: translateY(0); filter: brightness(.3); } 40% { filter: brightness(.6); }
+  to { transform: translateY(var(--out)); filter: none; } }
+/* the doorway's warm light while an ork works inside (a warm tone well under the question's yellow, §5) */
+.gui-camp__doorlight { position: absolute; pointer-events: none; mix-blend-mode: screen;
+  background: radial-gradient(ellipse at 50% 80%, color-mix(in srgb, var(--art-wood-light) 75%, transparent), transparent 72%);
+  animation: gui-camp-glow 2.4s ease-in-out infinite alternate; }
+@keyframes gui-camp-glow { from { opacity: .7; } to { opacity: 1; } }
 .gui-camp__bubble { position: absolute; transform: translate(-50%, -100%); padding: 0; border: 0; background: none; z-index: 45;
   font: var(--type-camp-caption); color: var(--parchment-ink); cursor: default; }
 .gui-camp__bubble.is-button { cursor: pointer; }
@@ -117,10 +122,10 @@
 @keyframes gui-camp-away { from, to { visibility: hidden; } }
 @keyframes gui-camp-lift { from, to { visibility: visible; } }
 @keyframes gui-camp-frames6 { to { background-position-x: calc(var(--w) * -6); } }
-@media (prefers-reduced-motion: reduce) { .gui-camp__door, .gui-camp__ork.is-out { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .gui-camp__doorlight { animation: none; } .gui-camp__ork.is-out { animation: none; transform: translateY(var(--out)); } }
 
 /* a cart and an ork are pressed: a cart opens the task's history, an ork its terminal (js/camp/waybill.js) */
-.gui-camp__layer.is-carts .gui-camp__cart, .gui-camp__door { pointer-events: auto; cursor: pointer; }
+.gui-camp__layer.is-carts .gui-camp__cart { pointer-events: auto; cursor: pointer; }
 .gui-camp__cart > img { pointer-events: auto; }
 .gui-camp__ork[role="button"] { cursor: pointer; }
 .gui-camp__waybill { position: absolute; right: 24px; bottom: 120px; z-index: 3000; width: min(560px, calc(100% - 48px)); max-height: 60%;

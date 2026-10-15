@@ -610,6 +610,13 @@ gauge; the track bed's curve and junction pieces to match c2's curves and c3's j
     `decor/wild`, thick down both sides, with a pond and jetty on the left.
   - The palisade runs along the back only, with a short end of wall behind the catapult.
   - Shots beside the target at its width: `img/loop/scale-fd|r18-1512|1470.jpg`.
+- **Doorways (the owner: the door patch did not match the buildings).** `tools/doorways.py` measures each building
+  sprite's dark opening once and writes it into the manifest as `doorway: [x, y, w, h]` (`BY_EYE` for the few checked
+  by hand). A steward stepping out of its building is seen only inside that opening and below its sill, so it comes
+  out of the real door's darkness. A building with no doorway (the Task board's booth, the Wiki's shelves) lets it walk
+  out from behind its foot. While an ork works inside, the doorway glows a soft warm light (`--art-wood-light`, below
+  the question's yellow). `orks/body/door.png` is no longer drawn. Shot: `img/loop/doorways.jpg` (the depot's west
+  gateway, the booth, the Review gate, the mill), at close zoom.
 
 ### 4f. The heralds: buildings that bring news stand on the back wall (the owner, 15 October; not built)
 

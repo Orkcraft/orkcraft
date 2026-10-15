@@ -15,7 +15,7 @@ import { placing, constructing, raised } from "../build.js";
 import { zoomLevel, zoomBy, LEVELS } from "../zoom.js";
 import { bareMenu, setNumbered } from "../town.js";
 import { lay, stepsFor, DEFAULT_STEP, SIDING_SHOWN, PATH_W } from "./layout.js";
-import { V3, kit, loadKit, sizeOf } from "./sprites.js";
+import { V3, kit, loadKit, sizeOf, doorwayOf } from "./sprites.js";
 import { grassOf, earthOf, shiftOf, bedOf, hash, STAND_IN } from "./ground.js";
 import { CampCarts, Finale, Switches, arriving, leaving } from "./carts.js";
 import { hovered, StewardOut, Bubble, thought } from "./steward.js";
@@ -172,6 +172,8 @@ function Building({ b, at, number, raising }) {
     if (b.alert) openOrders(b.alert.id);       // a question: a press opens it at once
     else pickBuilding(b.id);                    // selected; the selected one again: entered
   };
+  const d = p.file && busy ? doorwayOf(p.file) : null;            // its doorway's warm light while an ork works inside
+  const light = d && html`<span class="gui-camp__doorlight" style=${`left:${d[0] * B}px;top:${d[1] * B}px;width:${d[2] * B}px;height:${d[3] * B}px`}></span>`;
   const body = p.file ? img(p.file, 0, 0, p.w, p.h, "", "gui-camp__px gui-camp__sprite")
     : html`<div class="gui-camp__block" style=${`width:${p.w}px;height:${p.h}px`}><span class="gui-camp__block-door"></span></div>`;
   const signal = broken ? "fire" : b.signal ? (b.signal.kind === "held" ? "held" : "fire") : "";
@@ -183,7 +185,7 @@ function Building({ b, at, number, raising }) {
       onPointerEnter=${(e) => { if (e.pointerType === "mouse" && !raising) hovered.value = b.id; }}
       onPointerLeave=${() => { if (hovered.value === b.id) hovered.value = null; }}
       onKeyDown=${(e) => { if (e.key === "Enter") click(e); }}>
-    ${body}
+    ${body}${light}
     <span class=${cls("gui-camp__name is-name", nameAt(p, B).cl)} style=${nameAt(p, B).style}>${say(b.title)}</span>
   </div>`;
   const sig = (signal || b.alert) && html`<${Badge} kind=${b.alert ? "ask" : signal} x=${p.cx} y=${p.y + 4 * B}

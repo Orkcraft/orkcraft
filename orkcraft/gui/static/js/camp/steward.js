@@ -12,7 +12,7 @@ import { busy as busyOf } from "../fold.js";
 import { brokenOf } from "../hut.js";
 import { openBuilding } from "../windows.js";
 import { openOrders } from "../orders.js";
-import { V3, sizeOf, orkSprite } from "./sprites.js";
+import { V3, sizeOf, orkSprite, doorwayOf } from "./sprites.js";
 
 export const hovered = signal(null);       // the building under the mouse
 const WORDS = 3;
@@ -57,21 +57,23 @@ export function Bubble({ x, y, text, onClick = null }) {
   </button>`;
 }
 
-/** The steward stepping out of its door (o6-door, four frames, shown at one device pixel an art pixel where the screen
- *  is dense enough; else its role ork beside the door). */
-function OutOfDoor({ b, p, S, O = S, onOrk }) {
+/** The steward stepping out of its building (the PM, 15 October: no drawn door leaf). With a doorway (tools/doorways.py)
+ *  it steps out of that dark opening, seen only inside it and below its sill, so it appears from the real door; with
+ *  none it walks out from behind the building's foot. */
+function OutOfDoor({ b, p, S, O = S, B, onOrk }) {
   const click = onOrk ? (e) => { e.stopPropagation(); onOrk(b); } : undefined;
-  const dense = (window.devicePixelRatio || 1) >= 2, door = sizeOf("orks/body/door.png");
-  if (dense && door) {
-    const k = S / 2, w = door[0] * k, h = door[1] * k;
-    return html`<span class="gui-camp__door" data-id=${b.id} role="button" title=${say(`${b.ork_name}: its terminal`)} onClick=${click} style=${`left:${p.door.x - w / 2}px;top:${p.feet - h}px;width:${w}px;height:${h}px;`
-      + `background-image:url(${V3}orks/body/door.png);background-size:${w * 4}px ${h}px;--w:${w}px`}></span>`;
-  }
   const file = orkSprite(b.ork_name), s = sizeOf(file);
   if (!s) return null;
-  const w = s[0] * O, h = s[1] * O;                    // the orks' own step (about ×1.3 the track's)
-  return html`<span class="gui-camp__ork is-out" role="button" title=${say(`${b.ork_name}: its terminal`)} onClick=${click} style=${`left:${p.door.x - w / 2}px;top:${p.feet - h}px;width:${w}px;height:${h}px;`
-    + `background:url(${V3 + file}) 0 0 / auto ${h}px no-repeat`}></span>`;
+  const w = s[0] * O, h = s[1] * O, d = p.file ? doorwayOf(p.file) : null;
+  // the opening in world px; without one, a slot at the building's foot (nothing of the ork shows above it)
+  const R = d ? { x: p.x + d[0] * B, y: p.y + d[1] * B, w: d[2] * B, h: d[3] * B } : { x: p.door.x - w / 2, y: p.feet, w, h: 0 };
+  const side = w, W = R.w + 2 * side, H = h + R.h + 24 * O, sill = h + R.h;
+  const clip = `polygon(${side}px ${h}px, ${side + R.w}px ${h}px, ${side + R.w}px ${sill}px, ${W}px ${sill}px, ${W}px ${H}px, 0 ${H}px, 0 ${sill}px, ${side}px ${sill}px)`;
+  return html`<span class="gui-camp__exit" role="button" title=${say(`${b.ork_name}: its terminal`)} onClick=${click}
+      style=${`left:${Math.round(R.x - side)}px;top:${Math.round(R.y - h)}px;width:${Math.round(W)}px;height:${Math.round(H)}px;clip-path:${clip}`}>
+    <span class=${cls("gui-camp__ork is-out", { "is-behind": !d })} style=${`left:${Math.round(side + R.w / 2 - w / 2)}px;top:${Math.round(sill - h)}px;`
+      + `width:${w}px;height:${h}px;--out:${Math.round((d ? 14 : 18) * O + (d ? 0 : h * 0.6))}px;background:url(${V3 + file}) 0 0 / auto ${h}px no-repeat`}></span>
+  </span>`;
 }
 
 /** The scroll over a building: small on the mouse, grown with the quick actions when it is selected. */
@@ -105,7 +107,7 @@ export function StewardOut({ b, p, L, grown, seen, onOrk = null, onBubble = null
   const S = L.step.s, O = L.step.o || S, B = L.step.b;
   const head = p.feet - 64 * O;
   return html`<div class="gui-camp__layer is-out">
-    <${OutOfDoor} b=${b} p=${p} S=${S} O=${O} onOrk=${onOrk} />
+    <${OutOfDoor} b=${b} p=${p} S=${S} O=${O} B=${B} onOrk=${onOrk} />
     ${!grown && html`<${Bubble} x=${p.door.x + 6 * B} y=${head - 4} text=${thought(b)}
       onClick=${onBubble ? () => onBubble(b) : null} />`}
     <${Scroll} b=${b} p=${p} grown=${grown} seen=${seen} />

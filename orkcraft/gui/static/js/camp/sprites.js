@@ -15,7 +15,7 @@ export function loadKit() {
     const out = {};
     for (const s of m.sprites || []) {
       const [w, h] = s.frame || s.size || [0, 0];
-      out[s.file] = { w, h, frames: s.frames || 1, show: s.show || 1 };
+      out[s.file] = { w, h, frames: s.frames || 1, show: s.show || 1, doorway: s.doorway || null };
     }
     kit.value = out;
   });
@@ -28,6 +28,9 @@ export const sizeOf = (file) => {
 };
 
 export const has = (file) => !!(kit.value && kit.value[file]);
+
+/** A building sprite's doorway, [x, y, w, h] in art px from its top left (tools/doorways.py), or null when it has none. */
+export const doorwayOf = (file) => (kit.value && kit.value[file] && kit.value[file].doorway) || null;
 
 /** An ork's sprite by its orkish name (`orks/roles/taskmaster.png`), else the plain capped ork. */
 export function orkSprite(name, anim = "idle") {
