@@ -665,3 +665,8 @@ away from the person:
    and arranges it themselves by dragging, the track staying the product's. Further rows join the quarter.
 The Wiki stands on the grass among its readers (§4c rule 1) wherever they are.
 
+**Plots come after Mission 1 (the owner, same day).** During Mission 1 there are no plots: the quarter is plain
+grass, and the mission's quests raise the core buildings themselves. Plots appear only once Mission 1 is done (the
+person knows how building works and what each core building does), when exploring new buildings becomes the
+interest. Until then nothing hints at buildings to come.
+
