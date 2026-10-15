@@ -573,4 +573,6 @@ wilderness, the UI kit's textures if V4 asks).
    with carts' chips and orks' bubbles still legible. LOOP measures it at 1512 × 982 (a 14-inch MacBook's default)
    and 1470 × 956 (a 13-inch Air), and tightens gaps, path lengths and the lines' spacing before it shrinks anything;
    if a smaller default step is still needed, it says by how much.
+7. **Orks smaller again (the owner, after seeing ×1.5):** about 1.5× smaller, by the target's ratio: an ork about a
+   quarter to a third of an ordinary building's height, kept when the buildings shrink for 3 × 6.
 
