@@ -2820,7 +2820,7 @@
    "file": "g3-stakes-2.png",
    "show": 1,
    "wood_pull": true,
-   "about": "round 13 (gen_sheets g3-stakes-2 #1; decisions §17.5): the palisade of sharpened stakes, thinner and lower than g3's: the run (3), its west end (the gateway's right half, 1), its east end and a post (the gateway's left half, 0), the side running down (5). Its first round (g3-stakes) drew no side and is not used",
+   "about": "round 13 (gen_sheets g3-stakes-2 #1; decisions §17.5): the back palisade of sharpened stakes, thinner and lower than g3's: the run (3), its west end (the gateway's right half, 1), its east end (the gateway's left half, 0); the gap at the lookout is the run's two ends. No side and no corners (the owner: from above the side reads as a pile of logs)",
    "groups": [
     {
      "size": [
@@ -2852,20 +2852,6 @@
         1,
         1
        ]
-      },
-      {
-       "file": "edge/palisade-post.png",
-       "order": 0,
-       "crop": [
-        0.84,
-        0,
-        1,
-        1
-       ]
-      },
-      {
-       "file": "edge/palisade-v.png",
-       "order": 5
       }
      ]
     }

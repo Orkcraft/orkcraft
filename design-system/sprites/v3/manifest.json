@@ -1848,46 +1848,6 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
-   "file": "edge/palisade-post.png",
-   "size": [
-    8,
-    40
-   ],
-   "frame": [
-    8,
-    40
-   ],
-   "frames": 1,
-   "pitch": 11.47,
-   "show": 1,
-   "anchor": "feet",
-   "placeholder": true,
-   "source": "g3-stakes-2.png",
-   "scale": 1.0,
-   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
-  },
-  {
-   "file": "edge/palisade-v.png",
-   "size": [
-    32,
-    128
-   ],
-   "frame": [
-    32,
-    128
-   ],
-   "frames": 1,
-   "pitch": 11.47,
-   "show": 1,
-   "anchor": "feet",
-   "placeholder": true,
-   "source": "g3-stakes-2.png",
-   "scale": 1.0,
-   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
-  },
-  {
    "file": "ground/corner-ne.png",
    "size": [
     43,
