@@ -214,3 +214,9 @@
 /* a rolling cart's chip (its round's price): with the chips, over orks and buildings (§4 layers) */
 .gui-camp__cart-chip { position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 1500; pointer-events: none; }
 .gui-camp__cart-chip.is-gone { display: none; }
+/* the narrow track bed's soft edge (§4e rule 1, amended): the earth fades out over a few pixels across the rails */
+.gui-camp__bed { position: absolute; }
+.gui-camp__bed.is-h { -webkit-mask: linear-gradient(to bottom, transparent, #000 5px, #000 calc(100% - 5px), transparent);
+  mask: linear-gradient(to bottom, transparent, #000 5px, #000 calc(100% - 5px), transparent); }
+.gui-camp__bed.is-v { -webkit-mask: linear-gradient(to right, transparent, #000 5px, #000 calc(100% - 5px), transparent);
+  mask: linear-gradient(to right, transparent, #000 5px, #000 calc(100% - 5px), transparent); }

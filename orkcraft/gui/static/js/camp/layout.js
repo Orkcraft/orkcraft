@@ -10,6 +10,7 @@
 
 import { loop, cellsOf, path, throwsOn, simplify, lengthOf, exitsOf } from "./track.js";
 import { SERVICES, FOOTPATH, neighbours, readersOf, footpath } from "./services.js";
+import { BED } from "./ground.js";
 
 export { exitsOf, simplify, lengthOf };
 export const TILE = 64;          // a track tile, art px (c2's 64 × 64), shown at step.s
@@ -147,6 +148,7 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   // top); a station keeps its own track (§4.11).
   let lineTop = 0, right = colL + 3 * T;
   const lift = Math.round(STAND * B);
+  const reach = Math.round((T * (1 - BED)) / 2);                         // a path runs on to the narrow bed's edge
   rows.forEach((row, r) => {
     const ds = row.map((b) => ({ b, d: dims(b), spur: SPUR.has(b.type), depot: depotOf(b),
                                  own: SPUR.has(b.type) || b.type === SIDING || depotOf(b) }));
@@ -183,7 +185,7 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
       }
       if (annexS) x += annexS[0] * B + 2 * B;
       if (!spur && !depot && !svc) out.paths.push({ x: Math.round(cx - PATH_W * B / 2), y: Math.round(feet - 6 * B), w: PATH_W * B,
-                                  h: Math.round(lineTop - feet + 6 * B + 2) });
+                                  h: Math.round(lineTop + reach - feet + 6 * B + 2) });
       x += w + GAP * B;
       free = Math.max(free, x - GAP * B);
       if (b.type === SIDING) {                                           // the siding beside the booth, its buffer east

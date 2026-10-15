@@ -98,19 +98,12 @@ function earthBox(x, y, w, h, B, cell, bed = false) {
     + `background:url(${V3 + s}) ${-sx * B}px ${-sy * B}px / ${k[0] * B}px ${k[1] * B}px repeat`}></div>`;
 }
 
-/** The track bed (§4e): earth under every track tile, a step darker so the sleepers read, the grass's rims along its
- *  open sides; all the rims first, the earth over them, so the bed joins itself and a path with no seam. */
+/** The track bed (§4e rule 1, amended): a narrow band of earth just wider than the sleepers under every rail, a step
+ *  darker, its edge soft, no grass rims (js/camp/ground.js `bedOf`). */
 function Bed({ L }) {
-  const B = L.step.b, T = L.T, rims = [], earth = [];
-  const r = { n: sizeOf("ground/rim-n.png"), e: sizeOf("ground/rim-e.png"), s: sizeOf("ground/rim-s.png"), w: sizeOf("ground/rim-w.png") };
-  for (const c of bedOf(L.tiles, T)) {
-    if (c.open.includes("n") && r.n) rims.push(tiled("ground/rim-n.png", c.x, c.y - (r.n[1] - 2) * B, T, r.n[1] * B, B, "repeat-x"));
-    if (c.open.includes("s") && r.s) rims.push(tiled("ground/rim-s.png", c.x, c.y + T - 2 * B, T, r.s[1] * B, B, "repeat-x"));
-    if (c.open.includes("w") && r.w) rims.push(tiled("ground/rim-w.png", c.x - (r.w[0] - 2) * B, c.y, r.w[0] * B, T, B, "repeat-y"));
-    if (c.open.includes("e") && r.e) rims.push(tiled("ground/rim-e.png", c.x + T - 2 * B, c.y, r.e[0] * B, T, B, "repeat-y"));
-    earth.push(earthBox(c.x, c.y, T, T, B, c.cell, true));
-  }
-  return html`<div class="gui-camp__layer is-bed">${rims}${earth}</div>`;
+  const B = L.step.b, T = L.T;
+  return html`<div class="gui-camp__layer is-bed">${bedOf(L.tiles, T).map((c) => html`<div class=${`gui-camp__bed is-${c.along}`}
+      style=${`left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px`}>${earthBox(0, 0, c.w, c.h, B, c.cell, true)}</div>`)}</div>`;
 }
 
 /** The dirt paths from the doors to the stops, and from a service down to its readers (§4c): earth with the grass's

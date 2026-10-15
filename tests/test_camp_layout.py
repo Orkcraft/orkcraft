@@ -367,7 +367,7 @@ console.log(JSON.stringify({ pockets: L.tiles.filter((t) => !t.siding && t.y < L
 """, tmp_path)
     assert out["pockets"] == 0 and out["pocketSwitches"] == 0 and all(out["stations"])
     assert out["stop"] == out["line"] + 32 and out["wait"] == out["line"] and out["parks"] is False
-    assert out["line"] <= out["pathFoot"] <= out["line"] + 4                       # its path runs down to the line
+    assert out["line"] + 12 <= out["pathFoot"] <= out["line"] + 16                 # its path runs down to the narrow bed
     assert out["route"][-1] == [out["route"][-1][0], out["stop"]]                  # it rolls to its stop on the line
 
 
@@ -400,21 +400,25 @@ GROUND = ROOT / "orkcraft" / "gui" / "static" / "js" / "camp" / "ground.js"
 
 def test_the_ground_varies_by_a_fixed_hash_and_the_track_lies_on_a_bed_of_earth(tmp_path):
     """design-system-v3.md §4e: grass and earth tiles chosen by a fixed hash of the cell (the same camp draws the same,
-    no row repeats one stamp; ruts only on the bed); a square of earth under every track tile, open to the grass only
-    where no other track tile lies beside it; building paths 24 art px wide."""
+    no row repeats one stamp; ruts only on the bed); under every track tile a narrow band of earth just wider than the
+    sleepers (about 1.25× their 32 art px), following its ways out; building paths 24 art px wide."""
     out = _run(TOWN + f'import * as G from "{GROUND.as_uri()}";\n' + """
 const L = C.lay(B, R, { b: 1.5, s: 1 }, size);
 const row = Array.from({ length: 12 }, (_, x) => G.grassOf(x, 3));
-const bed = G.bedOf(L.tiles, L.T), one = bed.find((c) => c.x === L.cols.left + 2 * L.T && c.y === L.lines[0]);
+const bed = G.bedOf(L.tiles, L.T), x2 = L.cols.left + 2 * L.T;
+const one = bed.filter((c) => c.x === x2 && c.y < L.lines[0] + L.T && c.y + c.h > L.lines[0]);
+const covered = new Set(bed.map((c) => Math.floor((c.x + c.w / 2) / L.T) + "," + Math.floor((c.y + c.h / 2) / L.T)));
 const paths = Math.min(...Object.keys(Array(400).fill(0)).map((k) => G.earthOf(+k, 7)).map((v) => v.includes("ruts") ? 0 : 1));
 console.log(JSON.stringify({ same: G.grassOf(5, 9) === G.grassOf(5, 9) && G.earthOf(2, 4, true) === G.earthOf(2, 4, true),
-  kinds: new Set(row).size, bed: bed.length, tiles: new Set(L.tiles.map((t) => t.x + "," + t.y)).size, one,
+  kinds: new Set(row).size, one, every: L.tiles.every((t) => bed.some((c) => c.x < t.x + L.T && t.x < c.x + c.w && c.y < t.y + L.T && t.y < c.y + c.h)),
   ruts: Array.from({ length: 400 }, (_, k) => G.earthOf(k, 7, true)).some((v) => v.includes("ruts")), pathsNoRuts: paths,
   pathW: C.PATH_W }));
 """, tmp_path)
     assert out["same"] and out["kinds"] >= 3                                       # fixed, and varied along a row
-    assert out["bed"] == out["tiles"]                                               # a square of earth under each tile
-    assert out["one"]["open"] == "ns"                                               # a line's tile: grass above and below
+    assert out["every"]                                                              # earth under every tile
+    [one] = out["one"]                                                               # a line's straight: one band,
+    assert one["along"] == "h" and one["w"] == 64 and one["h"] == 40                # end to end, 40 art px across
+    assert 32 < one["h"] <= 1.3 * 32                                                 # just wider than its sleepers
     assert out["ruts"] and out["pathsNoRuts"] == 1                                  # ruts on the bed only
     assert out["pathW"] == 24
 

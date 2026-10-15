@@ -35,18 +35,31 @@ export const earthOf = (gx, gy, bed = false) => EARTH[hash(gx, gy, 2) % (bed ? E
 /** Where today's earth is shifted for a cell standing in for its variant, art px (a whole step, so pixels stay whole). */
 export const shiftOf = (gx, gy) => [(hash(gx, gy, 3) % 4) * 8, (hash(gx, gy, 4) % 4) * 8];
 
-/** The track bed: a square of earth under each track tile (`T` its side) and the sides where grass meets it, as
- *  { x, y, cell: [gx, gy], open: "nesw" } — a side is open where no other tile of the bed lies beside it. */
+/** The track bed (§4e rule 1, amended): a narrow band of earth just wider than the sleepers (`BED` of a tile, about
+ *  1.25× their length) under every rail, following each tile's ways out: a straight's band end to end, a curve's or a
+ *  junction's from its middle out to each exit. As { x, y, w, h, along: "h" | "v", cell }. */
+export const BED = 0.625;
+const WAYS = { "straight-h": "ew", "straight-v": "ns", "corner-ne": "ne", "corner-nw": "nw", "corner-se": "se",
+               "corner-sw": "sw", "t-n": "new", "t-e": "nes", "stop-e": "w", crossing: "ew" };
+const TURN = { n: "e", e: "s", s: "w", w: "n" };
 export function bedOf(tiles, T) {
-  const at = new Map(), out = [];
+  const W = Math.round(T * BED), m = (T - W) / 2, out = [], seen = new Set();
   for (const t of tiles) {
     const k = `${t.x},${t.y}`;
-    if (!at.has(k)) at.set(k, { x: t.x, y: t.y });
-  }
-  for (const b of at.values()) {
-    const open = [["n", 0, -T], ["e", T, 0], ["s", 0, T], ["w", -T, 0]]
-      .filter(([, dx, dy]) => !at.has(`${b.x + dx},${b.y + dy}`)).map(([d]) => d).join("");
-    out.push({ ...b, cell: [Math.round(b.x / T), Math.round(b.y / T)], open });
+    if (seen.has(k)) continue;
+    seen.add(k);
+    let ways = t.exits ? [...t.exits] : [...(WAYS[t.name] || "ew")];
+    if (!t.exits && t.rot) for (let q = 0; q < ((t.rot / 90) % 4 + 4) % 4; q++) ways = ways.map((d) => TURN[d]);
+    const cell = [Math.round(t.x / T), Math.round(t.y / T)];
+    const has = (d) => ways.includes(d);
+    if (has("e") || has("w")) {
+      const x0 = has("w") ? 0 : m, x1 = has("e") ? T : T - m;
+      out.push({ x: t.x + x0, y: t.y + m, w: x1 - x0, h: W, along: "h", cell });
+    }
+    if (has("n") || has("s")) {
+      const y0 = has("n") ? 0 : m, y1 = has("s") ? T : T - m;
+      out.push({ x: t.x + m, y: t.y + y0, w: W, h: y1 - y0, along: "v", cell });
+    }
   }
   return out;
 }
