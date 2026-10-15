@@ -504,8 +504,9 @@ work all day).
    - then the **questions** that block an ork, oldest first;
    - then 🔥 problems;
    - then **proposals** (an ork's plan to approve, an improvement).
-   An answered card leaves with a small confirmation and the next one comes in. Typing grows the sheet to full
-   height and shrinks the building to a strip. Nothing waiting: the building with the most work in view, the sheet
+   An answered card leaves with a small confirmation and the next one comes in. Typing **slides the sheet up over
+   the building** (the owner: it covers, never squeezes it; the camp stays drawn underneath, as it is) until the field
+   sits above the keyboard; closing the keyboard slides it back down. Nothing waiting: the building with the most work in view, the sheet
    says "All quiet" with **Drop an idea**.
 4. **Full view.** Turning the phone to landscape shows the whole town (the overview step); the Full view button
    does the same in portrait for a phone with rotation locked. Back by turning back or the button.
