@@ -175,6 +175,7 @@ class Host:
         snap["growth"] = self.growth.snapshot()            # the news and the operator's mascot (gui/growth.py)
         snap["portrait"] = self.you.snapshot()             # the look, Do not disturb, what gathered (gui/you.py)
         snap["portrait"]["away"] = self.away.snapshot()    # a day away from the camp, while it lasts (gui/away.py)
+        snap["portrait"]["sleep"] = self.away.phone_line()  # "Your Mac is on battery and may sleep." or "" (gui/away.py)
         snap["usage_ask"] = self.usage.should_ask()        # the one question about usage stats (js/settings.js)
         snap["update"] = self.updates.snapshot()           # a newer Orkline, if one is out (js/update.js)
         snap["improve"] = self.day_review.state()          # the days Improve can read, and the one read now

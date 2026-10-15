@@ -71,6 +71,7 @@ p { margin: 0 0 8px; }
 .head .ok-res img { width: 20px; height: 20px; }
 .head h1 { flex: 1 1 auto; min-width: 0; font-size: 1.25rem; line-height: 1.2; }
 :root[data-theme="office"] .head h1 { font-size: 1.0625rem; }
+.head .sleep { flex: 1 0 100%; margin: 0; }
 
 /* -- cards ---------------------------------------------------------------------------------------------------- */
 .card { background: var(--panel); border: 1px solid var(--frame); border-radius: var(--ok-radius-lg); padding: 12px; box-shadow: var(--card-edge); }

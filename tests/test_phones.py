@@ -462,3 +462,17 @@ async def test_a_listener_stopped_while_it_comes_up_never_comes_back_by_itself(f
     finally:
         server.stop()
         await asyncio.wait_for(task, 10)
+
+
+def test_settings_phones_offers_keeping_the_computer_awake_once_a_phone_is_paired(fake_repo, isolated_layout_file):
+    checkpoint.ensure(fake_repo)
+    host = Host(fake_repo, auto_commit=False)
+    host.away.platform = "darwin"
+    listener = phones.Listener(host)                                # the machine's settings file, as Away reads it
+    assert listener.read()["awake_offer"] == ""                     # no phone yet: nothing to ask
+    code = listener.pairing.new_code()
+    listener.pairing.pair(code, "Vadim's phone")
+    assert listener.read()["awake_offer"] == "Mac"
+    host.command("awake.offer", {"yes": True})
+    assert listener.read()["awake_offer"] == "" and host.town.machine.keep_awake == "phone"
+    assert settings.load().keep_awake == "phone" and settings.load().phones   # the phone kept by the save

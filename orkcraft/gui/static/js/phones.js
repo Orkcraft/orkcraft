@@ -7,6 +7,8 @@
 // The app in the phone's browser (gui/pwa.py): with Tailscale here and its certificate, the QR code leads the
 // person through it — Tailscale's download while no phone of theirs is in the tailnet, then the app's link,
 // which opens Orkline in the phone's browser and pairs it at once.
+// Once a phone is paired, asked once (decisions-2026-10 §18): keep the computer awake, on power, so the phone can
+// reach the town all day (town_settings.py `awake.offer`; Town settings → Keep the computer awake changes it later).
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, linked } from "./html.js";
 import { command, say } from "./link.js";
@@ -14,6 +16,18 @@ import { command, say } from "./link.js";
 const WHAT = "A paired phone sees the town small: each building, the questions the orks wait on, spend and "
   + "quotas. It may answer a question, stop all, drop a text or a file into Drop file here and ask the Workchief. It never builds, "
   + "types into a terminal or changes a setting.";
+
+/** "Keep this Mac awake so your phone can reach the town all day?" Yes / Not now, once (`machine`: "Mac" or ""). */
+function AwakeOffer({ machine, onDone }) {
+  const [gone, setGone] = useState(false);
+  if (!machine || gone) return null;
+  const answer = (yes) => { setGone(true); command("awake.offer", { yes }).then(() => onDone && onDone(), () => {}); };
+  return html`<span class="gui-phones__awake" role="group" aria-label=${say("Keep the computer awake")}>
+    <span class="ok-font-status">${say(`Keep this ${machine} awake so your phone can reach the town all day? Only on power.`)}</span>
+    <span><button class="ok-btn primary" onClick=${() => answer(true)}>${say("Yes")}</button>
+      <button class="ok-btn" onClick=${() => answer(false)}>${say("Not now")}</button></span>
+  </span>`;
+}
 
 const when = (iso) => (iso ? iso.replace("T", " ").slice(0, 16) : "");
 
@@ -111,6 +125,7 @@ export function usePairing() {
   const [offer, setOffer] = useState(null);
   const [left, setLeft] = useState(0);
   const [paired, setPaired] = useState("");
+  const [awake, setAwake] = useState("");
   const live = useRef(null);
   live.current = offer;
   useEffect(() => () => { if (live.current) command("phones.pair_stop").catch(() => {}); }, []);
@@ -120,7 +135,7 @@ export function usePairing() {
     const t = setInterval(() => command("phones.list").then((r) => {
       setLeft(Math.round(r.pairing));
       const fresh = r.phones.find((d) => !known.has(d.id));
-      if (fresh) setPaired(fresh.name);
+      if (fresh) { setPaired(fresh.name); setAwake(r.awake_offer || ""); }
       if (!r.pairing || fresh) setOffer(null);
     }, () => {}), 1000);
     return () => clearInterval(t);
@@ -128,7 +143,7 @@ export function usePairing() {
   const pair = () => command("phones.pair").then((r) => { setPaired(""); setLeft(Math.round(r.pairing)); setOffer(r); }, () => {});
   const cancel = () => command("phones.pair_stop").then(() => setOffer(null), () => {});
   const step = useAppStep(offer, left);
-  return { offer, left, paired, pair, cancel, step };
+  return { offer, left, paired, awake, pair, cancel, step };
 }
 
 /** The code itself, at the right of the head in the menu's top block (under it when the sheet is too narrow). */
@@ -141,12 +156,13 @@ export function PairQr({ pairing: { step } }) {
 }
 
 /** Under the head's name: Pair a phone, or while a code shows how to scan it, the address, the fingerprint and Cancel. */
-export function PairNote({ pairing: { offer, paired, pair, cancel, step } }) {
+export function PairNote({ pairing: { offer, paired, awake, pair, cancel, step } }) {
   if (!offer) {
     return html`<span class="gui-you__pair">
       <button class="ok-btn" title=${say("A QR code to scan with the Orkline app. The paired phones and Forget are in Town settings → Phones.")}
         onClick=${pair}>${say("Pair a phone")}</button>
-      ${paired && html`<span class="ok-font-status">${say(`Paired: ${paired}`)}</span>`}</span>`;
+      ${paired && html`<span class="ok-font-status">${say(`Paired: ${paired}`)}</span>`}
+      ${paired && html`<${AwakeOffer} machine=${awake} />`}</span>`;
   }
   return html`<div class="gui-phones__how">
     ${step.lines.map((line) => html`<span class="ok-font-status">${linked(line)}</span>`)}
@@ -194,6 +210,8 @@ export function PhonesField({ pairNow = false }) {
         <button class="ok-btn" onClick=${() => forget(d.id)} title=${say("Its token stops working at once")}>${say("Forget")}</button>
       </li>`)}
     </ul>`}
+    ${!offer && p.phones.length > 0 && html`<${AwakeOffer} machine=${p.awake_offer}
+      onDone=${() => command("phones.list").then(setP, () => {})} />`}
     ${offer
       ? html`<${Offer} offer=${offer} left=${left} onCancel=${cancel} />`
       : html`<span><button class="ok-btn" onClick=${pair}>${say("Pair a phone")}</button></span>`}

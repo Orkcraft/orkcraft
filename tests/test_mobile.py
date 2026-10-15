@@ -265,3 +265,16 @@ def test_a_phone_presses_a_buildings_quick_actions_but_never_one_that_reads_the_
     assert mobile.guard("building.input", {"id": cat, "input": "catapult.dry_run", "by": "bench"})["by"] == "person"
     assert mobile.quick([{"id": "pool.task", "label": "New task"}]) == [
         {"id": "pool.task", "label": "New task", "takes": "text", "ask": False}]
+
+
+def test_the_phone_says_once_quietly_when_the_computer_is_on_battery_and_may_sleep(fake_repo, isolated_layout_file):
+    host = _host(fake_repo)
+    host.away.platform = "darwin"
+    host.away.power = lambda: False
+    snap = host.command("mobile.snapshot")
+    assert snap["portrait"]["sleep"] == "Your Mac is on battery and may sleep."
+    host.away.power, host.away._power_at = (lambda: True), -1e9                    # on power again
+    again = host.command("mobile.snapshot", {"since": snap["rev"]})
+    assert again["portrait"]["sleep"] == "" and again["rev"] != snap["rev"]
+    host.away.power, host.away._power_at = (lambda: None), -1e9                    # a desktop that tells nothing
+    assert host.command("mobile.snapshot")["portrait"]["sleep"] == ""

@@ -57,21 +57,33 @@ function UsageField({ s, onPick }) {
     <p class="ok-font-status ok-tone-muted">${say(s.usage_blocked ? `Off here: ${s.usage_blocked}.` : USAGE_WHAT)}</p>`;
 }
 
-/** Keep the computer awake while carts are in work and it is on power (gui/away.py, gui/awake.py): the screen may
- *  turn off, the machine does not sleep by itself; with no work, or on battery, it sleeps as its power settings say.
- *  What holds it is the system's own (caffeinate, systemd-inhibit, Windows); where none is, it says so. */
+/** When the computer is kept awake, on power only (gui/away.py, gui/awake.py; decisions-2026-10 §18): never, while
+ *  carts are in work, or also while a phone is paired so it can reach the town all day. The screen may turn off; the
+ *  machine does not sleep by itself. On battery it sleeps as its power settings say, whatever the choice. What holds
+ *  it is the system's own (caffeinate, systemd-inhibit, Windows); where none is, it says so. */
+const AWAKE_WHAT = {
+  off: "The computer sleeps as its power settings say. While it sleeps the orks stop, and a phone cannot reach the town.",
+  carts: "While carts are in work and the computer is on power, it does not sleep by itself; with no work, or on battery, it sleeps as its power settings say.",
+  phone: "While Orkline runs, a phone is paired and the computer is on power, it does not sleep by itself, carts or not. On battery it sleeps as its power settings say, and the phone says so.",
+};
+const AWAKE_WHY = {
+  phone: "Holding now: a phone is paired and the computer is on power, so the phone can reach the town.",
+  carts: "Holding now: carts are in work and the computer is on power.",
+};
+
 function AwakeField({ s, onPick }) {
-  const lid = " A closed lid still sleeps a laptop: leave the lid open.";
-  const what = !s.keep_awake
-    ? "The computer sleeps as its power settings say. While it sleeps the orks stop, and a phone cannot reach the town."
-    : s.awake_how
-      ? "Holding now: carts are in work and the computer is on power. The screen may turn off; the computer does not sleep by itself." + lid
-      : s.awake_can
-        ? "While carts are in work and the computer is on power, it does not sleep by itself; with no work, or on battery, it sleeps as its power settings say." + lid
-        : "This computer gives Orkline no way to keep it awake here: set its power settings so it does not sleep while the town works.";
-  return html`<${Steps} label=${say("Keep the computer awake while carts are in work")} value=${s.keep_awake}
-      items=${[[true, say("On")], [false, say("Off")]]} onPick=${onPick} />
-    <p class="ok-font-status ok-tone-muted">${say(what)}</p>`;
+  const a = s.awake || {};
+  const mode = a.mode || s.keep_awake;
+  const lines = !s.awake_can && mode !== "off"
+    ? ["This computer gives Orkline no way to keep it awake here: set its power settings so it does not sleep while the town works."]
+    : [AWAKE_WHAT[mode] || "",
+      ...(mode === "phone" && !s.phones_paired ? ["No phone is paired yet: Settings → Phones."] : []),
+      ...(s.awake_how && AWAKE_WHY[a.why] ? [AWAKE_WHY[a.why]] : []),
+      ...(mode !== "off" && a.battery ? ["It is on battery now, so it may sleep."] : []),
+      ...(mode !== "off" ? ["The screen still turns off. A laptop with its lid closed still sleeps unless a display is attached."] : [])];
+  return html`<${Steps} label=${say("Keep the computer awake")} value=${mode}
+      items=${[["off", say("Never")], ["carts", say("While carts work")], ["phone", say("Stay reachable from your phone")]]} onPick=${onPick} />
+    ${lines.map((line) => html`<p class="ok-font-status ok-tone-muted">${say(line)}</p>`)}`;
 }
 
 /** Asked once, when the operator has not said yes or no: the town opens, then this. While the onboarding
@@ -214,7 +226,7 @@ export function SettingsDialog() {
       <${LogsField} s=${s} set=${set} />
       <${ToolsField} s=${s} set=${set} />
       <${HooksField} s=${s} set=${set} />
-      <${AwakeField} s=${s} onPick=${(v) => command("awake.set", { on: v }).then(setS, () => {})} />
+      <${AwakeField} s=${s} onPick=${(v) => command("awake.set", { mode: v }).then(setS, () => {})} />
       <${UsageField} s=${s} onPick=${(v) => command("usage.share", { share: v }).then(setS, () => {})} />
       ${!s.updates_blocked && html`<${UpdatesField} s=${s} />`}
       <${AccountsField} />

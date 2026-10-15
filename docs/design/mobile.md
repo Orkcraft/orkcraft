@@ -398,9 +398,12 @@ same each time it shows, so the app can be added later too. Until the
 app is added that address holds the phone's key, and the page says so.
 
 **The computer stays awake.** A town asleep answers no phone and its orks stop, so while Orkline is open
-the computer does not sleep by itself (`gui/awake.py`; Town settings → Keep the computer awake, on by
-default): `caffeinate -i` on macOS, `systemd-inhibit --what=sleep` on Linux, `SetThreadExecutionState` on
-Windows. The screen still turns off, and a laptop's closed lid still sleeps it; no phone wakes it.
+the computer does not sleep by itself (`gui/awake.py`; Town settings → Keep the computer awake): Never, While
+carts work (the default), or **Stay reachable from your phone** — held whenever a phone is paired, carts or not
+(decisions-2026-10 §18), offered once when a phone pairs. Only on power: on battery it sleeps as its settings
+say, and the phone shows one quiet line, "Your Mac is on battery and may sleep." `caffeinate -i` on macOS,
+`systemd-inhibit --what=sleep` on Linux, `SetThreadExecutionState` on Windows. The screen still turns off, and a
+laptop's closed lid still sleeps it unless a display is attached; no phone wakes it.
 
 **What it cannot do yet.** No push while it is closed: news comes while it is open (`notify.py`), with a
 system notification when the page is in the background and the person allowed it. iOS has no share

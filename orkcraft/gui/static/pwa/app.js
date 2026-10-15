@@ -373,7 +373,9 @@ function render(s, keptAt = 0) {
       meat(resource("meat", words.supply || "Orks", `${hud.agents_working ?? 0}/${hud.agents ?? 0}`, ""), hud, s),
       score(s.score)),
     h("h1", { class: "ok-hud__brand" }, camp && h("img", { class: "mark", src: "icon-192.png", alt: "" }),
-      s.project || "Orkline", s.demo ? h("small", {}, " demo") : null));
+      s.project || "Orkline", s.demo ? h("small", {}, " demo") : null),
+    // One quiet line when the computer is on battery and may sleep (gui/away.py `phone_line`; decisions §18).
+    ...(s.portrait?.sleep ? [h("p", { class: "muted sleep" }, s.portrait.sleep)] : []));
 
   ui.look.render(s);
   ui.town.render(s);

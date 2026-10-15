@@ -7,7 +7,8 @@ carts in work go on while the person is away (docs/design/audience.md §2a, leav
     on_power()             # True on mains power (or a machine with no battery), False on battery, None unknown
 
 The host holds it only while carts are in work in an Agent pool (core/leaving.py) and the computer is on power, and
-lets go when the work is done or the cap of a day away is reached: a laptop on battery is never kept awake.
+lets go when the work is done or the cap of a day away is reached; with "Stay reachable from your phone" also while a
+phone is paired, carts or not (gui/away.py `reason`, decisions-2026-10 §18). A laptop on battery is never kept awake.
 
 Each system's own way, and only against idle sleep — never the display, never a sleep the person asks for:
 
@@ -17,7 +18,7 @@ Each system's own way, and only against idle sleep — never the display, never 
 - Windows: `SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED)` from a thread of its own.
 
 Nothing found (no systemd, a container): it says so through `how` and does nothing. The setting is the
-machine's (`keep_awake`, Town settings), on by default.
+machine's (`keep_awake`, Town settings: off | carts | phone), "carts" by default.
 
 Power: macOS `pmset -g batt` ("AC Power"), Linux `/sys/class/power_supply` (a Mains supply online, or no battery at
 all), Windows `GetSystemPowerStatus`. A machine that tells nothing counts as on power (a desktop).
@@ -32,7 +33,7 @@ import threading
 from pathlib import Path
 from typing import Callable
 
-WHY = "Orkline: carts are in work, the orks keep working while the screen is off"
+WHY = "Orkline: the orks keep working, and a paired phone reaches the town, while the screen is off"
 ES_CONTINUOUS, ES_SYSTEM_REQUIRED = 0x80000000, 0x00000001
 
 

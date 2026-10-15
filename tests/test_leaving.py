@@ -171,7 +171,7 @@ def test_it_holds_the_computer_only_while_carts_work_on_power_and_under_the_cap(
     away2, town2, a2 = _away(tmp_path / "b", power=False)
     assert away2.keep_awake() == "" and not a2.on                                    # on battery: never
     away3, town3, a3 = _away(tmp_path / "c")
-    town3.machine.keep_awake = False
+    town3.machine.keep_awake = "off"
     assert away3.keep_awake() == ""                                                  # the setting off
 
 

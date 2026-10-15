@@ -522,7 +522,13 @@ class Listener:
                 "tail_address": self.tail_address, "tail_trusted": self.tail_trusted,
                 "tailscale": bool(tailnet.command()) and not tailnet.off(),
                 "fingerprint": self.fingerprint, "open": sorted({p.id for p in self.phones}),
-                "pairing": self.pairing.expires_in()}
+                "pairing": self.pairing.expires_in(),
+                "awake_offer": self._awake_offer()}
+
+    def _awake_offer(self) -> str:
+        """"Mac" while "keep it awake for the phone" is to be asked (gui/away.py `offer`), else ""."""
+        away = getattr(self.host, "away", None)
+        return away.offer() if away is not None else ""
 
     def pair(self) -> dict[str, Any]:
         """A new one-time code and the QR code that carries it, the address and the fingerprint."""

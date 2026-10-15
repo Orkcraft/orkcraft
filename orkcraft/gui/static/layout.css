@@ -848,6 +848,7 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 .gui-phones__offer { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: flex-start; }
 .gui-phones__qr { width: 240px; max-width: 100%; height: auto; image-rendering: pixelated; }
 .gui-phones__how { display: flex; flex-direction: column; gap: var(--space-1); flex: 1; min-width: 12em; }
+.gui-phones__awake { display: flex; flex-direction: column; gap: var(--space-1); }
 .gui-phones__fp, .gui-phones__link { font: 11px/16px var(--font-mono); overflow-wrap: anywhere; color: var(--ink-muted); }
 .gui-phones__recipe { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2);
   background: var(--panel-inset); box-shadow: var(--bevel-sunken); }

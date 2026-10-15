@@ -42,6 +42,9 @@ PROFILE_TEXT = ("orchestration", "role", "role_other", "industry", "industry_oth
 PROFILE_LISTS = ("day", "mcp")   # mcp: the MCP servers the orks may use (gui/onboarding.py)
 UPDATES = ("auto", "critical", "ask")   # core/updates.py POLICIES
 LOOKS = ("camp", "office", "shift")
+# When the computer is kept from sleeping (gui/away.py): never, while carts are in work, or also while a phone is
+# paired, so it can reach the town all day (decisions-2026-10 §18). Both only on power.
+KEEP_AWAKE = ("off", "carts", "phone")
 # "shift": Office while the work day lasts, Camp the rest of the day (docs/design/portrait.md §3) — the default.
 SHIFT = (9 * 60, 17 * 60)                # the work day, in minutes from midnight: 09:00–17:00
 
@@ -89,7 +92,8 @@ class MachineSettings:
     agy_warder_checked: bool = False
     usage: bool | None = None     # anonymous usage stats (core/usage.py): None until the operator answers
     install_id: str = ""          # a random id while they share them; forgotten when they stop
-    keep_awake: bool = True       # the computer does not sleep by itself while carts are in work, on power (gui/away.py)
+    keep_awake: str = "carts"     # KEEP_AWAKE: when the computer does not sleep by itself, on power (gui/away.py)
+    awake_offered: bool = False   # "keep it awake for the phone" was asked once, when a phone paired (js/phones.js)
     fire: bool = True             # flames over a building whose ork has waited a minute or more (the GUI's huts)
     updates: str = "critical"     # which updates install by themselves when the town opens (core/updates.py)
     main_tool: str = ""           # the tool decisions run on (realm/harnesses.py); "" the first one on
@@ -119,6 +123,7 @@ class MachineSettings:
             "usage": {"share": self.usage, "id": self.install_id},
             "fire": self.fire,
             "keep_awake": self.keep_awake,
+            "awake_offered": self.awake_offered,
             "updates": self.updates,
             "main_tool": self.main_tool,
             "phones": [dict(p) for p in self.phones],
@@ -151,7 +156,8 @@ class MachineSettings:
         usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
         s.usage = usage.get("share") if isinstance(usage.get("share"), bool) else None
         s.fire = data.get("fire") is not False
-        s.keep_awake = data.get("keep_awake") is not False
+        s.keep_awake = awake_mode(data.get("keep_awake"))
+        s.awake_offered = data.get("awake_offered") is True
         s.updates = data["updates"] if data.get("updates") in UPDATES else "critical"
         s.main_tool = data["main_tool"] if data.get("main_tool") in TOOLS else ""
         s.phones = clean_phones(data.get("phones"))
@@ -181,6 +187,13 @@ def clean_tier_models(raw: object) -> dict[str, dict[str, str]]:
         if kept:
             out[tool] = kept
     return out
+
+
+def awake_mode(raw: object) -> str:
+    """One of KEEP_AWAKE; the old true / false (and nothing) read as "carts" / "off", as they behaved."""
+    if raw in KEEP_AWAKE:
+        return str(raw)
+    return "off" if raw is False else "carts"
 
 
 def clean_dnd(raw: object) -> str:

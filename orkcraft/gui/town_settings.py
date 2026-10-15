@@ -104,6 +104,7 @@ def read(host) -> dict[str, Any]:
             "updates": m.updates, "updates_blocked": updates.blocked() or ("the demo" if host.town.demo else ""),
             "version": __version__, "round": _round(host), "logs": _logs(host),
             "keep_awake": m.keep_awake, "awake_how": host.awake.how, "awake_can": host.awake.can(),
+            "awake": host.away.power_state(), "phones_paired": host.away.paired(),
             "hooks": _hooks_on(host), **_tools(m)}
 
 
@@ -209,16 +210,27 @@ def round_now(host, args: dict) -> dict[str, Any]:
 
 
 def keep_awake(host, args: dict) -> dict[str, Any]:
-    """Whether the computer stays awake while carts are in work and it is on power (`on`: true | false), at once
-    (gui/away.py `keep_awake`, gui/awake.py)."""
+    """When the computer stays awake on power (`mode`: off | carts | phone; the old `on`: true | false still
+    understood), at once (gui/away.py `keep_awake`, gui/awake.py)."""
     m = host.town.machine
-    m.keep_awake = args.get("on") is True
+    m.keep_awake = settings.awake_mode(args["mode"] if "mode" in args else args.get("on") is True)
     settings.save(m)
     host.away.keep_awake()                      # only while the town is open in its window or the browser
     return read(host)
 
 
+def awake_offer(host, args: dict) -> dict[str, Any]:
+    """The answer to "keep it awake for the phone", asked once when a phone paired (`yes`: true | false)."""
+    m = host.town.machine
+    m.awake_offered = True
+    if args.get("yes") is True:
+        m.keep_awake = "phone"
+    settings.save(m)
+    host.away.keep_awake()
+    return {"keep_awake": m.keep_awake}
+
+
 def commands(host) -> dict[str, Callable[[dict], Any]]:
     return {"town.settings": lambda a: read(host), "town.settings.set": lambda a: change(host, a),
             "usage.share": lambda a: share_usage(host, a), "round.now": lambda a: round_now(host, a),
-            "awake.set": lambda a: keep_awake(host, a)}
+            "awake.set": lambda a: keep_awake(host, a), "awake.offer": lambda a: awake_offer(host, a)}
