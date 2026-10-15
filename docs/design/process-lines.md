@@ -21,9 +21,10 @@ cost. No stage has a track of its own.
 
 ## 2. Several depots on one line? No: role huts, and at most one depot
 
-- **The early stages are one ork each:** a **role hut**, a small building holding one ork of that role (Analyst,
-  PM, UX designer, Architect, Scrum master: the Agent pool's lanes as roles, ork-console.md §14, given a hut each on
-  the line). They need no parallel bays, so they are drawn small; the line stays short (eight places hold it).
+- **The early stages are one ork each, and still an Agent pool** (no new building type, no new word): an Agent pool
+  set to one role and one ork (Analyst, PM, UX designer, Architect, Scrum master: the pool's lanes as roles,
+  ork-console.md §14), drawn as the depot's **one-bay size**, a small shed. It needs no parallel bays, so the line
+  stays short (eight places hold it). In Office it is an Agent pool card like any other.
 - **The depot appears once, where parallel work happens:** the implementation, where the Scrum master's stories run
   side by side in its bays. A process without parallel work has no depot of its own and uses line 1's.
 - **The split:** at the Scrum master's hut one epic cart arrives and **several story carts leave**, each with its own
@@ -54,8 +55,8 @@ again). The Review gate on line 0.5 stays the last check for what leaves the cam
 
 - **Reused:** the stations' stops, one-way travel, the waybill, the pool's roles, the Review board's members, the
   Review gate's barrier, the depot's bays, the round's price.
-- **New:** the role hut (one small sprite, an ork at a desk; a sign with the role); the council annex (a small
-  campfire ring, from the old Review board art); the line barrier; the split of one cart into several; the line
+- **New pictures, no new building types:** the depot's one-bay size (one small sprite); the council annex (a small
+  campfire ring, from the old Review board art: the Review board's feature, not a building); the line barrier; the split of one cart into several; the line
   template (a data file: stations, their roles and prompts, debates, barriers), installed by one button.
 - **Size:** about 4–6 days of code plus one small art sheet; the template's prompts follow BMAD's published roles.
 

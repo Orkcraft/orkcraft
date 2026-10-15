@@ -764,7 +764,7 @@ since the words do not change between looks. Spec 13.
 
 ## 23. A process as a line: BMAD (15 October, the owner and the PM)
 
-A staged process (BMAD first) is one line of the quarter; its stages are role huts along it (one ork each), the
+A staged process (BMAD first) is one line of the quarter; its stages are one-bay Agent pools along it (one role, one ork each: no new building type), the
 depot once where work runs in parallel; a story split turns one cart into several; **debates after a stage are the
 station's council annex** (on per station or for the whole line, its price said first; default after the PRD and
 the architecture), not extra buildings; the person's approvals are barriers on the line. Priority medium (P1),
