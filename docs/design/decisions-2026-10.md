@@ -670,3 +670,13 @@ grass, and the mission's quests raise the core buildings themselves. Plots appea
 person knows how building works and what each core building does), when exploring new buildings becomes the
 interest. Until then nothing hints at buildings to come.
 
+## 21. From the tutorial to the person's own camp: the charter (15 October, design)
+
+The owner's question: how does the person move from Mission 1's drills to a camp built for their own goal? The PM's
+proposal, written in [first-mission.md](first-mission.md) §11: **the charter**, at the start of quest 4 (the first
+real work): "What are we building here?" — *my project* (a goal line; the Workchief proposes the first three to five
+cards from the repository, the person keeps or drops each), *a routine to automate* (one of four, which brings
+Mission 2 forward), or *just looking* (a sandbox). The goal hangs as a banner on the wall band; milestones, not
+points; later missions and the quarter's plots are offered by what the goal's real work shows. P0 for activation,
+after the owner plays Mission 1. Not started.
+

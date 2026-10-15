@@ -309,3 +309,38 @@ and is owed by §8 anyway.
    narrower command (the changed package's tests) when it is slow.
 3. **A failed check on GitHub that is not the ork's** (a flaky test, a red main) must not count as the trigger.
    Count it only when main was green at the same time.
+
+## 11. From the drills to the person's own camp: the charter (the owner's question, 15 October; design, not built)
+
+The question: Mission 1 teaches with drills; how does the person move from the tutorial to a camp built for **their
+own goal**? Answer: **one moment, the charter, between the drills and the first real work** — the camp is given its
+purpose, in the story's words, and everything after is real work towards it.
+
+**When:** at the start of quest 4, the first real work (§3), right after the drills of quests 1–3 and the look switch
+of 3½. Never before Mission 1 (the onboarding asks as little as possible at the start, B6).
+
+**The Workchief:** "Boss, the drills are done and the Grunts are restless. What are we building here?" Three
+answers, one screen, the class's chips already known:
+
+| answer | what follows |
+|---|---|
+| **"My project"** (the default for a developer: the project folder or repository the town already has) | one line of the goal in the person's words ("a co-op roguelike, a playable demo by December"); optional: a deadline. The Workchief reads the repository (its README, open issues, TODOs) and proposes **the first three to five cards** towards the goal, each with its price said; the person keeps, edits or drops each, and they land on the Task board as real cards. Quest 4 then takes its first real work from them (the listeners' issues stay as the source when there is no goal line) |
+| **"A routine to automate"** (no project yet, or a manager's class) | four ready routines to pick one from: the inbox sorted by rules, a weekly report, meeting briefs, a research digest; the picked one becomes the camp's goal, and Mission 2 (a process that comes back, §7) is offered at once instead of later |
+| **"Just looking"** | the camp stays a sandbox with the demo's drills; the charter can be given any time from the Town Hall |
+
+**In the camp:** the charter is a **banner on the wall band** (§20 of the decisions), the goal's line written on it,
+by the lookout; a click opens it (edit the line, the deadline, the cards it spawned). It is the camp's purpose seen
+every day, not a score: **milestones, not points** (§8's rule that nothing a person can do is locked behind play). A
+card towards the goal wears the banner's small mark on its waybill, so the person sees which work serves it.
+
+**After the charter, the campaign serves the goal:** each later mission is offered when the real work shows its
+moment (§8: failed checks → 1b, the same files read again → the Wiki's mission, …), on the person's own cards. The
+plots of the person's quarter (decisions §20) appear after Mission 1 and are chosen by the goal as well (a game's
+goal → the UX bench and assets; a library → the Test bench and Branches & PRs).
+
+**The story:** the person's class hired the camp (v3-prompts §13: a Jira Lich, an Indie Knight…); the charter is the
+contract. The Workchief's lines may joke; the goal line and the cards' prices are said plainly (CLAUDE.md, the voice).
+
+**Size:** the charter screen and the banner, about 1 day; the first cards from the repository and the goal, one
+model call with its price said, about 1 day; the routine path reuses Mission 2's design. **Priority:** P0 for
+activation, built after the owner has played Mission 1 (§9) and with 1b's order decided then. Not started.
