@@ -507,8 +507,13 @@ inside). Between buildings:
 The person's Office places win over neighbours (the owner: "it is their right"). What is guaranteed is the track:
 fixed topology, full-width lines, no crossings, whatever is moved.
 
-Full rules: [design-system-v3.md](design-system-v3.md) §4c. Priority: one way round, switches and pockets are P0
-with Mission 1b; the back row and neighbours are P1.
+**A round's price, and placement as tidiness.** A cart going round again wears its round's cost (`round 2 · 🪵 18k`): the
+second round reads as the price of rework. Placement makes trips shorter on screen only (work arrives at once), so it
+is tidiness, never throughput: no layout measure, nothing in the score; the optimising game stays the score. The
+Warchief's hint about a long trip moves to Later.
+
+Full rules: [design-system-v3.md](design-system-v3.md) §4c. Priority: one way round, switches, pockets and a round's
+price are P0, built now by the LOOP session; the back row and neighbours are P1.
 
 **The launch date moved.** 19 October is off and there is no new date: the launch is the owner's "ready" (§13.1–2).
 The devlog, Discord, the posts and the testers all wait for it together, since an empty room reads as a dead project.

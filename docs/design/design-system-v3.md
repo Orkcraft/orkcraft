@@ -423,9 +423,9 @@ track. Between buildings, three kinds of link, three drawings:
 2. **Neighbours.** Two buildings joined by a return road stand in the same row, at most one place apart, so the round
    trip is short. A service stands above its busiest reader.
 3. **The person's places win.** A building the person placed in Office keeps its row and place; neighbours and the
-   back row place only buildings never placed. A far placement costs a longer trip, shown as it is. The Warchief may
-   say once, as a 💡 improvement, never forced: "The brief rides across the whole camp. Put the Calendar next to the
-   Agent pool?"
+   back row place only buildings never placed. A far placement costs a longer trip, shown as it is (and only shown:
+   rule 9). Later, perhaps: the Warchief says once, as a 💡 improvement, never forced, "The brief rides across the
+   whole camp. Put the Calendar next to the Agent pool?"
 4. **The track is the product's, the places are the person's.** The person chooses a building's row and its order,
    never its coordinates, so the track comes out right whatever they do:
    - the topology is fixed: a line per row, the two columns, the split, the merge, the buffer stop; placing only
@@ -452,7 +452,17 @@ track. Between buildings, three kinds of link, three drawings:
    Stations keep their own (the Task board's siding, the Review gate's weighbridge, the mine's shaft). This amends
    §4.1's "no rail spurs" for pockets only: one tile, parallel, never a branch to a building.
 
-**Priority:** one way round with the return line, the switches, the pockets and the queue are **P0, built with Mission
+8. **A round has its price.** A cart going round again wears its round and what that round cost on its chip, on the
+   return line and back in: `round 2 · 🪵 18k` (and `$` on an API key), from the recorded tokens only, as the flying
+   cart's cost (the-score.md). A second round reads as the price of rework, not as distance.
+9. **Placement is tidiness, never throughput.** A cart's trip is drawn only: the work reaches its building at once
+   (`cart_travel_s` 0), so a far placement costs nothing real, and nothing pretends it does. No layout-efficiency
+   measure, no trip time in the score; the optimising game is the score (fewer rounds, cheaper roles, the Wiki read
+   first). The Warchief's 💡 line about a long round trip (rule 3) moves to **Later**: the person may notice it alone.
+   To check on the owner's own play: do they move buildings for shorter trips, and does that pull last a week? If it
+   does, something real behind placement is worth a thought then.
+
+**Priority:** one way round with the return line, the switches, the pockets, the queue and a round's price are **P0, built with Mission
 1b** (its rework and the gate's send-back need them), after the owner has played Mission 1: about 2–3 days. The back
 row, the neighbours, the ork's walk to the Wiki and the 💡 line are **P1**. **No:** a cart backing along a line; each
 tool call or MCP read of an agent drawn as a cart or a flash.
