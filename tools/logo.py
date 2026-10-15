@@ -20,6 +20,12 @@ head's 12×8 grid, drawn at 2× (24×16) and 4× (`@2x`)) and its states with th
 on a 20×8 grid (40×16): `ork-idle` eyes shut and Zz, `ork-busy` a gear, `ork-waiting` a flame on the
 crown and `!`, `ork-frozen` a snowflake, `ork-draft` a page.
 
+`python tools/logo.py --glasses` draws instead the candidates for the new mark (the ork in round glasses, the PM
+session's brief of 15 October; concepts: gen_sheets `l1-logo`): `GLASSES` below, on a 16×16 grid so the glasses read
+at 16 px, four colours (face, cap, dark, bone; the lens's glint is the cap's teal, never yellow), and one comparison
+sheet in `docs/design/img/logo/`: each at 16, 32 and 128 px on dark and light, in one colour, beside the word, in a
+browser tab, with today's mark beside them. It writes nothing else: the mark changes only once the owner picks.
+
 Needs `pip install fonttools brotli pillow` (brotli reads the woff2 font).
 """
 from __future__ import annotations
@@ -250,10 +256,129 @@ def raster(colours: dict[str, str], size: int) -> Image.Image:
     return img
 
 
+# --- the candidates for the new mark: the ork in round glasses (`--glasses`) -------------------------------------
+# F face, C cap, D dark (the cap's band, the glasses' frames, the pupils, the mouth), T bone (tusks, lenses),
+# g the lens's glint in the cap's teal, . nothing
+GLASSES = {
+    "a": [                                  # a flat cap, lenses of four
+        "....CCCCCCCC....",
+        "..CCCCCCCCCCCC..",
+        ".CCCCCCCCCCCCCC.",
+        ".DDDDDDDDDDDDDD.",
+        "F.FFFFFFFFFFFF.F",
+        "FFDDDDFFFFDDDDFF",
+        "FFDgTDDDDDDgTDFF",
+        ".FDTDDFFFFDTDDF.",
+        "..DDDDFFFFDDDD..",
+        "..FFFFFFFFFFFF..",
+        "..FTFFFFFFFFTF..",
+        "..FTDDDDDDDDTF..",
+        "..FFFFFFFFFFFF..",
+        "...FFFFFFFFFF...",
+        "....FFFFFFFF....",
+        "................",
+    ],
+    "b": [                                  # a ribbed beanie, lenses of five
+        "................",
+        ".....CCCCCC.....",
+        "...CCCCCCCCCC...",
+        "..CCCCCCCCCCCC..",
+        "..CDCDCDCDCDCD..",
+        "F.FFFFFFFFFFFF.F",
+        "FDDDDDFFFFDDDDDF",
+        "FDgTTDDDDDDgTTDF",
+        "FDTDTDFFFFDTDTDF",
+        "FDTTTDFFFFDTTTDF",
+        "FDDDDDFFFFDDDDDF",
+        ".FFFFFFFFFFFFFF.",
+        ".FFTFFFFFFFFTFF.",
+        ".FFTDDDDDDDDTFF.",
+        "..FFFFFFFFFFFF..",
+        "....FFFFFFFF....",
+    ],
+}
+GLASSES_PALETTES = {
+    "dark": {"F": "#86c062", "C": "#3f8f88", "D": "#1a1813", "T": "#ece4cf", "g": "#3f8f88"},
+    "light": {"F": "#548c34", "C": "#2f7a74", "D": "#181c28", "T": "#f4efe2", "g": "#2f7a74"},
+}
+
+
+def _on(grid: list[str], colours: dict[str, str], size: int, ground: str | None = None) -> Image.Image:
+    """A grid centred on a square of `size` px, each grid pixel a whole number of px (never resampled)."""
+    k = max(1, size // max(len(grid), len(grid[0])))
+    bg = tuple(int(ground[i:i + 2], 16) for i in (1, 3, 5)) + (255,) if ground else (0, 0, 0, 0)
+    img = Image.new("RGBA", (size, size), bg)
+    head = grid_image(grid, colours, k)
+    img.alpha_composite(head, ((size - head.width) // 2, (size - head.height) // 2))
+    return img
+
+
+def glasses_mono(grid: list[str]) -> list[str]:
+    """One colour for the Office: every cell filled but the dark ones and the tusks, which are cut out."""
+    return ["".join("F" if c in "FCTg" and c != "T" else "." for c in row) for row in grid]
+
+
+def glasses_sheet(out: pathlib.Path) -> pathlib.Path:
+    """The comparison sheet: a row per mark (today's, then each candidate)."""
+    import io
+
+    from PIL import ImageDraw, ImageFont
+    font = TTFont(FONT)
+    font.flavor = None
+    buf = io.BytesIO()
+    font.save(buf)
+    word = ImageFont.truetype(io.BytesIO(buf.getvalue()), 40)
+    small = ImageFont.truetype(io.BytesIO(buf.getvalue()), 14)
+    marks = {"today": (GRID, {"dark": PALETTES["office"], "light": PALETTES["light"]})}
+    for name, grid in GLASSES.items():
+        marks[name] = (grid, GLASSES_PALETTES)
+    DARK, LIGHT = "#1a1813", "#f4efe2"
+    row_h, W_ = 176, 1180
+    sheet = Image.new("RGBA", (W_, row_h * len(marks) + 40), (44, 40, 34, 255))
+    draw = ImageDraw.Draw(sheet)
+    draw.text((16, 12), "16 · 32 · 128 on dark | the same on light | one colour | beside the word | in a tab",
+              font=small, fill="#ece4cf")
+    for r, (name, (grid, pal)) in enumerate(marks.items()):
+        y = 40 + r * row_h
+        draw.text((16, y + 4), name, font=small, fill="#ece4cf")
+        x = 70
+        for ground, key in ((DARK, "dark"), (LIGHT, "light")):
+            for size in (16, 32, 128):
+                tile = _on(grid, pal[key], size, ground)
+                sheet.alpha_composite(tile, (x, y + 8 + (128 - size)))
+                x += size + 8
+            x += 16
+        mono = glasses_mono(grid) if name != "today" else ["".join("F" if c == "F" else "." for c in row) for row in grid]
+        for ground, ink in ((DARK, "#ece4cf"), (LIGHT, "#1a1813")):
+            sheet.alpha_composite(_on(mono, {"F": ink}, 64, ground), (x, y + 72))
+            x += 72
+        lock = Image.new("RGBA", (250, 64), DARK)
+        lock.alpha_composite(_on(grid, pal["dark"], 64), (0, 0))
+        ImageDraw.Draw(lock).text((72, 8), "Orkline", font=word, fill="#ece4cf")
+        sheet.alpha_composite(lock, (x + 8, y + 8))
+        tab = Image.new("RGBA", (170, 32), "#dcd6c8")
+        td = ImageDraw.Draw(tab)
+        td.rectangle((0, 0, 169, 31), fill="#f4efe2", outline="#bdb6a6")
+        tab.alpha_composite(_on(grid, pal["light"], 16), (8, 8))
+        td.text((30, 8), "Orkline — Camp", font=small, fill="#1a1813")
+        sheet.alpha_composite(tab, (x + 8, y + 96))
+    out.mkdir(parents=True, exist_ok=True)
+    dest = out / "glasses-compare.png"
+    sheet.convert("RGB").save(dest, optimize=True)
+    for name, grid in GLASSES.items():               # each candidate alone at 128, for a closer look
+        _on(grid, GLASSES_PALETTES["dark"], 128).save(out / f"glasses-{name}-128.png")
+    return dest
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=pathlib.Path, default=ROOT / "design-system" / "logo")
-    out = ap.parse_args().out
+    ap.add_argument("--glasses", action="store_true", help="only the new mark's candidates, into docs/design/img/logo/")
+    args = ap.parse_args()
+    if args.glasses:
+        print(f"wrote {glasses_sheet(ROOT / 'docs' / 'design' / 'img' / 'logo')}")
+        return
+    out = args.out
     out.mkdir(parents=True, exist_ok=True)
 
     vw, vh = W * CELL, H * CELL
