@@ -296,7 +296,32 @@ GLASSES = {
         "..FFFFFFFFFFFF..",
         "....FFFFFFFF....",
     ],
+    "c": [                                  # the Mechanic's head (sprites/v3/orks/roles/mechanic.png) redrawn front-on:
+        "................",                 # its khaki cap and brim (c), goggles with blue lenses (L, a glint w),
+        "....CCCCCCCC....",                 # both pointed ears
+        "...CCCCCCCCCC...",
+        "..CCCCCCCCCCCC..",
+        "..cccccccccccc..",
+        "F..FFFFFFFFFF..F",
+        "FFFFFFFFFFFFFFFF",
+        ".FDDDDFFFFDDDDF.",
+        ".FDwLDDDDDDwLDF.",
+        ".FDLLDFFFFDLLDF.",
+        "..DDDDFFFFDDDD..",
+        "..FFFFFFFFFFFF..",
+        "..FTFFFFFFFFTF..",
+        "..FTDDDDDDDDTF..",
+        "...FFFFFFFFFF...",
+        ".....FFFFFF.....",
+    ],
 }
+# the Mechanic's own colours for c (its tusks bone, not the sprite's pale yellow: yellow is the question's)
+MECHANIC = {"dark": {"F": "#7a8a44", "C": "#8d7d5e", "c": "#67584a", "D": "#2a1a1c", "T": "#ece4cf", "L": "#6cc6ec",
+                     "w": "#defdff", "g": "#6cc6ec"},
+            "light": {"F": "#5f7232", "C": "#7a6a4c", "c": "#55483a", "D": "#2a1a1c", "T": "#f4efe2", "L": "#4aa8d4",
+                      "w": "#defdff", "g": "#4aa8d4"}}
+# the role sprites the owner pointed at, cut round their heads for the sheet (x0, y0, x1, y1 on the sprite)
+ROLE_HEADS = {"mechanic": (3, 4, 35, 28), "treasurer": (12, 1, 40, 23)}
 GLASSES_PALETTES = {
     "dark": {"F": "#86c062", "C": "#3f8f88", "D": "#1a1813", "T": "#ece4cf", "g": "#3f8f88"},
     "light": {"F": "#548c34", "C": "#2f7a74", "D": "#181c28", "T": "#f4efe2", "g": "#2f7a74"},
@@ -331,10 +356,10 @@ def glasses_sheet(out: pathlib.Path) -> pathlib.Path:
     small = ImageFont.truetype(io.BytesIO(buf.getvalue()), 14)
     marks = {"today": (GRID, {"dark": PALETTES["office"], "light": PALETTES["light"]})}
     for name, grid in GLASSES.items():
-        marks[name] = (grid, GLASSES_PALETTES)
+        marks[name] = (grid, MECHANIC if name == "c" else GLASSES_PALETTES)
     DARK, LIGHT = "#1a1813", "#f4efe2"
     row_h, W_ = 176, 1180
-    sheet = Image.new("RGBA", (W_, row_h * len(marks) + 40), (44, 40, 34, 255))
+    sheet = Image.new("RGBA", (W_, row_h * (len(marks) + 1) + 40), (44, 40, 34, 255))
     draw = ImageDraw.Draw(sheet)
     draw.text((16, 12), "16 · 32 · 128 on dark | the same on light | one colour | beside the word | in a tab",
               font=small, fill="#ece4cf")
@@ -362,11 +387,23 @@ def glasses_sheet(out: pathlib.Path) -> pathlib.Path:
         tab.alpha_composite(_on(grid, pal["light"], 16), (8, 8))
         td.text((30, 8), "Orkline — Camp", font=small, fill="#1a1813")
         sheet.alpha_composite(tab, (x + 8, y + 96))
+    y = 40 + len(marks) * row_h                    # the role sprites C comes from, as they are drawn (at 1× and 4×)
+    draw.text((16, y + 4), "roles", font=small, fill="#ece4cf")
+    x = 70
+    for name, box in ROLE_HEADS.items():
+        head = Image.open(ROOT / "design-system" / "sprites" / "v3" / "orks" / "roles" / f"{name}.png").convert("RGBA").crop(box)
+        for k in (1, 4):
+            tile = Image.new("RGBA", (head.width * k, head.height * k), DARK)
+            tile.alpha_composite(head.resize((head.width * k, head.height * k), Image.NEAREST))
+            sheet.alpha_composite(tile, (x, y + 8 + 128 - tile.height))
+            x += tile.width + 8
+        draw.text((x - head.width * 4 - 8, y + 140), name, font=small, fill="#ece4cf")
+        x += 24
     out.mkdir(parents=True, exist_ok=True)
     dest = out / "glasses-compare.png"
     sheet.convert("RGB").save(dest, optimize=True)
     for name, grid in GLASSES.items():               # each candidate alone at 128, for a closer look
-        _on(grid, GLASSES_PALETTES["dark"], 128).save(out / f"glasses-{name}-128.png")
+        _on(grid, (MECHANIC if name == "c" else GLASSES_PALETTES)["dark"], 128).save(out / f"glasses-{name}-128.png")
     return dest
 
 
