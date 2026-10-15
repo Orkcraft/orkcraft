@@ -217,12 +217,18 @@ function More({ b }) {
 
 /** Work: the building's own view by its UI document; a type without one shows its status lines. A type with no
  *  Work shows its large card here, on the phone only (its sheet). */
+// The Work views checked on parchment in Camp (design-system-v4.md §5, the PM: most-used first); the others keep the
+// dark panel until each is looked at. `kit-paper` is neutral in Office.
+const PAPER = new Set(["fields", "barracks", "loot", "mine", "war_drum", "watchtower", "scrolls", "pit", "mill", "forest",
+  "signpost", "horn", "council", "gramophone", "lab", "ux_lab", "forge", "crag", "catapult", "workshop"]);
+
 function Work({ b }) {
   if (workless(b)) return html`<div class="ok-win__body gui-win__body gui-sheet"><${Card} b=${b} level="l" /></div>`;
   const d = details.value[b.id];
   const view = d && d.data && viewOf(d.type);
   if (view) {
-    return html`<div class="ok-win__body gui-win__body is-view"><${Layout} doc=${d.ui} panes=${view.panes(b.id, d.data)} /></div>`;
+    return html`<div class=${cls("ok-win__body gui-win__body is-view", { "kit-paper": PAPER.has(b.type) })} data-type=${b.type}>
+      <${Layout} doc=${d.ui} panes=${view.panes(b.id, d.data)} /></div>`;
   }
   return html`<div class="ok-win__body gui-win__body">
     ${b.status_plain.length > 0 ? html`<section class="gui-section">

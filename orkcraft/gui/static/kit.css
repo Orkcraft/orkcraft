@@ -216,3 +216,24 @@
   border-image-source: image-set(url("/ds/sprites/v4/ui/btn-wood-hover.png") 1x, url("/ds/sprites/v4/ui/btn-wood-hover@2x.png") 2x); }
 [data-look="camp"] .gui-portrait__toggle.is-on { color: var(--kit-ink); box-shadow: none;
   border-image-source: image-set(url("/ds/sprites/v4/ui/btn-teal-down.png") 1x, url("/ds/sprites/v4/ui/btn-teal-down@2x.png") 2x); }
+
+/* a building's Info on parchment (the PM, after step 3): the panel's ground is parchment while the Info is open; its
+   parts are framed by an engraved line, their headers in the kit's heading (sentence case, as the plates); labels,
+   tabs and small actions keep their words' own case. Terminals stay dark wells (their own colours). */
+[data-look="camp"] .gui-panel > .ok-win__frame:has(> .gui-info-tab), [data-look="camp"] .gui-panel > .ok-win__frame:has(> .kit-paper) {
+  background: var(--parchment) image-set(url("/ds/sprites/v4/ui/parchment.png") 1x, url("/ds/sprites/v4/ui/parchment@2x.png") 2x) repeat;
+  background-clip: padding-box; }
+[data-look="camp"] .kit-paper { --ok-case: none; --ok-track: 0; }
+/* the question over a building's view: a signal, so on the dark plate in its own yellow, whatever the ground */
+[data-look="camp"] .gui-panel > .ok-win__frame > .gui-alert { background: var(--chip); color: var(--signal-ask); margin: 0 0 6px;
+  box-shadow: inset 0 0 0 1px var(--art-outline), inset 0 0 0 2px color-mix(in srgb, var(--chip-ink) 25%, transparent); }
+[data-look="camp"] .gui-info-tab .gui-info-part { background: color-mix(in srgb, var(--parchment) 60%, transparent); border: 0;
+  box-shadow: inset 0 0 0 2px var(--kit-parchment-rule), inset 2px 2px 0 2px color-mix(in srgb, var(--kit-parchment-deep) 70%, transparent); border-radius: 0; }
+[data-look="camp"] .gui-info-tab .gui-info-part.is-ork { box-shadow: inset 0 0 0 2px var(--kit-parchment-rule); }
+[data-look="camp"] .gui-info-tab .gui-info-part__label { display: flex; align-items: center; gap: 8px; font: var(--type-kit-heading);
+  letter-spacing: 0; text-transform: none; color: var(--parchment-ink); }
+[data-look="camp"] .gui-info-tab .gui-info-part__label::after { content: ""; flex: 1; height: 2px; background: var(--kit-parchment-rule);
+  box-shadow: 0 2px 0 #f6efdc; }
+[data-look="camp"] .gui-info-tab .gui-section > h3 { font: var(--type-kit-heading); letter-spacing: 0; text-transform: none; color: var(--parchment-ink); }
+[data-look="camp"] .gui-info__v3 { flex: none; image-rendering: pixelated; image-rendering: crisp-edges; }
+[data-look="camp"] .gui-info__head { padding-top: 4px; }

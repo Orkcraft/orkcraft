@@ -120,6 +120,11 @@
   --frame: var(--kit-wood-light); --frame-strong: var(--kit-wood); --hut-frame: var(--kit-wood); --frame-focus: var(--accent-teal);
   --selection: color-mix(in srgb, var(--accent-teal) 22%, var(--parchment)); --action: var(--accent-teal); --on-action: var(--kit-ink);
   --success: #2d6a2b; --danger: #9e2f1c; --warning: #7a5f08; --info: #2b5a86; --meter: var(--kit-wood-light);
+  --alert: #7a5f08; --alert-hot: #9e2f1c;
+  --mark-yellow: #7a5f08; --mark-green: #2d6a2b; --mark-blue: #2b5a86; --mark-red: #9e2f1c; --mark-purple: #6b3d8c;
+  --pr-merged: #6b3d8c; --tier-elder: #6b3d8c; --tier-warrior: #9e2f1c; --tier-laborer: #6b5440;
+  --unit-active: #7c5339; --unit-alert: #9e2f1c; --quiet-ink: #6b3d8c; --road: var(--kit-wood-light); --road-selected: var(--accent-teal);
+  --sticky-yellow: #efe2a8; --sticky-green: #d3e4c2; --sticky-blue: #cadbe6; --sticky-red: #efcfc5; --sticky-purple: #ddd1ea;
   --bevel-hi: #f6efdc; --bevel-lo: var(--kit-parchment-rule);
   --bevel-raised: inset 1px 1px 0 #f6efdc, inset -1px -1px 0 var(--kit-parchment-rule);
   --bevel-sunken: inset 1px 1px 0 var(--kit-parchment-rule), inset -1px -1px 0 #f6efdc;
@@ -129,6 +134,9 @@
   border-image: image-set(url("sprites/v4/ui/well.png") 1x, url("sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat; }
 [data-look="camp"] .kit-paper .ok-input:focus { outline: 2px solid var(--accent-teal); outline-offset: 0; }
 [data-look="camp"] .kit-paper .ok-input::placeholder { color: #8a7458; }
+/* a section's heading on parchment is the kit's heading in sentence case (the PM: caps read loud), a label keeps its case */
+[data-look="camp"] .kit-paper .ok-font-heading { font: var(--type-kit-heading); letter-spacing: 0; text-transform: none; color: var(--parchment-ink); }
+[data-look="camp"] .kit-paper .ok-font-label { text-transform: none; letter-spacing: 0; }
 
 /* the herald's notice (design-system-v3 §4f, v4 §2): parchment in the thin frame, up to 360 px, opening upwards from
    its building on the back wall with a tail pointing down at it; its title in the pixel face, its details in the
@@ -168,3 +176,8 @@
   background: image-set(url("sprites/v4/ui/notice-tail.png") 1x, url("sprites/v4/ui/notice-tail@2x.png") 2x) 0 0 / 14px 8px no-repeat; image-rendering: pixelated; }
 [data-look="camp"] .kit-notice-chip:hover { background: #f6efdc; }
 [data-look="camp"] .kit-notice-chip:focus-visible { outline: 2px solid var(--parchment-ink); box-shadow: 0 0 0 4px var(--kit-ink); }
+/* code, logs and terminals stay dark wells inside the parchment (code reads better on dark; the PM) */
+[data-look="camp"] .kit-paper pre, [data-look="camp"] .kit-paper .gui-term { background: var(--chip); color: var(--chip-ink);
+  box-shadow: inset 0 0 0 2px var(--art-outline), inset 0 0 0 3px var(--kit-parchment-rule); --ink: var(--chip-ink);
+  --ink-muted: color-mix(in srgb, var(--chip-ink) 70%, var(--chip)); }
+[data-look="camp"] .kit-paper pre { padding: 8px 10px; }

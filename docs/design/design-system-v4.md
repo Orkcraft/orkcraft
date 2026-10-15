@@ -159,7 +159,8 @@ its words, and gains the kit in Camp by `[data-look="camp"]` rules in one sheet,
 | **The command bar** `.gui-warchief__bar` (js/warchief.js) | `bar` round parchment (`.kit-paper`); the Workchief's face on a dark square; Build, Answers (n), Improve, Open and the quick actions are the kit's buttons; the input a `well` on parchment in Nunito |
 | the panels over it `.gui-warchief__over` (the Workchief's thread, Build, Improve, a set-up, **the quest log**) | `frame-thin` on parchment (`.kit-paper`); their text stays Nunito |
 | every `.ok-btn` in Camp | the kit's button pieces (`design-system/kit.css`): wood; `.primary` teal; `.is-on` / `aria-pressed="true"` pressed in teal; disabled flat parchment; `kit-button` face, no upper case |
-| **The building panel** `.gui-panel` with `.ok-win` (js/windows.js), its tabs Work/Card, Info and the documents | the panel on `frame` (caps); its name on a `plate` riding the frame's top edge; **Work and Info become icon tabs** hanging off the panel's left side (`tab`, `-on` for the open one; `data-tab` on each, the word kept as its text, tooltip and accessible name); the documents' tabs stay in the bar as small wooden tabs; More, the whole town and close are small square wooden buttons. **Its inside keeps the building's own view on the dark panel** (§8). |
+| **A building's insides** (the PM, after step 3): its Info (`.gui-info-tab`, every type) and its Work view (`js/windows.js` `PAPER`: every building type, checked one by one, most-used first) | on parchment: `.kit-paper` on the view's body remaps the colour roles (ink, muted, ✓ ✗ ⚠, the signal's yellow as a readable amber, the colour marks, tiers, sticky-note fills) so each view's own markup reads dark on cream; the panel's ground turns parchment with it; a part of the Info is framed by an engraved line, **its header the kit's heading in sentence case** (and every `.ok-font-heading` on parchment); labels keep their words' case; **code, JSON and terminals stay dark wells**; the question over a view sits on the dark plate in its own yellow; the Info's picture is **the building's v3 sprite** (the depot for the Agent pool), halved when larger than its room |
+| **The building panel** `.gui-panel` with `.ok-win` (js/windows.js), its tabs Work/Card, Info and the documents | the panel on `frame` (caps); its name on a `plate` riding the frame's top edge; **Work and Info become icon tabs** hanging off the panel's left side (`tab`, `-on` for the open one; `data-tab` on each, the word kept as its text, tooltip and accessible name); the documents' tabs stay in the bar as small wooden tabs; More, the whole town and close are small square wooden buttons. Its inside is parchment (the row above). |
 | the scroll `.gui-camp__scroll` and its quick actions (js/camp/steward.js) | the head stays its painted sprite; the sheet on `frame-thin` and the `parchment` tile; the title in `kit-heading`; the actions the kit's buttons |
 | **The ork's console sheet** `.gui-orkconsole` (js/slots.js, js/orkconsole.js) and the waybill / a steward's console `.gui-camp__waybill` | parchment in `frame`, the colour roles remapped as in `.kit-paper`; its head in `kit-heading`; its tabs small wooden tabs; the texts in Nunito and JetBrains Mono, an xterm keeps its own dark |
 | **The Items panel** `.gui-items`, its toggle (js/camp/items.js) | the toggle the kit's button; the panel parchment in `frame`; each picture in a `slot` (`-hover` under the pointer); the notes and the hint Nunito |
@@ -182,12 +183,14 @@ its words, and gains the kit in Camp by `[data-look="camp"]` rules in one sheet,
 3. Camp's real chrome, in §5's order (done): `orkcraft/gui/static/kit.css` after the others, the kit's classes added to
    the markup where a piece needed one (the top bar's groups, the toasts, the command bar and its panels, the panel's
    `data-tab`); the browser tests stay green. Shots at 1440 × 900, density 2, in `img/v4/step3-*.png`.
+4. A building's insides on parchment (the PM, after step 3; done): the Info of every type, then each Work view, the
+   most-used first. Shots: [insides-info.png](img/v4/insides-info.png), [insides-work-1.png](img/v4/insides-work-1.png)
+   (Agent pool, Review gate, Research, Calendar, External listeners, Wiki), [-2](img/v4/insides-work-2.png) (Drop file
+   here, Transformer, File tree, Router, Sound alerts, Review board), [-3](img/v4/insides-work-3.png) (Audio briefing,
+   Test bench, UX bench, Branches & PRs, Metrics, Publisher, Script). The Task board's Work is its inside (§5).
 
 ## 7. Not changed, on purpose
 
-- **The insides of the building views** (the 19 types' Work and Info, terminals, boards) stay on their dark panel:
-  they were drawn for it, and a token remap onto parchment needs a look at each type. The frame, the plate and the tabs
-  round them are v4's. Moving a view onto parchment is one line per type (the `.kit-paper` class) once it is checked.
 - **The map's chips, names and badges'** plates (v3 layers 8–9; their face is Jersey 15 now), the Workchief's speech
   bubble, the phone app (`gui/static/pwa/`).
 - **Office**, and the narrow window (under 641 px) keep their drawing.

@@ -19,6 +19,8 @@ import { Dialog } from "./dialog.js";
 import { OrdersDialog, ModelDialog, RedesignDialog, Field, Select } from "./acts.js";
 import { StewardTitle, StewardWindow, StewardModels, BuildingSettings } from "./steward.js";
 import { OrkHead, HutSprite, activeBiome, Scheme, TierMark, OrkFace, orkKey } from "./icons.js";
+import { V3, sizeOf, loadKit } from "./camp/sprites.js";
+import { spriteOf } from "./camp/layout.js";
 
 const infos = signal({});          // "<building>" or "<building>|<ork ref>" → what `info` said
 const asked = new Map();           // the same key → when it was asked last
@@ -153,6 +155,19 @@ function About({ text }) {
       onClick=${() => setAll(!all)}>${say(all ? "less" : "more")}</button>`}</p>`;
 }
 
+/** The building as the camp draws it (design-system-v4.md §5): its v3 sprite in Camp, halved when it is larger than
+ *  the head's room (whole steps only, never resampled otherwise); today's small hut where no v3 sprite is cut, and in
+ *  Office. */
+function BuildingPicture({ b, i }) {
+  const camp = document.documentElement.dataset.look === "camp";
+  if (camp) loadKit();
+  const file = camp ? spriteOf(b) : null;
+  const size = file && sizeOf(file);
+  if (!size) return html`<${HutSprite} type=${b.type} biome=${activeBiome()} goal=${i.goal} level=${i.level || 0} />`;
+  const k = size[0] > 200 || size[1] > 128 ? 0.5 : 1;
+  return html`<img class="gui-info__v3" src=${V3 + file} width=${size[0] * k} height=${size[1] * k} alt="" draggable="false" />`;
+}
+
 function BuildingInfo({ b, i, redo, open }) {
   const run = (name, args = {}) => command(name, { id: b.id, ...args }).then(redo, () => {});
   const w = i.week;
@@ -160,7 +175,7 @@ function BuildingInfo({ b, i, redo, open }) {
   const renown = `Renown: ${i.level ? ROMAN[i.level] : "none yet"}`;
   return html`<section class="gui-info">
     <div class="gui-info__head">
-      <${HutSprite} type=${b.type} biome=${activeBiome()} goal=${i.goal} level=${i.level || 0} />
+      <${BuildingPicture} b=${b} i=${i} />
       <div class="gui-info__renown">
         <span class="ok-font-body">${i.level_mark ? html`<b>${i.level_mark}</b> · ${say(i.goal_title)}` : say(`${renown} · ${i.goal_title}`)}</span>
         ${i.next && html`<span class="ok-font-status ok-tone-muted">${say(i.next)}</span>`}
@@ -407,7 +422,7 @@ export function InfoTab({ b }) {
   const page = infoPage(b.id);
   const mod = page && b.page ? typeModule(b.type) : null;
   if (mod && mod.infoPage) {
-    return html`<div class="ok-win__body gui-win__body gui-info-tab">${mod.infoPage(b, page)}</div>`;
+    return html`<div class="ok-win__body gui-win__body gui-info-tab kit-paper">${mod.infoPage(b, page)}</div>`;
   }
   return html`<${UsualInfo} b=${b} />`;
 }
@@ -426,7 +441,7 @@ function UsualInfo({ b }) {
   const [dialog, open, close] = useDialog(b.id);
   const redo = () => ask(b.id, null, true);
   const t = town.value;
-  return html`<div class="ok-win__body gui-win__body gui-info-tab">
+  return html`<div class="ok-win__body gui-win__body gui-info-tab kit-paper">
     ${!i ? html`<p class="ok-font-status ok-tone-muted">${say("Looking…")}</p>` : html`
       <div class="gui-info-part is-building">
         <p class="gui-info-part__label ok-font-label">${say("The building")}</p>

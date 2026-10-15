@@ -534,7 +534,11 @@ def test_v4_parchment_content_reads():
     block = css[css.index('[data-look="camp"] .kit-paper {'):]
     block = block[:block.index("}")]
     camp = {t["name"]: t["value"]["camp"] for t in tokens.system()["color"]["tokens"]}
-    for role in ("ink-muted", "success", "danger", "warning", "info"):
+    for role in ("ink-muted", "success", "danger", "warning", "info", "alert", "mark-yellow", "mark-green", "mark-blue",
+                 "mark-red", "mark-purple", "tier-elder", "tier-warrior", "tier-laborer"):
         value = re.search(rf"--{role}: (#[0-9a-f]{{6}})", block).group(1)
         assert _contrast(value, camp["parchment"]) >= 4.5, role
     assert _contrast(re.search(r"--ink-comment: (#[0-9a-f]{6})", block).group(1), camp["parchment"]) >= 3
+    for sticky in ("yellow", "green", "blue", "red", "purple"):            # a card's fill under parchment ink
+        fill = re.search(rf"--sticky-{sticky}: (#[0-9a-f]{{6}})", block).group(1)
+        assert _contrast(camp["parchment-ink"], fill) >= 7, sticky
