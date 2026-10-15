@@ -724,3 +724,28 @@ its button under the portrait) · **The Workchief's council** (the Town Hall's p
 *Town settings*. Code keeps the `town_hall` type and its orks (CLAUDE.md: identifiers stay); Office keeps its card,
 since the words do not change between looks. Spec 13.
 
+**The camp's lines, final shape (the owner, same day; supersedes the bands above where they differ).**
+
+```
+ wall │ lookout · Drop file here · Calendar · Metrics …………………… catapult ▸ (over the wall)
+ 0.5  │ [Task board]═siding        (Wiki on the grass)         [Review gate]+home
+      │   ║ ◂══════════════ line 0.5: sent back, to the board ═══════════ ║
+      │   ▼ left column down                                 right column up ▲
+ 1    │ ══▶═ depot · Review board · Transformer (the tutorial's buildings) ══▶═
+ 2+   │ ══▶═ the person's quarter (each line laid by a click on its semaphore) ══▶═
+```
+
+1. **Line 0, the wall:** the lookout (in), Drop file here, the Calendar, Metrics, and the catapult at the right (out).
+2. **Line 0.5, the person's two touchpoints:** the **Task board** at the left (work goes in) and the **Review gate
+   with the home** at the right (the person judges); the **Wiki** on the grass between them, its footpaths down to
+   its readers on line 1.
+3. **Line 1, the processing the missions build:** the depot (Agent pool), the Review board (the debates), the
+   Transformer when the missions bring it.
+4. **Lines 2 and on, the person's quarter:** a new line is laid by a click on the semaphore at the left column's
+   junction ("Lay a new line"), not by a building; the Router keeps its own job (routing rules).
+5. **One way round, clockwise from the board:** down the left column, east along the processing lines, up the right
+   column to the Review gate; passed → the catapult; **sent back → west along line 0.5 to the Task board**, which is
+   the return line. *PM's proposal against "the last line carries the carts back": with the gate at the top right,
+   a return line at the bottom would make the right column run both ways; the return along line 0.5 keeps every
+   track one-way and shows a rework going back to the dispatcher. To confirm with the owner.*
+
