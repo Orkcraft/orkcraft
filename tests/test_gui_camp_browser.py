@@ -465,3 +465,24 @@ def test_a_building_that_takes_an_items_cell_sends_it_back_with_a_line_in_the_pa
     pg.wait_for_function("() => import('/static/js/link.js').then(m => !m.town.value.growth.items.notes.length)", timeout=WAIT_MS)
     for bid in (pool, bench):
         _call(pg, "town.demolish", {"id": bid})
+
+
+def test_the_camps_bottom_line_stands_above_the_quest_log(camp_look):
+    """A panel that stays over the Warchief's line (the quest log, a setup: js/inset.js) is the camp's bottom inset:
+    the work is centred above it, and a camp taller than what is left shows its last line, where the carts run."""
+    pg = camp_look
+    _clear(pg)
+    ids = [_call(pg, "town.build", {"type": "forge"}) for _ in range(10)]
+    pg.keyboard.press("Escape")
+    for bid in ids:
+        _building(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
+    inset = "import('/static/js/inset.js')"
+    lowest = "() => Math.max(...[...document.querySelectorAll('.gui-camp__layer.is-track img, .gui-camp__building img')].map(e => e.getBoundingClientRect().bottom))"
+    try:
+        pg.evaluate(f"() => {inset}.then(m => {{ m.coverTop.value = 420; }})")
+        pg.wait_for_function(f"() => ({lowest})() <= 420", timeout=WAIT_MS)
+    finally:
+        pg.evaluate(f"() => {inset}.then(m => {{ m.coverTop.value = null; }})")
+    pg.wait_for_function(f"() => ({lowest})() > 420", timeout=WAIT_MS)      # no panel: the work is centred again
+    for bid in ids:
+        _call(pg, "town.demolish", {"id": bid})

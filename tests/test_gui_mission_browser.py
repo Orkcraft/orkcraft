@@ -41,6 +41,13 @@ def _src(pg, bid: str) -> str:
     return _building(pg, bid).locator("img").first.get_attribute("src") or ""
 
 
+def _above_the_log(pg, sel: str = ".gui-camp__building img, .gui-camp__siding img") -> None:
+    """All that `sel` shows stands above the quest log, never behind it (js/inset.js)."""
+    pg.wait_for_function("""s => { const log = document.querySelector('.gui-warchief__setup'), all = [...document.querySelectorAll(s)];
+        return log && all.length && all.every((a) => a.getBoundingClientRect().bottom <= log.getBoundingClientRect().top); }""",
+                         arg=sel, timeout=WAIT_MS)
+
+
 def test_the_drill_waits_on_the_siding_the_barrier_lifts_and_the_drill_rolls_on(camp_look, gui, no_model):
     server, _ = gui
     pg = camp_look
@@ -56,6 +63,7 @@ def test_the_drill_waits_on_the_siding_the_barrier_lifts_and_the_drill_rolls_on(
     siding = pg.locator(f'.gui-camp__siding[data-id="{board}"] img')
     siding.first.wait_for(state="attached", timeout=WAIT_MS)
     assert siding.count() == 1 and _src(pg, board).endswith("/buildings/fields.png")
+    _above_the_log(pg)                                                  # the camp's bottom inset is the quest log's
     _shot(pg, "1-siding")
 
     pg.locator(".gui-warchief__setup").get_by_role("button", name="Set up the Agent pool").click()   # quest 2
@@ -77,6 +85,7 @@ def test_the_drill_waits_on_the_siding_the_barrier_lifts_and_the_drill_rolls_on(
     gate = built()["gate"]
     pg.wait_for_function(f"() => (document.querySelector('.gui-camp__building[data-id=\"{gate}\"] img') || {{}}).src"
                          f"?.endsWith('/buildings/loot_vault.png')", timeout=WAIT_MS)   # the barrier down
+    _above_the_log(pg)
     pg.wait_for_timeout(1500)
     _shot(pg, "2-barrier-down")
 

@@ -25,6 +25,7 @@ import { showConsole } from "../orkconsole.js";
 import { Waybill, waybillOf } from "./waybill.js";
 import { StewardConsole, stewardOf, openStewardConsole } from "./stewardconsole.js";
 import { portraitOpen } from "../portrait.js";
+import { coverTop } from "../inset.js";
 import { settingsOpen } from "../settings.js";
 import { openMenu } from "../menu.js";
 import { Placed, Inventory } from "./items.js";
@@ -303,16 +304,20 @@ export function CampTown({ buildings, roads }) {
   const L = k ? laid.L : null;
   const panelW = panelShown() && !opened.value.full ? panelWidth.value : 0;
 
-  // the default view: the work in the middle of the part of the window the panel leaves; then the drag's offset.
-  // Mission 1 (js/mission.js): the view follows the drill at the Review gate's barrier, then from the gate to where it
-  // leaves (the finale, js/camp/carts.js), above the quest log
+  // the default view: the work in the middle of the part of the window the panel and the quest log leave (js/inset.js:
+  // the camp's bottom inset is the quest log's height); then the drag's offset. Mission 1 (js/mission.js): the view
+  // follows the drill at the Review gate's barrier, then from the gate to where it leaves (the finale, js/camp/carts.js)
   const m = snapshot.value && snapshot.value.mission, finale = m && m.finale;
   const fg = L && finale && L.buildings[finale.gate], fo = fg && (L.buildings[finale.out] ? L.buildings[finale.out].stop : L.buffer);
   const lift = L && !fg && m && m.quest === "gate" && m.press && L.buildings[m.built];
   const focus = fg ? { x: (fg.cx + fo.x) / 2, y: (fg.y + fo.y) / 2 } : lift ? { x: lift.cx, y: lift.y + lift.h / 2 } : null;
   const seen = Math.max(view.w - panelW, 320);
+  const box = ref.current && coverTop.value !== null ? ref.current.getBoundingClientRect() : null;
+  const tall = Math.max(view.h - (box ? Math.max(0, box.bottom - coverTop.value) : 0), 240);
   const ox = !L ? 0 : Math.round(seen / 2 - (focus ? focus.x : L.work.x + L.work.w / 2) + pan.value.x);
-  const oy = !L ? 0 : Math.round((focus ? view.h * 0.4 - focus.y : view.h / 2 - (L.work.y + L.work.h / 2)) + pan.value.y);
+  // covered, a camp taller than what is left shows its last line (where the carts run) above the panel, the wall's top cut
+  const low = !L || focus || !box || L.work.h <= tall ? null : L.work.y + L.work.h - tall + 8;
+  const oy = !L ? 0 : Math.round((low !== null ? -low : tall / 2 - (focus ? focus.y : L.work.y + L.work.h / 2)) + pan.value.y);
 
   const down = (e) => {
     if (e.button !== 0 || placing.value) return;

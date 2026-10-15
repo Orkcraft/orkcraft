@@ -28,6 +28,7 @@ import { html, cls } from "./html.js";
 import { act, command, details, town, say, toast } from "./link.js";
 import { opened, openBuilding, selected } from "./windows.js";
 import { projectFor } from "./project.js";
+import { coverTop } from "./inset.js";
 import { historyFor } from "./history.js";
 import { building as buildOpen, laying, demolishing, raised, settingUp, endSetup, BuildRow, buildEnter } from "./build.js";
 import { framing } from "./frame.js";
@@ -447,6 +448,7 @@ export function WarchiefLine() {
   const [picking, setPicking] = useState(false);  // Improve's days, over the bar
   const [back, setBack] = useState(-1);          // where ↑ is in the history
   const root = useRef(null);
+  const cover = useRef(null);
   const data = hall();
   const b = t.buildings.find((x) => x.id === HALL);
   const chips = l.about.map((id) => t.buildings.find((x) => x.id === id)).filter(Boolean);
@@ -588,6 +590,22 @@ export function WarchiefLine() {
       if (c) { e.preventDefault(); set(`/${c.word} `); }
     }
   }
+
+  // the quest log or a setup that stays over the line: its top is the town's bottom edge (js/cover.js)
+  useEffect(() => {
+    const el = root.current && root.current.querySelector(".gui-warchief__setup");
+    if (cover.current && cover.current.el === el) return;
+    if (cover.current) cover.current.stop();
+    cover.current = null;
+    if (!el) { coverTop.value = null; return; }
+    const set = () => { coverTop.value = Math.round(el.getBoundingClientRect().top); };
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    window.addEventListener("resize", set);
+    set();
+    cover.current = { el, stop: () => { ro.disconnect(); window.removeEventListener("resize", set); } };
+  });
+  useEffect(() => () => { if (cover.current) cover.current.stop(); coverTop.value = null; }, []);
 
   if (!b) return null;
   const name = data ? data.warchief : say("Warchief");
