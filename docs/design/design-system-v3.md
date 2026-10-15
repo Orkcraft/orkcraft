@@ -641,6 +641,15 @@ than a chip, and a bubble over a building in the rows covers its neighbours. So:
 
 **Priority: P1**, after V4's chrome and LOOP's current queue; the notice is a V4 kit piece, the placement is LOOP's.
 
+**Built (LOOP, 15 October): the placement.**
+- **The Calendar.** The first one (`layout.js` `HERALD`) stands on the wall walk right of the lookout. Its stop is on
+  line 1, reached by a spur of straights (drawn, not a way for carts) and a T on the line. The top row starts east of
+  it; a second Calendar stands in the rows.
+- **The band.** The default view's work area reaches its height over the wall plus a band of 40 art px for its
+  notices. At 1512 × 982 that pushes the return line to the command bar's edge: the band and a fully visible return
+  line do not both fit at ×1.
+- Shots: `img/loop/herald-1512|1470.jpg`.
+
 ## 5. Signals win by value
 
 The grey test of F1 (v3-prompts §5.2) showed the yellow flag turning into a white flag and the ❓ smaller than the

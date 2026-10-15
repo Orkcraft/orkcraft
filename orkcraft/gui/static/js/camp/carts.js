@@ -125,6 +125,7 @@ function standOf(p, B, T) {
   if (p.type === "loot" && p.spur) return { x: p.cx, y: p.y + p.h * 0.69, dx: 0 };
   if (p.depot) return { x: p.bays[0], y: p.rail + T * 0.3, dx: p.bays[1] - p.bays[0] };          // in its bays
   if (p.spur) return { x: p.cx, y: p.feet - T * 0.45, dx: 0 };
+  if (p.wall === "herald") return { x: p.cx, y: p.stop.y - T * 0.55, dx: 0 };      // on its spur, off the line
   if (p.wall === "out") return { x: p.stop.x - T * 0.2, y: p.stop.y + T * 0.3, dx: -44 * B };
   if (p.waitAt) return { x: p.waitAt.x, y: p.waitAt.y - 2 * B, dx: -12 * B };     // on its path's end, off the line
   return { x: p.stop.x, y: p.stop.y + T * 0.3, dx: -12 * B };

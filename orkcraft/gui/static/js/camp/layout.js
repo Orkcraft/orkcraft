@@ -42,6 +42,8 @@ export const DEFAULT_STEP = 1;
 export const phoneStep = (steps) => Math.max(0, steps.findIndex((s) => s.b === 1 && s.s === 1));
 
 export const WAY_IN = "watchtower";          // stands in the back wall; the track comes in at its foot
+export const HERALD = "war_drum";            // the Calendar: on the back wall walk, right of the lookout (§4f)
+const HERALD_TILE = 2;                       // its spur's tile along line 1, from the left column
 export const WAY_OUT = "catapult";           // stands against the right wall at the line's buffer stop
 export const SIDING = "fields";              // the Task board: the dispatcher's booth and its siding
 export const DEPOT = "barracks";             // the Agent pool: the depot, a shed on its line, the track through it (§4d)
@@ -146,7 +148,9 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   const sorted = order(buildings, roads);
   const tower = sorted.find((b) => b.type === WAY_IN) || null;
   const cata = [...sorted].reverse().find((b) => b.type === WAY_OUT) || null;
-  const inRows = sorted.filter((b) => b !== tower && b !== cata);
+  // the heralds stand on the back wall (§4f): the lookout at the way in, the first Calendar on the wall walk beside it
+  const herald = sorted.find((b) => b.type === HERALD) || null;
+  const inRows = sorted.filter((b) => b !== tower && b !== cata && b !== herald);
   // a service never placed beside its busiest reader, the two ends of a road back as neighbours (§4c rules 1–2)
   // a building's room along its row in art px, the zoom aside: its sprite, a gap, the Task board's siding, the home
   const homeArt = home && size(home) ? size(home)[0] + GAP : 0;
@@ -189,7 +193,9 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
       lineTop = Math.round(prev + T + 4 * B + band);                     // as close as the row allows (decisions §17.4)
     }
     out.lines.push(lineTop);
-    let x = colL + T + GAP * B, free = colL + T;                       // the next box's x; the line's front free from
+    // the herald's spur comes down to line 1 at its tile: the top row starts east of it
+    const past = r === 0 && herald ? colL + (HERALD_TILE + 1) * T + GAP * B : 0;
+    let x = Math.max(colL + T + GAP * B, past), free = Math.max(colL + T, past);   // the next box's x; the line's front free from
     for (const { b, d, spur, own, depot } of ds) {
       const w = Math.max(d.w, PATH_W * B);
       let cx;
@@ -246,6 +252,18 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
 
   // the two buildings in the wall
   const wallX = (cd ? x + T - 12 * B + cd.w : x + T + 24 * B) + 8 * B;
+  if (herald) {                                                         // on the wall walk, its spur down to line 1
+    const hd = dims(herald), cx = colL + HERALD_TILE * T + T / 2, feet = wallY + 4 * B;
+    out.buildings[herald.id] = { id: herald.id, type: herald.type, file: hd.file, x: Math.round(cx - hd.w / 2), y: Math.round(feet - hd.h),
+                                 w: hd.w, h: hd.h, cx, feet, row: -1, wall: "herald", door: { x: cx, y: feet },
+                                 stop: { x: cx, y: out.lines[0] + T / 2 }, growth: { level: Math.min(Math.max(herald.level || 0, 0), 3), annex: "" } };
+    const x0 = colL + HERALD_TILE * T;
+    for (let y = Math.round(feet - 8 * B); y < out.lines[0]; y += T) {
+      out.tiles.push({ name: "straight-v", x: x0, y: Math.min(y, out.lines[0] - T), rot: 0, siding: herald.id });
+    }
+    const join = out.tiles.find((t) => !t.siding && t.x === x0 && t.y === out.lines[0]);
+    if (join) Object.assign(join, { name: "t-n", rot: 0, exits: exitsOf("t-n", 0) });   // the spur meets the line square
+  }
   if (tower) {
     const cx = colL + T / 2;
     out.buildings[tower.id] = { id: tower.id, type: tower.type, file: td.file, x: Math.round(cx - td.w / 2), y: Math.round(wallY + 8 * B - td.h),
@@ -275,7 +293,10 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
     const way = s && r && footpath(s, out.buildings[r], FOOTPATH * B);
     if (way) out.paths.push(way);
   }
-  out.work = { x: colL, y: wallY - 24 * B, w: track.xs + 2 * T - colL, h: foot - wallY + 24 * B };
+  // the work, from over the wall to the return line: with a herald, its height over the wall and a band of wilderness
+  // above it where its notices open (§4f; V4 draws them), so the default view keeps that band in sight
+  const over = herald ? out.buildings[herald.id].h + 40 * B : 24 * B;
+  out.work = { x: colL, y: wallY - over, w: track.xs + 2 * T - colL, h: foot - wallY + over };
   out.decor = decorAround(out, B);
 
   const cells = link(cellsOf(out.tiles), T);

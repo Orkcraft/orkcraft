@@ -345,8 +345,8 @@ const list = (cal) => [{ id: "board", type: "fields" }, { id: "pool", type: "lak
   { id: "y", type: "lab" }, { id: "z", type: "mill" }, { id: "q", type: "pit" }, cal, { id: "w", type: "crag" }];
 const rowsOf = (L) => { const r = {}; for (const p of Object.values(L.buildings)) (r[p.row] = r[p.row] || []).push([p.x, p.id]);
   return Object.fromEntries(Object.entries(r).map(([k, v]) => [k, v.sort((a, c) => a[0] - c[0]).map((x) => x[1])])); };
-const free = rowsOf(C.lay(list({ id: "cal", type: "war_drum" }), roads, { b: 1, s: 1 }, size));
-const kept = rowsOf(C.lay(list({ id: "cal", type: "war_drum", hut: [0.9, 0.9] }), roads, { b: 1, s: 1 }, size));
+const free = rowsOf(C.lay(list({ id: "cal", type: "gramophone" }), roads, { b: 1, s: 1 }, size));
+const kept = rowsOf(C.lay(list({ id: "cal", type: "gramophone", hut: [0.9, 0.9] }), roads, { b: 1, s: 1 }, size));
 const W = C.lay([{ id: "wiki", type: "scrolls", hut: [0.5, 0.9] }, { id: "pool", type: "forge" }, { id: "y", type: "lab" }],
                 [{ id: "r", from: "pool", to: "wiki" }], { b: 1, s: 1 }, size), wiki = W.buildings.wiki;
 console.log(JSON.stringify({ free, kept, wiki: [wiki.service, wiki.row, W.paths.filter((p) => p.service).length] }));
@@ -453,3 +453,24 @@ console.log(JSON.stringify({ n: L.decor.length, inside, way, again, green }));
 """, tmp_path)
     assert out["n"] >= 40 and out["inside"] == 0 and out["way"] == 0 and out["again"]
     assert out["green"] >= 0.4 * out["n"]                                           # trees and bushes the most
+
+
+def test_the_calendar_stands_on_the_back_wall_walk_with_a_spur_down_to_line_1(tmp_path):
+    """design-system-v3.md §4f: the first Calendar is a herald, on the wall walk right of the lookout, its stop on line 1
+    reached by a short spur (track drawn, not a way for carts); the top row starts east of it; a second Calendar stands
+    in the rows; the default view keeps a band over the wall for its notices."""
+    out = _run(TOWN + """
+B.push({ id: "cal", type: "war_drum" }, { id: "cal2", type: "war_drum" });
+const L = C.lay(B, R, { b: 1, s: 1 }, size), h = L.buildings.cal, t = L.buildings.in;
+const spur = L.tiles.filter((x) => x.siding === "cal"), join = L.tiles.find((x) => !x.siding && x.x === spur[0].x && x.y === L.lines[0]);
+const row0 = Object.values(L.buildings).filter((p) => p.row === 0);
+console.log(JSON.stringify({ h, t, wallY: L.wall.y, line: L.lines[0], spur: spur.map((x) => [x.name, x.x, x.y]), join: join && join.name,
+  firstX: Math.min(...row0.map((p) => p.x)), second: L.buildings.cal2.row, workTop: L.work.y,
+  route: L.route("cal", "pool") }));
+""", tmp_path)
+    h, t = out["h"], out["t"]
+    assert h["wall"] == "herald" and h["row"] == -1 and h["cx"] > t["cx"] and abs(h["feet"] - out["wallY"]) < 8
+    assert out["spur"] and all(n == "straight-v" for n, _, _ in out["spur"]) and out["join"] == "t-n"
+    assert h["stop"]["y"] == out["line"] + 32 and out["firstX"] > h["cx"]          # its stop on line 1; the row east
+    assert out["second"] >= 0 and out["route"]                                     # a second in the rows; it sends carts
+    assert out["workTop"] <= h["y"] - 40                                            # a band over it in the default view
