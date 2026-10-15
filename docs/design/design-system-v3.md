@@ -413,18 +413,20 @@ track. Between buildings, three kinds of link, three drawings:
 |---|---|---|
 | **flow**: the work changes hands | Task board → Agent pool → Review gate → catapult | carts on the line (§4) |
 | **return**: the answer goes back to who asked (`returns: true`, a send-back) | the Calendar → Agent pool → the brief back; the Review gate's send-back to the pool | the same cart (one id) goes **round again**: on along its line, back along the **return line**, in again at the left column to the building that asked (rules 5–7). Never backwards on a line. A frequent loop gets a siding of its own, as 1b's proving siding |
-| **service**: consulted, never passed through | the Wiki read by an Agent pool (`notes`); later the Town Hall | **no track.** It stands in the **back row** along the palisade; an ork walks the path to it with a scroll before the run and back with the excerpt: one walk per run, never one per `wiki_search` |
+| **service**: consulted, never passed through | the Wiki read by an Agent pool (`notes`); later the Town Hall | **no track and no stop.** It stands in a row beside its busiest reader; an ork walks the short path to it with a scroll before the run and back with the excerpt: one walk per run, never one per `wiki_search`. Other readers show 📖 in their ork's bubble |
 
 **Rules:**
 
-1. **The back row.** Services stand between the back wall and the upper row, with no line and no stop; the way-in
-   column and the lookout stay clear. A path runs from a service down to each building that reads it, through the
-   gaps between the upper row's buildings (a gap is one path wide, §4.8). A path to the lower row crosses line 1 at a
-   **level crossing** (planks between the rails, square to the line). Paths never run along the track.
+1. **A service beside its reader** (the owner, 15 October; the back row along the palisade was built and is taken
+   out: one building did not earn a row of its own and long paths). A service stands in a row like any building,
+   next to its busiest reader, with no stop on the line; one short footpath (16 art px, narrower than a building's)
+   joins its door to its reader's path. Readers further away get no path: their ork's bubble shows 📖 while it reads.
+   A service the person placed in Office keeps its place and gets no path. Paths never run along the track; a level
+   crossing (planks, square to the line) stays for any path that must cross one.
 2. **Neighbours.** Two buildings joined by a return road stand in the same row, at most one place apart, so the round
-   trip is short. A service stands above its busiest reader.
-3. **The person's places win.** A building the person placed in Office keeps its row and place; neighbours and the
-   back row place only buildings never placed. A far placement costs a longer trip, shown as it is (and only shown:
+   trip is short. A service stands beside its busiest reader (rule 1).
+3. **The person's places win.** A building the person placed in Office keeps its row and place; neighbours place only
+   buildings never placed. A far placement costs a longer trip, shown as it is (and only shown:
    rule 9). Later, perhaps: the Warchief says once, as a 💡 improvement, never forced, "The brief rides across the
    whole camp. Put the Calendar next to the Agent pool?"
 4. **The track is the product's, the places are the person's.** The person chooses a building's row and its order,

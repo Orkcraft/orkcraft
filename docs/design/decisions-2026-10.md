@@ -531,3 +531,12 @@ art `st-depot` by the art session. Full rules: [design-system-v3.md](design-syst
 art px from 32); grass and earth drawn from several tiles by a fixed hash, all inner corners added. P0 after the
 depot; art `g5-ground`. Rules: [design-system-v3.md](design-system-v3.md) §4e.
 
+**Later the same day (the owner):**
+- **The back row is taken out.** It was built (LOOP step 4) and showed long paths louder than the track for one
+  building. The Wiki stands beside its busiest reader with no stop and one short footpath; other readers show 📖.
+  The track bed (§4e) is what sets the track apart from the grass. Rules: design-system-v3.md §4c rule 1.
+- **The Warchief is renamed the Workchief** in everything a person reads (the town hall's ork, its line, its chat,
+  the docs, the README, the marketing drafts). Code keeps its names (`warchief`, `orc.town_hall`, files, event ids);
+  the old word stays in the glossary's `was`. It also takes the word "war" out of the product's main character
+  (Q18's care).
+
