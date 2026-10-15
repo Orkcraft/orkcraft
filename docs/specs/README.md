@@ -63,6 +63,7 @@ Run tests with: `uv run --extra gui --extra dev pytest -q <files>` (browser test
 | 12 | [the v4 kit on the remaining screens](12-v4-remaining-screens.md) (audit, then move) | before the testers | flash |
 | 05 | [release 0.3.0](05-release-0.3.0.md) | Thu 22 October | flash-low |
 | E1 | [the clean-install check](e1-clean-install.md) (the owner runs it, no agy) | Wed 21 October | — |
+| 13 | [no Town Hall in the camp; the home's menu](13-home-instead-of-town-hall.md) | before the testers | flash |
 | 06 | [three bands: the camp lays itself out](06-three-bands.md) | after Halloween | pro |
 | 07 | [the person's quarter: drag in Camp](07-quarter-drag.md) | after 06 | flash |
 | 08 | [the Wiki on the grass](08-wiki-on-grass.md) | after 06 | flash |

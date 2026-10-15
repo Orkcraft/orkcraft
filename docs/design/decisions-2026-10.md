@@ -716,3 +716,11 @@ on `main`. launch-prep.md §4's measures move to about 1 December.
 - **Row 1 (processing):** Router · Transformer · the depot · Research · Script · the benches · Review board ·
   Inspector · the Review gate (with the person's home beside it).
 
+**No Town Hall in the camp; its door is the person's home (the owner, same day).** Camp no longer draws the Town Hall
+as a building. The Workchief stays (the command bar's "Ask the Workchief…", the portrait, the line at the camp's
+foot); the hall's panel (its roles, their spend, its settings) opens from **the home's menu**, which becomes the
+person's one place: *Since your last look* · *You: profile and deeds* · **Items** (the inventory, moved here from
+its button under the portrait) · **The Workchief's council** (the Town Hall's panel) · *The charter* (once set) ·
+*Town settings*. Code keeps the `town_hall` type and its orks (CLAUDE.md: identifiers stay); Office keeps its card,
+since the words do not change between looks. Spec 13.
+
