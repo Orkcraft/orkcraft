@@ -417,3 +417,15 @@ console.log(JSON.stringify({ same: G.grassOf(5, 9) === G.grassOf(5, 9) && G.eart
     assert out["one"]["open"] == "ns"                                               # a line's tile: grass above and below
     assert out["ruts"] and out["pathsNoRuts"] == 1                                  # ruts on the bed only
     assert out["pathW"] == 24
+
+
+def test_plain_grass_dominates_tufts_one_cell_in_eight_flowers_one_in_twenty(tmp_path):
+    out = _run(f'import * as G from "{GROUND.as_uri()}";\n' + """
+const n = { plain: 0, tufts: 0, flowers: 0 };
+for (let x = 0; x < 100; x++) for (let y = 0; y < 100; y++) {
+  const v = G.grassOf(x, y); n[v.includes("tufts") ? "tufts" : v.includes("flowers") ? "flowers" : "plain"]++;
+}
+console.log(JSON.stringify(n));
+""", tmp_path)
+    assert abs(out["tufts"] / 10000 - 1 / 8) < 0.02 and abs(out["flowers"] / 10000 - 1 / 20) < 0.015
+    assert out["plain"] > 0.75 * 10000

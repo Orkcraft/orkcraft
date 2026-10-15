@@ -20,8 +20,14 @@ export function hash(gx, gy, salt = 0) {
   return (h ^ (h >>> 16)) >>> 0;
 }
 
-/** A grass cell's tile: four plain, two with tufts, one with flowers. */
-export const grassOf = (gx, gy) => GRASS[hash(gx, gy, 1) % GRASS.length];
+/** A grass cell's tile: plain grass the most (one of four), tufts about one cell in eight (one of two), flowers about
+ *  one in twenty, so the decor stays quiet (§4.9). */
+export function grassOf(gx, gy) {
+  const k = hash(gx, gy, 1) % 40, v = hash(gx, gy, 8);
+  if (k < 5) return GRASS[4 + (v % 2)];                // 5 in 40: tufts
+  if (k < 7) return GRASS[6];                          // 2 in 40: flowers
+  return GRASS[v % 4];                                 // the rest: plain
+}
 
 /** An earth cell's tile: three plain, one with stones; the track bed may also wear old ruts. */
 export const earthOf = (gx, gy, bed = false) => EARTH[hash(gx, gy, 2) % (bed ? EARTH.length : RUTS)];
