@@ -398,6 +398,25 @@ SHEETS: dict[str, dict] = {
                   "glowing teal. No gold, no yellow, no red.",
         "about": "the one class k3-stages left out: the Growth-Hack Gnome at stages 2–4",
     },
+    "g5-ground": {
+        "kind": "ground", "expect": 28, "aspect": "16:9", "refs": ["c2"],
+        "prompt": "Ground tiles seen flat from straight above, every tile exactly the same 64 × 64 square, 28 tiles in a "
+                  "strict grid of 7 columns and 4 rows with thin magenta gaps, nothing drawn across the gaps. Grass "
+                  "as saturated and bright as in the attached frame F1 (about #7cbd40); earth the paths' warm sand "
+                  "(about #e4b469); flat, few marks, so a field of them never shows a pattern. Row 1: four plain grass "
+                  "tiles, each a little different; two grass tiles with a few small tufts; one grass tile with a few "
+                  "tiny white flowers. Row 2: three plain earth tiles, each a little different; one earth tile with a "
+                  "few small stones; one earth tile with two faint old cart ruts running left to right; one earth tile "
+                  "a step darker (the bed under rails); one grass tile with an earth edge along its bottom. Row 3: "
+                  "grass meeting earth: the grass tile with earth along its top, its left, its right; then the four "
+                  "outer corners (earth in one corner quarter only: top-left, top-right, bottom-left, bottom-right). "
+                  "Row 4: the four inner corners (earth everywhere but grass in one corner quarter: top-left, "
+                  "top-right, bottom-left, bottom-right); then a band of earth one tile wide turning from left to "
+                  "down, from left to up, and a T of earth from top to bottom with a branch to the right, for the "
+                  "track's curves and junction of the attached sheet c2. The grass's edge against the earth a soft "
+                  "ragged line, the same on every tile, meeting the tile's edges at the same place.",
+        "about": "design-system-v3.md §4e: varied grass and earth, all rims and corners, the track bed's curves",
+    },
     "i1-items": {
         "kind": "building", "expect": 16, "aspect": "16:9", "refs": ["g2"],
         "prompt": "Sixteen small objects a player places on the grass of the camp, each alone, about the size of the "

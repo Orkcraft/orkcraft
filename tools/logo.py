@@ -1,30 +1,24 @@
-"""The ork mark and the Orkcraft logo, drawn from one pixel grid: SVGs, favicons and a preview.
+"""The Orkline mark and logo, drawn from the Mechanic's head (the owner, 15 October): SVGs, favicons, the README's
+logo and the phone's icons.
 
     python tools/logo.py [--out DIR]
 
-The mark is a 12×8 ork head on a plain grid: green face, pointed ears, a dark brow band for the eyes
-and two tusks. No outline, no shading, three colours, so it reads at 16 px and stays sober enough for
-the Office. Every file is built from `GRID` below; change the grid, run this again, and they all follow.
+The mark is the Mechanic of the roles (`design-system/sprites/v3/orks/roles/mechanic.png`) as it is drawn, cut above
+its shoulders (`MARK_BOX`). Out come, in `design-system/logo/` by default (the GUI serves it at `/ds/logo/`):
 
-Out come, in `design-system/logo/` by default (the GUI serves it at `/ds/logo/`):
+- `ork-mark.svg`, `ork-mark-camp.svg`, `ork-mark-light.svg`: the head, one path per colour (the art keeps its own);
+- `ork-mark-mono.svg`: one colour (`currentColor`), its darkest pixels cut out;
+- `orkcraft-dark.svg`, `orkcraft-light.svg`: the head with the word, set in Titillium Web 700 and turned into
+  outlines so it needs no font;
+- `favicon-16.png`, `favicon-32.png`, `favicon.ico`, `ork-mark-256.png`: at whole multiples, the 16 px boxed down;
 
-- `ork-mark.svg`, `ork-mark-camp.svg`, `ork-mark-light.svg`: the mark in the Office, Camp and
-  light-ground colours;
-- `ork-mark-mono.svg`: one colour (`currentColor`), eyes and tusks cut out;
-- `orkcraft-dark.svg`, `orkcraft-light.svg`: the mark with the word, set in Titillium Web 700 from
-  `design-system/fonts/` and turned into outlines so it needs no font;
-- `favicon-16.png`, `favicon-32.png`, `favicon.ico`, `ork-mark-256.png`.
+and `docs/img/logo-dark.png`, `logo-light.png` (the README's: the word in Almendra SC with its shadow) and the phone's
+`icon-192.png`, `icon-512.png`, `apple-touch-icon.png` (`orkcraft/gui/static/pwa/`).
 
-The same head is the agent everywhere in the GUI: `design-system/sprites/orks/` gets `ork.png` (the
-head's 12×8 grid, drawn at 2× (24×16) and 4× (`@2x`)) and its states with their glyph beside the head
-on a 20×8 grid (40×16): `ork-idle` eyes shut and Zz, `ork-busy` a gear, `ork-waiting` a flame on the
-crown and `!`, `ork-frozen` a snowflake, `ork-draft` a page.
-
-`python tools/logo.py --glasses` draws instead the candidates for the new mark (the ork in round glasses, the PM
-session's brief of 15 October; concepts: gen_sheets `l1-logo`): `GLASSES` below, on a 16×16 grid so the glasses read
-at 16 px, four colours (face, cap, dark, bone; the lens's glint is the cap's teal, never yellow), and one comparison
-sheet in `docs/design/img/logo/`: each at 16, 32 and 128 px on dark and light, in one colour, beside the word, in a
-browser tab, with today's mark beside them. It writes nothing else: the mark changes only once the owner picks.
+The agent's small head in the GUI is still the 12×8 grid below: `design-system/sprites/orks/` gets `ork.png` (drawn
+at 2× (24×16) and 4× (`@2x`)) and its states with their glyph beside the head on a 20×8 grid (40×16): `ork-idle` eyes
+shut and Zz, `ork-busy` a gear, `ork-waiting` a flame on the crown and `!`, `ork-frozen` a snowflake, `ork-draft` a
+page.
 
 Needs `pip install fonttools brotli pillow` (brotli reads the woff2 font).
 """
@@ -233,207 +227,123 @@ def word_path(text: str, cap: float, x: float, baseline: float) -> tuple[str, fl
 
 
 def lockup(colours: dict[str, str]) -> str:
-    """The mark and the word side by side: capitals five pixels tall, centred on the head."""
-    cap = 5 * CELL
-    baseline = (H * CELL + cap) / 2
+    """The mark and the word side by side: capitals 45 % of the head's height, centred on it."""
+    head = mark()
+    hw, hh = head.width * CELL, head.height * CELL
+    cap = 0.45 * hh
+    baseline = (hh + cap) / 2
     gap = 3 * CELL
-    d, width = word_path("Orkcraft", cap, W * CELL + gap, baseline)
-    total = W * CELL + gap + width
-    body = mark_paths(colours) + f'<path fill="{colours["word"]}" d="{d}" shape-rendering="geometricPrecision"/>'
-    return svg(round(total + 1), H * CELL, body, "Orkcraft")
+    d, width = word_path(WORD, cap, hw + gap, baseline)
+    total = hw + gap + width
+    body = mark_svg_body(head) + f'<path fill="{colours["word"]}" d="{d}" shape-rendering="geometricPrecision"/>'
+    return svg(round(total + 1), hh, body, WORD)
 
 
-def raster(colours: dict[str, str], size: int) -> Image.Image:
-    """The mark centred on a transparent square of `size` px, each grid pixel a whole number of px."""
-    k = max(1, size // W)
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    ox, oy = (size - W * k) // 2, (size - H * k) // 2
-    for y, row in enumerate(GRID):
-        for x, c in enumerate(row):
-            if c != ".":
-                rgb = tuple(int(colours[c][i:i + 2], 16) for i in (1, 3, 5))
-                img.paste(rgb + (255,), (ox + x * k, oy + y * k, ox + (x + 1) * k, oy + (y + 1) * k))
-    return img
+# --- the mark: the Mechanic's head, as drawn (the owner, 15 October) ------------------------------------------------
+# The owner chose the Mechanic of the roles (design-system/sprites/v3/orks/roles/mechanic.png) as the mark, as it is
+# drawn, cut above its shoulders. Every logo file is built from these pixels: SVGs as one path per colour, rasters at
+# whole multiples (and, under its own size, the favicon's 16 px boxed down), the README's logo, the phone's icons.
+MARK_SPRITE = ROOT / "design-system" / "sprites" / "v3" / "orks" / "roles" / "mechanic.png"
+MARK_BOX = (5, 6, 34, 30)                   # the head on the sprite, from the cap to the chin's outline
+MARK_CLEAR = [(0, 27, 12, 30), (31, 27, 40, 30)]   # the shoulders beside the chin, on the sprite, left out
+WORD = "Orkline"
+WORDMARK_FONT = ROOT / "design-system" / "fonts" / "almendra-sc-latin-400-normal.woff2"
 
 
-# --- the candidates for the new mark: the ork in round glasses (`--glasses`) -------------------------------------
-# F face, C cap, D dark (the cap's band, the glasses' frames, the pupils, the mouth), T bone (tusks, lenses),
-# g the lens's glint in the cap's teal, . nothing
-GLASSES = {
-    "a": [                                  # a flat cap, lenses of four
-        "....CCCCCCCC....",
-        "..CCCCCCCCCCCC..",
-        ".CCCCCCCCCCCCCC.",
-        ".DDDDDDDDDDDDDD.",
-        "F.FFFFFFFFFFFF.F",
-        "FFDDDDFFFFDDDDFF",
-        "FFDgTDDDDDDgTDFF",
-        ".FDTDDFFFFDTDDF.",
-        "..DDDDFFFFDDDD..",
-        "..FFFFFFFFFFFF..",
-        "..FTFFFFFFFFTF..",
-        "..FTDDDDDDDDTF..",
-        "..FFFFFFFFFFFF..",
-        "...FFFFFFFFFF...",
-        "....FFFFFFFF....",
-        "................",
-    ],
-    "b": [                                  # a ribbed beanie, lenses of five
-        "................",
-        ".....CCCCCC.....",
-        "...CCCCCCCCCC...",
-        "..CCCCCCCCCCCC..",
-        "..CDCDCDCDCDCD..",
-        "F.FFFFFFFFFFFF.F",
-        "FDDDDDFFFFDDDDDF",
-        "FDgTTDDDDDDgTTDF",
-        "FDTDTDFFFFDTDTDF",
-        "FDTTTDFFFFDTTTDF",
-        "FDDDDDFFFFDDDDDF",
-        ".FFFFFFFFFFFFFF.",
-        ".FFTFFFFFFFFTFF.",
-        ".FFTDDDDDDDDTFF.",
-        "..FFFFFFFFFFFF..",
-        "....FFFFFFFF....",
-    ],
-    "c": [                                  # the Mechanic's head (sprites/v3/orks/roles/mechanic.png) redrawn front-on:
-        "................",                 # its khaki cap and brim (c), goggles with blue lenses (L, a glint w),
-        "....CCCCCCCC....",                 # both pointed ears
-        "...CCCCCCCCCC...",
-        "..CCCCCCCCCCCC..",
-        "..cccccccccccc..",
-        "F..FFFFFFFFFF..F",
-        "FFFFFFFFFFFFFFFF",
-        ".FDDDDFFFFDDDDF.",
-        ".FDwLDDDDDDwLDF.",
-        ".FDLLDFFFFDLLDF.",
-        "..DDDDFFFFDDDD..",
-        "..FFFFFFFFFFFF..",
-        "..FTFFFFFFFFTF..",
-        "..FTDDDDDDDDTF..",
-        "...FFFFFFFFFF...",
-        ".....FFFFFF.....",
-    ],
-}
-# the Mechanic's own colours for c (its tusks bone, not the sprite's pale yellow: yellow is the question's)
-MECHANIC = {"dark": {"F": "#7a8a44", "C": "#8d7d5e", "c": "#67584a", "D": "#2a1a1c", "T": "#ece4cf", "L": "#6cc6ec",
-                     "w": "#defdff", "g": "#6cc6ec"},
-            "light": {"F": "#5f7232", "C": "#7a6a4c", "c": "#55483a", "D": "#2a1a1c", "T": "#f4efe2", "L": "#4aa8d4",
-                      "w": "#defdff", "g": "#4aa8d4"}}
-# the role sprites the owner pointed at, cut round their heads for the sheet (x0, y0, x1, y1 on the sprite)
-ROLE_HEADS = {"mechanic": (3, 4, 35, 28), "treasurer": (12, 1, 40, 23)}
-GLASSES_PALETTES = {
-    "dark": {"F": "#86c062", "C": "#3f8f88", "D": "#1a1813", "T": "#ece4cf", "g": "#3f8f88"},
-    "light": {"F": "#548c34", "C": "#2f7a74", "D": "#181c28", "T": "#f4efe2", "g": "#2f7a74"},
-}
+def mark() -> Image.Image:
+    img = Image.open(MARK_SPRITE).convert("RGBA")
+    for box in MARK_CLEAR:
+        img.paste((0, 0, 0, 0), box)
+    return img.crop(MARK_BOX)
 
 
-def _on(grid: list[str], colours: dict[str, str], size: int, ground: str | None = None) -> Image.Image:
-    """A grid centred on a square of `size` px, each grid pixel a whole number of px (never resampled)."""
-    k = max(1, size // max(len(grid), len(grid[0])))
-    bg = tuple(int(ground[i:i + 2], 16) for i in (1, 3, 5)) + (255,) if ground else (0, 0, 0, 0)
-    img = Image.new("RGBA", (size, size), bg)
-    head = grid_image(grid, colours, k)
+def mark_svg_body(img: Image.Image, mono: str | None = None) -> str:
+    """The head as SVG paths, one per colour (or, `mono`, one colour with its darkest pixels cut out)."""
+    by: dict[str, list[tuple[int, int, int]]] = {}
+    px = img.load()
+    for y in range(img.height):
+        x = 0
+        while x < img.width:
+            r, g, b, a = px[x, y]
+            if not a or (mono and 0.299 * r + 0.587 * g + 0.114 * b < 60):
+                x += 1
+                continue
+            colour = mono or f"#{r:02x}{g:02x}{b:02x}"
+            start = x
+            while x < img.width and px[x, y][3] and (mono or px[x, y][:3] == (r, g, b)) and not (
+                    mono and 0.299 * px[x, y][0] + 0.587 * px[x, y][1] + 0.114 * px[x, y][2] < 60):
+                x += 1
+            by.setdefault(colour, []).append((start, y, x - start))
+    return "".join(f'<path fill="{c}" d="' + "".join(f"M{x * CELL} {y * CELL}h{n * CELL}v{CELL}h{-n * CELL}z"
+                                                   for x, y, n in runs_) + '"/>' for c, runs_ in by.items())
+
+
+def mark_raster(size: int, ground: tuple[int, int, int, int] = (0, 0, 0, 0), fill: float = 1.0) -> Image.Image:
+    """The head centred on a square of `size` px: at the largest whole multiple that fits `fill` of it, or, smaller
+    than the head itself (the 16-px favicon), boxed down."""
+    head = mark()
+    room = int(size * fill)
+    k = room // max(head.size)
+    if k >= 1:
+        head = head.resize((head.width * k, head.height * k), Image.NEAREST)
+    else:
+        f = room / max(head.size)
+        head = head.resize((max(1, round(head.width * f)), max(1, round(head.height * f))), Image.BOX)
+    img = Image.new("RGBA", (size, size), ground)
     img.alpha_composite(head, ((size - head.width) // 2, (size - head.height) // 2))
     return img
 
 
-def glasses_mono(grid: list[str]) -> list[str]:
-    """One colour for the Office: every cell filled but the dark ones and the tusks, which are cut out."""
-    return ["".join("F" if c in "FCTg" and c != "T" else "." for c in row) for row in grid]
-
-
-def glasses_sheet(out: pathlib.Path) -> pathlib.Path:
-    """The comparison sheet: a row per mark (today's, then each candidate)."""
+def readme_logo(text: str, shadow: str, height: int = 192) -> Image.Image:
+    """The README's logo: the head at a whole multiple and the word in Almendra SC with its offset shadow, on clear."""
     import io
 
     from PIL import ImageDraw, ImageFont
-    font = TTFont(FONT)
+    font = TTFont(WORDMARK_FONT)
     font.flavor = None
     buf = io.BytesIO()
     font.save(buf)
-    word = ImageFont.truetype(io.BytesIO(buf.getvalue()), 40)
-    small = ImageFont.truetype(io.BytesIO(buf.getvalue()), 14)
-    marks = {"today": (GRID, {"dark": PALETTES["office"], "light": PALETTES["light"]})}
-    for name, grid in GLASSES.items():
-        marks[name] = (grid, MECHANIC if name == "c" else GLASSES_PALETTES)
-    DARK, LIGHT = "#1a1813", "#f4efe2"
-    row_h, W_ = 176, 1180
-    sheet = Image.new("RGBA", (W_, row_h * (len(marks) + 1) + 40), (44, 40, 34, 255))
-    draw = ImageDraw.Draw(sheet)
-    draw.text((16, 12), "16 · 32 · 128 on dark | the same on light | one colour | beside the word | in a tab",
-              font=small, fill="#ece4cf")
-    for r, (name, (grid, pal)) in enumerate(marks.items()):
-        y = 40 + r * row_h
-        draw.text((16, y + 4), name, font=small, fill="#ece4cf")
-        x = 70
-        for ground, key in ((DARK, "dark"), (LIGHT, "light")):
-            for size in (16, 32, 128):
-                tile = _on(grid, pal[key], size, ground)
-                sheet.alpha_composite(tile, (x, y + 8 + (128 - size)))
-                x += size + 8
-            x += 16
-        mono = glasses_mono(grid) if name != "today" else ["".join("F" if c == "F" else "." for c in row) for row in grid]
-        for ground, ink in ((DARK, "#ece4cf"), (LIGHT, "#1a1813")):
-            sheet.alpha_composite(_on(mono, {"F": ink}, 64, ground), (x, y + 72))
-            x += 72
-        lock = Image.new("RGBA", (250, 64), DARK)
-        lock.alpha_composite(_on(grid, pal["dark"], 64), (0, 0))
-        ImageDraw.Draw(lock).text((72, 8), "Orkline", font=word, fill="#ece4cf")
-        sheet.alpha_composite(lock, (x + 8, y + 8))
-        tab = Image.new("RGBA", (170, 32), "#dcd6c8")
-        td = ImageDraw.Draw(tab)
-        td.rectangle((0, 0, 169, 31), fill="#f4efe2", outline="#bdb6a6")
-        tab.alpha_composite(_on(grid, pal["light"], 16), (8, 8))
-        td.text((30, 8), "Orkline — Camp", font=small, fill="#1a1813")
-        sheet.alpha_composite(tab, (x + 8, y + 96))
-    y = 40 + len(marks) * row_h                    # the role sprites C comes from, as they are drawn (at 1× and 4×)
-    draw.text((16, y + 4), "roles", font=small, fill="#ece4cf")
-    x = 70
-    for name, box in ROLE_HEADS.items():
-        head = Image.open(ROOT / "design-system" / "sprites" / "v3" / "orks" / "roles" / f"{name}.png").convert("RGBA").crop(box)
-        for k in (1, 4):
-            tile = Image.new("RGBA", (head.width * k, head.height * k), DARK)
-            tile.alpha_composite(head.resize((head.width * k, head.height * k), Image.NEAREST))
-            sheet.alpha_composite(tile, (x, y + 8 + 128 - tile.height))
-            x += tile.width + 8
-        draw.text((x - head.width * 4 - 8, y + 140), name, font=small, fill="#ece4cf")
-        x += 24
-    out.mkdir(parents=True, exist_ok=True)
-    dest = out / "glasses-compare.png"
-    sheet.convert("RGB").save(dest, optimize=True)
-    for name, grid in GLASSES.items():               # each candidate alone at 128, for a closer look
-        _on(grid, (MECHANIC if name == "c" else GLASSES_PALETTES)["dark"], 128).save(out / f"glasses-{name}-128.png")
-    return dest
+    word = ImageFont.truetype(io.BytesIO(buf.getvalue()), 132)
+    head = mark()
+    k = int(height * 0.7) // head.height
+    head = head.resize((head.width * k, head.height * k), Image.NEAREST)
+    x0 = 24 + head.width + 40
+    l, t, r, b = word.getbbox(WORD)
+    img = Image.new("RGBA", (x0 + r + 32, height), (0, 0, 0, 0))
+    img.alpha_composite(head, (24, (height - head.height) // 2))
+    d = ImageDraw.Draw(img)
+    y = (height - (b - t)) // 2 - t
+    d.text((x0 + 6, y + 6), WORD, font=word, fill=shadow)
+    d.text((x0, y), WORD, font=word, fill=text)
+    return img
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", type=pathlib.Path, default=ROOT / "design-system" / "logo")
-    ap.add_argument("--glasses", action="store_true", help="only the new mark's candidates, into docs/design/img/logo/")
-    args = ap.parse_args()
-    if args.glasses:
-        print(f"wrote {glasses_sheet(ROOT / 'docs' / 'design' / 'img' / 'logo')}")
-        return
-    out = args.out
+    out = ap.parse_args().out
     out.mkdir(parents=True, exist_ok=True)
 
-    vw, vh = W * CELL, H * CELL
-    (out / "ork-mark.svg").write_text(svg(vw, vh, mark_paths(PALETTES["office"]), "Orkcraft"))
-    (out / "ork-mark-camp.svg").write_text(svg(vw, vh, mark_paths(PALETTES["camp"]), "Orkcraft"))
-    (out / "ork-mark-light.svg").write_text(svg(vw, vh, mark_paths(PALETTES["light"]), "Orkcraft"))
-    mono = f'<path fill="currentColor" d="{path("F")}"/>'
-    (out / "ork-mark-mono.svg").write_text(svg(vw, vh, mono, "Orkcraft"))
+    head = mark()
+    vw, vh = head.width * CELL, head.height * CELL
+    body = mark_svg_body(head)
+    for name in ("ork-mark.svg", "ork-mark-camp.svg", "ork-mark-light.svg"):     # the art keeps its own colours
+        (out / name).write_text(svg(vw, vh, body, WORD))
+    (out / "ork-mark-mono.svg").write_text(svg(vw, vh, mark_svg_body(head, "currentColor"), WORD))
     (out / "orkcraft-dark.svg").write_text(lockup(PALETTES["office"]))
     (out / "orkcraft-light.svg").write_text(lockup(PALETTES["light"]))
-
-    office = PALETTES["office"]
     for size in (16, 32):
-        raster(office, size).save(out / f"favicon-{size}.png")
-    raster(office, 256).save(out / "ork-mark-256.png")
-    # every size drawn on its own grid, never scaled down from the largest
-    raster(office, 48).save(out / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)],
-                            append_images=[raster(office, 16), raster(office, 32)])
+        mark_raster(size).save(out / f"favicon-{size}.png")
+    mark_raster(256).save(out / "ork-mark-256.png")
+    # every size drawn on its own, never scaled down from the largest
+    mark_raster(48).save(out / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)],
+                         append_images=[mark_raster(16), mark_raster(32)])
+    docs = ROOT / "docs" / "img"
+    readme_logo("#e8dfc6", "#000000").save(docs / "logo-dark.png")
+    readme_logo("#1d1a12", "#cdbf96").save(docs / "logo-light.png")
+    pwa = ROOT / "orkcraft" / "gui" / "static" / "pwa"
+    for name, size in (("icon-192.png", 192), ("icon-512.png", 512), ("apple-touch-icon.png", 180)):
+        mark_raster(size, (20, 20, 20, 255), 0.72).convert("RGB").save(pwa / name)
     sprites(ROOT / "design-system" / "sprites" / "orks")
     print(f"wrote {out} and the ork sprites")
 
