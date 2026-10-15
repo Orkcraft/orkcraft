@@ -490,7 +490,7 @@ def test_a_building_that_takes_an_items_cell_sends_it_back_with_a_line_in_the_pa
 
 
 def test_the_camps_bottom_line_stands_above_the_quest_log(camp_look):
-    """A panel that stays over the Warchief's line (the quest log, a setup: js/inset.js) is the camp's bottom inset:
+    """A panel that stays over the Workchief's line (the quest log, a setup: js/inset.js) is the camp's bottom inset:
     the work is centred above it, and a camp taller than what is left shows its last line, where the carts run."""
     pg = camp_look
     _clear(pg)

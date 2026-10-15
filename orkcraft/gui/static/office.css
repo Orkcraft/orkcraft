@@ -2,7 +2,7 @@
    (data-theme="office": flat panels, hairlines, the system font). Monochrome greys, light or dark as the
    system says, one accent (the Camp gold, muted) for what is selected and for focus. What says money or
    risk keeps its colour and its mark: success ✓, warning ⚠, danger ✗, a question waiting. No sprites:
-   the huts are cards with their name and status lines, the Warchief's line has no face. */
+   the huts are cards with their name and status lines, the Workchief's line has no face. */
 [data-look="office"] {
   --canvas: #161616; --terrain: #161616; --terrain-image: none;
   --panel: #1f1f1f; --panel-inset: #191919; --panel-raised: #2a2a2a;

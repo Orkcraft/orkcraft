@@ -1,7 +1,7 @@
 // 🏰 Town Hall, the town's way in (docs/design/building-views.md §3; the work is
 // core/workers/town_hall.py, the data gui/views/town_hall.py):
-//   closed  — Ask me anything, or what happens in the hall (Camp's hut; Office has the Warchief's line);
-//   Work    — the tabs Chat (the Warchief's whole chat), Hall (its orks, the audit, the proposals), Sessions
+//   closed  — Ask me anything, or what happens in the hall (Camp's hut; Office has the Workchief's line);
+//   Work    — the tabs Chat (the Workchief's whole chat), Hall (its orks, the audit, the proposals), Sessions
 //             (the War Tent, js/tent.js), Limits.
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
@@ -20,12 +20,12 @@ if (typeof document !== "undefined" && !document.querySelector(`link[href="${she
   document.head.appendChild(link);
 }
 
-/** Change, on a plan: the person goes on talking, and the Warchief asks the Town Builder again. */
+/** Change, on a plan: the person goes on talking, and the Workchief asks the Town Builder again. */
 const changePlan = () => fill("Change the plan: ");
 
 const keep = (e) => e.stopPropagation();          // a press on a control is not a press on the hut
 
-/** A question for the Warchief (Camp's hut asks it); its answer comes in the town's line and the hall's Chat. */
+/** A question for the Workchief (Camp's hut asks it); its answer comes in the town's line and the hall's Chat. */
 function askWarchief(id, text) {
   return act(id, "ask", { text }).then(() => true, () => false);
 }
@@ -47,8 +47,8 @@ function raise(type, asked = "") {
 
 // -- closed: the hut ---------------------------------------------------------------------------------
 
-/** Closed: what happens in the hall — a town order waits, the Warchief is answering, the audit found
- *  something — its count the headline and each on a line; else the field to ask the Warchief. */
+/** Closed: what happens in the hall — a town order waits, the Workchief is answering, the audit found
+ *  something — its count the headline and each on a line; else the field to ask the Workchief. */
 function HallCard({ b }) {
   const news = (b.card && b.card.news) || [];
   if (!news.length) return html`<div class="gui-hut__body-in"><div class="gui-form__row th-ask"><${AskField} id=${b.id} /></div></div>`;
@@ -70,9 +70,9 @@ export function quick(id, action) {
   return true;
 }
 
-// -- the Warchief's chat ---------------------------------------------------------------------------
+// -- the Workchief's chat ---------------------------------------------------------------------------
 
-// -- the Warchief's cards: the work it gave a specialist (core/warchief.py) ----------------------------
+// -- the Workchief's cards: the work it gave a specialist (core/warchief.py) ----------------------------
 
 const STEP = { working: "…", done: "✓", failed: "✗" };
 const HAS = { road: "Road planner", recruit: "Recruiter", keeper: "keeper" };
@@ -98,7 +98,7 @@ function PlanList({ plan }) {
   </div>`;
 }
 
-/** A card in the Warchief's chat: who has the work, what came of it, and what the person decides. */
+/** A card in the Workchief's chat: who has the work, what came of it, and what the person decides. */
 export function Card({ c }) {
   const live = c.state === "ready" || c.state === "working" || c.state === "sent";
   const btn = (label, choice, primary = false) => html`<button class=${cls("ok-btn", { primary })}
@@ -153,7 +153,7 @@ function Composer({ id, name }) {
   </div>`;
 }
 
-/** The Warchief's whole chat: the messages take the room and scroll, the newest at the bottom; the
+/** The Workchief's whole chat: the messages take the room and scroll, the newest at the bottom; the
  *  composer stays under them; New chat quiet on top. */
 function Chat({ id, data }) {
   const box = useRef(null);

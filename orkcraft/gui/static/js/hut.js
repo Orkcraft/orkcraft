@@ -146,7 +146,7 @@ export function buildingMenu(e, b) {
     ...own.map((a) => ({ label: a.label, run: a.run })),
     "-",
     freeRoads(b) && { label: "Listen to…", hint: `/road @${name}`, run: () => { laying.value = { from: null, to: b.id, among }; } },
-    { label: "Ask the Warchief about it", hint: `@${name}`, run: () => mention(b) },
+    { label: "Ask the Workchief about it", hint: `@${name}`, run: () => mention(b) },
     b.id !== CORNER && { label: b.pinned ? "Unpin to move it" : "Pin it in place",
       run: () => togglePin({ stopPropagation() {} }, b.id) },
     b.id !== CORNER && { label: b.folded ? "Unfold the card" : "Fold the card", hint: `/${b.folded ? "unfold" : "fold"} @${name}`,

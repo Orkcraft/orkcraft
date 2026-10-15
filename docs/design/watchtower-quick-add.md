@@ -47,7 +47,7 @@ people ask for: GitHub, GitLab, Gmail, Slack, Discord, Jira (with Confluence) an
 4. **Check before Add.** The last step is a real first look, live: *connected as @ann · 14 items
    seen · the next new one will be a signal*. A failure says which step to redo, in plain words.
 5. **Tokens never pass through a model.** The form posts straight to the worker; the steward and
-   the Warchief never see a token, and a token never lands in the town scroll or the project file.
+   the Workchief never see a token, and a token never lands in the town scroll or the project file.
 6. **Poll first.** Every quick-added source polls (2 min). Push (webhooks, sockets) is an upgrade
    offered later on the source's line, never a step of adding it.
 

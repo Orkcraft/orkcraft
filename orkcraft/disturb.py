@@ -1,5 +1,5 @@
 """Do not disturb (docs/design/portrait.md §4): for the person, not the orks. While it holds the Horn
-sounds nothing, the Warchief does not speak first, only error toasts show and pushes wait, but for the
+sounds nothing, the Workchief does not speak first, only error toasts show and pushes wait, but for the
 budget spent; nothing stops working. Per machine, in `settings.dnd_until`.
 
     disturb.choose(machine, "1h", now)    # off | 1h | morning | on

@@ -2,7 +2,7 @@
 
 Status: proposal 2026-10-12, the owner's ask; **being built (A5, 2026-10-14), type by type — see §7.** Priority **P1**, with the Work and Info split of
 [ork-console.md](ork-console.md) §15, and one check at **P0** (§4). Builds on
-[select-a-building.md](select-a-building.md) §7 (a building raised is set up in the Warchief's line, built for
+[select-a-building.md](select-a-building.md) §7 (a building raised is set up in the Workchief's line, built for
 External listeners), [warchief-line-and-cards.md](warchief-line-and-cards.md) §3 (place first, then set up) and §4
 (a card in three sizes, and its window).
 
@@ -50,7 +50,7 @@ A first guess at each core type's everyday job on its large card ([catalog-shelv
 ## 3. Setup: it works on defaults, and asks at most one question
 
 > **A building raised works at once on its defaults. It asks at most one question, the one with no good default, in
-> the Warchief's line. Everything else is a default, changed later in its Info.**
+> the Workchief's line. Everything else is a default, changed later in its Info.**
 
 - Every core type gets the line's setup that External listeners has
   ([select-a-building.md](select-a-building.md) §7): its one question with answers as buttons ("What should it
@@ -101,7 +101,7 @@ loading: every setting stays in the building's config as before, and its old UI 
 | type | its Work held | where it went |
 |---|---|---|
 | **Agent pool** | counters and Pause; the question strip; New task; the flow of tasks and a task opened over it (brief, diff, report, answer, files, assumptions); a tab per ork with its terminal, Take over / Hand back, its recent work; rules, the steward's ask, folder, settings, kinds of work, areas in work, decisions | counters on the large card's first line, Pause / Resume the command card's (and the card's when paused); questions on the ❓ and in the console (§7 of ork-console.md); New task and the flow with the task opened over it on the **large card**; each ork's session, terminal, Take over / Hand back, history with cost in its **console** (js/orkconsole.js); rules, folder, settings, kinds of work, areas, decisions in its **Info** |
-| **External listeners** | its chips and the feed, a message read over it, Check now, Read all, Open new, a failing source with its fix; Add source over the feed; Sources & intent (the intent, each source with Edit, Log in again, Remove, its places, the steward's ask) | the chips, the feed, the message read over it, Check now, Read all, Open new and a failing source on the **large card** (a bare building's card is drawn while grown); Add source a page of its **Info** (its ← Back), also from the card with no source and from the Warchief's setup; the intent and the sources in its **Info** |
+| **External listeners** | its chips and the feed, a message read over it, Check now, Read all, Open new, a failing source with its fix; Add source over the feed; Sources & intent (the intent, each source with Edit, Log in again, Remove, its places, the steward's ask) | the chips, the feed, the message read over it, Check now, Read all, Open new and a failing source on the **large card** (a bare building's card is drawn while grown); Add source a page of its **Info** (its ← Back), also from the card with no source and from the Workchief's setup; the intent and the sources in its **Info** |
 | **Review gate** | counters with Accept all / Accept files; Rules (the keeper's dialog); the strip of a cart that needs you; the carts and the changed files, a cart or file opened over them with its acts, edit, branch files, why it waits, its chain | everything but the rules on the **large card** (the opened cart replaces the list there; Rework, Drop and Accept all ask over the town, never inside the card); a long cart or file to the **Inspector**; the rules, read out and changed through its steward, in its **Info** |
 | **Task board** | the whole board (counters, the three parts, lanes of cards, drag between lanes, the selected card's strip, every card's window: open and edit, context, plan, join, news, delete), the note writer; When new tasks go; New note folder | the whole board on the **large card** (grown to 760 × 520, a type's `grown`), its windows asking over the town; the note writer on the card too (+ Note, the New note quick action); When new tasks go and New note folder in its **Info** |
 

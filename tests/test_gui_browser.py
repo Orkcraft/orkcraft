@@ -1,7 +1,7 @@
 """The GUI in a real browser (Chromium through Playwright): the town on a fresh project, every type of the
 catalog raised through Build and looked at — closed (its card on the town), then in the panel on the right:
 its Work, its Info, the whole town (docs/design/calm-town.md) — plus Lake's documents in the panel, the
-Warchief's line and the right click. Each must draw, and the page must log no error.
+Workchief's line and the right click. Each must draw, and the page must log no error.
 
 Skipped where Playwright or Chromium is missing; `-m browser` runs these alone, `-m "not browser"` leaves
 them out."""
@@ -90,7 +90,7 @@ def page(gui):
     pg.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
     pg.on("console", lambda m: m.type == "error" and errors.append(f"console: {m.text}"))
     pg.goto(server.url)
-    pg.wait_for_selector(".gui-warchief__face", timeout=WAIT_MS)   # Office: the Warchief's line is the hall's way in
+    pg.wait_for_selector(".gui-warchief__face", timeout=WAIT_MS)   # Office: the Workchief's line is the hall's way in
     yield pg
     pg.wait_for_timeout(300)                    # what a refresh after the last step draws
     pg.close()
@@ -200,7 +200,7 @@ def _three_ways(pg, bid: str, has_view: bool = True, workless: bool = False) -> 
 
 
 def _line(pg, text: str, enter: bool = True) -> None:
-    """Something typed into the Warchief's line."""
+    """Something typed into the Workchief's line."""
     field = pg.locator(".gui-warchief__input")
     field.click()
     field.fill(text)
@@ -219,7 +219,7 @@ def _clear(pg) -> None:
 
 def _place(pg, before: set) -> str:
     """Build's second half (docs/design/select-a-building.md §8): the ghost placed with a press, the scaffolding up
-    while the Warchief asks its setup (put off with Later), then the building stands. Its id."""
+    while the Workchief asks its setup (put off with Later), then the building stands. Its id."""
     layer = pg.locator(".gui-town__placing")
     layer.wait_for(state="visible", timeout=WAIT_MS)
     box = layer.bounding_box()
@@ -263,7 +263,7 @@ def test_the_town_hall_is_the_warchiefs_line_in_office(page):
     pg = page
     assert _hut(pg, TOWN_HALL).count() == 0                     # no hut of it on the town
     assert pg.locator(".gui-strip, .gui-status, .gui-advisor").count() == 0   # no console, no status bar
-    pg.locator(".gui-warchief__face").click()                   # the hall in the panel, on the Warchief's chat
+    pg.locator(".gui-warchief__face").click()                   # the hall in the panel, on the Workchief's chat
     _panel(pg, "Work")
     pg.locator(".gui-panel .ok-tab.is-active", has_text="Chat").wait_for(state="visible", timeout=WAIT_MS)
     _info(pg)
@@ -630,7 +630,7 @@ def test_the_right_click_gives_a_buildings_menu_and_the_maps(page):
     _panel(pg, "Info")
     pg.keyboard.press("Escape")
     _hut(pg, bid).locator(".gui-hut__title").click(button="right")
-    menu.locator(".gui-menu__item", has_text="Ask the").click()     # the Warchief's line, about it
+    menu.locator(".gui-menu__item", has_text="Ask the").click()     # the Workchief's line, about it
     pg.locator(".gui-warchief__chip", has_text="@").first.wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
     pg.locator(".gui-town").click(button="right", position={"x": 600, "y": 500})
@@ -680,7 +680,7 @@ def test_the_warchiefs_line_runs_commands_names_buildings_and_hints(page):
 
 
 def test_build_grows_the_line_by_a_row_of_icons_and_a_double_press_builds_at_once(page):
-    """Build (docs/design/warchief-line-and-cards.md §2): the Warchief's line grows a row of small icons of what each is
+    """Build (docs/design/warchief-line-and-cards.md §2): the Workchief's line grows a row of small icons of what each is
     for; its field finds in them by their own word first; a double press raises it at a free spot, no ghost; Escape
     puts the row away."""
     pg = page
@@ -740,8 +740,8 @@ def test_a_click_selects_a_building_and_open_or_a_second_click_opens_it(page):
 
 
 def test_a_selected_building_turns_the_line_into_its_command_card(camp_look):
-    """A building selected, the Warchief's line is its card (docs/design/select-a-building.md §2): its steward's
-    face (its role's: the Taskmaster's, docs/design/ork-icons.md), its quick actions (Q, W, E), the field for its steward; ✕ gives the Warchief back
+    """A building selected, the Workchief's line is its card (docs/design/select-a-building.md §2): its steward's
+    face (its role's: the Taskmaster's, docs/design/ork-icons.md), its quick actions (Q, W, E), the field for its steward; ✕ gives the Workchief back
     while it stays selected."""
     pg = camp_look
     bid = pg.evaluate("() => import('/static/js/link.js').then(m => m.command('town.build', { type: 'fields' }))")
@@ -752,12 +752,12 @@ def test_a_selected_building_turns_the_line_into_its_command_card(camp_look):
     assert bar.locator(".gui-warchief__face img").get_attribute("src").endswith("/faces/taskmaster.png")   # its role's face
     assert bar.get_by_role("button", name="Build", exact=True).count() == 0
     ph = pg.locator(".gui-warchief__input").get_attribute("placeholder")
-    assert ph.startswith("Tell ") or "about" in ph                    # its steward, or the Warchief about it
+    assert ph.startswith("Tell ") or "about" in ph                    # its steward, or the Workchief about it
     pg.locator("body").press("q")                                    # Q: its first action, a new task
     pg.locator(".gui-modal").wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
     pg.locator(".gui-modal").wait_for(state="detached", timeout=WAIT_MS)
-    bar.locator(".gui-warchief__back").click()                       # the Warchief again, it stays open
+    bar.locator(".gui-warchief__back").click()                       # the Workchief again, it stays open
     bar.get_by_role("button", name="Build", exact=True).wait_for(state="visible", timeout=WAIT_MS)
     assert bar.locator(".gui-warchief__act").count() == 0
     assert pg.evaluate("() => import('/static/js/windows.js').then(m => m.selected.value)") == bid   # its card grown, still selected
@@ -991,7 +991,7 @@ def test_the_huds_menu_sets_the_towns_autonomy_and_stop_all_stands_in_the_hud(pa
     pg = page
     hud = pg.locator(".gui-hud")
     assert hud.get_by_role("button", name="Stop all", exact=True).count() == 1 and hud.get_by_text("Ready").count() == 0
-    assert hud.get_by_role("button", name="Answers", exact=True).count() == 0          # the questions are the Warchief's line's
+    assert hud.get_by_role("button", name="Answers", exact=True).count() == 0          # the questions are the Workchief's line's
     assert pg.locator(".gui-hour__dial").count() == 1                                    # the hour: the sun or the moon
     hud.locator(".gui-hud__menu").click()
     modal = pg.locator(".gui-modal")
@@ -1048,7 +1048,7 @@ def test_listen_asks_in_words_and_lays_the_road_the_steward_offers(page, monkeyp
 
 
 def test_the_warchief_gives_the_work_and_his_card_builds_and_undoes_it(page, monkeypatch):
-    """A line in words goes to the Warchief; his answer's card (core/warchief.py) raises the building on Build
+    """A line in words goes to the Workchief; his answer's card (core/warchief.py) raises the building on Build
     and takes it down on Undo, over the line, without the panel."""
     from orkcraft.core import runners
     pg = page
@@ -1766,7 +1766,7 @@ def test_roads_from_one_building_into_another_are_one_road_and_its_card_lists_th
 
 def test_the_night_round_marks_a_card_says_it_in_the_morning_and_sits_in_settings(camp_look, gui, monkeypatch):
     """🌙 on a card the Night round found something for: a click shows its words and commits, Seen takes it off;
-    an idea of the round is marked too; its morning line is the Warchief's and opens the board; Settings turns
+    an idea of the round is marked too; its morning line is the Workchief's and opens the board; Settings turns
     it off and on and has Look now (docs/design/night-round.md)."""
     from orkcraft.core import runners
     from orkcraft.realm import growth
@@ -1900,7 +1900,7 @@ def test_a_narrow_window_lists_every_question_the_counts_say(gui):
 
 def test_the_sun_sets_the_working_hours_and_leaves_the_camp(page):
     """The sun's menu keeps the person's day (js/day.js): the working hours, on with a start and an end, and "I'm off",
-    which shows the Warchief's line about the day away and the lid, then the day away with I'm back
+    which shows the Workchief's line about the day away and the lid, then the day away with I'm back
     (docs/design/audience.md §2a)."""
     pg = page
     pg.locator(".gui-hour__dial").click()
@@ -1913,7 +1913,7 @@ def test_the_sun_sets_the_working_hours_and_leaves_the_camp(page):
     sun.get_by_role("button", name="I'm off…", exact=True).click()
     plan = sun.get_by_role("group", name="Leaving the camp")
     plan.wait_for(state="visible", timeout=WAIT_MS)
-    assert "Warchief:" in plan.inner_text() and "leave the lid open" in plan.inner_text()
+    assert "Workchief:" in plan.inner_text() and "leave the lid open" in plan.inner_text()
     plan.get_by_role("button", name="I'm off", exact=True).click()
     sun.wait_for(state="hidden", timeout=WAIT_MS)
     pg.locator(".gui-hour__dial").click()
@@ -2353,7 +2353,7 @@ def test_the_test_benchs_window_leads_with_its_cases_results_and_recommendations
 
 
 def test_a_test_bench_is_set_up_by_a_frame_dragged_round_its_buildings(page, gui):
-    """docs/design/improve-buildings.md §5.1: Build → Logic raises a Test bench; the Warchief asks what it tests; a
+    """docs/design/improve-buildings.md §5.1: Build → Logic raises a Test bench; the Workchief asks what it tests; a
     frame dragged round two buildings picks them, and they are tested as one chain, framed on the map."""
     from orkcraft import scroll as ts
     pg, (server, _browser) = page, gui
@@ -2465,15 +2465,15 @@ def test_comment_mode_sends_what_was_pressed_to_the_alchemist(page, gui):
     face.click()
     page.wait_for_selector(".gui-comment__note textarea", timeout=WAIT_MS)
     assert page.locator(".gui-warchief__menu, .gui-warchief__picker").count() == 0       # the press opened nothing else
-    page.fill(".gui-comment__note textarea", "The Warchief's face could say what it does")
+    page.fill(".gui-comment__note textarea", "The Workchief's face could say what it does")
     page.click(".gui-comment__note .ok-btn.is-primary")
     page.wait_for_selector(".gui-comment__note", state="detached", timeout=WAIT_MS)
     [c] = server.host.fixes.store.waiting()
-    assert c.text == "The Warchief's face could say what it does" and "gui-warchief__face" in c.where["selector"]
+    assert c.text == "The Workchief's face could say what it does" and "gui-warchief__face" in c.where["selector"]
     page.click(".gui-comment__bar .gui-link")                                           # Improve Orkline (1 waiting)
     page.wait_for_selector(".gui-fixes", timeout=WAIT_MS)
     assert page.locator(".gui-comment__bar").count() == 0                                # the mode left for the dialog
-    assert "The Warchief's face could say what it does" in page.inner_text(".gui-fixes")
+    assert "The Workchief's face could say what it does" in page.inner_text(".gui-fixes")
     page.keyboard.press("Escape")
     server.host.fixes.store.drop_comment(c.id)
 
@@ -2539,7 +2539,7 @@ def test_the_agent_pool_s_lanes_are_roles_and_a_session_s_chip_opens_it(gui, cam
 
 
 def test_mission_1_shows_its_quest_in_the_warchiefs_line_and_sets_up_the_board(page, gui):
-    """first-mission.md §3: the quest log stands in the Warchief's line; its one press sets up the building on its
+    """first-mission.md §3: the quest log stands in the Workchief's line; its one press sets up the building on its
     plot; Skip the mission leaves the town as it stands."""
     server, _ = gui
     pg = page

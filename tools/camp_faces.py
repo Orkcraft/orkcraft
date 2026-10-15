@@ -9,7 +9,7 @@ lists (`faces.roles`):
 1. its body is `camp/orks/roles/<role>.png` (48 × 56, feet at the bottom centre); the face is the window of
    `faces.rows` over it, 32 wide, centred on the skin of the head (the olive pixels under the headgear);
 2. the role's `clear` boxes (in the body's pixels) are emptied first: a held thing that touches the head
-   (the Warchief's banner); what is not joined to the head (a staff, a flask) falls away by itself;
+   (the Workchief's banner); what is not joined to the head (a staff, a flask) falls away by itself;
 3. it is written as `camp/orks/faces/<role>.png`, 32 × 24, and halved into `<role>-16.png`, 16 × 16 (the head's
    16 × 12 at the foot of the frame), the one for list rows. Both at 1×: the interface scales by whole numbers
    (design-system-v2.md §2, §11).

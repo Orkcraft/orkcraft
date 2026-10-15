@@ -17,11 +17,11 @@ in the camp's voice.
 |---|---|---|
 | External listeners, the Task board, the clock | **the ways in:** a cart rolls in through a gap in the palisade (a message spotted from the lookout, a task pinned on the board, a cart the clock sends at its hour) | the track **starts outside the wall** at each way in |
 | the Agent pool and the other buildings | **the line:** the orks refine the cart, building by building | the track between buildings |
-| the Review gate | **the check:** nothing leaves without the Warchief's nod (the person) | the gate on the track |
+| the Review gate | **the check:** nothing leaves without the Workchief's nod (the person) | the gate on the track |
 | the Publisher | **the way out:** the finished cart is flung over the wall: a pull request opened, a post published, a reply sent | **a catapult at the palisade, the track's end** |
 
 **The words stay** (CLAUDE.md): the interface says External listeners, Task board, Publisher; the gap in the wall and
-the catapult are only how Camp draws them. The camp's voice (the Warchief's lines, growth news, posts) may say
+the catapult are only how Camp draws them. The camp's voice (the Workchief's lines, growth news, posts) may say
 "launched".
 
 ## 2. What it gives

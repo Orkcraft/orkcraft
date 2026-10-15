@@ -73,7 +73,7 @@ A folded card opens by itself — **a peek** — while one of these holds:
 - **The snapshot** (gui/state.py) says `folded`.
 - **The host**: `building.fold` toggles it (gui/console.py), as `building.pin` does: saves the scroll,
   records `folded` / `unfolded` in the chronicle. No toast: the hut shows what happened.
-- **The Town Hall** never folds: it is the way to the Warchief.
+- **The Town Hall** never folds: it is the way to the Workchief.
 
 ## 4. Where it is reached
 
@@ -83,7 +83,7 @@ A folded card opens by itself — **a peek** — while one of these holds:
 - **The right click on the bare map** (js/town.js `bareMenu`): *Fold the quiet ones* (`/fold`) — every hut
   that is open, not the Town Hall, not at work, not open in the panel and has no peek reason — and *Unfold
   all* (`/unfold`). Each stands only when it would change something.
-- **The Warchief's line** (js/warchief.js): `/fold @name` and `/unfold @name`; with no name, the same as the
+- **The Workchief's line** (js/warchief.js): `/fold @name` and `/unfold @name`; with no name, the same as the
   map's two entries.
 - **The host**: `town.fold` {ids, value} folds or unfolds many in one save; `building.fold` takes `value`
   to set one instead of toggling it.

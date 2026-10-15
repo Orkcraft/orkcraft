@@ -32,7 +32,7 @@ export const panelWidth = signal(0);       // how wide the panel stands over the
 
 // The open building; `ork`: one of its orks picked in its garrison; `tab`: work | info; `full`: the whole town.
 export const opened = signal({ active: null, ork: null, tab: "work", full: false });
-// The selected building (docs/design/select-a-building.md §1): a click selects — its ork comes out, the Warchief's
+// The selected building (docs/design/select-a-building.md §1): a click selects — its ork comes out, the Workchief's
 // line is its card — and opens nothing; a second click, a double click or Open on its card opens it. An open
 // building is selected too.
 export const selected = signal(null);
@@ -177,7 +177,7 @@ window.addEventListener("keydown", (e) => {
   else if (selected.value) letGo();
 });
 
-// The host sends the open building's own state, and the Town Hall's (the Warchief's line shows his chat),
+// The host sends the open building's own state, and the Town Hall's (the Workchief's line shows his chat),
 // and again when its worker says it changed.
 // A small window of a closed building (a quick action's, js/types.js overlay) wants its state too, while it stands.
 const peeking = signal({});                 // building id → how many small windows want its state

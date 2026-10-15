@@ -2,7 +2,7 @@
 
 Status: proposal 2026-10-12, the owner's ask. Priority **P0**: it is the first fifteen minutes. **Built 2026-10-14
 (B7): quests 1 to 3½** (`realm/mission.py` the quests and their words, `core/mission.py` the work, `gui/mission.py`
-and `js/mission.js` the quest log in the Warchief's line); offered first on the onboarding's town step ("Set up the
+and `js/mission.js` the quest log in the Workchief's line); offered first on the onboarding's town step ("Set up the
 camp myself"). The drill runs no model: the Agent pool runs it by a script while its `drill.json` is there.
 **Quests 4 and 5 and the hooks, 2026-10-14 (B8):** before quest 4 the hooks are asked for once, file by file what is
 written (`hooks/install.py` `preview`), how to take them back (`orkline hooks remove`, Settings → Security reviewer)
@@ -35,7 +35,7 @@ in minutes, and by its end you know the controls.
    price said before it starts and under $0.05.
 4. **Each quest teaches one control of the main scenario** (a cart on a road, ❓ and the console, parallel orks and
    🥩), never a settings screen.
-5. **Nothing is faked as real.** A practice event is called a drill, on its card and in the Warchief's words.
+5. **Nothing is faked as real.** A practice event is called a drill, on its card and in the Workchief's words.
 6. **Skippable at every step.** A punk ork (today's path for those who orkestrate already) skips the mission for an
    empty town, as now.
 
@@ -43,26 +43,26 @@ in minutes, and by its end you know the controls.
 
 Reworked with the owner 2026-10-13. The person is **not given a town to work out**: they **build it, one building a
 quest**, as a strategy game's first mission does ("Boss, we need a quality gate"). Each building is met by building
-it, and shows what it is for at once. A quest log in the Warchief's line, one objective at a time; his lines may joke
+it, and shows what it is for at once. A quest log in the Workchief's line, one objective at a time; his lines may joke
 (CLAUDE.md, the voice); what a quest spends is said plainly.
 
 **So that building does not push the first win away:**
 
 - **each quest raises one building, and it works at once:** the drill cart travels over what is built so far;
-- **no looking for a place:** the Warchief lights a plot, one press raises the building there; it can be moved later;
+- **no looking for a place:** the Workchief lights a plot, one press raises the building there; it can be moved later;
 - **each building, raised, says what it does in one line and asks one question at most**
   ([lighter-buildings.md](lighter-buildings.md) §3).
 
-| quest | the Warchief | raised | what happens | time · cost |
+| quest | the Workchief | raised | what happens | time · cost |
 |---|---|---|---|---|
 | **1** | "Boss, the work needs somewhere to lie" | Task board | a drill card appears on it (a practice task, called a drill) | ≤ 1 min · free |
 | **2** | "We need hands" | Agent pool, and the road from the board | a Grunt takes the card and asks a scripted question: ❓ on him, 🔥 on the pool; the person answers in the console | ≤ 3 min · free, no model: **the first win** |
 | **3** | "Nothing leaves without a check" | Review gate, and its road | the drill's result reaches the gate; the person passes it and sees its waybill ([cart-waybill.md](cart-waybill.md)) | ≤ 5 min · free |
-| **3½** | "Boss, in working hours the camp can look like an office" | — | the person presses the key and sees **the same town** in Office (the same carts and orks, as rows and numbers, calm and monochrome), then presses it again and is back in Camp. The Warchief: "By day the office, after work the camp. Switch when you like." A deed, *Two faces* | ≈ 15 s · free |
+| **3½** | "Boss, in working hours the camp can look like an office" | — | the person presses the key and sees **the same town** in Office (the same carts and orks, as rows and numbers, calm and monochrome), then presses it again and is back in Camp. The Workchief: "By day the office, after work the camp. Switch when you like." A deed, *Two faces* | ≈ 15 s · free |
 | **4** | "Listen to what goes on outside" | External listeners (GitHub) | **real work**, read-only: the person's unread issues and notifications sorted into cards; without `gh`, the repository's TODO and FIXME. The price said before it starts | ≤ 8 min · ≈ $0.02 |
 | **5** (may be put off) | "Two at once" | — | two cards taken by two Grunts in parallel, each on its branch; 🥩 2/8; one asks; both reach the gate | ≤ 15 min · price said first |
 
-**The class stays** (decided 2026-10-13): one screen, the class chosen from its chips. It changes the Warchief's words
+**The class stays** (decided 2026-10-13): one screen, the class chosen from its chips. It changes the Workchief's words
 and quest 4's source (a developer: GitHub; a manager: mail, through MCP, [connections.md](connections.md)); the
 buildings and the order are the same for every class. Industry and the typical day leave the first session.
 
@@ -116,10 +116,10 @@ The owner, 2026-10-13: some time after Mission 1, a mission to set up a **second
 
 - **orkspaces** stay hidden "until a person asks for a second town" ([cut-list.md](cut-list.md) §3): Mission 2 is
   how the second one comes;
-- **recipes** (the Warchief laying a whole set: [ork-console.md](ork-console.md) §18) are what a mission builds;
+- **recipes** (the Workchief laying a whole set: [ork-console.md](ork-console.md) §18) are what a mission builds;
 - **the town's clock** ([town-time.md](town-time.md)) gets the scenario that teaches it.
 
-**When:** after Mission 1 and a few days of use (the third to the seventh day), the Warchief offers the next mission in
+**When:** after Mission 1 and a few days of use (the third to the seventh day), the Workchief offers the next mission in
 the morning brief: a new chapter, not an improvement, so not in the 💡 list ([the-score.md](the-score.md)).
 
 **What is built**, one orkspace (F2), by class:
@@ -235,10 +235,10 @@ and the waybill shows each round. It is built on Mission 1's town: the Task boar
 The quest log and its rules are Mission 1's: one objective at a time, one press, the price said before it, skippable
 at every step. The ork that works is called by its orkish name, a Grunt; the buildings by what they do.
 
-| quest | the Warchief | what happens | time · cost |
+| quest | the Workchief | what happens | time · cost |
 |---|---|---|---|
-| **1** | "Boss, the Grunts hand you work they never tried." | **Set the check.** The Warchief finds the project's test command (`pytest`, `npm test`, `go test ./...`, `cargo test`, `make test`, read from the project's files, no model) and the person confirms it or types their own: one press. It is run once on the main branch. A red main stops the quest and says so plainly ("the tests fail before any ork touched them: fix them first, or pick a narrower command"). The proving siding is laid beside the pool | ≤ 2 min · free, no model |
-| **2** | "Watch one fail, then pass." | **A drill.** Called a drill on its card and in the Warchief's words (§2 rule 5). A scripted Grunt's first round fails the check and its second passes. The check's verdicts are scripted too: no model, the project untouched. The person watches the cart go round again, then opens its waybill: two rounds | ≤ 2 min · free, no model |
+| **1** | "Boss, the Grunts hand you work they never tried." | **Set the check.** The Workchief finds the project's test command (`pytest`, `npm test`, `go test ./...`, `cargo test`, `make test`, read from the project's files, no model) and the person confirms it or types their own: one press. It is run once on the main branch. A red main stops the quest and says so plainly ("the tests fail before any ork touched them: fix them first, or pick a narrower command"). The proving siding is laid beside the pool | ≤ 2 min · free, no model |
+| **2** | "Watch one fail, then pass." | **A drill.** Called a drill on its card and in the Workchief's words (§2 rule 5). A scripted Grunt's first round fails the check and its second passes. The check's verdicts are scripted too: no model, the project untouched. The person watches the cart go round again, then opens its waybill: two rounds | ≤ 2 min · free, no model |
 | **3** | "Now for real." | **One real card**, chosen by the person from the board (Mission 1's quest 4 left some there), run on a branch with the check on. Its price is said first: one run on the main tool, a budget of $1.00 on the pool for the quest (taken off when it ends, as quest 5's is). It reaches the Review gate already checked. The person reads its waybill and lifts the barrier, or sends it back with a reason: then the round count goes on | ≤ 10 min · price said first |
 
 Quest 3 needs the Security reviewer on, as Mission 1's quest 5 does. It works on a branch and nothing is merged
@@ -254,7 +254,7 @@ without the person.
 3. the person sends a result back at the gate, or rates it 👎, with a note that says it broke (the reason chip
    "did the wrong thing" with a note matching test, build, fails, broken).
 
-Mission 1b is offered **once**, in the Warchief's line after the next morning brief, while the pool has no
+Mission 1b is offered **once**, in the Workchief's line after the next morning brief, while the pool has no
 `test_cmd` set. It is a new chapter, not an improvement, so it never goes in the 💡 list. The line names what
 happened: "Boss, *Fix the login form* passed your gate on Tuesday and broke its tests on GitHub. Want the Grunts to
 prove their work before you see it?" A "Not now" is remembered for 14 days. **The fallback** (§8): offered anyway

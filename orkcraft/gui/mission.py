@@ -1,5 +1,5 @@
 """Mission 1's quest log in the GUI (docs/design/first-mission.md §3; core/mission.py does the work): the
-Warchief's line shows the quest under way, its one press and the way out (js/mission.js).
+Workchief's line shows the quest under way, its one press and the way out (js/mission.js).
 
     face = MissionFace(host)
     host.commands.update(face.commands())    # mission.raise (quest 3: lifts the barrier) · .leave · .seen · .hooks

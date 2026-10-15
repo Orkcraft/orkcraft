@@ -5,7 +5,7 @@ rests on: one that cites none, or one the day does not have, is dropped — no p
 
     day_review.run(root, key, ask, titles, decisions, dislikes)   a Review, kept in `.orkcraft/council/days/<key>.json`
     day_review.load(root, day)                                    the kept one, or None
-    day_review.warchief_text(review)                              what the Warchief is asked to go through
+    day_review.warchief_text(review)                              what the Workchief is asked to go through
     day_review.span_key(since, until)                             a span's key: the logs from `since` to `until`
     day_review.bounds(key), day_review.label(key)                 its first and last second and its days; in words
 
@@ -185,7 +185,7 @@ def load(root: Path, day: str) -> Review | None:
 
 
 def warchief_text(review: Review, titles: dict[str, str]) -> str:
-    """The findings, for the Warchief to offer one by one: apply or skip. A code change is written down, not made."""
+    """The findings, for the Workchief to offer one by one: apply or skip. A code change is written down, not made."""
     lines = []
     for f in review.findings:
         where = f"@{titles.get(f.building, f.building)}" if f.building else "the town"

@@ -87,7 +87,7 @@ Optional: `claude`, `codex` and/or `agy` on your `PATH` for agents (building new
 `claude`), and `gh` for GitHub events. Orkline updates itself: a critical fix installs when the town
 opens, any other update is offered ([docs/updates.md](docs/updates.md)).
 
-Worth knowing: `/` or `Ctrl+K` puts you in the Warchief's line (`/build`, `/road`, `/orkspace`,
+Worth knowing: `/` or `Ctrl+K` puts you in the Workchief's line (`/build`, `/road`, `/orkspace`,
 `@a building`, or just ask) · a right click on a hut or on the bare map has its menu · **Stop all** in
 the HUD stops every running agent, script and browser. Prefer a calm screen? Settings has the
 **Office** look: monochrome, no sprites, same town.
@@ -101,7 +101,7 @@ the HUD stops every running agent, script and browser. Prefer a calm screen? Set
 | 🧌 **Ork** | an agent, a script or a free chain of data steps living in a building |
 | 🛤 **Road** | a subscription: what happens in one building travels as a cart to the buildings that listen |
 | 🪙 / 🪵 / 🥩 | money, context tokens and running agents — with budgets you set |
-| 🧌 **Warchief** | the lead agent in the line at the town's foot: builds, lays roads and answers for you |
+| 🧌 **Workchief** | the lead agent in the line at the town's foot: builds, lays roads and answers for you |
 
 Roads are the point. A building never needs to know who listens to it; the listener decides what to
 do with each cart. **The cheapest thing that works wins:** a plain road, then a **chain** (data steps,
@@ -125,7 +125,7 @@ writes a new one for you (a script first, a model only where a script can't do t
 The 🏰 Town Hall is where the town changes. Everything goes through it, and everything it does is a
 commit in the camp's own git, so it can be undone.
 
-![The Town Hall: the Warchief's chat, its Hall, the sessions and the limits](docs/img/town-hall.png)
+![The Town Hall: the Workchief's chat, its Hall, the sessions and the limits](docs/img/town-hall.png)
 
 - **🏗 Build** — `/build` or a right click on the map: say what you need, or pick from the catalog.
 - **🛠 New** — the **Builder** asks what the building should do and writes it. The blueprint is
@@ -143,7 +143,7 @@ commit in the camp's own git, so it can be undone.
 Buildings and their operator grow from what the orks learned — never from clicks
 ([docs/design/growth.md](docs/design/growth.md)). A building earns **Renown I–III** and shows it as a
 flag on its roof; your mascot grows from a Standup Zombie to a Release Night King and collects
-**deeds**; the Warchief says what grew and wears the crown. The **War Map** shows your orkspaces as
+**deeds**; the Workchief says what grew and wears the crown. The **War Map** shows your orkspaces as
 lands, and calls you with rings when an ork in another one asks — as a strategy game does when your
 units are attacked.
 

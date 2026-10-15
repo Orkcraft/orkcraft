@@ -2,7 +2,7 @@
 // no build: the phone listener serves these files as they are (this one, util.js, dock.js, town.js, fields.js, icons.js). It speaks the
 // phone's protocol (gui/phones.py): the compact snapshot (`state`), a command and its `reply`, and `news` while
 // the app is open. It may do what a phone may (gui/mobile.py COMMANDS): answer a question, follow the Advisor,
-// Stop all, ask the Warchief, drop a text, a link or a file into Drop file here and write a to-do, a note or a
+// Stop all, ask the Workchief, drop a text, a link or a file into Drop file here and write a to-do, a note or a
 // task on Task Fields. Nothing else, whatever
 // this page sends: the listener refuses the rest.
 
@@ -57,7 +57,7 @@ function pairing(pairCode) {
   show(h("section", { class: "card" },
     h("h1", {}, "Pairing this phone"),
     h("p", {}, "It will see the town small: each building, the questions the orks wait on, spend and quotas. "
-      + "It may answer a question, stop all, ask the Warchief and drop a text or a file. It never builds or types into a terminal."),
+      + "It may answer a question, stop all, ask the Workchief and drop a text or a file. It never builds or types into a terminal."),
     msg, again));
   pair(pairCode, guessName(), msg, again);
 }
@@ -263,7 +263,7 @@ document.addEventListener("visibilitychange", () => {
 
 // The first screen is what asks (the questions in their buildings' tiles, when any ork asks), Task Fields, then
 // the orkspace's buildings: in trouble or at work, then the quiet ones as a grid (town.js); what a phone does now
-// and then (the Warchief, Drop file here, Stop all) is the bar at the foot (dock.js), the look and this phone the
+// and then (the Workchief, Drop file here, Stop all) is the bar at the foot (dock.js), the look and this phone the
 // page's own foot.
 function layout() {
   const parts = {

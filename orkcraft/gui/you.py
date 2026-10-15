@@ -1,6 +1,6 @@
 """You in the GUI (docs/design/portrait.md): what the portrait's menu sets for the person, per machine —
 the look (camp | office), Do not disturb, the working hours and the fire on the roofs (`fire`) — and what gathered
-while Do not disturb or the working hours held, said once when they end: in the Warchief's line (`summary`) and to
+while Do not disturb or the working hours held, said once when they end: in the Workchief's line (`summary`) and to
 the phones that are open (`on_news`).
 
 The working hours (docs/design/audience.md §2a) are quiet for the person's own project: an ork's question raises no
@@ -106,7 +106,7 @@ class You:
         return n, first
 
     def _end(self, lead: str = "While you were away") -> None:
-        """It ended: everything that gathered, as one line in the Warchief's line and one to the phones."""
+        """It ended: everything that gathered, as one line in the Workchief's line and one to the phones."""
         questions = len(self.host.muster.roster.alerts)
         sounds, horn_id = self._kept()
         parts = []

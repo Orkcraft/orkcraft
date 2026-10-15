@@ -41,7 +41,7 @@ ROLES: dict[str, tuple[tuple[str, str, str], ...]] = {
 }
 TAB_GOALS = {"tech": "Review the building as an engineer would before trusting it with real work."}
 WORDING = ("The interface writes ork / orks / orkestration, never orc or orchestration. Labels, settings and "
-           "anything about money or safety say plainly what happens; only the Warchief's lines, growth news and "
+           "anything about money or safety say plainly what happens; only the Workchief's lines, growth news and "
            "the onboarding may joke. A building's words are its today's word (realm/lexicon.py TERMS); old Camp "
            "spellings stay only in code.")
 _JSON = re.compile(r"\{.*\}", re.S)

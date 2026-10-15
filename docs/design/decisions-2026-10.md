@@ -485,7 +485,7 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
   - Phone screenshots are in `img/i1/phone-390-*`, `phone-430-*`.
   - Last item for I1 tonight: the quest log covering the camp's bottom line.
 - **00:22.** Check-in. I1 has the quest-log fix done locally and is not blocked. Before it merges, it is reading
-  intermittent load errors in the drag and Warchief tests.
+  intermittent load errors in the drag and Workchief tests.
 - **01:08.** I1's last items are on `main`:
   - c59aff8: the quest log is the camp's bottom inset, which retires M1's 40% stopgap;
   - 3467317: browser tests that left an orkspace behind, the root of the loot-cart flake and probably the clan one.
@@ -510,7 +510,7 @@ fixed topology, full-width lines, no crossings, whatever is moved.
 **A round's price, and placement as tidiness.** A cart going round again wears its round's cost (`round 2 · 🪵 18k`): the
 second round reads as the price of rework. Placement makes trips shorter on screen only (work arrives at once), so it
 is tidiness, never throughput: no layout measure, nothing in the score; the optimising game stays the score. The
-Warchief's hint about a long trip moves to Later.
+Workchief's hint about a long trip moves to Later.
 
 Full rules: [design-system-v3.md](design-system-v3.md) §4c. Priority: one way round, switches, pockets and a round's
 price are P0, built now by the LOOP session; the back row and neighbours are P1.

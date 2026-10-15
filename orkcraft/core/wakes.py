@@ -18,7 +18,7 @@ Its ork — the building's keeper (core/keeper.py) — wakes on two things only,
 (the budget is spent, a wake of the building still open) is due again at the next look.
 
 Landscape (docs/design/landscape.md §4) has no ork of its own: its wake names a `looker`, the first building
-with an ork its roads lead to, else the Town Hall (the Warchief). The looker's steward is asked to change the
+with an ork its roads lead to, else the Town Hall (the Workchief). The looker's steward is asked to change the
 landscape object's settings; the object's own keeper never runs.
 """
 from __future__ import annotations
@@ -51,7 +51,7 @@ def is_landscape(town: Town, building_id: str) -> bool:
 
 def looker(town: Town, building_id: str) -> str:
     """Who looks when it breaks: the building itself; for landscape (landscape.md §4) the first building with an
-    ork its roads lead to (nearest first), else the Town Hall, whose steward is the Warchief."""
+    ork its roads lead to (nearest first), else the Town Hall, whose steward is the Workchief."""
     if not is_landscape(town, building_id):
         return building_id
     seen, front = {building_id}, [building_id]
@@ -73,7 +73,7 @@ def _land(town: Town, title: str, by: str) -> str:
     """The line that tells the looker why a landscape object is theirs to look at."""
     if by == TOWN_HALL:
         return (f"{title} is part of the land: it has no ork of its own and no road from it leads to a building "
-                f"with one, so the Warchief looks after it.\n")
+                f"with one, so the Workchief looks after it.\n")
     return (f"{title} is part of the land: it has no ork of its own. Its road leads to {town.title_of(by)}, so "
             f"that building's steward looks after it.\n")
 

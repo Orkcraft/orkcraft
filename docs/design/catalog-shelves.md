@@ -21,7 +21,7 @@ look bigger and vaguer than it is.
 | shelf | types | why |
 |---|---|---|
 | **Core** (offered by default) | Task board, Agent pool, Review gate, Inspector, External listeners | the main path: a task → agents in parallel → a diff → the person approves. External listeners as the way in from GitHub |
-| **Plumbing** (not picked by hand, placed when needed) | Router, Transformer, Script | the cheapest thing that works ([script-first.md](script-first.md)). The Warchief or the building designer places one when a road needs logic; they stay findable in the catalog |
+| **Plumbing** (not picked by hand, placed when needed) | Router, Transformer, Script | the cheapest thing that works ([script-first.md](script-first.md)). The Workchief or the building designer places one when a road needs logic; they stay findable in the catalog |
 | **More buildings** (a shelf, off by default) | Wiki, Research, Review board, File tree, Drop file here, Audio briefing, Publisher, Branches & PRs (§3b), Metrics (§3a), Calendar (the person's meetings only; the town's time moves to the HUD's dial, [town-time.md](town-time.md) §5) | useful, not for a first look |
 | **Improve tools** (not in the catalog; through Improve) | Test bench, UX bench | they improve buildings, not the person's work: for experienced users and contributors |
 | **Not a building** | Sound alerts | §3 |

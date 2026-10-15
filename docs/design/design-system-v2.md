@@ -236,7 +236,7 @@ tower's top carries the flame) · `asking` (❓ over the cover) · `idle` (no mo
 - **Directions:** down (toward the viewer), up, side (mirrored for the other side).
 - **Animations** (frames): idle 4 · walk 6 per direction · work 6 (the tool's swing) · sit 2 · and the state poses
   below. 8 fps.
-- **Role slot** (headgear and held tool on the same body, `orc.<type>` in `TERMS` says the name): Warchief (horned
+- **Role slot** (headgear and held tool on the same body, `orc.<type>` in `TERMS` says the name): Workchief (horned
   helmet, a loosened tie), Grunt (bone-white hard hat, a muted brown work vest), Taskmaster, Lookout (a headset over
   the cap), Seer (hood and staff), Quartermaster (helmet, shield, a brass key), Loader, Mechanic (welder's cap,
   wrench), Alchemist (pointed cloth hat, a muted green flask), Treasurer (clipboard, coin pouch), Pathfinder (fur hat,

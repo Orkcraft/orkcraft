@@ -10,7 +10,7 @@ buildings ([yards.md](yards.md) §3, §7), the card sizes of the UX bench ([impr
 | 1 | the map view: every building as its house, its plinth and its name; a peek on trouble and on a drag; `M`, a pinch, the bare town's menu | done |
 | 2 | three levels — the map, the overview, close up — by a pinch and ⌘+ / ⌘−; a building as wide at every level, only its height and its place down the town change; the huts glide | done |
 | 3 | the mark floats up over a house when it changes, and settles; at most three in the air; a `mark(b)` for the types with none yet (Task board, Calendar, Wiki, File tree) | |
-| 4 | a button for the zoom in the HUD; `/zoom` in the Warchief's line; the phone keeps its own | |
+| 4 | a button for the zoom in the HUD; `/zoom` in the Workchief's line; the phone keeps its own | |
 
 ## 1. Why
 

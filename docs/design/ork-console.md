@@ -1,7 +1,7 @@
 # Design — every ork in reach: one status, one console
 
 Status: proposal 2026-10-12, nothing built. Talked through by the owner as product and UX ("think it through before
-any code"). Builds on [select-a-building.md](select-a-building.md) §2 (the Warchief's line is the selected building's
+any code"). Builds on [select-a-building.md](select-a-building.md) §2 (the Workchief's line is the selected building's
 command card), [warchief-line-and-cards.md](warchief-line-and-cards.md) §0 (buildings with and without a view),
 [yards.md](yards.md) (an ork lives only where a model thinks), [roads-and-orcs.md](roads-and-orcs.md) and
 [steward-at-work.md](steward-at-work.md) (stewards and their tier), [calm-town.md](calm-town.md) (the HUD: Stop all,
@@ -82,9 +82,9 @@ Decisions this takes:
 
 ## 3. What stays as built
 
-- The Warchief's line is the selected building's command card: its steward's face, its three quick actions (Q, W,
+- The Workchief's line is the selected building's command card: its steward's face, its three quick actions (Q, W,
   E), its field asks its steward ([select-a-building.md](select-a-building.md) §2).
-- Nothing selected, the line is the Warchief's: Build and Improve (the Town Hall's actions, the hall itself unseen).
+- Nothing selected, the line is the Workchief's: Build and Improve (the Town Hall's actions, the hall itself unseen).
 - A building's setup is done in the line ([select-a-building.md](select-a-building.md) §7): the Town Hall's command
   card, changed.
 - Orks drawn only where a model works; a yard calls one when it needs it ([yards.md](yards.md)).
@@ -171,7 +171,7 @@ attached: seen, answered, stopped.** A person who never does it still knows ther
 
 ## 7. The line in two parts
 
-The line at the town's foot, today the Warchief's or the selected building's command card, gets a second part:
+The line at the town's foot, today the Workchief's or the selected building's command card, gets a second part:
 
 ```
 ┌─ building part (built) ──────────────────────────┬─ ork part (new) ─────────────────────────────────┐
@@ -185,7 +185,7 @@ The line at the town's foot, today the Warchief's or the selected building's com
 
 | selected | building part | ork part |
 |---|---|---|
-| nothing | the Warchief: Build ▾, Improve | the Warchief's own session (today's line) |
+| nothing | the Workchief: Build ▾, Improve | the Workchief's own session (today's line) |
 | a building | its command card (built) and a row of **its orks' portraits** with their state (§5) | the ork waiting on the person, if one is; else the building's steward; else empty |
 | an ork (on the town or a portrait) | its building's command card | **that ork's console** |
 
@@ -282,7 +282,7 @@ to an ork instead of one. To fill in from the code before stage 1:
 | 6 | the Agent pool's lanes as roles with session chips | §14 | **P0**, the lanes only (they exist); the data model behind them is P1 |
 | 7 | Work keeps data and flow; Info split into the building's and the ork's | §15 | **P1** |
 | 8 | the Town Hall's roles folded, 11 names to 8 | [town-hall-roles.md](town-hall-roles.md) | **P1**, before the ork's Info ships (or it ships 11 role cards) |
-| 9 | a yard's failure: the Warchief sorts it, the Mason repairs | §16 | **P1** |
+| 9 | a yard's failure: the Workchief sorts it, the Mason repairs | §16 | **P1** |
 | 10 | tier and Autonomy on the ork in settings; a session's 👎 apart from its ork's | §2 | **P1** |
 | 11 | quick actions for every building | §7 | **P1** |
 | 12 | the yard with lines between its orks; forms over every AI tool's questions | §5, §7 | **Later** |
@@ -381,10 +381,10 @@ building (its Info), a cart's way (§17), the town (the HUD's 🪙). Never count
 A yard has no ork of its own (yards.md). When it fails:
 
 1. its flow stands: the building burns (§5);
-2. **the Warchief** sorts it out: a cheap session that reads the error and decides who takes it;
+2. **the Workchief** sorts it out: a cheap session that reads the error and decides who takes it;
 3. a broken script or chain goes to **the Mason**, who built it: a fix proposed, the person applies it as a builder's
    change is applied today;
-4. a cause outside the code (mail access ran out, `gh` missing) is not repaired: the Warchief says plainly what is
+4. a cause outside the code (mail access ran out, `gh` missing) is not repaired: the Workchief says plainly what is
    needed from the person.
 
 No new ork. The Mason builds, the Mason repairs.
@@ -430,7 +430,7 @@ what to judge, its clan proposed by its steward and cut to the three roles; one 
 To check on the first run: does a clan member read the project's code, or only the document it is given? An AI
 architect needs the code's context.
 
-**Later, not a hidden feature: a recipe.** The person tells the Warchief what they want and it lays the whole set
+**Later, not a hidden feature: a recipe.** The person tells the Workchief what they want and it lays the whole set
 (schedule → Review board with its clan → the brief), all on the map and all editable. A good thing for buildings
 from the community. And later still a role may be an expertise whose context the building gives, so the Farseer
 could sit on the person's own clan.
@@ -503,7 +503,7 @@ Asked 2026-10-12: with today's tools the owner forgets in which tab or session s
   it ended: **decided**, **waits for you** (❓, §5), or **left without a decision**.
 - **A talk left without a decision** puts a soft mark on its card ("talked, not decided"), so it is not lost; the
   morning brief names those older than a day.
-- **A talk started with no card** (from the Warchief's line) asks once, at its end, where it belongs: a new idea card,
+- **A talk started with no card** (from the Workchief's line) asks once, at its end, where it belongs: a new idea card,
   an existing card, or nowhere.
 - **Search across all talks:** Later, once there are enough to need it.
 

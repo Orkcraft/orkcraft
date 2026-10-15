@@ -261,7 +261,7 @@ def calendar(now: dt.datetime) -> tuple[str, list[tuple[str, str]]]:
 
 MEETING_DOCS = {
     "docs/meetings/design-sync.md": "# Design sync: Town Hall\n\n## Agenda\n1. Build in one place\n"
-                                    "2. Ask me anything: what the Warchief may answer\n3. Limits\n\n## Notes\n- \n",
+                                    "2. Ask me anything: what the Workchief may answer\n3. Limits\n\n## Notes\n- \n",
     "docs/meetings/one-on-one-ann.md": "# 1:1 with Ann\n\n- The offsite: the 21st\n- Her move to the pricing team\n"
                                        "- Feedback on the Barracks docs\n",
 }
@@ -551,7 +551,7 @@ def workshop(root: Path, now: dt.datetime) -> None:
 
 
 def town_hall(root: Path, now: dt.datetime) -> None:
-    """A morning's talk with the Warchief, and the last audit."""
+    """A morning's talk with the Workchief, and the last audit."""
     from orkcraft.realm import audit
     at = lambda m: _iso(now - dt.timedelta(minutes=m))
     _jsonl(state_dir(root, "town_hall", "town_hall") / "chat.jsonl", [

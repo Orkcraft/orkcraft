@@ -275,9 +275,9 @@ function Settings({ id, d }) {
   </div>`;
 }
 
-// -- set up in the Warchief's line (js/warchief.js, docs/design/select-a-building.md §7) ---------------------------
+// -- set up in the Workchief's line (js/warchief.js, docs/design/select-a-building.md §7) ---------------------------
 
-/** What the Warchief asks of a tower just raised. */
+/** What the Workchief asks of a tower just raised. */
 export function setupAsk(b) {
   return `${b.title} is going up. What should it listen to?`;
 }

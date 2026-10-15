@@ -1,4 +1,4 @@
-# Design — growth: buildings that mature, a mascot that grows, a crowned Warchief
+# Design — growth: buildings that mature, a mascot that grows, a crowned Workchief
 
 Status: design notes, written 2026-10-06; stages 1–5 are implemented (`realm/growth.py`,
 `gui/growth.py`, `tools/growth_sprites.py`, the crown in `tools/logo.py`). The sketches in
@@ -11,7 +11,7 @@ orkestration (CLAUDE.md).
 **One vocabulary, two looks.** Camp and Office words are merged (CLAUDE.md, Wording); Camp and Office
 are now only looks (portrait.md §3). Growth shows in Camp; in Office the stage and deeds keep counting
 and show again in Camp. Growth keeps the Camp's words: it says *who* the camp has become, and its
-voice may joke (mascot names, the Warchief's address). Where these notes still say "Office words", read
+voice may joke (mascot names, the Workchief's address). Where these notes still say "Office words", read
 the plain wording a former Office mode had; it is gone.
 
 | stage | what | state |
@@ -20,7 +20,7 @@ the plain wording a former Office mode had; it is gone.
 | 2 | a building's level I–III and its goal flag on the roof (§4, §5) | done |
 | 2b | the renown as a flag and a footing, the goal as an annex (§5) | done |
 | 3 | the Info panel's large header with the level (§6) | done |
-| 4 | the Warchief's crown (§8) | done |
+| 4 | the Workchief's crown (§8) | done |
 | 5 | the operator's mascot grows, in the head of Settings, with deeds (§7) | done |
 | later | what a level unlocks by goal (§4.4); temporary moods of the mascot (§7.5) | |
 
@@ -31,7 +31,7 @@ the plain wording a former Office mode had; it is gone.
 - **The clock.** `gui/growth.py` settles once a minute, and at the next tick after a rating, a change
   of the orks or a road (`bus.HALL`, `bus.ROADS`). The first look on a machine records the deeds and the
   stage already reached without saying them.
-- **News** waits in `.orkcraft/growth.json` and is said by the Warchief's line after an ork's question
+- **News** waits in `.orkcraft/growth.json` and is said by the Workchief's line after an ork's question
   and before the spend: a click opens the building's Info (a level, a loop) or Settings (a stage, a deed),
   ✕ marks it seen. At most one loop a day.
 - **The stage marks** are shared by the kins: a dark-green band (2), ivory horns (3), and at 4 the eyes
@@ -46,7 +46,7 @@ The retros and the goals learn from the operator's ratings, and the operator rar
 without turning a tool into a game.
 
 The first idea was points: for a written review of a building, for applying a change the steward or
-the Warchief proposed, and a rank and an icon bought with them. We are not doing that, because:
+the Workchief proposed, and a rank and an icon bought with them. We are not doing that, because:
 
 - **Points for Apply reward weaker oversight.** Apply is the last guard after the Council and
   probation. A point for pressing it pays the operator to stop reading. A carefully declined bad
@@ -70,7 +70,7 @@ and let the **operator's mascot grow** with the camp (§7).
    back as it is today (probation reverts a change; autonomy stays the operator's to set).
 3. **Calm.** There are no XP bars, no numbers on the map, no "Level up!" dialogs and no confetti.
    Growth shows where a picture already is (the hut's header, the head of Settings) and in one line
-   in the Warchief's line. The HUD gets nothing new; only Orders burns there.
+   in the Workchief's line. The HUD gets nothing new; only Orders burns there.
 4. **One art system.** Growth is drawn by **adding** a few pixels to the existing sprites, never by
    redrawing them: the same five colours, the same pixel. Overlays are drawn from code grids (like
    `tools/logo.py`), so they come out identical every time and never drift the way an image model does.
@@ -82,7 +82,7 @@ and let the **operator's mascot grow** with the camp (§7).
 The cheapest step, and first, because it may be enough on its own.
 
 When a change that a rating or a review caused has proved itself, the operator is told once, in the
-Warchief's line:
+Workchief's line:
 
 ```
 🧌 Your 👎 on Brief (Tue) → the Building retro rewrote its prompt (Wed) → this week 4 👍, 0 👎.
@@ -160,7 +160,7 @@ may propose a reviewer ork for the building's output. This is not in stages 1–
 - The reached level is stored in the Town Scroll as `buildings[].level` (`0`–`3`, missing = `0`) so
   that it never drops when old rows age out of the ledger.
 - A level that goes up publishes `growth.level` on the bus (`core/bus.py`). The GUI says it in the
-  Warchief's line ("The Forge grew to 💎 II"). The service never shows a toast itself.
+  Workchief's line ("The Forge grew to 💎 II"). The service never shows a toast itself.
 
 ## 5. The flag, the footing and the annex
 
@@ -250,7 +250,7 @@ head is kept beside the design system's and shown before it.
 | 3 | the campaign's second chapter · or a lean week ([the-score.md](the-score.md): less wood per accepted result than the week before, 👎 and send-backs per result not up) · or a building at level II |
 | 4 | the third chapter · or a lean month (four lean weeks in five) · or three buildings at III |
 
-A stage once reached stays; the Warchief's line names the deed that opened it ("Lich of Sprints: a week at 12 % less
+A stage once reached stays; the Workchief's line names the deed that opened it ("Lich of Sprints: a week at 12 % less
 per result, nothing sent back more"). The campaign's chapters are read from the mission's state
 (`.orkcraft/mission.json`: `finished` is the first; a later mission writes `chapters`); the lean weeks from
 `score.lean_weeks` (`realm/score.py`). Two deeds came with it: 🛒 Mission 1 and 🪵 A lean week.
@@ -268,7 +268,7 @@ nick from the onboarding, the others are the kin's.
 | knights (founders) | Bootstrap Squire | Indie Knight | Knight of the Seed Round | Paladin of Product-Market Fit |
 | ghosts (everyone else) | Inbox Ghost | Wandering Ghost | Captain of the Ghost Crew | Lord of a Thousand Tabs |
 
-- **The top stage is never a crown.** The crown is the Warchief's (§8). Each role has its own top
+- **The top stage is never a crown.** The crown is the Workchief's (§8). Each role has its own top
   mark: a horned war helm for the engineer, rating stars for the ASO gnome, and so on.
 - **The names** keep the onboarding's humour (Jira Lich, Release Night King).
 - **Art cost:** 8 base heads and 44 overlays (11 roles × 4 stages), all from code grids.
@@ -299,8 +299,8 @@ the camp's rules:
 - **The two parts are told apart:** the head is the operator (per machine), and below it a divider
   names the camp ("Camp: orkcraft") whose rules follow. Otherwise a new project would seem to start the
   operator from nothing.
-- **Seen rarely, so it is announced.** A new stage is said once in the Warchief's line, and that line
-  is a link that opens Settings on the portrait. The Warchief's address (§7.4) keeps it present
+- **Seen rarely, so it is announced.** A new stage is said once in the Workchief's line, and that line
+  is a link that opens Settings on the portrait. The Workchief's address (§7.4) keeps it present
   between visits.
 - **A new stage** glows softly the first time Settings opens after it. There is no dialog.
 - **Stored** per machine in `~/.config/orkcraft/settings.json` → `growth.stage`, the highest stage
@@ -326,9 +326,9 @@ A row of small marks under the portrait, each what the camp **learned**, never a
 - **The ones not reached** show as grey silhouettes with a hint ("Join two buildings with a road"), so
   the row also points at what Orkline can do that the operator has not tried.
 
-### 7.4 How the Warchief addresses the operator
+### 7.4 How the Workchief addresses the operator
 
-The Warchief addresses the operator by the mascot's stage: "My Lord Lich, the Forge asks for a
+The Workchief addresses the operator by the mascot's stage: "My Lord Lich, the Forge asks for a
 decision." It is one line of wording with no art, so growth shows in the conversation too.
 
 ### 7.5 Later: moods
@@ -339,21 +339,21 @@ touches the stage. Any night form must be earned by the **orks** working in quie
 operator sleeps, never by the operator staying up: the point of Orkline is that the clan works at
 night.
 
-## 8. The Warchief's crown
+## 8. The Workchief's crown
 
-![The ork; the Warchief; asleep, at work, waiting (the crown's points burn)](../img/growth/warchief-crown.png)
+![The ork; the Workchief; asleep, at work, waiting (the crown's points burn)](../img/growth/warchief-crown.png)
 
-Today the Warchief has the same head as every ork in every garrison. A **gold crown** marks the
+Today the Workchief has the same head as every ork in every garrison. A **gold crown** marks the
 leader. It is the **role's mark, not a reward**: always there, never grown.
 
-- The grid becomes **12×10** (two rows of crown over the 12×8 head). The Warchief stands slightly
+- The grid becomes **12×10** (two rows of crown over the 12×8 head). The Workchief stands slightly
   taller than the other heads, and the badges that hold it are checked for height.
 - **Waiting:** the ork's flame sits on the crown of its head, where the crown now is. For the
-  Warchief, the **crown's points burn** (alert orange) instead.
-- **The product's mark and the favicon stay crownless.** Only the Warchief's line and the Town Hall's
+  Workchief, the **crown's points burn** (alert orange) instead.
+- **The product's mark and the favicon stay crownless.** Only the Workchief's line and the Town Hall's
   chat show the crowned head.
 - Built by `tools/logo.py` as `sprites/orks/warchief.png` with its states, beside the ork's.
-- The Warchief **does not grow and does not take the operator's mascot**: a face that changes every
+- The Workchief **does not grow and does not take the operator's mascot**: a face that changes every
   month reads as someone else, and two alike faces in the chat blur who speaks.
 
 ## 9. Not doing
@@ -371,7 +371,7 @@ leader. It is the **role's mark, not a reward**: always there, never grown.
 
 In `realm/lexicon.py` `TERMS`, all kept from the Camp: `renown` (Renown), `mascot` (mascot), `deed`
 (deed). The War Map's foot is a `new orkspace` (it was the *fog of war*). Mascot names and the
-Warchief's address are the camp's voice.
+Workchief's address are the camp's voice.
 
 ## 11. Metrics
 

@@ -60,7 +60,7 @@ script's `|| agent:` fallback go away (`realm/mill.py` `MODEL_STEPS`, `FALLBACK`
 - **Saved towns.** A Transformer with `agent:` steps loads as follows: its steps up to the first `agent:`
   stay; the `agent:` ask becomes a Road rule on the road's receiving building; steps after it become a
   second Transformer on that building's way out. A Transformer whose road leads nowhere that has an ork
-  becomes a **Script** (`workshop`) with the ask as its steward prompt. The Warchief says it once.
+  becomes a **Script** (`workshop`) with the ask as its steward prompt. The Workchief says it once.
   The demo's changelog Transformer (`demo/seeds.py`, `demo/dashboard.py`) is rewritten the same way.
 
 ## 4. Who looks when land breaks
@@ -69,7 +69,7 @@ Landscape has no steward, so a failure (a rule that no longer matches, a file th
 script that exits non-zero) and a 👎 go, in order, to:
 
 1. the steward of the building its road leads to (the first one with an ork downstream);
-2. the Warchief, when no road leads to an ork.
+2. the Workchief, when no road leads to an ork.
 
 They wake as script-first wakes a keeper today (`core/wakes.py`): once per failure, with the object's
 log. What they may change is the object's settings (rules, steps, sounds), through the same
@@ -124,7 +124,7 @@ The data does not change: ids, specs, roads and event ids stay. The change is a 
 
 1. **The flag and the catalog**: `landscape` on the seven types, the Wizard's groups, `custom` out of the
    list, the term in `TERMS`. Tests: the catalog's checks, the architecture test.
-2. **Who looks** (§4): failures and 👎 of landscape wake the downstream steward or the Warchief; the
+2. **Who looks** (§4): failures and 👎 of landscape wake the downstream steward or the Workchief; the
    landscape object's own keeper never runs. Test: a runner that fails if a landscape object's ork is
    called.
 3. **The look** (§5): sprites without cards, hover, the small window, smoke. Checked in the demo with
@@ -154,13 +154,13 @@ The data does not change: ids, specs, roads and event ids stay. The change is a 
 
 **Stage 2** (night audit 2026-10-08, P4):
 - `core/wakes.py` `looker(town, id)`: a building is its own looker; a landscape object's is the first building
-  with an ork its roads lead to (nearest first, through other landscape), else the Town Hall (the Warchief).
+  with an ork its roads lead to (nearest first, through other landscape), else the Town Hall (the Workchief).
   Every `Wake` carries `looker`; a landscape wake's request starts with a line telling the looker why the
   object is theirs.
 - `gui/keeper.py` `keeper_wake`: the job still changes the landscape object's settings (same proposal, Apply,
   Revert, Autonomy), but the model call is the looker's steward's (`steward.runner_for(looker)`) and
   `core/keeper.py` `ask(looker=)` speaks as that steward. The toast and the job say who looked
-  (*The steward of Task board looked at a 👎: …*, *the Warchief …*).
+  (*The steward of Task board looked at a 👎: …*, *the Workchief …*).
 - When it wakes is unchanged (`wakes.due`: once per error spell, once per 👎), and only for land that is
   script-first: a Transformer with an `agent:` step still thinks and keeps its ork until stage 4.
 - Not done: the yard's visiting ork (`gui/state.py` `visit`) is still drawn at the landscape object on a wake;

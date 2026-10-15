@@ -14,7 +14,7 @@ you, and whether it may disturb you.
 | 2 | Do not disturb (§4) | done (`disturb.py`, `gui/you.py`, the Horn, `gui/notify.py`) |
 | 3 | two looks, Camp and Office; the old Office leaves the docs (§3, §6) | done (`town.css`, `office.css`) |
 | 4 | the phone: the portrait in its top bar, the menu as a sheet (§5) | the host's part done (`portrait` in the compact snapshot, `you.dnd` and `you.look` allowed); the sheet is the app's |
-| later | Change role from the menu; a new stage's glow; the Warchief addressing you by your stage | |
+| later | Change role from the menu; a new stage's glow; the Workchief addressing you by your stage | |
 
 ## As built
 
@@ -63,10 +63,10 @@ you, and whether it may disturb you.
   from `office.css` to `town.css`, scoped `[data-look]`; `index.html` opens on `data-look="camp"`.
 - **The Horn** asks `town.hushed()` (the GUI host sets it from `gui/you.py`) and logs a call it kept as
   `dnd` ("do not disturb" in its window). The TUI never sets it.
-- **The summary** shows in the Warchief's line until ✕; its click opens Answers when a question waits,
+- **The summary** shows in the Workchief's line until ✕; its click opens Answers when a question waits,
   else the Horn that kept a sound. It goes to the phones as one news line (`kind: "dnd"`).
 - **Not built:** Change role (the onboarding has no way back to Who are you? yet), the new stage's glow,
-  and the Warchief's address by stage (it addresses no one by stage yet, in either look);
+  and the Workchief's address by stage (it addresses no one by stage yet, in either look);
   `orkcraft gui --look` stays gone: the look is set in the window.
 
 ## 1. The portrait
@@ -82,7 +82,7 @@ you, and whether it may disturb you.
 - **Marks:** the stage I–IV at the bottom right; an
   `alert` dot at the bottom left while an ork asks (a click on the dot opens Answers, a click elsewhere
   the menu). Not Renown: Renown is a building's.
-- **A new stage** glows softly until the menu is opened (it glowed in Settings before). The Warchief's
+- **A new stage** glows softly until the menu is opened (it glowed in Settings before). The Workchief's
   line still says it once, and its link opens the menu.
 - **Office** (§3) draws the role's mark instead of the head: a line icon in a circle (`js/roles.js`: code
   brackets, a lens, a team tree, a flag, a pen nib, a gamepad, a rising phone, a horn, bars, a rocket, and a
@@ -123,13 +123,13 @@ as `data-look` always did; the words, the panel, the line and every action are t
 | | Camp | Office |
 |---|---|---|
 | buildings | the huts' building sprites | a card: the name and its status lines, no sprite |
-| the Warchief's line | 🧌 | `›` |
+| the Workchief's line | 🧌 | `›` |
 | the portrait | the mascot's head, the stage | the role's monogram |
 | colour | the Camp palette (gold, moss, bronze) | monochrome greys with one accent, the Camp gold muted (`#b8a06a` dark, `#7a6630` light): the selected, the focus ring; light or dark as the system says |
 | type | Almendra titles, Titillium | the system UI stack |
 | emoji in labels | yes | no (`modes.plain`) |
 | a building that waits for you | flames climb its roof (when Fire on the roofs is on, in the portrait's menu: Camp's own, so Office does not show it) | its frame turns `danger`, no flames |
-| the Warchief | jokes, addresses you by your stage ("My Lord Lich") | plain ("Forge asks for a decision") |
+| the Workchief | jokes, addresses you by your stage ("My Lord Lich") | plain ("Forge asks for a decision") |
 | growth news, a new stage's glow | yes | no; the stage and the deeds keep counting and show again in Camp |
 
 - **A hut's controls are the same size in both looks:** the pin and the fold chevron sit in 24 px boxes, so
@@ -159,7 +159,7 @@ For the person, not the orks: nothing stops working, nothing is lost, it all wai
 | | while it holds |
 |---|---|
 | 📯 the Horn | sounds nothing; each call is logged as kept, why "do not disturb" |
-| the Warchief | does not speak first (calm-town.md §8); it answers when asked |
+| the Workchief | does not speak first (calm-town.md §8); it answers when asked |
 | toasts | only `error` |
 | pushes to phones | all held but one: the budget is spent and the orks stopped |
 | Answers | the questions gather; its count in the HUD stays |
@@ -167,7 +167,7 @@ For the person, not the orks: nothing stops working, nothing is lost, it all wai
 
 - **How long:** 1 hour · until morning (the end of the machine's quiet hours, else 9:00) · until
   turned off. The menu shows the end ("Until 9:00").
-- **When it ends:** one line in the Warchief's line, and one push, of everything that gathered:
+- **When it ends:** one line in the Workchief's line, and one push, of everything that gathered:
   the questions, the sounds kept, the toasts held, the pushes held, and the spend if it crossed into
   `warn` or `over` ("While you were away: 3 questions, 2 sounds kept, 1 error, spend at 92%"). A
   click opens Answers when a question waits, else the Horn's log of calls.
@@ -203,7 +203,7 @@ For the person, not the orks: nothing stops working, nothing is lost, it all wai
 ## 7. Not doing
 
 - No third look, no per-building look.
-- Office changes no word: a building is a building, the Warchief is the Warchief.
+- Office changes no word: a building is a building, the Workchief is the Workchief.
 - Do not disturb never stops, pauses or slows an ork.
 
 ## 8. Open questions

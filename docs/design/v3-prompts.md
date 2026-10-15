@@ -153,7 +153,7 @@ inside; the door open with the keeper half out (the keeper of §3b).
    (left is mirrored). Row 5: working at a table, 6 frames. Row 6: stepping out of a door and turning to the viewer,
    4 frames. Arms and legs clearly swing in every walk."
 2. **The roles:** "The same body, twelve times, only headgear, clothes and tool change, 32 × 32 each, one row:
-   1. the Warchief: a horned helmet and a loosened necktie over a leather vest; 2. a Grunt: a bone-white hard hat and a
+   1. the Workchief: a horned helmet and a loosened necktie over a leather vest; 2. a Grunt: a bone-white hard hat and a
    muted brown work vest; 3. the Taskmaster (task board keeper): a quill behind the ear and a scroll; 4. the Seer
    (inspector): a hood and a staff with a glass charm; 5. the Lookout: a fur hat and a simple headset; 6. the Mechanic:
    a welder's cap and a wrench; 7. the Alchemist: a pointed cloth hat and a muted green flask; 8. the Treasurer: a
@@ -408,7 +408,7 @@ Saved as references, **not cut** (named `-r1` so `camp_sheet.py --v3` does not p
 
 - **The ork of v3:** round, big head, olive skin, a leather apron, small tusks, a friendly resting face — the same
   character in o1 and o2, and our own.
-- **The twelve roles read by silhouette** (o2): the Warchief's horned helmet and tie, the Grunt's hard hat, the
+- **The twelve roles read by silhouette** (o2): the Workchief's horned helmet and tie, the Grunt's hard hat, the
   Taskmaster's quill and scroll, the Seer's hood and staff, the Lookout's fur hat, the Mechanic's cap and wrench, the
   Alchemist's pointed hat and flask, the Treasurer's clipboard, the Warder's shield, the Pathfinder's map and lantern
   (row 2), the Prospector's miner's lamp and pick, the Loader's rope and gloves.
@@ -516,7 +516,7 @@ row, another line, joined the same way. Needs all four curves of c2 and its swit
 
 The owner, looking at all the ork sheets side by side: **the main ork is the capped one of the 0.3 sheets** — cloth
 cap, leather apron over a shirt, tool belt — whose roles hold big props in different poses with a colour of their own
-(the Warchief's axe, the Lookout's spyglass, the Seer's glowing orb, the Warder's shield with a lock, the Treasurer's
+(the Workchief's axe, the Lookout's spyglass, the Seer's glowing orb, the Warder's shield with a lock, the Treasurer's
 scales, the Alchemist's flask, the Pathfinder's map and lantern, the painter's brush, the clipboard): references
 `0.3/roles-2.jpg` and the roles already cut in `design-system/sprites/camp/orks/roles/`. It replaces o1/o2's bald ork
 (§10). The owner's own `o3-states-r1.jpg` and `o5-inside-r1.jpg` are drawn with this ork and become its states and
@@ -565,7 +565,7 @@ portrait's heads. Stage 4's gold eyes become a teal glow (yellow is the question
 and two of them also open by the game's goal ([the-score.md](the-score.md)): **stage 3** also by a **lean week** — the
 town's cost per accepted result down from the week before with the quality guard steady (👎 and reworks per result not
 up); **stage 4** also by **a month of it** (four lean weeks in five). A stage, once reached, stays. The deed is named in
-the Warchief's line when it lands ("Lich of Sprints: a week at 12 % less per result, nothing sent back more").
+the Workchief's line when it lands ("Lich of Sprints: a week at 12 % less per result, nothing sent back more").
 
 ## 14. Items the person places in the camp; growth by missions (the owner, 2026-10-14, evening)
 

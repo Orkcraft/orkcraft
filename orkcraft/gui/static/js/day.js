@@ -31,7 +31,7 @@ export function WorkHours({ p }) {
   </div>`;
 }
 
-/** "I'm off": the Warchief's line about the day away, the cart to take first, Go. While away: the window spent, Back. */
+/** "I'm off": the Workchief's line about the day away, the cart to take first, Go. While away: the window spent, Back. */
 export function Leave({ p, onDone }) {
   const away = p && p.away;
   const [plan, setPlan] = useState(null);
@@ -50,7 +50,7 @@ export function Leave({ p, onDone }) {
   }
   const go = () => { command("away.leave", { first }).catch(() => {}); setPlan(null); onDone(); };
   return html`<div class="gui-day gui-day__plan" role="group" aria-label=${say("Leaving the camp")}>
-    <p class="ok-font-status">${say(`Warchief: ${plan.line}`)}</p>
+    <p class="ok-font-status">${say(`Workchief: ${plan.line}`)}</p>
     ${plan.carts.length > 1 && html`<ul class="gui-day__carts">
       ${plan.carts.slice(0, 6).map((c) => html`<li key=${c.task}><label>
         <input type="radio" name="gui-day-first" checked=${first === c.task} onChange=${() => setFirst(c.task)} />

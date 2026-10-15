@@ -145,7 +145,7 @@ silhouette at 1×; one modern joke per role at most, never in buildings or signa
 
 | role | headgear and tool |
 |---|---|
-| Warchief | horned helmet, **a loosened necktie** over the leather vest, a small banner on the back |
+| Workchief | horned helmet, **a loosened necktie** over the leather vest, a small banner on the back |
 | Grunt | a bone-white hard hat, a muted brown work vest, an axe |
 | Taskmaster | a cap with a pencil behind the ear, a scroll |
 | Lookout | a cap with **a simple headset**, a spyglass |

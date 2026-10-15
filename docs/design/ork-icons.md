@@ -37,7 +37,7 @@ roles that are on the town by default ([catalog-shelves.md](catalog-shelves.md))
 
 | role | expertise | headgear and held thing (a starting idea) |
 |---|---|---|
-| Warchief | the lead | the crown (as today) |
+| Workchief | the lead | the crown (as today) |
 | Mason | data, schemas, scripts | a mason's cap, a trowel |
 | Alchemist | UI/UX | a beret, a flask |
 | Mechanic | quality on cases | goggles, a wrench |
@@ -66,7 +66,7 @@ warchief, grunt, mason, alchemist, mechanic, treasurer, seer, quartermaster (the
 Review gate's ork), pathfinder. They draw the orks **on the map**.
 
 **What does not match yet:** every small face in the interface (the 🥩 list, the console, a card's header, the
-Warchief's line, the mascot) still uses the old head under six hats chosen by **building** (`js/icons.js` `HATS`,
+Workchief's line, the mascot) still uses the old head under six hats chosen by **building** (`js/icons.js` `HATS`,
 `sprites/orks/face-*`): the old style, and against rule 1 above.
 
 **Decided:**

@@ -53,7 +53,7 @@ class KeeperMixin:
         """A script-first building's ork woke (core/wakes.py): its keeper asked in the town's words, the same job
         as a keeper asked by hand, with a toast. False when it cannot run now — the budget is spent, or a wake of
         the building is still open in its console — and it is due again at the next look. Landscape has no ork:
-        the steward its wake names (`looker`: downstream, else the Warchief) is asked instead."""
+        the steward its wake names (`looker`: downstream, else the Workchief) is asked instead."""
         if any(j.get("_wake") and j["building"] == wake.building for j in self.jobs.values()):
             return False
         title = self.town.title_of(wake.building)
@@ -62,7 +62,7 @@ class KeeperMixin:
         if by == wake.building:
             who, woke = "its ork", f"Woke on {what}: {wake.detail}"
         else:
-            who = "the Warchief" if by == TOWN_HALL else f"the steward of {self.town.title_of(by)}"
+            who = "the Workchief" if by == TOWN_HALL else f"the steward of {self.town.title_of(by)}"
             woke = f"{who[0].upper()}{who[1:]} looked at {what}: {wake.detail}"
         spec = self.town.custom_specs.get(wake.building)
         if spec is None or (self.town.demo and runners.KEEPER_RUNNER is None):

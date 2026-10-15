@@ -34,8 +34,8 @@ Order: value / risk, best first. First version — refined below as the audit go
   — `ui/after-U01-camp-phone.png` — `gui/static/js/pocket.js` (`asks`) — S/M — two numbers for "what waits for
   me" that disagree; the chip should count what Answers counts (or open Answers when the town waits on a
   non-building). — done by D1: the chip counts what Answers counts and opens Answers when no building asks (`ui/after-U06-camp-phone.png`).
-- [x] U07 With a building's panel open the Warchief's line squeezes: the placeholder is cut ("Ask the
-  Warchief… or /") and the question beside it is cut to "Quartermaster: 3 cart…" —
+- [x] U07 With a building's panel open the Workchief's line squeezes: the placeholder is cut ("Ask the
+  Workchief… or /") and the question beside it is cut to "Quartermaster: 3 cart…" —
   `ui/camp-win-todo.png` — `gui/static/js/warchief*.js` / `layout.css` — S/M — when space is short, drop the
   waiting question to an icon + count rather than cut both. — done by D3 (342c758): a container query on the bar — squeezed, the question says ❓ and how many wait (the HUD's Answers count), the field keeps its whole hint, the question in the tooltip — `ui/after-U07-camp-open.png`
 - [x] U08 Office: the orange ✻ (busy Claude mark) floats in the middle of a card's title row, far from the

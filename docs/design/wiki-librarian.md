@@ -1,7 +1,7 @@
 # Design — the Wiki's librarian: keeps, finds, places, checks
 
 Status: written 2026-10-07; stages 1–4 (§11) built the same day, and with them the Calendar's own
-line *from the Wiki: 2 to discuss* and the suggestions over the Warchief bar for `/note`. Where the
+line *from the Wiki: 2 to discuss* and the suggestions over the Workchief bar for `/note`. Where the
 build went another way than this text first said, §12 says so. The pictures are on the design canvas *Scroll Dump
 screens* (rows 4–6: the quality check, Quick note, the librarian and the meetings). It grows the
 🗑️ Scroll Dump (**Wiki**) from "an ork that turns sources into pages" into the town's owner of
@@ -48,7 +48,7 @@ What is missing:
    read, and never blocks Save. The librarian (the agent) writes pages at take-in, as today.
 3. **Suggest, never decide alone.** Every guess — section, tags, links, the meeting — shows before
    Save and goes with one click. What was confirmed is not guessed again at take-in.
-4. **One note, wherever it was written.** The Wiki's Quick note, `/note` to the Warchief and a note
+4. **One note, wherever it was written.** The Wiki's Quick note, `/note` to the Workchief and a note
    on the Task board are the same note and the same file.
 5. **Handing over is by id, not by luck.** A note bound to a meeting reaches that meeting's brief
    because it carries the meeting's id, whatever words it uses.
@@ -74,7 +74,7 @@ What is missing:
 |---|---|
 | The Wiki's window | **+ Quick note** in the head, next to *Check the wiki*; opens the panel over the tree |
 | The Wiki's card and Info | the quick action `wiki.note` (catalog), next to Ingest and Lint |
-| The Warchief bar | `/note <text>` (a new word in `COMMANDS`, no model): the suggestions show over the bar; Enter saves, Tab picks another meeting, `@Wiki` picks the wiki when the town has several |
+| The Workchief bar | `/note <text>` (a new word in `COMMANDS`, no model): the suggestions show over the bar; Enter saves, Tab picks another meeting, `@Wiki` picks the wiki when the town has several |
 | The Task board | a note card gets **→ Wiki** (and the New note form a checkbox *Also to the Wiki*): the same file is written, the card keeps a link to it |
 
 With several Wikis in the town, the note goes to the one the person names; else the one whose topic
@@ -275,7 +275,7 @@ Not planned: reading attendees from `.ics` (`ATTENDEE` lines) — a later step t
   whose agenda changed asks the Calendars it reads to draw again. The window says *from the Wiki: 2 to
   discuss* beside the meeting (*· 3 pages* once its brief is back); the closed card, narrow, a pill
   *✎ 2* with the words on hover.
-- **`/note` in the Warchief bar.** The suggestions stand over the bar as the text is typed (after
+- **`/note` in the Workchief bar.** The suggestions stand over the bar as the text is typed (after
   400 ms, as the panel's): the meeting, the section, the tags, the pages to link. Tab walks the coming
   meetings (the next 14 days, the suggested one first; `suggest` returns them as `meetings`) and *Not
   for a meeting*, Shift+Tab back; Enter saves what is shown. `@Wiki` names the wiki, as any `@name`.

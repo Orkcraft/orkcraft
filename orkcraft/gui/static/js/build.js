@@ -1,4 +1,4 @@
-// Changing the town: Build (the Warchief asked, or a building raised from the catalog), laying a road
+// Changing the town: Build (the Workchief asked, or a building raised from the catalog), laying a road
 // between two buildings and taking one up. The acts are the core's (gui/builder.py); the dialogs are the page's.
 import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -14,14 +14,14 @@ export const laying = signal(null);                // {from, to}: a road waits f
 export const pickedRoad = signal(null);            // the road key the person clicked
 export const demolishing = signal(null);           // the building id a Demolish dialog asks about
 export const copying = signal(null);               // the building id a Copy to orkspace dialog asks about
-export const settingUp = signal(null);             // {id, type}: just raised, its setup asked in the Warchief's line
+export const settingUp = signal(null);             // {id, type}: just raised, its setup asked in the Workchief's line
 export const placing = signal(null);               // {type, title, bare, yard}: picked in Build, its ghost under the mouse
 export const constructing = signal({});            // building id → until when its scaffolding stands (Infinity: its setup)
 export const built = signal(new Set());            // the buildings that just came up: they rise into place once
 const RAISE_MS = 1600;                             // a building with no questions: its construction, then it stands
 
 // Build, as a strategy game does it (docs/design/select-a-building.md §8): pick a building, place its ghost with the
-// mouse, it goes up under scaffolding while the Warchief asks its setup (if its type has one), then it stands.
+// mouse, it goes up under scaffolding while the Workchief asks its setup (if its type has one), then it stands.
 
 /** Picked in Build: its ghost follows the mouse until a press places it (js/town.js), Escape lets it go. */
 export function place(t) {
@@ -38,7 +38,7 @@ function stands(id) {
   setTimeout(() => { const s = new Set(built.value); s.delete(id); built.value = s; }, 1200);
 }
 
-/** The setup in the Warchief's line is over (answered, Later, or put away): the building stands. */
+/** The setup in the Workchief's line is over (answered, Later, or put away): the building stands. */
 export function endSetup() {
   const s = settingUp.value;
   settingUp.value = null;
@@ -46,7 +46,7 @@ export function endSetup() {
 }
 
 /** A building just raised: it goes up under scaffolding; a type with a `Setup` of its own (js/types.js) is set up
- *  in the Warchief's line meanwhile (docs/design/select-a-building.md §7–8), and stands when that is over; any other
+ *  in the Workchief's line meanwhile (docs/design/select-a-building.md §7–8), and stands when that is over; any other
  *  stands after a moment. */
 export function raised(id, type) {
   if (!id) return;
@@ -55,19 +55,19 @@ export function raised(id, type) {
     constructing.value = { ...constructing.value, [id]: Date.now() + RAISE_MS };
     setTimeout(() => stands(id), RAISE_MS);
   };
-  const setUp = () => {          // the line let go: its own hints would stand over the question the Warchief asks
+  const setUp = () => {          // the line let go: its own hints would stand over the question the Workchief asks
     if (document.activeElement) document.activeElement.blur();
     settingUp.value = { id, type };
   };
   import(`./buildings/${type}.js`).then((m) => { if (m.Setup) setUp(); else plain(); }, plain);
 }
 
-// Build is a row of small icons the Warchief's line grows upward (docs/design/warchief-line-and-cards.md §2): each says
+// Build is a row of small icons the Workchief's line grows upward (docs/design/warchief-line-and-cards.md §2): each says
 // what you want done — take in what comes, work in parallel, talk a hard topic over — not which house does it
 // (tools/intent_sprites.py); where it listens or what it reads is its setup's. The icons stand in small groups by what
 // they are for, two or three each, the group's word over them and a rule under the word, always in this order: an icon
 // never moves (the role's own are framed in gold where they stand). The line's own field filters it while Build is on
-// (js/warchief.js), Enter takes the first icon left or, with none, asks the Warchief what to build. One line over the
+// (js/warchief.js), Enter takes the first icon left or, with none, asks the Workchief what to build. One line over the
 // row says what the icon under the mouse raises. A press picks one and its ghost follows the mouse (`place`), a double
 // press builds it at a free spot; from the map's menu (*Build here*) a press builds it on that spot.
 export const GROUPS = [
@@ -131,12 +131,12 @@ function forYou(tiles, standing) {
 
 let enter = null;                                  // what Enter in the line does while the row stands
 
-/** Enter in the Warchief's line while Build is on: the first icon left is picked; false when none is left. */
+/** Enter in the Workchief's line while Build is on: the first icon left is picked; false when none is left. */
 export function buildEnter() {
   return enter ? enter() : false;
 }
 
-/** The row over the Warchief's line: `query` is the line's text. */
+/** The row over the Workchief's line: `query` is the line's text. */
 export function BuildRow({ query }) {
   const [types, setTypes] = useState(null);
   const [over, setOver] = useState(null);         // the icon under the mouse: the line over the row says it
@@ -167,7 +167,7 @@ export function BuildRow({ query }) {
   const biome = activeBiome();
   const said = over ? `${say(over.word)} — ${say(over.t.title)}: ${over.t.summary}`
     : types === null ? say("Looking…")
-    : !row.length ? say("Nothing by that name — Enter asks the Warchief what to build.")
+    : !row.length ? say("Nothing by that name — Enter asks the Workchief what to build.")
     : yours.length ? say(`For you, in gold: ${yours.map((x) => x.word).join(", ")}. ${hut ? "A press builds it here." : "A press places it; twice builds it at a free spot."}`)
     : say(hut ? "A press builds it here." : "A press places it; a double press builds it at a free spot.");
   const groups = [...GROUPS, { id: "more", word: "More" }]
@@ -266,7 +266,7 @@ export function RoadBar() {
     onClose=${() => setHandling(null)} onDone=${() => {}} />`}`;
 }
 
-/** Demolish asked from the hut's menu or the Warchief's line. */
+/** Demolish asked from the hut's menu or the Workchief's line. */
 export function DemolishAsked() {
   const id = demolishing.value;
   const b = id && town.value.buildings.find((x) => x.id === id);

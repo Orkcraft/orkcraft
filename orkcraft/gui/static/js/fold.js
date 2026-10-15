@@ -1,11 +1,11 @@
 // Folded cards (docs/design/folded-cards.md): what folds a hut and what makes a folded one peek, one by one
 // (js/hut.js) or many at once — Fold the quiet ones and Unfold all on the bare town (js/town.js), `/fold` and
-// `/unfold` in the Warchief's line (js/warchief.js).
+// `/unfold` in the Workchief's line (js/warchief.js).
 import { command } from "./link.js";
 import { opened, selected } from "./windows.js";
 import { keepTall } from "./parts.js";
 
-export const CORNER = "town_hall";          // the Hall never folds: it is the way to the Warchief
+export const CORNER = "town_hall";          // the Hall never folds: it is the way to the Workchief
 
 /** Why a folded hut peeks (§2): an ork of it asks, its worker failed, it is paused. */
 export function reasons(b) {

@@ -196,8 +196,8 @@ class Console(JobsMixin, KeeperMixin, RecruiterMixin, RoadPlannerMixin, StewardM
         return {"last": plain(last)[:2000], "cascade": [[plain(title), share] for title, share in cascade]}
 
     def improve(self, args: dict) -> dict:
-        """Improve, in the Warchief's line (docs/design/warchief-line-and-cards.md §1): the latest 👎 of every building,
-        as one ask for the Warchief to go through — what went wrong in each and what to change. With no 👎, nothing to
+        """Improve, in the Workchief's line (docs/design/warchief-line-and-cards.md §1): the latest 👎 of every building,
+        as one ask for the Workchief to go through — what went wrong in each and what to change. With no 👎, nothing to
         ask: `none` says so. With a `day` (YYYY-MM-DD), the Mechanic and the Farseer read that day's logs first
         (gui/day_review.py; `again`: read it again though it was read); with `since_update`, the logs since this
         machine started on the code it runs now. `said` tells what they are doing."""

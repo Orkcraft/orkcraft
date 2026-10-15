@@ -217,13 +217,13 @@ def _add_via_claude(w, args: dict) -> None:
 
 
 def _setup(w, args: dict) -> dict:
-    """The Warchief's setup of a new tower: Claude's connectors and how the quick add goes (js/warchief.js Setup)."""
+    """The Workchief's setup of a new tower: Claude's connectors and how the quick add goes (js/warchief.js Setup)."""
     return w.adding.setup_view()
 
 
 @_adding
 def _add_quick(w, args: dict) -> None:
-    """One press in the Warchief's setup: the service through Claude's connection, as it comes, saved on its first look."""
+    """One press in the Workchief's setup: the service through Claude's connection, as it comes, saved on its first look."""
     w.adding.quick(text(args, "service", 40))
 
 

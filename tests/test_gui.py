@@ -577,7 +577,7 @@ def test_a_building_is_raised_from_the_catalog_and_demolished(fake_repo, isolate
     named = host.command("town.build", {"type": "fields", "prompt": "What should I build? sort my inbox into tasks"})
     assert next(b for b in host.snapshot()["buildings"] if b["id"] == named)["title"] == "Sort inbox into tasks"
     again = host.command("town.build", {"type": "fields", "prompt": "What should I build?  sort my inbox into tasks"})
-    assert again == named                                  # the Warchief's offer pressed twice raises one building
+    assert again == named                                  # the Workchief's offer pressed twice raises one building
     assert host.command("town.build", {"type": "fields", "prompt": "Добавь здание тасков"}) != named
     assert next(b for b in host.snapshot()["buildings"] if b["title"] == "Task Fields")
     bid = host.command("town.build", {"type": "fields"})
@@ -793,7 +793,7 @@ def test_a_type_draws_its_closed_card_from_its_view(fake_repo, isolated_layout_f
     assert fields["page"] and fields["card"]["error"] == "" and fields["card"]["lanes"]
     assert {"label", "count", "new"} <= set(fields["card"]["lanes"][0])
     hall = next(b for b in snap["buildings"] if b["id"] == "town_hall")
-    assert hall["page"] and hall["card"] == {"news": [], "warchief": "Warchief"}     # nothing happens: Build, Ask
+    assert hall["page"] and hall["card"] == {"news": [], "warchief": "Workchief"}     # nothing happens: Build, Ask
 
 
 def test_lake_open_and_keeper_ask_are_there_for_every_type(fake_repo, isolated_layout_file):
@@ -808,7 +808,7 @@ def test_lake_open_and_keeper_ask_are_there_for_every_type(fake_repo, isolated_l
 
 def test_the_town_hall_is_the_town_s_way_in(fake_repo, isolated_layout_file, monkeypatch):
     """docs/design/building-views.md §3: closed — Build and Ask me anything, or what happens; command —
-    the Warchief's chat, the sessions, the audit, spend and quotas; full — Hall, Sessions, Limits."""
+    the Workchief's chat, the sessions, the audit, spend and quotas; full — Hall, Sessions, Limits."""
     import time
 
     from orkcraft.core import runners
@@ -820,7 +820,7 @@ def test_the_town_hall_is_the_town_s_way_in(fake_repo, isolated_layout_file, mon
     d = host.detail("town_hall")
     json.dumps(d)
     data = d["data"]
-    assert data["warchief"] == "Warchief" and data["chat"] == [] and data["thinking"] is False
+    assert data["warchief"] == "Workchief" and data["chat"] == [] and data["thinking"] is False
     assert {"agents", "audit", "proposals", "elders", "reviews", "board"} <= set(data["hall"])
     assert data["spend"]["level"] == "ok" and isinstance(data["limits"], list)
     with pytest.raises(CommandError):

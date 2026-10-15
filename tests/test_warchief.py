@@ -1,4 +1,4 @@
-"""The Warchief delegates (core/warchief.py, docs/design/calm-town.md §5–§7): his answer's DO line becomes a
+"""The Workchief delegates (core/warchief.py, docs/design/calm-town.md §5–§7): his answer's DO line becomes a
 card — the Town Builder's plan, reviewed by the Council and raised on Build (or at once when unchained, with
 Undo), one building of the catalog, or a face's job (the road planner, the Recruiter, a keeper)."""
 from __future__ import annotations

@@ -32,7 +32,7 @@ TYPE_USES = {"barracks": {"triage": "Sort the tasks", "plan": "Plan the tasks", 
              "council": {"decide": "Let the document go"},
              "gramophone": {"script": "Write the script"},
              "mine": {"plan": "Plan the research", "search": "Search the web", "check": "Group the findings"},
-             "town_hall": {"answer": "Answer as the Warchief", "build": "Plan the town (Town planner)"}}
+             "town_hall": {"answer": "Answer as the Workchief", "build": "Plan the town (Town planner)"}}
 
 # What each task's model calls are for, in the Spend window's *By purpose* (docs/design/simplify.md §2;
 # `telemetry.PURPOSES`); a task not named here is `work`.
@@ -43,7 +43,7 @@ PURPOSE = {"watch": "retro", "redesign": "build", "keeper": "build", "roads": "b
 
 
 def purpose_of(use: str, type_id: str = "") -> str:
-    """The purpose of one of the steward's tasks; the Town Hall's `answer` is the Warchief's `chat`."""
+    """The purpose of one of the steward's tasks; the Town Hall's `answer` is the Workchief's `chat`."""
     return "chat" if (type_id, use) == ("town_hall", "answer") else PURPOSE.get(use, "work")
 
 

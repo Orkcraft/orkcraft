@@ -1,6 +1,6 @@
 // The right click (docs/design/calm-town.md §3): a building's menu on its hut — Open, Info, Listen to…,
-// Ask the Warchief, Demolish — and the bare map's — Build here, Settings. What the Command Card had, without
-// opening the panel; each entry names the Warchief's command that does the same (js/warchief.js), so the
+// Ask the Workchief, Demolish — and the bare map's — Build here, Settings. What the Command Card had, without
+// opening the panel; each entry names the Workchief's command that does the same (js/warchief.js), so the
 // menu teaches the line.
 import { signal } from "@preact/signals";
 import { useEffect, useRef } from "preact/hooks";

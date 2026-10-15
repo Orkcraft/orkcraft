@@ -179,7 +179,7 @@ move or ride carts. Office: a 10 px square in the state's colour, the load as a 
 
 **Ork** — one body, frame 32×48, anchored at the feet. Directions down, up, side (mirrored). Frames: idle 4, walk 6
 per direction, work 6, sit 2, at 8 fps. `role` slot: headgear and tool over the body (its name is `orc.<type>` in
-`TERMS`: the Warchief, a Grunt, the Lookout, the Seer, …). `state` slot, a pose: working (the tool swings, no badge),
+`TERMS`: the Workchief, a Grunt, the Lookout, the Seer, …). `state` slot, a pose: working (the tool swings, no badge),
 asks (a hand raised, ❓), stuck (slumped, `!`), held (arms crossed, ⏳), idle (dozing, no badge). Office: the state as
 a word.
 

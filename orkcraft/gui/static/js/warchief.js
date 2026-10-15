@@ -1,14 +1,14 @@
-// The Warchief's line (docs/design/calm-town.md §4): one input at the town's bottom middle, the way to build,
+// The Workchief's line (docs/design/calm-town.md §4): one input at the town's bottom middle, the way to build,
 // to command and to ask. `/` or Ctrl+K focuses it from anywhere, Esc leaves it, ↑ walks its history.
 //
 //   empty    hints over it that follow the town's state, by rules, no model (`hints`)
 //   /word    the commands, completed as typed; one runs at once, with no model (`COMMANDS`)
 //   @name    names a building; the building open in the panel is named already (its command card, below)
-//   words    go to the Warchief (core/workers/town_hall.py `ask`); its answer unrolls over the line, the
+//   words    go to the Workchief (core/workers/town_hall.py `ask`); its answer unrolls over the line, the
 //            last few messages, and its whole chat is the Town Hall's Chat tab
 //
 // Build grows the line: its row of icons stands over the bar, in the line's frame, and the field finds in it
-// (js/build.js `BuildRow`): Enter takes the first icon left, or asks the Warchief what to build; Escape, Build
+// (js/build.js `BuildRow`): Enter takes the first icon left, or asks the Workchief what to build; Escape, Build
 // again or a press elsewhere puts it away.
 //
 // Its cards (the work it gave a specialist: a plan, a building, a road, an ork, a change) stand in its
@@ -17,10 +17,10 @@
 // While it is left alone the line says what wants a decision first: an ork's question (§8).
 //
 // A building selected, the line is its **command card** (docs/design/select-a-building.md §2): its steward's face
-// and name, Open (its window, until it is open), its quick actions (three, ⋯ for its Info), the field asking about it; ✕ gives the Warchief back
+// and name, Open (its window, until it is open), its quick actions (three, ⋯ for its Info), the field asking about it; ✕ gives the Workchief back
 // while it stays selected (Build and Improve with him: the open panel leaves the line little room). What is typed
 // goes to its steward (js/keeper.js: it answers, or proposes a change of its rules and settings with Apply); to the
-// Warchief, with the building named as `@` does, from a yard (no steward), a building that keeps no settings, or
+// Workchief, with the building named as `@` does, from a yard (no steward), a building that keeps no settings, or
 // words that name another building too. Q, W, E (the field left) do its first three actions.
 import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -50,7 +50,7 @@ const SEEN_MS = 45_000;                    // an answer stays over the line this
 
 export const line = signal({ text: "", about: [], focus: 0 });   // about: building ids named as chips; focus: a tick
 const history = [];
-const givenBack = signal(null);            // the selected building whose card ✕ put away: the Warchief's line again
+const givenBack = signal(null);            // the selected building whose card ✕ put away: the Workchief's line again
 const CARD_ACTS = 3;                       // a card's quick actions on the line; the rest in its Info (⋯)
 const CARD_KEYS = ["KeyQ", "KeyW", "KeyE"];  // its first three, by the key's place (any layout), as an RTS's grid
 
@@ -58,7 +58,7 @@ function input() {
   return document.querySelector(".gui-warchief__input");
 }
 
-/** Put a building in the line as a chip and focus it (the hut's menu: Ask the Warchief about it). */
+/** Put a building in the line as a chip and focus it (the hut's menu: Ask the Workchief about it). */
 export function mention(b) {
   const l = line.value;
   line.value = { ...l, about: l.about.includes(b.id) ? l.about : [...l.about, b.id], focus: l.focus + 1 };
@@ -218,7 +218,7 @@ const COMMANDS = [
   { word: "audit", args: "", about: "the Warder, the Pathfinder and the Treasurer look over the town",
     run: () => act(HALL, "audit").catch(() => {}) },
   { word: "settings", args: "", about: "how freely the orks decide", run: () => { settingsOpen.value = true; return null; } },
-  { word: "new", args: "", about: "a fresh chat with the Warchief", run: () => act(HALL, "forget").catch(() => {}) },
+  { word: "new", args: "", about: "a fresh chat with the Workchief", run: () => act(HALL, "forget").catch(() => {}) },
 ];
 
 const buildTypes = signal(null);           // the catalog, asked once for /build
@@ -359,7 +359,7 @@ function Over({ text, about, onPick }) {
     return html`<ul class="ok-list__items gui-warchief__list" role="listbox">
       ${list.map((x) => html`<li key=${x.word} class="ok-item" role="option" onPointerDown=${(e) => { e.preventDefault(); onPick({ text: `/${x.word} ` }); }}>
         <span class="ok-font-mono">/${x.word}</span> <span class="ok-tone-muted">${x.args}</span><span class="meta">${say(x.about)}</span></li>`)}
-      ${!list.length && html`<li class="ok-tone-muted">${say("No such command — a line without / goes to the Warchief")}</li>`}
+      ${!list.length && html`<li class="ok-tone-muted">${say("No such command — a line without / goes to the Workchief")}</li>`}
     </ul>`;
   }
   const at = text.match(/@([^@\s]*)$/);
@@ -407,7 +407,7 @@ function Speaks({ hidden }) {
       <button class="gui-link" title=${say("Seen")} aria-label=${say("Seen")} onPointerDown=${(e) => e.preventDefault()}
         onClick=${seen}>✕</button></span>`;
   }
-  if (p.dnd && p.dnd.on) return null;          // Do not disturb: the Warchief does not speak first
+  if (p.dnd && p.dnd.on) return null;          // Do not disturb: the Workchief does not speak first
   if (a) {
     return html`<button class="gui-warchief__speaks ok-font-status ok-tone-fire" title=${a.title}
         aria-label=${`${a.who ? `${a.who}: ` : ""}${a.title}`}
@@ -453,7 +453,7 @@ export function WarchiefLine() {
   const b = t.buildings.find((x) => x.id === HALL);
   const chips = l.about.map((id) => t.buildings.find((x) => x.id === id)).filter(Boolean);
   const open = selected.value;                     // the selected building (open in the panel, or only selected)
-  // the building open in the panel, named in what is typed — its card says so; ✕ on the card: the Warchief at large
+  // the building open in the panel, named in what is typed — its card says so; ✕ on the card: the Workchief at large
   const auto = open && open !== HALL && !l.about.includes(open) && givenBack.value !== open
     ? t.buildings.find((x) => x.id === open) : null;
   const sel = open && open !== HALL ? t.buildings.find((x) => x.id === open) : null;
@@ -496,7 +496,7 @@ export function WarchiefLine() {
     return () => clearTimeout(id);
   }, [shown]);
 
-  // A building just raised asks its setup here (js/build.js raised): the Warchief puts its type's question.
+  // A building just raised asks its setup here (js/build.js raised): the Workchief puts its type's question.
   const su = settingUp.value;
   const suMod = su ? typeModule(su.type) : null;
   const suB = su ? t.buildings.find((x) => x.id === su.id) : null;
@@ -515,8 +515,8 @@ export function WarchiefLine() {
 
   const set = (text) => { line.value = { ...line.value, text }; setSaid(""); };
   // Improve (docs/design/warchief-line-and-cards.md §1): a day's logs read by the Mechanic and the Farseer, whose
-  // findings the Warchief then offers (gui/day_review.py, docs/design/improve-buildings.md §13); or, with no day,
-  // the latest 👎 handed to the Warchief to go through.
+  // findings the Workchief then offers (gui/day_review.py, docs/design/improve-buildings.md §13); or, with no day,
+  // the latest 👎 handed to the Workchief to go through.
   const improve = (day = "", again = false) => {
     setPicking(false);
     if (day) {
@@ -540,7 +540,7 @@ export function WarchiefLine() {
 
   function send(value) {                       // the field's own value: a render may not have caught up yet
     const text = value.trim();
-    if (buildOn && !text.startsWith("/")) {      // Build's finder: the first icon left, else the Warchief is asked
+    if (buildOn && !text.startsWith("/")) {      // Build's finder: the first icon left, else the Workchief is asked
       if (!buildEnter() && text) { buildOpen.value = false; ask(`What should I build? ${text}`, []).catch(() => {}); }
       clear();
       return;
@@ -608,10 +608,10 @@ export function WarchiefLine() {
   useEffect(() => () => { if (cover.current) cover.current.stop(); coverTop.value = null; }, []);
 
   if (!b) return null;
-  const name = data ? data.warchief : say("Warchief");
+  const name = data ? data.warchief : say("Workchief");
   const office = (t.portrait || {}).look === "office";
   const acts = card ? card.quick || [] : [];
-  const ph = buildOn ? say(buildOpen.value.hut ? "Build here: what for? mail, tasks, a wiki…" : "What for? mail, tasks, a wiki… Enter asks the Warchief")
+  const ph = buildOn ? say(buildOpen.value.hut ? "Build here: what for? mail, tasks, a wiki…" : "What for? mail, tasks, a wiki… Enter asks the Workchief")
     : steward && card.keeper ? say(`Tell ${steward.name} or ask it…`)
     : card ? say(`Ask the ${name} about ${card.title}…`) : say(`Ask the ${name}… or / for commands`);
   const face = card && steward
@@ -675,7 +675,7 @@ export function WarchiefLine() {
           onClick=${() => openOrders()}>${card ? `❓ ${t.alerts.length}` : html`<span class="gui-warchief__long">${say(`Answers (${t.alerts.length})`)}</span><span
             class="gui-warchief__short">❓ ${t.alerts.length}</span>`}</button>`}
         ${!card && html`<button class=${cls("ok-btn gui-warchief__improve", { "is-on": picking })}
-          title=${say("The Mechanic and the Farseer read a day's logs, and the Warchief offers what to change")}
+          title=${say("The Mechanic and the Farseer read a day's logs, and the Workchief offers what to change")}
           aria-pressed=${picking} onClick=${() => (improveDays.length ? setPicking(!picking) : improve())}>${say("Improve")}</button>`}
       </span>
       <input ref=${ref} class="ok-input gui-warchief__input" value=${l.text} aria-label=${ph.replace(/…$/, "")}

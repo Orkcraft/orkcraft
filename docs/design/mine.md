@@ -51,7 +51,7 @@ happens and what it costs: *Start research · up to $3.00*, *Search more*, *Acce
 | Where | How |
 |---|---|
 | The Mine's window | **New research**: the question, optional *Must cover* (sub-questions) and *Skip* (sites or topics); the limit for this one, the tools it uses (§10 defaults) |
-| The Warchief bar | `/research <question>` (`@Mine` names one when the town has several) |
+| The Workchief bar | `/research <question>` (`@Mine` names one when the town has several) |
 | A road | any cart: its title is the question, its text the brief (a Task board card, a Router rule, a Calendar beat). Its `ref` stays, so the report can go back by a return road |
 | A repeat | §8: only through the Calendar |
 

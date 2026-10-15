@@ -40,14 +40,14 @@ body { user-select: text; -webkit-user-select: text; }
 }
 .gui-settings .gui-steps { align-self: flex-start; }
 
-/* The town's foot (docs/design/calm-town.md §1): the War Map at the left (js/warmap.js), the Warchief's line in the
+/* The town's foot (docs/design/calm-town.md §1): the War Map at the left (js/warmap.js), the Workchief's line in the
    middle of what the panel leaves of the town (js/chrome.js, js/warchief.js). Only its controls take the mouse. */
 .gui-foot { grid-area: town; align-self: end; z-index: 5; position: relative; display: flex; align-items: flex-end;
   gap: var(--space-3); padding: 0 var(--space-3) var(--space-3); pointer-events: none; min-width: 0; }
 .gui-foot > * { pointer-events: auto; }
 
 
-/* The Warchief's line: the face (the Town Hall), the chips it is about, the field; over it the last of his
+/* The Workchief's line: the face (the Town Hall), the chips it is about, the field; over it the last of his
    chat, what a command said, the hints or the commands and names as typed. */
 .gui-warchief { flex: 1 1 auto; position: relative; display: flex; flex-direction: column; align-items: center; min-width: 0; }
 .gui-warchief__bar { display: flex; align-items: center; gap: var(--space-2); width: min(720px, 100%); box-sizing: border-box;
@@ -67,7 +67,7 @@ body { user-select: text; -webkit-user-select: text; }
 .gui-warchief__buttons .ok-btn { flex: none; }
 .gui-warchief__chip { flex: none; display: inline-flex; align-items: center; gap: 2px; padding: 0 var(--space-1);
   border: 1px solid var(--frame); border-radius: var(--ok-radius); background: var(--selection); white-space: nowrap; }
-/* a selected building's command card (js/warchief.js): its steward's name, ✕ for the Warchief again */
+/* a selected building's command card (js/warchief.js): its steward's name, ✕ for the Workchief again */
 .gui-warchief__who { flex: none; display: inline-flex; align-items: center; gap: var(--space-1); max-width: 16em;
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .gui-warchief__who > b { overflow: hidden; text-overflow: ellipsis; }
@@ -84,7 +84,7 @@ body { user-select: text; -webkit-user-select: text; }
   .gui-warchief__long { display: none; }
   .gui-warchief__short { display: inline; }
 }
-/* Squeezed further, the field keeps room to type: what the Warchief says first goes (Answers (N) counts the
+/* Squeezed further, the field keeps room to type: what the Workchief says first goes (Answers (N) counts the
    questions already), and the buttons tighten. */
 .gui-warchief__input.ok-input { min-width: 160px; }
 @container warchief (max-width: 700px) {
@@ -422,7 +422,7 @@ body { user-select: text; -webkit-user-select: text; }
 
 .gui-toasts { position: fixed; right: var(--space-4); bottom: calc(56px + var(--space-4)); z-index: 10;
   display: flex; flex-direction: column; gap: var(--space-2); max-width: 420px; }
-/* a quest log or a building's setup in the Warchief's line: the toasts stand above it, never over its press */
+/* a quest log or a building's setup in the Workchief's line: the toasts stand above it, never over its press */
 body:has(.gui-warchief__setup) .gui-toasts { bottom: calc(56px + 50vh + var(--space-6, 24px)); }
 .gui-toasts .ok-toast { cursor: default; user-select: text; -webkit-user-select: text; }
 .gui-toast__text { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; cursor: text; }
@@ -630,7 +630,7 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 
 .gui-settings p::first-letter { text-transform: uppercase; }
 
-/* A card in the Warchief's chat (js/buildings/town_hall.js Card): who has the work, what came of it, the choice. */
+/* A card in the Workchief's chat (js/buildings/town_hall.js Card): who has the work, what came of it, the choice. */
 .gui-card-order { margin-top: var(--space-1); padding: var(--space-2) var(--space-3); border: 1px solid var(--frame);
   border-left: 3px solid var(--frame-focus); border-radius: var(--radius-sm, 0); background: var(--panel-inset);
   display: flex; flex-direction: column; gap: var(--space-1); }
@@ -834,7 +834,7 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 .gui-orkhead { display: inline-flex; align-items: center; gap: 1px; vertical-align: middle; }
 [data-look="camp"] .gui-orkhead__office { display: none; }
 
-/* The Warchief's face, or a steward's, and what grew, said in his line (js/warchief.js). */
+/* The Workchief's face, or a steward's, and what grew, said in his line (js/warchief.js). */
 .gui-warchief__crowned { display: inline-flex; align-items: center; }
 .gui-warchief__news { display: inline-flex; gap: var(--space-2); align-items: baseline; }
 .gui-map__state.ok-tone-wait { color: var(--warning); }   /* a paused building in the open orkspace */
@@ -855,7 +855,7 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 .gui-phones__kv dt { color: var(--ink-muted); }
 .gui-phones__kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 
-/* A narrow window (a phone, a half-screen window): the town's foot gives the Warchief's line the width — the
+/* A narrow window (a phone, a half-screen window): the town's foot gives the Workchief's line the width — the
    War Map shrinks to a strip of its lands and the line drops the news it cannot show whole (the face keeps
    its ❓); a form's field and its button stack instead of squeezing the field to a few letters. */
 @media (max-width: 640px) {
@@ -1001,7 +1001,7 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 .gui-tier__mark { image-rendering: pixelated; }
 [data-look="office"] .gui-tier__mark { display: none; }
 
-/* Build: the Warchief's line grown by a row of small icons (js/build.js `BuildRow`, docs/design/warchief-line-and-cards.md
+/* Build: the Workchief's line grown by a row of small icons (js/build.js `BuildRow`, docs/design/warchief-line-and-cards.md
    §2): what each is for (design-system/sprites/intents/), a thin rule between the catalog's groups, the line over it
    saying what the icon under the mouse raises. One row; a narrow line scrolls it sideways. */
 .gui-warchief__grown .ok-win__body { gap: 2px; padding-top: var(--space-1); padding-bottom: var(--space-1); }
@@ -1024,7 +1024,7 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 .gui-build__word { display: none; }                  /* its word: the line over the row, and Office's own */
 .gui-warchief__build.is-on { background: var(--selection); color: var(--ink-gold); box-shadow: inset 0 -2px 0 var(--ink-gold); }
 
-/* What the Warchief says first (js/warchief.js Speaks): a bubble over the line, never a part of it, so nothing in the
+/* What the Workchief says first (js/warchief.js Speaks): a bubble over the line, never a part of it, so nothing in the
    line moves when a question, a piece of news or the spend comes and goes. */
 .gui-warchief > .gui-warchief__speaks { position: absolute; bottom: calc(100% + var(--space-2)); left: 50%; transform: translateX(-50%);
   display: inline-flex; align-items: baseline; gap: var(--space-2); max-width: min(560px, 90%); padding: var(--space-1) var(--space-3);
@@ -1047,7 +1047,7 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
 .gui-orkcard__who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .gui-orkcard__why { margin: 0; white-space: normal; color: var(--ink); }
 .gui-panel .ok-win__bar > .ok-win__title { flex: 0 1 auto; min-width: 4em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* In Camp the Warchief speaks as his orks do (yards.css .gui-out__bubble): a pixel bubble of parchment that pops up
+/* In Camp the Workchief speaks as his orks do (yards.css .gui-out__bubble): a pixel bubble of parchment that pops up
    over the line, its tail down to his face at the line's left end. Office keeps the plain bubble above. */
 [data-look="camp"] .gui-warchief > .gui-warchief__speaks { left: calc(50% - min(360px, 50%)); transform: none; transform-origin: 24px 100%;
   bottom: calc(100% + 14px); padding: 2px 6px; margin: 0; border: 8px solid transparent; border-radius: 0; box-shadow: none;

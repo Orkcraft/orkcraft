@@ -33,10 +33,10 @@ export function makeDock(ctx) {
     ctx.flash(r.kept ? "Idea kept: it is sent when the signal returns." : `Idea dropped into ${to.label}.`);
   });
   const ideaSheet = sheet("Drop an idea", idea, ideaWhere, h("div", { class: "row" }, ideaBtn));
-  // -- the Warchief --
+  // -- the Workchief --
   const chat = h("div", { class: "chat", "aria-live": "polite" });
-  const ask = h("input", { id: "ask", class: "ok-input", placeholder: "Ask the Warchief…", maxlength: "2000",
-    enterkeyhint: "send", autofocus: true, "aria-label": "Ask the Warchief" });
+  const ask = h("input", { id: "ask", class: "ok-input", placeholder: "Ask the Workchief…", maxlength: "2000",
+    enterkeyhint: "send", autofocus: true, "aria-label": "Ask the Workchief" });
   const askBtn = h("button", { class: "ok-btn primary", type: "button" }, "Ask");
   let chatTimer = 0;
   async function readChat() {
@@ -45,7 +45,7 @@ export function makeDock(ctx) {
     if (!r.ok) return;
     const c = r.result;
     chat.replaceChildren(...c.chat.map((m) => h("div", { class: `msg${m.error ? " warn" : ""}` },
-      h("span", { class: "who" }, m.who === "user" ? "You" : (c.warchief || "Warchief")),
+      h("span", { class: "who" }, m.who === "user" ? "You" : (c.warchief || "Workchief")),
       h("p", {}, m.text || ""), m.offer && h("p", { class: "muted" }, "It offers a card: answer it at the computer."))),
       c.thinking ? h("p", { class: "muted" }, "Thinking…") : "");
     if (c.thinking && askSheet.el.open) chatTimer = setTimeout(readChat, 3000);
@@ -63,7 +63,7 @@ export function makeDock(ctx) {
   }
   askBtn.addEventListener("click", askWarchief);
   ask.addEventListener("keydown", (e) => { if (e.key === "Enter") askWarchief(); });
-  const askSheet = sheet("Warchief", h("div", { class: "row" }, ask, askBtn), chat);
+  const askSheet = sheet("Workchief", h("div", { class: "row" }, ask, askBtn), chat);
 
   // -- Drop file here --
   const drop = h("textarea", { id: "drop", class: "ok-input", rows: "4", placeholder: "A link or a text", maxlength: "20000",

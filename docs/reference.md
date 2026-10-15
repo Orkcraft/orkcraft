@@ -4,7 +4,7 @@ _The detailed reference. Start with the [README](../README.md). Old `MGTUI_*` / 
 
 > [!NOTE]
 > The screens, keys and console below are the **terminal UI's**, which is deprecated (`orkcraft tui`). The
-> window (`orkcraft`) is a calm town: the map, one panel on the right, the Warchief's line —
+> window (`orkcraft`) is a calm town: the map, one panel on the right, the Workchief's line —
 > [design/calm-town.md](design/calm-town.md). The buildings, roads, orks, files and settings below are the same in both.
 
 A terminal harness and orkestrator for multi-agent work in any git project, in an
@@ -113,7 +113,7 @@ Buildings (keys `1`–`9`):
 | # | Building | Resident | Shows |
 |---|---|---|---|
 | 1 | 📦 Artifacts | Quartermaster | `./loot/` artifacts and wiki notes |
-| 2 | 🏰 Town Hall | Warchief | its agents and the last audit · Sessions (live terminals of every AI tool) · Limits (each tool's quota) |
+| 2 | 🏰 Town Hall | Workchief | its agents and the last audit · Sessions (live terminals of every AI tool) · Limits (each tool's quota) |
 | — | 🏛️ Systems | Engineer | multi-agent pipelines and their schemes |
 
 Every other building is built from the catalog of typed buildings (below) or from scratch by the Builder (a Workshop).
@@ -493,14 +493,14 @@ sends down roads and its settings. Each camp type has its own silhouette (see To
   protected the same way for that run. Files outside the wiki that change while it works are
   reported.
 - **Quick note** (docs/design/wiki-librarian.md): *+ Quick note* in the window, the quick action, `/note`
-  to the Warchief, or *→ Wiki* on a note of the Task board. As the note is typed the wiki suggests,
+  to the Workchief, or *→ Wiki* on a note of the Task board. As the note is typed the wiki suggests,
   without a model, the pages to link (the ones that share its words, in any script and inflection),
   their section and, as tags, the names of those pages the note says; each is dropped with one click.
   The note is a Markdown file in `inbox` (default `notes/inbox`, made a source of the wiki by the
   first note) with that front matter, and the librarian keeps it at take-in (*Take in now*, on by
   default, starts one at once). Saving sends `wiki.noted`. When rules find nothing, the light model
   (the Council's `fast_model`) is asked once per note for a section and tags (`suggest_model`).
-  `/note <text>` in the Warchief's line shows those suggestions over the line as the text is typed —
+  `/note <text>` in the Workchief's line shows those suggestions over the line as the text is typed —
   the meeting it is for, the section, the tags, the pages to link — and saves only on Enter; Tab
   picks another coming meeting (the next 14 days) or *Not for a meeting*, Shift+Tab goes back, and
   `@Wiki` names the wiki when the town has several.
@@ -624,9 +624,9 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   cache). Rules first — a rule's block stops it and says why; then one `claude -p --model haiku`
   call whose objections you may override. Reviews: `.orkcraft/council/reviews.jsonl`, the Town Hall.
 - **The Town Hall's hut** has two buttons — 🏗 Build (a preset or new from scratch) and 🔍 Audit
-  (also `[` / `]`); the clean-up and the settings live in F10. Its steward is the **Warchief**
-  (a scroll of old names it the Chieftain and keeps its id). In the GUI the hut
-  is the town's way in: Build and **Ask me anything** — a question to the Warchief, whose chat is the
+  (also `[` / `]`); the clean-up and the settings live in F10. Its steward is the **Workchief**
+  (a scroll that names it the Chieftain or the Warchief is renamed and keeps its id). In the GUI the hut
+  is the town's way in: Build and **Ask me anything** — a question to the Workchief, whose chat is the
   Town Hall's Command Card (it names a building of the catalog when one fits, and builds it on a click). Two towers, a pediment over the round window of the Elders,
   columns between; in the corner of its heading row burns the Elders' lamp: 🌙 on watch (quiet
   hours, or by day from 🕰 On the clock), 📜 advice waits for you, 🔚 today's questions are used up, 💤 at
@@ -718,7 +718,7 @@ what you do with results ─► the same, weighted: Loot ✓ ✎ ↩ ✗ · a La
   takes the mark off. When there were commits, the day's diff gives at most 3 cleanup ideas as notes in
   **Ideas** — fewer after three deleted in a row, none after six, three again once one is taken. It never
   makes a task or sends a cart; a night with nothing changed calls no model. Its line in the morning is
-  the Warchief's (said once); Settings → Night round turns it off and has Look now; a board's
+  the Workchief's (said once); Settings → Night round turns it off and has Look now; a board's
   `night_round: false` leaves it out. The Town retro also sees THE WORK: what lies and for how long, and
   may add two `Work:` notes. Nights in `.orkcraft/round/nights.jsonl`.
 - Settings live in `.orkcraft/council/settings.json`: `fast_llm`, `fast_model`, `optimize_at`,
@@ -749,7 +749,7 @@ all through one registry (`orkcraft/realm/harnesses.py`, docs/design/harnesses.m
 once, reads, works in a worktree, resumes and opens a terminal, what it prints and costs.
 
 - **Main tool** — Settings → *AI tools* turns each tool on or off and picks the main one (empty: the
-  first one on). Every decision runs on it: the Warchief, the Town Builder, the Foreman, the road
+  first one on). Every decision runs on it: the Workchief, the Town Builder, the Foreman, the road
   planner, the Recruiter, the Council's fast path, stewards and keepers, retros. With no tool on it
   is Claude Code.
 - **Steps** name a tool or `main` (the main tool, read when the step runs). New orks, Barracks
@@ -1130,7 +1130,7 @@ A phone paired with the town (design: [design/mobile.md](design/mobile.md)) sees
 building's title, type and state, the questions the orks wait on (their last three lines and the
 Elders' advice), spend and quotas. It may answer a question with one of its own answers, follow the
 Elders' advice, **Stop all** (the desktop says which phone sent it), drop a text, a link or a file into
-a **Drop file here** building (never read as a path on this machine), ask the **Warchief** and read
+a **Drop file here** building (never read as a path on this machine), ask the **Workchief** and read
 his answers. It never builds, demolishes, lays roads, moves
 a hut, types into a terminal or changes a setting: anything else it sends is refused.
 
@@ -1194,16 +1194,16 @@ and Office were once two vocabularies switched per machine, per project and by o
 gone. The deprecated TUI keeps the camp's ASCII. An older `settings.json` with `mode`, `office` and
 `office_days`, or an older `.orkcraft.json` with `preferences.mode`, still loads; those keys are ignored.
 
-**Do not disturb** (the portrait's menu: 1 h, until morning, on): the Horn keeps its sounds, the Warchief
+**Do not disturb** (the portrait's menu: 1 h, until morning, on): the Horn keeps its sounds, the Workchief
 does not speak first, only error toasts show and every push to a phone waits but the spend over its
 limit; the orks keep working. When it ends one line says everything that gathered.
 
 **Words** (`orkcraft/realm/lexicon.py`). A concept keeps its Camp word when it says *who*: the orks, the
-Warchief, the town and its buildings and roads, renown. It takes a plain word when it says *what a thing
+Workchief, the town and its buildings and roads, renown. It takes a plain word when it says *what a thing
 does, what it costs or what it risks*: a building's function, the spend, autonomy, a file. Older code and
 older towns still write the Camp word of a renamed concept; the interface says it in today's word
 (labels, buttons, huts, toasts, the text of every GUI template), while paths (`./loot/`) and what people
-and agents wrote stay as written. The voice stays the camp's: the Warchief's lines, growth news and the
+and agents wrote stay as written. The voice stays the camp's: the Workchief's lines, growth news and the
 onboarding (*Punk ork*).
 
 | word | replaces |
@@ -1223,7 +1223,7 @@ onboarding (*Punk ork*).
 | steward | — |
 | steward | keeper |
 | War Map | — |
-| Warchief | — |
+| Workchief | Warchief |
 | Town Hall | — |
 | Road planner | — |
 | Road rule | — |

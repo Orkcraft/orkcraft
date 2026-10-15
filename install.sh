@@ -57,12 +57,12 @@ mkdir -p "$LOG_DIR" || { echo "orkline install: cannot write ${LOG_DIR}" >&2; ex
 banner() {                                    # $1: the terminal's width in columns
   printf '     \033[0m\033[48;5;221m \033[0m \033[0m\033[48;5;221m  \033[0m \033[0m\033[48;5;221m \033[0m   \033[0m'; printf '\n'
   printf '  \033[0m\033[48;5;70m \033[0m \033[0m\033[48;5;70m        \033[0m \033[0m\033[48;5;70m \033[0m'; [ "$1" -ge 48 ] && printf '   \033[1mOrkline\033[0m'; printf '\n'
-  printf '   \033[0m\033[48;5;70m  \033[0m\033[48;5;234m  \033[0m\033[48;5;70m  \033[0m\033[48;5;234m  \033[0m\033[48;5;70m  \033[0m \033[0m'; [ "$1" -ge 48 ] && printf '   The Warchief raises your camp'; printf '\n'
+  printf '   \033[0m\033[48;5;70m  \033[0m\033[48;5;234m  \033[0m\033[48;5;70m  \033[0m\033[48;5;234m  \033[0m\033[48;5;70m  \033[0m \033[0m'; [ "$1" -ge 48 ] && printf '   The Workchief raises your camp'; printf '\n'
   printf '    \033[0m\033[48;5;70m \033[0m\033[48;5;253m \033[0m\033[48;5;70m    \033[0m\033[48;5;253m \033[0m\033[48;5;70m \033[0m  \033[0m'; [ "$1" -ge 48 ] && printf '   \033[2muv · Python · Orkline\033[0m'; printf '\n'
   printf '     \033[0m\033[48;5;70m      \033[0m   \033[0m'; printf '\n'
 }
 # -- end of banner --
-# The terminal's width: the Warchief alone when his words would wrap, nothing when he would not fit.
+# The terminal's width: the Workchief alone when his words would wrap, nothing when he would not fit.
 COLS="$(stty size </dev/tty 2>/dev/null | cut -d' ' -f2)"
 case "$COLS" in ""|*[!0-9]*) COLS="$(tput cols 2>/dev/null || echo 80)" ;; esac
 case "$COLS" in ""|*[!0-9]*) COLS=80 ;; esac

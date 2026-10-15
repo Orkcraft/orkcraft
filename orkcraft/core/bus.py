@@ -33,7 +33,7 @@ SNAPSHOT = "snapshot"  # orkspace, sha, why: a snapshot of an orkspace's project
 SESSION = "session"  # key, state ("opened" | "exited" | "forgotten"), code: an ork's CLI session (core/sessions.py)
 TOOL_ERROR = "tool_error"  # harness, tool, kind, title, line, action, detail, switch, hint, main, where, retry: an
                           # AI tool failed (realm/tool_errors.py report); a face shows Switch, Retry and Details
-ORDER = "order"      # kind, building, source, order, card: the Warchief gave an order a face runs as its job
+ORDER = "order"      # kind, building, source, order, card: the Workchief gave an order a face runs as its job
                      # (a road for the road planner, an ork for the Recruiter, a change for a keeper)
 LOOK = "look"        # the greeting of "since your last look" changed (core/last_look.py): a face draws it again
 

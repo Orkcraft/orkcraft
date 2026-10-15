@@ -6,7 +6,7 @@ docs/design/war-map.md):
 - `design-system/sprites/mascots/<role>-<stage>.png` (and `@2x`): the operator's mascot, a head on the
   landing's 12 × 11 class grid per onboarding role, each of its four stages adding its own headgear or
   prop (a red bandana, then a horned helm; a keyword tag, then rating stars…), never a crown: the crown
-  is the Warchief's. `grids.json` beside them: every head as its grid and the palette, which the UX bench
+  is the Workchief's. `grids.json` beside them: every head as its grid and the palette, which the UX bench
   draws again from a person's words (orkcraft/design/mascots.py).
 - `design-system/sprites/flags/`: a building's renown and goal, drawn at the header sprites' scale (2 px
   a pixel). `level-<n>.png`, the flag on its roof at I–III (ivory, taller at II, gold at III; the pole's
@@ -58,7 +58,7 @@ def save_pair(img1x: Image.Image, path: pathlib.Path) -> None:
 # -- the mascots ---------------------------------------------------------------------------------------
 # The operator's mascot by role (realm/intents.py `ROLES`) and stage: a head on the 12 × 11 grid of the
 # landing's class sprites, each stage adding its own headgear or prop. A grid is a base head and an
-# overlay: '.' keeps the base, '_' clears it. Never a crown: the crown is the Warchief's.
+# overlay: '.' keeps the base, '_' clears it. Never a crown: the crown is the Workchief's.
 
 PALETTE = {
     "K": "#1a1813",                                   # eyes, mouths, outlines

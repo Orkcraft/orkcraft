@@ -1,4 +1,4 @@
-# Design — the Warchief's line does more, cards come in three sizes, tiers say what they are
+# Design — the Workchief's line does more, cards come in three sizes, tiers say what they are
 
 Status: discussed with the owner 2026-10-09; what is built is marked **Built**. Builds on
 [select-a-building.md](select-a-building.md) (a click selects, Build in place), [yards.md](yards.md) §7 (fences and
@@ -14,7 +14,7 @@ bare buildings) and [building-views.md](building-views.md) §1a (a card shows mo
 
 The person may shrink a medium card to minimal (§4) or fold it; a town of ten medium cards would fill the screen.
 
-## 1. The Warchief's line: buttons before the words
+## 1. The Workchief's line: buttons before the words
 
 An empty field is the blank page: a new person does not know what to type. The line starts with two or three
 buttons, then the field.
@@ -22,19 +22,19 @@ buttons, then the field.
 - **Build** (always) — opens the build tray (§2); the catalog dialog until the tray is built. **Built.**
 - **Answers (N)** — only while orks wait on the person (the glossary's word for the orks' questions, realm/lexicon.py);
   it opens them. It takes the place of Answers in the HUD. **Built.**
-- **Improve** (**built**, `warchief.improve`) — the Warchief goes through the latest 👎 of every building, says what went wrong in each and offers a
+- **Improve** (**built**, `warchief.improve`) — the Workchief goes through the latest 👎 of every building, says what went wrong in each and offers a
   change (a rule, a step, a tier, an ork), each a card with Apply or Not now. With no 👎 it says so and offers
   nothing.
-  - *Later, written down only:* with no 👎 the Warchief asks every building for its use (runs, failures, spend,
+  - *Later, written down only:* with no 👎 the Workchief asks every building for its use (runs, failures, spend,
     what was opened, what was ignored) and looks for the problem himself.
 - **While a building is selected** the buttons are its own two or three quick actions and its steward speaks in the
-  line (select-a-building.md §2): one place, one way. **Built** (its first step: the field still asks the Warchief).
+  line (select-a-building.md §2): one place, one way. **Built** (its first step: the field still asks the Workchief).
 
 ## 2. Build from the line, not a dialog (built)
 
-The catalog of 21 buildings with a paragraph each is too much. Build **grows the Warchief's line** by one row of small
+The catalog of 21 buildings with a paragraph each is too much. Build **grows the Workchief's line** by one row of small
 icons over its bar, in the line's own frame (`js/build.js` `BuildRow`), not a window of its own: the line's field is
-already where words go, so it finds in the row, and Enter that finds no icon asks the Warchief, whose line it is. The
+already where words go, so it finds in the row, and Enter that finds no icon asks the Workchief, whose line it is. The
 row is one line of 34-pixel icons with a thin rule between the groups, about 70 px tall in all (the first tray, a
 window of labelled tiles, stood six times as tall: the owner's call, 2026-10-09); a narrow line scrolls it sideways.
 
@@ -47,7 +47,7 @@ window of labelled tiles, stood six times as tall: the owner's call, 2026-10-09)
 - **For you** first, framed in gold: three of the onboarding's role's own buildings not standing yet (`builder.for_role`:
   counted over its ready towns); then the rest;
 - typing in the line filters it by the icon's own word first ("mail" leaves Mail), else by its building's name and
-  summary; Enter takes the first left, or with none asks the Warchief what to build; Escape, Build again or a press
+  summary; Enter takes the first left, or with none asks the Workchief what to build; Escape, Build again or a press
   elsewhere puts the row away;
 - a press picks it and its ghost follows the mouse (select-a-building.md §8); **a double press builds it at a free
   spot**, no ghost, for a person who does not mind where; from the map's *Build here* a press builds it there.
@@ -58,7 +58,7 @@ window of labelled tiles, stood six times as tall: the owner's call, 2026-10-09)
 For you only frames its icons in gold. A placed ghost over another building turns red and builds nothing; once
 placed, the building stands up from its scaffolding in the ghost's box, at the ghost's corner, and stays there
 (a hut's spot no longer hangs on its size, js/town.js `free`; huts the person placed or stretched are held, the
-others make way). The Warchief's news is a speech bubble over the line, never in it, so the line never shifts: in Camp the ork's pixel
+others make way). The Workchief's news is a speech bubble over the line, never in it, so the line never shifts: in Camp the ork's pixel
 bubble of parchment, in Office a calm one, both from the line's left end with a tail down to his face, popping in; the line is
 720px wide at most, so the Build row stands in one line (Office shows its icons in grey).
 

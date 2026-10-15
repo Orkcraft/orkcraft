@@ -1,4 +1,4 @@
-"""The Warchief's orders (docs/design/calm-town.md §5–§7): it does not build. It understands what the
+"""The Workchief's orders (docs/design/calm-town.md §5–§7): it does not build. It understands what the
 person wants, gives the work to the specialist who does it, and brings back what they made as a card in
 its chat. Its answer ends with at most one line that says which:
 
@@ -53,7 +53,7 @@ _ids = itertools.count(1)
 
 
 def about_text(town, ids: list[str]) -> str:
-    """The buildings the person pointed at (chips in the line), for the Warchief's prompt."""
+    """The buildings the person pointed at (chips in the line), for the Workchief's prompt."""
     named = [(i, town.scroll.building(i)) for i in ids]
     lines = [f"- {i} · {bs.title}" for i, bs in named if bs is not None and not bs.demolished]
     return ("The person points at:\n" + "\n".join(lines) + "\n") if lines else ""

@@ -10,7 +10,7 @@ its road, and is done when its goal holds — looked at on every tick, so it not
     m.view()         # what the quest log draws, None when no mission is under way
 
 Quests 1 to 3½ call no model: the Agent pool runs the drill by a script while its `drill.json` is there
-(core/workers/barracks.py DRILL), and the drill is called a drill on its card and in the Warchief's words.
+(core/workers/barracks.py DRILL), and the drill is called a drill on its card and in the Workchief's words.
 Before quest 4 the hooks are asked for once (`hooks`), showing what is written where. Quest 4 reads only (realm/
 mission_work.py: GitHub with the person's `gh`, else the TODO and FIXME lines) and calls no model; quest 5 is real
 work, its price said before the press, on branches, the Security reviewer on, nothing merged without the person.

@@ -236,7 +236,7 @@ function Roads({ b, t }) {
   </section>`;
 }
 
-/** Info's ork part heads with the ork itself (docs/design/yards.md §9): its face at full size, as the Warchief's line
+/** Info's ork part heads with the ork itself (docs/design/yards.md §9): its face at full size, as the Workchief's line
  *  shows it when the building is selected, its name, and why the building has an ork at all — apart from what the
  *  building does. A yard has no ork of its own: its steward's face, and when it comes. */
 function OrkCard({ b, i }) {

@@ -50,7 +50,7 @@ itself. Every cart has one origin, shown the same way everywhere:
 
 | origin | mark | from |
 |---|---|---|
-| **a person** | 👤 | a task made by hand, a dropped file, a talk, the Warchief's line |
+| **a person** | 👤 | a task made by hand, a dropped file, a talk, the Workchief's line |
 | **a meeting** | 📅 | the Calendar |
 | **the town itself** | ⏰ | a schedule, the night council, a held task run at a reset; signed by who started it (the Treasurer, the night council) |
 | **an outside event** | the service's own mark: Slack, mail, Jira, GitHub, Figma… | External listeners |

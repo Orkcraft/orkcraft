@@ -1,4 +1,4 @@
-"""🚶 Leaving the camp (docs/design/audience.md §2a, backlog W3): in the morning one press, "I'm off". The Warchief says
+"""🚶 Leaving the camp (docs/design/audience.md §2a, backlog W3): in the morning one press, "I'm off". The Workchief says
 what the orks will do until evening — which carts — and the cap, up to `CAP_PCT` % of the AI tool's window, and asks
 what to take first. While carts are in work the town keeps the computer from sleeping (gui/awake.py, only on power);
 it lets it sleep when the work is done or the cap is reached. A closed lid still sleeps a laptop, and the line says so.
@@ -36,7 +36,7 @@ CAP_PCT = 30                            # the share of the window the orks may s
 EVENING = 19 * 60                       # "until evening" when the person set no working hours
 WAITING = ("queued",)                   # a cart in a pool's queue
 WORKING = ("working", "reviewing", "planning")   # a cart an ork is on
-SHOWN = 3                               # carts the Warchief names; the rest are "+N more"
+SHOWN = 3                               # carts the Workchief names; the rest are "+N more"
 
 
 def _pools(town) -> list[tuple[str, Any]]:
@@ -138,7 +138,7 @@ class Leaving:
         return bool(self.away and self.away.get("capped"))
 
     def plan(self, now: dt.datetime | None = None) -> dict[str, Any]:
-        """What "I'm off" would do now: the carts, until when, the cap, the Warchief's line and the lid's sentence."""
+        """What "I'm off" would do now: the carts, until when, the cap, the Workchief's line and the lid's sentence."""
         now = now or dt.datetime.now()
         rows = carts(self.town)
         end = schedule.fmt(until(self.town.machine, now).hour * 60 + until(self.town.machine, now).minute)

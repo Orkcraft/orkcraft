@@ -166,7 +166,7 @@ def test_the_calendar_says_what_the_wiki_keeps_for_a_meeting(fake_repo: Path, mo
     hint = host.command("act", {"id": bid, "act": "suggest", "args": {"text": "Pricing tiers with Sergey tomorrow"}})
     links = [x["path"] for x in hint["links"]]
     assert links
-    # the meetings the Warchief bar's Tab walks: the coming ones, nearest first
+    # the meetings the Workchief bar's Tab walks: the coming ones, nearest first
     assert [(m["title"], m["when"]) for m in hint["meetings"]] == [
         ("Sergey 1:1", "2026-10-07 17:00"), ("Pricing review with Sergey", "2026-10-08 11:00"),
         ("Pricing review with Sergey", "2026-10-13 11:00")]

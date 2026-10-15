@@ -427,7 +427,7 @@ track. Between buildings, three kinds of link, three drawings:
    trip is short. A service stands beside its busiest reader (rule 1).
 3. **The person's places win.** A building the person placed in Office keeps its row and place; neighbours place only
    buildings never placed. A far placement costs a longer trip, shown as it is (and only shown:
-   rule 9). Later, perhaps: the Warchief says once, as a 💡 improvement, never forced, "The brief rides across the
+   rule 9). Later, perhaps: the Workchief says once, as a 💡 improvement, never forced, "The brief rides across the
    whole camp. Put the Calendar next to the Agent pool?"
 4. **The track is the product's, the places are the person's.** The person chooses a building's row and its order,
    never its coordinates, so the track comes out right whatever they do:
@@ -462,7 +462,7 @@ track. Between buildings, three kinds of link, three drawings:
 9. **Placement is tidiness, never throughput.** A cart's trip is drawn only: the work reaches its building at once
    (`cart_travel_s` 0), so a far placement costs nothing real, and nothing pretends it does. No layout-efficiency
    measure, no trip time in the score; the optimising game is the score (fewer rounds, cheaper roles, the Wiki read
-   first). The Warchief's 💡 line about a long round trip (rule 3) moves to **Later**: the person may notice it alone.
+   first). The Workchief's 💡 line about a long round trip (rule 3) moves to **Later**: the person may notice it alone.
    To check on the owner's own play: do they move buildings for shorter trips, and does that pull last a week? If it
    does, something real behind placement is worth a thought then.
 

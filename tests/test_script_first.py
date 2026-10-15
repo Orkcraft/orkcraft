@@ -318,7 +318,7 @@ def test_a_wake_says_the_buildings_own_error_line_never_its_status_word():
     assert wakes._detail(NS()) == ""
 
 
-# -- landscape: no ork of its own; the steward downstream looks, else the Warchief (landscape.md §4) ---------
+# -- landscape: no ork of its own; the steward downstream looks, else the Workchief (landscape.md §4) ---------
 
 def test_who_looks_when_land_breaks(fake_repo):
     from orkcraft.realm.buildings import TOWN_HALL
@@ -333,7 +333,7 @@ def test_who_looks_when_land_breaks(fake_repo):
     ts.subscribe(scroll, board, router, "signpost.routed")
     assert wakes.looker(host.town, pit) == board           # through the Router: land too, so further down
     assert wakes.looker(host.town, router) == board
-    assert wakes.looker(host.town, alone) == TOWN_HALL     # no road to an ork: the Warchief
+    assert wakes.looker(host.town, alone) == TOWN_HALL     # no road to an ork: the Workchief
     assert wakes.looker(host.town, script) == script       # a building has its own ork
 
 

@@ -3,7 +3,7 @@
 Status: written 2026-10-08; stages 1–4 of §7 built the same day. Builds on the retros
 (docs/design/retros-and-goals.md: the 🔧 Building retro daily, the 🗓 Weekly retro), the Task Fields'
 context and plan (docs/design/fields-board.md §5b, realm/cardlore.py), the steward's work
-(docs/design/steward-at-work.md §2) and the Warchief's line (docs/design/calm-town.md §8, the growth news
+(docs/design/steward-at-work.md §2) and the Workchief's line (docs/design/calm-town.md §8, the growth news
 of docs/design/growth.md §3). Wording: ork, orkestration (CLAUDE.md).
 
 ## 1. Why
@@ -19,7 +19,7 @@ is cheap to do (the operator is away, the quota has room).
 
 ## 2. What it is not
 
-- **Not the Town Hall at night.** The Town Hall is the town's own: its audit, the Warchief, the proposals.
+- **Not the Town Hall at night.** The Town Hall is the town's own: its audit, the Workchief, the proposals.
   The work lives in the buildings: the to-dos on a 🌾 Task Fields board, the knowledge in a 🗑️ Wiki. So
   the round is each board's **steward** at work (realm/steward.py `WORK`: its goal picks the model), and
   the Town Hall only says the morning's one line.
@@ -106,14 +106,14 @@ items about the work itself, titled `Work: …`: a to-do lying for weeks to drop
 no longer serve, a direction the week's commits point to. They are advice: shown with the other items,
 nothing to apply.
 
-## 4. The morning (`growth.tell`, the Warchief's line)
+## 4. The morning (`growth.tell`, the Workchief's line)
 
-The round says what it did **once**, in the Warchief's line, as growth news does (said once, then seen):
+The round says what it did **once**, in the Workchief's line, as growth news does (said once, then seen):
 
 > 🌙 Night round: 3 cards have news, 2 cleanup ideas · Task Fields
 
 A click opens the board. Nothing found, nothing said. The line says plainly what happened; the voice of
-the camp stays for the Warchief's own words.
+the camp stays for the Workchief's own words.
 
 ## 5. Cost and safety
 

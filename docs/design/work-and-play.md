@@ -73,7 +73,7 @@ The risk: a person who sees only the game in the first minutes takes Orkline for
 never learns Office exists. Not answered with another onboarding question; shown instead:
 
 1. **In Mission 1, a step of fifteen seconds** between quests 3 and 4 ([first-mission.md](first-mission.md) §3, 3½):
-   the person switches to Office, sees the same town as rows and numbers, switches back; the Warchief says "by day the
+   the person switches to Office, sees the same town as rows and numbers, switches back; the Workchief says "by day the
    office, after work the camp". The idea is learned by doing it, with the key. **P0**, part of Mission 1.
 2. **The README and the first screen:** both looks side by side, "At work: Office. After work: Camp. The same town."
    This answers [open-questions.md](open-questions.md) Q13 (show Office in the README): yes. **P0 before the launch.**

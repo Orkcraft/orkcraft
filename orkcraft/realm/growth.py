@@ -8,9 +8,9 @@ direction: the shape of its flag.
 The operator grows too, per machine (`settings.growth`): **deeds** (what the camp learned to do: the
 first road, the first change of the orks kept…) and the **stage** of their mascot (1–4), never lost. A stage
 opens by any of its paths (v3-prompts.md §14): the campaign's missions, the score's lean weeks
-(`realm/score.py`), or the buildings' levels; the Warchief's line names the deed that opened it.
+(`realm/score.py`), or the buildings' levels; the Workchief's line names the deed that opened it.
 
-What grew is **news**, said once by the Warchief's line: a level reached, a stage, a deed, and the
+What grew is **news**, said once by the Workchief's line: a level reached, a stage, a deed, and the
 loop closed on a review ("your 👎 on Brief → the orks changed it → 4 👍 since"). The news waits in
 `.orkcraft/growth.json` until the operator has seen it.
 

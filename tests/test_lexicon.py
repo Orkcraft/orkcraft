@@ -8,7 +8,7 @@ def test_a_concept_has_one_word():
     assert lexicon.term("watchtower") == "External listeners"
     assert lexicon.term("road", many=True) == "roads"
     assert lexicon.term("ork") == "ork" and lexicon.term("ork", many=True) == "orks"
-    assert lexicon.term("orc.town_hall") == "Warchief" and lexicon.term("town_hall") == "Town Hall"
+    assert lexicon.term("orc.town_hall") == "Workchief" and lexicon.term("town_hall") == "Town Hall"
     assert lexicon.term("chore", many=True) == "to-dos"
 
 
@@ -34,7 +34,8 @@ def test_an_old_camp_spelling_reads_in_todays_word():
     assert say("Orks wait on the road") == "Orks wait on the road"            # who keeps its word
     assert say("🧌 GARRISON") == "🧌 ORKS"
     assert say("No buildings in this orkspace yet.") == "No buildings in this orkspace yet."
-    assert say("Ask the Warchief") == "Ask the Warchief"
+    assert say("Ask the Workchief") == "Ask the Workchief"
+    assert say("Ask the Warchief") == "Ask the Workchief" and say("The Warchief's chat") == "The Workchief's chat"
     assert say("Standing orders & trigger") == "Instructions & trigger"
     assert say("📯 War Horn") == "📯 Stop all" and say("Not enough food") == "No ork slots left"
     assert say("Wandering Ghost") == "Wandering Ghost" and say("Inbox Ghost") == "Inbox Ghost"   # a kin, never a preview
@@ -56,7 +57,8 @@ def test_the_gui_gets_every_spelling():
     table = dict(lexicon.table())
     assert table["Watchtower"] == "External listeners" and table["Chores"] == "To-dos"
     assert table["GARRISON"] == "ORKS"
-    assert "orks" not in table and "Warchief" not in table and "road" not in table   # nothing to change
+    assert "orks" not in table and "Workchief" not in table and "road" not in table   # nothing to change
+    assert table["Warchief"] == "Workchief" and table["WARCHIEF"] == "WORKCHIEF"
 
 
 def test_a_path_is_not_a_concept():

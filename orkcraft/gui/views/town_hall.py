@@ -1,11 +1,11 @@
 """🏰 Town Hall in the GUI, the town's way in (docs/design/building-views.md §3):
 
-- closed (`card`): what happens in the hall — a town order waits, the Warchief is answering, the
+- closed (`card`): what happens in the hall — a town order waits, the Workchief is answering, the
   audit found something — else nothing, and the page shows Build and Ask me anything;
-- command and full (`detail`): the Warchief's chat, the hall (its orks, the audit, the proposals),
+- command and full (`detail`): the Workchief's chat, the hall (its orks, the audit, the proposals),
   spend and the quotas (Limits). The live sessions are the snapshot's (`sessions`).
 
-The work is the worker's (core/workers/town_hall.py): a question to the Warchief, an audit, the
+The work is the worker's (core/workers/town_hall.py): a question to the Workchief, an audit, the
 quotas read again.
 """
 from __future__ import annotations
@@ -102,7 +102,7 @@ def _ask(w, args: dict) -> None:
 
 
 def _card(w, args: dict) -> bool:
-    """A card of the Warchief's answered: build, cancel or undo."""
+    """A card of the Workchief's answered: build, cancel or undo."""
     choice = text(args, "choice", 20)
     if choice not in ("build", "cancel", "undo") or not w.card_act(text(args, "card", 100), choice):
         raise ActError("That card has moved on")

@@ -85,7 +85,7 @@ The War Map's fog (war-map.md §2.4) takes a name and a biome; under them, one m
   parent), and a first commit over 200 MB (it names the largest folders, so the person can ignore them).
 
 The War Map shows the project's name in the open land's line and in every land's tooltip. A land's menu has
-**Project…**, and the Warchief's line `/project`: both open the Project dialog of that orkspace (where it works now,
+**Project…**, and the Workchief's line `/project`: both open the Project dialog of that orkspace (where it works now,
 **Choose a folder…**, a path pasted, the town's other projects, the town's folder).
 
 ### As built (stage 1)

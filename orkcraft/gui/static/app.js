@@ -1,6 +1,6 @@
 // The Orkline GUI: the town over the core (gui/server.py), drawn with the design system's markup
 // (design-system/components.md). Preact + signals, no build step. A calm town (docs/design/calm-town.md):
-// the HUD, the map, the panel on the right, the War Map of orkspaces at the bottom left and the Warchief's line.
+// the HUD, the map, the panel on the right, the War Map of orkspaces at the bottom left and the Workchief's line.
 import { render } from "preact";
 import { html } from "./js/html.js";
 import { town, connect, openLink, copyText } from "./js/link.js";
@@ -46,7 +46,7 @@ function App() {
   // The town's ground is the open orkspace's biome, its colour and its glyphs (docs/design/war-map.md §3).
   wearGround(space ? space.biome : "dirt", look);
   const ids = new Set(space ? space.buildings : t.buildings.map((b) => b.id));
-  ids.delete(HALL);                                      // the Warchief's line is the hall's way in
+  ids.delete(HALL);                                      // the Workchief's line is the hall's way in
   const buildings = t.buildings.filter((b) => ids.has(b.id));
   return html`<div class="gui">
     <${Hud} />

@@ -33,10 +33,10 @@ Today: Camp's finished pixel-art sprites, the ones the GUI shows. Every sprite i
   parallel), discuss, calendar, transform (process data), research, check (validate), drop, tasks, wiki, then code,
   send, route, chart, logic (the Test bench's cog), uiux (the UX bench's flask), sound, listen; drawn by `tools/intent_sprites.py` (`js/build.js` `INTENTS`, docs/design/warchief-line-and-cards.md §2).
 - `orks/steward-<role>.png` (24×20) and `orks/hat-<role>.png` (24×4): a steward's head under its building's hat
-  (scribe, lookout, smith, clerk, captain, miner), on the Warchief's line when its building is selected, and the hat
+  (scribe, lookout, smith, clerk, captain, miner), on the Workchief's line when its building is selected, and the hat
   alone on the ork out of its building; drawn by `tools/hat_sprites.py` (`js/icons.js` `HATS`,
   docs/design/select-a-building.md §2).
-- `orks/warchief*.png` (24×20, its states 40×20): the Warchief, the ork's head under a gold crown, and its
+- `orks/warchief*.png` (24×20, its states 40×20): the Workchief, the ork's head under a gold crown, and its
   states with the ork's glyphs beside it (the crown's points burn while it waits), drawn by `tools/logo.py` (`js/icons.js` `WarchiefHead`; docs/design/growth.md §8).
 - `buildings/mill/work-still.png`, `work-part.png`, `buildings/catapult/work-still.png`, `work-part.png` (and `@2x`):
   a house at work as two layers on its header's canvas, the house without its moving part and the part alone, painted

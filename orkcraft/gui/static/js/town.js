@@ -51,7 +51,7 @@ const dropped = signal({});                // building id → {x, y}: where a hu
 const MIN_ROOM = { w: 1080, h: 600 };
 const COLS = 4, ROWS = 3;
 const MARGIN = 24;                          // between the room's edge and the outermost huts
-const STRIP = 64;                          // the town's foot (the orkspaces, the Warchief's line, layout.css .gui-foot): no hut under it
+const STRIP = 64;                          // the town's foot (the orkspaces, the Workchief's line, layout.css .gui-foot): no hut under it
 const DEFAULT_SIZE = { w: 240, h: 64 };     // a hut not drawn yet
 const RAISING_SIZE = { w: 160, h: 110 };    // a building under scaffolding (js/build.js raised): its house at its real size, its name and plinth
 

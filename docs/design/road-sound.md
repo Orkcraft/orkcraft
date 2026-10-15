@@ -78,9 +78,9 @@ ours: we take the genre, never a game's lines or voices.
 | Work taken | `tasks.created`, `pool.assigned`, `tasks.sent` | "Fine. Ork go." · "More work? Grr." · "On it, boss." |
 | Done | `pool.done`, `workshop.done`, `mill.done`, `team.artifact_ready` | "Built it. Mostly." · "Finished! Where's grub?" · "Smashed it good." |
 | Failed | `workshop.failed`, `pool.failed`, `mill.failed` | "It broke. Not me." · "Bah! Thing fight back." · "Ork tried. Ork sad." |
-| Needs you | `pool.question`, `loot.needs_you`, `forge.conflict`, `signpost.unmatched` | "Warchief! Need your eyes." · "Where this go?" · "Ork stuck. Help?" |
+| Needs you | `pool.question`, `loot.needs_you`, `forge.conflict`, `signpost.unmatched` | "Workchief! Need your eyes." · "Where this go?" · "Ork stuck. Help?" |
 | Alarm | `workshop.alert`, `catapult.failed`, `charts.threshold` | "Trouble at the walls!" · "Loud thing broke!" |
-| Yes / again | `team.approved` / `team.rework`, `loot.rework` | "Warchief say yes!" · "Again?! Fine…" |
+| Yes / again | `team.approved` / `team.rework`, `loot.rework` | "Workchief say yes!" · "Again?! Fine…" |
 | Word came | `mail.received`, `watch.webhook`, `watch.github` | "Scroll come!" · "Raven bring word." |
 | Git | `git.pr_opened`, `git.pr_merged`, `forge.merged` | "New road dug." · "Road is open!" |
 | Sent on | `signpost.routed` | "That way!" · "Off you go." |
@@ -128,11 +128,11 @@ grammar on purpose, a small grunt before or after. Not a monster, not scary: tir
 7. **Failed** — "Quickly, defensive, like a kid caught out: *It broke. Not me.*"
 8. **Failed** — "Angry snort, then muttering: *Bah! Thing fight back.*"
 9. **Failed** — "Sad and slow, a sigh: *Ork tried. Ork sad.*"
-10. **Needs you** — "Calling across a yard, urgent but not panicked: *Warchief! Need your eyes.*"
+10. **Needs you** — "Calling across a yard, urgent but not panicked: *Workchief! Need your eyes.*"
 11. **Needs you** — "Puzzled, scratching the head, rising at the end: *Where this go?*"
 12. **Needs you** — "Embarrassed, quieter: *Ork stuck. Help?*"
 13. **Alarm** — "Shouted, out of breath, from far away: *Trouble at the walls!*"
-14. **Yes / again** — "Delighted, a short laugh: *Warchief say yes!*" / "Outraged, then giving in: *Again?! … Fine.*"
+14. **Yes / again** — "Delighted, a short laugh: *Workchief say yes!*" / "Outraged, then giving in: *Again?! … Fine.*"
 15. **Word came** — "Excited, announcing: *Scroll come!*" / "Matter-of-fact: *Raven bring word.*"
 16. **Git** — "Pleased, like opening a gate: *Road is open!*" / "Digging, satisfied: *New road dug.*"
 17. **Poked** — "Fed up, through the teeth, then a small growl: *Poke me again, I bite.*"

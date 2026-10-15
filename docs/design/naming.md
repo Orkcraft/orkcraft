@@ -130,7 +130,7 @@ web was searched, "not found" means "not found by a web search".
 - **A famous mark needs no similar goods.** In the EU and the UK a mark with a reputation, as Warcraft has, is protected
   beyond similar goods (Art. 9(2)(c) EUTMR, s.10(3) UK Trade Marks Act 1994): a name that calls Warcraft to mind and
   takes unfair advantage of its fame is enough. "A developer tool, not a game" helps little.
-- **The whole picture decides, not the name alone:** ork + craft + a real-time strategy look; the words Warchief,
+- **The whole picture decides, not the name alone:** ork + craft + a real-time strategy look; the words Workchief,
   Peon, Grunt, Great Hall, Barracks, Horde; Farseer (a Horde hero of Warcraft III); the gold-on-dark interface; and
   design docs in a public repository saying "in the style of Warcraft II" ([building-prompts.md](building-prompts.md),
   [sprites.md](sprites.md)). Docs that say "made to look like Warcraft" are the worst evidence in a dispute: intent.
@@ -209,7 +209,7 @@ A rename removes the risk from the name, not from the product. Independent of it
 | Peon, Grunt, Horde | Warcraft's units and faction, said by an ork in a strategy look | rename in `realm/lexicon.py` `TERMS` (the old spelling goes to `was`) |
 | Farseer | a Horde hero of Warcraft III, and an Aeldari psyker of Warhammer 40,000 | rename the night's Elder |
 | Grot (as in "Grot Pointa") | a Warhammer 40,000 term, in Games Workshop's ork speech | rename in the demo |
-| Warchief | an ordinary word, but beside orks it reads as Warcraft's title; used ~490 times | weigh: lowest priority of the table, keep unless the lawyer says otherwise |
+| Workchief | an ordinary word, but beside orks it reads as Warcraft's title; used ~490 times | weigh: lowest priority of the table, keep unless the lawyer says otherwise |
 | "Warcraft" in shipped prompts, the gold-on-dark frames | already planned (Q18, [color-pass.md](color-pass.md) §3) | finish before the launch |
 
 **One spelling:** under Orkline the name and the orks inside both say "ork", so CLAUDE.md's Wording stays as it is. Only
@@ -222,7 +222,7 @@ Q18 stays open, and "-craft", the larger weight, is gone). "Orkline": the rail l
 camp's story ([camp-story.md](camp-story.md)).
 
 **What changes now (text a person reads):** the name in the README, the docs, the GUI (title, onboarding, the
-Warchief's lines, About), the CLI's help and messages, `updates.json` notes from now on, `pyproject.toml`'s
+Workchief's lines, About), the CLI's help and messages, `updates.json` notes from now on, `pyproject.toml`'s
 `name`/`description`, a second command **`orkline`** beside `orkcraft`.
 
 **What stays (CLAUDE.md: code keeps its names, so settings and town scrolls keep loading):** the Python package

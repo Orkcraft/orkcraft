@@ -190,6 +190,6 @@ The states stay those of today (the screenshots), with a way on from each:
 
 ## 9. Open questions
 
-1. **The keeper's proposal**: one turn of the light model, or the Warchief's model for a better clan?
+1. **The keeper's proposal**: one turn of the light model, or the Workchief's model for a better clan?
 2. **A member's model**: does the keeper choose tiers (an elder for Risks), or all the same by default?
 3. **Exits shared with the Signpost**: done — both draw their ways out with no road as stubs (§2.1).

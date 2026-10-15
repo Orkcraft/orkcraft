@@ -149,7 +149,7 @@ export function Inventory({ items }) {
         onClick=${() => { inventoryOpen.value = !open; }}>${say("Items")}</button>
     ${open && html`<section class=${cls("gui-items", { "is-target": drag.value && drag.value.placed && drag.value.over === "panel" })}
         role="region" aria-label=${say("Items")}>
-      ${notes.map((n, k) => html`<p key=${k} class="ok-font-body gui-items__note"><span class="gui-items__who">${say("Warchief")}:</span> ${say(n)}</p>`)}
+      ${notes.map((n, k) => html`<p key=${k} class="ok-font-body gui-items__note"><span class="gui-items__who">${say("Workchief")}:</span> ${say(n)}</p>`)}
       <p class="ok-font-status ok-tone-muted gui-items__hint">${say("Drag one onto the camp's grass: the grid shows where it fits. Drag a placed one back here to put it away.")}</p>
       <ul class="gui-items__list">${rows.map((r) => {
         const out = r.left === 0;

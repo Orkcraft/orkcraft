@@ -168,7 +168,7 @@ export function OrkFace({ who, small = false, scale = 1, title = "" }) {
 const ORK_STATE = { busy: "ork-busy", alert: "ork-waiting", idle: "ork-idle", frozen: "ork-frozen", draft: "ork-draft" };
 const ORK_STATE_WORD = { busy: "busy", alert: "waiting", idle: "resting", frozen: "frozen", draft: "draft" };
 
-/** The Warchief: its face; its state's glyph beside it (waiting, busy). */
+/** The Workchief: its face; its state's glyph beside it (waiting, busy). */
 export function WarchiefHead({ state = "" }) {
   const glyph = { waiting: "ork-waiting", busy: "ork-busy" }[state];
   return html`<span class="gui-warchief__crowned"><${OrkFace} who="town_hall" />${glyph && html`<i

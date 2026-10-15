@@ -219,7 +219,7 @@ orkcraft/gui/
 - **Only its own page drives the town.** The socket takes a random token from the page's address
   and an `Origin` of this server; anything else gets 403.
 - **The layout is the design system's.** `layout.css` places the components (HUD on top, the town, the
-  panel over its right half, the orkspaces and the Warchief's line at its foot — [calm-town.md](calm-town.md))
+  panel over its right half, the orkspaces and the Workchief's line at its foot — [calm-town.md](calm-town.md))
   and uses tokens only.
 - **A building, closed and open.** Closed (its hut card) and open in the panel (Work, Info): what each
   type shows, the hooks a type keeps (`card`, `panes`, `quick`) and how the work is split across
@@ -249,7 +249,7 @@ orkcraft/gui/
 
 - **The calm town** ([calm-town.md](calm-town.md)), over what is listed after it: the console, the status
   bar, the advisor and Build went; a building opens in one panel on the right with Lake's documents
-  (Work, Info, the documents' tabs); the orkspaces at the bottom left; the right click; the Warchief's
+  (Work, Info, the documents' tabs); the orkspaces at the bottom left; the right click; the Workchief's
   line (`/` commands, `@` names, hints) and his cards, the work he gives the Town Builder, the road
   planner, the Recruiter and the keepers (`core/warchief.py`). What follows is how it was before.
 
@@ -295,7 +295,7 @@ orkcraft/gui/
 
 - 🏰 The Town Hall as the town's way in (`core/workers/town_hall.py`, `gui/views/town_hall.py`,
   `js/buildings/town_hall.js`): its hut is Build (in one: say what you need, or pick from the
-  catalog by what it is for) and Ask me anything; its Command Card the Warchief's chat (a building
+  catalog by what it is for) and Ask me anything; its Command Card the Workchief's chat (a building
   it names is built on a click), the live sessions, the audit, spend and quotas; its window the tabs
   Hall, Sessions (the War Tent) and Limits. The status bar keeps Halt All, Answers and the project.
   The TUI's Hall reads the same worker.
@@ -355,5 +355,5 @@ found by its files, so a port touches no shared list and parallel ports do not c
 2. ~~The other types' windows as their workers come (§2, 1).~~ Done: every type's window (above).
 3. ~~Camp (stage 5).~~ Dropped as a mode. The GUI now has two looks, picked in the portrait's menu
    (portrait.md §3): Camp, today's look, and Office, calm and monochrome. `orkcraft gui --look` is gone.
-4. A phone over the same host: glance, Orders, the Pit, the Warchief, Halt All, pushes —
+4. A phone over the same host: glance, Orders, the Pit, the Workchief, Halt All, pushes —
    [mobile.md](mobile.md); stage 0 (`gui/mobile.py`, `GET /api/version`) stands.

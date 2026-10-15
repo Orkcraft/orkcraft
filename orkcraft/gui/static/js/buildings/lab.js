@@ -499,7 +499,7 @@ function PullRequest({ id, onClose }) {
   </${Dialog}>`;
 }
 
-// -- set up in the Warchief's line (js/warchief.js; docs/design/improve-buildings.md §5.1) -------------------------
+// -- set up in the Workchief's line (js/warchief.js; docs/design/improve-buildings.md §5.1) -------------------------
 
 /** Its setup asked again: from its window, when what it tests changes (its roads are laid only here). */
 function setUp(id) {
@@ -507,7 +507,7 @@ function setUp(id) {
   settingUp.value = { id, type: "lab" };
 }
 
-/** What the Warchief asks of a Test bench just raised. */
+/** What the Workchief asks of a Test bench just raised. */
 export function setupAsk(b) {
   return `${b.title} is going up. What should it test?`;
 }

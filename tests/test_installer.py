@@ -152,7 +152,7 @@ def test_a_pick_from_orkcraft_dev_is_said_back_when_the_town_cannot_open_here(tm
     done, events, home = _run(tmp_path, "--no-report", "--role", "engineer", "--look", "office")
     assert done.returncode == 0, done.stdout + done.stderr
     assert "To open it on your pick: orkline --role engineer --look office" in done.stdout
-    assert "\x1b[" not in done.stdout                  # no terminal: no Warchief in colour, no escapes in the log
+    assert "\x1b[" not in done.stdout                  # no terminal: no Workchief in colour, no escapes in the log
 
 
 @pytest.mark.parametrize("args", [("--look", "necropolis"), ("--role",), ("--role", "x; rm -rf ~"), ("--wat",)])

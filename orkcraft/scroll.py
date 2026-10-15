@@ -429,7 +429,8 @@ def building_from_preset(preset_id: str, presets: Presets, building_id: str | No
         id=building_id or preset_id, preset_ref=_preset_ref(preset_id, presets),
         title=p.get("title", preset_id), icon=p.get("icon", ""),
         chronicles={"enabled": True, "log_file": str(HISTORY_DIR / f"{building_id or preset_id}.events.jsonl")},
-        garrison=Garrison(OrcSpec(orc_name.lower().replace(" ", "_"), orc_name, role=p.get("role", ""))),
+        garrison=Garrison(OrcSpec(p.get("orc_id") or orc_name.lower().replace(" ", "_"), orc_name,
+                                 role=p.get("role", ""))),
     )
 
 

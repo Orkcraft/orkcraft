@@ -153,7 +153,7 @@ def grid_image(grid: list[str], colours: dict[str, str], k: int) -> Image.Image:
 
 
 def sprites(out: pathlib.Path) -> None:
-    """The agent's head and its states for the GUI (design-system/sprites/orks/), and the Warchief's."""
+    """The agent's head and its states for the GUI (design-system/sprites/orks/), and the Workchief's."""
     out.mkdir(parents=True, exist_ok=True)
     for name in STATES:
         grid = state_grid(name)
@@ -164,7 +164,7 @@ def sprites(out: pathlib.Path) -> None:
         grid_image(grid, SPRITE_COLOURS, 4).save(out / f"{name}@2x.png")
 
 
-# The Warchief: the ork's head under a gold crown (docs/design/growth.md §8), two rows over the 12×8 grid.
+# The Workchief: the ork's head under a gold crown (docs/design/growth.md §8), two rows over the 12×8 grid.
 # The crown marks the role, it is never earned. Waiting, the crown's points burn instead of the ork's flame.
 # A state's glyph stands beside the head as the ork's does, the crown's rows padded to its width.
 CROWN = ["...Y.YY.Y...", "...YYYYYY..."]

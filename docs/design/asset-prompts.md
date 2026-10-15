@@ -229,21 +229,21 @@ five-second test with developers as it is**, and into the artist's brief.
 5. **An ork rides in the third cart:** orks never ride or move carts.
 6. **The hall has no crest.**
 
-## The twist: a Warchief in a tie, workers in work clothes (the owner, 2026-10-13)
+## The twist: a Workchief in a tie, workers in work clothes (the owner, 2026-10-13)
 
 **Taken, as the characters' signature.** It is the first audience's own joke ([audience.md](audience.md) §2a): a day
 of other people's merge requests and calls with managers, then the evening's camp. The orks are a small company of
 their own, and it sets them further apart from the big strategy game (Q18).
 
-- **The Warchief:** the horned helmet, and **a tie, loosened**, over the leather: the boss just back from a meeting.
-  (The person is the Warchief's boss; the joke is on meetings, never on the person.)
+- **The Workchief:** the horned helmet, and **a tie, loosened**, over the leather: the boss just back from a meeting.
+  (The person is the Workchief's boss; the joke is on meetings, never on the person.)
 - **The workers:** a hard hat made of half a skull or a bone-white helmet, the apron and tool belt they already have;
   the Grunts on the line in **work vests in a muted orange-brown**, never bright orange or yellow (kept for signals,
   [town-readability.md](town-readability.md) §2).
 - **The rule for the joke:** **modern things only as deliberate jokes on the characters,** one per role at most (a
   tie, a hard hat, a clipboard for the Treasurer, a headset for the Lookout); **never in buildings or signals**, where
   the camp stays a camp (the megaphone stays out).
-- **The voice matches:** the Warchief's lines may joke about meetings and stand-ups; labels and anything about money
+- **The voice matches:** the Workchief's lines may joke about meetings and stand-ups; labels and anything about money
   or safety stay plain (CLAUDE.md, Wording).
 
 **Prompt** (with the round-3 roles sheet attached): "No shadows. The same nine orc roles as the attached sheet, same
@@ -262,7 +262,7 @@ Put together by hand from the sheets in `docs/design/img/references/0.3/` (magen
 to the Publisher), a spur of track from each door, mine carts rolling by themselves with their loads (a letter, the
 `</>` scroll, a crate), the Agent pool with its cover lifted and orks at work inside (one cart at an ork's place), the
 Inspector's lake on its own spur below the line, one ork asking (❓, the loudest thing), a cart waiting at the gate for
-the person (a yellow flag and its chip), the Warchief by the gate, words only on dark chips.
+the person (a yellow flag and its chip), the Workchief by the gate, words only on dark chips.
 
 **What it teaches:**
 
@@ -282,7 +282,7 @@ at their target sizes (1× and 2×), into a new folder beside today's, ready for
 
 | need | covered by 0.3 | missing |
 |---|---|---|
-| the ork | idle, walk (4 ways), hammer, carry, sit; nine roles | **the state poses** (asking, stuck, held, dozing); the Warchief in a tie and the work clothes |
+| the ork | idle, walk (4 ways), hammer, carry, sit; nine roles | **the state poses** (asking, stuck, held, dozing); the Workchief in a tie and the work clothes |
 | carts | loads, flags, a pile, rolling | — |
 | track | straight, corners, switch, merge, crossing, buffer stops | **a T-junction** (a spur joining from above), **quieter ties** |
 | buildings | tower, gate, walls kit, three roof kits, fire ring (three states), lake, five facades | **the Publisher's catapult** and its launch; **facades without their island of earth**; **tables and workbenches** inside a hall |
@@ -314,7 +314,7 @@ the same kind as the style reference):
 7. **The ork's states.** "No shadows. The same orc worker as the attached sheet, 32 by 32, five poses: working with a
    calm face; waiting with one hand raised and a curious face; slumped with a frown and a small grey smoke puff over
    the head; sitting with arms crossed; sitting and dozing."
-8. **The Warchief and work clothes.** The prompt of "The twist" above.
+8. **The Workchief and work clothes.** The prompt of "The twist" above.
 
 ## The concept frame, v2, with the missing pieces (2026-10-14)
 

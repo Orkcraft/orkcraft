@@ -41,7 +41,7 @@ Every model call gets a **purpose** next to its building, and the ledger is kept
 - `telemetry.charge(usd, source, purpose=…, tokens=…)`; `purpose` is one of a closed list:
   `work` (an ork's task), `sort`, `plan`, `review` (a Review board turn), `check` (spot-check, lint,
   quality), `ingest`, `answer` (a question answered for the person), `look` (Lookout, carried look),
-  `retro`, `build` (Fast Path, Recruiter, Town planner), `chat` (the Warchief).
+  `retro`, `build` (Fast Path, Recruiter, Town planner), `chat` (the Workchief).
 - Transcript runs (`ORKCRAFT_RUN`) carry the purpose in their env, so they count the same way.
 - `.orkcraft/spend/calls.jsonl`: one line per call (when, building, purpose, model, tokens, $), kept by
   the housekeeping's log limit.
@@ -79,7 +79,7 @@ The **Council** stays only as the Town Hall's own word for the Build check and t
 - One log: `.orkcraft/<type>/<id>/answers.jsonl` of the building whose ork asked; the morning summary
   reads all of them. `elders.jsonl` is read once and split by building.
 - A question from a session no building owns (a War Tent session) is answered by the Town Hall's
-  steward, the Warchief, under the same rules.
+  steward, the Workchief, under the same rules.
 - `realm/elders.py` stays as the rules module the steward calls (`judge`, `_WIDENS`); `core/night.py`
   asks the owning steward instead of the Elders. The Town Hall loses its *Elders* line; each building's
   window shows *Answered tonight: N* in its steward's block.
@@ -150,8 +150,8 @@ Stages 1, 2 and 4 do not depend on each other; 3 waits for a week of stage 0.
 ## 10. Open questions
 
 - Should the Pacer ever stop a run on 🕰, or only on ⛓️‍💥? This text says only ⛓️‍💥.
-- A War Tent session's question at night: the Warchief answers, or nobody (it waits for the person)?
-  This text says the Warchief, under the Warder's rules.
+- A War Tent session's question at night: the Workchief answers, or nobody (it waits for the person)?
+  This text says the Workchief, under the Warder's rules.
 
 ## 11. As built
 

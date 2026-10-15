@@ -6,7 +6,7 @@
 
 Camp and Office were two vocabularies once; now there is one, and they are two looks (`look.camp`,
 `look.office`) that change only how the town is drawn. A concept keeps its Camp word when it
-says *who* (the orks, the Warchief, the town, its buildings and roads, renown) and takes a plain word
+says *who* (the orks, the Workchief, the town, its buildings and roads, renown) and takes a plain word
 when it says *what a thing does, what it costs or what it risks* (a building's function, the spend,
 autonomy, a file). `TERMS` is the glossary (docs/reference.md shows it as a table). A concept that
 took a plain word keeps the Camp spelling it had in `was`: older code and older towns still write it,
@@ -54,7 +54,7 @@ TERMS: tuple[Term, ...] = (
     _t("steward", "steward", "stewards"),
     _t("keeper", "steward", "stewards", "keeper", "keepers"),     # a building's steward, asked in plain words
     _t("war_map", "War Map"),
-    _t("orc.town_hall", "Warchief"),                               # the hall's steward: the chat behind Ask me anything
+    _t("orc.town_hall", "Workchief", "", "Warchief"),             # the hall's steward: the chat behind Ask me anything
     _t("town_hall", "Town Hall"),
     _t("road_planner", "Road planner"),                            # lays a road from words (realm/road_planner.py)
     _t("road_rule", "Road rule", "Road rules"),                    # what a building's steward does with a road's carts (a `steward` handler)
@@ -74,7 +74,7 @@ TERMS: tuple[Term, ...] = (
     _t("look", "Look", "Looks"),                                   # how the town is drawn: never its words
     _t("look.camp", "Camp"),                                       # the default look: sprites, the mascot, flames
     _t("look.office", "Office"),                                   # the calm look: monochrome, no sprites
-    _t("dnd", "Do not disturb"),                                   # sounds, pushes, the Warchief's news wait
+    _t("dnd", "Do not disturb"),                                   # sounds, pushes, the Workchief's news wait
     # -- what a thing does, costs or risks: plain words ---------------------------------------------
     _t("ghost", "preview"),                                        # Build's placing outline; "ghost" is no old spelling
                                                                    # any more: the ghosts are a kin (Wandering Ghost)
@@ -170,7 +170,7 @@ TERMS: tuple[Term, ...] = (
     _t("purpose.look", "Watching sources"),
     _t("purpose.retro", "Retros"),
     _t("purpose.build", "New buildings, orks and roads"),
-    _t("purpose.chat", "The Warchief's chat"),
+    _t("purpose.chat", "The Workchief's chat"),
     # where a source of External listeners speaks: the groups of its Add a source (realm/quickadd.py GROUPS)
     _t("source_group.messengers", "Messengers"),                    # Slack, Discord
     _t("source_group.mail", "Mail"),                                # Gmail

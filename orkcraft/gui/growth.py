@@ -1,6 +1,6 @@
 """Growth and the biomes in the GUI (docs/design/growth.md, docs/design/war-map.md): the host's clock
 settles the buildings' levels, the operator's deeds and mascot stage (realm/growth.py); the snapshot
-carries the news the Warchief's line says and the operator's mascot for the head of Settings; the War
+carries the news the Workchief's line says and the operator's mascot for the head of Settings; the War
 Map's lands get their commands (biome, rename, remove).
 
     g = Growth(host)                 # once: the camp's biomes spread (realm/biomes.py)

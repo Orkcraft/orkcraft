@@ -94,7 +94,7 @@ one letter a cell, "." a transparent cell. The head: {what}.
 The palette (a letter → its colour and what it is used for):
 {palette}
 Rules: the same palette only (never a letter of your own), the same head and silhouette unless the words ask
-otherwise, readable at 24 × 22 px, never a crown (the crown is the Warchief's).
+otherwise, readable at 24 × 22 px, never a crown (the crown is the Workchief's).
 
 The grid now:
 {grid}

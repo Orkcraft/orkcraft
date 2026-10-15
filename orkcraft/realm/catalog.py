@@ -429,7 +429,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         events=(_e("hall.audit_done", "audit done", TEXT, "an audit finished: its findings"),),
         actions=(_a("hall.build", "Build", "🏗", "build: from a preset, or new from scratch — one way in"),
                  _a("hall.audit", "Audit", "🔍", "audit the town: security, usability, spend")),
-        art="great_hall", orc="Warchief"),
+        art="great_hall", orc="Workchief"),
     BuildingType(
         "workshop", "Workshop", "🛠️", "S",
         "a building made from scratch: the Builder's script does the work on every cart; a "

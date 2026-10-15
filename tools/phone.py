@@ -8,7 +8,7 @@ what a phone may send can be tried from another machine on the same Wi-Fi (or th
     python tools/phone.py answer <id> <key>  # answer a question (one of its own answers only)
     python tools/phone.py follow <id>        # send the Elders' advice as your answer
     python tools/phone.py halt               # stop all (asks first)
-    python tools/phone.py ask 'What should I build next?'   # ask the Warchief; `chat` reads his answer
+    python tools/phone.py ask 'What should I build next?'   # ask the Workchief; `chat` reads his answer
     python tools/phone.py drop 'https://example.com/spec'   # drop a text or a link into The Pit (once, by its id)
     python tools/phone.py watch              # the news as it comes, as the app's local notifications would
     python tools/phone.py send <command> '<json args>'   # anything else: the listener refuses what a phone may not

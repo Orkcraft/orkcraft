@@ -37,7 +37,7 @@ plus its login (`tools.py`), its hooks (`hooks/`) and its quota (`quota/`), when
 run on; empty means the first tool that is on. A chosen tool that is off gives way to the first one
 on; with none on it is Claude Code, as before there was a choice (`builders.main_tool`).
 
-- **Decisions** — the Warchief, the Town Builder, the Foreman and the Builder, the road planner, the
+- **Decisions** — the Workchief, the Town Builder, the Foreman and the Builder, the road planner, the
   Recruiter, the Council's fast path, stewards and keepers, retros, the Catapult's web planner, the
   Workshop — call `builders.main_runner` (or `main_runner_of(machine)` in a face).
 - **Steps** name a tool or `main`. `main` is resolved when the step runs (`roads.resolve`,

@@ -75,7 +75,7 @@ def build(host, args: dict) -> str:
     prompt = args.get("prompt")
     asked = (spec.get("type") or "", " ".join(prompt.split())[:2000]) if isinstance(prompt, str) and prompt.strip() else None
     if asked is not None:
-        # The Warchief's Build offer stays in its chat: a second press on it opens what the first one raised.
+        # The Workchief's Build offer stays in its chat: a second press on it opens what the first one raised.
         done = host.raised_for.get(asked)
         kept = town.scroll.building(done) if done else None
         if kept is not None and not kept.demolished:

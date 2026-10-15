@@ -23,7 +23,7 @@ drawn, never a word (CLAUDE.md, Wording), so "its Office name" below means a con
 - **Office**, calm: `data-theme="office"`, `data-look="office"` (`gui/static/office.css` over the office
   theme). Monochrome greys, light or dark as the system says (`prefers-color-scheme`), one muted gold
   accent for what is selected and for focus, the system font, no sprites (the huts are cards, the
-  Warchief's line has no face, the portrait is the role's monogram), no flames, no growth news. What
+  Workchief's line has no face, the portrait is the role's monogram), no flames, no growth news. What
   says money or risk keeps its colour and its mark (✓ ⚠ ✗, a question waiting). The `office` theme's
   warm palette below is what the design system's own previews still show; `office.css` draws the GUI's
   greys over it.
@@ -179,7 +179,7 @@ In Office, only the outline and name turn red-orange (`alert-hot`), and `?` foll
   - The gold wordmark is for the splash screen and onboarding.
   - The ork mascot is for Camp onboarding and empty states.
   - Office sets the name in plain type.
-  - **The ork mark** (`logo/`, drawn by `tools/logo.py` from one 12×8 grid): a flat ork head, green with pointed ears, a dark brow band and two tusks, three colours and no outline, so it reads at 16px and stays sober in Office. It comes in Office (`ork-mark.svg`), Camp (`ork-mark-camp.svg`), light-ground (`ork-mark-light.svg`) and one-colour (`ork-mark-mono.svg`) colours, beside the word (`orkcraft-dark.svg`, `orkcraft-light.svg`, Titillium Web 700 in outlines) and as the favicon. Shown at a whole multiple of its grid with `image-rendering: pixelated`. It is the face of the Warchief's line at the town's foot (`js/warchief.js`, [calm-town.md](calm-town.md) §4): a click opens the Town Hall.
+  - **The ork mark** (`logo/`, drawn by `tools/logo.py` from one 12×8 grid): a flat ork head, green with pointed ears, a dark brow band and two tusks, three colours and no outline, so it reads at 16px and stays sober in Office. It comes in Office (`ork-mark.svg`), Camp (`ork-mark-camp.svg`), light-ground (`ork-mark-light.svg`) and one-colour (`ork-mark-mono.svg`) colours, beside the word (`orkcraft-dark.svg`, `orkcraft-light.svg`, Titillium Web 700 in outlines) and as the favicon. Shown at a whole multiple of its grid with `image-rendering: pixelated`. It is the face of the Workchief's line at the town's foot (`js/warchief.js`, [calm-town.md](calm-town.md) §4): a click opens the Town Hall.
 
 ## Components
 

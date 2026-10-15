@@ -18,9 +18,9 @@ def test_scheme_parts_and_badges():
     styles = [st for _, st in looks.scheme_parts(pair)]
     assert styles[0] == looks.HARNESS_STYLE["agy"] and styles[-1] == looks.HARNESS_STYLE["claude"]
     assert looks.scheme_long(pair) == "write: agy → review: claude"
-    lead = Orc("Warchief", "kanban", RESIDENT, lead=True, harness=[{"role": "run", "harness": "claude"}])
+    lead = Orc("Workchief", "kanban", RESIDENT, lead=True, harness=[{"role": "run", "harness": "claude"}])
     scribe = Orc("Scribe", "digest", RESIDENT, kind="chain")
-    assert garrison_badge([lead, scribe]) == "🧌 Warchief+1 ✻ 🔨 💤"
+    assert garrison_badge([lead, scribe]) == "🧌 Workchief+1 ✻ 🔨 💤"
     assert scribe.badge == "🪧 Scribe 🔨 💤"
 
 

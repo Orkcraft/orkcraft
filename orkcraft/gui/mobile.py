@@ -444,7 +444,7 @@ def plain_markdown(text: str) -> str:
 
 def chat(host, args: dict | None = None) -> dict[str, Any]:
     """`mobile.chat`: the last messages of the Town Hall's chat (`limit`, at most CHAT_MESSAGES), so a
-    phone that asked the Warchief reads his answer. Markdown comes as plain text in the words it was
+    phone that asked the Workchief reads his answer. Markdown comes as plain text in the words it was
     written in (emoji aside: `modes.strip_emoji`, never `modes.plain`); a card he gave (a
     building to raise, work for a specialist) is only `offer`: it is answered at the desk."""
     hall = host.town.worker("town_hall")

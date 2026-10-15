@@ -116,7 +116,7 @@ def buildings(town: Town, muster: Muster) -> list[dict[str, Any]]:
             "visit": "",
             "paused": _paused(worker),
             "card": _card(type_id, worker),
-            # its quick actions, on its command card in the Warchief's line (js/warchief.js): each opens its own
+            # its quick actions, on its command card in the Workchief's line (js/warchief.js): each opens its own
             # small window or just does it, never the whole building
             "quick": [{"id": a.id, "label": a.label} for a in catalog.quick_actions_of(spec)] if spec else [],
             "page": (PAGES / f"{type_id}.js").is_file(),

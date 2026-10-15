@@ -34,7 +34,7 @@ class Adding:
         self.gh = ""                      # who gh is logged in as ("" not yet known or not logged in)
         self.claude: list[feeds_agent.Connector] = []     # the servers Claude Code has (asked when the picker opens)
         self.claude_asked = False         # Claude Code answered which servers it has (the picker says "asking…" before)
-        self.added = ""                   # the service the Warchief's quick setup added last ("" none yet)
+        self.added = ""                   # the service the Workchief's quick setup added last ("" none yet)
         self.reset()
 
     def reset(self) -> None:
@@ -235,7 +235,7 @@ class Adding:
         self.w.changed()
 
     def quick(self, service: str) -> None:
-        """The Warchief's setup in one press (docs/design/select-a-building.md §7): the service through Claude's
+        """The Workchief's setup in one press (docs/design/select-a-building.md §7): the service through Claude's
         connection with what it listens for, how often and the most a day as they come; saved when its first look
         answers. All of it changes later in the building."""
         self.added = ""
@@ -244,7 +244,7 @@ class Adding:
         self.what_claude("", feeds_agent.EVERY_DEFAULT, feeds_agent.CEILING_DEFAULT, then_save=True)
 
     def setup_view(self) -> dict:
-        """What the Warchief's setup shows: Claude's connectors, what runs, what went wrong, what was added."""
+        """What the Workchief's setup shows: Claude's connectors, what runs, what went wrong, what was added."""
         if not self.step and not self.added and not self.claude_asked:
             self.open()
         return {"asked": self.claude_asked, "sources": self.through_claude(), "busy": self.busy, "error": self.error,

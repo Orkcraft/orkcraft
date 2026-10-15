@@ -415,7 +415,7 @@ model keeps no pixel grid, and the text in images is not trusted (in the product
    three carts, one ❓ and one flame as the only bright yellow.
 2. **The readability stress test:** 8 orks and 10 carts; most working with no badge; one ❓, one red `!`, one ⏳; a pile
    of four carts; one chip "#42 · Login form". Checked by [town-readability.md](town-readability.md) §6.
-3. **The orks by role:** Warchief, Grunt, Mason, Alchemist, Mechanic, Treasurer, Farseer, Warder, Pathfinder, one
+3. **The orks by role:** Workchief, Grunt, Mason, Alchemist, Mechanic, Treasurer, Farseer, Warder, Pathfinder, one
    size and angle, readable at 32 px ([ork-icons.md](ork-icons.md)).
 4. **One ork's states:** working, asking, error, held for a limit, idle.
 5. **The carts:** loads (code, asset, message, document, ×3) and state flags (none, yellow, ⏳, red, a pile ×4).

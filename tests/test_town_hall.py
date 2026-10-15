@@ -14,7 +14,7 @@ MAIL = {"id": "inbox", "title": "Inbox", "icon": "📬", "orc": {"name": "Courie
         "config": {"host": "imap.example.com", "user_env": "MAIL_USER", "password_env": "hunter2-plain"}}
 
 
-# -- the Town Hall's worker and the Warchief (docs/design/building-views.md §3) -------------------
+# -- the Town Hall's worker and the Workchief (docs/design/building-views.md §3) -------------------
 
 def test_an_old_scroll_s_chieftain_is_the_warchief_and_keeps_its_id():
     """The hall's ork was the Chieftain: a scroll that has one still loads, the ork renamed, its id
@@ -25,16 +25,22 @@ def test_an_old_scroll_s_chieftain_is_the_warchief_and_keeps_its_id():
     old = {k: dict(v) for k, v in presets(registry()).items()}
     old[TOWN_HALL] = {**old[TOWN_HALL], "orc": "Chieftain"}
     old[TOWN_HALL].pop("was")
+    old[TOWN_HALL].pop("orc_id")
     scroll = ts.default_scroll(old)
     assert scroll.building(TOWN_HALL).garrison.steward.name == "Chieftain"
     scroll = ts.TownScroll.from_dict(scroll.to_dict())                 # as it comes back from the file
     ts.ensure_presets(scroll, presets(registry()))
     lead = scroll.building(TOWN_HALL).garrison.steward
-    assert (lead.id, lead.name) == ("chieftain", "Warchief") and ts.validate(scroll.to_dict()) == []
+    assert (lead.id, lead.name) == ("chieftain", "Workchief") and ts.validate(scroll.to_dict()) == []
     fresh = ts.default_scroll(presets(registry())).building(TOWN_HALL).garrison.steward
-    assert (fresh.id, fresh.name) == ("warchief", "Warchief")
-    assert lexicon.term("orc.town_hall") == "Warchief"
-    assert lexicon.words("Ask the Warchief") == "Ask the Warchief"
+    assert (fresh.id, fresh.name) == ("warchief", "Workchief")
+    old[TOWN_HALL]["orc"] = "Warchief"                                 # a town from before the Workchief
+    scroll = ts.TownScroll.from_dict(ts.default_scroll(old).to_dict())
+    ts.ensure_presets(scroll, presets(registry()))
+    lead = scroll.building(TOWN_HALL).garrison.steward
+    assert (lead.id, lead.name) == ("warchief", "Workchief")
+    assert lexicon.term("orc.town_hall") == "Workchief"
+    assert lexicon.words("Ask the Workchief") == "Ask the Workchief"
 
 
 def test_custom_leaves_the_catalog_and_an_old_one_still_loads():
@@ -53,7 +59,7 @@ def _answered(w, messages: int) -> None:
         if len(w.chat) >= messages and not w.thinking:
             return
         time.sleep(0.01)
-    raise AssertionError("the Warchief never answered")
+    raise AssertionError("the Workchief never answered")
 
 
 def test_the_hall_is_its_worker_s_and_the_warchief_answers(fake_repo: Path, monkeypatch):
@@ -65,7 +71,7 @@ def test_the_hall_is_its_worker_s_and_the_warchief_answers(fake_repo: Path, monk
                         lambda prompt: asked.append(prompt) or ("A board keeps them.\nBUILD: fields", 0.01))
     town = Town(fake_repo, auto_commit=False)
     w = town.worker(TOWN_HALL)
-    assert w is not None and w.TYPE == "town_hall" and w.warchief == "Warchief"
+    assert w is not None and w.TYPE == "town_hall" and w.warchief == "Workchief"
     h = w.hall()
     assert h["audit"] is None and [a["name"] for a in h["agents"]][:3] == ["Warder", "Pathfinder", "Treasurer"]
     assert w.ask("   ") and not w.thinking                              # nothing asked: said why

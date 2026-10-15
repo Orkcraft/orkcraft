@@ -1,5 +1,5 @@
 // The chrome around the town (docs/design/calm-town.md §1): the HUD (the portrait, js/portrait.js; the project's name opens the town's
-// settings, js/settings.js; 🥩 and Stop all, js/slots.js; the treasury; the orks' questions are the Warchief's line's, js/warchief.js) and the toasts. The
+// settings, js/settings.js; 🥩 and Stop all, js/slots.js; the treasury; the orks' questions are the Workchief's line's, js/warchief.js) and the toasts. The
 // orkspaces are the War Map (js/warmap.js). Markup and classes are the design system's (design-system/components.md: Hud, WarMap, Toast).
 import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls, linked } from "./html.js";
@@ -61,8 +61,8 @@ function Hour({ hud, p }) {
       ${p && html`<${Steps} label="Do not disturb" value=${d.choice || "off"} onPick=${(v) => command("you.dnd", { dnd: v }).catch(() => {})}
           items=${[["off", "Off"], ["1h", "1 h"], ["morning", `Until ${d.morning || "09:00"}`], ["on", "On"]]} />
         <p class="ok-font-status ok-tone-muted">${say(d.on
-          ? `${d.label}: sounds, pushes and the Warchief's news wait; only errors show. The orks keep working.`
-          : "Do not disturb holds sounds, pushes and the Warchief's news; the orks keep working.")}</p>
+          ? `${d.label}: sounds, pushes and the Workchief's news wait; only errors show. The orks keep working.`
+          : "Do not disturb holds sounds, pushes and the Workchief's news; the orks keep working.")}</p>
         <${Steps} label="Look" value=${p.look_choice || p.look} onPick=${(v) => command("you.look", { look: v }).catch(() => {})}
           items=${[["shift", "By shift"], ["camp", "Camp"], ["office", "Office"]]} />
         <p class="ok-font-status ok-tone-muted">${say(`By shift: Office ${p.shift || "09:00–17:00"}, Camp the rest of the day.`)}</p>

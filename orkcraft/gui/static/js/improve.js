@@ -1,4 +1,4 @@
-// Improve's days, over the Warchief's line (js/warchief.js): first the logs since the last update (since this machine
+// Improve's days, over the Workchief's line (js/warchief.js): first the logs since the last update (since this machine
 // started on the code it runs now, core/running.py), then each day with logs, for the Mechanic and the Farseer to
 // read (gui/day_review.py, docs/design/improve-buildings.md §13) — again when it was read — and the latest 👎 alone.
 // A day read has its changes: each one tried in the Test bench that tests its building, and measured there
@@ -24,7 +24,7 @@ export function ImprovePick({ im, onPick }) {
   const days = (im && im.days) || [];
   const running = im && im.running;
   const up = (im && im.update) || {};
-  return html`<p class="ok-font-status ok-tone-muted">${say("Which logs should the Mechanic and the Farseer read? They look at its costliest calls, failures, reworks and 👎, and the Warchief offers each change to apply or skip.")}</p>
+  return html`<p class="ok-font-status ok-tone-muted">${say("Which logs should the Mechanic and the Farseer read? They look at its costliest calls, failures, reworks and 👎, and the Workchief offers each change to apply or skip.")}</p>
     ${running && html`<p class="ok-font-status ok-tone-wait">${say(`Reading ${running.includes("_") ? "the logs since the last update" : dayWord(running)}…`)}</p>`}
     ${up.at && html`<span class="gui-warchief__day is-update">
       <button class="ok-btn" disabled=${!!running} onClick=${() => onPick(SINCE_UPDATE)}>${say("Since the last update")}</button>

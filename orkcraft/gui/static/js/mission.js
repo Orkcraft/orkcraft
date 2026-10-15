@@ -1,5 +1,5 @@
-// Mission 1's quest log in the Warchief's line (docs/design/first-mission.md §3; gui/mission.py, core/mission.py):
-// the quest under way, the Warchief's line for it, its goal, what it costs, and its one press, which sets up the
+// Mission 1's quest log in the Workchief's line (docs/design/first-mission.md §3; gui/mission.py, core/mission.py):
+// the quest under way, the Workchief's line for it, its goal, what it costs, and its one press, which sets up the
 // building on the plot lit for it; on quest 3, once the drill waits at the Review gate, it lifts the barrier (the
 // person's pass), and the line after it says the drill rolled on (the finale, drawn in Camp: js/camp/carts.js). Before quest 4 it asks once for the hooks, showing what is written into which
 // file and how to take it back. Skip the mission leaves the town as it stands. When the last quest is done, one line

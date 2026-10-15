@@ -201,7 +201,7 @@ class Host:
         if event.topic == bus.TOOL_ERROR:              # an AI tool failed: its toast says what to do
             self.failures.show(event.data)
             return
-        if event.topic == bus.ORDER:                   # the Warchief gave a specialist work: the console runs it
+        if event.topic == bus.ORDER:                   # the Workchief gave a specialist work: the console runs it
             self._order(event.data)
         if event.topic == bus.ROADS:                   # the roads changed: the scroll keeps them
             self.town.save()
@@ -215,7 +215,7 @@ class Host:
         self.on_change()
 
     def _order(self, data: dict) -> None:
-        """An order of the Warchief's (core/warchief.py) as the console's job: the road planner, the
+        """An order of the Workchief's (core/warchief.py) as the console's job: the road planner, the
         Recruiter, a keeper. Its offer opens on the page when ready; a refusal goes back on his card."""
         kind, bid, words = data.get("kind"), str(data.get("building") or ""), str(data.get("order") or "")
         try:

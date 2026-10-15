@@ -7,7 +7,7 @@ curl -fsSL https://orkcraft.dev/install.sh | sh
 ```
 
 [`install.sh`](../install.sh) at the root of the repository is the whole installer: read it before you
-run it. It needs only `sh` and `curl`. In a terminal it opens with the Warchief, drawn from his sprite in 12×5 cells
+run it. It needs only `sh` and `curl`. In a terminal it opens with the Workchief, drawn from his sprite in 12×5 cells
 (`tools/install_banner.py`; his words beside him only when the terminal is 48 columns or wider; not
 with `NO_COLOR` or outside a terminal).
 

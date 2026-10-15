@@ -15,7 +15,7 @@ WHY: dict[str, str] = {
     "fields": "Turns a card into a plan, hands it to an ork, and moves the card as the work moves.",
     "war_drum": "Prepares a meeting's brief from your notes, tasks and the wiki.",
     "forge": "Resolves a merge conflict and writes a pull request's description.",
-    "town_hall": "The Warchief: answers you, plans buildings and roads for what you need, and audits the town.",
+    "town_hall": "The Workchief: answers you, plans buildings and roads for what you need, and audits the town.",
     "workshop": "Writes the building's script from your words and fixes it when it fails.",
     "custom": "Lays out the panes from your words.",
     "gramophone": "Turns a report, a summary or a wiki page into a spoken briefing.",

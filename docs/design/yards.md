@@ -62,8 +62,8 @@ head stands in the title bar, while one of these holds:
 
 - **Data.** The steward stays in the roster, the scroll and the snapshot; `orc` in the catalog and
   `garrison` in `gui/state.py` keep their names. A town scroll written before loads as it is.
-- **Asking.** The right click's *Ask the Warchief about it*, the keeper on a selection in Lake, `@name`
-  in the Warchief's line all work on a yard as on a hut: asking is what brings the ork.
+- **Asking.** The right click's *Ask the Workchief about it*, the keeper on a selection in Lake, `@name`
+  in the Workchief's line all work on a yard as on a hut: asking is what brings the ork.
 - **Fire.** A yard whose ork asks burns as a hut does (gui-design-system.md: questions are fire).
 - **Office.** The Office look draws no heads; it shows the same rule in words: `visiting` after the
   name while the ork is there.

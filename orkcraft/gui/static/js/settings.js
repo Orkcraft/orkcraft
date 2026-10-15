@@ -149,7 +149,7 @@ function ToolsField({ s, set }) {
     <${Steps} label=${say("Main tool")} value=${s.main_tool}
       items=${[["", say("First one on")], ...on.map((x) => [x.id, html`<${ToolMark} id=${x.id} mark=${x.mark} /> ${x.title}`])]}
       onPick=${(v) => set({ main_tool: v })} />
-    <p class="ok-font-status ok-tone-muted">${say(`Decisions run on ${now}: the Warchief, the planners, the Council's fast path, the stewards, and every ork step set to the main tool. An ork or a steward that names its own tool keeps it.`)}</p>
+    <p class="ok-font-status ok-tone-muted">${say(`Decisions run on ${now}: the Workchief, the planners, the Council's fast path, the stewards, and every ork step set to the main tool. An ork or a steward that names its own tool keeps it.`)}</p>
     <${TierModelsField} s=${s} set=${set} />`;
 }
 

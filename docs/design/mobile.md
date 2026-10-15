@@ -21,7 +21,7 @@ nobody answers. A phone paired with the town (a 🐦‍⬛ **War Raven** in Camp
 | Glance at the town | the project, each building's title, type, state and whether its ork asks | `mobile.compact` over `state.buildings` |
 | Orders (Office: Answers) | a question an ork waits on, its last lines, its answers, the Elders' advice; a tap answers | `orders.answer` → `Muster.answer`; `orders.follow` |
 | Drop into The Pit (Office: Drop file here) | a link, a text, a photo or a file shared from the phone's share sheet | `act` → `gui/views/pit.py` `drop` / `drop_file` |
-| Ask the Warchief (Office: Lead agent) | the Town Hall's chat, one question at a time | `act` → `gui/views/town_hall.py` `ask` |
+| Ask the Workchief (Office: Lead agent) | the Town Hall's chat, one question at a time | `act` → `gui/views/town_hall.py` `ask` |
 | 🛑 Halt All (Office: Stop all) | every session interrupted, every agent process killed | `halt` → `Host._halt` |
 | Spend and quotas | the HUD's spend against its limit and the tools' quotas | `state.hud` (`treasury.resources`, `treasury.quota`) |
 | Push notifications | a question came, spend or a quota crossed into warn or over | `mobile.news` (§5) |
@@ -132,7 +132,7 @@ are not on it.
 | `mobile.look_done` | — | — : the person read "since your last look" on the phone | new (console) |
 | `act` on an Agent pool | `answer` {`task`, `text`}; `stop_ork` {`ork`} | an ork's own question answered (never a draft's yes, a persona's or a plan sent back: `mobile._pool_question`); one ork stopped from the 🥩 list | yes (console) |
 
-The Warchief's answer arrives in the Town Hall's `detail` (`chat`), which the phone listener does
+The Workchief's answer arrives in the Town Hall's `detail` (`chat`), which the phone listener does
 not send; stage 2 adds `mobile.chat` (the last messages of the hall's chat, Markdown as plain text)
 so the phone reads its answer.
 
@@ -176,7 +176,7 @@ sends what may carry emoji twice, as it is and `_plain` (`title_plain`, `hour_pl
 `message_plain`), and `resources` names the HUD's four in the look's words. The app's own labels
 (Answers, Drop file here, Stop all, Lead agent) come from the glossary: `mobile.hello` will carry
 `lexicon.glossary()` at stage 1, so an app built once says words added later. What people or
-agents wrote (a question's lines, the Warchief's answer, a dropped file's name) keeps its words.
+agents wrote (a question's lines, the Workchief's answer, a dropped file's name) keeps its words.
 
 ## 5. Push notifications
 
@@ -241,11 +241,11 @@ on iOS, FCM on Android).
   (`mobile.guard` sets `paths: false` on its `drop`), so a phone cannot pull a file of the machine into
   the project.
 - **What a phone reads** is the compact snapshot: no Town Scroll, no file contents, no terminal
-  output beyond a question's last three lines. Stage 2's `mobile.chat` is the Warchief's answers,
+  output beyond a question's last three lines. Stage 2's `mobile.chat` is the Workchief's answers,
   which already avoid secrets as the hall's chat does.
 - **Rate limits** on the listener: pairing attempts (5 a minute, then locked until the desktop
   shows a new code), commands (a few per second per device).
-- **Spend.** A Warchief question costs a model call; it counts against the same budget
+- **Spend.** A Workchief question costs a model call; it counts against the same budget
   (`Town.budget_ok`), and a spent budget refuses it on the phone as at the desk.
 
 ## 8. Not decided
@@ -264,7 +264,7 @@ on iOS, FCM on Android).
 |---|---|---|
 | 0 | the surface, inside the host: `mobile.API`, `server.PROTOCOL`, `GET /api/version` (the run's token), `mobile.hello`, `mobile.snapshot` (compact, with `rev` / `since`), `mobile.COMMANDS` and `mobile.allowed`, `mobile.news`, the `war_raven` term; tests. No phone talks to it yet; the page could | done |
 | 1 | LAN: the phone listener (TLS, a device token, `mobile.allowed`, compact snapshots only), pairing by QR code, Settings → Phones (list, forget), the glossary in `mobile.hello`; a first app: glance, Orders, Halt All, spend and quotas | done on the host; the app waits on §8.1 (`tools/phone.py` stands in) |
-| 2 | the rest of v1: drop into The Pit (share sheet, offline queue, the drop's client id), Ask the Warchief with `mobile.chat`, the notifier (`gui/notify.py`) with local notifications while the app is open | done on the host (the client id, `mobile.chat`, the notifier's `news`); the share sheet and the offline queue are the app's |
+| 2 | the rest of v1: drop into The Pit (share sheet, offline queue, the drop's client id), Ask the Workchief with `mobile.chat`, the notifier (`gui/notify.py`) with local notifications while the app is open | done on the host (the client id, `mobile.chat`, the notifier's `news`); the share sheet and the offline queue are the app's |
 | 3 | away from home: the relay (end to end TLS, push through APNs / FCM), or the operator's tunnel; per-kind mute and quiet hours | — |
 | 4 | when the daemon comes: the phone reaches a town with no window open; a town picker for several projects | — |
 
@@ -273,14 +273,14 @@ on iOS, FCM on Android).
 No app store and no build: the phone listener serves a small web app itself (`gui/pwa.py`, its files in
 `gui/static/pwa/`, plain JavaScript), and the phone adds it to its Home Screen. It does what stage 1 and 2
 give a phone: the glance (spend, quotas, the buildings, what asks first), Answers with the Advisor's
-suggestion, Stop all (two taps), the Warchief and Drop file here (a text, a link or a file up to 5 MB; on
+suggestion, Stop all (two taps), the Workchief and Drop file here (a text, a link or a file up to 5 MB; on
 Android also from the share sheet, through the manifest's `share_target`).
 
 **The screen** (since 2026-10-11, stage 1 of the phone's redesign). A glance reads top down: the resources as
 the desktop's HUD draws them (Quota, Spend while it is shown, and the orks at work as the meat, `2/5`; their
 sprites in Camp, their words in Office), the town's name after them, then Answers with one line over the
 questions ("3 orks wait on you, the longest 7 min."), only while an ork asks, then the buildings. What a phone
-does now and then is a bar at the foot, where the thumb is (`pwa/dock.js`): Ask (the Warchief) and Drop (Drop
+does now and then is a bar at the foot, where the thumb is (`pwa/dock.js`): Ask (the Workchief) and Drop (Drop
 file here) open a sheet from the foot; Stop all, there only while an ork works, stops on a hold of 1.2 s (the
 button fills while it is held; let go early and nothing happens), or a tap opens a sheet whose Stop every ork
 stands up the screen, away from the bar, so two taps in a pocket stop nothing. The look, notices, this phone

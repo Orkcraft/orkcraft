@@ -204,7 +204,7 @@ It writes `design-system/sprites/buildings/<type>/header-<biome>.png` (and `@2x`
 clean pixels; a CSS filter at run time would smear the palette. `js/icons.js` `headerSprite(type,
 biome)` picks the file. The prototype does the same on a canvas, to try the rules live.
 
-- The agents' heads and the Warchief stay green in every biome: they are the clan, not the place.
+- The agents' heads and the Workchief stay green in every biome: they are the clan, not the place.
 - Void takes the green off the buildings. That is accepted: the clan stays green.
 
 ### 3.4 Lava, a sixth

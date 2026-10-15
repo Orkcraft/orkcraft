@@ -4,7 +4,7 @@
 //   SlotsHud     in the HUD: 🥩 working/limit, 🔥 · ❓ · ! when something waits for you, ⏳ what is held for a limit, and Stop all beside them as one
 //                block "what runs". A press opens the list, waiting first, then the longest running; Stop all is
 //                its first row too.
-//   OrkConsole   at the town's foot, beside the Warchief's line: the ork a row picked, folded — its status, its
+//   OrkConsole   at the town's foot, beside the Workchief's line: the ork a row picked, folded — its status, its
 //                question with its answers (or Reply), ⏹ Stop, its spend and AI tool. Open shows its building.
 //                ▴ unfolds it (js/orkconsole.js): its sessions, its cart, its answer, its terminal, its history.
 //

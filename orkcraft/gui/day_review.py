@@ -1,6 +1,6 @@
-"""📜 Improve reads a day (docs/design/improve-buildings.md §13): the Warchief's Improve, on a day picked, has the
+"""📜 Improve reads a day (docs/design/improve-buildings.md §13): the Workchief's Improve, on a day picked, has the
 Mechanic and the Farseer read that day's logs (realm/day_review.py) in a thread of their own; when they are done the
-Warchief is asked to offer each change, to apply or skip. A day read before is not read again (no cost) unless asked.
+Workchief is asked to offer each change, to apply or skip. A day read before is not read again (no cost) unless asked.
 At night (gui/nightly.py, with the Elders, while the Council's `review_nightly` is on) yesterday is read the same way,
 and the morning says what was found: Improve then goes through it at no cost.
 
@@ -84,7 +84,7 @@ class DayReview:
             return builders.ask(builders.main_tool(self.town.machine), prompt)
 
     def start(self, day: str, ask_warchief: bool = True, again: bool = False) -> str:
-        """Read `day` (in a thread), unless it was read before and not `again`: then its findings go to the Warchief
+        """Read `day` (in a thread), unless it was read before and not `again`: then its findings go to the Workchief
         at once. What to say now."""
         if self.running:
             return f"The Elders are reading {day_review.label(self.running)}: one reading at a time"
@@ -131,7 +131,7 @@ class DayReview:
         about = sorted({f.building for f in review.findings if f.building in titles})
         problem = hall.ask(day_review.warchief_text(review, titles), about) if hall is not None else "no Town Hall"
         if problem:
-            self.town.toast(f"{review.said}; the Warchief could not take it: {problem}", title="Improve")
+            self.town.toast(f"{review.said}; the Workchief could not take it: {problem}", title="Improve")
 
     # -- at night ------------------------------------------------------------------------------------------------
 

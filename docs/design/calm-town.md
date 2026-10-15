@@ -1,4 +1,4 @@
-# Design — a calm town: the map, one panel, the Warchief
+# Design — a calm town: the map, one panel, the Workchief
 
 The town took the whole screen of a real-time strategy game, its console included: a War Map, an
 Info panel with the garrison, a Command Card of keys, a status bar, a Build button, and a building's
@@ -7,16 +7,16 @@ console. A person who runs orks mostly **watches**: who works, who asks, what it
 question, open a building, sometimes build one. The console held the screen for the rare action.
 
 The metaphor stays in the map, the buildings, the roads and the orks. The console goes. What is left
-is the map, one panel on the right, and one line to the Warchief, who does the rest with its clan.
+is the map, one panel on the right, and one line to the Workchief, who does the rest with its clan.
 
 | stage | what | state |
 |---|---|---|
 | 1 | the TUI deprecated: the window is the default, the TUI gets no new features (§9) | done |
 | 2 | one panel on the right: a building's Work and Info, Lake's documents as its tabs (§2) | done |
 | 3 | no console: the War Map block, the status bar, Build, the Command Card and the advisor go; the right click (§1, §3) | done |
-| 4 | the Warchief's line: `/` commands, `@` names, hints by rules — no model (§4) | done |
-| 5 | the Warchief delegates: its answer's order goes to a specialist, its cards (§5–§7) | done |
-| 6 | the Warchief speaks first, in its line (§8) | done |
+| 4 | the Workchief's line: `/` commands, `@` names, hints by rules — no model (§4) | done |
+| 5 | the Workchief delegates: its answer's order goes to a specialist, its cards (§5–§7) | done |
+| 6 | the Workchief speaks first, in its line (§8) | done |
 | 7 | the TUI removed: `tui/`, `screens/`, `widgets/`, `wm/`, `app.py`, `theme.py` and Textual go (§9) | done |
 | later | a plan's buildings as ghosts on the map; `@building` straight to its steward; the Foreman fills one building's settings | |
 
@@ -28,7 +28,7 @@ is the map, one panel on the right, and one line to the Warchief, who does the r
 │        the map (it scrolls so that the open         │ [Work] [Info] │ a.py ✕     │
 │        building and its neighbours stay seen)       │ …                          │
 │                                                     │                            │
-│ [+ Orkspace]   [🧌 Ask the Warchief… or / ]         │                            │
+│ [+ Orkspace]   [🧌 Ask the Workchief… or / ]         │                            │
 └─────────────────────────────────────────────────────┴────────────────────────────┘
 ```
 
@@ -38,7 +38,7 @@ is the map, one panel on the right, and one line to the Warchief, who does the r
 - **The map** is the screen. Nothing floats over it but the two controls at its foot.
 - **The orkspaces**, bottom left, grow with use: one orkspace shows only `+ Orkspace`; two or more show
   their list (the one that asks marked) with `+` at its end. `+` asks a name (`orkspace.new` on the host).
-- **The Warchief's line**, bottom middle of what the panel leaves (§4): the way to build, to command and to ask.
+- **The Workchief's line**, bottom middle of what the panel leaves (§4): the way to build, to command and to ask.
 - **Gone:** the lower console (War Map block, Info, the garrison, Command Card), the status bar, the
   Office's advisor with its Build, and a building's window over the whole town (the panel's ⤢ does it).
   Camp keeps the Town Hall's hut in its corner, with *Ask me anything* on it.
@@ -65,12 +65,12 @@ building's window no longer compete for that half: they are **one panel**.
   building); a closed panel with documents waits as a handle at the right edge.
 - **The map scrolls** when a building opens: the room grows by the panel's width, and the building and
   the buildings its roads reach are brought into the part left (all of them when they fit).
-- The Town Hall's Work has a **Chat** tab: the whole conversation with the Warchief.
+- The Town Hall's Work has a **Chat** tab: the whole conversation with the Workchief.
 
 ## 3. The right click
 
 On a hut, and from ⋯ in its panel's bar (`js/menu.js`, `js/hut.js` `buildingMenu`): Open, Info, Listen to…,
-Ask the Warchief about it, Pin / Unpin, Fold, Demolish… (confirmed) — what the Command Card had, without
+Ask the Workchief about it, Pin / Unpin, Fold, Demolish… (confirmed) — what the Command Card had, without
 opening the panel; the only way to Demolish from the town. On the bare map: Build here… (the catalog, the
 building raised where the click was), Tidy up (every hut that is not pinned laid out along its roads,
 left to right, from the top left: `js/tidy.js`), Settings. An entry names the `/` command that does the same,
@@ -87,7 +87,7 @@ place and the hut goes there (`hut.move`) or takes the size (`hut.size`, kept in
 `hut_size`); a double click on an edge gives it back its own size. Huts are pushed apart only when the town
 loads with them on one another (an older scroll, a card that grew), never by a drag or a hover.
 
-## 4. The Warchief's line
+## 4. The Workchief's line
 
 One input at the town's foot (`js/warchief.js`). `/` or Ctrl+K focuses it from anywhere, Esc leaves it,
 ↑ / ↓ walk its history, Tab completes a command, Backspace on an empty line drops the last chip.
@@ -110,15 +110,15 @@ One input at the town's foot (`js/warchief.js`). `/` or Ctrl+K focuses it from a
   A command that misses a name says how to write it.
 - `@` names a **building** (completed from the orkspace's). The building open in the panel stands in the
   line as a chip already, so "add an ork" needs no more words.
-- Anything else goes to the Warchief, with the buildings named as what the person points at.
+- Anything else goes to the Workchief, with the buildings named as what the person points at.
 
 **The answer** unrolls over the line: its last messages, its cards, the hints. The whole chat is the
 Town Hall's Chat tab. A press over the line never takes the focus from the field, so what it shows
 stays put under the mouse.
 
-## 5. The Warchief delegates
+## 5. The Workchief delegates
 
-The Warchief does not build. It understands what the person wants, writes the order for the specialist
+The Workchief does not build. It understands what the person wants, writes the order for the specialist
 who does it, and brings back what they made (`core/warchief.py`). Its answer ends with at most one line:
 
 | `DO: {…}` | who | where it runs |
@@ -133,7 +133,7 @@ An order that names a type or a building that does not exist is dropped: the ans
 last three go out on the bus (`bus.ORDER`); the GUI host starts the console's job, and a refusal (a
 building with no keeper, the budget spent) comes back on the card. Each specialist stays one call in an
 empty folder: it sees the order and the catalog, never the project, and its answer is used only when it
-passes its checks. The Warchief sees the town; the specialists see only its order. An older answer's
+passes its checks. The Workchief sees the town; the specialists see only its order. An older answer's
 `BUILD: <type>` line still reads as a build.
 
 ```
@@ -157,7 +157,7 @@ A card stands in its answer (`js/buildings/town_hall.js` `Card`), in the line an
    person takes it there.
 4. **Done.** What it raised, and **Undo**: the buildings come down and the roads up.
 
-## 7. When the Warchief asks first
+## 7. When the Workchief asks first
 
 | the act | how |
 |---|---|
@@ -167,7 +167,7 @@ A card stands in its answer (`js/buildings/town_hall.js` `Card`), in the line an
 
 Whatever is raised passed the Council first (a plan) or is the catalog's own (a building).
 
-## 8. When the Warchief speaks first
+## 8. When the Workchief speaks first
 
 Rarely, and in its line, never in a dialog: while the line is left alone it shows what wants a
 decision — an ork's question (a click opens Orders on it), else spend near or over its limit (a click
@@ -197,5 +197,5 @@ dependency of every install (2026-10-10): without it a phone got only a link to 
 
 ## 10. Words
 
-The road planner got its Office word (*Link planner*) in `realm/lexicon.py` `TERMS`; the Warchief is the
+The road planner got its Office word (*Link planner*) in `realm/lexicon.py` `TERMS`; the Workchief is the
 *Lead agent* there already. The panel, the line and a card are plain words.

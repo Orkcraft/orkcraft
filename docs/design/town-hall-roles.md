@@ -58,7 +58,7 @@ model's.
 
 | role | expertise | takes over |
 |---|---|---|
-| **Warchief** | the lead: talks, sorts things out, hands work on | — |
+| **Workchief** | the lead: talks, sorts things out, hands work on | — |
 | **Mason** | data, schemas, scripts: builds them, checks them, repairs a yard ([ork-console.md](ork-console.md) §16) | — |
 | **Alchemist** | UI/UX: lays out views, checks how a building reads | the Artisan |
 | **Mechanic** | quality measured on cases | — (gives up spend) |

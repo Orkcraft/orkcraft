@@ -4,7 +4,7 @@
   Council's Fast Path, 👍 / 👎 of the stewards, the retros' proposals — plain data each face draws
   (the TUI's `screens/town_hall.py`, the GUI's `gui/views/town_hall.py`). `audit()` runs the hall's
   three agents over the town (rules, no model call) and sends `hall.audit_done` down its roads.
-- **The Warchief** (`ask(text, about)`): the hall's lead ork answers the person in a chat — what the
+- **The Workchief** (`ask(text, about)`): the hall's lead ork answers the person in a chat — what the
   town is, what to build, how — one model call per question in a thread (`runners.WARCHIEF_RUNNER`,
   else the Claude CLI). It does not build: an answer that asks for work gives it to a specialist and
   carries a card (core/warchief.py): the Town Builder's plan (made here, in a thread, then the Council's
@@ -13,7 +13,7 @@
 - **Limits**: spend against the run's budget, and the claude / agy / codex quotas read in a thread every
   `LIMITS_REFRESH_S` (`read_limits()`).
 
-The sandbox (`orkcraft --demo`) never calls a model nor a CLI: the Warchief answers from the
+The sandbox (`orkcraft --demo`) never calls a model nor a CLI: the Workchief answers from the
 catalog and the quotas are a sample.
 """
 from __future__ import annotations
@@ -36,7 +36,7 @@ from orkcraft.sources.limits import PROVIDERS, Limit, fetch_limits
 TOWN_HALL = "town_hall"
 CHAT_FILE = "chat.jsonl"
 CHAT_KEPT = 60                  # messages the chat keeps
-CONTEXT_TURNS = 8               # of them, what the Warchief reads again with a new question
+CONTEXT_TURNS = 8               # of them, what the Workchief reads again with a new question
 ASK_LIMIT = 4000                # characters of one question
 LIMITS_REFRESH_S = 10 * 60      # as the TUI's Limits
 
@@ -50,7 +50,7 @@ DEMO_LIMITS = (Limit("claude", "", "5h session", 0.62, None), Limit("claude", ""
                Limit("agy", "", "daily", 0.4, None), Limit("codex", "plus", "5h", 0.9, None),
                Limit("codex", "plus", "weekly", 0.7, None))
 
-PROMPT = """You are the Warchief, the lead ork of an Orkline town. A town is a project: buildings (typed
+PROMPT = """You are the Workchief, the lead ork of an Orkline town. A town is a project: buildings (typed
 modules) take carts (messages) along roads (links) and orks (agents) work in them. The person who runs
 the town asks you; answer briefly and plainly in Markdown, as a guide who knows this town.
 
@@ -103,7 +103,7 @@ class TownHallWorker(Worker):
             self.order_waits, self.serious = now
             self.changed()
 
-    # -- the Warchief --------------------------------------------------------------------------
+    # -- the Workchief --------------------------------------------------------------------------
 
     @property
     def warchief(self) -> str:
@@ -112,11 +112,11 @@ class TownHallWorker(Worker):
         return lead.name if lead is not None else catalog.TYPES[TOWN_HALL].orc
 
     def ask(self, text: str, about: list[str] | None = None) -> str:
-        """A question for the Warchief (`about`: the buildings the person points at): "" when it is
+        """A question for the Workchief (`about`: the buildings the person points at): "" when it is
         asked, else why not."""
         text = (text or "").strip()[:ASK_LIMIT]
         if not text:
-            return "Ask the Warchief something"
+            return "Ask the Workchief something"
         if self.thinking:
             return f"{self.warchief} is still answering"
         self._say("you", text)
@@ -124,7 +124,7 @@ class TownHallWorker(Worker):
             answer, type_id = self._demo_answer(text)
             self._say("warchief", answer, card=warchief.card({"kind": "build", "type": type_id}) if type_id else None)
             return ""
-        if self.out_of_gold("the Warchief's answer"):
+        if self.out_of_gold("the Workchief's answer"):
             self._say("warchief", "The budget of this run is spent — raise it, and ask again.", error=True)
             return ""
         self._asked += 1
@@ -178,7 +178,7 @@ class TownHallWorker(Worker):
     def status(self) -> str:
         return "WORKING" if self.thinking else ""
 
-    # -- the Warchief's cards: the specialists' work (core/warchief.py) -------------------------------
+    # -- the Workchief's cards: the specialists' work (core/warchief.py) -------------------------------
 
     def _start(self, c: dict) -> None:
         """A new card's work: the plan in a thread, a face's job on the bus, a building at once when unchained."""
@@ -295,7 +295,7 @@ class TownHallWorker(Worker):
             road = core_roads.lay(self.town, r.target, r.source, r.subscription, None, quiet=True, returns=r.returns)
             if road is not None:
                 made["roads"].append(f"{r.target}:{road.id}")
-        self.town.checkpoint("create", "camp", f"town: {plan.title or 'the Warchief’s plan'}")
+        self.town.checkpoint("create", "camp", f"town: {plan.title or 'the Workchief’s plan'}")
         self.town.toast(f"{len(made['buildings'])} buildings · {len(made['roads'])} roads",
                         title=f"🏰 {plan.title or 'The plan'} stands")
         return made
@@ -350,7 +350,7 @@ class TownHallWorker(Worker):
             pass
 
     def town_lines(self) -> list[str]:
-        """The town as the Warchief reads it: a building per line, then its roads."""
+        """The town as the Workchief reads it: a building per line, then its roads."""
         sc = self.town.scroll
         lines = []
         for bs in sc.buildings:
@@ -372,7 +372,7 @@ class TownHallWorker(Worker):
             history=f"\nThe conversation so far:{history}\n" if history else "", question=question)
 
     def _demo_answer(self, question: str) -> tuple[str, str]:
-        """The sandbox's Warchief: the catalog building whose words the question shares most."""
+        """The sandbox's Workchief: the catalog building whose words the question shares most."""
         words = {w for w in re.findall(r"[a-z]{4,}", question.lower())}
         best, score = None, 0
         for t in buildable():

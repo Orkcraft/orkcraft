@@ -1,4 +1,4 @@
-"""🚶 Leaving the camp in the GUI (docs/design/audience.md §2a, backlog W3): the sun dial's "I'm off", the Warchief's
+"""🚶 Leaving the camp in the GUI (docs/design/audience.md §2a, backlog W3): the sun dial's "I'm off", the Workchief's
 line that says what the orks will do until evening and asks what to take first, and the computer kept awake only while
 carts are in work and it is on power (gui/awake.py), let go when the work is done or the cap is reached.
 
@@ -8,7 +8,7 @@ carts are in work and it is on power (gui/awake.py), let go when the work is don
     away.keep_awake()                       # hold or let go, at once (the town opened, the setting changed)
     away.snapshot()                         # what the page shows while away, or None
 
-What the service says when the cap is reached or evening comes is said once in the Warchief's line, as the end of
+What the service says when the cap is reached or evening comes is said once in the Workchief's line, as the end of
 Do not disturb is (`you.summary`).
 """
 from __future__ import annotations

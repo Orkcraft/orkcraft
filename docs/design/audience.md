@@ -67,7 +67,7 @@ background. So:
 - **Why they would leave it on:** the orks no longer stop on the first question (rule 1 above). That is the product's
   own answer to "nothing happens without me".
 - **"Leaving the camp" is a ritual, as in a strategy game** (P0 before the launch, with "while you were away"). In the
-  morning, one press: "I'm off". The Warchief says what the orks will do until evening, which carts, and the cap
+  morning, one press: "I'm off". The Workchief says what the orks will do until evening, which carts, and the cap
   ("up to 30 % of the window"), and asks what to take first. While carts are in work and the laptop is on power, the
   town keeps the Mac from sleeping, and lets it sleep when the work is done or the cap is reached. A closed lid still
   sleeps; this is said plainly, with "leave the lid open".

@@ -52,7 +52,7 @@ Mechanic, the Alchemist), whatever the look (CLAUDE.md, *Orks by their orkish na
   - The UX bench lays none: it picks its building from a list (§6.1).
   - The Test bench turns to `"setup"` in stage 2, when its setup can pick a building or a frame of them; until then
     it keeps its roads, so testing a chain does not stop working in between.
-- **Setup and settings.** *Setup* is what a building asks while it goes up (the Warchief's line,
+- **Setup and settings.** *Setup* is what a building asks while it goes up (the Workchief's line,
   [select-a-building.md](select-a-building.md) §7); *settings* is what its window changes later. A road an Improve
   building needs is setup's.
 
@@ -107,7 +107,7 @@ so nothing but a person could give a building that input.
 
 ### 5.1 Setup (stage 2, built 2026-10-11)
 
-1. Build → **Logic** raises a Test bench, and the Warchief asks *What should it test?* (`js/buildings/lab.js`
+1. Build → **Logic** raises a Test bench, and the Workchief asks *What should it test?* (`js/buildings/lab.js`
    `Setup`): one press on a standing building tests it; **Frame several on the map** lets the person drag a frame
    (`js/frame.js` `FrameSelect`, a strategy game's selection) and the buildings it touches are picked; **Test them as
    one chain**. *Change what it tests* in its window asks again.
@@ -498,7 +498,7 @@ as the Farseer on a person's own Review board ([ork-console.md](ork-console.md) 
 
 ## 13. Improve reads a day: the Mechanic and the Farseer (asked 2026-10-12)
 
-Asked by the owner: instead of copying a day's logs out for someone to read, **Improve** in the Warchief's line has the
+Asked by the owner: instead of copying a day's logs out for someone to read, **Improve** in the Workchief's line has the
 town's own councillors read them and offer the changes. The Mechanic stays where a single building or scheme is
 reviewed (the Test bench); Improve is the town's whole day.
 
@@ -519,10 +519,10 @@ objects when a change gives the person more to do, hides what a building did, or
    with its whole persona and the digest; each says at most six findings, each with one change of a kind (setting,
    prompt, rule, step, tier, road, code, drop). **A finding that cites no hotspot of the day is dropped**: no proof,
    no finding. A councillor whose ask fails is said; the other's findings stand. A day with no hotspot asks no model.
-4. **The Warchief offers them** one by one, to apply or skip, as it does any change. A code change is not made here:
+4. **The Workchief offers them** one by one, to apply or skip, as it does any change. A code change is not made here:
    it is said, and the Test bench can try it (§5.3; a pull request only from there, shown before it goes, §4 — what
    the logs hold never goes into one).
-5. **Kept** in `.orkcraft/council/days/<day>.json`: picking the day again hands the same findings to the Warchief at
+5. **Kept** in `.orkcraft/council/days/<day>.json`: picking the day again hands the same findings to the Workchief at
    no cost.
 
 **Since the last update** (asked 2026-10-12). The first row of Improve reads the logs from the moment this machine

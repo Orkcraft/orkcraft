@@ -1,6 +1,6 @@
 {
   "type": "town_hall",
-  "about": "🏰 Town Hall, the town's way in: four tabs, one shown at a time — the Warchief's chat (all of it; the town's line shows its last words), the Hall (its orks, the audit, the proposals, the Elders, the Council's reviews), Sessions (the War Tent) and Limits (spend and quotas).",
+  "about": "🏰 Town Hall, the town's way in: four tabs, one shown at a time — the Workchief's chat (all of it; the town's line shows its last words), the Hall (its orks, the audit, the proposals, the Elders, the Council's reviews), Sessions (the War Tent) and Limits (spend and quotas).",
   "panes": {
     "tabs": {
       "about": "the tabs Chat, Hall, Sessions (how many run) and Limits; a click shows one",
@@ -10,7 +10,7 @@
       "required": true
     },
     "chat": {
-      "about": "the Chat tab: the whole conversation with the Warchief, its cards and the field to ask",
+      "about": "the Chat tab: the whole conversation with the Workchief, its cards and the field to ask",
       "components": [
         "list",
         "text"

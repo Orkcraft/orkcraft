@@ -229,7 +229,7 @@ measure:
 | Agent pool | a small real task on your project comes back as a pull request with green tests, and you see which orks split it | minutes to the first accepted task |
 
 The bench holds the design and the measure. The moment itself goes into the building's first run
-for everyone (its setup in the Warchief's line, [select-a-building.md](select-a-building.md) §7),
+for everyone (its setup in the Workchief's line, [select-a-building.md](select-a-building.md) §7),
 not into the bench.
 
 ## 6. Make tasks (stage 7)

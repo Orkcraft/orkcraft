@@ -1,14 +1,14 @@
 """Mission 1, Raise the camp (docs/design/first-mission.md §3): the person builds the first town, one building a quest.
 
 The quests, their words and where the mission stands; no face, no town. core/mission.py raises the buildings, lays
-the roads and watches each quest's goal; the GUI draws the quest log in the Warchief's line.
+the roads and watches each quest's goal; the GUI draws the quest log in the Workchief's line.
 
-    mission.QUESTS                  the quests in their order: id, the Warchief's line, the goal, what is raised
+    mission.QUESTS                  the quests in their order: id, the Workchief's line, the goal, what is raised
     mission.load(root)              where the mission stands: {"on", "quest", "started", "done", "skipped", …}
     mission.save(root, state)
 
 Quests 1 to 3½ run no model and spend nothing: the drill is a practice task, called a drill on its card and in the
-Warchief's words (§2 rule 5). Quests 4 and 5 are real work (core/mission.py). A deed for each quest and Mission 1's
+Workchief's words (§2 rule 5). Quests 4 and 5 are real work (core/mission.py). A deed for each quest and Mission 1's
 stage and first item: realm/growth.py.
 """
 from __future__ import annotations
@@ -25,7 +25,7 @@ PATH = Path(".orkcraft") / "mission.json"
 @dataclass(frozen=True)
 class Quest:
     id: str
-    says: str            # the Warchief's line (the camp's voice may joke)
+    says: str            # the Workchief's line (the camp's voice may joke)
     goal: str            # what the person does, plainly
     raises: str = ""     # the building type it raises ("" none)
     press: str = ""      # the button that raises it ("" when the goal is done elsewhere)

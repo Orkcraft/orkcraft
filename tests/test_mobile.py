@@ -124,7 +124,7 @@ async def test_the_version_handshake_takes_the_token(fake_repo):
         await asyncio.wait_for(task, 10)
 
 
-# -- stage 2: the drop's client id, the Warchief's answers, the notifier ---------------------------
+# -- stage 2: the drop's client id, the Workchief's answers, the notifier ---------------------------
 
 def test_a_drop_with_a_client_id_is_made_once_an_hour(fake_repo, isolated_layout_file):
     import base64

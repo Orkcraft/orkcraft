@@ -29,7 +29,7 @@ launch wait on. Answers go under each question, and the doc it changes is update
 - **Q5.** **Three kinds of review:** the Review gate (rules, or the person), the Review board (a clan judges), the Agent pool
    steward's own review. Should two of them become one? *Default:* keep the gate (a decision) and the board (opinions);
    the pool's own review shows as a session of its steward.
-- **Q6.** **Where a new idea goes:** the Task board's Ideas, the Warchief's line, a talk ([ork-console.md](ork-console.md)
+- **Q6.** **Where a new idea goes:** the Task board's Ideas, the Workchief's line, a talk ([ork-console.md](ork-console.md)
    §21). One way in or several? *Default:* everything ends as a card in Ideas; the line and a talk ask where it
    belongs.
 - **Q7.** **Autonomy for a new person:** "propose only" is safe and asks often; "apply if unanswered" is calm and riskier.
@@ -60,7 +60,7 @@ launch wait on. Answers go under each question, and the doc it changes is update
     one small screenshot, for the people who think it is a toy.
   *Answered 2026-10-13:* yes, both looks side by side, "At work: Office. After work: Camp. The same town."
   ([work-and-play.md](work-and-play.md) §4b).
-- **Q14.** **The camp's jokes:** the Warchief's lines joke. Does that sit well with a developer who is tired at 2 a.m.? *Default:*
+- **Q14.** **The camp's jokes:** the Workchief's lines joke. Does that sit well with a developer who is tired at 2 a.m.? *Default:*
     jokes in growth news and the mission only; never on an error, money or a question.
 
 ## D. Install, trust, safety

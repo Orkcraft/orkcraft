@@ -1,5 +1,5 @@
 """A steward's headgear by the work of its building: one ork head, a role's hat over it (docs/design/select-a-building.md
-§2), as the Warchief wears his crown (tools/logo.py).
+§2), as the Workchief wears his crown (tools/logo.py).
 
     python tools/hat_sprites.py [--preview FILE]
 
@@ -8,7 +8,7 @@ and lit there as the ork out of its building is (tools/visit_sprites.py), so the
 
 - `face-<role>.png`, `face-ork.png` (12×10, 12×8; flat, a pixel its own): Info's ork at full size, 72 CSS px wide (layout.css).
 - `hat-<role>.png` (12×2, 24×4 drawn): the hat alone, worn by the ork that comes out of its building (js/visit.js);
-- `steward-<role>.png` (12×10, 24×20 drawn): the head under its hat, the steward's face on the Warchief's line when
+- `steward-<role>.png` (12×10, 24×20 drawn): the head under its hat, the steward's face on the Workchief's line when
   its building is selected (js/warchief.js).
 
 Which type wears which hat is `js/icons.js` `HATS`. Needs `pip install pillow fonttools brotli` (tools/logo.py).

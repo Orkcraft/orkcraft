@@ -50,6 +50,6 @@
 .th-fold__body { padding: 0 0 var(--space-3) var(--space-4); }
 .th-fold__body > p { margin: 0 0 var(--space-1); }
 
-/* The closed card's field to ask the Warchief. */
+/* The closed card's field to ask the Workchief. */
 .th-ask { display: flex; }
 .th-ask > .ok-input { flex: 1; min-width: 0; }

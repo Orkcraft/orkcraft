@@ -11,12 +11,12 @@
 - **One vocabulary, two looks.** Camp and Office are no longer vocabularies, only **looks** of the GUI
   ([docs/design/portrait.md](docs/design/portrait.md) §3): Camp (the default) and Office (calm,
   monochrome, no sprites). A look changes only how things are drawn, never a word. A concept keeps its Camp word
-  when it says *who* (ork, Warchief, town, building, road, Town Hall, Renown) and has a plain word
+  when it says *who* (ork, Workchief, town, building, road, Town Hall, Renown) and has a plain word
   when it says *what a thing does, costs or risks* (External listeners, Spend, Stop all, Autonomy,
   Town file, Project).
 - **Orks by their orkish names, buildings by what they do — whatever the look.** Every ork — a building's
   (`orc.<type>` in `TERMS`), the Town Hall's, the night's Elders — is called by its orkish name: the Mechanic,
-  the Alchemist, a Grunt, the Lookout, the Warchief. Every building is called by what it does, in Office's plain
+  the Alchemist, a Grunt, the Lookout, the Workchief. Every building is called by what it does, in Office's plain
   words: Test bench, UX bench, Agent pool, External listeners. Never the other way round: no ork gets a job title
   ("Tester", "Worker"), no building a camp name ("Barracks", "Mechanic"). `orkcraft/realm/lexicon.py` `TERMS` is the glossary: a new concept or building type
   gets its one word there, and new code writes that word. A renamed concept keeps its old Camp
@@ -24,7 +24,7 @@
   for attributes and data. A GUI `html` template's own text is written in today's word at the source
   (`tests/test_gui_wording.py` checks). What people or agents wrote keeps its words; Markdown, inputs,
   logs and terminals keep theirs.
-- The voice stays the camp's: the Warchief's lines, growth news and the onboarding may joke; labels,
+- The voice stays the camp's: the Workchief's lines, growth news and the onboarding may joke; labels,
   settings and anything about money or safety say plainly what happens.
 - Tests that check a visible string use the same wording.
 
