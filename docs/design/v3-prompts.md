@@ -662,3 +662,19 @@ Picked in the art session by the rules of §15 (front-on, no text baked in, no m
 The Task board's inside draws them by `.has-art` (`js/buildings/fields_inside.css`); its CSS stand-ins stay for a
 manifest that cannot be read. Screens: `img/i2/inside-v3.png`.
 
+## 17. Round 12: the queue after I2 (written 2026-10-15)
+
+The owner, through the PM session: write the queue's prompts, then generate it, P0 first, within **30 calls** for the
+whole queue (a second try at c3-switches included) and **6 more** for the logo's concepts; stop at once on a 402.
+Picks by the rules of §15 (for the track: the gauge nearest 32 art px and the rails reaching the tile's edges); the
+candidates stay in `candidates/` so the owner can change a pick. In `tools/gen_sheets.py`, in this order:
+
+| sheet | priority | asks | calls |
+|---|---|---|---|
+| `c3-switches` | P0 | the N/E/S junction (64 px), the switch stand in two positions told apart by position only, a pocket (three tiles: one tile parallel to the line, in and out by a switch), a level crossing of planks (design-system-v3.md §4c rules 1, 6, 7) | 3 (+3 if the gauge is off) |
+| `c1-ends` | P0 | the cart from the front and the back, empty and loaded, at c1's scale | 3 |
+| `l1-logo` | after P0 | four concepts of the capped ork's face in round glasses with a teal glint, flat, 3–4 colours, no text; the mark itself is drawn by `tools/logo.py` | up to 6 (outside the 30) |
+| `k3-stages` | P1 | the eleven classes' heads at stages 2–4 (growth.md §7.2's props, with ivory, bone, teal and plum for gold and red; stage 4's eyes teal) | 3 |
+| `i1-items` | P1 | the 15 items still drawn as stand-ins, the sundial and first-mission's proving stone | 3 |
+| `o7-moves` | P1 | the Prospector walking, digging and carrying a sack | 3 |
+

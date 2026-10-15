@@ -99,7 +99,8 @@ REF = {"f1": "f1-town.jpg", "b1": "b1-core.jpg", "o1": "o1-body.jpg", "o2": "o2-
        "c2": "c2-track.jpg", "g2": "g2-decor.jpg",
        "g3": "g3-palisade.jpg", "tb": "b1-taskboard.jpg",       # the owner's picks of round 7
        "r03": "../0.3/roles-2.jpg", "o3r": "o3-states-r1.jpg",  # the capped ork (§12)
-       "std": "st-dispatch.jpg"}                                 # the picked dispatcher's booth (§13)
+       "std": "st-dispatch.jpg",                                 # the picked dispatcher's booth (§13)
+       "k1": "k1-classes.jpg", "o7": "o7-prospector.jpg"}        # the picked classes and Prospector (§15)
 
 # the sheets: kind (building, ork, track, edge, signals), the prompt (v3-prompts §3, as the reviews redid it), the
 # pieces the cutter should find, the image's aspect, and the cut name `--pick` copies it to
@@ -315,6 +316,85 @@ SHEETS: dict[str, dict] = {
                   "frame; tabs to sit on a panel's top edge, active and inactive; a square 48 × 48 action button in "
                   "a walnut frame in three states (normal, hover, pressed); an \"Exit\" button with an arrow.",
         "about": "v3-prompts §3e.2: the panels, tabs, the action button in three states, Exit",
+    },
+    # round 12 (v3-prompts §17): the queue after I2 — P0 the track's switches and the cart's ends, then the logo's
+    # concepts, then P1 the portrait's stages, the earned items, the Prospector's moves
+    "c3-switches": {
+        "kind": "track", "expect": 5, "aspect": "16:9", "refs": ["c1"],
+        "prompt": "Track pieces drawn on EXACTLY the gauge of the attached sheet c2's straight pieces: the two rails 32 "
+                  "art px apart, centred on the tile, running all the way to the tile's edges, the ties spaced as on "
+                  "c2's straights. Five pieces with magenta round each: 1. one 64 × 64 tile, a T-junction with exits "
+                  "north, east and south (a straight from top to bottom, a branch curving off to the right edge's "
+                  "middle). 2. and 3. a small switch stand beside the track, about 16 × 24 px: a short wooden post with "
+                  "an iron lever at its foot and a flat target arm on top; in 2 the lever leans left and the arm is "
+                  "level, in 3 the lever leans right and the arm points up. The two must differ by position only, the "
+                  "same colours. 4. a pocket, three tiles long: a straight east–west line, and above it a second track "
+                  "one tile long parallel to it, joined to the line at both ends by short switch curves (in from the "
+                  "left, out to the right). 5. one 64 × 64 tile of a level crossing: wooden planks laid between and "
+                  "beside the rails of a straight east–west line, square to it, for a path to cross.",
+        "about": "design-system-v3.md §4c rules 1, 6, 7: the N/E/S junction, the switch stand in two positions, a "
+                 "pocket, a level crossing",
+    },
+    "c1-ends": {
+        "kind": "cart", "expect": 4, "aspect": "16:9", "refs": ["c1"],
+        "prompt": "The mine cart of the attached sheet c1-carts, at exactly its pixel size and colours, seen straight "
+                  "from the front and straight from the back (as it comes towards the viewer and as it goes away), "
+                  "four pieces in one row: 1. front, empty; 2. front, loaded with a wrapped bundle as in c1; 3. back, "
+                  "empty; 4. back, loaded. The wheels and the axle seen end-on; the same honey wood and iron bands.",
+        "about": "the cart from the front and the back, empty and loaded, at c1's scale (for the columns)",
+    },
+    "l1-logo": {
+        "kind": "logo", "expect": 4, "aspect": "1:1",
+        "prompt": "Concepts for an app's logo mark, four variants in a 2 × 2 grid, each alone on the magenta: the "
+                  "head of an orc seen straight from the front (this overrides any top-down projection above), flat, "
+                  "3–4 colours, bold simple shapes that still read at 16 px. The orc of the attached sheet roles-2: "
+                  "olive-moss skin, a cloth cap, two small tusks; it wears round glasses with big lenses and a thin "
+                  "bridge, a small teal glint in each lens (never yellow); kind and focused, never angry. Vary the "
+                  "cap's shape and the glasses' size between the four. No text, no letters, no frame, no background "
+                  "shape.",
+        "about": "concepts for the new mark (the PM, 15 October): the capped ork's face in glasses; the mark itself "
+                 "is drawn by tools/logo.py",
+        "refs": ["r03"],
+    },
+    "k3-stages": {
+        "kind": "character", "expect": 33, "aspect": "16:9", "refs": ["r03", "k1"],
+        "prompt": "Heads and shoulders, front-facing, of the eleven characters of the attached sheet k1-classes, in "
+                  "the same order, each at three stages of growth: three rows (stage 2, stage 3, stage 4) of eleven, "
+                  "every head the same size, each stage adding its own headgear or prop. 1. Burnout Peon: sweat and "
+                  "tired eyes · a plum bandana and war paint · a horned iron helm. 2. Bug Ork: a magnifier on the eye "
+                  "· goggles up, the beetle caught · a beetle-shell helm. 3. The Jira Lich: a plum bow tie · a headset "
+                  "· a high plum collar. 4. Roadmap Mummy: a rolled roadmap · a map pin on the head · a bone band, "
+                  "the roadmap unrolled. 5. Gradient-Sick Elf: a rainbow of soft teal and plum · a ranger's green hood "
+                  "and a pencil · long hair, bone pins, swatches. 6. Lore Elf: a quill · a plum beret · long hair and "
+                  "a d20. 7. Keyword Gnome: a keyword tag · brass goggles · an ivory band under five stars. "
+                  "8. Growth-Hack Gnome: an ivory star · a bone horn · an ivory band and a green arrow up. "
+                  "9. Data-Mining Goblin: a miner's lamp · a pickaxe · a top hat and a monocle. 10. Indie Knight: a "
+                  "steel helm with a plum plume · a sprout on the helm · a white helm with a glowing teal visor. "
+                  "11. Wandering Ghost: a straw hat · a captain's hat and an eye patch · a crest of open tabs. At "
+                  "stage 4 the eyes glow teal. No gold, no yellow, no red: ivory, bone, teal and plum instead.",
+        "about": "growth.md §7.2: the portrait's stages 2–4 for the eleven classes, in v3 (stage 4's eyes teal)",
+    },
+    "i1-items": {
+        "kind": "building", "expect": 16, "aspect": "16:9", "refs": ["g2"],
+        "prompt": "Sixteen small objects a player places on the grass of the camp, each alone, about the size of the "
+                  "decor in the attached sheet g2-decor (24–48 px), in a 4 × 4 grid, in this order: 1. a painter's "
+                  "easel; 2. a wooden signpost with an arrow up; 3. a small chest of teal crystals; 4. a crest banner "
+                  "on a pole, teal and plum; 5. a tombstone with a paper ticket pinned to it; 6. a statue of a beetle "
+                  "in a glass jar; 7. a lantern post, its light teal-white; 8. a small mine cart on a stone plinth; "
+                  "9. a trophy cup of carved wood; 10. a log pile on a stone plinth; 11. an anvil; 12. an old railway "
+                  "semaphore on a post; 13. a stone statue of balance scales; 14. a small pennant on a pole; 15. a "
+                  "sundial on a stone base; 16. a whetstone on a stone plinth. Calm colours: wood, stone, bone, teal "
+                  "and plum.",
+        "about": "v3-prompts §14: the earned items still drawn as stand-ins, the sundial and first-mission's proving "
+                 "stone",
+    },
+    "o7-moves": {
+        "kind": "ork-capped", "expect": 18, "aspect": "16:9", "refs": ["r03", "o3r", "o7"],
+        "prompt": "The Prospector of the attached sheet o7-prospector (the capped orc with a miner's lamp on the cap, "
+                  "its light teal-white, a pick), three rows of six frames: 1. walking to the right; 2. digging: the "
+                  "pick raised, swung down, struck, pulled back; 3. carrying a small sack on the shoulder, walking to "
+                  "the right.",
+        "about": "the Prospector's walk, dig and carry (§13.1)",
     },
     "c2-curves": {
         "kind": "track", "expect": 6, "aspect": "3:2",
