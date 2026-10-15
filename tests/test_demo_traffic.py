@@ -48,5 +48,6 @@ def test_a_review_gate_sends_a_cart_back_and_the_snapshot_says_where_it_goes_rou
         snap = [c for c in host.snapshot()["carts"] if c.get("back")]
         assert snap and {(c["from"], c["to"]) for c in snap} == {(c.source, c.target) for c in back}
         assert all(c["state"] == "moving" and not c["stands"] for c in snap)
+        assert all(c["round"] == 2 and c["round_tokens"] is not None for c in snap)       # its round and its price
     finally:
         host.close()

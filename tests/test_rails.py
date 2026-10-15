@@ -108,3 +108,15 @@ def test_a_roads_stop_keeps_a_pile_of_a_few_carts():
     out = state.carts(town, now)
     assert len(out) == state.STANDING_PER_ROAD and all(c["stands"] for c in out)
     assert [c["ref"] for c in out] == [f"#{i}" for i in range(4, state.STANDING_PER_ROAD + 4)]   # the newest, oldest first
+
+
+def test_a_cart_sent_back_says_its_ends_its_round_and_what_the_round_before_cost():
+    """design-system-v3.md §4c rule 8: a rework handed back goes round again wearing `round N · 🪵 …`: its ref's sends
+    back to that maker so far plus one, and the tokens from the maker's last hop on (only what was recorded)."""
+    now = 1000.0
+    trail = (pipes.Hop("b", tokens=9000), pipes.Hop("gate", tokens=500), pipes.Hop("b", tokens=12000), pipes.Hop("gate"))
+    back = lambda at: roads.Cart(road_id=roads.SENT_BACK, source="gate", target="b", status="sent",   # noqa: E731
+                                 payload=pipes.Payload(kind=pipes.TEXT, value="x", source="gate", mode="loot.rework", title="Fix it", ref="7",
+                                                       trail=trail), at=at)
+    out = [c for c in state.carts(_town(back(now - 5), back(now - 2)), now) if c.get("back")]
+    assert [(c["from"], c["to"], c["round"], c["round_tokens"]) for c in out] == [("gate", "b", 2, 12000), ("gate", "b", 3, 12000)]

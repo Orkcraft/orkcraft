@@ -187,6 +187,28 @@ def roads(town: Town) -> list[dict[str, Any]]:
     return out
 
 
+def _rounds(every: list) -> dict[int, int]:
+    """Each cart handed back: which round it starts at its maker (its ref's sends back to it so far, plus one)."""
+    seen: dict[tuple[str, str], int] = {}
+    out = {}
+    for c in every:
+        if c.road_id == roads_mod.SENT_BACK:
+            key = (c.target, c.payload.ref or id(c))
+            seen[key] = seen.get(key, 1) + 1
+            out[id(c)] = seen[key]
+    return out
+
+
+def _back(c, rounds: dict[int, int]) -> dict[str, Any]:
+    """A cart handed straight back (a rework) has no road: its two ends (Camp draws it going round again), the round
+    it starts and what the round before cost, from its maker's last hop on (design-system-v3.md §4c rule 8)."""
+    trail = tuple(c.payload.trail or ())
+    last = max((i for i, h in enumerate(trail) if h.building == c.target), default=None)
+    tokens, cost = pipes.trail_totals(trail[last:]) if last is not None else (None, None)
+    return {"back": True, "from": c.source, "to": c.target, "round": rounds.get(id(c), 2),
+            "round_tokens": tokens, "round_cost": cost}
+
+
 def _exit_sign(town: Town, road) -> str:
     """The sign of a road that takes a Review board's exit: the exit's name."""
     routes = (road.filter or {}).get("route") or []
@@ -264,6 +286,7 @@ def carts(town: Town, now: float | None = None, muster: Muster | None = None) ->
     seen_ref: set[tuple[str, str]] = set()
     for c in every:
         latest_in[c.target] = c
+    rounds = _rounds(every)
     out, standing = [], {}
     for c in reversed(every):
         age = now - c.at
@@ -298,7 +321,7 @@ def carts(town: Town, now: float | None = None, muster: Muster | None = None) ->
                     "age": round(age, 2), "load": load_of(c.payload, source_type), "ref": short_ref(ref),
                     "state": state, "stands": stands,
                     # a cart handed straight back (a rework) has no road: its two ends, and the faces draw it round again
-                    **({"back": True, "from": c.source, "to": c.target} if c.road_id == roads_mod.SENT_BACK else {})})
+                    **(_back(c, rounds) if c.road_id == roads_mod.SENT_BACK else {})})
     out.reverse()
     return out
 

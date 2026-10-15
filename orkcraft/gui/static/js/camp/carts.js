@@ -96,11 +96,19 @@ function Rolling({ c, way, B }) {
   const p = m ? pointAt(m.pts, m.s) : { x: way.pts[0][0], y: way.pts[0][1], face: 1 };
   return html`<div ref=${ref} class=${cls("gui-camp__cart is-driven", { "is-west": p.face < 0, "is-back": !!c.back })} data-load=${loadOf(c)}
       data-road=${c.road} data-id=${c.id}
-      title=${say(chipOf(c))} role="button" aria-label=${say(`${chipOf(c)}: its history`)}
+      title=${say(c.back ? `${chipOf(c)} · sent back: ${roundWord(c)}` : chipOf(c))} role="button" aria-label=${say(`${chipOf(c)}: its history`)}
       onClick=${(e) => { e.stopPropagation(); waybillOf.value = { cart: c.id }; }}
       style=${`transform:translate(${Math.round(p.x)}px,${Math.round(p.y)}px)`}>
     <${Bin} c=${c} B=${B} />
+    ${c.back && html`<span class="gui-camp__launch-chip is-round" style=${`top:${-48 * B - 30}px`}>${roundWord(c)}</span>`}
   </div>`;
+}
+
+/** A cart going round again wears its round and what the round before cost (§4c rule 8): `round 2 · 🪵 18k`, `$` on an
+ *  API key; only what was recorded. */
+export function roundWord(c) {
+  const t = tokensWord(c.round_tokens), m = c.round_cost === null || c.round_cost === undefined ? "" : `$${Number(c.round_cost).toFixed(2)}`;
+  return [`round ${c.round || 2}`, t ? `🪵 ${t}` : "", m].filter(Boolean).join(" · ");
 }
 
 /** Where a building's stopped carts stand, never on the main line (§4c rule 7): in its pocket, close together (more

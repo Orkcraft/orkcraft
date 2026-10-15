@@ -193,3 +193,6 @@
 .gui-camp__switch > img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 .gui-camp__switch > .is-thrown, .gui-camp__switch[data-thrown="1"] > .is-still { visibility: hidden; }
 .gui-camp__switch[data-thrown="1"] > .is-thrown { visibility: visible; }
+/* a cart going round again wears its round and its price (§4c rule 8), as a launched cart wears its cost */
+.gui-camp__launch-chip.is-round { left: 0; transform: translateX(-50%); white-space: nowrap; pointer-events: none; }
+.gui-camp__cart.is-driven.is-gone .gui-camp__launch-chip { display: none; }
