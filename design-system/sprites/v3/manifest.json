@@ -25,6 +25,11 @@
     "signal",
     "count"
    ],
+   "hd": {
+    "1": "buildings/barracks@hd1.webp",
+    "1.5": "buildings/barracks@hd1_5.webp",
+    "2": "buildings/barracks@hd2.webp"
+   },
    "doorway": [
     72,
     86,
@@ -55,7 +60,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/catapult@hd1.webp",
+    "1.5": "buildings/catapult@hd1_5.webp",
+    "2": "buildings/catapult@hd2.webp"
+   }
   },
   {
    "file": "buildings/council.png",
@@ -81,6 +91,11 @@
     "signal",
     "count"
    ],
+   "hd": {
+    "1": "buildings/council@hd1.webp",
+    "1.5": "buildings/council@hd1_5.webp",
+    "2": "buildings/council@hd2.webp"
+   },
    "doorway": [
     40,
     52,
@@ -111,7 +126,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/crag@hd1.webp",
+    "1.5": "buildings/crag@hd1_5.webp",
+    "2": "buildings/crag@hd2.webp"
+   }
   },
   {
    "file": "buildings/custom.png",
@@ -137,6 +157,11 @@
     "signal",
     "count"
    ],
+   "hd": {
+    "1": "buildings/custom@hd1.webp",
+    "1.5": "buildings/custom@hd1_5.webp",
+    "2": "buildings/custom@hd2.webp"
+   },
    "doorway": [
     22,
     68,
@@ -198,7 +223,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/fields@hd1.webp",
+    "1.5": "buildings/fields@hd1_5.webp",
+    "2": "buildings/fields@hd2.webp"
+   }
   },
   {
    "file": "buildings/forest.png",
@@ -223,7 +253,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/forest@hd1.webp",
+    "1.5": "buildings/forest@hd1_5.webp",
+    "2": "buildings/forest@hd2.webp"
+   }
   },
   {
    "file": "buildings/forge.png",
@@ -249,6 +284,11 @@
     "signal",
     "count"
    ],
+   "hd": {
+    "1": "buildings/forge@hd1.webp",
+    "1.5": "buildings/forge@hd1_5.webp",
+    "2": "buildings/forge@hd2.webp"
+   },
    "doorway": [
     65,
     75,
@@ -279,7 +319,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/gramophone@hd1.webp",
+    "1.5": "buildings/gramophone@hd1_5.webp",
+    "2": "buildings/gramophone@hd2.webp"
+   }
   },
   {
    "file": "buildings/horn.png",
@@ -304,7 +349,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/horn@hd1.webp",
+    "1.5": "buildings/horn@hd1_5.webp",
+    "2": "buildings/horn@hd2.webp"
+   }
   },
   {
    "file": "buildings/lab.png",
@@ -330,6 +380,11 @@
     "signal",
     "count"
    ],
+   "hd": {
+    "1": "buildings/lab@hd1.webp",
+    "1.5": "buildings/lab@hd1_5.webp",
+    "2": "buildings/lab@hd2.webp"
+   },
    "doorway": [
     21,
     62,
@@ -360,7 +415,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/lake@hd1.webp",
+    "1.5": "buildings/lake@hd1_5.webp",
+    "2": "buildings/lake@hd2.webp"
+   }
   },
   {
    "file": "buildings/loot.png",
@@ -385,7 +445,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/loot@hd1.webp",
+    "1.5": "buildings/loot@hd1_5.webp",
+    "2": "buildings/loot@hd2.webp"
+   }
   },
   {
    "file": "buildings/loot_vault-up.png",
@@ -411,6 +476,11 @@
     "signal",
     "count"
    ],
+   "hd": {
+    "1": "buildings/loot_vault-up@hd1.webp",
+    "1.5": "buildings/loot_vault-up@hd1_5.webp",
+    "2": "buildings/loot_vault-up@hd2.webp"
+   },
    "doorway": [
     44,
     62,
@@ -442,6 +512,11 @@
     "signal",
     "count"
    ],
+   "hd": {
+    "1": "buildings/loot_vault@hd1.webp",
+    "1.5": "buildings/loot_vault@hd1_5.webp",
+    "2": "buildings/loot_vault@hd2.webp"
+   },
    "doorway": [
     44,
     62,
@@ -473,6 +548,11 @@
     "signal",
     "count"
    ],
+   "hd": {
+    "1": "buildings/mill@hd1.webp",
+    "1.5": "buildings/mill@hd1_5.webp",
+    "2": "buildings/mill@hd2.webp"
+   },
    "doorway": [
     32,
     81,
@@ -504,6 +584,11 @@
     "signal",
     "count"
    ],
+   "hd": {
+    "1": "buildings/mine@hd1.webp",
+    "1.5": "buildings/mine@hd1_5.webp",
+    "2": "buildings/mine@hd2.webp"
+   },
    "doorway": [
     37,
     75,
@@ -534,7 +619,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/pit@hd1.webp",
+    "1.5": "buildings/pit@hd1_5.webp",
+    "2": "buildings/pit@hd2.webp"
+   }
   },
   {
    "file": "buildings/scrolls.png",
@@ -559,7 +649,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/scrolls@hd1.webp",
+    "1.5": "buildings/scrolls@hd1_5.webp",
+    "2": "buildings/scrolls@hd2.webp"
+   }
   },
   {
    "file": "buildings/signpost.png",
@@ -584,7 +679,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/signpost@hd1.webp",
+    "1.5": "buildings/signpost@hd1_5.webp",
+    "2": "buildings/signpost@hd2.webp"
+   }
   },
   {
    "file": "buildings/town_hall.png",
@@ -610,6 +710,11 @@
     "signal",
     "count"
    ],
+   "hd": {
+    "1": "buildings/town_hall@hd1.webp",
+    "1.5": "buildings/town_hall@hd1_5.webp",
+    "2": "buildings/town_hall@hd2.webp"
+   },
    "doorway": [
     68,
     88,
@@ -641,6 +746,11 @@
     "signal",
     "count"
    ],
+   "hd": {
+    "1": "buildings/ux_lab@hd1.webp",
+    "1.5": "buildings/ux_lab@hd1_5.webp",
+    "2": "buildings/ux_lab@hd2.webp"
+   },
    "doorway": [
     37,
     62,
@@ -671,7 +781,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/war_drum@hd1.webp",
+    "1.5": "buildings/war_drum@hd1_5.webp",
+    "2": "buildings/war_drum@hd2.webp"
+   }
   },
   {
    "file": "buildings/watchtower.png",
@@ -696,7 +811,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/watchtower@hd1.webp",
+    "1.5": "buildings/watchtower@hd1_5.webp",
+    "2": "buildings/watchtower@hd2.webp"
+   }
   },
   {
    "file": "buildings/workshop.png",
@@ -721,7 +841,12 @@
     "door",
     "signal",
     "count"
-   ]
+   ],
+   "hd": {
+    "1": "buildings/workshop@hd1.webp",
+    "1.5": "buildings/workshop@hd1_5.webp",
+    "2": "buildings/workshop@hd2.webp"
+   }
   },
   {
    "file": "carts/asset.png",
@@ -745,7 +870,12 @@
    "slots": [
     "load",
     "flag"
-   ]
+   ],
+   "hd": {
+    "1": "carts/asset@hd1.webp",
+    "1.5": "carts/asset@hd1_5.webp",
+    "2": "carts/asset@hd2.webp"
+   }
   },
   {
    "file": "carts/back-empty.png",
@@ -765,7 +895,12 @@
    "source": "c1-ends.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "carts/back-empty@hd1.webp",
+    "1.5": "carts/back-empty@hd1_5.webp",
+    "2": "carts/back-empty@hd2.webp"
+   }
   },
   {
    "file": "carts/back-loaded.png",
@@ -785,7 +920,12 @@
    "source": "c1-ends.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "carts/back-loaded@hd1.webp",
+    "1.5": "carts/back-loaded@hd1_5.webp",
+    "2": "carts/back-loaded@hd2.webp"
+   }
   },
   {
    "file": "carts/bundle.png",
@@ -809,7 +949,12 @@
    "slots": [
     "load",
     "flag"
-   ]
+   ],
+   "hd": {
+    "1": "carts/bundle@hd1.webp",
+    "1.5": "carts/bundle@hd1_5.webp",
+    "2": "carts/bundle@hd2.webp"
+   }
   },
   {
    "file": "carts/code.png",
@@ -833,7 +978,12 @@
    "slots": [
     "load",
     "flag"
-   ]
+   ],
+   "hd": {
+    "1": "carts/code@hd1.webp",
+    "1.5": "carts/code@hd1_5.webp",
+    "2": "carts/code@hd2.webp"
+   }
   },
   {
    "file": "carts/doc.png",
@@ -857,7 +1007,12 @@
    "slots": [
     "load",
     "flag"
-   ]
+   ],
+   "hd": {
+    "1": "carts/doc@hd1.webp",
+    "1.5": "carts/doc@hd1_5.webp",
+    "2": "carts/doc@hd2.webp"
+   }
   },
   {
    "file": "carts/empty.png",
@@ -881,7 +1036,12 @@
    "slots": [
     "load",
     "flag"
-   ]
+   ],
+   "hd": {
+    "1": "carts/empty@hd1.webp",
+    "1.5": "carts/empty@hd1_5.webp",
+    "2": "carts/empty@hd2.webp"
+   }
   },
   {
    "file": "carts/flag-flag.png",
@@ -905,7 +1065,12 @@
    "slots": [
     "load",
     "flag"
-   ]
+   ],
+   "hd": {
+    "1": "carts/flag-flag@hd1.webp",
+    "1.5": "carts/flag-flag@hd1_5.webp",
+    "2": "carts/flag-flag@hd2.webp"
+   }
   },
   {
    "file": "carts/flag-held.png",
@@ -929,7 +1094,12 @@
    "slots": [
     "load",
     "flag"
-   ]
+   ],
+   "hd": {
+    "1": "carts/flag-held@hd1.webp",
+    "1.5": "carts/flag-held@hd1_5.webp",
+    "2": "carts/flag-held@hd2.webp"
+   }
   },
   {
    "file": "carts/flag-none.png",
@@ -953,7 +1123,12 @@
    "slots": [
     "load",
     "flag"
-   ]
+   ],
+   "hd": {
+    "1": "carts/flag-none@hd1.webp",
+    "1.5": "carts/flag-none@hd1_5.webp",
+    "2": "carts/flag-none@hd2.webp"
+   }
   },
   {
    "file": "carts/front-empty.png",
@@ -973,7 +1148,12 @@
    "source": "c1-ends.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "carts/front-empty@hd1.webp",
+    "1.5": "carts/front-empty@hd1_5.webp",
+    "2": "carts/front-empty@hd2.webp"
+   }
   },
   {
    "file": "carts/front-loaded.png",
@@ -993,7 +1173,12 @@
    "source": "c1-ends.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "carts/front-loaded@hd1.webp",
+    "1.5": "carts/front-loaded@hd1_5.webp",
+    "2": "carts/front-loaded@hd2.webp"
+   }
   },
   {
    "file": "carts/message.png",
@@ -1017,7 +1202,12 @@
    "slots": [
     "load",
     "flag"
-   ]
+   ],
+   "hd": {
+    "1": "carts/message@hd1.webp",
+    "1.5": "carts/message@hd1_5.webp",
+    "2": "carts/message@hd2.webp"
+   }
   },
   {
    "file": "carts/pile.png",
@@ -1037,7 +1227,12 @@
    "source": "c1-carts.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "carts/pile@hd1.webp",
+    "1.5": "carts/pile@hd1_5.webp",
+    "2": "carts/pile@hd2.webp"
+   }
   },
   {
    "file": "decor/boulder.png",
@@ -1057,7 +1252,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/boulder@hd1.webp",
+    "1.5": "decor/boulder@hd1_5.webp",
+    "2": "decor/boulder@hd2.webp"
+   }
   },
   {
    "file": "decor/brush.png",
@@ -1077,7 +1277,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/brush@hd1.webp",
+    "1.5": "decor/brush@hd1_5.webp",
+    "2": "decor/brush@hd2.webp"
+   }
   },
   {
    "file": "decor/bush-small.png",
@@ -1097,7 +1302,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/bush-small@hd1.webp",
+    "1.5": "decor/bush-small@hd1_5.webp",
+    "2": "decor/bush-small@hd2.webp"
+   }
   },
   {
    "file": "decor/bush.png",
@@ -1117,7 +1327,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/bush@hd1.webp",
+    "1.5": "decor/bush@hd1_5.webp",
+    "2": "decor/bush@hd2.webp"
+   }
   },
   {
    "file": "decor/log-mossy.png",
@@ -1137,7 +1352,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/log-mossy@hd1.webp",
+    "1.5": "decor/log-mossy@hd1_5.webp",
+    "2": "decor/log-mossy@hd2.webp"
+   }
   },
   {
    "file": "decor/log.png",
@@ -1157,7 +1377,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/log@hd1.webp",
+    "1.5": "decor/log@hd1_5.webp",
+    "2": "decor/log@hd2.webp"
+   }
   },
   {
    "file": "decor/logpile.png",
@@ -1177,7 +1402,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/logpile@hd1.webp",
+    "1.5": "decor/logpile@hd1_5.webp",
+    "2": "decor/logpile@hd2.webp"
+   }
   },
   {
    "file": "decor/mushrooms-teal.png",
@@ -1197,7 +1427,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/mushrooms-teal@hd1.webp",
+    "1.5": "decor/mushrooms-teal@hd1_5.webp",
+    "2": "decor/mushrooms-teal@hd2.webp"
+   }
   },
   {
    "file": "decor/mushrooms-white.png",
@@ -1217,7 +1452,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/mushrooms-white@hd1.webp",
+    "1.5": "decor/mushrooms-white@hd1_5.webp",
+    "2": "decor/mushrooms-white@hd2.webp"
+   }
   },
   {
    "file": "decor/pebbles.png",
@@ -1237,7 +1477,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/pebbles@hd1.webp",
+    "1.5": "decor/pebbles@hd1_5.webp",
+    "2": "decor/pebbles@hd2.webp"
+   }
   },
   {
    "file": "decor/pine.png",
@@ -1257,7 +1502,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/pine@hd1.webp",
+    "1.5": "decor/pine@hd1_5.webp",
+    "2": "decor/pine@hd2.webp"
+   }
   },
   {
    "file": "decor/reeds-small.png",
@@ -1277,7 +1527,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/reeds-small@hd1.webp",
+    "1.5": "decor/reeds-small@hd1_5.webp",
+    "2": "decor/reeds-small@hd2.webp"
+   }
   },
   {
    "file": "decor/reeds-tall.png",
@@ -1297,7 +1552,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/reeds-tall@hd1.webp",
+    "1.5": "decor/reeds-tall@hd1_5.webp",
+    "2": "decor/reeds-tall@hd2.webp"
+   }
   },
   {
    "file": "decor/reeds.png",
@@ -1317,7 +1577,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/reeds@hd1.webp",
+    "1.5": "decor/reeds@hd1_5.webp",
+    "2": "decor/reeds@hd2.webp"
+   }
   },
   {
    "file": "decor/rock.png",
@@ -1337,7 +1602,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/rock@hd1.webp",
+    "1.5": "decor/rock@hd1_5.webp",
+    "2": "decor/rock@hd2.webp"
+   }
   },
   {
    "file": "decor/rocks.png",
@@ -1357,7 +1627,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/rocks@hd1.webp",
+    "1.5": "decor/rocks@hd1_5.webp",
+    "2": "decor/rocks@hd2.webp"
+   }
   },
   {
    "file": "decor/stump.png",
@@ -1377,7 +1652,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/stump@hd1.webp",
+    "1.5": "decor/stump@hd1_5.webp",
+    "2": "decor/stump@hd2.webp"
+   }
   },
   {
    "file": "decor/tree.png",
@@ -1397,7 +1677,12 @@
    "source": "g2-decor.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/tree@hd1.webp",
+    "1.5": "decor/tree@hd1_5.webp",
+    "2": "decor/tree@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/bush-1.png",
@@ -1417,7 +1702,12 @@
    "source": "g6-wild.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/bush-1@hd1.webp",
+    "1.5": "decor/wild/bush-1@hd1_5.webp",
+    "2": "decor/wild/bush-1@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/bush-2.png",
@@ -1437,7 +1727,12 @@
    "source": "g6-wild.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/bush-2@hd1.webp",
+    "1.5": "decor/wild/bush-2@hd1_5.webp",
+    "2": "decor/wild/bush-2@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/bush-3.png",
@@ -1457,7 +1752,12 @@
    "source": "g6-wild.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/bush-3@hd1.webp",
+    "1.5": "decor/wild/bush-3@hd1_5.webp",
+    "2": "decor/wild/bush-3@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/jetty.png",
@@ -1477,7 +1777,12 @@
    "source": "g6-wild.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/jetty@hd1.webp",
+    "1.5": "decor/wild/jetty@hd1_5.webp",
+    "2": "decor/wild/jetty@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/log.png",
@@ -1497,7 +1802,12 @@
    "source": "g6-wild.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/log@hd1.webp",
+    "1.5": "decor/wild/log@hd1_5.webp",
+    "2": "decor/wild/log@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/pine-1.png",
@@ -1517,7 +1827,12 @@
    "source": "g6-wild.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/pine-1@hd1.webp",
+    "1.5": "decor/wild/pine-1@hd1_5.webp",
+    "2": "decor/wild/pine-1@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/pine-2.png",
@@ -1537,7 +1852,12 @@
    "source": "g6-wild.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/pine-2@hd1.webp",
+    "1.5": "decor/wild/pine-2@hd1_5.webp",
+    "2": "decor/wild/pine-2@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/pine-3.png",
@@ -1557,7 +1877,12 @@
    "source": "g6-wild.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/pine-3@hd1.webp",
+    "1.5": "decor/wild/pine-3@hd1_5.webp",
+    "2": "decor/wild/pine-3@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/pond.png",
@@ -1577,7 +1902,12 @@
    "source": "g6-wild.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/pond@hd1.webp",
+    "1.5": "decor/wild/pond@hd1_5.webp",
+    "2": "decor/wild/pond@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/rocks-1.png",
@@ -1597,7 +1927,12 @@
    "source": "g6-wild.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/rocks-1@hd1.webp",
+    "1.5": "decor/wild/rocks-1@hd1_5.webp",
+    "2": "decor/wild/rocks-1@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/rocks-2.png",
@@ -1617,7 +1952,12 @@
    "source": "g6-wild.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/rocks-2@hd1.webp",
+    "1.5": "decor/wild/rocks-2@hd1_5.webp",
+    "2": "decor/wild/rocks-2@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/tree-1.png",
@@ -1637,7 +1977,12 @@
    "source": "g6-wild.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/tree-1@hd1.webp",
+    "1.5": "decor/wild/tree-1@hd1_5.webp",
+    "2": "decor/wild/tree-1@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/tree-2.png",
@@ -1657,7 +2002,12 @@
    "source": "g6-wild.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/tree-2@hd1.webp",
+    "1.5": "decor/wild/tree-2@hd1_5.webp",
+    "2": "decor/wild/tree-2@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/tree-3.png",
@@ -1677,7 +2027,12 @@
    "source": "g6-wild.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/tree-3@hd1.webp",
+    "1.5": "decor/wild/tree-3@hd1_5.webp",
+    "2": "decor/wild/tree-3@hd2.webp"
+   }
   },
   {
    "file": "decor/wild/tree-4.png",
@@ -1697,7 +2052,12 @@
    "source": "g6-wild.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "decor/wild/tree-4@hd1.webp",
+    "1.5": "decor/wild/tree-4@hd1_5.webp",
+    "2": "decor/wild/tree-4@hd2.webp"
+   }
   },
   {
    "file": "depot/doors.png",
@@ -1717,7 +2077,12 @@
    "source": "st-depot.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "depot/doors@hd1.webp",
+    "1.5": "depot/doors@hd1_5.webp",
+    "2": "depot/doors@hd2.webp"
+   }
   },
   {
    "file": "depot/semaphore-0.png",
@@ -1737,7 +2102,12 @@
    "source": "st-depot.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "depot/semaphore-0@hd1.webp",
+    "1.5": "depot/semaphore-0@hd1_5.webp",
+    "2": "depot/semaphore-0@hd2.webp"
+   }
   },
   {
    "file": "depot/semaphore-1.png",
@@ -1757,7 +2127,12 @@
    "source": "st-depot.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "depot/semaphore-1@hd1.webp",
+    "1.5": "depot/semaphore-1@hd1_5.webp",
+    "2": "depot/semaphore-1@hd2.webp"
+   }
   },
   {
    "file": "edge/palisade-corner-ne.png",
@@ -1777,7 +2152,12 @@
    "source": "g3-sides.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "edge/palisade-corner-ne@hd1.webp",
+    "1.5": "edge/palisade-corner-ne@hd1_5.webp",
+    "2": "edge/palisade-corner-ne@hd2.webp"
+   }
   },
   {
    "file": "edge/palisade-corner-nw.png",
@@ -1797,7 +2177,12 @@
    "source": "g3-sides.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "edge/palisade-corner-nw@hd1.webp",
+    "1.5": "edge/palisade-corner-nw@hd1_5.webp",
+    "2": "edge/palisade-corner-nw@hd2.webp"
+   }
   },
   {
    "file": "edge/palisade-corner-se.png",
@@ -1817,7 +2202,12 @@
    "source": "g3-sides.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "edge/palisade-corner-se@hd1.webp",
+    "1.5": "edge/palisade-corner-se@hd1_5.webp",
+    "2": "edge/palisade-corner-se@hd2.webp"
+   }
   },
   {
    "file": "edge/palisade-corner-sw.png",
@@ -1837,7 +2227,12 @@
    "source": "g3-sides.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "edge/palisade-corner-sw@hd1.webp",
+    "1.5": "edge/palisade-corner-sw@hd1_5.webp",
+    "2": "edge/palisade-corner-sw@hd2.webp"
+   }
   },
   {
    "file": "edge/palisade-end-e.png",
@@ -1857,7 +2252,12 @@
    "source": "g3-stakes-2.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "edge/palisade-end-e@hd1.webp",
+    "1.5": "edge/palisade-end-e@hd1_5.webp",
+    "2": "edge/palisade-end-e@hd2.webp"
+   }
   },
   {
    "file": "edge/palisade-end-w.png",
@@ -1877,7 +2277,12 @@
    "source": "g3-stakes-2.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "edge/palisade-end-w@hd1.webp",
+    "1.5": "edge/palisade-end-w@hd1_5.webp",
+    "2": "edge/palisade-end-w@hd2.webp"
+   }
   },
   {
    "file": "edge/palisade-gap.png",
@@ -1897,7 +2302,12 @@
    "source": "g3-palisade.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "edge/palisade-gap@hd1.webp",
+    "1.5": "edge/palisade-gap@hd1_5.webp",
+    "2": "edge/palisade-gap@hd2.webp"
+   }
   },
   {
    "file": "edge/palisade-h.png",
@@ -1917,7 +2327,12 @@
    "source": "g3-stakes-2.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "edge/palisade-h@hd1.webp",
+    "1.5": "edge/palisade-h@hd1_5.webp",
+    "2": "edge/palisade-h@hd2.webp"
+   }
   },
   {
    "file": "ground/corner-ne.png",
@@ -2377,7 +2792,12 @@
    "source": "g4-growth.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "growth/annex-quality@hd1.webp",
+    "1.5": "growth/annex-quality@hd1_5.webp",
+    "2": "growth/annex-quality@hd2.webp"
+   }
   },
   {
    "file": "growth/annex-thrift.png",
@@ -2397,7 +2817,12 @@
    "source": "g4-growth.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "growth/annex-thrift@hd1.webp",
+    "1.5": "growth/annex-thrift@hd1_5.webp",
+    "2": "growth/annex-thrift@hd2.webp"
+   }
   },
   {
    "file": "growth/banner-1.png",
@@ -2417,7 +2842,12 @@
    "source": "g4-growth.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "growth/banner-1@hd1.webp",
+    "1.5": "growth/banner-1@hd1_5.webp",
+    "2": "growth/banner-1@hd2.webp"
+   }
   },
   {
    "file": "growth/banner-2.png",
@@ -2437,7 +2867,12 @@
    "source": "g4-growth.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "growth/banner-2@hd1.webp",
+    "1.5": "growth/banner-2@hd1_5.webp",
+    "2": "growth/banner-2@hd2.webp"
+   }
   },
   {
    "file": "growth/banner-3.png",
@@ -2457,7 +2892,12 @@
    "source": "g4-growth.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "growth/banner-3@hd1.webp",
+    "1.5": "growth/banner-3@hd1_5.webp",
+    "2": "growth/banner-3@hd2.webp"
+   }
   },
   {
    "file": "growth/footing-1.png",
@@ -2477,7 +2917,12 @@
    "source": "g4-growth.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "growth/footing-1@hd1.webp",
+    "1.5": "growth/footing-1@hd1_5.webp",
+    "2": "growth/footing-1@hd2.webp"
+   }
   },
   {
    "file": "growth/footing-2.png",
@@ -2497,7 +2942,12 @@
    "source": "g4-growth.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "growth/footing-2@hd1.webp",
+    "1.5": "growth/footing-2@hd1_5.webp",
+    "2": "growth/footing-2@hd2.webp"
+   }
   },
   {
    "file": "growth/footing-3.png",
@@ -2517,7 +2967,12 @@
    "source": "g4-growth.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "growth/footing-3@hd1.webp",
+    "1.5": "growth/footing-3@hd1_5.webp",
+    "2": "growth/footing-3@hd2.webp"
+   }
   },
   {
    "file": "homes/elf.png",
@@ -2537,7 +2992,12 @@
    "source": "b6-houses.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "homes/elf@hd1.webp",
+    "1.5": "homes/elf@hd1_5.webp",
+    "2": "homes/elf@hd2.webp"
+   }
   },
   {
    "file": "homes/gnome.png",
@@ -2557,7 +3017,12 @@
    "source": "b6-houses.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "homes/gnome@hd1.webp",
+    "1.5": "homes/gnome@hd1_5.webp",
+    "2": "homes/gnome@hd2.webp"
+   }
   },
   {
    "file": "homes/goblin.png",
@@ -2577,7 +3042,12 @@
    "source": "b6-houses.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "homes/goblin@hd1.webp",
+    "1.5": "homes/goblin@hd1_5.webp",
+    "2": "homes/goblin@hd2.webp"
+   }
   },
   {
    "file": "homes/knight.png",
@@ -2597,7 +3067,12 @@
    "source": "b6-houses.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "homes/knight@hd1.webp",
+    "1.5": "homes/knight@hd1_5.webp",
+    "2": "homes/knight@hd2.webp"
+   }
   },
   {
    "file": "homes/lich.png",
@@ -2617,7 +3092,12 @@
    "source": "b6-houses.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "homes/lich@hd1.webp",
+    "1.5": "homes/lich@hd1_5.webp",
+    "2": "homes/lich@hd2.webp"
+   }
   },
   {
    "file": "homes/orc.png",
@@ -2637,7 +3117,12 @@
    "source": "b6-houses.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "homes/orc@hd1.webp",
+    "1.5": "homes/orc@hd1_5.webp",
+    "2": "homes/orc@hd2.webp"
+   }
   },
   {
    "file": "homes/skeleton.png",
@@ -2657,7 +3142,12 @@
    "source": "b6-houses.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "homes/skeleton@hd1.webp",
+    "1.5": "homes/skeleton@hd1_5.webp",
+    "2": "homes/skeleton@hd2.webp"
+   }
   },
   {
    "file": "inside/board.png",
@@ -2677,7 +3167,12 @@
    "source": "u6-inside.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "inside/board@hd1.webp",
+    "1.5": "inside/board@hd1_5.webp",
+    "2": "inside/board@hd2.webp"
+   }
   },
   {
    "file": "inside/booth.png",
@@ -2697,7 +3192,12 @@
    "source": "u6-inside.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "inside/booth@hd1.webp",
+    "1.5": "inside/booth@hd1_5.webp",
+    "2": "inside/booth@hd2.webp"
+   }
   },
   {
    "file": "inside/flag-down.png",
@@ -2717,7 +3217,12 @@
    "source": "u6-cards.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "inside/flag-down@hd1.webp",
+    "1.5": "inside/flag-down@hd1_5.webp",
+    "2": "inside/flag-down@hd2.webp"
+   }
   },
   {
    "file": "inside/flag-half.png",
@@ -2737,7 +3242,12 @@
    "source": "u6-cards.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "inside/flag-half@hd1.webp",
+    "1.5": "inside/flag-half@hd1_5.webp",
+    "2": "inside/flag-half@hd2.webp"
+   }
   },
   {
    "file": "inside/flag-up.png",
@@ -2757,7 +3267,12 @@
    "source": "u6-cards.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "inside/flag-up@hd1.webp",
+    "1.5": "inside/flag-up@hd1_5.webp",
+    "2": "inside/flag-up@hd2.webp"
+   }
   },
   {
    "file": "inside/lever.png",
@@ -2777,7 +3292,12 @@
    "source": "u6-cards.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "inside/lever@hd1.webp",
+    "1.5": "inside/lever@hd1_5.webp",
+    "2": "inside/lever@hd2.webp"
+   }
   },
   {
    "file": "inside/pin.png",
@@ -2797,7 +3317,12 @@
    "source": "u6-cards.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "inside/pin@hd1.webp",
+    "1.5": "inside/pin@hd1_5.webp",
+    "2": "inside/pin@hd2.webp"
+   }
   },
   {
    "file": "inside/sheet.png",
@@ -2817,7 +3342,12 @@
    "source": "u6-cards.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "inside/sheet@hd1.webp",
+    "1.5": "inside/sheet@hd1_5.webp",
+    "2": "inside/sheet@hd2.webp"
+   }
   },
   {
    "file": "inside/slab.png",
@@ -2837,7 +3367,12 @@
    "source": "u6-cards.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "inside/slab@hd1.webp",
+    "1.5": "inside/slab@hd1_5.webp",
+    "2": "inside/slab@hd2.webp"
+   }
   },
   {
    "file": "items/class-elf.png",
@@ -2857,7 +3392,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/class-elf@hd1.webp",
+    "1.5": "items/class-elf@hd1_5.webp",
+    "2": "items/class-elf@hd2.webp"
+   }
   },
   {
    "file": "items/class-gnome.png",
@@ -2877,7 +3417,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/class-gnome@hd1.webp",
+    "1.5": "items/class-gnome@hd1_5.webp",
+    "2": "items/class-gnome@hd2.webp"
+   }
   },
   {
    "file": "items/class-goblin.png",
@@ -2897,7 +3442,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/class-goblin@hd1.webp",
+    "1.5": "items/class-goblin@hd1_5.webp",
+    "2": "items/class-goblin@hd2.webp"
+   }
   },
   {
    "file": "items/class-knight.png",
@@ -2917,7 +3467,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/class-knight@hd1.webp",
+    "1.5": "items/class-knight@hd1_5.webp",
+    "2": "items/class-knight@hd2.webp"
+   }
   },
   {
    "file": "items/class-lich.png",
@@ -2937,7 +3492,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/class-lich@hd1.webp",
+    "1.5": "items/class-lich@hd1_5.webp",
+    "2": "items/class-lich@hd2.webp"
+   }
   },
   {
    "file": "items/class-orc.png",
@@ -2957,7 +3517,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/class-orc@hd1.webp",
+    "1.5": "items/class-orc@hd1_5.webp",
+    "2": "items/class-orc@hd2.webp"
+   }
   },
   {
    "file": "items/class-skeleton.png",
@@ -2977,7 +3542,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/class-skeleton@hd1.webp",
+    "1.5": "items/class-skeleton@hd1_5.webp",
+    "2": "items/class-skeleton@hd2.webp"
+   }
   },
   {
    "file": "items/first-cart.png",
@@ -2997,7 +3567,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/first-cart@hd1.webp",
+    "1.5": "items/first-cart@hd1_5.webp",
+    "2": "items/first-cart@hd2.webp"
+   }
   },
   {
    "file": "items/lean-month.png",
@@ -3017,7 +3592,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/lean-month@hd1.webp",
+    "1.5": "items/lean-month@hd1_5.webp",
+    "2": "items/lean-month@hd2.webp"
+   }
   },
   {
    "file": "items/lean-week.png",
@@ -3037,7 +3617,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/lean-week@hd1.webp",
+    "1.5": "items/lean-week@hd1_5.webp",
+    "2": "items/lean-week@hd2.webp"
+   }
   },
   {
    "file": "items/level3-barracks.png",
@@ -3057,7 +3642,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/level3-barracks@hd1.webp",
+    "1.5": "items/level3-barracks@hd1_5.webp",
+    "2": "items/level3-barracks@hd2.webp"
+   }
   },
   {
    "file": "items/level3-fields.png",
@@ -3077,7 +3667,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/level3-fields@hd1.webp",
+    "1.5": "items/level3-fields@hd1_5.webp",
+    "2": "items/level3-fields@hd2.webp"
+   }
   },
   {
    "file": "items/level3-loot.png",
@@ -3097,7 +3692,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/level3-loot@hd1.webp",
+    "1.5": "items/level3-loot@hd1_5.webp",
+    "2": "items/level3-loot@hd2.webp"
+   }
   },
   {
    "file": "items/pennant.png",
@@ -3117,7 +3717,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/pennant@hd1.webp",
+    "1.5": "items/pennant@hd1_5.webp",
+    "2": "items/pennant@hd2.webp"
+   }
   },
   {
    "file": "items/proving-stone.png",
@@ -3137,7 +3742,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/proving-stone@hd1.webp",
+    "1.5": "items/proving-stone@hd1_5.webp",
+    "2": "items/proving-stone@hd2.webp"
+   }
   },
   {
    "file": "items/sundial.png",
@@ -3157,7 +3767,12 @@
    "source": "i1-items.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "items/sundial@hd1.webp",
+    "1.5": "items/sundial@hd1_5.webp",
+    "2": "items/sundial@hd2.webp"
+   }
   },
   {
    "file": "orks/body/door.png",
@@ -3201,9 +3816,9 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
    "hd": {
-    "1": "orks/body/idle@hd1.png",
-    "1.5": "orks/body/idle@hd1_5.png",
-    "2": "orks/body/idle@hd2.png"
+    "1": "orks/body/idle@hd1.webp",
+    "1.5": "orks/body/idle@hd1_5.webp",
+    "2": "orks/body/idle@hd2.webp"
    }
   },
   {
@@ -3227,9 +3842,9 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
    "hd": {
-    "1": "orks/body/sit@hd1.png",
-    "1.5": "orks/body/sit@hd1_5.png",
-    "2": "orks/body/sit@hd2.png"
+    "1": "orks/body/sit@hd1.webp",
+    "1.5": "orks/body/sit@hd1_5.webp",
+    "2": "orks/body/sit@hd2.webp"
    }
   },
   {
@@ -3253,9 +3868,9 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
    "hd": {
-    "1": "orks/body/walk-down@hd1.png",
-    "1.5": "orks/body/walk-down@hd1_5.png",
-    "2": "orks/body/walk-down@hd2.png"
+    "1": "orks/body/walk-down@hd1.webp",
+    "1.5": "orks/body/walk-down@hd1_5.webp",
+    "2": "orks/body/walk-down@hd2.webp"
    }
   },
   {
@@ -3279,9 +3894,9 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
    "hd": {
-    "1": "orks/body/walk-side@hd1.png",
-    "1.5": "orks/body/walk-side@hd1_5.png",
-    "2": "orks/body/walk-side@hd2.png"
+    "1": "orks/body/walk-side@hd1.webp",
+    "1.5": "orks/body/walk-side@hd1_5.webp",
+    "2": "orks/body/walk-side@hd2.webp"
    }
   },
   {
@@ -3305,9 +3920,9 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
    "hd": {
-    "1": "orks/body/walk-up@hd1.png",
-    "1.5": "orks/body/walk-up@hd1_5.png",
-    "2": "orks/body/walk-up@hd2.png"
+    "1": "orks/body/walk-up@hd1.webp",
+    "1.5": "orks/body/walk-up@hd1_5.webp",
+    "2": "orks/body/walk-up@hd2.webp"
    }
   },
   {
@@ -3331,9 +3946,9 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
    "hd": {
-    "1": "orks/body/work@hd1.png",
-    "1.5": "orks/body/work@hd1_5.png",
-    "2": "orks/body/work@hd2.png"
+    "1": "orks/body/work@hd1.webp",
+    "1.5": "orks/body/work@hd1_5.webp",
+    "2": "orks/body/work@hd2.webp"
    }
   },
   {
@@ -3365,9 +3980,9 @@
     "#8a7a64"
    ],
    "hd": {
-    "1": "orks/inside/carry@hd1.png",
-    "1.5": "orks/inside/carry@hd1_5.png",
-    "2": "orks/inside/carry@hd2.png"
+    "1": "orks/inside/carry@hd1.webp",
+    "1.5": "orks/inside/carry@hd1_5.webp",
+    "2": "orks/inside/carry@hd2.webp"
    }
   },
   {
@@ -3399,9 +4014,9 @@
     "#8a7a64"
    ],
    "hd": {
-    "1": "orks/inside/lens@hd1.png",
-    "1.5": "orks/inside/lens@hd1_5.png",
-    "2": "orks/inside/lens@hd2.png"
+    "1": "orks/inside/lens@hd1.webp",
+    "1.5": "orks/inside/lens@hd1_5.webp",
+    "2": "orks/inside/lens@hd2.webp"
    }
   },
   {
@@ -3433,9 +4048,9 @@
     "#8a7a64"
    ],
    "hd": {
-    "1": "orks/inside/pin@hd1.png",
-    "1.5": "orks/inside/pin@hd1_5.png",
-    "2": "orks/inside/pin@hd2.png"
+    "1": "orks/inside/pin@hd1.webp",
+    "1.5": "orks/inside/pin@hd1_5.webp",
+    "2": "orks/inside/pin@hd2.webp"
    }
   },
   {
@@ -3467,9 +4082,9 @@
     "#8a7a64"
    ],
    "hd": {
-    "1": "orks/inside/quill@hd1.png",
-    "1.5": "orks/inside/quill@hd1_5.png",
-    "2": "orks/inside/quill@hd2.png"
+    "1": "orks/inside/quill@hd1.webp",
+    "1.5": "orks/inside/quill@hd1_5.webp",
+    "2": "orks/inside/quill@hd2.webp"
    }
   },
   {
@@ -3493,9 +4108,9 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
    "hd": {
-    "1": "orks/prospector/carry@hd1.png",
-    "1.5": "orks/prospector/carry@hd1_5.png",
-    "2": "orks/prospector/carry@hd2.png"
+    "1": "orks/prospector/carry@hd1.webp",
+    "1.5": "orks/prospector/carry@hd1_5.webp",
+    "2": "orks/prospector/carry@hd2.webp"
    }
   },
   {
@@ -3519,9 +4134,9 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
    "hd": {
-    "1": "orks/prospector/dig@hd1.png",
-    "1.5": "orks/prospector/dig@hd1_5.png",
-    "2": "orks/prospector/dig@hd2.png"
+    "1": "orks/prospector/dig@hd1.webp",
+    "1.5": "orks/prospector/dig@hd1_5.webp",
+    "2": "orks/prospector/dig@hd2.webp"
    }
   },
   {
@@ -3545,9 +4160,9 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
    "hd": {
-    "1": "orks/prospector/walk@hd1.png",
-    "1.5": "orks/prospector/walk@hd1_5.png",
-    "2": "orks/prospector/walk@hd2.png"
+    "1": "orks/prospector/walk@hd1.webp",
+    "1.5": "orks/prospector/walk@hd1_5.webp",
+    "2": "orks/prospector/walk@hd2.webp"
    }
   },
   {
@@ -3573,9 +4188,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/alchemist@hd1.png",
-    "1.5": "orks/roles/alchemist@hd1_5.png",
-    "2": "orks/roles/alchemist@hd2.png"
+    "1": "orks/roles/alchemist@hd1.webp",
+    "1.5": "orks/roles/alchemist@hd1_5.webp",
+    "2": "orks/roles/alchemist@hd2.webp"
    }
   },
   {
@@ -3601,9 +4216,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/artisan@hd1.png",
-    "1.5": "orks/roles/artisan@hd1_5.png",
-    "2": "orks/roles/artisan@hd2.png"
+    "1": "orks/roles/artisan@hd1.webp",
+    "1.5": "orks/roles/artisan@hd1_5.webp",
+    "2": "orks/roles/artisan@hd2.webp"
    }
   },
   {
@@ -3629,9 +4244,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/farseer@hd1.png",
-    "1.5": "orks/roles/farseer@hd1_5.png",
-    "2": "orks/roles/farseer@hd2.png"
+    "1": "orks/roles/farseer@hd1.webp",
+    "1.5": "orks/roles/farseer@hd1_5.webp",
+    "2": "orks/roles/farseer@hd2.webp"
    }
   },
   {
@@ -3657,9 +4272,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/grunt@hd1.png",
-    "1.5": "orks/roles/grunt@hd1_5.png",
-    "2": "orks/roles/grunt@hd2.png"
+    "1": "orks/roles/grunt@hd1.webp",
+    "1.5": "orks/roles/grunt@hd1_5.webp",
+    "2": "orks/roles/grunt@hd2.webp"
    }
   },
   {
@@ -3685,9 +4300,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/loader@hd1.png",
-    "1.5": "orks/roles/loader@hd1_5.png",
-    "2": "orks/roles/loader@hd2.png"
+    "1": "orks/roles/loader@hd1.webp",
+    "1.5": "orks/roles/loader@hd1_5.webp",
+    "2": "orks/roles/loader@hd2.webp"
    }
   },
   {
@@ -3713,9 +4328,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/lookout@hd1.png",
-    "1.5": "orks/roles/lookout@hd1_5.png",
-    "2": "orks/roles/lookout@hd2.png"
+    "1": "orks/roles/lookout@hd1.webp",
+    "1.5": "orks/roles/lookout@hd1_5.webp",
+    "2": "orks/roles/lookout@hd2.webp"
    }
   },
   {
@@ -3741,9 +4356,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/mason@hd1.png",
-    "1.5": "orks/roles/mason@hd1_5.png",
-    "2": "orks/roles/mason@hd2.png"
+    "1": "orks/roles/mason@hd1.webp",
+    "1.5": "orks/roles/mason@hd1_5.webp",
+    "2": "orks/roles/mason@hd2.webp"
    }
   },
   {
@@ -3769,9 +4384,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/mechanic@hd1.png",
-    "1.5": "orks/roles/mechanic@hd1_5.png",
-    "2": "orks/roles/mechanic@hd2.png"
+    "1": "orks/roles/mechanic@hd1.webp",
+    "1.5": "orks/roles/mechanic@hd1_5.webp",
+    "2": "orks/roles/mechanic@hd2.webp"
    }
   },
   {
@@ -3797,9 +4412,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/pathfinder@hd1.png",
-    "1.5": "orks/roles/pathfinder@hd1_5.png",
-    "2": "orks/roles/pathfinder@hd2.png"
+    "1": "orks/roles/pathfinder@hd1.webp",
+    "1.5": "orks/roles/pathfinder@hd1_5.webp",
+    "2": "orks/roles/pathfinder@hd2.webp"
    }
   },
   {
@@ -3822,9 +4437,9 @@
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "hd": {
-    "1": "orks/roles/prospector@hd1.png",
-    "1.5": "orks/roles/prospector@hd1_5.png",
-    "2": "orks/roles/prospector@hd2.png"
+    "1": "orks/roles/prospector@hd1.webp",
+    "1.5": "orks/roles/prospector@hd1_5.webp",
+    "2": "orks/roles/prospector@hd2.webp"
    }
   },
   {
@@ -3850,9 +4465,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/quartermaster@hd1.png",
-    "1.5": "orks/roles/quartermaster@hd1_5.png",
-    "2": "orks/roles/quartermaster@hd2.png"
+    "1": "orks/roles/quartermaster@hd1.webp",
+    "1.5": "orks/roles/quartermaster@hd1_5.webp",
+    "2": "orks/roles/quartermaster@hd2.webp"
    }
   },
   {
@@ -3878,9 +4493,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/seer@hd1.png",
-    "1.5": "orks/roles/seer@hd1_5.png",
-    "2": "orks/roles/seer@hd2.png"
+    "1": "orks/roles/seer@hd1.webp",
+    "1.5": "orks/roles/seer@hd1_5.webp",
+    "2": "orks/roles/seer@hd2.webp"
    }
   },
   {
@@ -3906,9 +4521,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/taskmaster@hd1.png",
-    "1.5": "orks/roles/taskmaster@hd1_5.png",
-    "2": "orks/roles/taskmaster@hd2.png"
+    "1": "orks/roles/taskmaster@hd1.webp",
+    "1.5": "orks/roles/taskmaster@hd1_5.webp",
+    "2": "orks/roles/taskmaster@hd2.webp"
    }
   },
   {
@@ -3934,9 +4549,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/treasurer@hd1.png",
-    "1.5": "orks/roles/treasurer@hd1_5.png",
-    "2": "orks/roles/treasurer@hd2.png"
+    "1": "orks/roles/treasurer@hd1.webp",
+    "1.5": "orks/roles/treasurer@hd1_5.webp",
+    "2": "orks/roles/treasurer@hd2.webp"
    }
   },
   {
@@ -3962,9 +4577,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/warchief@hd1.png",
-    "1.5": "orks/roles/warchief@hd1_5.png",
-    "2": "orks/roles/warchief@hd2.png"
+    "1": "orks/roles/warchief@hd1.webp",
+    "1.5": "orks/roles/warchief@hd1_5.webp",
+    "2": "orks/roles/warchief@hd2.webp"
    }
   },
   {
@@ -3990,9 +4605,9 @@
     "role"
    ],
    "hd": {
-    "1": "orks/roles/warder@hd1.png",
-    "1.5": "orks/roles/warder@hd1_5.png",
-    "2": "orks/roles/warder@hd2.png"
+    "1": "orks/roles/warder@hd1.webp",
+    "1.5": "orks/roles/warder@hd1_5.webp",
+    "2": "orks/roles/warder@hd2.webp"
    }
   },
   {
@@ -4026,9 +4641,9 @@
     "state"
    ],
    "hd": {
-    "1": "orks/states/asks@hd1.png",
-    "1.5": "orks/states/asks@hd1_5.png",
-    "2": "orks/states/asks@hd2.png"
+    "1": "orks/states/asks@hd1.webp",
+    "1.5": "orks/states/asks@hd1_5.webp",
+    "2": "orks/states/asks@hd2.webp"
    }
   },
   {
@@ -4062,9 +4677,9 @@
     "state"
    ],
    "hd": {
-    "1": "orks/states/doze@hd1.png",
-    "1.5": "orks/states/doze@hd1_5.png",
-    "2": "orks/states/doze@hd2.png"
+    "1": "orks/states/doze@hd1.webp",
+    "1.5": "orks/states/doze@hd1_5.webp",
+    "2": "orks/states/doze@hd2.webp"
    }
   },
   {
@@ -4098,9 +4713,9 @@
     "state"
    ],
    "hd": {
-    "1": "orks/states/held@hd1.png",
-    "1.5": "orks/states/held@hd1_5.png",
-    "2": "orks/states/held@hd2.png"
+    "1": "orks/states/held@hd1.webp",
+    "1.5": "orks/states/held@hd1_5.webp",
+    "2": "orks/states/held@hd2.webp"
    }
   },
   {
@@ -4134,9 +4749,9 @@
     "state"
    ],
    "hd": {
-    "1": "orks/states/stuck@hd1.png",
-    "1.5": "orks/states/stuck@hd1_5.png",
-    "2": "orks/states/stuck@hd2.png"
+    "1": "orks/states/stuck@hd1.webp",
+    "1.5": "orks/states/stuck@hd1_5.webp",
+    "2": "orks/states/stuck@hd2.webp"
    }
   },
   {
@@ -4170,9 +4785,9 @@
     "state"
    ],
    "hd": {
-    "1": "orks/states/working@hd1.png",
-    "1.5": "orks/states/working@hd1_5.png",
-    "2": "orks/states/working@hd2.png"
+    "1": "orks/states/working@hd1.webp",
+    "1.5": "orks/states/working@hd1_5.webp",
+    "2": "orks/states/working@hd2.webp"
    }
   },
   {
@@ -4193,7 +4808,12 @@
    "source": "k1-classes.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/aso_manager@hd1.webp",
+    "1.5": "people/aso_manager@hd1_5.webp",
+    "2": "people/aso_manager@hd2.webp"
+   }
   },
   {
    "file": "people/data_analyst.png",
@@ -4213,7 +4833,12 @@
    "source": "k4-goblin.png",
    "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/data_analyst@hd1.webp",
+    "1.5": "people/data_analyst@hd1_5.webp",
+    "2": "people/data_analyst@hd2.webp"
+   }
   },
   {
    "file": "people/designer.png",
@@ -4233,7 +4858,12 @@
    "source": "k1-classes.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/designer@hd1.webp",
+    "1.5": "people/designer@hd1_5.webp",
+    "2": "people/designer@hd2.webp"
+   }
   },
   {
    "file": "people/eng_manager.png",
@@ -4253,7 +4883,12 @@
    "source": "k1-classes.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/eng_manager@hd1.webp",
+    "1.5": "people/eng_manager@hd1_5.webp",
+    "2": "people/eng_manager@hd2.webp"
+   }
   },
   {
    "file": "people/engineer.png",
@@ -4273,7 +4908,12 @@
    "source": "k1-classes.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/engineer@hd1.webp",
+    "1.5": "people/engineer@hd1_5.webp",
+    "2": "people/engineer@hd2.webp"
+   }
   },
   {
    "file": "people/founder.png",
@@ -4293,7 +4933,12 @@
    "source": "k1-classes.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/founder@hd1.webp",
+    "1.5": "people/founder@hd1_5.webp",
+    "2": "people/founder@hd2.webp"
+   }
   },
   {
    "file": "people/game_designer.png",
@@ -4313,7 +4958,12 @@
    "source": "k1-classes.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/game_designer@hd1.webp",
+    "1.5": "people/game_designer@hd1_5.webp",
+    "2": "people/game_designer@hd2.webp"
+   }
   },
   {
    "file": "people/heads/data_analyst.png",
@@ -4333,7 +4983,12 @@
    "source": "k4-goblin.png",
    "scale": 2.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/heads/data_analyst@hd1.webp",
+    "1.5": "people/heads/data_analyst@hd1_5.webp",
+    "2": "people/heads/data_analyst@hd2.webp"
+   }
   },
   {
    "file": "people/marketing.png",
@@ -4353,7 +5008,12 @@
    "source": "k1-classes.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/marketing@hd1.webp",
+    "1.5": "people/marketing@hd1_5.webp",
+    "2": "people/marketing@hd2.webp"
+   }
   },
   {
    "file": "people/other.png",
@@ -4373,7 +5033,12 @@
    "source": "k1-classes.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/other@hd1.webp",
+    "1.5": "people/other@hd1_5.webp",
+    "2": "people/other@hd2.webp"
+   }
   },
   {
    "file": "people/product_manager.png",
@@ -4393,7 +5058,12 @@
    "source": "k1-classes.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/product_manager@hd1.webp",
+    "1.5": "people/product_manager@hd1_5.webp",
+    "2": "people/product_manager@hd2.webp"
+   }
   },
   {
    "file": "people/qa.png",
@@ -4413,7 +5083,12 @@
    "source": "k1-classes.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/qa@hd1.webp",
+    "1.5": "people/qa@hd1_5.webp",
+    "2": "people/qa@hd2.webp"
+   }
   },
   {
    "file": "people/stages/aso_manager-2.png",
@@ -4433,7 +5108,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/aso_manager-2@hd1.webp",
+    "1.5": "people/stages/aso_manager-2@hd1_5.webp",
+    "2": "people/stages/aso_manager-2@hd2.webp"
+   }
   },
   {
    "file": "people/stages/aso_manager-3.png",
@@ -4453,7 +5133,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/aso_manager-3@hd1.webp",
+    "1.5": "people/stages/aso_manager-3@hd1_5.webp",
+    "2": "people/stages/aso_manager-3@hd2.webp"
+   }
   },
   {
    "file": "people/stages/aso_manager-4.png",
@@ -4473,7 +5158,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/aso_manager-4@hd1.webp",
+    "1.5": "people/stages/aso_manager-4@hd1_5.webp",
+    "2": "people/stages/aso_manager-4@hd2.webp"
+   }
   },
   {
    "file": "people/stages/data_analyst-2.png",
@@ -4493,7 +5183,12 @@
    "source": "k4-goblin.png",
    "scale": 2.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/data_analyst-2@hd1.webp",
+    "1.5": "people/stages/data_analyst-2@hd1_5.webp",
+    "2": "people/stages/data_analyst-2@hd2.webp"
+   }
   },
   {
    "file": "people/stages/data_analyst-3.png",
@@ -4513,7 +5208,12 @@
    "source": "k4-goblin.png",
    "scale": 2.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/data_analyst-3@hd1.webp",
+    "1.5": "people/stages/data_analyst-3@hd1_5.webp",
+    "2": "people/stages/data_analyst-3@hd2.webp"
+   }
   },
   {
    "file": "people/stages/data_analyst-4.png",
@@ -4533,7 +5233,12 @@
    "source": "k4-goblin.png",
    "scale": 2.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/data_analyst-4@hd1.webp",
+    "1.5": "people/stages/data_analyst-4@hd1_5.webp",
+    "2": "people/stages/data_analyst-4@hd2.webp"
+   }
   },
   {
    "file": "people/stages/designer-2.png",
@@ -4553,7 +5258,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/designer-2@hd1.webp",
+    "1.5": "people/stages/designer-2@hd1_5.webp",
+    "2": "people/stages/designer-2@hd2.webp"
+   }
   },
   {
    "file": "people/stages/designer-3.png",
@@ -4573,7 +5283,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/designer-3@hd1.webp",
+    "1.5": "people/stages/designer-3@hd1_5.webp",
+    "2": "people/stages/designer-3@hd2.webp"
+   }
   },
   {
    "file": "people/stages/designer-4.png",
@@ -4593,7 +5308,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/designer-4@hd1.webp",
+    "1.5": "people/stages/designer-4@hd1_5.webp",
+    "2": "people/stages/designer-4@hd2.webp"
+   }
   },
   {
    "file": "people/stages/eng_manager-2.png",
@@ -4613,7 +5333,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/eng_manager-2@hd1.webp",
+    "1.5": "people/stages/eng_manager-2@hd1_5.webp",
+    "2": "people/stages/eng_manager-2@hd2.webp"
+   }
   },
   {
    "file": "people/stages/eng_manager-3.png",
@@ -4633,7 +5358,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/eng_manager-3@hd1.webp",
+    "1.5": "people/stages/eng_manager-3@hd1_5.webp",
+    "2": "people/stages/eng_manager-3@hd2.webp"
+   }
   },
   {
    "file": "people/stages/eng_manager-4.png",
@@ -4653,7 +5383,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/eng_manager-4@hd1.webp",
+    "1.5": "people/stages/eng_manager-4@hd1_5.webp",
+    "2": "people/stages/eng_manager-4@hd2.webp"
+   }
   },
   {
    "file": "people/stages/engineer-2.png",
@@ -4673,7 +5408,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/engineer-2@hd1.webp",
+    "1.5": "people/stages/engineer-2@hd1_5.webp",
+    "2": "people/stages/engineer-2@hd2.webp"
+   }
   },
   {
    "file": "people/stages/engineer-3.png",
@@ -4693,7 +5433,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/engineer-3@hd1.webp",
+    "1.5": "people/stages/engineer-3@hd1_5.webp",
+    "2": "people/stages/engineer-3@hd2.webp"
+   }
   },
   {
    "file": "people/stages/engineer-4.png",
@@ -4713,7 +5458,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/engineer-4@hd1.webp",
+    "1.5": "people/stages/engineer-4@hd1_5.webp",
+    "2": "people/stages/engineer-4@hd2.webp"
+   }
   },
   {
    "file": "people/stages/founder-2.png",
@@ -4733,7 +5483,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/founder-2@hd1.webp",
+    "1.5": "people/stages/founder-2@hd1_5.webp",
+    "2": "people/stages/founder-2@hd2.webp"
+   }
   },
   {
    "file": "people/stages/founder-3.png",
@@ -4753,7 +5508,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/founder-3@hd1.webp",
+    "1.5": "people/stages/founder-3@hd1_5.webp",
+    "2": "people/stages/founder-3@hd2.webp"
+   }
   },
   {
    "file": "people/stages/founder-4.png",
@@ -4773,7 +5533,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/founder-4@hd1.webp",
+    "1.5": "people/stages/founder-4@hd1_5.webp",
+    "2": "people/stages/founder-4@hd2.webp"
+   }
   },
   {
    "file": "people/stages/game_designer-2.png",
@@ -4793,7 +5558,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/game_designer-2@hd1.webp",
+    "1.5": "people/stages/game_designer-2@hd1_5.webp",
+    "2": "people/stages/game_designer-2@hd2.webp"
+   }
   },
   {
    "file": "people/stages/game_designer-3.png",
@@ -4813,7 +5583,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/game_designer-3@hd1.webp",
+    "1.5": "people/stages/game_designer-3@hd1_5.webp",
+    "2": "people/stages/game_designer-3@hd2.webp"
+   }
   },
   {
    "file": "people/stages/game_designer-4.png",
@@ -4833,7 +5608,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/game_designer-4@hd1.webp",
+    "1.5": "people/stages/game_designer-4@hd1_5.webp",
+    "2": "people/stages/game_designer-4@hd2.webp"
+   }
   },
   {
    "file": "people/stages/marketing-2.png",
@@ -4853,7 +5633,12 @@
    "source": "k3-marketing.png",
    "scale": 1.14,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/marketing-2@hd1.webp",
+    "1.5": "people/stages/marketing-2@hd1_5.webp",
+    "2": "people/stages/marketing-2@hd2.webp"
+   }
   },
   {
    "file": "people/stages/marketing-3.png",
@@ -4873,7 +5658,12 @@
    "source": "k3-marketing.png",
    "scale": 1.14,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/marketing-3@hd1.webp",
+    "1.5": "people/stages/marketing-3@hd1_5.webp",
+    "2": "people/stages/marketing-3@hd2.webp"
+   }
   },
   {
    "file": "people/stages/marketing-4.png",
@@ -4893,7 +5683,12 @@
    "source": "k3-marketing.png",
    "scale": 1.14,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/marketing-4@hd1.webp",
+    "1.5": "people/stages/marketing-4@hd1_5.webp",
+    "2": "people/stages/marketing-4@hd2.webp"
+   }
   },
   {
    "file": "people/stages/other-2.png",
@@ -4913,7 +5708,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/other-2@hd1.webp",
+    "1.5": "people/stages/other-2@hd1_5.webp",
+    "2": "people/stages/other-2@hd2.webp"
+   }
   },
   {
    "file": "people/stages/other-3.png",
@@ -4933,7 +5733,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/other-3@hd1.webp",
+    "1.5": "people/stages/other-3@hd1_5.webp",
+    "2": "people/stages/other-3@hd2.webp"
+   }
   },
   {
    "file": "people/stages/other-4.png",
@@ -4953,7 +5758,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/other-4@hd1.webp",
+    "1.5": "people/stages/other-4@hd1_5.webp",
+    "2": "people/stages/other-4@hd2.webp"
+   }
   },
   {
    "file": "people/stages/product_manager-2.png",
@@ -4973,7 +5783,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/product_manager-2@hd1.webp",
+    "1.5": "people/stages/product_manager-2@hd1_5.webp",
+    "2": "people/stages/product_manager-2@hd2.webp"
+   }
   },
   {
    "file": "people/stages/product_manager-3.png",
@@ -4993,7 +5808,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/product_manager-3@hd1.webp",
+    "1.5": "people/stages/product_manager-3@hd1_5.webp",
+    "2": "people/stages/product_manager-3@hd2.webp"
+   }
   },
   {
    "file": "people/stages/product_manager-4.png",
@@ -5013,7 +5833,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/product_manager-4@hd1.webp",
+    "1.5": "people/stages/product_manager-4@hd1_5.webp",
+    "2": "people/stages/product_manager-4@hd2.webp"
+   }
   },
   {
    "file": "people/stages/qa-2.png",
@@ -5033,7 +5858,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/qa-2@hd1.webp",
+    "1.5": "people/stages/qa-2@hd1_5.webp",
+    "2": "people/stages/qa-2@hd2.webp"
+   }
   },
   {
    "file": "people/stages/qa-3.png",
@@ -5053,7 +5883,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/qa-3@hd1.webp",
+    "1.5": "people/stages/qa-3@hd1_5.webp",
+    "2": "people/stages/qa-3@hd2.webp"
+   }
   },
   {
    "file": "people/stages/qa-4.png",
@@ -5073,7 +5908,12 @@
    "source": "k3-stages.png",
    "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "people/stages/qa-4@hd1.webp",
+    "1.5": "people/stages/qa-4@hd1_5.webp",
+    "2": "people/stages/qa-4@hd2.webp"
+   }
   },
   {
    "file": "track/corner-ne.png",
@@ -5293,7 +6133,12 @@
    "source": "c3-switches.png",
    "scale": 2.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "track/switch-0@hd1.webp",
+    "1.5": "track/switch-0@hd1_5.webp",
+    "2": "track/switch-0@hd2.webp"
+   }
   },
   {
    "file": "track/switch-1.png",
@@ -5313,7 +6158,12 @@
    "source": "c3-switches.png",
    "scale": 2.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "track/switch-1@hd1.webp",
+    "1.5": "track/switch-1@hd1_5.webp",
+    "2": "track/switch-1@hd2.webp"
+   }
   },
   {
    "file": "track/switch-e.png",
@@ -5413,7 +6263,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/bubble/c@hd1.webp",
+    "1.5": "ui/bubble/c@hd1_5.webp",
+    "2": "ui/bubble/c@hd2.webp"
+   }
   },
   {
    "file": "ui/bubble/e.png",
@@ -5433,7 +6288,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/bubble/e@hd1.webp",
+    "1.5": "ui/bubble/e@hd1_5.webp",
+    "2": "ui/bubble/e@hd2.webp"
+   }
   },
   {
    "file": "ui/bubble/n.png",
@@ -5453,7 +6313,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/bubble/n@hd1.webp",
+    "1.5": "ui/bubble/n@hd1_5.webp",
+    "2": "ui/bubble/n@hd2.webp"
+   }
   },
   {
    "file": "ui/bubble/ne.png",
@@ -5473,7 +6338,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/bubble/ne@hd1.webp",
+    "1.5": "ui/bubble/ne@hd1_5.webp",
+    "2": "ui/bubble/ne@hd2.webp"
+   }
   },
   {
    "file": "ui/bubble/nw.png",
@@ -5493,7 +6363,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/bubble/nw@hd1.webp",
+    "1.5": "ui/bubble/nw@hd1_5.webp",
+    "2": "ui/bubble/nw@hd2.webp"
+   }
   },
   {
    "file": "ui/bubble/s.png",
@@ -5513,7 +6388,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/bubble/s@hd1.webp",
+    "1.5": "ui/bubble/s@hd1_5.webp",
+    "2": "ui/bubble/s@hd2.webp"
+   }
   },
   {
    "file": "ui/bubble/se.png",
@@ -5533,7 +6413,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/bubble/se@hd1.webp",
+    "1.5": "ui/bubble/se@hd1_5.webp",
+    "2": "ui/bubble/se@hd2.webp"
+   }
   },
   {
    "file": "ui/bubble/sw.png",
@@ -5553,7 +6438,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/bubble/sw@hd1.webp",
+    "1.5": "ui/bubble/sw@hd1_5.webp",
+    "2": "ui/bubble/sw@hd2.webp"
+   }
   },
   {
    "file": "ui/bubble/tail-1.png",
@@ -5573,7 +6463,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/bubble/tail-1@hd1.webp",
+    "1.5": "ui/bubble/tail-1@hd1_5.webp",
+    "2": "ui/bubble/tail-1@hd2.webp"
+   }
   },
   {
    "file": "ui/bubble/tail-2.png",
@@ -5593,7 +6488,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/bubble/tail-2@hd1.webp",
+    "1.5": "ui/bubble/tail-2@hd1_5.webp",
+    "2": "ui/bubble/tail-2@hd2.webp"
+   }
   },
   {
    "file": "ui/bubble/w.png",
@@ -5613,7 +6513,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/bubble/w@hd1.webp",
+    "1.5": "ui/bubble/w@hd1_5.webp",
+    "2": "ui/bubble/w@hd2.webp"
+   }
   },
   {
    "file": "ui/button/hover.png",
@@ -5633,7 +6538,12 @@
    "source": "u2-panels.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/button/hover@hd1.webp",
+    "1.5": "ui/button/hover@hd1_5.webp",
+    "2": "ui/button/hover@hd2.webp"
+   }
   },
   {
    "file": "ui/button/normal.png",
@@ -5653,7 +6563,12 @@
    "source": "u2-panels.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/button/normal@hd1.webp",
+    "1.5": "ui/button/normal@hd1_5.webp",
+    "2": "ui/button/normal@hd2.webp"
+   }
   },
   {
    "file": "ui/button/pressed.png",
@@ -5673,7 +6588,12 @@
    "source": "u2-panels.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/button/pressed@hd1.webp",
+    "1.5": "ui/button/pressed@hd1_5.webp",
+    "2": "ui/button/pressed@hd2.webp"
+   }
   },
   {
    "file": "ui/panel/parchment.png",
@@ -5693,7 +6613,12 @@
    "source": "u2-panels.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/panel/parchment@hd1.webp",
+    "1.5": "ui/panel/parchment@hd1_5.webp",
+    "2": "ui/panel/parchment@hd2.webp"
+   }
   },
   {
    "file": "ui/panel/terminal.png",
@@ -5713,7 +6638,12 @@
    "source": "u2-panels.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/panel/terminal@hd1.webp",
+    "1.5": "ui/panel/terminal@hd1_5.webp",
+    "2": "ui/panel/terminal@hd2.webp"
+   }
   },
   {
    "file": "ui/ring-l.png",
@@ -5733,7 +6663,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/ring-l@hd1.webp",
+    "1.5": "ui/ring-l@hd1_5.webp",
+    "2": "ui/ring-l@hd2.webp"
+   }
   },
   {
    "file": "ui/ring-m.png",
@@ -5753,7 +6688,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/ring-m@hd1.webp",
+    "1.5": "ui/ring-m@hd1_5.webp",
+    "2": "ui/ring-m@hd2.webp"
+   }
   },
   {
    "file": "ui/ring-s.png",
@@ -5773,7 +6713,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/ring-s@hd1.webp",
+    "1.5": "ui/ring-s@hd1_5.webp",
+    "2": "ui/ring-s@hd2.webp"
+   }
   },
   {
    "file": "ui/scroll/a-bottom.png",
@@ -5793,7 +6738,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/scroll/a-bottom@hd1.webp",
+    "1.5": "ui/scroll/a-bottom@hd1_5.webp",
+    "2": "ui/scroll/a-bottom@hd2.webp"
+   }
   },
   {
    "file": "ui/scroll/a-sheet.png",
@@ -5813,7 +6763,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/scroll/a-sheet@hd1.webp",
+    "1.5": "ui/scroll/a-sheet@hd1_5.webp",
+    "2": "ui/scroll/a-sheet@hd2.webp"
+   }
   },
   {
    "file": "ui/scroll/a-top.png",
@@ -5833,7 +6788,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/scroll/a-top@hd1.webp",
+    "1.5": "ui/scroll/a-top@hd1_5.webp",
+    "2": "ui/scroll/a-top@hd2.webp"
+   }
   },
   {
    "file": "ui/scroll/b-bottom.png",
@@ -5853,7 +6813,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/scroll/b-bottom@hd1.webp",
+    "1.5": "ui/scroll/b-bottom@hd1_5.webp",
+    "2": "ui/scroll/b-bottom@hd2.webp"
+   }
   },
   {
    "file": "ui/scroll/b-sheet.png",
@@ -5873,7 +6838,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/scroll/b-sheet@hd1.webp",
+    "1.5": "ui/scroll/b-sheet@hd1_5.webp",
+    "2": "ui/scroll/b-sheet@hd2.webp"
+   }
   },
   {
    "file": "ui/scroll/b-top.png",
@@ -5893,7 +6863,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/scroll/b-top@hd1.webp",
+    "1.5": "ui/scroll/b-top@hd1_5.webp",
+    "2": "ui/scroll/b-top@hd2.webp"
+   }
   },
   {
    "file": "ui/scroll/banner.png",
@@ -5913,7 +6888,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/scroll/banner@hd1.webp",
+    "1.5": "ui/scroll/banner@hd1_5.webp",
+    "2": "ui/scroll/banner@hd2.webp"
+   }
   },
   {
    "file": "ui/scroll/c-bottom.png",
@@ -5933,7 +6913,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/scroll/c-bottom@hd1.webp",
+    "1.5": "ui/scroll/c-bottom@hd1_5.webp",
+    "2": "ui/scroll/c-bottom@hd2.webp"
+   }
   },
   {
    "file": "ui/scroll/c-sheet.png",
@@ -5953,7 +6938,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/scroll/c-sheet@hd1.webp",
+    "1.5": "ui/scroll/c-sheet@hd1_5.webp",
+    "2": "ui/scroll/c-sheet@hd2.webp"
+   }
   },
   {
    "file": "ui/scroll/c-top.png",
@@ -5973,7 +6963,12 @@
    "source": "u1-bubble.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/scroll/c-top@hd1.webp",
+    "1.5": "ui/scroll/c-top@hd1_5.webp",
+    "2": "ui/scroll/c-top@hd2.webp"
+   }
   },
   {
    "file": "ui/tab/active.png",
@@ -5993,7 +6988,12 @@
    "source": "u2-panels.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/tab/active@hd1.webp",
+    "1.5": "ui/tab/active@hd1_5.webp",
+    "2": "ui/tab/active@hd2.webp"
+   }
   },
   {
    "file": "ui/tab/inactive.png",
@@ -6013,7 +7013,12 @@
    "source": "u2-panels.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "ui/tab/inactive@hd1.webp",
+    "1.5": "ui/tab/inactive@hd1_5.webp",
+    "2": "ui/tab/inactive@hd2.webp"
+   }
   }
  ]
 }
