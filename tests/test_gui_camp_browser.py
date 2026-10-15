@@ -405,7 +405,53 @@ def test_the_persons_home_stands_by_the_review_gate_and_opens_their_own(camp_loo
     panel = pg.locator(".gui-panel")
     panel.wait_for(state="visible", timeout=WAIT_MS)
     assert panel.locator(".ok-win__title").inner_text().strip() == "Town Hall"
+    # A notice from the town_hall shows on the home instead and opens the council (spec 13)
+    pg.evaluate("() => import('/static/js/camp/notices.js').then(m => m.showNotice('town_hall', { title: 'Council review' }))")
+    notice = pg.locator(".gui-camp__notice[data-id='town_hall']")
+    notice.wait_for(state="visible", timeout=WAIT_MS)
+    nb, hb = notice.bounding_box(), home.bounding_box()
+    assert abs((nb["x"] + nb["width"] / 2) - (hb["x"] + hb["width"] / 2)) < 80
+    notice.get_by_role("button", name="Open").click()
+    panel = pg.locator(".gui-panel")
+    panel.wait_for(state="visible", timeout=WAIT_MS)
+    assert panel.locator(".ok-win__title").inner_text().strip() == "Town Hall"
     pg.keyboard.press("Escape")
+    pg.evaluate("() => import('/static/js/camp/notices.js').then(m => m.foldNotice('town_hall'))")
+    notice.wait_for(state="hidden", timeout=WAIT_MS)
+    # The External listeners' road dialog does not offer the Town Hall as a road source in Camp
+    sources_camp = pg.evaluate("""async () => {
+        const { ListenDialog } = await import('/static/js/console.js');
+        const { laying } = await import('/static/js/build.js');
+        const { html } = await import('/static/js/html.js');
+        const { render } = await import('preact');
+        const div = document.createElement('div');
+        document.body.appendChild(div);
+        render(html`<${ListenDialog} b=${{ id: 'gate' }} onClose=${() => {}} />`, div);
+        await new Promise(r => setTimeout(r, 50));
+        const among = laying.value ? laying.value.among : [];
+        laying.value = null;
+        div.remove();
+        return among;
+    }""")
+    assert "town_hall" not in sources_camp
+    # In Office, the road dialog does offer the Town Hall
+    sources_office = pg.evaluate("""async () => {
+        document.documentElement.dataset.look = 'office';
+        const { ListenDialog } = await import('/static/js/console.js');
+        const { laying } = await import('/static/js/build.js');
+        const { html } = await import('/static/js/html.js');
+        const { render } = await import('preact');
+        const div = document.createElement('div');
+        document.body.appendChild(div);
+        render(html`<${ListenDialog} b=${{ id: 'gate' }} onClose=${() => {}} />`, div);
+        await new Promise(r => setTimeout(r, 50));
+        const among = laying.value ? laying.value.among : [];
+        laying.value = null;
+        div.remove();
+        document.documentElement.dataset.look = 'camp';
+        return among;
+    }""")
+    assert "town_hall" in sources_office
     # With a charter set (spec 03), the home's menu has the six entries
     pg.evaluate(f"() => {LINK}.then(m => {{ m.town.value = {{ ...m.town.value, charter: {{ goal: 'Build the camp' }} }}; }})")
     home.click()

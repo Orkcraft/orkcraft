@@ -91,7 +91,6 @@ export function order(buildings, roads) {
  *  its place in the row by its x, so moving a card in Office moves the building in Camp; one never placed fills the
  *  room left, top row first, in the work's order (decisions-2026-10.md §14). */
 export function rowsOf(list, wide = null) {
-  list = list.filter((b) => b.type !== "town_hall" && b.id !== "town_hall");
   // the depot (§4d) is about two buildings wide: it takes two of a row's places
   const wt = (b) => (b.type === DEPOT ? 2 : 1), size = list.reduce((n, b) => n + wt(b), 0);
   // a second row as soon as one building was placed in the lower half (Build's "Bottom row" in Camp, a card in Office)
@@ -140,8 +139,6 @@ export function rowsOf(list, wide = null) {
  *  (`homes/<kin>.png`), east of the Review gate on its row, its door a path above the line like a building's
  *  (§4.13); with no gate, at the first row's end. */
 export function lay(buildings, roads, step, size, waiting = () => false, home = "") {
-  buildings = buildings.filter((b) => b.type !== "town_hall" && b.id !== "town_hall");
-  roads = roads.filter((r) => r.from !== "town_hall" && r.to !== "town_hall");
   const B = step.b, S = step.s, T = TILE * S;
   const depotOf = (b) => b.type === DEPOT && !!size(DEPOT_FILE);       // the depot once its sprite is cut, else a building
   const dims = (b) => {

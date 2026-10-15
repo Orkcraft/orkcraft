@@ -494,11 +494,11 @@ def test_town_hall_is_not_placed_in_camp(tmp_path):
     out = _run(TOWN + """
 const B_with_hall = [...B, { id: "town_hall", type: "town_hall" }];
 const L = C.lay(B_with_hall, R, { b: 1.5, s: 1 }, size);
-const ord = C.order(B_with_hall, R).map((b) => b.id);
-const rows = C.rowsOf(B_with_hall).flat().map((b) => b.id);
+const ord = C.order(B_with_hall, R);
+const rows = C.rowsOf(ord).flat().map((b) => b.id);
 console.log(JSON.stringify({
   has_hall: "town_hall" in L.buildings,
-  in_order: ord.includes("town_hall"),
+  in_order: ord.some((b) => b.id === "town_hall"),
   in_rows: rows.includes("town_hall")
 }));
 """, tmp_path)

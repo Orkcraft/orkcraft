@@ -31,7 +31,8 @@ import { settingsOpen } from "../settings.js";
 import { openMenu } from "../menu.js";
 import { HALL, hallTab } from "../tent.js";
 import { Placed, Inventory, inventoryOpen } from "./items.js";
-import { Notices, notices } from "./notices.js";
+import { Notices, notices, openCouncil } from "./notices.js";
+export { openCouncil };
 
 /** The ork a click on a building's steward means: the one stopped or asking, else at work, else its first; its
  *  console's key (core/slots.py rows: a roster ork's ref, a pool's `<building>/<name>`); null with none to show. */
@@ -227,11 +228,6 @@ function Growth({ L, buildings }) {
   return html`<div class="gui-camp__layer is-growth">${out}</div>`;
 }
 
-export function openCouncil() {
-  hallTab.value = "hall";
-  openBuilding(HALL, "work");
-}
-
 /** The person's home beside the Review gate (design-system-v3.md §4.13, v3-prompts §13): their kin's house, its name
  *  on it as a building's and its path down to the line (laid with the others, layout.js); a click
  *  opens what is the person's own — since your last look, their profile and deeds, Items, the Workchief's council,
@@ -362,8 +358,6 @@ function Placing({ p, L }) {
 let laid = { key: "", L: null };
 
 export function CampTown({ buildings, roads }) {
-  buildings = buildings.filter((b) => b.type !== "town_hall" && b.id !== "town_hall");
-  roads = roads.filter((r) => r.from !== "town_hall" && r.to !== "town_hall");
   loadKit();
   const ref = useRef(null);
   const [view, setView] = useState({ w: 1440, h: 860 });
@@ -414,7 +408,7 @@ export function CampTown({ buildings, roads }) {
     const top = ref.current.getBoundingClientRect().top + ref.current.clientTop;   // the world's place inside its border
     const hud = Math.max(0, ...[...document.querySelectorAll(".gui-hud__group")].map((e) => e.getBoundingClientRect().bottom));
     const tops = [...document.querySelectorAll(".gui-camp__notice")].map((el) => {
-      const p = L.buildings[el.dataset.id];
+      const p = el.dataset.id === "town_hall" ? L.home : L.buildings[el.dataset.id];
       return p ? top + oyBase + p.y - 6 - 16 - el.offsetHeight : Infinity;
     });
     const need = Math.max(0, Math.round(hud + 12 - Math.min(...tops)));

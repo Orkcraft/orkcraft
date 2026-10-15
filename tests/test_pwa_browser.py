@@ -369,3 +369,35 @@ async def test_the_phone_shows_one_orkspace_at_a_time_without_moving_the_desktop
         await page.locator(".grid .cell", has_text=title).wait_for(state="detached", timeout=WAIT_MS)
         assert await page.evaluate("document.querySelector('meta[name=theme-color]').content") == "#070d14"
         assert server.host.command("mobile.snapshot")["active_orkspace"] == first != lab     # the desktop's stays
+
+
+@pytest.mark.asyncio
+async def test_the_phones_camp_draws_without_town_hall_and_hall_notices_reach_home(fake_repo):
+    """Spec 13, round 2: the phone loads camp/layout.js, so its Camp loses the hall too.
+    The phone's Camp still draws without error and has no Town Hall, and the hall's notices reach the home."""
+    async with _phone(fake_repo) as (server, page):
+        server.host.command("you.look", {"look": "camp"})
+        await page.wait_for_function("() => document.documentElement.dataset.theme === 'camp'", timeout=WAIT_MS)
+        camp = page.locator(".camp")
+        await camp.wait_for(timeout=WAIT_MS)
+        # Camp draws without error and has no Town Hall hut
+        assert await camp.locator(".camp-hut[data-b='town_hall']").count() == 0
+        # The phone loads camp/layout.js: order and lay exclude town_hall, and hall's notices reach home
+        res = await page.evaluate("""async () => {
+            const { lay, order } = await import('/app/camp/layout.js');
+            const bs = [{ id: 'town_hall', type: 'town_hall' }, { id: 'pool', type: 'barracks' }];
+            const roads = [{ id: 'r1', from: 'town_hall', to: 'pool' }];
+            const ord = order(bs, roads);
+            const L = lay(bs, roads, { b: 1, s: 1 }, () => [64, 64], () => false, 'homes/kin.png');
+            const target = (id) => (id === 'town_hall' ? L.home : L.buildings[id]);
+            return {
+                has_hall_in_order: ord.some(b => b.id === 'town_hall'),
+                has_hall_in_buildings: 'town_hall' in L.buildings,
+                has_home: Boolean(L.home),
+                notice_reaches_home: target('town_hall') === L.home
+            };
+        }""")
+        assert not res["has_hall_in_order"]
+        assert not res["has_hall_in_buildings"]
+        assert res["has_home"]
+        assert res["notice_reaches_home"]

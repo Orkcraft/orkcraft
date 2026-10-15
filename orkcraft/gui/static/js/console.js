@@ -122,13 +122,15 @@ function HistoryDialog({ b, ork, tool, onClose }) {
 }
 
 /** ➕ Listen: the road dialog in words, the steward picks the source among the buildings here (build.js). */
-function ListenDialog({ b, onClose }) {
+export function ListenDialog({ b, onClose }) {
   useEffect(() => {
     const t = town.value;
     const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
     const here = new Set(space ? space.buildings : t.buildings.map((x) => x.id));
-    here.add(HALL);
-    laying.value = { from: null, to: b.id, among: t.buildings.filter((x) => x.id !== b.id && here.has(x.id)).map((x) => x.id) };
+    const camp = document.documentElement.dataset.look === "camp";
+    if (!camp) here.add(HALL);
+    else here.delete(HALL);
+    laying.value = { from: null, to: b.id, among: t.buildings.filter((x) => x.id !== b.id && here.has(x.id) && (!camp || x.id !== HALL)).map((x) => x.id) };
     onClose();
   }, []);
   return null;

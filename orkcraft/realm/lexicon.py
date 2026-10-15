@@ -68,6 +68,7 @@ TERMS: tuple[Term, ...] = (
     _t("renown", "Renown"),                                        # a building's level I–III (realm/growth.py)
     _t("mascot", "mascot", "mascots"),                             # the operator's, from the onboarding
     _t("deed", "deed", "deeds"),                                   # what the camp learned to do
+    _t("item", "item", "items"),                                   # decor on the camp's grass (growth.items)
     # -- you: the portrait's menu (docs/design/portrait.md) -------------------------------------------
     _t("portrait", "portrait"),                                    # the person in the HUD's left corner
     _t("home", "Home"),                                            # the person's house by the Review gate (v3 §4.13)
@@ -75,9 +76,7 @@ TERMS: tuple[Term, ...] = (
     _t("look.camp", "Camp"),                                       # the default look: sprites, the mascot, flames
     _t("look.office", "Office"),                                   # the calm look: monochrome, no sprites
     _t("dnd", "Do not disturb"),                                   # sounds, pushes, the Workchief's news wait
-    _t("charter", "charter", "charters"),
-    _t("item", "item", "items"),
-    _t("warchief_council", "The Workchief's council", was="The Warchief's council"),
+    _t("warchief_council", "The Workchief's council"),             # the Town Hall's door in the home's menu
     # -- what a thing does, costs or risks: plain words ---------------------------------------------
     _t("ghost", "preview"),                                        # Build's placing outline; "ghost" is no old spelling
                                                                    # any more: the ghosts are a kin (Wandering Ghost)
@@ -118,6 +117,7 @@ TERMS: tuple[Term, ...] = (
     _t("town_scroll", "Town file", "Town files", "Town Scroll", "Town Scrolls"),
     _t("project", "Project", "Projects"),                           # the folder an orkspace works in (docs/design/projects.md)
     _t("account", "Account", "Accounts"),                           # a sign-in of the person's own (docs/design/google-account.md)
+    _t("charter", "charter", "charters"),                           # the town's real goal, after the tutorial (spec 03)
     _t("town_builder", "Town planner", "", "Town Builder"),
     _t("town_retro", "Weekly retro", "", "Town retro"),
     _t("retro_freedom", "Autonomy", "", "Freedom"),                 # how freely a steward applies its retro's changes
@@ -254,9 +254,7 @@ _ALSO = {"lake": ("Lake",), "pit": ("Pit",), "mill": ("Mill",), "horn": ("Horn",
 # Whole phrases first: where a word for word would read wrong.
 _PHRASES = {"Into the pit": "Dropped",
             "Not enough food": "No ork slots left", "Treasury empty": "Budget spent",
-            "Halt All Operations": "Stop all", "Halt All": "Stop all",
-            "The Warchief's Council": "The Workchief's council",
-            "The Workchief's Council": "The Workchief's council"}
+            "Halt All Operations": "Stop all", "Halt All": "Stop all"}
 
 _BY_KEY = {t.key: t for t in TERMS}
 
