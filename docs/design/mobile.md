@@ -474,3 +474,43 @@ served to the app as `camp/layout.js` with the modules it imports), the same spr
 - **The HUD** keeps one line at 390 px: spend, 🥩, ❓ 🔥, and the score (tokens per accepted result, its trend);
   Stop all stays the foot's.
 - **Office** keeps its calm lists on the phone: the camp is Camp's drawing.
+
+## 13. The phone in v4: one building in view, the orks' asks under it (the owner, 15 October; planned, not built)
+
+Portrait is for answering, landscape for looking (decisions-2026-10 §18–19 context: the owner uses the phone from
+work all day).
+
+```
+┌──────────────────────────┐
+│ HUD: slim, v4 kit        │  ~44 px: 🔥 · ❓ · 🥩 counts, Stop all, Full view
+├──────────────────────────┤
+│                          │
+│   the building in view   │  30–40 % of the height: the camp, centred on the
+│   (its ork, its carts)   │  building of the card below; it pans to the next
+│                          │  building when the card changes
+├──────────────────────────┤
+│ ═══ bottom sheet ═══     │  v4 parchment: the card — an ork's question or
+│ Grub, the Mechanic asks… │  proposal, its options as buttons, a line to type
+│ [Yes] [No] [Reply…]      │  ‹ 2 / 5 ›  swipe left / right between cards
+└──────────────────────────┘
+```
+
+1. **The HUD** is the v4 kit, one slim row: the counts, Stop all (teal), and **Full view**.
+2. **The building in view** takes 30–40 % of the height and is not pannable in this mode (a swipe there would fight
+   the cards'); a tap opens the building's sheet as today. When the card belongs to another building, the camp
+   **pans smoothly** to it: the game's camera follows the work.
+3. **The bottom sheet** holds one card at a time, swiped horizontally, with `‹ 2 / 5 ›` and dots. The order:
+   - first, **since your last look** as one card (wins first, audience §2a);
+   - then the **questions** that block an ork, oldest first;
+   - then 🔥 problems;
+   - then **proposals** (an ork's plan to approve, an improvement).
+   An answered card leaves with a small confirmation and the next one comes in. Typing grows the sheet to full
+   height and shrinks the building to a strip. Nothing waiting: the building with the most work in view, the sheet
+   says "All quiet" with **Drop an idea**.
+4. **Full view.** Turning the phone to landscape shows the whole town (the overview step); the Full view button
+   does the same in portrait for a phone with rotation locked. Back by turning back or the button.
+5. Same words as the desktop, the v4 kit's pieces, the same `mobile.allowed` commands: nothing new a phone may do.
+
+**Depends on** §19 of the decisions (the first load made fast: keep-alive, cached sprites, atlases), which comes first.
+**Priority:** P0 for the owner's daily use, about 2–3 days after §19. **Not started:** the owner asked that nothing is
+launched until he says so.
