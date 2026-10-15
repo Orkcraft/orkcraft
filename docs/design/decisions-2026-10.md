@@ -575,4 +575,6 @@ wilderness, the UI kit's textures if V4 asks).
    if a smaller default step is still needed, it says by how much.
 7. **Orks smaller again (the owner, after seeing ×1.5):** about 1.5× smaller, by the target's ratio: an ork about a
    quarter to a third of an ordinary building's height, kept when the buildings shrink for 3 × 6.
+8. **No palisade down the side (the owner: "it looks very strange").** The palisade runs along the back only; the
+   sides are trees and bushes (the wilderness), the catapult against a short end of wall. design-system-v3 §4.6.
 

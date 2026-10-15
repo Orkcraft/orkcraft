@@ -330,7 +330,7 @@ a larger scale, which v3 does not use. To get F1's fill, the sheets must draw th
    to the single projection), facing right, the track coming into its side from the left, and throws up and to the
    right over the wall. *Whatever crosses the camp's border stands on the
    wall* — the way in on one side, the way out on the other (for now only these two).
-6. **The palisade is low, of sharpened stakes** (amended 15 October, the owner, after the v4 targets: thinner and lower than the old rounded logs, about 40 px tall, so it edges the camp without walling it; was: rounded logs, 64 px, never sharpened), along the back and **down the right edge**,
+6. **The palisade is low, of sharpened stakes** (amended 15 October, the owner, after the v4 targets: thinner and lower than the old rounded logs, about 40 px tall, so it edges the camp without walling it; was: rounded logs, 64 px, never sharpened), along the back only (**the right edge's palisade is taken out**, the owner, 15 October: drawn top-down it read as a stack of logs; the sides are framed by the wilderness, as in `references/v4/target-camp.jpg`; the catapult stands against a short end of wall at the buffer stop),
    which the catapult stands against and throws over; nowhere round a building. Work comes in through the tower in the
    wall at the left and leaves over the wall at the right.
 7. **A building is one sprite with a door** (§13.1): no lifting cover, no nine-slice roof, no facade or crest slot.
