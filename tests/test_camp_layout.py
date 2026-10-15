@@ -458,7 +458,7 @@ console.log(JSON.stringify({ n: L.decor.length, inside, way, again, green }));
 def test_the_calendar_stands_on_the_back_wall_walk_with_a_spur_down_to_line_1(tmp_path):
     """design-system-v3.md §4f: the first Calendar is a herald, on the wall walk right of the lookout, its stop on line 1
     reached by a short spur (track drawn, not a way for carts); the top row starts east of it; a second Calendar stands
-    in the rows; the default view keeps a band over the wall for its notices."""
+    in the rows; the default view frames the rows, not a band for its notices."""
     out = _run(TOWN + """
 B.push({ id: "cal", type: "war_drum" }, { id: "cal2", type: "war_drum" });
 const L = C.lay(B, R, { b: 1, s: 1 }, size), h = L.buildings.cal, t = L.buildings.in;
@@ -473,7 +473,7 @@ console.log(JSON.stringify({ h, t, wallY: L.wall.y, line: L.lines[0], spur: spur
     assert out["spur"] and all(n == "straight-v" for n, _, _ in out["spur"]) and out["join"] == "t-n"
     assert h["stop"]["y"] == out["line"] + 32 and out["firstX"] > h["cx"]          # its stop on line 1; the row east
     assert out["second"] >= 0 and out["route"]                                     # a second in the rows; it sends carts
-    assert out["workTop"] <= h["y"] - 40                                            # a band over it in the default view
+    assert out["workTop"] > h["y"]                     # no band kept for its notices: the view eases down when one opens
 
 
 def test_the_buildings_doorways_are_in_the_manifest_and_survive_a_recut():

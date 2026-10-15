@@ -293,10 +293,9 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
     const way = s && r && footpath(s, out.buildings[r], FOOTPATH * B);
     if (way) out.paths.push(way);
   }
-  // the work, from over the wall to the return line: with a herald, its height over the wall and a band of wilderness
-  // above it where its notices open (§4f; V4 draws them), so the default view keeps that band in sight
-  const over = herald ? out.buildings[herald.id].h + 40 * B : 24 * B;
-  out.work = { x: colL, y: wallY - over, w: track.xs + 2 * T - colL, h: foot - wallY + over };
+  // the work, from the back wall to the return line (the default view is centred on it); a herald's notice does not
+  // widen it: the view eases down for it when it opens (js/camp/town.js, §4f)
+  out.work = { x: colL, y: wallY - 24 * B, w: track.xs + 2 * T - colL, h: foot - wallY + 24 * B };
   out.decor = decorAround(out, B);
 
   const cells = link(cellsOf(out.tiles), T);

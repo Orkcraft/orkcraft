@@ -30,6 +30,7 @@ import { coverTop } from "../inset.js";
 import { settingsOpen } from "../settings.js";
 import { openMenu } from "../menu.js";
 import { Placed, Inventory } from "./items.js";
+import { Notices, notices } from "./notices.js";
 
 /** The ork a click on a building's steward means: the one stopped or asking, else at work, else its first; its
  *  console's key (core/slots.py rows: a roster ork's ref, a pool's `<building>/<name>`); null with none to show. */
@@ -47,7 +48,8 @@ const averagePerResult = (s) => (!s ? null : s.tokens !== null && s.tokens !== u
 const onOrk = (b) => { const key = orkKey(b); if (key) { stewardOf.value = null; showConsole(key, true); } else openStewardConsole(b.id); };
 const onBubble = (b) => { waybillOf.value = { building: b.id }; };   // the task's history
 
-const pan = signal({ x: 0, y: 0 });        // the drag's offset from the default view, CSS px
+const pan = signal({ x: 0, y: 0 });
+const ease = signal(0);                    // how far the view eases down for a herald's notice (§4f)        // the drag's offset from the default view, CSS px
 let panned = false;                        // the last press dragged the town: its click selects nothing
 const DRAG_PX = 5;
 
@@ -382,7 +384,24 @@ export function CampTown({ buildings, roads }) {
   const ox = !L ? 0 : Math.round(seen / 2 - (focus ? focus.x : L.work.x + L.work.w / 2) + pan.value.x);
   // covered, a camp taller than what is left shows its last line (where the carts run) above the panel, the wall's top cut
   const low = !L || focus || !box || L.work.h <= tall ? null : L.work.y + L.work.h - tall + 8;
-  const oy = !L ? 0 : Math.round((low !== null ? -low : tall / 2 - (focus ? focus.y : L.work.y + L.work.h / 2)) + pan.value.y);
+  // a herald's notice open at the default view, not dragged: the view eases down just enough for its top to clear the
+  // HUD (§4f), and back when it folds (measured after it draws: `ease`)
+  const easing = !focus && zoomLevel.value === "b" && !pan.value.x && !pan.value.y && Object.keys(notices.value).length > 0;
+  const oyBase = !L ? 0 : Math.round((low !== null ? -low : tall / 2 - (focus ? focus.y : L.work.y + L.work.h / 2)) + pan.value.y);
+  const oy = oyBase + (easing ? ease.value : 0);
+  useLayoutEffect(() => {
+    // from layout, not from the moving picture: each notice's top in the world (its herald's top, its tail, its own
+    // height), where the un-eased view puts it on screen, and the HUD's foot; settles in one pass
+    if (!easing || !L || !ref.current) { if (ease.value) ease.value = 0; return; }
+    const top = ref.current.getBoundingClientRect().top + ref.current.clientTop;   // the world's place inside its border
+    const hud = Math.max(0, ...[...document.querySelectorAll(".gui-hud__group")].map((e) => e.getBoundingClientRect().bottom));
+    const tops = [...document.querySelectorAll(".gui-camp__notice")].map((el) => {
+      const p = L.buildings[el.dataset.id];
+      return p ? top + oyBase + p.y - 6 - 16 - el.offsetHeight : Infinity;
+    });
+    const need = Math.max(0, Math.round(hud + 12 - Math.min(...tops)));
+    if (need !== ease.value) ease.value = need;
+  });
 
   const down = (e) => {
     if (e.button !== 0 || placing.value) return;
@@ -423,7 +442,7 @@ export function CampTown({ buildings, roads }) {
   const grown = grownCard.value && buildings.find((b) => b.id === grownCard.value);
   return html`<main ref=${ref} class=${cls("gui-town gui-camp", { "is-panning": panned, "is-overview": zoomLevel.value === "a" })} data-step=${L ? `${step.b}/${step.s}` : ""}
       onPointerDown=${down} onWheel=${wheel} onClick=${bare} onContextMenu=${(e) => { if (!e.target.closest(".gui-camp__building")) bareMenu(e, buildings, here, null); }}>
-    ${L && html`<div class=${cls("gui-camp__world", { "is-following": !!focus })} style=${`width:${L.w}px;height:${L.h}px;transform:translate(${ox}px,${oy}px)`}>
+    ${L && html`<div class=${cls("gui-camp__world", { "is-following": !!focus || easing || ease.value > 0 })} style=${`width:${L.w}px;height:${L.h}px;transform:translate(${ox}px,${oy}px)`}>
       <${Decals} L=${L} />
       <${Bed} L=${L} />
       <${Paths} L=${L} />
@@ -445,6 +464,7 @@ export function CampTown({ buildings, roads }) {
       ${finale && html`<div class="gui-camp__layer is-carts"><${Finale} key=${finale.id} L=${L} f=${finale} /></div>`}
       ${outB && html`<${StewardOut} b=${outB} p=${L.buildings[outB.id]} L=${L} grown=${selected.value === outB.id} onOrk=${onOrk} onBubble=${onBubble}
         seen=${{ left: -ox, top: -oy + 8, right: -ox + seen }} />`}
+      <${Notices} L=${L} seen=${{ left: -ox, right: -ox + seen }} />
       ${placing.value && html`<${Placing} p=${placing.value} L=${L} />`}
       ${grown && L.buildings[grown.id] && html`<${GrownCard} b=${grown} p=${L.buildings[grown.id]} L=${L} />`}
     </div>`}

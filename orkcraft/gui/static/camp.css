@@ -225,3 +225,8 @@
   mask: linear-gradient(to bottom, transparent, #000 5px, #000 calc(100% - 5px), transparent); }
 .gui-camp__bed.is-v { -webkit-mask: linear-gradient(to right, transparent, #000 5px, #000 calc(100% - 5px), transparent);
   mask: linear-gradient(to right, transparent, #000 5px, #000 calc(100% - 5px), transparent); }
+/* a herald's notice (§4f): over its herald, opening upwards over the wall and the wilderness (the V4 kit draws it) */
+.gui-camp__layer.is-notices { z-index: 2200; }
+.gui-camp__notice { position: absolute; transform: translate(-50%, calc(-100% - 16px)); pointer-events: auto; cursor: default; }
+/* a notice standing aside of its herald (by the window's edge) keeps its tail over the herald */
+[data-look="camp"] .gui-camp__notice .kit-notice::after { left: calc(50% - 14px + var(--tail, 0px)); }
