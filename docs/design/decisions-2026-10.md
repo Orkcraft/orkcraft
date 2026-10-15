@@ -806,3 +806,14 @@ later); **the home becomes a room** with the person's growing figure and the dee
 (silhouettes for the rest, no "?"); coins and furniture are a second stage; **names stay**, the trains are the look.
 The score stays the honest measure. [settlement.md](settlement.md). Not started; specs on the owner's word.
 
+
+## 26. Who builds: agy or Claude, and the night run (15 October, the owner and the PM)
+
+The first two agy branches, reviewed: spec 13 (small, one area) was about 85% done and needs one short round; spec
+01 (caching, sockets) passed every test yet left old sprites stuck after an update and loosened the port's
+protection unasked. Hence: **every spec says who builds it** (agy for small one-area specs; Claude for caching,
+networking, security, data loss, and every pro or multi-module spec); **the owner starts agy and one Claude session
+in the evening, on different files; the PM session reviews and merges in the morning.** Each spec names its files
+("change nothing outside them") and asks for a behavioural browser test. The saving is in Claude's weekly limit: a
+review costs about half of writing the code, so agy pays on small specs and barely on hard ones. The split and the
+flow: [specs/README.md](../specs/README.md) "Who builds".

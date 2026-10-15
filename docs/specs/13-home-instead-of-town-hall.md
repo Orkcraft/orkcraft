@@ -2,6 +2,24 @@
 
 Branch `spec/13-home-menu` · model **flash** · design: decisions-2026-10.md §20 ("No Town Hall in the camp…")
 
+## Round 2 (15 October): fix the first round, nothing else
+The branch is `spec/13-home-instead-of-town-hall` (not the name above); it already holds round 1 (`330857f`). Work on
+it, on top of that commit. Change only `orkcraft/gui/static/js/camp/layout.js`, `town.js`, `notices.js`,
+`console.js`, `items.js`, `orkcraft/realm/lexicon.py` and the tests below. Change nothing outside these files.
+1. **Point 4 below was not done.** In Camp, a notice from the `town_hall` (notices.js filters by `L.buildings[id]`, so
+   today it vanishes) shows on the person's home instead and opens the council (`openCouncil`). The External
+   listeners' road dialog (`console.js`, ListenDialog) no longer offers the Town Hall as a road source in Camp.
+2. **Lexicon:** drop the made-up old spellings (`was="The Warchief's council"` and the new `_PHRASES` entries): these
+   words never existed, so there is nothing to translate. Move the new terms (`charter`, `item`) into the section
+   where their kind lives, each with a one-line comment like its neighbours.
+3. **One filter:** the `town_hall` exclusion lives once, in `layout.js` (`lay`/`order`); remove the copies elsewhere
+   (`layout.js` and `town.js`).
+4. **The phone:** the phone app also loads `camp/layout.js`, so its Camp loses the hall too. Add a test that the
+   phone's Camp still draws without error and has no Town Hall, and that the hall's notices reach the home there too.
+
+Tests: critical tests, plus `tests/test_camp_layout.py tests/test_items.py tests/test_lexicon.py
+tests/test_gui_wording.py tests/test_gui_camp_browser.py tests/test_pwa_browser.py`.
+
 ## Do
 1. **Camp:** `js/camp/layout.js` and `js/camp/town.js` no longer place or draw the `town_hall` building (its orks
    and its config stay; nothing is deleted from the town file). Office (`js/town.js`) is unchanged.

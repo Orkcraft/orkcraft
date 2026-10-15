@@ -2,6 +2,32 @@
 
 Branch `spec/01-phone-fast-load` · model **flash** · design: decisions-2026-10.md §19
 
+## Round 2 (15 October): fix the first round, nothing else
+The branch `spec/01-phone-fast-load` already holds round 1 (`9d8d46c`). Work on it, on top of that commit. Change
+only `orkcraft/gui/phones.py`, `orkcraft/gui/places.py`, `orkcraft/gui/pwa.py`, `orkcraft/gui/static/pwa/sw.js`,
+`orkcraft/gui/static/pwa/app.js`, `orkcraft/gui/static/pwa/app.css`, a new helper module next to `phones.py`, and
+the tests below. Change nothing outside these files.
+1. **Revert what the spec did not ask for:** the `SO_REUSEPORT` bind and the macOS `errno 49` → `127.0.0.1` fallback
+   in `phones.py` (the bind is back as on `main`, port-hijack protection intact), and the `app.css`
+   `.yard > *:not(.lit)` change (back as on `main`).
+2. **Requests with a body close the connection:** any request with a body or a `Content-Length` header (including
+   every early 403/413/415/429 answer in `phones.py` `_pair` and `places.py` `post`) answers with
+   `Connection: close` and ends the keep-alive loop, as before this spec. Only body-less GETs are kept alive.
+3. **No stuck old sprites.** Sprites are served `immutable`, so a plain `fetch()` may return the old file from the
+   browser's HTTP cache. In `sw.js`, every fetch that fills the cache (a cache-first miss, the precache batches)
+   uses `fetch(request, {cache: "reload"})`. In `updateAssets`, read the stored `assets.json` map **before** writing
+   the new one, compare, drop the changed entries, then store the new map, all in this one code path; the fetch
+   handler no longer writes `assets.json` into the cache itself, and `syncAssets` does not post the map a second time.
+4. **Hashes once:** compute the asset hashes once when the listener starts, off the event loop (a thread), not on the
+   first `assets.json` request.
+5. **Size:** move the keep-alive loop helper out of `phones.py` into a new module beside it, so `phones.py` is at
+   most 600 lines.
+6. **A behavioural browser test** in `tests/test_pwa_browser.py`: load the app, then change one sprite's bytes (and so
+   its hash) on the server and reload: the next load shows the new bytes; and a second open with nothing changed makes
+   **zero** network requests for sprites.
+
+Tests: critical tests, plus `tests/test_phones.py tests/test_pwa.py tests/test_pwa_browser.py`.
+
 ## Why
 Opening the phone app (PWA) over Tailscale takes very long the first time and again on every open. Three causes,
 verified in the code:
