@@ -520,3 +520,17 @@ def test_v4_kit_css_and_its_preview_name_only_files_that_are_there():
     kit = json.loads((tokens.SYSTEM / "sprites" / "v4" / "ui" / "kit.json").read_text(encoding="utf-8"))
     for name in kit["icons"]:
         assert (tokens.SYSTEM / "sprites" / "v4" / "ui" / "icons" / f"{name}@2x.png").is_file(), name
+
+
+def test_v4_parchment_content_reads():
+    """design-system-v4.md §3: inside a parchment panel (`.kit-paper`) the colour roles are remapped; each reads on
+    the parchment at 4.5:1, the disabled grey at 3:1."""
+    import re
+    css = (tokens.SYSTEM / "kit.css").read_text(encoding="utf-8")
+    block = css[css.index('[data-look="camp"] .kit-paper {'):]
+    block = block[:block.index("}")]
+    camp = {t["name"]: t["value"]["camp"] for t in tokens.system()["color"]["tokens"]}
+    for role in ("ink-muted", "success", "danger", "warning", "info"):
+        value = re.search(rf"--{role}: (#[0-9a-f]{{6}})", block).group(1)
+        assert _contrast(value, camp["parchment"]) >= 4.5, role
+    assert _contrast(re.search(r"--ink-comment: (#[0-9a-f]{6})", block).group(1), camp["parchment"]) >= 3

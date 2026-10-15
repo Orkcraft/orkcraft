@@ -20,7 +20,7 @@ const SEVERITY = { information: "is-ok", warning: "is-warn", error: "is-error" }
 // Camp shows each resource's sprite before its word and value (design-system/sprites/icons/res-*.png);
 // Office hides the sprite (`.ok-res img`).
 function Resource({ icon, word, value, level }) {
-  return html`<span class=${cls("ok-res", { [LEVEL[level] || ""]: !!LEVEL[level] })}>
+  return html`<span class=${cls("ok-res kit-well", { [LEVEL[level] || ""]: !!LEVEL[level] })}>
     <img src=${`/ds/sprites/icons/res-${icon}.png`} srcset=${`/ds/sprites/icons/res-${icon}@2x.png 2x`} alt="" />
     <span class="ok-word">${word}</span>${value}</span>`;
 }
@@ -48,7 +48,7 @@ function Hour({ hud, p }) {
   // over the middle of the town: a building's window open on the right takes its part away
   const panel = panelShown() && !opened.value.full ? panelWidth.value : 0;
   return html`<span ref=${ref} class="gui-hour" style=${`--town-w:calc(100vw - ${panel}px)`}>
-    <button class=${cls("gui-hour__dial", { "is-night": night })} title=${said} aria-label=${said} aria-expanded=${open}
+    <button class=${cls("gui-hour__dial kit-btn is-icon", { "is-night": night })} title=${said} aria-label=${said} aria-expanded=${open}
         onClick=${() => setOpen(!open)}>
       <img class="ok-sprite" src=${`/ds/sprites/icons/${night ? "night" : "day"}.png`}
         srcset=${`/ds/sprites/icons/${night ? "night" : "day"}@2x.png 2x`} width="32" height="32" alt="" draggable="false" />
@@ -76,18 +76,24 @@ export function Hud() {
   const t = town.value;
   const hud = t.hud;
   const words = t.resources;
+  // Two groups (design-system-v4.md §5): Camp frames each and lets the camp show between them; Office lays their
+  // children out as one row (`display: contents`).
   return html`<header class="ok-hud gui-hud">
-    ${narrow.value && html`<${Portrait} />`}
-    <span class="ok-hud__brand">Orkline</span>
-    <button class="gui-hud__project gui-hud__menu" title=${`${t.project}${t.demo ? " (demo)" : ""} — ${say("town settings: how freely the orks decide, how long they wait")}`}
-      onClick=${() => { settingsOpen.value = true; }}>${say("Menu")}${t.demo ? " · demo" : ""} ▾</button>
-    <${ScoreHud} s=${t.score} />
+    <span class="gui-hud__group kit-bar">
+      ${narrow.value && html`<${Portrait} />`}
+      <span class="ok-hud__brand">Orkline</span>
+      <button class="gui-hud__project gui-hud__menu kit-btn" title=${`${t.project}${t.demo ? " (demo)" : ""} — ${say("town settings: how freely the orks decide, how long they wait")}`}
+        onClick=${() => { settingsOpen.value = true; }}>${say("Menu")}${t.demo ? " · demo" : ""} ▾</button>
+      <${ScoreHud} s=${t.score} />
+    </span>
     <span class="ok-hud__spacer"></span>
-    <${Hour} hud=${hud} p=${t.portrait} />
-    ${hud.quota && html`<${Resource} icon="quota" word=${words.quota} value=${hud.quota} level=${hud.quota_level} />`}
-    ${hud.show_gold && html`<${Resource} icon="gold" word=${words.gold} value=${hud.gold} level=${hud.gold_level} />`}
-    <${Resource} icon="lumber" word=${words.lumber} value=${hud.lumber} level=${hud.lumber_level} />
-    <${SlotsHud} word=${words.supply} online=${online.value} />
+    <span class="gui-hud__group kit-bar">
+      <${Hour} hud=${hud} p=${t.portrait} />
+      ${hud.quota && html`<${Resource} icon="quota" word=${words.quota} value=${hud.quota} level=${hud.quota_level} />`}
+      ${hud.show_gold && html`<${Resource} icon="gold" word=${words.gold} value=${hud.gold} level=${hud.gold_level} />`}
+      <${Resource} icon="lumber" word=${words.lumber} value=${hud.lumber} level=${hud.lumber_level} />
+      <${SlotsHud} word=${words.supply} online=${online.value} />
+    </span>
   </header>`;
 }
 
@@ -95,7 +101,7 @@ export function Hud() {
 export function Toasts() {
   return html`<div class="gui-toasts" role="status" aria-live="polite">
     ${toasts.value.map((x) => x.tool ? html`<${ToolToast} key=${x.id} x=${x} />`
-      : html`<div key=${x.id} data-toast=${x.id} class=${cls("ok-toast gui-toast", { [SEVERITY[x.severity] || "is-ok"]: true })}
+      : html`<div key=${x.id} data-toast=${x.id} class=${cls("ok-toast gui-toast kit-frame-thin kit-paper", { [SEVERITY[x.severity] || "is-ok"]: true })}
         onMouseEnter=${() => holdToast(x.id, true)} onMouseLeave=${() => holdToast(x.id, false)}>
       <span class="ok-toast__mark">${MARK[x.severity] || "✓"}</span>
       <span class="gui-toast__text">${x.title ? html`<b>${x.title}</b> — ` : ""}${linked(x.message)}</span>
@@ -118,7 +124,7 @@ function ToolToast({ x }) {
   const retry = () => { close(); command("tool_error.retry", { retry: t.retry }).catch(() => {}); };
   const copy = () => copyText(t.detail || "");
   const others = t.switch || [];
-  return html`<div class="ok-toast is-error gui-toolerr" role="alert">
+  return html`<div class="ok-toast is-error gui-toolerr kit-frame-thin kit-paper" role="alert">
     <span class="ok-toast__mark">✗</span>
     <div class="gui-toolerr__body">
       <div class="gui-toolerr__head">

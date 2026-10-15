@@ -283,10 +283,11 @@ export function Panel() {
         ${b && html`<span class="ok-win__no">${numberOf(b)}</span>`}
         <span class="ok-win__title">${b ? say(b.title) : say("Lake")}</span>
         <div class="ok-tabs gui-panel__tabs" role="tablist" onDblClick=${(e) => e.stopPropagation()}>
-          ${b && work && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "work" })} role="tab"
-              aria-selected=${!front && tab === "work"} onClick=${() => pickTab("work")}>${say(workless(b) ? "Card" : "Work")}</button>`}
-          ${b && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "info" })} role="tab"
-              aria-selected=${!front && tab === "info"} onClick=${() => pickTab("info")}>${say("Info")}</button>`}
+          ${b && work && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "work" })} role="tab" data-tab="work"
+              title=${say(workless(b) ? "Card" : "Work")} aria-selected=${!front && tab === "work"}
+              onClick=${() => pickTab("work")}>${say(workless(b) ? "Card" : "Work")}</button>`}
+          ${b && html`<button class=${cls("ok-tab", { "is-active": !front && tab === "info" })} role="tab" data-tab="info"
+              title=${say("Info")} aria-selected=${!front && tab === "info"} onClick=${() => pickTab("info")}>${say("Info")}</button>`}
           ${l.shown && docs.map((t) => html`<${DocTab} key=${t.id} t=${t} active=${front && activeDoc && t.id === activeDoc.id}
               onPick=${() => pickDoc(t.id)} />`)}
         </div>

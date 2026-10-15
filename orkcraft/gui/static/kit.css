@@ -1,0 +1,189 @@
+/* Camp's chrome in the v4 kit (docs/design/design-system-v4.md §5): today's components wear the kit's pieces
+   (design-system/kit.css: .kit-bar, .kit-well, .kit-btn, …) in the Camp look. Every rule here is Camp's
+   ([data-look="camp"]); the markup the kit adds is neutral in Office. The camp's drawing (js/camp/, camp.css) is not
+   touched here. */
+
+/* the top bar's two groups: one row in Office, two framed groups with the camp between them in Camp */
+.gui-hud__group { display: contents; }
+
+@media (min-width: 641px) {
+  /* the top bar floats over the camp: the town starts at the window's top, and what hung under the bar (the
+     portrait, the 🥩 list, the hints) hangs under the taller bar through --bar-hud */
+  [data-look="camp"] { --bar-hud: 64px; }
+  [data-look="camp"] .gui { grid-template-rows: 0 minmax(0, 1fr); }
+  [data-look="camp"] .gui-hud.ok-hud { align-self: start; height: var(--kit-hud-h); width: auto; margin: 4px 8px 0; padding: 0;
+    gap: 8px; background: none; box-shadow: none; overflow: visible; pointer-events: none; color: var(--parchment-ink); }
+  [data-look="camp"] .gui-hud__group { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 6px; pointer-events: auto; min-width: 0; }
+  [data-look="camp"] .gui-panel { margin-top: var(--bar-hud); }
+  [data-look="camp"] .gui-items-slot { top: calc(var(--bar-hud) + 72px); }
+  /* the camp's drawing starts a little under the bar's top (its own border, in the grass's colour), so a scroll over a
+     building of the first row clears the bar as it cleared the old strip; the camera reads the room without it */
+  [data-look="camp"] .gui-camp { border-top: 36px solid var(--world-grass); box-sizing: border-box; }
+}
+[data-look="camp"] .gui-hud .ok-hud__brand { font: 400 22px/1 var(--font-display); color: var(--parchment-ink); padding: 0 6px 0 4px; }
+[data-look="camp"] .gui-hud .kit-btn { height: 32px; }
+[data-look="camp"] .gui-hud .kit-well { height: 32px; padding: 0 8px; gap: 6px; border-radius: 0; color: var(--parchment-ink);
+  font: var(--type-kit-number); font-variant-numeric: tabular-nums; }
+[data-look="camp"] .gui-hud .ok-res img { width: 24px; height: 24px; }
+[data-look="camp"] .gui-hud .ok-res .ok-word { font: var(--type-camp-label); color: var(--parchment-ink); opacity: .8; }
+[data-look="camp"] .gui-hud .ok-res.is-warn { color: var(--parchment-ink); box-shadow: inset 0 -3px 0 var(--warning); }
+[data-look="camp"] .gui-hud .ok-res.is-over { color: var(--parchment-ink); box-shadow: inset 0 -3px 0 var(--danger); }
+[data-look="camp"] .gui-hud .gui-slots__open { cursor: pointer; }
+[data-look="camp"] .gui-hud .gui-slots__open:hover { border-image-source: image-set(url("/ds/sprites/v4/ui/slot-hover.png") 1x, url("/ds/sprites/v4/ui/slot-hover@2x.png") 2x); }
+[data-look="camp"] .gui-hud .gui-slots__waits { font: var(--type-kit-number); }
+[data-look="camp"] .gui-hud .gui-score__trend.is-down { color: var(--accent-teal); }
+[data-look="camp"] .gui-hud .ok-hud__halt { font: var(--type-kit-button); }
+/* the hour: a square icon button in the right group, no longer pinned over the town's middle */
+[data-look="camp"] .gui-hud .gui-hour { position: relative; top: auto; left: auto; }
+[data-look="camp"] .gui-hud .gui-hour__dial { width: 32px; height: 32px; min-width: 32px; }
+[data-look="camp"] .gui-hud .gui-hour__dial > img { width: 22px; height: 22px; }
+[data-look="camp"] .gui-hud .gui-hour__menu { top: calc(var(--bar-hud) + 4px); }
+@media (min-width: 641px) {
+  /* a building's inside takes the town's place under the floating bar */
+  [data-look="camp"] .gui-inside { margin-top: var(--bar-hud); }
+  [data-look="camp"] .gui:has(> .gui-inside) { background: var(--art-wood-deep); }
+}
+
+/* the command bar: the Workchief's line on parchment in its wooden bar; its buttons are the kit's (.ok-btn) */
+[data-look="camp"] .gui-warchief__bar { padding: 2px 4px; gap: 6px; border-radius: 0; box-shadow: none; }
+[data-look="camp"] .gui-warchief.is-focused .gui-warchief__bar { outline: 2px solid var(--accent-teal); outline-offset: -6px; }
+[data-look="camp"] .gui-warchief__face { width: 40px; height: 40px; background: var(--chip); border-radius: 0;
+  box-shadow: inset 0 0 0 2px var(--kit-parchment-rule), inset 0 0 0 3px var(--art-outline); }
+[data-look="camp"] .gui-warchief__buttons { gap: 4px; }
+[data-look="camp"] .gui-warchief__input.ok-input { height: 40px; }
+[data-look="camp"] .gui-warchief__who { color: var(--parchment-ink); font: var(--type-kit-button); }
+[data-look="camp"] .gui-warchief__chip { background: var(--kit-parchment-deep); color: var(--parchment-ink); box-shadow: inset 0 0 0 2px var(--kit-parchment-rule); }
+/* the panels over it (the Workchief's thread, Build, Improve, a set-up, the quest log): parchment in a thin frame */
+[data-look="camp"] .gui-warchief__over > .ok-win__frame { width: 100%; }
+[data-look="camp"] .gui-warchief__over .ok-win__body { background: transparent; }
+
+/* the building's panel: the thick frame with its teal caps, the name on a teal plate riding the top edge, Work and
+   Info as icon tabs hanging off its left side (their words in the tooltip and the accessible name), close, the whole
+   town and More as small square buttons. Its inside keeps the building's own view on the dark panel. */
+[data-look="camp"] .gui-panel { position: relative; padding-top: 12px; box-sizing: border-box; }
+[data-look="camp"] .gui-panel > .ok-win__frame { border: var(--kit-frame) solid transparent; border-radius: 0; image-rendering: pixelated; overflow: visible;
+  border-image: image-set(url("/ds/sprites/v4/ui/frame.png") 1x, url("/ds/sprites/v4/ui/frame@2x.png") 2x) 14 / var(--kit-frame) round;
+  background: var(--panel); background-clip: padding-box; box-shadow: none; }
+[data-look="camp"] .gui-panel.is-alert > .ok-win__frame { box-shadow: var(--glow-fire); }
+[data-look="camp"] .gui-panel > .ok-win__frame > .ok-win__bar { height: 36px; margin: -30px 0 4px; padding: 0 4px 0 10px; gap: 6px;
+  background: none; box-shadow: none; color: var(--kit-ink); position: relative; z-index: 1; }
+[data-look="camp"] .gui-panel .ok-win__title { flex: 0 1 auto; box-sizing: border-box; height: 36px; display: inline-flex; align-items: center;
+  padding: 0 12px; font: var(--type-kit-heading); color: var(--kit-ink); background: var(--accent-teal);
+  border: var(--kit-bevel) solid transparent; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/plate.png") 1x, url("/ds/sprites/v4/ui/plate@2x.png") 2x) 6 fill / var(--kit-bevel) repeat; }
+[data-look="camp"] .gui-panel .ok-win__no { font: var(--type-kit-small); color: var(--kit-ink); text-shadow: 0 1px var(--art-outline); }
+[data-look="camp"] .gui-panel .ok-win__no:empty { display: none; }
+[data-look="camp"] .gui-panel > .ok-win__frame > .ok-win__bar > .gui-tab__close { box-sizing: border-box; width: 28px; height: 28px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center; font: 400 18px/1 var(--font-kit); color: var(--kit-ink);
+  background: var(--kit-wood); border: var(--kit-bevel) solid transparent; image-rendering: pixelated; margin: 0;
+  border-image: image-set(url("/ds/sprites/v4/ui/btn-wood.png") 1x, url("/ds/sprites/v4/ui/btn-wood@2x.png") 2x) 6 fill / var(--kit-bevel) repeat; }
+[data-look="camp"] .gui-panel > .ok-win__frame > .ok-win__bar > .gui-tab__close:hover {
+  border-image-source: image-set(url("/ds/sprites/v4/ui/btn-wood-hover.png") 1x, url("/ds/sprites/v4/ui/btn-wood-hover@2x.png") 2x); }
+/* the tabs: the document tabs stay in the bar as small wooden tabs; Work and Info leave it for the left side */
+[data-look="camp"] .gui-panel .ok-win__bar > .gui-panel__tabs { overflow: visible; margin-left: 6px; gap: 4px; align-items: center; }
+[data-look="camp"] .gui-panel .gui-panel__tabs > .ok-tab { height: 28px; padding: 0 8px; font: var(--type-kit-button); font-size: 16px;
+  color: var(--kit-ink); background: var(--kit-wood); box-shadow: inset 0 0 0 2px var(--art-outline), inset 2px 2px 0 2px var(--kit-wood-light); }
+[data-look="camp"] .gui-panel .gui-panel__tabs > .ok-tab.is-active { background: var(--accent-teal);
+  box-shadow: inset 0 0 0 2px var(--art-outline), inset 2px 2px 0 2px var(--kit-teal-light); }
+[data-look="camp"] .gui-panel .gui-panel__tabs > .ok-tab[data-tab] { position: absolute; left: calc(-1 * var(--kit-tab) + 2px);
+  width: var(--kit-tab); height: var(--kit-tab); padding: 0; font-size: 0; color: transparent; overflow: hidden; background: var(--kit-wood);
+  box-shadow: none; border: 8px solid transparent; border-right-width: 0; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/tab.png") 1x, url("/ds/sprites/v4/ui/tab@2x.png") 2x) 8 0 8 8 fill / 8px 0 8px 8px repeat; }
+[data-look="camp"] .gui-panel .gui-panel__tabs > .ok-tab[data-tab]:hover {
+  border-image-source: image-set(url("/ds/sprites/v4/ui/tab-hover.png") 1x, url("/ds/sprites/v4/ui/tab-hover@2x.png") 2x); }
+[data-look="camp"] .gui-panel .gui-panel__tabs > .ok-tab[data-tab].is-active { background: var(--accent-teal); box-shadow: none;
+  border-image-source: image-set(url("/ds/sprites/v4/ui/tab-on.png") 1x, url("/ds/sprites/v4/ui/tab-on@2x.png") 2x); }
+[data-look="camp"] .gui-panel .gui-panel__tabs > .ok-tab[data-tab]::before { content: ""; position: absolute; left: 4px; top: 2px; width: 24px; height: 24px;
+  image-rendering: pixelated; background: center / 24px 24px no-repeat; }
+[data-look="camp"] .gui-panel .gui-panel__tabs > .ok-tab[data-tab="work"] { top: 60px; }
+[data-look="camp"] .gui-panel .gui-panel__tabs > .ok-tab[data-tab="info"] { top: 60px; }
+[data-look="camp"] .gui-panel .gui-panel__tabs > .ok-tab[data-tab="work"] ~ .ok-tab[data-tab="info"] { top: 108px; }
+[data-look="camp"] .gui-panel .gui-panel__tabs > .ok-tab[data-tab="work"]::before {
+  background-image: image-set(url("/ds/sprites/v4/ui/icons/work.png") 1x, url("/ds/sprites/v4/ui/icons/work@2x.png") 2x); }
+[data-look="camp"] .gui-panel .gui-panel__tabs > .ok-tab[data-tab="info"]::before {
+  background-image: image-set(url("/ds/sprites/v4/ui/icons/info.png") 1x, url("/ds/sprites/v4/ui/icons/info@2x.png") 2x); }
+[data-look="camp"] .gui-panel .gui-panel__tabs > .ok-tab[data-tab]:focus-visible { outline: 2px solid var(--parchment-ink); box-shadow: 0 0 0 4px var(--kit-ink); }
+[data-look="camp"] .gui-panel.is-full { padding-left: var(--kit-tab); }
+
+/* the scroll a building's steward brings out (js/camp/steward.js): its painted head stays; its sheet is parchment in the
+   thin frame, the title in the pixel face, the quick actions the kit's buttons (.ok-btn) */
+[data-look="camp"] .gui-camp__scroll-title { font: var(--type-kit-heading); line-height: 22px; }
+[data-look="camp"] .gui-camp__scroll-body { border: var(--kit-frame) solid transparent; border-top-width: 0; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/frame-thin.png") 1x, url("/ds/sprites/v4/ui/frame-thin@2x.png") 2x) 14 / 0 var(--kit-frame) var(--kit-frame) round;
+  background: var(--parchment) image-set(url("/ds/sprites/v4/ui/parchment.png") 1x, url("/ds/sprites/v4/ui/parchment@2x.png") 2x) repeat;
+  background-clip: padding-box; box-shadow: 0 6px 0 color-mix(in srgb, var(--art-outline) 25%, transparent); padding: 12px 12px 10px; }
+[data-look="camp"] .gui-camp__scroll-acts { gap: 4px; }
+
+/* Items (js/camp/items.js): the toggle is the kit's button; the panel parchment in the thick frame, each item's picture
+   in a slot (lit under the pointer); an item standing in the camp keeps its faded row */
+[data-look="camp"] .gui-items { box-sizing: border-box; width: 280px; padding: 8px 10px; image-rendering: pixelated;
+  border: var(--kit-frame) solid transparent; box-shadow: none; color: var(--parchment-ink);
+  border-image: image-set(url("/ds/sprites/v4/ui/frame.png") 1x, url("/ds/sprites/v4/ui/frame@2x.png") 2x) 14 / var(--kit-frame) round;
+  background: var(--parchment) image-set(url("/ds/sprites/v4/ui/parchment.png") 1x, url("/ds/sprites/v4/ui/parchment@2x.png") 2x) repeat;
+  background-clip: padding-box;
+  --ink: var(--parchment-ink); --ink-muted: #6b5440; --ink-comment: #8a7458; --panel-raised: var(--kit-parchment-deep);
+  --frame: var(--kit-parchment-rule); }
+[data-look="camp"] .gui-items.is-target { outline: 2px solid var(--accent-teal); outline-offset: -8px; box-shadow: none; }
+[data-look="camp"] .gui-items__name { font: var(--type-kit-button); font-size: 18px; line-height: 20px; }
+[data-look="camp"] .gui-items__row:hover { background: color-mix(in srgb, var(--kit-parchment-deep) 60%, transparent); }
+[data-look="camp"] .gui-items__row { padding: 1px 2px; }
+[data-look="camp"] .gui-items__list { gap: 2px; }
+[data-look="camp"] .gui-items { padding: 4px 8px; max-height: min(calc(100vh - var(--bar-hud) - 200px), 560px); }
+[data-look="camp"] .gui-items__pic { box-sizing: border-box; width: 40px; height: 40px; border: var(--kit-bevel) solid transparent;
+  background: var(--kit-parchment-deep); box-shadow: none; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/slot.png") 1x, url("/ds/sprites/v4/ui/slot@2x.png") 2x) 6 fill / var(--kit-bevel) repeat; }
+[data-look="camp"] .gui-items__row:hover .gui-items__pic {
+  border-image-source: image-set(url("/ds/sprites/v4/ui/slot-hover.png") 1x, url("/ds/sprites/v4/ui/slot-hover@2x.png") 2x); }
+[data-look="camp"] .gui-items__pic > img { max-width: 28px; max-height: 28px; }
+[data-look="camp"] .gui-items__toggle.is-on { box-shadow: none; }
+
+/* toasts: parchment in the thin frame; the mark keeps its meaning by its sign (✓ ⚠ ✗) and its colour */
+[data-look="camp"] .gui-toasts .ok-toast { padding: 6px 8px; border-radius: 0; max-width: 420px; box-shadow: 0 6px 0 color-mix(in srgb, var(--art-outline) 25%, transparent); }
+[data-look="camp"] .gui-toasts .ok-toast__mark { flex: none; width: 24px; height: 24px; display: grid; place-items: center; font: var(--type-kit-heading);
+  background: var(--chip); box-shadow: inset 0 0 0 2px var(--art-outline); }
+[data-look="camp"] .gui-toasts .ok-toast.is-ok .ok-toast__mark { color: #7fd36e; }
+[data-look="camp"] .gui-toasts .ok-toast.is-warn .ok-toast__mark { color: var(--signal-ask); }
+[data-look="camp"] .gui-toasts .ok-toast.is-error .ok-toast__mark { color: var(--signal-fire); }
+[data-look="camp"] .gui-toasts .gui-toolerr__close { color: var(--parchment-ink); font: 400 18px/1 var(--font-kit); }
+
+/* the ork's console sheet (js/slots.js, js/orkconsole.js) and the waybill / a steward's console (js/camp/waybill.js,
+   stewardconsole.js): parchment in the thick frame, the head in the pixel face, its tabs small wooden tabs; the
+   terminal and the texts inside keep their own faces (and the terminal its dark) */
+[data-look="camp"] .gui-orkconsole, [data-look="camp"] .gui-camp__waybill { box-sizing: border-box; image-rendering: pixelated;
+  border: var(--kit-frame) solid transparent; border-radius: 0; color: var(--parchment-ink);
+  border-image: image-set(url("/ds/sprites/v4/ui/frame.png") 1x, url("/ds/sprites/v4/ui/frame@2x.png") 2x) 14 / var(--kit-frame) round;
+  background: var(--parchment) image-set(url("/ds/sprites/v4/ui/parchment.png") 1x, url("/ds/sprites/v4/ui/parchment@2x.png") 2x) repeat;
+  background-clip: padding-box; box-shadow: 0 6px 0 color-mix(in srgb, var(--art-outline) 25%, transparent);
+  --ink: var(--parchment-ink); --ink-muted: #6b5440; --ink-comment: #8a7458; --ink-gold: var(--kit-wood);
+  --panel: var(--parchment); --panel-raised: var(--kit-parchment-deep); --panel-inset: #f6efdc;
+  --frame: var(--kit-parchment-rule); --frame-strong: var(--kit-wood); --frame-focus: var(--accent-teal);
+  --selection: color-mix(in srgb, var(--accent-teal) 22%, var(--parchment)); --success: #2d6a2b; --danger: #9e2f1c;
+  --warning: #7a5f08; --info: #2b5a86; --alert: #7a5f08; --alert-hot: #9e2f1c; }
+[data-look="camp"] .gui-orkconsole__head > b, [data-look="camp"] .gui-camp__waybill-head > b { font: var(--type-kit-heading); }
+[data-look="camp"] .gui-orkconsole .ok-tabs { border-bottom: 2px solid var(--kit-parchment-rule); gap: 4px; }
+[data-look="camp"] .gui-orkconsole .ok-tab, [data-look="camp"] .gui-inside__shop .ok-tab { height: 28px; padding: 0 8px;
+  font: var(--type-kit-button); font-size: 16px; color: var(--kit-ink); background: var(--kit-wood); text-transform: none;
+  box-shadow: inset 0 0 0 2px var(--art-outline), inset 2px 2px 0 2px var(--kit-wood-light); }
+[data-look="camp"] .gui-orkconsole .ok-tab.is-active, [data-look="camp"] .gui-inside__shop .ok-tab.is-active { background: var(--accent-teal);
+  box-shadow: inset 0 0 0 2px var(--art-outline), inset 2px 2px 0 2px var(--kit-teal-light); }
+[data-look="camp"] .gui-orkconsole .gui-pre, [data-look="camp"] .gui-camp__waybill .gui-pre { background: #f6efdc; color: var(--parchment-ink);
+  box-shadow: inset 0 0 0 2px var(--kit-parchment-rule); }
+[data-look="camp"] .gui-camp__waybill .gui-toolerr__close { color: var(--parchment-ink); font: 400 20px/1 var(--font-kit); }
+
+/* the inside of a building, its right panel (js/inside.js; the Task board's settings and the like): the thick frame
+   with its teal caps, its title on the teal plate, Exit the kit's button */
+[data-look="camp"] .gui-inside__shop-frame { border: var(--kit-frame) solid transparent; image-rendering: pixelated; box-shadow: none;
+  border-image: image-set(url("/ds/sprites/v4/ui/frame.png") 1x, url("/ds/sprites/v4/ui/frame@2x.png") 2x) 14 / var(--kit-frame) round;
+  background: var(--parchment) image-set(url("/ds/sprites/v4/ui/parchment.png") 1x, url("/ds/sprites/v4/ui/parchment@2x.png") 2x) repeat;
+  background-clip: padding-box; overflow: visible; }
+[data-look="camp"] .gui-inside__shop-title { align-self: flex-start; margin: -26px 0 6px 10px; padding: 0 12px; height: 36px; box-sizing: border-box;
+  align-items: center; font: var(--type-kit-heading); color: var(--kit-ink); background: var(--accent-teal); border: var(--kit-bevel) solid transparent;
+  image-rendering: pixelated; max-width: calc(100% - 20px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  border-image: image-set(url("/ds/sprites/v4/ui/plate.png") 1x, url("/ds/sprites/v4/ui/plate@2x.png") 2x) 6 fill / var(--kit-bevel) repeat; }
+[data-look="camp"] .gui-inside__shop-title small { font: var(--type-camp-label); color: color-mix(in srgb, var(--kit-ink) 80%, var(--accent-teal)); }
+[data-look="camp"] .gui-inside__shop-body { --ink-muted: #6b5440; --ink-comment: #8a7458; --success: #2d6a2b; --danger: #9e2f1c;
+  --warning: #7a5f08; --info: #2b5a86; }
+[data-look="camp"] .gui-inside__shop-body .ok-input { border: 4px solid transparent; border-radius: 0; box-shadow: none; background: #f6efdc;
+  background-clip: padding-box; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/well.png") 1x, url("/ds/sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat; }
+[data-look="camp"] .gui-inside__exit { font: var(--type-kit-button); min-width: 96px; height: 36px; }

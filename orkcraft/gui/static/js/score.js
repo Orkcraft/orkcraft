@@ -22,7 +22,7 @@ export function ScoreHud({ s }) {
     + `Not measured yet: ${missing.join("; ")}.`);
   const guard = guarded ? say(`Quality: 👎 ${one(s.dislikes)} and ${one(s.reworks)} sent back per result`
     + (s.guard === "worse" ? ", more than last week" : s.guard === "steady" ? ", not more than last week" : "")) : "";
-  return html`<span class=${cls("ok-res gui-score", { "is-lean": !!s.lean, "is-worse": s.guard === "worse", "is-empty": !has })}
+  return html`<span class=${cls("ok-res gui-score kit-well", { "is-lean": !!s.lean, "is-worse": s.guard === "worse", "is-empty": !has })}
       title=${title} aria-label=${title}>
     <span class="ok-word">${say("per result")}</span>${has ? tokensWord(Math.round(s.tokens)) : ""}
     ${trend && html`<span class=${cls("gui-score__trend", { "is-down": s.trend < 0, "is-up": s.trend > 0 })}>${s.trend < 0 ? "↓" : s.trend > 0 ? "↑" : "→"}${Math.abs(Math.round(s.trend * 100))}%</span>`}

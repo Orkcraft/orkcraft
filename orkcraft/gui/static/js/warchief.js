@@ -630,11 +630,11 @@ export function WarchiefLine() {
   const quest = t.onboarding ? null : t.mission;   // Mission 1's quest under way (js/mission.js)
   return html`<div ref=${root} class=${cls("gui-warchief", { "is-focused": focused, "is-alert": t.alerts.length > 0 })}>
     ${picking ? html`<div key="improve" class="ok-win gui-warchief__over gui-warchief__grown">
-      <div class="ok-win__frame"><div class="ok-win__body"><${ImprovePick} im=${t.improve} onPick=${improve} /></div></div></div>`
+      <div class="ok-win__frame kit-frame-thin kit-paper"><div class="ok-win__body"><${ImprovePick} im=${t.improve} onPick=${improve} /></div></div></div>`
     : buildOn ? html`<div key="build" class="ok-win gui-warchief__over gui-warchief__grown">
-      <div class="ok-win__frame"><div class="ok-win__body"><${BuildRow} query=${l.text} /></div></div></div>`
+      <div class="ok-win__frame kit-frame-thin kit-paper"><div class="ok-win__body"><${BuildRow} query=${l.text} /></div></div></div>`
     : setting && !focused ? html`<div key="setup" class="ok-win gui-warchief__over gui-warchief__setup">
-      <div class="ok-win__frame"><div class="ok-win__body">
+      <div class="ok-win__frame kit-frame-thin kit-paper"><div class="ok-win__body">
         <p class="ok-font-status"><b>${say(name)}:</b> ${say(suMod.setupAsk ? suMod.setupAsk(suB) : `${suB.title} is going up. Set it up?`)}</p>
         <${suMod.Setup} id=${suB.id} b=${suB} done=${() => { endSetup(); }} />
         <div class="gui-warchief__setup-foot">
@@ -642,16 +642,16 @@ export function WarchiefLine() {
           <button class="ok-btn" onClick=${() => { endSetup(); }}>${say("Later")}</button></div>
       </div></div></div>`
     : quest && !focused ? html`<div key="quest" class="ok-win gui-warchief__over gui-warchief__setup" aria-live="polite">
-      <div class="ok-win__frame"><div class="ok-win__body"><${QuestLog} m=${quest} name=${name} /></div></div></div>`
+      <div class="ok-win__frame kit-frame-thin kit-paper"><div class="ok-win__body"><${QuestLog} m=${quest} name=${name} /></div></div></div>`
     : focused || thread || !!said ? html`<div key="over" class="ok-win gui-warchief__over"
         onMouseDown=${(e) => { if (!e.target.closest("input, textarea, select")) e.preventDefault(); }}>
-      <div class="ok-win__frame"><div class="ok-win__body">
+      <div class="ok-win__frame kit-frame-thin kit-paper"><div class="ok-win__body">
         ${thread && html`<${Thread} data=${data} />`}
         ${said && html`<p class="ok-font-status ok-tone-wait gui-warchief__said">${said}</p>`}
         ${focused && html`<${Over} text=${l.text} about=${[...l.about, ...(auto ? [auto.id] : [])]} onPick=${pick} />`}
       </div></div></div>` : null}
     <${Speaks} hidden=${!!card || buildOn || focused || thread || !!said || !!setting || !!quest || !!l.text || chips.length > 0} />
-    <div key="bar" class="gui-warchief__bar">
+    <div key="bar" class="gui-warchief__bar kit-bar kit-paper">
       ${face}
       ${card && html`<span class="gui-warchief__who ok-font-status"
           title=${steward ? say(`${steward.name}, the steward of ${card.title}`) : say(card.title)}>

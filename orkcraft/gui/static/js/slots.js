@@ -76,7 +76,7 @@ export function SlotsHud({ word, online }) {
   // What waits for you (🔥 · ❓ · ! errors), then what is held for a limit (⏳): never colour alone, a mark and a count.
   const marks = [s.fire && ` 🔥 ${s.fire}`, s.asks && ` ❓ ${s.asks}`, s.errors && ` ! ${s.errors}`, s.held && ` ⏳ ${s.held}`].filter(Boolean);
   return html`<span ref=${ref} class="gui-slots">
-    <button class=${cls("ok-res gui-slots__open", { "is-over": over })} aria-expanded=${open}
+    <button class=${cls("ok-res gui-slots__open kit-well", { "is-over": over })} aria-expanded=${open}
         title=${say("Orks at work and waiting for you")} onClick=${() => setOpen(!open)}>
       <img src="/ds/sprites/icons/res-meat.png" srcset="/ds/sprites/icons/res-meat@2x.png 2x" alt="" />
       <span class="ok-word">${word}</span>${s.working}/${s.limit}
@@ -84,7 +84,7 @@ export function SlotsHud({ word, online }) {
         s.errors && `${s.errors} in error`, s.held && `${s.held} held for a limit`].filter(Boolean).join(" · "))}>${marks.join(" ·")}</span>` : ""}
     </button>
     ${online
-      ? html`<button class="gui-hud__stop" title=${say("Stop every ork, script and browser at once")} onClick=${haltAll}>Stop all</button>`
+      ? html`<button class="gui-hud__stop kit-btn is-teal" title=${say("Stop every ork, script and browser at once")} onClick=${haltAll}>Stop all</button>`
       : html`<span class="ok-hud__halt">Disconnected — reconnecting</span>`}
     ${open && html`<div class="gui-slots__list" role="dialog" aria-label=${say("Orks at work")}>
       <div class="gui-slots__head">

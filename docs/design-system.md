@@ -182,3 +182,19 @@ art: its `world-*` and `art-*` fall back to its plain greys.
 - **Signals:** 28 px on a dark plate with an outline and a keyline; a cart's flag outlined; they win by value.
 - **Type:** Pixelify Sans for titles and chips, Nunito for labels (Cyrillic included), JetBrains Mono for the
   terminal; every Camp size a step larger; each style also a `--type-<style>` variable.
+
+## 11. Version 4: Camp's chrome in wood, teal and parchment
+
+[docs/design/design-system-v4.md](design/design-system-v4.md) in full; in short:
+
+- **Only Camp's chrome changes** (the top bar, the command bar, the building panel, the scroll, the consoles, Items,
+  the toasts, the inside's right panel); the camp's drawing, Office and every word stay as they were.
+- **The kit:** thick wooden frames with a teal inner border and teal caps, parchment panels, bevelled wood and teal
+  buttons, teal plates for headers, a column of icon tabs at a panel's side, framed counter chips, inventory slots;
+  drawn in code by `tools/ui_kit.py` (nine-slices at 2 CSS px an art pixel), worn through `design-system/kit.css`
+  (the `.kit-*` classes, Camp only) and `orkcraft/gui/static/kit.css` (today's components). Preview:
+  `design-system/previews/UIKitV4.html`.
+- **Tokens added:** `kit-*` colours (wood, teal, sunk parchment, `kit-ink`), sizes (`kit-frame`, `kit-hud-h`, …) and
+  type styles. Yellow and red stay the signals'.
+- **Type:** Jersey 15, a pixel face, for headings, numbers and buttons only (`--font-kit`); every sentence stays Nunito,
+  code JetBrains Mono, the wordmark New Rocker.

@@ -23,25 +23,34 @@
   background: color-mix(in srgb, var(--kit-parchment-deep) 45%, var(--parchment)); background-clip: padding-box;
   color: var(--parchment-ink); }
 
-/* buttons: wood, teal (.is-teal: the primary; .is-on: pressed in, the open one) */
-[data-look="camp"] .kit-btn { appearance: none; box-sizing: border-box; display: inline-flex; align-items: center;
-  justify-content: center; gap: 6px; height: 36px; min-width: 36px; padding: 0 10px; margin: 0; cursor: pointer;
-  font: var(--type-kit-button); letter-spacing: .02em; color: var(--kit-ink); text-transform: none; white-space: nowrap;
-  background: var(--kit-wood); border: var(--kit-bevel) solid transparent; image-rendering: pixelated; box-shadow: none;
+/* buttons: wood, teal (.is-teal: the primary; .is-on: pressed in, the open one). The design system's own button
+   (.ok-btn, components.css) wears the same pieces in Camp: .primary is teal, .is-on and [aria-pressed="true"] on. */
+[data-look="camp"] .kit-btn, [data-look="camp"] .ok-btn { appearance: none; box-sizing: border-box; display: inline-flex;
+  align-items: center; justify-content: center; gap: 6px; height: 36px; min-width: 36px; padding: 0 10px; margin: 0;
+  cursor: pointer; font: var(--type-kit-button); letter-spacing: .02em; color: var(--kit-ink); text-transform: none;
+  white-space: nowrap; background: var(--kit-wood); border: var(--kit-bevel) solid transparent; border-radius: 0;
+  image-rendering: pixelated; box-shadow: none; filter: none;
   border-image: image-set(url("sprites/v4/ui/btn-wood.png") 1x, url("sprites/v4/ui/btn-wood@2x.png") 2x) 6 fill / var(--kit-bevel) repeat; }
-[data-look="camp"] .kit-btn:hover { filter: none;
+[data-look="camp"] .ok-btn { height: var(--control-camp); }
+[data-look="camp"] .kit-btn:hover, [data-look="camp"] .ok-btn:hover { filter: none;
   border-image-source: image-set(url("sprites/v4/ui/btn-wood-hover.png") 1x, url("sprites/v4/ui/btn-wood-hover@2x.png") 2x); }
-[data-look="camp"] .kit-btn:active, [data-look="camp"] .kit-btn.is-down { padding-top: 2px;
+[data-look="camp"] .kit-btn:active, [data-look="camp"] .kit-btn.is-down, [data-look="camp"] .ok-btn:active,
+[data-look="camp"] .ok-btn.is-pressed { padding-top: 2px; box-shadow: none;
   border-image-source: image-set(url("sprites/v4/ui/btn-wood-down.png") 1x, url("sprites/v4/ui/btn-wood-down@2x.png") 2x); }
-[data-look="camp"] .kit-btn.is-teal, [data-look="camp"] .kit-btn.is-on {
+[data-look="camp"] .kit-btn.is-teal, [data-look="camp"] .kit-btn.is-on, [data-look="camp"] .ok-btn.primary {
+  color: var(--kit-ink); background: var(--accent-teal);
   border-image-source: image-set(url("sprites/v4/ui/btn-teal.png") 1x, url("sprites/v4/ui/btn-teal@2x.png") 2x); }
-[data-look="camp"] .kit-btn.is-teal:hover, [data-look="camp"] .kit-btn.is-on:hover {
+[data-look="camp"] .kit-btn.is-teal:hover, [data-look="camp"] .kit-btn.is-on:hover, [data-look="camp"] .ok-btn.primary:hover {
   border-image-source: image-set(url("sprites/v4/ui/btn-teal-hover.png") 1x, url("sprites/v4/ui/btn-teal-hover@2x.png") 2x); }
-[data-look="camp"] .kit-btn.is-teal:active, [data-look="camp"] .kit-btn.is-on {
+[data-look="camp"] .kit-btn.is-teal:active, [data-look="camp"] .kit-btn.is-on, [data-look="camp"] .ok-btn.primary:active,
+[data-look="camp"] .ok-btn.is-on, [data-look="camp"] .ok-btn[aria-pressed="true"] { color: var(--kit-ink);
   border-image-source: image-set(url("sprites/v4/ui/btn-teal-down.png") 1x, url("sprites/v4/ui/btn-teal-down@2x.png") 2x); }
-[data-look="camp"] .kit-btn:disabled, [data-look="camp"] .kit-btn.is-off { cursor: default; color: var(--parchment-ink); padding-top: 0;
+[data-look="camp"] .kit-btn:disabled, [data-look="camp"] .kit-btn.is-off, [data-look="camp"] .ok-btn:disabled,
+[data-look="camp"] .ok-btn.is-disabled { cursor: default; color: var(--parchment-ink); padding-top: 0;
   border-image-source: image-set(url("sprites/v4/ui/btn-wood-off.png") 1x, url("sprites/v4/ui/btn-wood-off@2x.png") 2x); }
-[data-look="camp"] .kit-btn:focus-visible, [data-look="camp"] .kit-tab:focus-visible, [data-look="camp"] .kit-slot:focus-visible { outline: 2px solid var(--kit-ink); outline-offset: 2px; }
+[data-look="camp"] .ok-btn .ok-kbd { color: inherit; font: var(--type-kit-small); }
+[data-look="camp"] .kit-btn:focus-visible, [data-look="camp"] .ok-btn:focus-visible, [data-look="camp"] .kit-tab:focus-visible,
+[data-look="camp"] .kit-slot:focus-visible { outline: 2px solid var(--parchment-ink); outline-offset: 0; box-shadow: 0 0 0 4px var(--kit-ink); }
 [data-look="camp"] .kit-btn.is-icon { width: var(--kit-icon-btn); height: var(--kit-icon-btn); padding: 0; }
 [data-look="camp"] .kit-btn.is-icon.is-small { width: 28px; height: 28px; min-width: 28px; }
 [data-look="camp"] .kit-ico { width: 24px; height: 24px; image-rendering: pixelated; flex: none; pointer-events: none; }
@@ -101,3 +110,22 @@
 [data-look="camp"] .kit-row { display: flex; align-items: center; gap: 8px; min-height: 28px; font: var(--type-camp-label); }
 [data-look="camp"] .kit-row > :last-child { margin-left: auto; font: var(--type-kit-number); }
 [data-look="camp"] .kit-row > img { width: 24px; height: 24px; image-rendering: pixelated; }
+
+/* parchment content: inside a parchment panel, the chrome's colour roles are remapped so today's components (rows,
+   inputs, links, lists, ✓ and ✗) read dark on cream (each 4.5:1 or more on `parchment`; the disabled grey 3.3:1) */
+[data-look="camp"] .kit-paper {
+  color: var(--parchment-ink);
+  --ink: var(--parchment-ink); --ink-muted: #6b5440; --ink-comment: #8a7458; --ink-gold: var(--kit-wood);
+  --panel: var(--parchment); --panel-raised: var(--kit-parchment-deep); --panel-inset: #f6efdc; --banner: var(--kit-wood);
+  --frame: var(--kit-wood-light); --frame-strong: var(--kit-wood); --hut-frame: var(--kit-wood); --frame-focus: var(--accent-teal);
+  --selection: color-mix(in srgb, var(--accent-teal) 22%, var(--parchment)); --action: var(--accent-teal); --on-action: var(--kit-ink);
+  --success: #2d6a2b; --danger: #9e2f1c; --warning: #7a5f08; --info: #2b5a86; --meter: var(--kit-wood-light);
+  --bevel-hi: #f6efdc; --bevel-lo: var(--kit-parchment-rule);
+  --bevel-raised: inset 1px 1px 0 #f6efdc, inset -1px -1px 0 var(--kit-parchment-rule);
+  --bevel-sunken: inset 1px 1px 0 var(--kit-parchment-rule), inset -1px -1px 0 #f6efdc;
+}
+[data-look="camp"] .kit-paper .ok-input { background: #f6efdc; color: var(--parchment-ink); box-shadow: none; border-radius: 0;
+  border: 4px solid transparent; background-clip: padding-box; image-rendering: pixelated; font: var(--type-camp-body);
+  border-image: image-set(url("sprites/v4/ui/well.png") 1x, url("sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat; }
+[data-look="camp"] .kit-paper .ok-input:focus { outline: 2px solid var(--accent-teal); outline-offset: 0; }
+[data-look="camp"] .kit-paper .ok-input::placeholder { color: #8a7458; }

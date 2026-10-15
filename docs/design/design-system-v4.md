@@ -1,6 +1,6 @@
 # Design — the design system, v4: Camp's chrome in wood, teal and parchment
 
-Status: steps 1 and 2 of 3 (V4, [decisions-2026-10.md](decisions-2026-10.md) §17.1), 15 October. The target is the owner's
+Status: built, steps 1–3 (V4, [decisions-2026-10.md](decisions-2026-10.md) §17.1), 15 October. The target is the owner's
 frame [img/references/v4/target-ui.jpg](img/references/v4/target-ui.jpg): thick wooden frames with a teal inner border,
 parchment panels, square bevelled icon buttons, a column of icon tabs at a panel's side, counters in framed chips,
 tab headers on teal plates, inventory slots. Today's Camp, for comparison: [img/loop/depot-busy.png](img/loop/depot-busy.png).
@@ -35,8 +35,9 @@ only a picture: v4 writes today's words, orks by their orkish names, buildings b
    consoles, chat and every sentence keep Nunito (`camp-body`, `camp-label`, `camp-caption`) and JetBrains Mono. The
    wordmark stays New Rocker. Case is as written: no `text-transform` (the words are today's, and so is their case).
 5. **States are pieces, not filters:** a button has `-hover`, `-down` (the bevel turned over) and `-off` (a flat
-   parchment face); a tab `-hover` and `-on`; a slot `-hover` and `-on`. Focus is a 2-px `kit-ink` outline 2 px out,
-   on every control.
+   parchment face); a tab `-hover` and `-on`; a slot `-hover` and `-on`. Focus is a two-tone ring (2 px
+   `parchment-ink` inside 2 px `kit-ink`), seen on parchment, wood and grass alike, on every control. Today's
+   `.ok-btn` wears the button pieces in Camp (`.primary` teal, `.is-on` / `aria-pressed` pressed in).
 6. **Only Camp wears the kit:** every kit rule is scoped `[data-look="camp"]`. In Office the same markup is drawn by
    its own rules, unchanged.
 
@@ -124,23 +125,23 @@ an ellipsis, never wrapped in the pixel face.
 ## 5. Piece by piece onto today's components
 
 The order is step 3's. Class names are today's (`orkcraft/gui/static/`, `design-system/components.css`); each keeps
-its markup and its words, and gains the kit in Camp by `[data-look="camp"]` rules in one sheet,
+its words, and gains the kit in Camp by `[data-look="camp"]` rules in one sheet,
 `orkcraft/gui/static/kit.css`, loaded after the others.
 
 | today | v4 in Camp |
 |---|---|
-| **The top bar** `.ok-hud.gui-hud` (js/chrome.js): the brand, Menu, the score, the hour, Spend, Context, Orks | the strip on `bar` with parchment inside, 56 high; the brand in New Rocker on the wood at the left; each counter group (`.ok-res`, `.gui-score…`, `.gui-slots…`) a `well` chip on the parchment with its sprite and its number in `kit-number`, its word in `camp-label`; Menu a `btn-wood` |
-| Stop all `.gui-hud__stop` (js/slots.js) | a `btn-teal` at the bar's right end, `kit-button` |
-| the hour `.gui-hour__dial` and its menu | a square `btn-wood` icon button (`kit-icon-btn`) holding today's sun/moon sprite; the menu on `frame-thin` with parchment |
-| **The command bar** `.gui-warchief__bar` (js/warchief.js) | `bar` round it; the Workchief's face in a square `well`; Build, Answers (n), Improve, Open and the quick actions `.gui-warchief__act` as `btn-wood`; Build when open, Open and `.ok-btn.primary` as `btn-teal`; the input `.gui-warchief__input` a `well` on parchment in Nunito |
-| the panels over it `.gui-warchief__over` (the Workchief's thread, Build, Improve, set-up) | `frame-thin` on parchment; their text stays Nunito |
-| **The building panel** `.gui-panel` with `.ok-win` (js/windows.js), its tabs `.ok-tabs .ok-tab` (Work/Card, Info, documents) | the panel on `frame` (caps); its title on a `plate` across the top edge in `kit-heading`; **the tabs become a column of icon tabs** on the panel's left (`tab`, `-on` for the open one), each with its icon and its word as the tooltip and accessible name; close, whole town and more as square icon buttons in the plate's row |
-| the scroll `.gui-camp__scroll` and its quick actions `.gui-camp__scroll-acts` (js/camp/steward.js) | the scroll's head stays its sprite; its body on `frame-thin` and the `parchment` tile; the title in `kit-heading`; actions `btn-wood`, the primary `btn-teal` |
-| **The ork's console sheet** `.gui-orkconsole` (js/orkconsole.js) | on `frame`; its header (the ork's name, its role) on a `plate`; its sections under `band`s; the terminal and logs inside keep the console's dark ground and JetBrains Mono |
-| **The Items panel** `.gui-items` and its toggle `.gui-items__toggle` (js/camp/items.js) | the toggle a `btn-wood`; the panel on `frame` with a `band` heading "Items"; each item `.gui-items__row`'s picture in a `slot` (`-hover` under the pointer, `-off` look when it stands in the camp); the Workchief's notes and the hint stay Nunito |
-| **The quest log** (js/mission.js in `.gui-warchief__setup`) | `frame-thin` on parchment; its objective's heading in `kit-heading` on a `plate`; its one press a `btn-teal`; the jokes and lines Nunito |
-| **The toasts** `.gui-toast.ok-toast`, `.gui-toolerr` (js/chrome.js) | `frame-thin` on parchment; the mark (✓ ⚠ ✗) in a small square `well`, ✗ keeps the signal's red as it is a signal; copy and close square icon buttons |
-| **The Task board's inside, its right panel** (`js/buildings/fields_inside.css`) | `frame` with a `plate` header; the counts in `kit-number`; its rows on parchment; its buttons `btn-wood`/`btn-teal` |
+| **The top bar** `.ok-hud.gui-hud` (js/chrome.js): the brand, Menu, the score, the hour, Spend, Context, Orks | **two framed groups floating over the camp** (`.gui-hud__group.kit-bar`; `display: contents` in Office): brand · Menu · the score at the left, the hour · Spend · Context · Orks · Stop all at the right, the camp seen between them as in the target. Each counter (`.ok-res`, `.gui-score`, `.gui-slots__open`) is a `well` chip, its number in `kit-number`, its word in `camp-label`, its sprite 24 px; Menu a wooden button. In Camp `--bar-hud` is 64 (was the strip's 28), so what hangs under the bar (the portrait, the 🥩 list, the hints) moves with it; the camp's drawing starts 36 px down (its own grass-coloured top border), so a scroll over a first-row building clears the bar as it cleared the old strip. Under 641 px wide the old strip stays. |
+| Stop all `.gui-hud__stop` (js/slots.js) | a `btn-teal` at the right group's end, `kit-button` |
+| the hour `.gui-hour__dial` and its menu | a square wooden icon button in the right group (no longer pinned over the town's middle), today's sun/moon sprite |
+| **The command bar** `.gui-warchief__bar` (js/warchief.js) | `bar` round parchment (`.kit-paper`); the Workchief's face on a dark square; Build, Answers (n), Improve, Open and the quick actions are the kit's buttons; the input a `well` on parchment in Nunito |
+| the panels over it `.gui-warchief__over` (the Workchief's thread, Build, Improve, a set-up, **the quest log**) | `frame-thin` on parchment (`.kit-paper`); their text stays Nunito |
+| every `.ok-btn` in Camp | the kit's button pieces (`design-system/kit.css`): wood; `.primary` teal; `.is-on` / `aria-pressed="true"` pressed in teal; disabled flat parchment; `kit-button` face, no upper case |
+| **The building panel** `.gui-panel` with `.ok-win` (js/windows.js), its tabs Work/Card, Info and the documents | the panel on `frame` (caps); its name on a `plate` riding the frame's top edge; **Work and Info become icon tabs** hanging off the panel's left side (`tab`, `-on` for the open one; `data-tab` on each, the word kept as its text, tooltip and accessible name); the documents' tabs stay in the bar as small wooden tabs; More, the whole town and close are small square wooden buttons. **Its inside keeps the building's own view on the dark panel** (§8). |
+| the scroll `.gui-camp__scroll` and its quick actions (js/camp/steward.js) | the head stays its painted sprite; the sheet on `frame-thin` and the `parchment` tile; the title in `kit-heading`; the actions the kit's buttons |
+| **The ork's console sheet** `.gui-orkconsole` (js/slots.js, js/orkconsole.js) and the waybill / a steward's console `.gui-camp__waybill` | parchment in `frame`, the colour roles remapped as in `.kit-paper`; its head in `kit-heading`; its tabs small wooden tabs; the texts in Nunito and JetBrains Mono, an xterm keeps its own dark |
+| **The Items panel** `.gui-items`, its toggle (js/camp/items.js) | the toggle the kit's button; the panel parchment in `frame`; each picture in a `slot` (`-hover` under the pointer); the notes and the hint Nunito |
+| **The toasts** `.gui-toast.ok-toast`, `.gui-toolerr` (js/chrome.js) | `frame-thin` on parchment (`.kit-paper`); the mark (✓ ⚠ ✗) on a dark square in its signal colour |
+| **The inside's right panel** `.gui-inside__shop-frame` (js/inside.js; the Task board's settings) | `frame` with caps on parchment; its title on a `plate` riding the top edge; Exit the kit's button, under the bar |
 | the map's chips, names and badges `.gui-camp__chip`, `.gui-camp__name`, `.gui-camp__badge` | **unchanged** (layers 8–9 are v3's, design-system-v3 §5) |
 
 ## 6. Steps and checks
@@ -153,9 +154,19 @@ its markup and its words, and gains the kit in Camp by `[data-look="camp"]` rule
    `tests/test_design.py` checks every file it and the preview name, and that every rule is scoped to Camp. Shots
    at 1440 × 900, density 2: [step2-mock.png](img/v4/step2-mock.png),
    [step2-mock-vs-target.png](img/v4/step2-mock-vs-target.png), [step2-kit-page.png](img/v4/step2-kit-page.png).
-3. Camp's real chrome, in §5's order; the browser tests stay green; shots into `img/v4/`, beside the target.
+3. Camp's real chrome, in §5's order (done): `orkcraft/gui/static/kit.css` after the others, the kit's classes added to
+   the markup where a piece needed one (the top bar's groups, the toasts, the command bar and its panels, the panel's
+   `data-tab`); the browser tests stay green. Shots at 1440 × 900, density 2, in `img/v4/step3-*.png`.
 
-## 7. For the owner and the other sessions
+## 7. Not changed, on purpose
+
+- **The insides of the building views** (the 19 types' Work and Info, terminals, boards) stay on their dark panel:
+  they were drawn for it, and a token remap onto parchment needs a look at each type. The frame, the plate and the tabs
+  round them are v4's. Moving a view onto parchment is one line per type (the `.kit-paper` class) once it is checked.
+- **The map's chips, names and badges** (v3 layers 8–9), the War Map, the portrait, and the Workchief's speech bubble.
+- **Office**, and the narrow window (under 641 px) keep their drawing.
+
+## 8. For the owner and the other sessions
 
 - **No texture needs an image model** for now (§2, Textures). If one is wanted, V4 writes the request for the art
   session and sends it to the PM session; V4 never calls a model itself.
