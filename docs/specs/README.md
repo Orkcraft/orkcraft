@@ -56,6 +56,7 @@ Run tests with: `uv run --extra gui --extra dev pytest -q <files>` (browser test
 | # | spec | when | model |
 |---|---|---|---|
 | 01 | [the phone's fast first load](01-phone-fast-load.md) | before the testers | flash |
+| 10 | [the phone's new UX](10-phone-v4.md) (four parts: cards, motion, full view, v4 look) | right after 01 (the owner) | pro / flash |
 | 02 | [Mission 1 blockers](02-mission1-blockers.md) (filled after the owner plays it) | before the testers | flash |
 | 03 | [the charter: "My project"](03-charter.md) | before the testers | pro |
 | 04 | [Halloween decor](04-halloween-decor.md) (art card + items) | before 31 October | flash |
@@ -66,5 +67,4 @@ Run tests with: `uv run --extra gui --extra dev pytest -q <files>` (browser test
 | 07 | [the person's quarter: drag in Camp](07-quarter-drag.md) | after 06 | flash |
 | 08 | [the Wiki on the grass](08-wiki-on-grass.md) | after 06 | flash |
 | 09 | [plots](09-plots.md) | after 07 | flash |
-| 10 | [the phone's v4 screen](10-phone-v4.md) | after Halloween | pro |
 | 11 | [Mission 1b](11-mission-1b.md) (three parts) | after the testers' feedback | pro |
