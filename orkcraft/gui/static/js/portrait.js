@@ -20,6 +20,7 @@ import { RoleIcon } from "./roles.js";
 import { usePairing, PairQr, PairNote } from "./phones.js";
 import { GithubAccount } from "./github.js";
 import { commentMode, fixesOpen } from "./fixes.js";
+import { V3, loadKit, has } from "./camp/sprites.js";
 
 export const portraitOpen = signal(false);
 
@@ -47,14 +48,16 @@ function ground(home) {
 }
 
 /** The head: in Camp the person's class figure of v3 (design-system/sprites/v3/people/<role id>.png; v3-prompts.md §13),
- *  its head (people/heads/, cut by tools/people_heads.py) at its own pixel in the corner, twice it in the menu; the stage as the
- *  existing marks round it until v3 stage art exists (a band at 2, horns at 3, a gem and a teal glow at 4: layout.css).
- *  The monogram in Office. */
+ *  its head (people/heads/, cut by tools/people_heads.py) at its own pixel in the corner, twice it in the menu. From stage
+ *  2 the stage's own head (people/stages/<role id>-<stage>.png, k3; v3-prompts §18) once the manifest lists it; else the
+ *  marks round the first head (a band at 2, horns at 3, a gem and a teal glow at 4: layout.css). The monogram in Office. */
 function Face({ y, p, size }) {
   if (p.look === "office") return html`<span class=${cls("gui-portrait__mono", { "is-big": size > 3 })} title=${p.mono}>
     <${RoleIcon} role=${p.role || ""} mono=${p.mono} size=${size > 3 ? 28 : size > 2 ? 20 : 14} /></span>`;
-  const src = `/ds/sprites/v3/people/heads/${y.sprite}.png`;
-  return html`<span class=${cls("gui-portrait__ground is-v3", { "is-full": size > 3 })} data-stage=${y.stage} style=${ground(y.home)}>
+  loadKit();
+  const staged = y.stage > 1 && has(`people/stages/${y.sprite}-${y.stage}.png`);
+  const src = staged ? `${V3}people/stages/${y.sprite}-${y.stage}.png` : `${V3}people/heads/${y.sprite}.png`;
+  return html`<span class=${cls("gui-portrait__ground is-v3", { "is-full": size > 3, "has-stage-art": staged })} data-stage=${y.stage} style=${ground(y.home)}>
     <img class="gui-portrait__person" src=${src} alt="" draggable="false" /></span>`;
 }
 

@@ -100,7 +100,7 @@ REF = {"f1": "f1-town.jpg", "b1": "b1-core.jpg", "o1": "o1-body.jpg", "o2": "o2-
        "g3": "g3-palisade.jpg", "tb": "b1-taskboard.jpg",       # the owner's picks of round 7
        "r03": "../0.3/roles-2.jpg", "o3r": "o3-states-r1.jpg",  # the capped ork (§12)
        "std": "st-dispatch.jpg",                                 # the picked dispatcher's booth (§13)
-       "k1": "k1-classes.jpg", "o7": "o7-prospector.jpg"}        # the picked classes and Prospector (§15)
+       "k1": "k1-classes.jpg", "o7": "o7-prospector.jpg", "k3": "k3-stages.jpg"}        # the picked classes and Prospector (§15)
 
 # the sheets: kind (building, ork, track, edge, signals), the prompt (v3-prompts §3, as the reviews redid it), the
 # pieces the cutter should find, the image's aspect, and the cut name `--pick` copies it to
@@ -388,6 +388,15 @@ SHEETS: dict[str, dict] = {
                   "11. Wandering Ghost: a straw hat · a captain's hat and an eye patch · a crest of open tabs. At "
                   "stage 4 the eyes glow teal. No gold, no yellow, no red: ivory, bone, teal and plum instead.",
         "about": "growth.md §7.2: the portrait's stages 2–4 for the eleven classes, in v3 (stage 4's eyes teal)",
+    },
+    "k3-marketing": {
+        "kind": "character", "expect": 3, "aspect": "16:9", "refs": ["k1", "k3"],
+        "prompt": "The Growth-Hack Gnome of the attached sheet k1-classes (a gnome with a bone horn and a rising "
+                  "chart), head and shoulders, front-facing, exactly the size and style of the heads in the attached "
+                  "sheet k3-stages, three in one row: stage 2 an ivory star on its cap; stage 3 holding a bone horn "
+                  "like a megaphone; stage 4 an ivory band on its head, a green arrow pointing up beside it, its eyes "
+                  "glowing teal. No gold, no yellow, no red.",
+        "about": "the one class k3-stages left out: the Growth-Hack Gnome at stages 2–4",
     },
     "i1-items": {
         "kind": "building", "expect": 16, "aspect": "16:9", "refs": ["g2"],

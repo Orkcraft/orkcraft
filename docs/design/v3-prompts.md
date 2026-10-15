@@ -705,4 +705,11 @@ The owner's yes on the whole queue (30 calls + 6 for the logo); six spent here.
   raised; plum and teal, told apart by position). #5 has a gateway at one end only; #6 turned its tracks south again.
 
 Calls spent of the queue's 30: 12 (c3 3, c1 3, st-depot 6).
+- **l1-logo** (3 of its 6 calls): four concepts a sheet; #3 (front-on, a teal cap, round glasses) leads.
+  `tools/logo.py --glasses` draws two marks from it on a 16 × 16 grid, a flat cap (a) and a ribbed beanie (b), and
+  the comparison sheet `img/logo/glasses-compare.png`; today's mark stays until the owner picks.
+- **k3-stages #3**: ten heads a row (all three candidates left a class out; #1 mixes full figures in, #2 has a red
+  d20 and a red pin). Cut at `close: 0` and `merge: 1.4` into `people/stages/<role id>-<2|3|4>.png`.
+  **k3-marketing #1** (2 calls) draws the class it left out, the Growth-Hack Gnome, full-length; its heads boxed.
+  `js/portrait.js` shows the stage's own head from stage 2 and drops the CSS marks over it.
 

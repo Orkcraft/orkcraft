@@ -1,0 +1,108 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "prompt": "No shadows. Pixel-art sprite sheet in exactly the style and palette of the attached image. Crisp hard pixels on a strict grid, no anti-aliasing, no blur, no gradients, each sprite with a dark 1-pixel outline, drawn at its final size with no finer detail than that size can hold. One three-quarter top-down projection, never isometric. Sprites in a neat grid with even spacing on a flat solid #FF00FF magenta background, nothing touching, no ground under them, no text unless asked. Bright yellow and bright red appear nowhere.\n\nSixteen small objects a player places on the grass of the camp, each alone, about the size of the decor in the attached sheet g2-decor (24–48 px), in a 4 × 4 grid, in this order: 1. a painter's easel; 2. a wooden signpost with an arrow up; 3. a small chest of teal crystals; 4. a crest banner on a pole, teal and plum; 5. a tombstone with a paper ticket pinned to it; 6. a statue of a beetle in a glass jar; 7. a lantern post, its light teal-white; 8. a small mine cart on a stone plinth; 9. a trophy cup of carved wood; 10. a log pile on a stone plinth; 11. an anvil; 12. an old railway semaphore on a post; 13. a stone statue of balance scales; 14. a small pennant on a pole; 15. a sundial on a stone base; 16. a whetstone on a stone plinth. Calm colours: wood, stone, bone, teal and plum.\n\nEvery building faces the viewer: its front wall parallel to the bottom edge of the image, the door in the middle of the front, seen slightly from above, exactly like the task board in the attached sheet b1-core. Never turned at an angle, never isometric.\n\nNo ground under the building: no patch of grass, no base square, no plinth of earth.\n\nNo frames, no boxes, no grid lines, no borders between sprites; each sprite floats alone on the magenta.\n\nNo shadows, no smoke, no glow.\n\nKeep exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #7cbd40), the paths warm sand (about #e4b469); warm honey wood, light cool stone, teal and plum cloth, cream bone.\n\nNo yellow, no orange and no red anywhere: those colours are reserved for the product's signals. The wood a muted honey brown, never orange.\n\nOutput the sheet as a PNG image.\n\nAttached, in order: f1-town, b1-core, g2-decor. F1 is the approved frame: its style and colours rule.",
+ "sheet": "i1-items",
+ "file": "1.jpg",
+ "image": [
+  2752,
+  1536
+ ],
+ "pitch": 11.47,
+ "art_px": 41,
+ "art_range": [
+  48,
+  260
+ ],
+ "grid": [
+  238,
+  133
+ ],
+ "pieces": 18,
+ "expected": 16,
+ "sizes": [
+  [
+   28,
+   41
+  ],
+  [
+   27,
+   40
+  ],
+  [
+   32,
+   35
+  ],
+  [
+   32,
+   41
+  ],
+  [
+   28,
+   40
+  ],
+  [
+   25,
+   40
+  ],
+  [
+   32,
+   45
+  ],
+  [
+   31,
+   47
+  ],
+  [
+   17,
+   46
+  ],
+  [
+   40,
+   40
+  ],
+  [
+   34,
+   41
+  ],
+  [
+   26,
+   45
+  ],
+  [
+   34,
+   43
+  ],
+  [
+   40,
+   39
+  ],
+  [
+   40,
+   28
+  ],
+  [
+   21,
+   45
+  ],
+  [
+   30,
+   45
+  ],
+  [
+   38,
+   42
+  ]
+ ],
+ "degrid": false,
+ "signal_px": 0,
+ "signal_pct": 0.0,
+ "cast_px": 5,
+ "cast_pct": 0.04,
+ "ok": false,
+ "issues": [
+  "18 pieces found, 16 expected",
+  "pieces about 41 art px, the taken sheets' 48–260: another pixel size"
+ ]
+}

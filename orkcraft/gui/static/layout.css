@@ -789,7 +789,10 @@ a.ok-act { box-sizing: border-box; text-decoration: none; }   /* a link as a but
    pixel in the menu; the stage as the marks round it until v3 stage art exists — a dark-green band
    (2), ivory horns (3), a teal gem and a teal glow (4; never gold: yellow is the question's). */
 .gui-portrait__ground.is-v3 { --stage-glow: #4fd1c5; position: relative; place-items: center; padding: 0; overflow: visible; }
-.gui-portrait__person { display: block; width: 24px; height: 24px; image-rendering: auto; }
+.gui-portrait__person { display: block; width: 24px; height: 24px; image-rendering: auto; object-fit: contain; }
+/* a stage drawn in v3 (k3) carries its own marks: no band, horns or glow over it */
+.gui-portrait__ground.is-v3.has-stage-art::before, .gui-portrait__ground.is-v3.has-stage-art::after { content: none; }
+.gui-portrait-slot .gui-portrait__ground.is-v3.has-stage-art, .gui-portrait__menu .gui-portrait__ground.is-v3.has-stage-art { box-shadow: none; }
 .gui-portrait.is-big .gui-portrait__ground.is-v3 { width: 44px; height: 44px; padding: 0; }
 .gui-portrait.is-big .gui-portrait__person { width: 40px; height: 40px; image-rendering: pixelated; }
 .gui-portrait__menu .gui-portrait__ground.is-v3.is-full { width: 84px; height: 84px; padding: 0; }

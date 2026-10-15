@@ -156,3 +156,14 @@ def test_the_look_by_the_shift_is_office_in_work_hours_and_camp_the_rest(monkeyp
     assert (at(8, 59), at(9), at(16, 59), at(17), at(23)) == ("camp", "office", "office", "camp", "camp")
     m.look = "camp"
     assert at(12) == "camp"
+
+
+def test_every_class_has_its_head_drawn_at_stages_two_to_four():
+    """v3-prompts §18 (k3): js/portrait.js shows people/stages/<role id>-<stage>.png from stage 2, one per class head."""
+    import json
+    v3 = Path(__file__).resolve().parent.parent / "design-system" / "sprites" / "v3"
+    cut = {s["file"] for s in json.loads((v3 / "manifest.json").read_text(encoding="utf-8"))["sprites"]}
+    roles = sorted(p.stem for p in (v3 / "people" / "heads").glob("*.png"))
+    assert len(roles) == 11
+    missing = [f"people/stages/{r}-{n}.png" for r in roles for n in (2, 3, 4) if f"people/stages/{r}-{n}.png" not in cut]
+    assert missing == []
