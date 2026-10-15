@@ -73,7 +73,7 @@ Every spec carries two lines, for agy above all: **"Change nothing outside these
 
 | # | spec | when | model | who builds |
 |---|---|---|---|---|
-| 01 | [the phone's fast first load](01-phone-fast-load.md) | before the testers | flash | agy (round 2); Claude if the cache fix misses |
+| 01 | [the phone's fast first load](01-phone-fast-load.md) (round 2 at the top) | before the testers | flash | agy (round 2); Claude if the cache fix misses |
 | 10 | [the phone's new UX](10-phone-v4.md) (four parts: cards, motion, full view, v4 look) | right after 01 (the owner) | pro / flash | Claude (pro part) · agy (flash parts) |
 | 02 | [Mission 1 blockers](02-mission1-blockers.md) (filled after the owner plays it) | before the testers | flash | agy |
 | 03 | [the charter: "My project"](03-charter.md) | before the testers | pro | **Claude** |
@@ -81,7 +81,7 @@ Every spec carries two lines, for agy above all: **"Change nothing outside these
 | 12 | [the v4 kit on the remaining screens](12-v4-remaining-screens.md) (audit, then move) | before the testers | flash | agy |
 | 05 | [release 0.3.0](05-release-0.3.0.md) | Thu 22 October | flash-low | agy |
 | E1 | [the clean-install check](e1-clean-install.md) (the owner runs it, no agy) | Wed 21 October | — | owner |
-| 13 | [no Town Hall in the camp; the home's menu](13-home-instead-of-town-hall.md) | before the testers | flash | agy (round 2) |
+| 13 | [no Town Hall in the camp; the home's menu](13-home-instead-of-town-hall.md) (round 2 at the top) | before the testers | flash | agy (round 2) |
 | 06 | [three bands: the camp lays itself out](06-three-bands.md) | after Halloween | pro | **Claude** |
 | 07 | [the person's quarter: drag in Camp](07-quarter-drag.md) | after 06 | flash | agy |
 | 08 | [the Wiki on the grass](08-wiki-on-grass.md) | after 06 | flash | agy |
