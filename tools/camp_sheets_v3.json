@@ -381,7 +381,7 @@
    "file": "st-depot.png",
    "show": 1,
    "wood_pull": true,
-   "about": "round 12 (v3-prompts §18, gen_sheets st-depot #4): the Agent pool as the depot (design-system-v3.md §4d), as the owner asked it: a long shed standing on the line, the track through it from the west gateway to the east one, three empty bays along its front; a bay's doors shut to lay over a bay; the exit's semaphore level (0) and raised (1). Its second shed (5, one bay shut) and the small shed (4) are not cut",
+   "about": "round 12 (v3-prompts §18, gen_sheets st-depot #4): the Agent pool as the depot (design-system-v3.md §4d), as the owner asked it: a long shed standing on the line, the track through it from the west gateway to the east one, three empty bays along its front; a bay's doors shut to lay over a bay; the exit's semaphore level (0) and raised (1). Its second shed (5, one bay shut) and the small shed (4) are not cut; the rails it drew in side view cleared outside its gateways and painted over in its bays (the camp's own track tiles run under it), its bays' floors dark (`clear`, `fill`: the owner, 15 October)",
    "groups": [
     {
      "size": [
@@ -397,7 +397,44 @@
      "items": [
       {
        "file": "buildings/depot.png",
-       "order": 0
+       "order": 0,
+       "clear": [
+        [
+         0.0,
+         0.7167,
+         0.122,
+         0.9417
+        ],
+        [
+         0.9238,
+         0.7167,
+         1.0,
+         0.9417
+        ]
+       ],
+       "fill": [
+        [
+         0.2683,
+         0.5833,
+         0.4177,
+         0.9417,
+         "#100b11"
+        ],
+        [
+         0.4634,
+         0.5833,
+         0.6128,
+         0.9417,
+         "#100b11"
+        ],
+        [
+         0.6646,
+         0.5833,
+         0.8171,
+         0.9417,
+         "#100b11"
+        ]
+       ]
       }
      ]
     },

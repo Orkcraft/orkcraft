@@ -900,6 +900,9 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
             frame = pad(img, iw, ih, item.get("anchor", anchor), cx)
             for fx0, fy0, fx1, fy1 in item.get("clear", []):        # a smudge of the sheet touching the sprite
                 frame[int(fy0 * ih):int(fy1 * ih), int(fx0 * iw):int(fx1 * iw)] = 0
+            for fx0, fy0, fx1, fy1, colour in item.get("fill", []):  # a part painted over in one colour (the depot's bays)
+                rgb = [int(colour[i:i + 2], 16) for i in (1, 3, 5)] + [255]
+                frame[int(fy0 * ih):int(fy1 * ih), int(fx0 * iw):int(fx1 * iw)] = rgb
             frames.append(frame)
         out = strip(frames) if len(frames) > 1 else frames[0]
         if group.get("keep_colours"):           # v3: re-pixelised in its own colours, the magenta cast removed
