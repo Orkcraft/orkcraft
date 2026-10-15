@@ -16,6 +16,7 @@ import { zoomLevel, zoomBy, LEVELS } from "../zoom.js";
 import { bareMenu, setNumbered } from "../town.js";
 import { lay, stepsFor, DEFAULT_STEP, SIDING_SHOWN, PATH_W, POCKET } from "./layout.js";
 import { V3, kit, loadKit, sizeOf } from "./sprites.js";
+import { grassOf, earthOf, shiftOf, bedOf, hash, STAND_IN } from "./ground.js";
 import { CampCarts, Finale, Switches, arriving } from "./carts.js";
 import { hovered, StewardOut } from "./steward.js";
 import { Stewards } from "./orks.js";
@@ -67,20 +68,49 @@ function tiled(file, x, y, w, h, k, repeat = "repeat") {
     + `background:url(${V3 + file}) 0 0 / ${s[0] * k}px ${s[1] * k}px ${repeat}`}></div>`;
 }
 
-/** The ground: grass is the token itself; tufts and flowers scattered (a fixed seed: every shot the same). */
+/** The ground (§4e): grass is the token itself, one of g5's grass tiles a cell once they are cut, chosen by a fixed
+ *  hash (js/camp/ground.js); until then today's tufts and flowers on a few of the cells the hash gives them. Then the
+ *  wilderness's decor. */
 function Decals({ L }) {
-  const B = L.step.b, out = [];
-  let t = 7;
-  const r = () => ((t = (t * 1103515245 + 12345) % 2147483648) / 2147483648);
-  for (let k = 0; k < Math.round((L.w * L.h) / (70000 * B * B)); k++) {
-    const n = r() < 0.6 ? "ground/tufts.png" : "ground/flowers.png", s = sizeOf(n);
-    if (s) out.push(img(n, Math.round(r() * L.w), Math.round(r() * L.h), s[0] * B, s[1] * B));
+  const B = L.step.b, C = 64 * B, out = [];
+  for (let gy = 0; gy * C < L.h; gy++) {
+    for (let gx = 0; gx * C < L.w; gx++) {
+      const v = grassOf(gx, gy), s = sizeOf(v);
+      if (s) { out.push(img(v, gx * C, gy * C, C, C)); continue; }
+      const stand = v.includes("tufts") ? STAND_IN.tufts : v.includes("flowers") ? STAND_IN.flowers : "";
+      const d = stand && hash(gx, gy, 5) % 4 === 0 ? sizeOf(stand) : null;     // sparse: the decor stays quiet (§4.9)
+      if (d) out.push(img(stand, gx * C + (hash(gx, gy, 6) % 4) * 8 * B, gy * C + (hash(gx, gy, 7) % 4) * 8 * B, d[0] * B, d[1] * B));
+    }
   }
   for (const d of L.decor) {
     const f = `decor/${d.name}.png`, s = sizeOf(f);
     if (s) out.push(img(f, d.x - (s[0] * B) / 2, d.y - s[1] * B, s[0] * B, s[1] * B));
   }
   return html`<div class="gui-camp__layer is-ground">${out}</div>`;
+}
+
+/** Earth over a box: its g5 variant for the cell once cut, else today's earth shifted by the cell's hash. */
+function earthBox(x, y, w, h, B, cell, bed = false) {
+  const v = earthOf(cell[0], cell[1], bed), s = sizeOf(v) ? v : STAND_IN.earth, k = sizeOf(s);
+  if (!k) return html`<div class="gui-camp__earth" style=${`left:${x}px;top:${y}px;width:${w}px;height:${h}px`}></div>`;
+  const [sx, sy] = s === v ? [0, 0] : shiftOf(cell[0], cell[1]);
+  return html`<div class=${cls("gui-camp__px", { "is-bed": bed })} style=${`left:${x}px;top:${y}px;width:${w}px;height:${h}px;`
+    + `background:url(${V3 + s}) ${-sx * B}px ${-sy * B}px / ${k[0] * B}px ${k[1] * B}px repeat`}></div>`;
+}
+
+/** The track bed (§4e): earth under every track tile, a step darker so the sleepers read, the grass's rims along its
+ *  open sides; all the rims first, the earth over them, so the bed joins itself and a path with no seam. */
+function Bed({ L }) {
+  const B = L.step.b, T = L.T, rims = [], earth = [];
+  const r = { n: sizeOf("ground/rim-n.png"), e: sizeOf("ground/rim-e.png"), s: sizeOf("ground/rim-s.png"), w: sizeOf("ground/rim-w.png") };
+  for (const c of bedOf(L.tiles, T)) {
+    if (c.open.includes("n") && r.n) rims.push(tiled("ground/rim-n.png", c.x, c.y - (r.n[1] - 2) * B, T, r.n[1] * B, B, "repeat-x"));
+    if (c.open.includes("s") && r.s) rims.push(tiled("ground/rim-s.png", c.x, c.y + T - 2 * B, T, r.s[1] * B, B, "repeat-x"));
+    if (c.open.includes("w") && r.w) rims.push(tiled("ground/rim-w.png", c.x - (r.w[0] - 2) * B, c.y, r.w[0] * B, T, B, "repeat-y"));
+    if (c.open.includes("e") && r.e) rims.push(tiled("ground/rim-e.png", c.x + T - 2 * B, c.y, r.e[0] * B, T, B, "repeat-y"));
+    earth.push(earthBox(c.x, c.y, T, T, B, c.cell, true));
+  }
+  return html`<div class="gui-camp__layer is-bed">${rims}${earth}</div>`;
 }
 
 /** The dirt paths from the doors to the stops, and from a service down to its readers (§4c): earth with the grass's
@@ -94,8 +124,7 @@ function Paths({ L }) {
     ${re && tiled("ground/rim-e.png", p.x + p.w - 2 * B, p.y, re[0] * B, p.h, B, "repeat-y")}
     ${across(p) && rn && tiled("ground/rim-n.png", p.x, p.y - (rn[1] - 2) * B, p.w, rn[1] * B, B, "repeat-x")}
     ${across(p) && rs && tiled("ground/rim-s.png", p.x, p.y + p.h - 2 * B, p.w, rs[1] * B, B, "repeat-x")}`);
-  const earth = L.paths.map((p) => tiled("ground/earth.png", p.x, p.y, p.w, p.h, B)
-    || html`<div class="gui-camp__earth" style=${`left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px`}></div>`);
+  const earth = L.paths.map((p) => earthBox(p.x, p.y, p.w, p.h, B, [Math.round(p.x / (64 * B)), Math.round(p.y / (64 * B))]));
   return html`<div class="gui-camp__layer is-paths">${rims}${earth}</div>`;
 }
 
@@ -419,6 +448,7 @@ export function CampTown({ buildings, roads }) {
       onPointerDown=${down} onWheel=${wheel} onClick=${bare} onContextMenu=${(e) => { if (!e.target.closest(".gui-camp__building")) bareMenu(e, buildings, here, null); }}>
     ${L && html`<div class=${cls("gui-camp__world", { "is-following": !!focus })} style=${`width:${L.w}px;height:${L.h}px;transform:translate(${ox}px,${oy}px)`}>
       <${Decals} L=${L} />
+      <${Bed} L=${L} />
       <${Paths} L=${L} />
       <${Track} L=${L} />
       <${Switches} L=${L} />

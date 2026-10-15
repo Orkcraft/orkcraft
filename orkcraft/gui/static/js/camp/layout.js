@@ -13,7 +13,7 @@ import { SERVICES, FOOTPATH, neighbours, readersOf, footpath } from "./services.
 
 export { exitsOf, simplify, lengthOf };
 export const TILE = 64;          // a track tile, art px (c2's 64 × 64), shown at step.s
-export const PATH_W = 32;        // a dirt path's width, art px at step.b
+export const PATH_W = 24;        // a dirt path's width, art px at step.b: the orks' footway (§4e; the track bed is wide)
 export const PATH_L = 24;        // from a building's door down to its line
 export const GAP = 32;           // between two buildings in a row (one path's width, §3)
 export const WALL_H = 48;        // the low palisade, its foot below the camp's top

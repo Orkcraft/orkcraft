@@ -426,3 +426,27 @@ console.log(JSON.stringify({ p, rail, gateX: g.cx, toPool: L.route("board", "poo
     if out["gateX"] > p["x"] + p["w"]:                                                    # one for beyond: through it
         assert any(a[1] == b[1] == rail and a[0] <= p["x"] and b[0] >= p["x"] + p["w"] for a, b in zip(out["through"], out["through"][1:]))
     assert out["rows"] == [["d", "a"], ["b", "c", "e"]]                                  # the depot is two places of six
+
+
+GROUND = ROOT / "orkcraft" / "gui" / "static" / "js" / "camp" / "ground.js"
+
+
+def test_the_ground_varies_by_a_fixed_hash_and_the_track_lies_on_a_bed_of_earth(tmp_path):
+    """design-system-v3.md §4e: grass and earth tiles chosen by a fixed hash of the cell (the same camp draws the same,
+    no row repeats one stamp; ruts only on the bed); a square of earth under every track tile, open to the grass only
+    where no other track tile lies beside it; building paths 24 art px wide."""
+    out = _run(TOWN + f'import * as G from "{GROUND.as_uri()}";\n' + """
+const L = C.lay(B, R, { b: 1.5, s: 1 }, size);
+const row = Array.from({ length: 12 }, (_, x) => G.grassOf(x, 3));
+const bed = G.bedOf(L.tiles, L.T), one = bed.find((c) => c.x === L.cols.left + 2 * L.T && c.y === L.lines[0]);
+const paths = Math.min(...Object.keys(Array(400).fill(0)).map((k) => G.earthOf(+k, 7)).map((v) => v.includes("ruts") ? 0 : 1));
+console.log(JSON.stringify({ same: G.grassOf(5, 9) === G.grassOf(5, 9) && G.earthOf(2, 4, true) === G.earthOf(2, 4, true),
+  kinds: new Set(row).size, bed: bed.length, tiles: new Set(L.tiles.map((t) => t.x + "," + t.y)).size, one,
+  ruts: Array.from({ length: 400 }, (_, k) => G.earthOf(k, 7, true)).some((v) => v.includes("ruts")), pathsNoRuts: paths,
+  pathW: C.PATH_W }));
+""", tmp_path)
+    assert out["same"] and out["kinds"] >= 3                                       # fixed, and varied along a row
+    assert out["bed"] == out["tiles"]                                               # a square of earth under each tile
+    assert out["one"]["open"] == "ns"                                               # a line's tile: grass above and below
+    assert out["ruts"] and out["pathsNoRuts"] == 1                                  # ruts on the bed only
+    assert out["pathW"] == 24

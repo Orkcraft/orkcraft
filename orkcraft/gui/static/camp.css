@@ -205,3 +205,5 @@
 .gui-camp__diagonal .is-ties line { stroke: var(--art-wood); stroke-width: 6px; stroke-linecap: butt; }
 .gui-camp__diagonal .is-rails line { stroke: var(--art-iron); stroke-width: 4px; stroke-linecap: square;
   filter: drop-shadow(0 1px 0 var(--art-outline)); }
+/* the track bed (§4e): the paths' earth a step darker, so the sleepers read on it */
+.gui-camp__px.is-bed { filter: brightness(.9); }

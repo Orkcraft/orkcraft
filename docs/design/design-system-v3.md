@@ -561,6 +561,18 @@ gauge; the track bed's curve and junction pieces to match c2's curves and c3's j
 `PATH_W` 24 and the hashed variants, with today's `earth.png` and rims standing in until g5 lands. **Priority: P0**
 (the look comes first, decisions §13.1–2), after the depot.
 
+**Built (LOOP, 15 October).** `js/camp/ground.js` and `town.js` `Bed`:
+- **The bed.** A square of path earth lies under every track tile (lines, columns, the return line, sidings, pockets,
+  under the depot), a step darker, with the grass's rims on its open sides. All rims are drawn first and the earth
+  over them, so the bed joins itself and a path with no seam.
+- **Paths.** `PATH_W` is 24.
+- **Variants.** Grass and earth take g5's variants by a fixed hash of the cell (`ground/grass-1…4`,
+  `grass-tufts-1|2`, `grass-flowers`, `earth-1…3`, `earth-stones`, `earth-ruts`, ruts on the bed only); each is
+  drawn once cut into the manifest. Until then today's earth stands in, shifted by the hash, and today's tufts and
+  flowers sit on a few of the cells the hash gives them.
+- **Not yet.** The bed's curves and junctions are squares until g5 draws them.
+- Shot: `img/loop/depot-and-bed.png`.
+
 ## 5. Signals win by value
 
 The grey test of F1 (v3-prompts §5.2) showed the yellow flag turning into a white flag and the ❓ smaller than the
