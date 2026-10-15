@@ -593,3 +593,13 @@ their notices open upwards over the wilderness with full details, never covering
 something of the person stays until dismissed; the rest fold into a count after about a minute (the PM's call, to
 keep the town calm). The catapult stays at the line's end. P1. Rules: design-system-v3 §4f.
 
+## 19. The phone app's slow first load (15 October; planned, not started)
+
+The owner: images take very long to load the first time. Causes, read from the code: 283 separate sprite PNGs
+(1.7 MB); the phone listener answers every request with `Connection: close`, so each image is a new TLS handshake over
+Tailscale (100–300 ms each through a relay); and the service worker is network-first for everything, so sprites are
+fetched again on every open. **Plan (P0, about half a day):** keep-alive on the listener; sprites cache-first under
+versioned URLs (network-first stays for the shell and data); the v3 sprites packed into a few atlases; everything
+precached once when a phone pairs at home. A native app would not fix this by itself. **Not started: the owner asked
+that nothing more is launched until he says so** (the account's weekly limit is near).
+
