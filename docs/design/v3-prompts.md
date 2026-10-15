@@ -684,3 +684,17 @@ candidates stay in `candidates/` so the owner can change a pick. In `tools/gen_s
 | `i1-items` | P1 | the 15 items still drawn as stand-ins, the sundial and first-mission's proving stone | 3 |
 | `o7-moves` | P1 | the Prospector walking, digging and carrying a sack | 3 |
 
+## 18. Round 12, P0 cut (2026-10-15)
+
+The owner's yes on the whole queue (30 calls + 6 for the logo); six spent here.
+
+- **c3-switches #3**: the only one on magenta (#1 and #2 drew grass under the track, which the product draws itself).
+  Its rails 30 art px apart against c2's 32 (×1.067; c2-curves came at 41, c2-more at 44). Cut: `track/t-e.png`, the
+  north–east–south junction (it replaces c2-more's, whose gauge was off); `track/crossing.png`, planks between and
+  beside the rails of a straight, cut from the middle of its long straight; `track/switch-0.png` (the arm east, the
+  lever west) and `track/switch-1.png` (the arm west, the lever east), 16 × 24, the same colours, told apart by
+  position. Its pocket drew three rails sharing one and is not cut: a pocket is c2's `switch-e`, a straight and
+  `merge-e`.
+- **c1-ends #3**: #1 stacks two carts, #2 boxes each. Cut at `merge: 1.5` to c1's size (40 wide):
+  `carts/front-empty`, `front-loaded`, `back-empty`, `back-loaded`.
+

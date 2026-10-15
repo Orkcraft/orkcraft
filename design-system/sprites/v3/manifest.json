@@ -355,18 +355,18 @@
    "file": "buildings/loot_vault.png",
    "size": [
     160,
-    208
+    112
    ],
    "frame": [
     160,
-    208
+    112
    ],
    "frames": 1,
-   "pitch": 7.19,
+   "pitch": 4.17,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "st-gate.png",
+   "source": "b1-core.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
@@ -579,19 +579,19 @@
   {
    "file": "buildings/watchtower.png",
    "size": [
-    136,
-    192
+    80,
+    128
    ],
    "frame": [
-    136,
-    192
+    80,
+    128
    ],
    "frames": 1,
-   "pitch": 10.24,
+   "pitch": 4.17,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "b1-lookout.png",
+   "source": "b1-core.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
@@ -649,6 +649,46 @@
     "load",
     "flag"
    ]
+  },
+  {
+   "file": "carts/back-empty.png",
+   "size": [
+    40,
+    32
+   ],
+   "frame": [
+    40,
+    32
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c1-ends.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "carts/back-loaded.png",
+   "size": [
+    40,
+    40
+   ],
+   "frame": [
+    40,
+    40
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c1-ends.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "carts/bundle.png",
@@ -817,6 +857,46 @@
     "load",
     "flag"
    ]
+  },
+  {
+   "file": "carts/front-empty.png",
+   "size": [
+    40,
+    32
+   ],
+   "frame": [
+    40,
+    32
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c1-ends.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "carts/front-loaded.png",
+   "size": [
+    40,
+    48
+   ],
+   "frame": [
+    40,
+    48
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c1-ends.png",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "carts/message.png",
@@ -3206,6 +3286,26 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "track/crossing.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 8.6,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "c3-switches.png",
+   "scale": 1.103,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
    "file": "track/merge-e.png",
    "size": [
     128,
@@ -3286,6 +3386,46 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "track/switch-0.png",
+   "size": [
+    16,
+    24
+   ],
+   "frame": [
+    16,
+    24
+   ],
+   "frames": 1,
+   "pitch": 8.6,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c3-switches.png",
+   "scale": 2.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "track/switch-1.png",
+   "size": [
+    16,
+    24
+   ],
+   "frame": [
+    16,
+    24
+   ],
+   "frames": 1,
+   "pitch": 8.6,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "c3-switches.png",
+   "scale": 2.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
    "file": "track/switch-e.png",
    "size": [
     128,
@@ -3354,12 +3494,12 @@
     64
    ],
    "frames": 1,
-   "pitch": 7.06,
+   "pitch": 8.6,
    "show": 1,
    "anchor": "top-left",
    "placeholder": true,
-   "source": "c2-more.png",
-   "scale": 0.727,
+   "source": "c3-switches.png",
+   "scale": 1.103,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },

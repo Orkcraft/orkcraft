@@ -1995,6 +1995,93 @@
    ]
   },
   {
+   "name": "c3-switches",
+   "file": "c3-switches.png",
+   "show": 1,
+   "about": "round 12 (v3-prompts §18, gen_sheets c3-switches #3): the north-east-south junction on c2's gauge (replaces c2-more's t-e, whose gauge was off), the level crossing cut from the middle of its long straight, and the switch stand in its two positions (0: the arm east, the lever west; 1: the arm west, the lever east), read at merge 2. Its pocket (1) is not cut: a pocket is c2's switch-e, a straight and merge-e",
+   "groups": [
+    {
+     "kind": "track",
+     "size": [
+      64,
+      64
+     ],
+     "anchor": "top-left",
+     "tile_from": "track/straight-h.png",
+     "items": [
+      {
+       "file": "track/t-e.png",
+       "order": 0,
+       "exits": "nes"
+      },
+      {
+       "file": "track/crossing.png",
+       "order": 5,
+       "crop": [
+        0.624,
+        0,
+        0.904,
+        1
+       ],
+       "exits": "we"
+      }
+     ]
+    },
+    {
+     "size": [
+      16,
+      24
+     ],
+     "anchor": "feet",
+     "merge": 2,
+     "items": [
+      {
+       "file": "track/switch-0.png",
+       "order": 2
+      },
+      {
+       "file": "track/switch-1.png",
+       "order": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "c1-ends",
+   "file": "c1-ends.png",
+   "show": 1,
+   "about": "round 12 (gen_sheets c1-ends #3): the cart end-on, for the columns, read at merge 1.5 to c1's size: front empty and loaded (row 1's end-on pair), back empty and loaded (row 2's right pair); row 1's side views and row 2's left pair not used",
+   "groups": [
+    {
+     "size": [
+      40,
+      40
+     ],
+     "anchor": "feet",
+     "merge": 1.5,
+     "items": [
+      {
+       "file": "carts/front-empty.png",
+       "order": 2
+      },
+      {
+       "file": "carts/front-loaded.png",
+       "order": 3
+      },
+      {
+       "file": "carts/back-empty.png",
+       "order": 6
+      },
+      {
+       "file": "carts/back-loaded.png",
+       "order": 7
+      }
+     ]
+    }
+   ]
+  },
+  {
    "name": "k2-homes",
    "file": "k2-homes.png",
    "show": 1,
