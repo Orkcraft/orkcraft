@@ -127,6 +127,31 @@
    ]
   },
   {
+   "file": "buildings/depot.png",
+   "size": [
+    328,
+    120
+   ],
+   "frame": [
+    328,
+    120
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "st-depot.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "slots": [
+    "door",
+    "signal",
+    "count"
+   ]
+  },
+  {
    "file": "buildings/fields.png",
    "size": [
     176,
@@ -355,18 +380,18 @@
    "file": "buildings/loot_vault.png",
    "size": [
     160,
-    112
+    208
    ],
    "frame": [
     160,
-    112
+    208
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 7.19,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "b1-core.png",
+   "source": "st-gate.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
@@ -579,19 +604,19 @@
   {
    "file": "buildings/watchtower.png",
    "size": [
-    80,
-    128
+    136,
+    192
    ],
    "frame": [
-    80,
-    128
+    136,
+    192
    ],
    "frames": 1,
-   "pitch": 4.17,
+   "pitch": 10.24,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
-   "source": "b1-core.png",
+   "source": "b1-lookout.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
@@ -1298,6 +1323,66 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "g2-decor.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "depot/doors.png",
+   "size": [
+    56,
+    56
+   ],
+   "frame": [
+    56,
+    56
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "st-depot.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "depot/semaphore-0.png",
+   "size": [
+    32,
+    64
+   ],
+   "frame": [
+    32,
+    64
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "st-depot.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "depot/semaphore-1.png",
+   "size": [
+    40,
+    72
+   ],
+   "frame": [
+    40,
+    72
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "st-depot.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"

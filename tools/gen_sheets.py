@@ -343,6 +343,21 @@ SHEETS: dict[str, dict] = {
                   "empty; 4. back, loaded. The wheels and the axle seen end-on; the same honey wood and iron bands.",
         "about": "the cart from the front and the back, empty and loaded, at c1's scale (for the columns)",
     },
+    "st-depot": {
+        "kind": "building", "expect": 4, "aspect": "16:9", "refs": ["c1", "c2"],
+        "prompt": "The camp's depot: a long timber engine shed standing right on a mine-cart track, the largest "
+                  "building of the camp, about twice as wide as the work hall of the attached sheet b1-core. We see "
+                  "its long side front-on; the track (exactly the gauge of the attached sheet c2) runs straight "
+                  "through it from left to right along its foot and out at both ends: carts drive in at the left end "
+                  "and out at the right end. A pitched plank roof with a vent ridge; an arched gateway with plank "
+                  "doors folded open at each end, the rails passing through; in the long front wall three wide open "
+                  "bays side by side, each showing the track inside, EMPTY: no carts anywhere, no characters. Then, "
+                  "apart on the magenta: 2. one bay's plank doors shut, to lay over a bay; 3. and 4. a small railway "
+                  "semaphore on a post, its arm level and its arm raised (the same colours, told apart by position).",
+        "about": "design-system-v3.md §4d, as the owner asked it: the depot on the line, carts in at one end and out "
+                 "at the other, three bays along it, a bay's doors shut, the exit's semaphore (candidates 1–3 faced "
+                 "their bays to the viewer and are not used)",
+    },
     "l1-logo": {
         "kind": "logo", "expect": 4, "aspect": "1:1",
         "prompt": "Concepts for an app's logo mark, four variants in a 2 × 2 grid, each alone on the magenta: the "

@@ -697,4 +697,12 @@ The owner's yes on the whole queue (30 calls + 6 for the logo); six spent here.
   `merge-e`.
 - **c1-ends #3**: #1 stacks two carts, #2 boxes each. Cut at `merge: 1.5` to c1's size (40 wide):
   `carts/front-empty`, `front-loaded`, `back-empty`, `back-loaded`.
+- **st-depot #4** (design-system-v3.md §4d), six calls: the first three faced their bays to the viewer with tracks
+  coming up from the south and carts baked in, so the prompt was rewritten as the owner asked it — the depot on the
+  line, carts in at one end and out at the other — and run again (#4–#6). #4: a long shed, the track through it from
+  the west gateway to the east one, three empty bays along its front. Cut: `buildings/depot.png` (328 × 120, two
+  buildings wide), `depot/doors.png` (a bay's doors shut, to lay over a bay), `depot/semaphore-0|1.png` (level,
+  raised; plum and teal, told apart by position). #5 has a gateway at one end only; #6 turned its tracks south again.
+
+Calls spent of the queue's 30: 12 (c3 3, c1 3, st-depot 6).
 

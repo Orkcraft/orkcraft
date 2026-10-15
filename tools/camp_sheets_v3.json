@@ -377,6 +377,54 @@
    ]
   },
   {
+   "name": "st-depot",
+   "file": "st-depot.png",
+   "show": 1,
+   "wood_pull": true,
+   "about": "round 12 (v3-prompts §18, gen_sheets st-depot #4): the Agent pool as the depot (design-system-v3.md §4d), as the owner asked it: a long shed standing on the line, the track through it from the west gateway to the east one, three empty bays along its front; a bay's doors shut to lay over a bay; the exit's semaphore level (0) and raised (1). Its second shed (5, one bay shut) and the small shed (4) are not cut",
+   "groups": [
+    {
+     "size": [
+      336,
+      120
+     ],
+     "anchor": "feet",
+     "slots": [
+      "door",
+      "signal",
+      "count"
+     ],
+     "items": [
+      {
+       "file": "buildings/depot.png",
+       "order": 0
+      }
+     ]
+    },
+    {
+     "size": [
+      64,
+      64
+     ],
+     "anchor": "feet",
+     "items": [
+      {
+       "file": "depot/doors.png",
+       "order": 1
+      },
+      {
+       "file": "depot/semaphore-0.png",
+       "order": 2
+      },
+      {
+       "file": "depot/semaphore-1.png",
+       "order": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
    "name": "o7-prospector",
    "file": "o7-prospector.png",
    "degrid": true,
