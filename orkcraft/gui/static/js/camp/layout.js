@@ -8,7 +8,7 @@
 // at one zoom step: buildings, carts, the ground and the paths at `step.b` CSS px per art px, orks and the track at
 // `step.s` (the layers at their own whole multiple, §3).
 
-import { loop, cellsOf, path, throwsOn, simplify, lengthOf, exitsOf } from "./track.js";
+import { loop, cellsOf, link, path, throwsOn, simplify, lengthOf, exitsOf } from "./track.js";
 import { SERVICES, FOOTPATH, neighbours, readersOf, footpath } from "./services.js";
 import { BED } from "./ground.js";
 
@@ -160,7 +160,7 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
     if (r === 0) lineTop = Math.max(wallY - 24 * B + band, wallY + T);
     else {
       const prev = out.lines[r - 1];
-      lineTop = prev + Math.ceil((T + 8 * B + band) / T) * T;
+      lineTop = Math.round(prev + T + 8 * B + band);                     // as close as the row allows (decisions §17.4)
     }
     out.lines.push(lineTop);
     let x = colL + T + GAP * B, free = colL + T;                       // the next box's x; the line's front free from
@@ -252,7 +252,7 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   out.work = { x: colL, y: wallY - 24 * B, w: track.xs + 2 * T - colL, h: foot - wallY + 24 * B };
   out.decor = decorAround(out, B);
 
-  const cells = cellsOf(out.tiles);
+  const cells = link(cellsOf(out.tiles), T);
   out.route = (fromId, toId) => route(out, cells, fromId, toId);
   out.routeOut = (fromId) => route(out, cells, fromId, { stop: buffer });   // to the line's buffer stop, where it leaves
   return out;

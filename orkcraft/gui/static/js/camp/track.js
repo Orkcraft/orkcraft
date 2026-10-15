@@ -38,11 +38,11 @@ export function loop(T, lines, colL, colR, multi) {
       if (r === 0) tile("corner-sw", colR, ly, 0, "s");
       else if (r < last) tile("t-n", colR, ly, -90, "s");
       else tile("t-n", colR, ly, 0, "e");
-      if (r < last) for (let y = ly + T; y < lines[r + 1]; y += T) tile("straight-v", colR, y, 0, "s");
+      if (r < last) for (const y of column(ly, lines[r + 1], T)) tile("straight-v", colR, y, 0, "s");
     }
     // up the left column from the line below (the way back from the return line)
     const below = r < last ? lines[r + 1] : endY + T;
-    for (let y = ly + T; y < below; y += T) tile("straight-v", colL, y, 0, "n");
+    for (const y of column(ly, below, T)) tile("straight-v", colL, y, 0, "n");
   });
   // on the right: the switch, on to the buffer stop or down to the return line; west along it; up the left column
   const xs = multi ? colR + T : colR;
@@ -62,6 +62,35 @@ export function cellsOf(tiles) {
   return new Map(tiles.filter((t) => !t.siding).map((t) => [`${t.x},${t.y}`, t]));
 }
 
+/** A column's straights between a line at `y0` and the next at `y1`: a tile's length apart, the last one laid just over
+ *  the one before when the gap is not whole tiles (the lines stand as close as their rows allow, §4 density). */
+export function column(y0, y1, T) {
+  const out = [];
+  for (let y = y0 + T; y + T <= y1; y += T) out.push(y);
+  if (y1 - (y0 + T) > 0 && (y1 - (y0 + T)) % T) out.push(y1 - T);
+  return out;
+}
+
+/** Each tile's neighbour by each of its ways out: the nearest tile that way on the same row or column, a tile's length
+ *  or less away, with a way back. Set as `t.next` (the lines need not stand whole tiles apart). */
+export function link(cells, T) {
+  const all = [...cells.values()];
+  for (const t of all) {
+    t.next = {};
+    for (const d of t.exits) {
+      let best = null, dist = Infinity;
+      for (const n of all) {
+        if (n === t || !n.exits.has(BACK[d])) continue;
+        const dx = n.x - t.x, dy = n.y - t.y;
+        const along = d === "e" ? dx : d === "w" ? -dx : d === "s" ? dy : -dy, across = d === "e" || d === "w" ? dy : dx;
+        if (across === 0 && along > 0 && along <= T && along < dist) { best = n; dist = along; }
+      }
+      if (best) t.next[d] = best;
+    }
+  }
+  return cells;
+}
+
 /** The way from one point to another along the track, one way round: the tiles a cart passes, first to last; null
  *  when there is none. A tile is left only by its `go` and entered only where it has an exit. */
 export function path(cells, T, from, to) {
@@ -75,7 +104,7 @@ export function path(cells, T, from, to) {
     const t = queue.shift();
     if (t === end) break;
     for (const d of t.go) {
-      const n = cells.get(`${t.x + STEP[d][0] * T},${t.y + STEP[d][1] * T}`);
+      const n = t.next ? t.next[d] : cells.get(`${t.x + STEP[d][0] * T},${t.y + STEP[d][1] * T}`);
       if (!n || !n.exits.has(BACK[d]) || prev.has(key(n))) continue;
       prev.set(key(n), t);
       queue.push(n);
