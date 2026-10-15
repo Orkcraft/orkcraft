@@ -729,9 +729,17 @@ def cut_ground(sheet: Sheet, group: dict, rows: list[dict], problems: list[str])
         px = img[img[..., 3] > 0][:, :3].astype(float)
         return np.median(px, axis=0)
     # each cell less its outermost pixel, where the magenta between the cells bled in
-    by_order = {item["order"]: trim(sheet.native(_extract(sheet, item)))[1:-1, 1:-1] for item in group["items"]}
-    g_med = med(inner(trim(sheet.native(sheet.nth(group["grass_ref"])))))
-    e_med = med(inner(trim(sheet.native(sheet.nth(group["earth_ref"])))))
+    # a `box` item (g5: tiles drawn touching) is read at `merge` (under 1: finer than the sheet's own step, so a tile
+    # comes out at its full size, `size`, without stretching)
+    def read(item):
+        box = _extract(sheet, item)
+        if "box" in item and group.get("merge"):
+            return sheet.coarse(box, group["merge"])
+        return trim(sheet.native(box))[1:-1, 1:-1]
+    by_order = {id(item): read(item) for item in group["items"]}
+    ref = lambda r: sheet.box(r) if isinstance(r, list) else sheet.nth(r)  # noqa: E731
+    g_med = med(inner(trim(sheet.native(ref(group["grass_ref"])))))
+    e_med = med(inner(trim(sheet.native(ref(group["earth_ref"])))))
     def is_grass(rgb):
         return (rgb[..., 1] > rgb[..., 0] + 8) & (rgb[..., 1] > rgb[..., 2] + 8)
     def onto_tokens(img):
@@ -747,7 +755,7 @@ def cut_ground(sheet: Sheet, group: dict, rows: list[dict], problems: list[str])
     problems.append(f"{group['_sheet']}: the sheet's grass {'#%02x%02x%02x' % tuple(int(v) for v in g_med)} → "
                     f"world-grass, its earth {'#%02x%02x%02x' % tuple(int(v) for v in e_med)} → world-earth")
     for item in group["items"]:
-        img, role = by_order[item["order"]], item["role"]
+        img, role = by_order[id(item)], item["role"]
         if role == "decal":
             rgb = img[..., :3].astype(float)
             plain = np.sqrt(((rgb - g_med) ** 2).sum(-1)) < group.get("plain", 22)
@@ -773,6 +781,9 @@ def cut_ground(sheet: Sheet, group: dict, rows: list[dict], problems: list[str])
             a = a[:, x0:x0 + L]
             a = a if side in "nw" else a[::-1]
             img = onto_tokens(a if side in "ns" else a.transpose(1, 0, 2))
+        elif role == "variant":                                     # g5: a whole tile at the set's size, its border left out
+            n = group["size"][0]
+            img = onto_tokens(img[:n, :n])
         else:
             img = onto_tokens(img)
         img = own_palette(img, group.get("colours", 24))

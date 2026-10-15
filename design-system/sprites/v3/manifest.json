@@ -1628,6 +1628,106 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "ground/earth-1.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 8.49,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g5-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/earth-2.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 8.49,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g5-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/earth-3.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 8.49,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g5-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/earth-ruts.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 8.49,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g5-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/earth-stones.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 8.49,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g5-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
    "file": "ground/earth.png",
    "size": [
     32,
@@ -1663,6 +1763,146 @@
    "anchor": "top-left",
    "placeholder": true,
    "source": "g1-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/grass-1.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 8.49,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g5-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/grass-2.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 8.49,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g5-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/grass-3.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 8.49,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g5-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/grass-4.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 8.49,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g5-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/grass-flowers.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 8.49,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g5-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/grass-tufts-1.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 8.49,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g5-ground.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ground/grass-tufts-2.png",
+   "size": [
+    64,
+    64
+   ],
+   "frame": [
+    64,
+    64
+   ],
+   "frames": 1,
+   "pitch": 8.49,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "g5-ground.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"

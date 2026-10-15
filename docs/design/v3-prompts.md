@@ -725,4 +725,13 @@ Calls spent of the queue's 30: 23 (P0 12, P1 9, k3-marketing 2); the logo 3 of i
   bottom, the hats cut at the top), one face size for all (`merge` 1.1 on k3, 1.14 on k3-marketing), the neighbours'
   specks dropped, the arrows left out of the frame, the ghost's crest kept: `img/v3-preview/portrait-stages.png`
   (row 1 the first stage, rows 2–4 the stages). No call spent.
+- **g5-ground #2** (design-system-v3.md §4e; 4 calls, after the key's monthly cap was raised): the only one whose
+  tiles are flat with no border of their own (#1 rings every tile with a ragged edge, #4 frames each with a bevel, #3
+  runs them together). Its two first rows are exactly the ask: `ground/grass-1…4`, `grass-tufts-1|2`,
+  `grass-flowers`, `earth-1…3`, `earth-stones`, `earth-ruts`, each boxed inside its border, read at its full 64 px
+  (`merge` 0.6, finer than the sheet's own step) and moved onto the tokens' grass and earth, so they join without a
+  seam. Its bed, rims and corners are not used (blobs that do not join): g1's rims stay. In the camp:
+  `img/v3-preview/camp-ground-g5.png`.
+
+Calls spent of the queue's 30: 27 (P0 12, P1 9, k3-marketing 2, g5 4); the logo 3 of its 6.
 

@@ -2353,6 +2353,157 @@
    "show": 1
   },
   {
+   "name": "g5-ground",
+   "file": "g5-ground.png",
+   "show": 1,
+   "about": "round 12 (design-system-v3.md §4e, gen_sheets g5-ground #2): the varied grass and earth (four plain grass, two with tufts, one with flowers; three plain earth, one with stones, one with ruts), each tile boxed inside its border (the tiles are drawn touching) and read at its full 64 px, moved onto the tokens' grass and earth. Its bed (12, planks drawn on it), rims and corners (rows 3–4, blobs that do not join) are not cut: g1's rims stay",
+   "groups": [
+    {
+     "kind": "ground",
+     "size": [
+      64,
+      64
+     ],
+     "anchor": "top-left",
+     "merge": 0.6,
+     "grass_ref": [
+      0.011,
+      0.0179,
+      0.1279,
+      0.2285
+     ],
+     "earth_ref": [
+      0.011,
+      0.2679,
+      0.1279,
+      0.4785
+     ],
+     "items": [
+      {
+       "file": "ground/grass-1.png",
+       "box": [
+        0.011,
+        0.0179,
+        0.1279,
+        0.2285
+       ],
+       "role": "variant"
+      },
+      {
+       "file": "ground/grass-2.png",
+       "box": [
+        0.1539,
+        0.0179,
+        0.2707,
+        0.2285
+       ],
+       "role": "variant"
+      },
+      {
+       "file": "ground/grass-3.png",
+       "box": [
+        0.2967,
+        0.0179,
+        0.4136,
+        0.2285
+       ],
+       "role": "variant"
+      },
+      {
+       "file": "ground/grass-4.png",
+       "box": [
+        0.4396,
+        0.0179,
+        0.5564,
+        0.2285
+       ],
+       "role": "variant"
+      },
+      {
+       "file": "ground/grass-tufts-1.png",
+       "box": [
+        0.5824,
+        0.0179,
+        0.6993,
+        0.2285
+       ],
+       "role": "variant"
+      },
+      {
+       "file": "ground/grass-tufts-2.png",
+       "box": [
+        0.7253,
+        0.0179,
+        0.8421,
+        0.2285
+       ],
+       "role": "variant"
+      },
+      {
+       "file": "ground/grass-flowers.png",
+       "box": [
+        0.8681,
+        0.0179,
+        0.985,
+        0.2285
+       ],
+       "role": "variant"
+      },
+      {
+       "file": "ground/earth-1.png",
+       "box": [
+        0.011,
+        0.2679,
+        0.1279,
+        0.4785
+       ],
+       "role": "variant"
+      },
+      {
+       "file": "ground/earth-2.png",
+       "box": [
+        0.1539,
+        0.2679,
+        0.2707,
+        0.4785
+       ],
+       "role": "variant"
+      },
+      {
+       "file": "ground/earth-3.png",
+       "box": [
+        0.2967,
+        0.2679,
+        0.4136,
+        0.4785
+       ],
+       "role": "variant"
+      },
+      {
+       "file": "ground/earth-stones.png",
+       "box": [
+        0.4396,
+        0.2679,
+        0.5564,
+        0.4785
+       ],
+       "role": "variant"
+      },
+      {
+       "file": "ground/earth-ruts.png",
+       "box": [
+        0.5824,
+        0.2679,
+        0.6993,
+        0.4785
+       ],
+       "role": "variant"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "name": "g2-decor",
    "file": "g2-decor.png",
    "about": "§3d.2 the decor (round 6): row 1 small, row 2 large, row 3 a dry brush and a mossy log (drawn touching: cut by halves) and rocks",

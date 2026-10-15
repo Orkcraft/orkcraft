@@ -1,0 +1,142 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "prompt": "No shadows. Pixel-art sprite sheet in exactly the style and palette of the attached image. Crisp hard pixels on a strict grid, no anti-aliasing, no blur, no gradients, each sprite with a dark 1-pixel outline, drawn at its final size with no finer detail than that size can hold. One three-quarter top-down projection, never isometric. Sprites in a neat grid with even spacing on a flat solid #FF00FF magenta background, nothing touching, no ground under them, no text unless asked. Bright yellow and bright red appear nowhere.\n\nGround tiles seen flat from straight above, every tile exactly the same 64 × 64 square, 28 tiles in a strict grid of 7 columns and 4 rows with thin magenta gaps, nothing drawn across the gaps. Grass as saturated and bright as in the attached frame F1 (about #7cbd40); earth the paths' warm sand (about #e4b469); flat, few marks, so a field of them never shows a pattern. Row 1: four plain grass tiles, each a little different; two grass tiles with a few small tufts; one grass tile with a few tiny white flowers. Row 2: three plain earth tiles, each a little different; one earth tile with a few small stones; one earth tile with two faint old cart ruts running left to right; one earth tile a step darker (the bed under rails); one grass tile with an earth edge along its bottom. Row 3: grass meeting earth: the grass tile with earth along its top, its left, its right; then the four outer corners (earth in one corner quarter only: top-left, top-right, bottom-left, bottom-right). Row 4: the four inner corners (earth everywhere but grass in one corner quarter: top-left, top-right, bottom-left, bottom-right); then a band of earth one tile wide turning from left to down, from left to up, and a T of earth from top to bottom with a branch to the right, for the track's curves and junction of the attached sheet c2. The grass's edge against the earth a soft ragged line, the same on every tile, meeting the tile's edges at the same place.\n\nNo frames, no boxes, no grid lines, no borders between sprites; each sprite floats alone on the magenta.\n\nNo shadows, no smoke, no glow.\n\nKeep exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #7cbd40), the paths warm sand (about #e4b469); warm honey wood, light cool stone, teal and plum cloth, cream bone.\n\nNo yellow, no orange and no red anywhere: those colours are reserved for the product's signals. The wood a muted honey brown, never orange.\n\nOutput the sheet as a PNG image.\n\nAttached, in order: f1-town, c2-track. F1 is the approved frame: its style and colours rule.",
+ "sheet": "g5-ground",
+ "file": "1.jpg",
+ "image": [
+  2752,
+  1536
+ ],
+ "pitch": 5.73,
+ "art_px": 66,
+ "art_range": null,
+ "grid": [
+  479,
+  267
+ ],
+ "pieces": 28,
+ "expected": 28,
+ "sizes": [
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   65
+  ],
+  [
+   66,
+   66
+  ],
+  [
+   66,
+   66
+  ],
+  [
+   66,
+   66
+  ],
+  [
+   66,
+   66
+  ],
+  [
+   66,
+   66
+  ],
+  [
+   66,
+   66
+  ],
+  [
+   66,
+   66
+  ],
+  [
+   66,
+   66
+  ],
+  [
+   66,
+   66
+  ],
+  [
+   66,
+   66
+  ],
+  [
+   66,
+   66
+  ],
+  [
+   66,
+   66
+  ],
+  [
+   66,
+   66
+  ],
+  [
+   67,
+   66
+  ]
+ ],
+ "degrid": false,
+ "signal_px": 0,
+ "signal_pct": 0.0,
+ "cast_px": 35,
+ "cast_pct": 0.03,
+ "ok": true,
+ "issues": []
+}
