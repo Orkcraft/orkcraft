@@ -601,7 +601,15 @@ gauge; the track bed's curve and junction pieces to match c2's curves and c3's j
 - **Tighter rows.** The door's path is 16, the waiting cart's room 36, and the line margin 4.
 - **3 × 6** fits the default view at 1512 × 982 and 1470 × 956 with its lines and the return line.
 - **3 × 8** fits the overview with room to spare, but not the default: it would need about ×0.85, not a whole step.
-- Shots: `img/loop/rows18|24-1512|1470-default|overview.jpg` and `scale-vs-target.jpg`.
+- Shots: `img/loop/rows18|24-1512|1470-default|overview.jpg`.
+- **Then (the owner).**
+  - Orks stand about a quarter of an ordinary building's height, as in the target: ×⅔ the buildings' step, the
+    nearest whole step below (×0.5 at the default).
+  - An unplaced tall station (the gate, the mine) goes to the top row; each row keeps the work's order.
+  - The wilderness is wide (520 art px round the camp), so a narrow camp sits centred in trees. It uses
+    `decor/wild`, thick down both sides, with a pond and jetty on the left.
+  - The palisade runs along the back only, with a short end of wall behind the catapult.
+  - Shots beside the target at its width: `img/loop/scale-fd|r18-1512|1470.jpg`.
 
 ## 5. Signals win by value
 

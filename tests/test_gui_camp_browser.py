@@ -419,9 +419,16 @@ def test_an_item_dragged_from_the_inventory_snaps_to_the_grass_and_stays_after_a
     assert pg.locator(".gui-items__grid").count() == 1                         # the grid shows while dragging
     assert pg.locator(".gui-items__ghost.is-ok").count() == 0
     h = pg.locator(".gui-camp__home").bounding_box()
-    target = (h["x"] + h["width"] + 120, h["y"] + h["height"] - 12)            # the row's open grass past the home
-    pg.mouse.move(*target, steps=6)
-    pg.locator(".gui-items__ghost.is-ok").wait_for(state="visible", timeout=WAIT_MS)
+    target = None                                                              # the row's open grass past the home
+    for dx in (60, 100, 140, 180, 220, 260):
+        for dy in (-12, -30, 20):
+            pg.mouse.move(h["x"] + h["width"] + dx, h["y"] + h["height"] + dy, steps=2)
+            if pg.locator(".gui-items__ghost.is-ok").count():
+                target = (h["x"] + h["width"] + dx, h["y"] + h["height"] + dy)
+                break
+        if target:
+            break
+    assert target, "no grass that fits beside the home"
     pg.mouse.up()
     placed = pg.locator('.gui-items__placed[data-item="tree"]')
     placed.wait_for(state="visible", timeout=WAIT_MS)

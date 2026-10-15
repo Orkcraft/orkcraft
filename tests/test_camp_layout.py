@@ -49,9 +49,11 @@ console.log(JSON.stringify({ order, rows, lines: L.lines, walls: [L.buildings.in
     assert out["order"][:4] == ["in", "board", "pool", "gate"] and out["order"][-1] == "lone"   # the work, then the rest
     assert out["walls"] == ["in", "out"]                                            # the two that face the world
     rows = [out["rows"][k] for k in sorted(out["rows"])]                             # balanced by width, row after
-    assert rows[0][:2] == ["board", "pool"] and sum(len(r) for r in rows) == 8      # row in the work's order
+    assert sum(len(r) for r in rows) == 8
     work = [b for b in out["order"] if b not in ("in", "out")]
-    assert [b for r in rows for b in r] == work                                      # never back to a row before
+    for r in rows:                                                                   # each row in the work's order,
+        assert r == [b for b in work if b in r]
+    assert "gate" in rows[0] and "mine" in rows[0]                                  # the tall stations up top
     t = out["T"]
     assert len(out["lines"]) == 2 and out["lines"][1] - out["lines"][0] >= t          # as close as the row allows
     stations = ("board", "gate", "mine")                                             # their own track
@@ -380,9 +382,10 @@ def test_the_agent_pool_is_the_depot_on_its_line_with_three_bays_and_the_track_t
     out = _run(TOWN + """
 const L = C.lay(B, R, { b: 1.5, s: 1 }, size);
 const p = L.buildings.pool, g = L.buildings.gate, rail = L.lines[p.row] + L.T / 2;
-const through = L.route("board", "gate");
+const beyond = Object.values(L.buildings).filter((q) => q.row === p.row && q.x > p.x + p.w && !q.wall)[0];
+const through = beyond ? L.route("in", beyond.id) : null;
 const rows = C.rowsOf([{ id: "d", type: "barracks" }, ...["a", "b", "c", "e", "f", "g", "h"].map((id) => ({ id, type: "forge" }))]);
-console.log(JSON.stringify({ p, rail, gateX: g.cx, toPool: L.route("board", "pool"), through,
+console.log(JSON.stringify({ p, rail, beyond: !!beyond, toPool: L.route("board", "pool"), through,
   path: L.paths.some((q) => !q.service && q.x <= p.bays[1] && p.bays[1] <= q.x + q.w && q.y + q.h >= p.y),
   rows: rows.map((r) => r.map((b) => b.id)) }));
 """, tmp_path)
@@ -392,8 +395,8 @@ console.log(JSON.stringify({ p, rail, gateX: g.cx, toPool: L.route("board", "poo
     assert p["x"] < p["bays"][0] < p["bays"][1] < p["bays"][2] < p["x"] + p["w"] and len(p["bays"]) == 3
     assert out["path"] is False                                                           # no path
     assert out["toPool"][-1] == [p["bays"][0], rail]                                      # a cart for it: at a bay
-    if out["gateX"] > p["x"] + p["w"]:                                                    # one for beyond: through it
-        assert any(a[1] == b[1] == rail and a[0] <= p["x"] and b[0] >= p["x"] + p["w"] for a, b in zip(out["through"], out["through"][1:]))
+    assert out["beyond"]                                                                   # one for beyond: through it
+    assert any(a[1] == b[1] == rail and a[0] <= p["x"] and b[0] >= p["x"] + p["w"] for a, b in zip(out["through"], out["through"][1:]))
     assert out["rows"] == [["d", "a", "b", "c"], ["e", "f", "g", "h"]]                  # the depot is two of nine places
 
 

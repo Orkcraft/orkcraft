@@ -29,11 +29,12 @@ const STAND = 36;
 // The zoom steps (§3; decisions §17.6): `b` the buildings, carts, ground and paths, `s` the track, `o` the orks, each a
 // whole number of device pixels an art pixel. The default is ×1, so a MacBook (1512 × 982 or 1470 × 956, density 2)
 // shows three rows of six with their lines and the return line; the overview ×0.5 holds three rows of eight; close up
-// ×2. Orks keep the buildings' step: against the old default (buildings ×1.5, orks ×1) they read ×1.5 larger.
-// Density 1 has no whole step under ×1: its overview draws every other art pixel. Density 3 (a phone): ⅔, ×1, ×2.
-const HI = [{ b: 0.5, s: 0.5, o: 0.5 }, { b: 1, s: 1, o: 1 }, { b: 2, s: 1.5, o: 2 }];
-const LO = [{ b: 0.5, s: 0.5, o: 0.5 }, { b: 1, s: 1, o: 1 }, { b: 2, s: 1, o: 2 }];
-const TRI = [{ b: 2 / 3, s: 2 / 3, o: 2 / 3 }, { b: 1, s: 1, o: 1 }, { b: 2, s: 4 / 3, o: 2 }];
+// ×2. Orks stand about a quarter of an ordinary building's height, as in the owner's target (references/v4): ×⅔ the
+// buildings' step, the nearest whole step below (×0.5 at the default on density 2). Density 1 has no whole step under
+// ×1: its overview draws every other art pixel. Density 3 (a phone): ⅔, ×1, ×2.
+const HI = [{ b: 0.5, s: 0.5, o: 0.5 }, { b: 1, s: 1, o: 0.5 }, { b: 2, s: 1.5, o: 1 }];
+const LO = [{ b: 0.5, s: 0.5, o: 0.5 }, { b: 1, s: 1, o: 1 }, { b: 2, s: 1, o: 1 }];
+const TRI = [{ b: 2 / 3, s: 2 / 3, o: 1 / 3 }, { b: 1, s: 1, o: 2 / 3 }, { b: 2, s: 4 / 3, o: 4 / 3 }];
 export const stepsFor = (dpr) => (dpr >= 3 ? TRI : dpr >= 2 ? HI : LO);
 export const DEFAULT_STEP = 1;
 /** A phone's default step: the art at its own pixel (×1), whatever the screen's density. */
@@ -48,6 +49,7 @@ const DEPOT_RAIL = 98;                       // the depot sprite's rails' middle
 export const DEPOT_BAYS = [110, 175, 240];   // its three bays' middles along it, art px from its west end
 const DEPOT_DOORS = [30, 300];               // its west and east gateways' middles
 const SPUR = new Set(["loot", "mine"]);
+const TALL = new Set(["loot", "mine"]);       // stations whose sprite stands taller than a row's buildings
 // growth (growth.md §5, v3-prompts §13.4): a goal other than balance builds its annex against the building's east wall
 export const ANNEX = { thrift: "growth/annex-thrift.png", quality: "growth/annex-quality.png" };      // their sprite draws its own track down to the line (gate, headframe)
 
@@ -112,6 +114,9 @@ export function rowsOf(list, wide = null) {
   }
   // balanced by width (decisions §17.6): each row about the same length, so the widest row sets the camp's width and
   // no row runs on alone; in the work's order, row after row, a row closed once the next would pass its share
+  // a tall station never placed (the Review gate's weighbridge, the mine) goes to the top row first: the room above it
+  // there is the wall's margin, not a row's empty grass (decisions §17.6)
+  free.sort((a, c) => (TALL.has(c.type) ? 1 : 0) - (TALL.has(a.type) ? 1 : 0));
   const span = (r) => rows[r].reduce((k, b) => k + wide(b), 0);
   const target = list.reduce((k, b) => k + wide(b), 0) / n;
   let r = 0;
@@ -119,6 +124,8 @@ export function rowsOf(list, wide = null) {
     while (r < n - 1 && rows[r].length && (full(r, b) || span(r) + wide(b) / 2 > target)) r++;
     rows[r].push(b);
   }
+  const at = new Map(list.map((b, i) => [b, i]));                 // within a row, the work's order again
+  for (const row of rows) if (!row.some((b) => Array.isArray(b.hut))) row.sort((a, c) => at.get(a) - at.get(c));
   return rows;
 }
 
@@ -147,7 +154,8 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   const rows = neighbours(rowsOf(inRows, wide), roads, ROW_MAX, (b) => (b.type === DEPOT ? 2 : 1));
 
   const td = tower ? dims(tower) : null, cd = cata ? dims(cata) : null;
-  const M = Math.round(160 * B);                                        // the wilderness round the camp
+  const M = Math.round(520 * B);         // the wilderness round the camp: wide, so a camp narrower than the window sits
+                                         // centred in trees, never beside an empty field (decisions §17.3)
   const top = M + Math.max(td ? td.h - WALL_H * B : 0, 0);              // room above the wall for the tower
   const campX = M, wallY = top + WALL_H * B;                            // the back wall's foot
   const colL = campX + Math.max(Math.round((td ? td.w / 2 : 48 * B) - T / 2), 24 * B);   // the way in, down to the lines
@@ -275,22 +283,32 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   return out;
 }
 
-// g2's decor (decisions §17.3): the wilderness round the palisade thick with trees and bushes, a few rocks, logs and
-// mushrooms between, chosen by a fixed hash of the cell (every shot of the same town the same); nothing on the way in
-// down to the lookout. Inside the palisade it stays sparse (§4.9): the grass's own tufts and flowers only.
-const WILD = ["pine", "pine", "tree", "tree", "bush", "bush", "bush-small", "pine", "tree", "bush", "rock", "stump",
-              "logpile", "reeds", "boulder", "pebbles", "log-mossy", "rocks", "mushrooms-teal", "mushrooms-white"];
+// The wilderness round the camp (decisions §17.3; the art session's decor/wild): trees, pines and bushes thick near the
+// back wall and down both sides, where no palisade runs now, a few rocks and logs between, thinning out towards the
+// world's edge; a pond with its jetty on the left where there is room. Chosen by a fixed hash of the cell, so every shot
+// of the same town is the same; nothing inside the camp (§4.9), nothing on the way in down to the lookout.
+const WILD = ["wild/tree-1", "wild/tree-2", "wild/tree-3", "wild/tree-4", "wild/pine-1", "wild/pine-2", "wild/pine-3",
+              "wild/bush-1", "wild/bush-2", "wild/bush-3", "wild/tree-1", "wild/pine-2", "wild/bush-2", "wild/tree-3",
+              "wild/rocks-1", "wild/rocks-2", "wild/log"];
 function decorAround(out, B) {
-  const c = out.camp, C = Math.round(44 * B), list = [], pad = 18 * B;
+  const c = out.camp, C = Math.round(40 * B), list = [], pad = 18 * B;
   const way = [out.cols.left - 24 * B, out.cols.left + out.T + 24 * B];
+  // the pond and its jetty, west of the camp, a third of the way down
+  const pond = { x: Math.round(c.x - 230 * B), y: Math.round(c.y + c.h * 0.45) };
+  const keep = { x: pond.x - 90 * B, y: pond.y - 110 * B, w: 220 * B, h: 140 * B };
+  if (pond.x - 60 * B > 0) {
+    list.push({ name: "wild/pond", x: pond.x, y: pond.y }, { name: "wild/jetty", x: Math.round(pond.x + 64 * B), y: Math.round(pond.y - 14 * B) });
+  }
   for (let gy = 0; gy * C < out.h; gy++) {
     for (let gx = 0; gx * C < out.w; gx++) {
       const h = hash(gx, gy, 11), x = gx * C + (h % 5) * 6 * B, y = gy * C + C + ((h >>> 3) % 5) * 5 * B;
       const inside = x > c.x - pad && x < c.x + c.w + pad && y > c.y - pad && y < c.y + c.h + 40 * B;
       if (inside || (x > way[0] && x < way[1] && y < out.wall.y + 8 * B)) continue;
-      // thicker near the palisade, thinning out towards the world's edge
-      const edge = Math.min(Math.abs(x - c.x), Math.abs(x - c.x - c.w), Math.abs(y - c.y), Math.abs(y - c.y - c.h));
-      if (h % 100 >= (edge < 120 * B ? 55 : 30)) continue;
+      if (x > keep.x && x < keep.x + keep.w && y > keep.y && y < keep.y + keep.h) continue;
+      // thick along the camp's edge (the sides most, where no wall runs), thinning out towards the world's edge
+      const side = Math.min(Math.abs(x - c.x), Math.abs(x - c.x - c.w)), ends = Math.min(Math.abs(y - c.y), Math.abs(y - c.y - c.h));
+      const near = Math.min(side, ends), chance = side < 140 * B ? 62 : near < 140 * B ? 50 : near < 360 * B ? 26 : 12;
+      if (h % 100 >= chance) continue;
       list.push({ name: WILD[(h >>> 7) % WILD.length], x: Math.round(x), y: Math.round(y) });
     }
   }

@@ -131,30 +131,26 @@ function Track({ L }) {
       : html`<div class="gui-camp__crossing" style=${`left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px`}></div>`))}</div>`;
 }
 
-/** The low palisade of rounded logs: along the back (open where the track comes in under the lookout), down the right
- *  edge to below the last line (§4.6). */
+/** The palisade: along the back only (open where the track comes in under the lookout), and a short end of wall behind
+ *  the catapult (§4.6 amended: the owner, the side read as a pile of logs). */
 function Palisade({ L }) {
   const B = L.step.b, w = L.wall, out = [];
   const h = (sizeOf("edge/palisade-h.png") || [80, 48])[1] * B;
-  const run = (x0, x1) => {
+  const run = (x0, x1, y = w.y) => {
     if (x1 <= x0) return;
-    out.push(tiled("edge/palisade-h.png", x0, w.y - h, x1 - x0, h, B, "repeat-x")
-      || html`<div class="gui-camp__logs" style=${`left:${x0}px;top:${w.y - 32 * B}px;width:${x1 - x0}px;height:${32 * B}px`}></div>`);
+    out.push(tiled("edge/palisade-h.png", x0, y - h, x1 - x0, h, B, "repeat-x")
+      || html`<div class="gui-camp__logs" style=${`left:${x0}px;top:${y - 32 * B}px;width:${x1 - x0}px;height:${32 * B}px`}></div>`);
     for (const [n, x] of [["edge/palisade-end-w.png", x0], ["edge/palisade-end-e.png", x1]]) {
       const s = sizeOf(n);
-      if (s) out.push(img(n, n.endsWith("-w.png") ? x - (s[0] * B) / 2 : x - (s[0] * B) / 2, w.y - s[1] * B, s[0] * B, s[1] * B));
+      if (s) out.push(img(n, x - (s[0] * B) / 2, y - s[1] * B, s[0] * B, s[1] * B));
     }
   };
   run(w.left, w.gap[0]);
   run(w.gap[1], w.x);
-  const v = sizeOf("edge/palisade-v.png"), post = sizeOf("edge/palisade-post.png");
-  if (v) {
-    const vw = v[0] * B, vh = v[1] * B, step = (v[1] - 10) * B;
-    for (let y = w.y - 7 * B; y < w.bottom - 12 * B; y += step) {
-      out.push(img("edge/palisade-v.png", w.x - vw / 2, y, vw, Math.min(vh, w.bottom - y), "object-fit:cover;object-position:top"));
-    }
-    if (post) out.push(img("edge/palisade-post.png", w.x - (post[0] * B) / 2, w.bottom - post[1] * B, post[0] * B, post[1] * B));
-  }
+  // the catapult's short end of wall (§4.6 amended): a piece or two behind it at the buffer stop, which it throws over;
+  // no wall down the sides, the wilderness frames them
+  const cata = Object.values(L.buildings).find((p) => p.wall === "out");
+  if (cata) run(Math.round(cata.x + cata.w * 0.55), Math.round(cata.x + cata.w * 0.55 + 112 * B), Math.round(cata.feet - 18 * B));
   return html`<div class="gui-camp__layer is-wall">${out}</div>`;
 }
 

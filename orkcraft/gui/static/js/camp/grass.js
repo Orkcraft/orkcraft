@@ -27,7 +27,7 @@ const meets = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h &&
 
 /** What no item may touch, as boxes: the buildings and the home with a cell round them (never against one), a goal's
  *  annex, the paths, every track tile (the lines, the columns, the sidings, the stops), the decor already standing
- *  round the camp, the palisade. */
+ *  round the camp, the back palisade. */
 export function blockers(L) {
   const B = L.step.b, c = CELL * B, out = [];
   for (const p of Object.values(L.buildings)) {
@@ -40,7 +40,6 @@ export function blockers(L) {
   for (const d of L.decor) out.push({ x: d.x - 20 * B, y: d.y - 40 * B, w: 40 * B, h: 40 * B });   // the wilderness's own
   const w = L.wall;
   out.push({ x: w.left - c, y: w.y - 56 * B, w: w.x - w.left + 2 * c, h: 56 * B + c / 2 });     // the back wall
-  out.push({ x: w.x - 20 * B, y: w.y - 56 * B, w: 40 * B, h: w.bottom - w.y + 56 * B });       // down the right edge
   return out;
 }
 
