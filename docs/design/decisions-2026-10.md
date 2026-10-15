@@ -366,7 +366,7 @@ The prompts for the frames and for every asset to replace: [v3-prompts.md](v3-pr
   waits until you have played Mission 1.
 
 **Needs you (in order):**
-1. **Play Mission 1 on Camp v3** (desktop and phone) and say how it feels. That decides 1b and the next missions.
+1. **Play Mission 1 on Camp v3** on the desktop (the phone app has no quest log; look at the phone separately) and say how it feels. That decides 1b and the next missions.
 2. **GEN's run, which spends Gemini credits** — say yes or no:
    `python tools/gen_sheets.py u6-inside u6-cards u2-panels -n 3 --max-calls 9` (the inside, the cards, the panels).
 3. **Confirm my overnight calls:**
