@@ -477,14 +477,14 @@ The Agent pool is the camp's heart: the orks build the person's project there. S
 depot**, drawn as an engine shed over the track; carts roll **into** it. Its words do not change (Agent pool; its
 orks are Grunts and their steward); this is its look, as the booth, the weighbridge and the mine are (§4.11).
 
-1. **On its own track, not across the line.** The depot stands over a **through siding** parallel to its line,
-   entered by a switch before it and left by a switch after it (§4c rule 6). A cart for the pool turns in at the first
-   switch and rolls in through the depot's west doors; carts for other buildings keep to the line and pass it by, so a
-   cart seen leaving the depot has always been worked on.
-2. **A bay per ork.** The depot has as many bays as the pool's `max_orcs` (3 by default, drawn at most 3; more is a
-   `+N` chip): one track and one pair of doors each. A cart in a bay is a Grunt at work on it, its bubble over that
-   bay; an empty bay with its doors shut is free room. **Busy or free reads from across the camp without a badge.**
-   A cart waiting for a free bay waits on the siding before the doors (the queue of §4c rule 7).
+1. **On the line itself** (the owner, said twice): the depot is a shed over its line, the line running through it
+   west to east, doors at both ends (`buildings/depot.png`, st-depot #4). Carts roll in at the west doors and out at
+   the east. A cart for another building rolls straight through without stopping; a cart for the pool stops inside.
+2. **A bay per ork.** The shed's front has three open bays along the track (`max_orcs`, 3 by default, drawn at most
+   3; more is a `+N` chip): a cart stopped in a bay is a Grunt at work on it, its bubble over that bay; an empty bay
+   is free room, its shutters closed (`depot/doors.png`). **Busy or free reads from across the camp without a badge.**
+   A cart waiting for a free bay waits on the line before the west doors (the queue of §4c rule 7); a cart passing
+   through waits behind it too, honestly.
 3. **Out the east doors.** Done, the cart rolls out and back onto the line at the second switch, towards the Review
    gate. With Mission 1b's check on, the **proving siding** (first-mission.md §10.1) is the depot's exit track: the
    semaphore arm at its mouth; a failed check sends the cart back into its bay from the exit side (shunting on the
@@ -494,9 +494,8 @@ orks are Grunts and their steward); this is its look, as the booth, the weighbri
    places. In Office its card is unchanged.
 6. **Its steward** stands by the west doors, where carts come in (§4.3).
 
-**Art (GEN):** `st-depot`: a timber engine shed with a pitched roof and a vent ridge, three arched bays side by side,
-front-on, doors open and shut (per bay), rails running into each bay at c2's gauge, room for a c1 cart inside each
-open bay; the exit's semaphore with the proving siding. Calm colours, no yellow or red.
+**Art:** done, st-depot #4 (d88f5a6): the shed on the line with the track through it, three bays along its front,
+shutters, and the semaphore in two positions (`depot/semaphore-0|1`).
 
 **Priority: P0**, the next work of the LOOP session after its fixes and before its step 4 (they share `layout.js` and
 `track.js`); about 2 days. The pool's old building sprite stays for Office's card if wanted.

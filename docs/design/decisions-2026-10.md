@@ -521,9 +521,10 @@ The materials in `docs/marketing/` stay drafts.
 
 ## 16. The Agent pool becomes the depot (15 October, the owner)
 
-The Agent pool is drawn as a **depot**: an engine shed on its own through siding, carts rolling into it, a bay per
-ork (`max_orcs`, three by default), so busy and free bays read from across the camp; the proving siding of Mission 1b
-is its exit track. Its name and words stay. Carts for other buildings pass it on the line. P0, built by LOOP next,
+The Agent pool is drawn as a **depot**: an engine shed standing on the line itself, the track through it west to
+east, carts rolling in and out (the owner, to the art session); a bay per ork along its front (`max_orcs`, three by
+default), so busy and free bays read from across the camp; the proving siding of Mission 1b is its exit track. Its
+name and words stay. Carts for other buildings roll through without stopping. P0, built by LOOP next,
 art `st-depot` by the art session. Full rules: [design-system-v3.md](design-system-v3.md) §4d.
 
 **Ground (the owner, same day).** All track stands on a bed of path earth, never grass; building paths narrower (24
