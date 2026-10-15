@@ -34,10 +34,8 @@ export const shiftOf = (gx, gy) => [(hash(gx, gy, 3) % 4) * 8, (hash(gx, gy, 4) 
 export function bedOf(tiles, T) {
   const at = new Map(), out = [];
   for (const t of tiles) {
-    const y = t.py === undefined ? t.y : Math.round(t.py - T / 2);     // a flat pocket lies where it is drawn
-    const k = `${t.x},${y}`;
-    if (at.has(k)) continue;
-    at.set(k, { x: t.x, y });
+    const k = `${t.x},${t.y}`;
+    if (!at.has(k)) at.set(k, { x: t.x, y: t.y });
   }
   for (const b of at.values()) {
     const open = [["n", 0, -T], ["e", T, 0], ["s", 0, T], ["w", -T, 0]]

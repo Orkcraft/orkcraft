@@ -1,14 +1,13 @@
 // Camp's track, one way round (design-system-v3.md §4c rules 5–7): east along the lines, down the right column, west
 // along the return line under the lowest row, up the left column. Each tile says which ways a cart may leave it
 // (`go`), so a route never runs backwards: a cart for a building behind it goes on, round the return line and in
-// again. A fork (into a line from the left column, on to the buffer stop or down to the return line, into a pocket)
-// has a switch stand beside it. A building's pocket is one tile above its stop, parallel to the line, entered and left
-// by a T on the line: a passing loop, so a cart waiting there never stands on the main line.
+// again. A fork (into a line from the left column, on to the buffer stop or down to the return line) has a switch
+// stand beside it. A cart waiting at a building stands off the line on its path's end: no pocket track (§4c rule 7).
 //
 // Pure: no page (tests/test_camp_layout.py runs it in Node). Every number is CSS px in the world's frame.
 
 // A tile's ways out (n e s w), turned a quarter clockwise `rot` / 90 times. `t-e` is c3's north–east–south junction
-// (the split on the left), `t-n` c2's north T (a pocket's mouth and tail; turned, the right column's T).
+// (the split on the left), `t-n` c2's north T (turned: the right column's T and the switch to the return line).
 const EXITS = { "straight-h": "ew", "straight-v": "ns", "corner-ne": "ne", "corner-sw": "sw", "corner-se": "se",
                 "corner-nw": "nw", "t-n": "new", "t-e": "nes", "stop-e": "w" };
 const CW = { n: "e", e: "s", s: "w", w: "n" };
@@ -22,9 +21,9 @@ export const STEP = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
 export const BACK = { n: "s", e: "w", s: "n", w: "e" };
 
 /** The loop's tiles, `go` on each, and its switches. `lines`: each line's top y; `colL` the left column's x; `colR`
- *  the right column's x with two rows or more (`multi`), else where the one line ends; `pockets`: the x of each
- *  pocket's straight, by line. Returns { tiles, switches, buffer, ret } (`ret`: the return line's top y). */
-export function loop(T, lines, colL, colR, multi, pockets = []) {
+ *  the right column's x with two rows or more (`multi`), else where the one line ends. Returns { tiles, switches,
+ *  buffer, ret } (`ret`: the return line's top y). */
+export function loop(T, lines, colL, colR, multi) {
   const tiles = [], switches = [];
   const tile = (name, x, y, rot, go, extra = {}) => { const t = { name, x, y, rot, go, ...extra }; tiles.push(t); return t; };
   const last = lines.length - 1, endY = lines[last];
@@ -34,18 +33,7 @@ export function loop(T, lines, colL, colR, multi, pockets = []) {
     // the split on the left: in from the way in (line 1) or up from the return line; east into the line, or on up
     const sw = tile("t-e", colL, ly, 0, r === 0 ? "e" : "en");
     if (r > 0) switches.push({ x: colL, y: ly, on: "n", turn: "e", side: "w", tile: sw });
-    const pk = new Set(pockets[r] || []);
-    for (let x = colL + T; x < colR; x += T) {
-      if (pk.has(x + T)) {                                             // a pocket's mouth: east on, or up into it
-        switches.push({ x, y: ly, on: "e", turn: "n", side: "s", tile: tile("t-n", x, ly, 0, "en", { mouth: x + T }), pocket: x + T });
-      } else if (pk.has(x - T)) tile("t-n", x, ly, 0, "e", { tail: x - T });   // its tail: down from it, east on
-      else tile("straight-h", x, ly, 0, "e");
-    }
-    for (const px of pk) {
-      tile("corner-se", px - T, ly - T, 0, "e", { pocket: px });
-      tile("straight-h", px, ly - T, 0, "e", { pocket: px });
-      tile("corner-sw", px + T, ly - T, 0, "s", { pocket: px });
-    }
+    for (let x = colL + T; x < colR; x += T) tile("straight-h", x, ly, 0, "e");
     if (multi) {                                                       // the right column: down to the last line
       if (r === 0) tile("corner-sw", colR, ly, 0, "s");
       else if (r < last) tile("t-n", colR, ly, -90, "s");

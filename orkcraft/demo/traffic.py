@@ -59,6 +59,7 @@ class Traffic:
         self._thread: threading.Thread | None = None
         self._turn = 0
         self._held: dict[str, float] = {}
+        self._ref = 100                # each task its own ref, as real ones are: a send-back reads `round 2`, never more
 
     def roads(self) -> list[tuple]:
         """(source, target, road) for every road whose two buildings stand; the roads into a Publisher twice, none into a
@@ -74,10 +75,14 @@ class Traffic:
                 out += [(r.source, b.id, r)] * (2 if kind == "catapult" else 0 if kind == "loot" else 1)
         return out
 
+    def next_ref(self) -> str:
+        self._ref += 1
+        return str(self._ref)
+
     def send(self, source: str, target: str, road, status: str = "delivered", title: str = "") -> Cart:
         now = dt.datetime.now().astimezone()
         title = title or self.rnd.choice(TITLES)
-        payload = pipes.Payload(kind="text", value=title, source=source, mode=road.event, title=title, ref=str(self.rnd.randint(10, 99)),
+        payload = pipes.Payload(kind="text", value=title, source=source, mode=road.event, title=title, ref=self.next_ref(),
                                 trail=_hops(self.town, source, self.rnd, now), want="change")
         cart = Cart(road.id, source, target, status, payload, "demo", time.monotonic())
         engine = self.town.roads
@@ -120,7 +125,7 @@ class Traffic:
             title = self.rnd.choice(TITLES)
             now = dt.datetime.now().astimezone()
             payload = pipes.Payload(kind="text", value=title, source=b.id, mode="loot.rework", title=title,
-                                    ref=str(self.rnd.randint(10, 99)), trail=_hops(self.town, maker, self.rnd, now), want="change")
+                                    ref=self.next_ref(), trail=_hops(self.town, maker, self.rnd, now), want="change")
             out.append(self.town.roads.sent_back(b.id, maker, payload))
         return out
 

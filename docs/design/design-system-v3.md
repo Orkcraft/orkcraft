@@ -480,10 +480,8 @@ switches on c2's gauge, with the north–east–south junction still owed (§0).
   `js/camp/traffic.js` keeps carts a cart apart, never overtaking, one that catches up waiting behind.
 - **Switches and pockets.** A switch stand (c3's `track/switch-0|1`, drawn at twice the track's zoom so its arm
   reads) stands at every fork and throws while a cart that turns there is near. The split on the left is c3's `t-e`.
-  A building's waiting carts stand off the line in one of two ways (`layout.js` `POCKET`). **"none" is the
-  default**: no pocket track, the cart standing on the end of the building's path, the line clear. **"flat"** is a
-  pocket track just above the line, joined by short diagonals drawn in code; c2's quarter curves read as arches, and
-  c3's `switch-e` with `merge-e` are blades on one straight. Shots: `img/loop/pocket-none.png`, `pocket-flat.png`.
+  A building's waiting carts stand on the end of its path just off the line, with no pocket track (the owner chose
+  this over a flat pocket in code; the arch of c2's curves and the flat stand-in are both gone).
   Stations keep their own track.
 - **Send-backs.** A rework handed straight back is kept by the road engine (`sent_back`) and wears
   `round N · 🪵 …` (`gui/state.py`).

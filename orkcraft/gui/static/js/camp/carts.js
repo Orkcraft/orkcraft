@@ -113,15 +113,15 @@ export function roundWord(c) {
   return [`round ${c.round || 2}`, t ? `🪵 ${t}` : "", m].filter(Boolean).join(" · ");
 }
 
-/** Where a building's stopped carts stand, never on the main line (§4c rule 7): in its pocket, close together (more
- *  than three are the pile there), or with no pocket (layout.js POCKET "none") on its path's end just off the line; on its weighbridge (the Review gate) or its shaft (the mine); at the buffer stop.
+/** Where a building's stopped carts stand, never on the main line (§4c rule 7): on its path's end just off the line,
+ *  close together (more than three are the pile there); on its weighbridge (the Review gate) or its shaft (the mine); at the buffer stop.
  *  And how far apart. */
 function standOf(p, B, T) {
   if (p.type === "loot" && p.spur) return { x: p.cx, y: p.y + p.h * 0.69, dx: 0 };
   if (p.depot) return { x: p.bays[0], y: p.rail + T * 0.3, dx: p.bays[1] - p.bays[0] };          // in its bays
   if (p.spur) return { x: p.cx, y: p.feet - T * 0.45, dx: 0 };
   if (p.wall === "out") return { x: p.stop.x - T * 0.2, y: p.stop.y + T * 0.3, dx: -44 * B };
-  if (!p.pocket && p.waitAt) return { x: p.waitAt.x, y: p.waitAt.y - 2 * B, dx: -12 * B };   // on its path's end
+  if (p.waitAt) return { x: p.waitAt.x, y: p.waitAt.y - 2 * B, dx: -12 * B };     // on its path's end, off the line
   return { x: p.stop.x, y: p.stop.y + T * 0.3, dx: -12 * B };
 }
 
@@ -236,7 +236,7 @@ export function CampCarts({ L, roads, carts = [], travel = 0, avg = null, bays =
       moving.set(c.id, m);
     } else if (m.L !== L) m.s = (m.s / (m.len || 1)) * len;   // the zoom changed: the same share of the way
     const fresh = m.L === null;
-    Object.assign(m, { pts, len, v: len / dur, L, parks: !!(to.pocket || to.depot), throws: way.throws || [] });
+    Object.assign(m, { pts, len, v: len / dur, L, parks: !!to.depot, throws: way.throws || [] });
     if (fresh) m.s = behind(m, keep);
     if (m.done !== null && m.done > GONE_S + 1.5) continue;
     seen.add(c.id);

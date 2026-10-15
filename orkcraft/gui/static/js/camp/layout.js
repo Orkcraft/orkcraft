@@ -1,7 +1,7 @@
 // Camp's town in v3 (docs/design/design-system-v3.md §3–§4): the buildings laid into rows by the work's order, a line of
 // track under each row, the lines joined into a loop; the lookout in the back wall at the way in, the catapult at the
-// right wall's buffer stop; each building joined by a short dirt path to its pocket, one tile above its line where its
-// carts stop (§4c rule 7). Carts run on the track only, one way round (js/camp/track.js): a road's carts go from its
+// right wall's buffer stop; each building joined by a short dirt path to its line, its waiting carts on the path's end
+// off the line (§4c rule 7). Carts run on the track only, one way round (js/camp/track.js): a road's carts go from its
 // source's stop to its building's stop (`route`), round the return line when the building is behind.
 //
 // Pure: no page, no Preact (tests/test_camp_layout.py runs it in Node). Every number out is CSS px in the world's frame
@@ -20,13 +20,10 @@ export const WALL_H = 48;        // the low palisade, its foot below the camp's 
 export const ROW_MAX = 5;        // buildings to a row: a sixth starts the next row and its own line
 export const SIDING_TILES = 3;   // the Task board's siding: the carts waiting to go (two straights and the buffer)
 export const SIDING_SHOWN = 5;   // carts drawn on it; the rest a "+N" chip (design-system-v3.md §4, decisions §13.1)
-export const FALLBACK = [128, 112];
-// Where a building's carts wait off the line (§4c rule 7): "flat", a pocket track just above the line, joined to it by a
-// short diagonal at each end (a stand-in drawn in code: c2's quarter curves read as arches); "none", no pocket track,
-// the cart standing on the end of the building's path, the line clear. Which is calmer is the owner's call.
-export const POCKET = { style: "none" };
-const FLAT_LIFT = 0.6;           // the flat pocket's rails above the line's, in tiles
-const STAND = 52;                // "none": the room a waiting cart takes at the path's end, art px   // a building with no v3 sprite: a block of this size
+export const FALLBACK = [128, 112];   // a building with no v3 sprite: a block of this size
+// A building's waiting carts stand off the line on the end of its path, no pocket track (§4c rule 7, the owner): the
+// room a waiting cart takes there, art px.
+const STAND = 52;
 
 // The zoom steps, buildings / orks and track (§3): whole device pixels at every step. Density 2: ×1 / ×1 (an overview),
 // ×1.5 / ×1 (the default), ×3 / ×2 (close). Density 1: ×1 / ×1, ×2 / ×1 (the default). Density 3 (a phone): ⅔ (two
@@ -146,14 +143,10 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   };
 
   // the rows, top to bottom: each row stands on its line, the next line whole tiles under the last (the columns tile).
-  // An ordinary building stands over its pocket (§4c rule 7): one tile above the line, under its door, entered and left
-  // by a T on the line, so a building's slot is centred on a tile and its pocket's three tiles (the curve in, the
-  // pocket, the curve out) never meet the next one's. A station keeps its own track and has no pocket.
-  const pockets = [];
+  // An ordinary building's path runs down to its line, its waiting carts standing on its end (`lift` above the line's
+  // top); a station keeps its own track (§4.11).
   let lineTop = 0, right = colL + 3 * T;
-  const style = POCKET.style;
-  // how far above the line's top an ordinary building's path ends: at the pocket's top, or above a waiting cart
-  const lift = style === "none" ? Math.round(STAND * B) : style === "flat" ? Math.round(T * FLAT_LIFT) : T;
+  const lift = Math.round(STAND * B);
   rows.forEach((row, r) => {
     const ds = row.map((b) => ({ b, d: dims(b), spur: SPUR.has(b.type), depot: depotOf(b),
                                  own: SPUR.has(b.type) || b.type === SIDING || depotOf(b) }));
@@ -166,31 +159,20 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
       lineTop = prev + Math.ceil((T + 8 * B + band) / T) * T;
     }
     out.lines.push(lineTop);
-    pockets.push([]);
-    let x = colL + T + GAP * B, free = colL + T;                       // the next box's x; the pocket row free from
+    let x = colL + T + GAP * B, free = colL + T;                       // the next box's x; the line's front free from
     for (const { b, d, spur, own, depot } of ds) {
       const w = Math.max(d.w, PATH_W * B);
       let cx;
       const svc = SERVICES.has(b.type);                                  // a service: no stop on the line, no path to it
-      const pocketed = !own && !svc && style !== "none";
-      if (own || !pocketed) {
-        x = Math.max(x, free);
-        cx = Math.round(x + w / 2);
-      } else {
-        const k = Math.max(2, Math.ceil((free - colL) / T) + 1, Math.ceil((x + w / 2 - T / 2 - colL) / T));
-        cx = colL + k * T + T / 2;
-        x = cx - w / 2;
-        free = colL + (k + 2) * T;
-        pockets[r].push(colL + k * T);
-      }
+      x = Math.max(x, free);
+      cx = Math.round(x + w / 2);
       // the depot stands on its line, its own rails over the line's; a spur station reaches down to it
       const feet = depot ? Math.round(lineTop + T / 2 - DEPOT_RAIL * B) + d.h
         : spur ? lineTop + T / 4 : own ? lineTop - PATH_L * B : lineTop - lift - PATH_L * B;
-      const pocketY = style === "flat" ? lineTop + T / 2 - lift : lineTop - T / 2;    // the pocket's rails' middle
       const annexS = ANNEX[b.goal] && size(ANNEX[b.goal]);
       out.buildings[b.id] = { id: b.id, type: b.type, file: d.file, x: Math.round(x + (w - d.w) / 2), y: Math.round(feet - d.h),
-                              w: d.w, h: d.h, cx, feet, row: r, spur, door: { x: cx, y: feet }, pocket: pocketed,
-                              stop: { x: cx, y: pocketed ? pocketY : lineTop + T / 2 }, waitAt: { x: cx, y: pocketed ? pocketY : lineTop },
+                              w: d.w, h: d.h, cx, feet, row: r, spur, door: { x: cx, y: feet },
+                              stop: { x: cx, y: lineTop + T / 2 }, waitAt: { x: cx, y: lineTop },
                               growth: { level: Math.min(Math.max(b.level || 0, 0), 3), annex: annexS ? ANNEX[b.goal] : "" } };
       if (svc) Object.assign(out.buildings[b.id], { service: true, stop: { x: cx, y: feet }, waitAt: null });
       if (depot) {                                                       // its bays along the through track, its gateways
@@ -201,9 +183,9 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
       }
       if (annexS) x += annexS[0] * B + 2 * B;
       if (!spur && !depot && !svc) out.paths.push({ x: Math.round(cx - PATH_W * B / 2), y: Math.round(feet - 6 * B), w: PATH_W * B,
-                                  h: Math.round((pocketed ? lineTop - lift : lineTop) - feet + 6 * B + 2) });
+                                  h: Math.round(lineTop - feet + 6 * B + 2) });
       x += w + GAP * B;
-      if (!pocketed) free = Math.max(free, x - GAP * B);
+      free = Math.max(free, x - GAP * B);
       if (b.type === SIDING) {                                           // the siding beside the booth, its buffer east
         const sx = Math.round(x - GAP * B / 2), sy = Math.round(feet - T * 0.75);
         out.sidings.push({ id: b.id, x: sx, y: sy, tiles: SIDING_TILES, stand: { x: sx + T * 0.6, y: sy + T * 0.8, dx: T * 0.62 } });
@@ -218,14 +200,10 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   const last = out.lines.length - 1, multi = out.lines.length > 1;
   const colR = colL + Math.ceil((right + GAP * B - colL) / T) * T;      // the right column (the merge), or the line's end
 
-  // the track, one way round (js/camp/track.js): the way in, a line per row with its pockets, the right column, the
-  // switch on to the buffer stop or down to the return line, the return line west, up the left column
-  const track = loop(T, out.lines, colL, colR, multi, pockets);
+  // the track, one way round (js/camp/track.js): the way in, a line per row, the right column, the switch on to the
+  // buffer stop or down to the return line, the return line west, up the left column
+  const track = loop(T, out.lines, colL, colR, multi);
   out.tiles = track.tiles;
-  out.pocketStyle = style;
-  if (style === "flat") {                                                // the flat pocket: its rails `lift` over the line's
-    for (const t of out.tiles) if (t.pocket !== undefined) t.py = t.y + T + T / 2 - lift;
-  }
   out.switches = track.switches;
   out.ret = track.ret;
   const endY = out.lines[last];
@@ -299,9 +277,7 @@ function route(out, cells, fromId, toId) {
   const T = out.T;
   const chain = path(cells, T, a.stop, z.stop);
   if (!chain) return null;
-  // a flat pocket (POCKET): its corners are short diagonals from the line's middle to the pocket's rails
-  const mid = (t) => (t.py === undefined ? [t.x + T / 2, t.y + T / 2]
-    : t.name === "corner-se" ? [t.x + T, t.py] : t.name === "corner-sw" ? [t.x, t.py] : [t.x + T / 2, t.py]);
+  const mid = (t) => [t.x + T / 2, t.y + T / 2];
   // a cart from the lookout comes in from outside the wall, down the way in
   const first = a.wall === "in" ? [a.stop.x, -T] : [a.stop.x, a.stop.y];
   const pts = simplify([first, ...chain.slice(1, -1).map(mid), [z.stop.x, z.stop.y]]);
