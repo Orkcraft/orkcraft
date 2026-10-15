@@ -203,7 +203,7 @@ export function CampCarts({ L, roads, carts = [], travel = 0, avg = null }) {
     if (!r) continue;
     if (c.stands) {
       const p = L.buildings[r.to];
-      if (!p) continue;
+      if (!p || p.back) continue;                       // a service is consulted: no track, no cart stands there
       if (!standing.has(r.to)) standing.set(r.to, []);
       standing.get(r.to).push(c);
       continue;

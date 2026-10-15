@@ -9,6 +9,7 @@
 // `step.s` (the layers at their own whole multiple, §3).
 
 import { loop, cellsOf, path, throwsOn, simplify, lengthOf, exitsOf } from "./track.js";
+import { backOf, neighbours, readersOf, spread, pathTo } from "./backrow.js";
 
 export { exitsOf, simplify, lengthOf };
 export const TILE = 64;          // a track tile, art px (c2's 64 × 64), shown at step.s
@@ -108,7 +109,9 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   const tower = sorted.find((b) => b.type === WAY_IN) || null;
   const cata = [...sorted].reverse().find((b) => b.type === WAY_OUT) || null;
   const inRows = sorted.filter((b) => b !== tower && b !== cata);
-  const rows = rowsOf(inRows);
+  // the back row (§4c rule 1): services never placed stand along the palisade; return pairs as neighbours (rule 2)
+  const backs = backOf(inRows);
+  const rows = neighbours(rowsOf(inRows.filter((b) => !backs.includes(b))), roads, ROW_MAX);
 
   const td = tower ? dims(tower) : null, cd = cata ? dims(cata) : null;
   const M = Math.round(160 * B);                                        // the wilderness round the camp
@@ -131,15 +134,18 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   // by a T on the line, so a building's slot is centred on a tile and its pocket's three tiles (the curve in, the
   // pocket, the curve out) never meet the next one's. A station keeps its own track and has no pocket.
   const pockets = [];
+  const backD = backs.map((b) => ({ b, d: dims(b) }));
+  const backFeet = wallY - 24 * B + Math.max(0, ...backD.map(({ d }) => d.h));
   let lineTop = 0, right = colL + 3 * T;
   rows.forEach((row, r) => {
     const ds = row.map((b) => ({ b, d: dims(b), spur: SPUR.has(b.type), own: SPUR.has(b.type) || b.type === SIDING }));
     const band = Math.max(64 * B, ...ds.map(({ d, spur, own }) => (spur ? d.h - T / 4 : d.h + PATH_L * B + (own ? 0 : T))),
                           r === homeRow ? homeS[1] * B + PATH_L * B : 0);
-    if (r === 0) lineTop = Math.max(wallY - 24 * B + band, wallY + T);
+    if (r === 0) lineTop = Math.max((backs.length ? backFeet + PATH_W * B + 12 * B : wallY - 24 * B) + band, wallY + T);
     else {
       const prev = out.lines[r - 1];
-      lineTop = prev + Math.ceil((T + 8 * B + band) / T) * T;
+      const cross = backs.length ? PATH_W * B + 8 * B : 0;                 // room under the line for a path across (§4c)
+      lineTop = prev + Math.ceil((T + 8 * B + cross + band) / T) * T;
     }
     out.lines.push(lineTop);
     pockets.push([]);
@@ -179,6 +185,19 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
     if (r === homeRow && !out.home) { x = Math.max(x, free); x += putHome(x, lineTop, r); free = x; }
     right = Math.max(right, x - GAP * B, free);
   });
+  // each service over its busiest reader, none over another, clear of the way in and the lookout
+  const here = new Set(Object.keys(out.buildings));
+  const xs = spread(backD.map(({ b, d }) => {
+    const r = readersOf(b.id, roads, here)[0];
+    return { id: b.id, w: d.w, over: r ? out.buildings[r].cx : null };
+  }), colL + T + GAP * B, GAP * B);
+  for (const { b, d } of backD) {
+    const x = xs[b.id], cx = Math.round(x + d.w / 2);
+    out.buildings[b.id] = { id: b.id, type: b.type, file: d.file, x, y: Math.round(backFeet - d.h), w: d.w, h: d.h, cx,
+                            feet: backFeet, row: -1, back: true, spur: false, pocket: false, door: { x: cx, y: backFeet },
+                            stop: { x: cx, y: backFeet }, growth: { level: Math.min(Math.max(b.level || 0, 0), 3), annex: "" } };
+    right = Math.max(right, x + d.w);
+  }
   const last = out.lines.length - 1, multi = out.lines.length > 1;
   const colR = colL + Math.ceil((right + GAP * B - colL) / T) * T;      // the right column (the merge), or the line's end
 
@@ -219,6 +238,16 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   out.w = Math.round(wallX + 24 * B + M);
   out.h = Math.round(foot + 48 * B + M);
   // the work: from the back wall to the return line, between the columns (the default view is centred on it)
+  // a path from each service to each building that reads it, crossing lines on planks (§4c rule 1)
+  out.crossings = [];
+  for (const { b } of backD) {
+    for (const id of readersOf(b.id, roads, here)) {
+      const way = out.buildings[id] && !out.buildings[id].back && pathTo(out.buildings[b.id], out.buildings[id], out, PATH_W * B);
+      if (!way) continue;
+      out.paths.push(...way.boxes);
+      out.crossings.push(...way.crossings);
+    }
+  }
   out.work = { x: colL, y: wallY - 24 * B, w: track.xs + 2 * T - colL, h: foot - wallY + 24 * B };
   out.decor = decorAround(out, B);
 

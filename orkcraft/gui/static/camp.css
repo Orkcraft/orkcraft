@@ -196,3 +196,7 @@
 /* a cart going round again wears its round and its price (§4c rule 8), as a launched cart wears its cost */
 .gui-camp__launch-chip.is-round { left: 0; transform: translateX(-50%); white-space: nowrap; pointer-events: none; }
 .gui-camp__cart.is-driven.is-gone .gui-camp__launch-chip { display: none; }
+/* a level crossing (§4c rule 1): planks between the rails where a path to a service crosses a line, square to it */
+.gui-camp__crossing { position: absolute; box-sizing: border-box; border-left: 2px solid var(--art-outline);
+  border-right: 2px solid var(--art-outline);
+  background: repeating-linear-gradient(180deg, var(--art-wood) 0 6px, var(--art-wood-dark) 6px 8px) 0 28% / 100% 44% no-repeat; }

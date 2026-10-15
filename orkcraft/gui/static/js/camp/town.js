@@ -83,22 +83,28 @@ function Decals({ L }) {
   return html`<div class="gui-camp__layer is-ground">${out}</div>`;
 }
 
-/** The dirt paths from the doors to the stops: earth with the grass's rim down both sides. */
+/** The dirt paths from the doors to the stops, and from a service down to its readers (§4c): earth with the grass's
+ *  rim down both sides (and along the top and the foot of a run across). All the rims first, then all the earth over
+ *  them, so where two runs join no rim cuts the join. */
 function Paths({ L }) {
   const B = L.step.b;
-  return html`<div class="gui-camp__layer is-paths">${L.paths.map((p) => {
-    const rw = sizeOf("ground/rim-w.png"), re = sizeOf("ground/rim-e.png");
-    return html`${tiled("ground/earth.png", p.x, p.y, p.w, p.h, B) || html`<div class="gui-camp__earth" style=${`left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px`}></div>`}
-      ${rw && tiled("ground/rim-w.png", p.x - (rw[0] - 2) * B, p.y, rw[0] * B, p.h, B, "repeat-y")}
-      ${re && tiled("ground/rim-e.png", p.x + p.w - 2 * B, p.y, re[0] * B, p.h, B, "repeat-y")}`;
-  })}</div>`;
+  const rw = sizeOf("ground/rim-w.png"), re = sizeOf("ground/rim-e.png"), rn = sizeOf("ground/rim-n.png"), rs = sizeOf("ground/rim-s.png");
+  const across = (p) => p.service && p.w > p.h;
+  const rims = L.paths.map((p) => html`${rw && tiled("ground/rim-w.png", p.x - (rw[0] - 2) * B, p.y, rw[0] * B, p.h, B, "repeat-y")}
+    ${re && tiled("ground/rim-e.png", p.x + p.w - 2 * B, p.y, re[0] * B, p.h, B, "repeat-y")}
+    ${across(p) && rn && tiled("ground/rim-n.png", p.x, p.y - (rn[1] - 2) * B, p.w, rn[1] * B, B, "repeat-x")}
+    ${across(p) && rs && tiled("ground/rim-s.png", p.x, p.y + p.h - 2 * B, p.w, rs[1] * B, B, "repeat-x")}`);
+  const earth = L.paths.map((p) => tiled("ground/earth.png", p.x, p.y, p.w, p.h, B)
+    || html`<div class="gui-camp__earth" style=${`left:${p.x}px;top:${p.y}px;width:${p.w}px;height:${p.h}px`}></div>`);
+  return html`<div class="gui-camp__layer is-paths">${rims}${earth}</div>`;
 }
 
 function Track({ L }) {
   const T = L.T;
   return html`<div class="gui-camp__layer is-track">${L.tiles.map((t) => sizeOf(`track/${t.name}.png`)
     ? img(`track/${t.name}.png`, t.x, t.y, T, T, t.rot ? `transform:rotate(${t.rot}deg)` : "")
-    : html`<div class=${cls("gui-camp__rails", { "is-v": t.name === "straight-v" })} style=${`left:${t.x}px;top:${t.y}px;width:${T}px;height:${T}px`}></div>`)}</div>`;
+    : html`<div class=${cls("gui-camp__rails", { "is-v": t.name === "straight-v" })} style=${`left:${t.x}px;top:${t.y}px;width:${T}px;height:${T}px`}></div>`)}
+    ${(L.crossings || []).map((c) => html`<div class="gui-camp__crossing" style=${`left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px`}></div>`)}</div>`;
 }
 
 /** The low palisade of rounded logs: along the back (open where the track comes in under the lookout), down the right
@@ -131,7 +137,7 @@ function Palisade({ L }) {
 /** Where a building's name stands, clear of its door and its steward: on the facade's top in the upper row (and the
  *  wall's two), under its foot left of its path in a lower row. In the building's own box. */
 function nameAt(p, B) {
-  if (p.wall || p.row === 0) return { cl: "is-top", style: `left:${p.w / 2}px;top:${Math.round(p.h * 0.14)}px` };
+  if (p.wall || p.back || p.row === 0) return { cl: "is-top", style: `left:${p.w / 2}px;top:${Math.round(p.h * 0.14)}px` };
   return { cl: "is-under", style: `left:${p.cx - p.x - (PATH_W / 2 + 4) * B}px;top:${p.h + 6 * B}px` };
 }
 
