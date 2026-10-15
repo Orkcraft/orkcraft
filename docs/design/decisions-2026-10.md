@@ -817,3 +817,28 @@ in the evening, on different files; the PM session reviews and merges in the mor
 ("change nothing outside them") and asks for a behavioural browser test. The saving is in Claude's weekly limit: a
 review costs about half of writing the code, so agy pays on small specs and barely on hard ones. The split and the
 flow: [specs/README.md](../specs/README.md) "Who builds".
+
+## 27. The concept is frozen: only changes to what exists, and simplifications (15 October, the owner)
+
+The concept is checked on one person and grows faster than the product (92 design docs, no tester yet). So, from
+today, **an idea is taken only if it changes or improves a mechanic that already exists. No new mechanics, buildings,
+systems or concepts.** The one exception: **a simplification** of the product or of a feature (fewer steps, fewer
+words, a thing removed or merged) is always welcome.
+
+**How the PM session applies it.** Every idea, the owner's or an agent's, is sorted before anything is written:
+- **improves an existing mechanic** (Mission 1, the Review gate, carts, the console, the phone, the camp's look,
+  the onboarding, install) → taken, prioritised as usual;
+- **simplifies** → taken, and ranks above an improvement of the same size;
+- **new** (a new mechanic, building, resource, currency, system) → **No** for now; one line in
+  [open-questions.md](open-questions.md) "After the testers", no design doc, no spec.
+
+**What it means for work already designed:**
+- Specs already written keep their order (specs/README.md): they rework existing mechanics (the camp's layout, the
+  home, the depot, the phone).
+- **The settlement (§25)** is new (leisure pieces, idle orks walking, the home's room, coins): no specs; it waits for
+  the testers. **BMAD lines (§23)** and **Mission 1b** stay after the testers, as already planned.
+
+**When it lifts:** after the testers' numbers, about 14 November (§22), and only if they hold:
+1. of 3–5 testers, **at least 3 finish Mission 1**;
+2. **at least 2 come back** within 7 days without being asked.
+Below that, the work goes to what stopped them (install, Mission 1, the first five minutes), still under this rule.

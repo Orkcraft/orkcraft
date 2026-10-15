@@ -16,6 +16,9 @@ The state a new product-and-marketing session starts from. Update it when you ha
 - No model identifiers in commits, docs or anything pushed.
 - Art: never re-pixelate generated images (CLAUDE.md "Art").
 
+- **Concept frozen** (decisions §27): take only ideas that change or improve an existing mechanic, and any
+  simplification; anything new goes as one line to open-questions.md "After the testers", no doc, no spec. Lifts
+  ~14 November if ≥3 testers finish Mission 1 and ≥2 come back within 7 days.
 - **Who builds** (decisions §26): the PM marks each spec agy or Claude when writing it; the owner starts both in the
   evening; the PM reviews every branch in the morning (specs/README.md "Who builds").
 
@@ -40,7 +43,6 @@ The state a new product-and-marketing session starts from. Update it when you ha
 ## Waiting on the owner
 - Play Mission 1 → fill spec 02 (Mission 1 blockers).
 - Written IP confirmation.
-- Whether to write the settlement specs (MVP).
 - E1 clean-install check on Wed 21 October; release 0.3.0 (spec 05) on Thu 22 October; Halloween decor (spec 04)
   before 31 October; testers after that (timeline: decisions §22).
 

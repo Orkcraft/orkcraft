@@ -215,3 +215,10 @@ found. Gathered from the docs of 2026-10-12 and -13.
   before the launch ("leaving the camp").
 - **R10. Other AI tools' marketplaces:** which of Codex, Cursor and the rest have a public plugin or extension
   marketplace, and what their format allows (hooks, a command) ([distribution.md](distribution.md) §3).
+
+## After the testers (new ideas parked by decisions §27)
+
+New mechanics, buildings or systems wait here, one line each, until the concept freeze lifts (decisions §27).
+
+- The settlement: leisure pieces on the grass, idle orks walking to them, the home's room, coins and furniture
+  ([settlement.md](settlement.md), decisions §25).
