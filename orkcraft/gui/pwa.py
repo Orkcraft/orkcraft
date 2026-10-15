@@ -27,6 +27,7 @@ same for everyone and say nothing of this town.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import re
 import time
@@ -100,10 +101,44 @@ def wants(path: str) -> bool:
     return path == PREFIX.rstrip("/") or path.startswith(PREFIX)
 
 
-def _head(status: HTTPStatus, content_type: str, length: int, extra: str = "") -> bytes:
+CACHE_PREFIXES = ("v3/", "sprites/", "icons/", "fence/", "fonts/")
+
+
+def is_cache_first(name: str) -> bool:
+    return name.startswith(CACHE_PREFIXES) or name.endswith((".png", ".webp"))
+
+
+_HASH_CACHE: dict[str, tuple[float, int, str]] = {}
+
+
+def assets() -> dict[str, str]:
+    """A map {path: short content hash} of the cache-first files (first 10 hex of sha1)."""
+    all_files = files()
+    out: dict[str, str] = {}
+    for name, path in all_files.items():
+        if not is_cache_first(name):
+            continue
+        try:
+            st = path.stat()
+            cached = _HASH_CACHE.get(name)
+            if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
+                out[name] = cached[2]
+            else:
+                h = hashlib.sha1(path.read_bytes()).hexdigest()[:10]
+                _HASH_CACHE[name] = (st.st_mtime, st.st_size, h)
+                out[name] = h
+        except OSError:
+            pass
+    return out
+
+
+def _head(status: HTTPStatus, content_type: str, length: int, extra: str = "",
+          cache_first: bool = False, keep_alive: bool = False) -> bytes:
+    cache = "public, max-age=31536000, immutable" if cache_first else "no-cache"
+    conn = "Connection: keep-alive" if keep_alive else "Connection: close"
     return (f"HTTP/1.1 {status.value} {status.phrase}\r\nContent-Type: {content_type}\r\n"
-            f"Content-Length: {length}\r\nCache-Control: no-cache\r\nX-Content-Type-Options: nosniff\r\n"
-            f"Referrer-Policy: no-referrer\r\n{extra}Connection: close\r\n\r\n").encode("ascii")
+            f"Content-Length: {length}\r\nCache-Control: {cache}\r\nX-Content-Type-Options: nosniff\r\n"
+            f"Referrer-Policy: no-referrer\r\n{extra}{conn}\r\n\r\n").encode("ascii")
 
 
 def manifest(raw: bytes, query: str) -> bytes:
@@ -117,25 +152,32 @@ def manifest(raw: bytes, query: str) -> bytes:
     return json.dumps(data, ensure_ascii=False).encode("utf-8")
 
 
-def serve(method: str, target: str) -> bytes:
+def serve(method: str, target: str, keep_alive: bool = False) -> bytes:
     """A whole response to a request for the app (`wants` its path)."""
     parts = urlsplit(target)
     if parts.path == PREFIX.rstrip("/"):
-        return _head(HTTPStatus.MOVED_PERMANENTLY, "text/plain; charset=utf-8", 0, f"Location: {PREFIX}\r\n")
+        return _head(HTTPStatus.MOVED_PERMANENTLY, "text/plain; charset=utf-8", 0, f"Location: {PREFIX}\r\n",
+                     keep_alive=keep_alive)
     if method not in ("GET", "HEAD"):
-        return _head(HTTPStatus.METHOD_NOT_ALLOWED, "text/plain; charset=utf-8", 0, "Allow: GET, HEAD\r\n")
+        return _head(HTTPStatus.METHOD_NOT_ALLOWED, "text/plain; charset=utf-8", 0, "Allow: GET, HEAD\r\n",
+                     keep_alive=keep_alive)
     name = parts.path[len(PREFIX):] or "index.html"
+    if name == "assets.json":
+        body = json.dumps(assets(), ensure_ascii=False).encode("utf-8")
+        head = _head(HTTPStatus.OK, "application/json", len(body), cache_first=False, keep_alive=keep_alive)
+        return head if method == "HEAD" else head + body
     path = files().get(name)
     if path is None:
         body = b"Not Found"
-        return _head(HTTPStatus.NOT_FOUND, "text/plain; charset=utf-8", len(body)) + body
+        return _head(HTTPStatus.NOT_FOUND, "text/plain; charset=utf-8", len(body), keep_alive=keep_alive) + body
     body = path.read_bytes()
     if name == "manifest.webmanifest":
         body = manifest(body, parts.query)
     extra = f"Content-Security-Policy: {CSP}\r\n" if path.suffix == ".html" else ""
     if name == "sw.js":
         extra += f"Service-Worker-Allowed: {PREFIX}\r\n"
-    head = _head(HTTPStatus.OK, TYPES[path.suffix], len(body), extra)
+    cf = is_cache_first(name)
+    head = _head(HTTPStatus.OK, TYPES[path.suffix], len(body), extra, cache_first=cf, keep_alive=keep_alive)
     return head if method == "HEAD" else head + body
 
 

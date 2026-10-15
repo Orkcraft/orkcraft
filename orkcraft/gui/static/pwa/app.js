@@ -39,6 +39,19 @@ if (location.hash || location.search) history.replaceState(null, "", location.pa
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 
+async function syncAssets() {
+  try {
+    const r = await fetch("assets.json");
+    if (!r.ok) return;
+    const assets = await r.json();
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      (reg.active || navigator.serviceWorker.controller)?.postMessage({ type: "assets", assets });
+    }
+  } catch {}
+}
+syncAssets();
+
 // -- pairing ----------------------------------------------------------------------------------------
 
 function unpaired(note = "") {
@@ -77,6 +90,7 @@ async function pair(pairCode, name, msg, button) {
     if (!r.ok) throw new Error(body.error || `Not paired (${r.status})`);
     device = { id: body.id, token: body.token, name: body.name };
     store.set(device);
+    precacheCamp();
     if (IOS && !STANDALONE) homeScreen();
     else connect();
   } catch (e) {
@@ -265,13 +279,63 @@ document.addEventListener("visibilitychange", () => {
 // the orkspace's buildings: in trouble or at work, then the quiet ones as a grid (town.js); what a phone does now
 // and then (the Workchief, Drop file here, Stop all) is the bar at the foot (dock.js), the look and this phone the
 // page's own foot.
+let precacheText = "";
+function showPrecache(text) {
+  precacheText = text;
+  if (ui?.precache) {
+    ui.precache.hidden = !text;
+    ui.precache.textContent = text;
+  }
+}
+
+async function precacheCamp() {
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const r = await fetch("assets.json");
+    if (!r.ok) return;
+    const assets = await r.json();
+    const allPaths = Object.keys(assets);
+    const dpr = window.devicePixelRatio || 1;
+    const hdCuts = new Set(allPaths.filter((p) => /@hd(1|1_5|2)\.webp$/.test(p)));
+    const basePngsWithHd = new Set();
+    for (const h of hdCuts) {
+      basePngsWithHd.add(h.replace(/@hd(1|1_5|2)\.webp$/, ".png"));
+    }
+    const paths = allPaths.filter((p) => (dpr >= 2 ? !basePngsWithHd.has(p) : !hdCuts.has(p)));
+    const total = paths.length;
+    if (!total) return;
+
+    const reg = await navigator.serviceWorker.ready;
+    const sw = reg.active || navigator.serviceWorker.controller;
+    if (!sw) return;
+
+    for (let i = 0; i < total; i += 20) {
+      const batch = paths.slice(i, i + 20);
+      await new Promise((resolve) => {
+        const mc = new MessageChannel();
+        mc.port1.onmessage = () => resolve();
+        sw.postMessage({ type: "precache", paths: batch }, [mc.port2]);
+        setTimeout(resolve, 10000);
+      });
+      const done = Math.min(i + batch.length, total);
+      showPrecache(`Getting the camp's pictures… ${done} / ${total}`);
+    }
+  } catch {
+  } finally {
+    showPrecache("");
+  }
+}
+
 function layout() {
   const parts = {
     status: h("p", { class: "status", role: "status" }),
+    precache: h("p", { class: "precache muted", role: "status" }),
     install: h("div"),
     head: h("header", { class: "ok-hud head" }),
     news: h("div", { class: "news", "aria-live": "polite" }),
   };
+  parts.precache.hidden = !precacheText;
+  parts.precache.textContent = precacheText;
   parts.town = makeTown({ send, deliver, flash, rerender: () => { if (town) { parts.town.render(town); ground(town); } } });
   parts.look = makeLook({ send, open: (id) => parts.town.open(id) });
   parts.fields = makeFields({ send, flash });
@@ -280,7 +344,7 @@ function layout() {
   const [camp, answers, buildings, info, more] = parts.town.parts;
   // The town's parts acted on only while it answers (not its sheets, not Answers: an answer is kept offline).
   parts.content = () => [camp, parts.fields.el, buildings, parts.look.el];
-  show(parts.status, parts.install, parts.head, parts.news, parts.look.el, camp, answers, parts.fields.el, buildings, info, more,
+  show(parts.status, parts.precache, parts.install, parts.head, parts.news, parts.look.el, camp, answers, parts.fields.el, buildings, info, more,
     parts.dock.foot, parts.dock.el, ...parts.dock.sheets, parts.fields.sheet, parts.slots.sheet);
   return parts;
 }

@@ -52,7 +52,8 @@ def report(host, args: dict) -> dict[str, Any]:
     return {"outcome": min(outcomes, key=lambda o: order.index(o) if o in order else len(order))}
 
 
-async def post(listener, method: str, headers: dict[str, str], reader: asyncio.StreamReader) -> bytes:
+async def post(listener, method: str, headers: dict[str, str], reader: asyncio.StreamReader,
+               keep_alive: bool = False) -> bytes:
     """`POST /api/place` on the phone listener (gui/phones.py): a report from a client that speaks no socket
     (Shortcuts, Tasker): a device token, JSON, 1 KB, six a minute a device."""
     from orkcraft.gui import mobile
@@ -60,30 +61,31 @@ async def post(listener, method: str, headers: dict[str, str], reader: asyncio.S
     from orkcraft.gui.pairing import Bucket
     from orkcraft.gui.phones import HEAD_S, _bearer, _json, _response
     if method != "POST":
-        return _response(HTTPStatus.METHOD_NOT_ALLOWED)
+        return _response(HTTPStatus.METHOD_NOT_ALLOWED, keep_alive=keep_alive)
     device = listener.pairing.device(_bearer(headers.get("authorization", "")))
     if device is None:
-        return _response(HTTPStatus.FORBIDDEN)
+        return _response(HTTPStatus.FORBIDDEN, keep_alive=keep_alive)
     if headers.get("content-type", "").split(";")[0].strip().lower() != "application/json":
-        return _response(HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+        return _response(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, keep_alive=keep_alive)
     try:
         length = int(headers.get("content-length", ""))
     except ValueError:
-        return _response(HTTPStatus.LENGTH_REQUIRED)
+        return _response(HTTPStatus.LENGTH_REQUIRED, keep_alive=keep_alive)
     if not 0 < length <= LIMIT or "transfer-encoding" in headers:
-        return _response(HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+        return _response(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, keep_alive=keep_alive)
     bucket = listener._place_buckets.setdefault(device["id"], Bucket(RATE, BURST, BURST))
     if not bucket.take():
-        return _json(HTTPStatus.TOO_MANY_REQUESTS, {"error": "Too many place reports: wait a minute"})
+        return _json(HTTPStatus.TOO_MANY_REQUESTS, {"error": "Too many place reports: wait a minute"},
+                     keep_alive=keep_alive)
     try:
         body = json.loads(await asyncio.wait_for(reader.readexactly(length), HEAD_S))
     except (ValueError, asyncio.IncompleteReadError, TimeoutError):
-        return _json(HTTPStatus.BAD_REQUEST, {"error": "Not a place report"})
+        return _json(HTTPStatus.BAD_REQUEST, {"error": "Not a place report"}, keep_alive=keep_alive)
     if not isinstance(body, dict):
-        return _json(HTTPStatus.BAD_REQUEST, {"error": "Not a place report"})
+        return _json(HTTPStatus.BAD_REQUEST, {"error": "Not a place report"}, keep_alive=keep_alive)
     listener.pairing.seen(device["id"])
     try:
         result = listener.host.command("place.report", mobile.guard("place.report", body, device))
     except CommandError as e:
-        return _json(HTTPStatus.BAD_REQUEST, {"error": str(e)})
-    return _json(HTTPStatus.OK, result)
+        return _json(HTTPStatus.BAD_REQUEST, {"error": str(e)}, keep_alive=keep_alive)
+    return _json(HTTPStatus.OK, result, keep_alive=keep_alive)

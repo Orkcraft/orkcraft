@@ -476,3 +476,89 @@ def test_settings_phones_offers_keeping_the_computer_awake_once_a_phone_is_paire
     host.command("awake.offer", {"yes": True})
     assert listener.read()["awake_offer"] == "" and host.town.machine.keep_awake == "phone"
     assert settings.load().keep_awake == "phone" and settings.load().phones   # the phone kept by the save
+
+
+@pytest.mark.asyncio
+async def test_two_get_requests_on_one_connection_both_answered_keep_alive(fake_repo):
+    server, task = await _serve(fake_repo)
+    try:
+        offer = server.host.command("phones.pair")
+        await _listening(server)
+        def run():
+            host, port = offer["address"].removeprefix("https://").rsplit(":", 1)
+            conn = http.client.HTTPSConnection(host, int(port), context=_pinned(), timeout=5)
+            try:
+                conn.request("GET", "/app/")
+                r1 = conn.getresponse()
+                assert r1.status == 200
+                assert r1.getheader("Connection", "").lower() == "keep-alive"
+                body1 = r1.read()
+                assert b"Orkline" in body1
+
+                conn.request("GET", "/app/app.js")
+                r2 = conn.getresponse()
+                assert r2.status == 200
+                assert r2.getheader("Connection", "").lower() == "keep-alive"
+                body2 = r2.read()
+                assert len(body2) > 0
+            finally:
+                conn.close()
+        await asyncio.to_thread(run)
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)
+
+
+@pytest.mark.asyncio
+async def test_connection_close_request_ends_the_connection(fake_repo):
+    server, task = await _serve(fake_repo)
+    try:
+        offer = server.host.command("phones.pair")
+        await _listening(server)
+        def run():
+            host, port = offer["address"].removeprefix("https://").rsplit(":", 1)
+            conn = http.client.HTTPSConnection(host, int(port), context=_pinned(), timeout=5)
+            try:
+                conn.request("GET", "/app/", headers={"Connection": "close"})
+                r = conn.getresponse()
+                assert r.status == 200
+                assert r.getheader("Connection", "").lower() == "close"
+                assert r.will_close is True
+                assert conn.sock is None  # Connection: close ended the connection
+                body = r.read()
+                assert b"Orkline" in body
+                assert r.isclosed()
+            finally:
+                conn.close()
+        await asyncio.to_thread(run)
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)
+
+
+@pytest.mark.asyncio
+async def test_idle_timeout_closes_connection(fake_repo, monkeypatch):
+    server, task = await _serve(fake_repo)
+    try:
+        offer = server.host.command("phones.pair")
+        await _listening(server)
+        monkeypatch.setattr(phones, "IDLE_S", 0.2)
+        def run():
+            import time
+            host, port = offer["address"].removeprefix("https://").rsplit(":", 1)
+            conn = http.client.HTTPSConnection(host, int(port), context=_pinned(), timeout=5)
+            try:
+                conn.request("GET", "/app/")
+                r = conn.getresponse()
+                assert r.status == 200
+                r.read()
+                time.sleep(0.35)
+                with pytest.raises((http.client.RemoteDisconnected, ConnectionResetError, BrokenPipeError, OSError)):
+                    conn.request("GET", "/app/")
+                    conn.getresponse()
+            finally:
+                conn.close()
+        await asyncio.to_thread(run)
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)
