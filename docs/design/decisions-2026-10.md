@@ -770,3 +770,28 @@ station's council annex** (on per station or for the whole line, its price said 
 the architecture), not extra buildings; the person's approvals are barriers on the line. Priority medium (P1),
 after the testers' first feedback, delivered as a line template. [process-lines.md](process-lines.md).
 
+## 24. Negative feedback in a camp of cheerful orks (15 October, the owner's question; design)
+
+The risk: the person likes the orks and does not want to upset them, so they pass weak work and skip 👎, and the
+town cannot learn (the quality guard of the score and Mission 5b live on it). **The answer: feedback is never a blow
+to an ork; it is an order on the work, and it visibly makes the camp stronger.**
+
+1. **Critique goes to the work, never to the ork.** The words at the Review gate are about the result: *Needs
+   another round* (with a note) and *Not this* (with a reason chip: did the wrong thing · broke something · too
+   much · unclear), never "reject" or "bad ork". 👎 stays in the data; the button says what it does.
+2. **Orks are never sad.** No sad face, no slump, no "fired". A cart sent back makes its ork **roll up its sleeves**
+   (one frame, the cart back on the line as *round 2*); the Workchief's line keeps the camp's humour: "Back to the
+   anvil, lads, the boss wants it sharper."
+3. **The orks ask for it.** At the gate the waiting ork's line invites the note: "Be straight with us, boss: what
+   would make it better?", and the reason chips make it one tap, the note optional.
+4. **Feedback visibly pays.** A note that leads to a kept improvement (the outer loop, Mission 5b) hangs as a
+   **lesson** in the building — a scroll pinned on its wall, its line readable on hover ("check the tests before
+   the gate — from your note, 12 Oct") — and counts toward the building's **Renown** as a 👍 does. The Workchief
+   says it once: "Your note taught the Grunts something." A deed for the first such lesson: *Hard but fair*.
+5. **Said plainly where money is:** a cart sent back at the gate costs less than one that breaks after it; the
+   waybill shows the round's price and what the note saved, so honesty reads as thrift, not cruelty.
+6. **Calm by default still holds:** no nagging for feedback; a result passed without a word is fine.
+
+Priority: wording and the sleeves frame are small (P1 with the next gate work); the lesson scroll comes with Mission
+5b (the outer loop). Not started.
+
