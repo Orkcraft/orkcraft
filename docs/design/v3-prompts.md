@@ -756,4 +756,9 @@ The owner's yes on the whole queue (decisions §17): 21 calls (15 + 6 for a seco
   leaves it) and `people/stages/data_analyst-2|3|4.png` framed as the stages, its ears kept in.
 
 The camp after the round: `img/v3-preview/camp-round13.png`.
+- **The orks a third smaller** (the owner, through the PM: an ork about a third of a building's height). No whole
+  zoom step does it, so every ork sheet is read again 1.5× coarser (`merge` ×1.5): the bodies, the roles, the states,
+  the inside poses, the door, the Prospector standing and moving — about 38 px tall where they were 56, in their own
+  colours, under their old names. The goblin is a class, not an ork, and the UI's faces are unchanged. Before and
+  after beside two buildings: `img/v3-preview/orks-smaller.png`. No call spent.
 

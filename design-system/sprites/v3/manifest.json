@@ -3090,12 +3090,12 @@
   {
    "file": "orks/body/door.png",
    "size": [
-    384,
-    168
+    256,
+    112
    ],
    "frame": [
-    96,
-    168
+    64,
+    112
    ],
    "frames": 4,
    "pitch": 7.43,
@@ -3103,7 +3103,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o6-door.png",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8
@@ -3111,12 +3111,12 @@
   {
    "file": "orks/body/idle.png",
    "size": [
-    160,
-    56
+    96,
+    40
    ],
    "frame": [
-    40,
-    56
+    24,
+    40
    ],
    "frames": 4,
    "pitch": 6.0,
@@ -3124,7 +3124,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "Gemini_Generated_Image_4xw8i84xw8i84xw8.jpeg",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8
@@ -3132,12 +3132,12 @@
   {
    "file": "orks/body/sit.png",
    "size": [
-    96,
-    56
+    64,
+    40
    ],
    "frame": [
-    48,
-    56
+    32,
+    40
    ],
    "frames": 2,
    "pitch": 6.0,
@@ -3145,7 +3145,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "Gemini_Generated_Image_4xw8i84xw8i84xw8.jpeg",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8
@@ -3153,12 +3153,12 @@
   {
    "file": "orks/body/walk-down.png",
    "size": [
-    192,
-    48
+    144,
+    32
    ],
    "frame": [
-    32,
-    48
+    24,
+    32
    ],
    "frames": 6,
    "pitch": 5.73,
@@ -3166,7 +3166,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8
@@ -3174,12 +3174,12 @@
   {
    "file": "orks/body/walk-side.png",
    "size": [
-    192,
-    48
+    144,
+    32
    ],
    "frame": [
-    32,
-    48
+    24,
+    32
    ],
    "frames": 6,
    "pitch": 5.73,
@@ -3187,7 +3187,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8
@@ -3195,12 +3195,12 @@
   {
    "file": "orks/body/walk-up.png",
    "size": [
-    192,
-    48
+    144,
+    32
    ],
    "frame": [
-    32,
-    48
+    24,
+    32
    ],
    "frames": 6,
    "pitch": 5.73,
@@ -3208,34 +3208,13 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8
   },
   {
    "file": "orks/body/work.png",
-   "size": [
-    288,
-    56
-   ],
-   "frame": [
-    48,
-    56
-   ],
-   "frames": 6,
-   "pitch": 6.0,
-   "show": 1,
-   "anchor": "feet",
-   "placeholder": true,
-   "source": "Gemini_Generated_Image_4xw8i84xw8i84xw8.jpeg",
-   "scale": 1.0,
-   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
-   "fps": 8
-  },
-  {
-   "file": "orks/inside/carry.png",
    "size": [
     192,
     40
@@ -3245,12 +3224,33 @@
     40
    ],
    "frames": 6,
+   "pitch": 6.0,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "Gemini_Generated_Image_4xw8i84xw8i84xw8.jpeg",
+   "scale": 1.5,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "fps": 8
+  },
+  {
+   "file": "orks/inside/carry.png",
+   "size": [
+    144,
+    32
+   ],
+   "frame": [
+    24,
+    32
+   ],
+   "frames": 6,
    "pitch": 5.07,
    "show": 1,
    "anchor": "feet",
    "placeholder": true,
    "source": "o5-inside-r1.png",
-   "scale": 1.5,
+   "scale": 2.25,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
@@ -3266,12 +3266,12 @@
   {
    "file": "orks/inside/lens.png",
    "size": [
-    160,
-    40
+    96,
+    32
    ],
    "frame": [
-    40,
-    40
+    24,
+    32
    ],
    "frames": 4,
    "pitch": 5.07,
@@ -3279,7 +3279,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o5-inside-r1.png",
-   "scale": 1.5,
+   "scale": 2.25,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
@@ -3295,12 +3295,12 @@
   {
    "file": "orks/inside/pin.png",
    "size": [
-    192,
-    40
+    128,
+    32
    ],
    "frame": [
-    48,
-    40
+    32,
+    32
    ],
    "frames": 4,
    "pitch": 5.07,
@@ -3308,7 +3308,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o5-inside-r1.png",
-   "scale": 1.5,
+   "scale": 2.25,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
@@ -3324,12 +3324,12 @@
   {
    "file": "orks/inside/quill.png",
    "size": [
-    160,
-    40
+    96,
+    32
    ],
    "frame": [
-    40,
-    40
+    24,
+    32
    ],
    "frames": 4,
    "pitch": 5.07,
@@ -3337,7 +3337,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o5-inside-r1.png",
-   "scale": 1.5,
+   "scale": 2.25,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8,
@@ -3353,12 +3353,12 @@
   {
    "file": "orks/prospector/carry.png",
    "size": [
-    240,
-    56
+    192,
+    40
    ],
    "frame": [
-    40,
-    56
+    32,
+    40
    ],
    "frames": 6,
    "pitch": 7.57,
@@ -3366,7 +3366,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o7-moves.png",
-   "scale": 1.17,
+   "scale": 1.755,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8
@@ -3374,12 +3374,12 @@
   {
    "file": "orks/prospector/dig.png",
    "size": [
-    288,
-    56
+    192,
+    40
    ],
    "frame": [
-    48,
-    56
+    32,
+    40
    ],
    "frames": 6,
    "pitch": 7.57,
@@ -3387,7 +3387,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o7-moves.png",
-   "scale": 1.17,
+   "scale": 1.755,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8
@@ -3395,12 +3395,12 @@
   {
    "file": "orks/prospector/walk.png",
    "size": [
-    240,
-    56
+    144,
+    40
    ],
    "frame": [
-    40,
-    56
+    24,
+    40
    ],
    "frames": 6,
    "pitch": 7.57,
@@ -3408,7 +3408,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o7-moves.png",
-   "scale": 1.17,
+   "scale": 1.755,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "fps": 8
@@ -3416,12 +3416,12 @@
   {
    "file": "orks/roles/alchemist.png",
    "size": [
-    40,
-    48
+    24,
+    32
    ],
    "frame": [
-    40,
-    48
+    24,
+    32
    ],
    "frames": 1,
    "pitch": 4.32,
@@ -3429,7 +3429,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "roles-2.jpg",
-   "scale": 1.5,
+   "scale": 2.25,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3439,12 +3439,12 @@
   {
    "file": "orks/roles/artisan.png",
    "size": [
-    48,
-    48
+    32,
+    32
    ],
    "frame": [
-    48,
-    48
+    32,
+    32
    ],
    "frames": 1,
    "pitch": 4.32,
@@ -3452,7 +3452,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "roles-2.jpg",
-   "scale": 1.5,
+   "scale": 2.25,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3462,12 +3462,12 @@
   {
    "file": "orks/roles/farseer.png",
    "size": [
-    48,
-    48
+    32,
+    32
    ],
    "frame": [
-    48,
-    48
+    32,
+    32
    ],
    "frames": 1,
    "pitch": 4.32,
@@ -3475,7 +3475,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "roles-2.jpg",
-   "scale": 1.5,
+   "scale": 2.25,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3485,12 +3485,12 @@
   {
    "file": "orks/roles/grunt.png",
    "size": [
-    48,
-    56
+    32,
+    40
    ],
    "frame": [
-    48,
-    56
+    32,
+    40
    ],
    "frames": 1,
    "pitch": 5.73,
@@ -3498,7 +3498,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3508,12 +3508,12 @@
   {
    "file": "orks/roles/loader.png",
    "size": [
-    56,
-    48
+    40,
+    32
    ],
    "frame": [
-    56,
-    48
+    40,
+    32
    ],
    "frames": 1,
    "pitch": 4.32,
@@ -3521,7 +3521,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "roles-2.jpg",
-   "scale": 1.5,
+   "scale": 2.25,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3531,12 +3531,12 @@
   {
    "file": "orks/roles/lookout.png",
    "size": [
-    48,
-    48
+    32,
+    32
    ],
    "frame": [
-    48,
-    48
+    32,
+    32
    ],
    "frames": 1,
    "pitch": 4.32,
@@ -3544,7 +3544,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "roles-2.jpg",
-   "scale": 1.5,
+   "scale": 2.25,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3554,12 +3554,12 @@
   {
    "file": "orks/roles/mason.png",
    "size": [
-    48,
-    56
+    32,
+    40
    ],
    "frame": [
-    48,
-    56
+    32,
+    40
    ],
    "frames": 1,
    "pitch": 5.73,
@@ -3567,7 +3567,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3577,12 +3577,12 @@
   {
    "file": "orks/roles/mechanic.png",
    "size": [
-    48,
-    56
+    32,
+    40
    ],
    "frame": [
-    48,
-    56
+    32,
+    40
    ],
    "frames": 1,
    "pitch": 5.73,
@@ -3590,7 +3590,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3600,12 +3600,12 @@
   {
    "file": "orks/roles/pathfinder.png",
    "size": [
-    48,
-    56
+    32,
+    40
    ],
    "frame": [
-    48,
-    56
+    32,
+    40
    ],
    "frames": 1,
    "pitch": 5.73,
@@ -3613,7 +3613,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3623,12 +3623,12 @@
   {
    "file": "orks/roles/prospector.png",
    "size": [
-    32,
-    56
+    24,
+    40
    ],
    "frame": [
-    32,
-    56
+    24,
+    40
    ],
    "frames": 1,
    "pitch": 9.88,
@@ -3636,19 +3636,19 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o7-prospector.png",
-   "scale": 2.25,
+   "scale": 3.375,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "orks/roles/quartermaster.png",
    "size": [
-    48,
-    56
+    32,
+    40
    ],
    "frame": [
-    48,
-    56
+    32,
+    40
    ],
    "frames": 1,
    "pitch": 5.73,
@@ -3656,7 +3656,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3666,12 +3666,12 @@
   {
    "file": "orks/roles/seer.png",
    "size": [
-    48,
-    56
+    32,
+    40
    ],
    "frame": [
-    48,
-    56
+    32,
+    40
    ],
    "frames": 1,
    "pitch": 5.73,
@@ -3679,7 +3679,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3689,12 +3689,12 @@
   {
    "file": "orks/roles/taskmaster.png",
    "size": [
-    56,
-    48
+    40,
+    32
    ],
    "frame": [
-    56,
-    48
+    40,
+    32
    ],
    "frames": 1,
    "pitch": 4.32,
@@ -3702,7 +3702,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "roles-2.jpg",
-   "scale": 1.5,
+   "scale": 2.25,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3712,12 +3712,12 @@
   {
    "file": "orks/roles/treasurer.png",
    "size": [
-    48,
-    48
+    32,
+    32
    ],
    "frame": [
-    48,
-    48
+    32,
+    32
    ],
    "frames": 1,
    "pitch": 4.32,
@@ -3725,7 +3725,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "roles-2.jpg",
-   "scale": 1.5,
+   "scale": 2.25,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3735,12 +3735,12 @@
   {
    "file": "orks/roles/warchief.png",
    "size": [
-    48,
-    56
+    32,
+    40
    ],
    "frame": [
-    48,
-    56
+    32,
+    40
    ],
    "frames": 1,
    "pitch": 5.73,
@@ -3748,7 +3748,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3758,12 +3758,12 @@
   {
    "file": "orks/roles/warder.png",
    "size": [
-    40,
-    48
+    32,
+    32
    ],
    "frame": [
-    40,
-    48
+    32,
+    32
    ],
    "frames": 1,
    "pitch": 4.32,
@@ -3771,7 +3771,7 @@
    "anchor": "bottom-centre",
    "placeholder": true,
    "source": "roles-2.jpg",
-   "scale": 1.5,
+   "scale": 2.25,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
@@ -3781,12 +3781,12 @@
   {
    "file": "orks/states/asks.png",
    "size": [
-    40,
-    40
+    24,
+    32
    ],
    "frame": [
-    40,
-    40
+    24,
+    32
    ],
    "frames": 1,
    "pitch": 8.34,
@@ -3794,7 +3794,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o3-states-r1.png",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [
@@ -3812,12 +3812,12 @@
   {
    "file": "orks/states/doze.png",
    "size": [
-    32,
-    40
+    24,
+    32
    ],
    "frame": [
-    32,
-    40
+    24,
+    32
    ],
    "frames": 1,
    "pitch": 8.34,
@@ -3825,7 +3825,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o3-states-r1.png",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [
@@ -3843,12 +3843,12 @@
   {
    "file": "orks/states/held.png",
    "size": [
-    32,
-    40
+    24,
+    32
    ],
    "frame": [
-    32,
-    40
+    24,
+    32
    ],
    "frames": 1,
    "pitch": 8.34,
@@ -3856,7 +3856,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o3-states-r1.png",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [
@@ -3874,12 +3874,12 @@
   {
    "file": "orks/states/stuck.png",
    "size": [
-    32,
-    40
+    24,
+    32
    ],
    "frame": [
-    32,
-    40
+    24,
+    32
    ],
    "frames": 1,
    "pitch": 8.34,
@@ -3887,7 +3887,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o3-states-r1.png",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [
@@ -3905,12 +3905,12 @@
   {
    "file": "orks/states/working.png",
    "size": [
-    40,
-    40
+    24,
+    32
    ],
    "frame": [
-    40,
-    40
+    24,
+    32
    ],
    "frames": 1,
    "pitch": 8.34,
@@ -3918,7 +3918,7 @@
    "anchor": "feet",
    "placeholder": true,
    "source": "o3-states-r1.png",
-   "scale": 1.0,
+   "scale": 1.5,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "tones": [
