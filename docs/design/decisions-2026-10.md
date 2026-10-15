@@ -333,6 +333,60 @@ The prompts for the frames and for every asset to replace: [v3-prompts.md](v3-pr
 
 ## 14. Overnight, 14–15 October: the owner delegated to the PM session
 
+### Morning summary (01:10, 15 October): what's done and what needs the owner
+
+**Built tonight, all on `main`, full suite green (2150 passed, twice in a row at `-n auto`):**
+- **The real Camp on v3 (I1).**
+  - The town in F1's look: one line per row joined into a loop, and the stations (the dispatcher's booth with its
+    siding, the barrier and weighbridge, the mine).
+  - The steward at the stop, carts that face their travel, the score in the HUD, zoom by whole steps and pan.
+  - **The phone**: Camp v3 at 390/430 px, with pan and pinch by whole steps, a bottom sheet for an ork's console, a
+    cart's waybill, and one HUD line. Screens: `img/i1/phone-*`.
+- **The Task board's inside (I2)**: three boards of parchment and stone cards, drag between boards, and orks
+  walking inside. It uses stand-in art until GEN's run.
+- **Growth and inventory (INV)**:
+  - portrait stages that open by missions, lean weeks and building levels (teal eyes at stage 4);
+  - building levels I–III shown as footing and banner;
+  - items earned quietly and placed on grass on a grid, saved in the town file and hidden in Office. An item a new
+    building displaces goes back to the inventory.
+- **Mission 1 on the stations (M1)**:
+  - The drill cart stands on the siding, and the person lifts the barrier.
+  - The finale: the drill rolls off the weighbridge, and the Publisher launches it if there is one.
+  - A deed per quest; finishing the mission opens stage 2 and earns the first-cart item. Screens: `img/m1/`.
+- **Stabilisation (S9)**: the root causes behind the red tests, five of them product bugs:
+  - a phone command sent twice;
+  - `openBuilding` racing its module;
+  - the bench feed dropping its last decision;
+  - the portrait menu overflowing;
+  - browser tests leaking an orkspace (the loot-cart flake).
+
+  Nothing was skipped or quarantined. Also fixed: the quest log no longer covers the camp's bottom line (the camp
+  insets above it; `img/i1/quest-log-inset.png`).
+- **Mission 1b "Proof before the gate"** is designed only (first-mission.md §10, about 5 days of work). Building it
+  waits until you have played Mission 1.
+
+**Needs you (in order):**
+1. **Play Mission 1 on Camp v3** (desktop and phone) and say how it feels. That decides 1b and the next missions.
+2. **GEN's run, which spends Gemini credits** — say yes or no:
+   `python tools/gen_sheets.py u6-inside u6-cards u2-panels -n 3 --max-calls 9` (the inside, the cards, the panels).
+3. **Confirm my overnight calls:**
+   - homes #1;
+   - Camp's rows taken from Office positions;
+   - Office and the phone keep the large Task board card;
+   - for 1b: a linter as the check when a project has no tests; a narrower command for a slow suite; a flaky test or
+     a red `main` never triggers 1b.
+4. **Art still missing:**
+   - the track junction (one 64-px tile with exits N/E/S);
+   - a front view of the cart;
+   - v3 art for the portrait stages;
+   - art for the earned items.
+5. **Rotate the Gemini key** you pasted into chat yesterday, if you haven't already.
+
+**Session state:** all idle. I1, M1, INV and V3 are done; I2 waits for art; GEN waits for your yes. Overnight
+check-ins have stopped.
+
+### Overnight log
+
 The owner, going to sleep: run everything in order, decide as needed, talk in the morning; GEN and V3 must not need
 the owner's input. What runs, in order:
 
@@ -432,3 +486,9 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
   - Last item for I1 tonight: the quest log covering the camp's bottom line.
 - **00:22.** Check-in. I1 has the quest-log fix done locally and is not blocked. Before it merges, it is reading
   intermittent load errors in the drag and Warchief tests.
+- **01:08.** I1's last items are on `main`:
+  - c59aff8: the quest log is the camp's bottom inset, which retires M1's 40% stopgap;
+  - 3467317: browser tests that left an orkspace behind, the root of the loot-cart flake and probably the clan one.
+
+  The full suite passed twice at `-n auto` (2150). All sessions are idle; the morning summary is at the top of this
+  section, and the check-ins have stopped.
