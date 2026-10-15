@@ -401,22 +401,25 @@ def pad(img: np.ndarray, w: int, h: int, anchor: str, cx: float | None = None) -
     """Place a trimmed sprite into a w × h slot at its anchor, cropping what overflows (said by the caller)."""
     out = np.zeros((h, w, 4), np.uint8)
     ih, iw = img.shape[:2]
-    if anchor in ("feet", "bottom-centre"):
-        cx = iw / 2 if cx is None or anchor == "bottom-centre" else cx
-        x = int(round(w / 2 - cx))
-        y = h - ih
-    elif anchor == "bottom-left":
-        x, y = 0, h - ih
-    elif anchor == "centre":
-        x, y = (w - iw) // 2, (h - ih) // 2
-    else:                                                       # top-left
-        x, y = 0, 0
+    x, y = pad_at(iw, ih, w, h, anchor, cx)
     sx0, sy0 = max(0, -x), max(0, -y)
     dx0, dy0 = max(0, x), max(0, y)
     cw, ch = min(iw - sx0, w - dx0), min(ih - sy0, h - dy0)
     if cw > 0 and ch > 0:
         out[dy0:dy0 + ch, dx0:dx0 + cw] = img[sy0:sy0 + ch, sx0:sx0 + cw]
     return out
+
+
+def pad_at(iw: int, ih: int, w: int, h: int, anchor: str, cx: float | None = None) -> tuple[int, int]:
+    """Where `pad` puts a trimmed iw × ih sprite's top left in a w × h slot."""
+    if anchor in ("feet", "bottom-centre"):
+        cx = iw / 2 if cx is None or anchor == "bottom-centre" else cx
+        return int(round(w / 2 - cx)), h - ih
+    if anchor == "bottom-left":
+        return 0, h - ih
+    if anchor == "centre":
+        return (w - iw) // 2, (h - ih) // 2
+    return 0, 0                                                 # top-left
 
 
 def up8(n: int) -> int:
@@ -935,7 +938,7 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
                              for fit, bs in zip(fits, boxes) for b in bs])
     anchor = group.get("anchor", "feet")
     for item, bs in zip(group["items"], boxes):
-        frames = []
+        frames, places = [], []
         if group.get("native"):                 # v3: the slot is what the sheet draws, on the grid of 8, never resampled
             pick = group.get("pick") == "mode"
             imgs = [trim(sheet.native(b) if scale == 1 else mode_down(sheet.native(b), scale) if pick
@@ -959,6 +962,7 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
             if group.get("native") and len(bs) == 1 and abs(iw / 2 - cx) > (iw - img.shape[1]) / 2 + 0.5:
                 cx = None                       # centred on its feet it would lose a side (a forge's anvil at its foot)
             frame = pad(img, iw, ih, item.get("anchor", anchor), cx)
+            places.append((b, pad_at(img.shape[1], img.shape[0], iw, ih, item.get("anchor", anchor), cx)))
             for fx0, fy0, fx1, fy1 in item.get("clear", []):        # a smudge of the sheet touching the sprite
                 frame[int(fy0 * ih):int(fy1 * ih), int(fx0 * iw):int(fx1 * iw)] = 0
             for fx0, fy0, fx1, fy1, colour in item.get("fill", []):  # a part painted over in one colour (the depot's bays)
@@ -981,8 +985,18 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
             out = own_palette(out, group.get("colours", 24))
         else:
             out = recolour(out, pal)
+        hd = {}
+        if group.get("_hd"):
+            import camp_hd                    # tools/ is on the path when the cutter runs
+        for k in group.get("_hd") or []:      # the orks' high-density cut (tools/camp_hd.py), straight from the sheet
+            fw, fh = frames[0].shape[1::-1]
+            size = (int(round(fw * group["_show"] * 2 * k)), int(round(fh * group["_show"] * 2 * k)))
+            bottom = item.get("anchor", anchor) in ("feet", "bottom-centre", "bottom-left")
+            rel = camp_hd.hd_name(item["file"], k)
+            save(strip([camp_hd.frame(sheet, b, (fw, fh), at, scale * sheet.pitch, size, bottom) for b, at in places]), rel)
+            hd[f"{k:g}"] = rel
         _write(out, item["file"], group, rows, problems, frames[0].shape[1::-1], len(frames), scale,
-               anchor=item.get("anchor"))
+               anchor=item.get("anchor"), hd=hd)
 
 
 def cut_nine(sheet: Sheet, group: dict, pal, rows: list[dict], problems: list[str]) -> None:
@@ -1050,7 +1064,7 @@ def steel(img: np.ndarray) -> np.ndarray:
     return out
 
 
-def _write(img, rel, group, rows, problems, frame, frames, scale=1.0, anchor=None) -> None:
+def _write(img, rel, group, rows, problems, frame, frames, scale=1.0, anchor=None, hd=None) -> None:
     if group.get("steel"):
         img = steel(img)
     h, w = img.shape[:2]
@@ -1071,6 +1085,8 @@ def _write(img, rel, group, rows, problems, frame, frames, scale=1.0, anchor=Non
         row["tones"] = group["tones"]
     if group.get("slots"):
         row["slots"] = group["slots"]
+    if hd:
+        row["hd"] = hd                  # step → its file at one image px per device px on a dpr-2 screen
     if group.get("map"):
         m = half(img)
         mrel = "map/" + rel
@@ -1195,6 +1211,7 @@ def main() -> None:
             for key in ("native", "keep_colours"):              # v3: set once for the whole spec
                 group.setdefault(key, spec.get(key, False))
             group.setdefault("wood_pull", sh.get("wood_pull", False))
+            group["_hd"] = sh.get("hd")
             cut_group(sheet, group, rows, problems)
     # a one-building sheet (`over`, listed after the sheet it overrides) replaces that sheet's sprite of the same name
     rows = list({r["file"]: r for r in rows}.values())

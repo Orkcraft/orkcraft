@@ -3199,7 +3199,12 @@
    "scale": 1.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
-   "fps": 8
+   "fps": 8,
+   "hd": {
+    "1": "orks/body/idle@hd1.png",
+    "1.5": "orks/body/idle@hd1_5.png",
+    "2": "orks/body/idle@hd2.png"
+   }
   },
   {
    "file": "orks/body/sit.png",
@@ -3220,7 +3225,12 @@
    "scale": 1.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
-   "fps": 8
+   "fps": 8,
+   "hd": {
+    "1": "orks/body/sit@hd1.png",
+    "1.5": "orks/body/sit@hd1_5.png",
+    "2": "orks/body/sit@hd2.png"
+   }
   },
   {
    "file": "orks/body/walk-down.png",
@@ -3241,7 +3251,12 @@
    "scale": 1.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
-   "fps": 8
+   "fps": 8,
+   "hd": {
+    "1": "orks/body/walk-down@hd1.png",
+    "1.5": "orks/body/walk-down@hd1_5.png",
+    "2": "orks/body/walk-down@hd2.png"
+   }
   },
   {
    "file": "orks/body/walk-side.png",
@@ -3262,7 +3277,12 @@
    "scale": 1.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
-   "fps": 8
+   "fps": 8,
+   "hd": {
+    "1": "orks/body/walk-side@hd1.png",
+    "1.5": "orks/body/walk-side@hd1_5.png",
+    "2": "orks/body/walk-side@hd2.png"
+   }
   },
   {
    "file": "orks/body/walk-up.png",
@@ -3283,7 +3303,12 @@
    "scale": 1.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
-   "fps": 8
+   "fps": 8,
+   "hd": {
+    "1": "orks/body/walk-up@hd1.png",
+    "1.5": "orks/body/walk-up@hd1_5.png",
+    "2": "orks/body/walk-up@hd2.png"
+   }
   },
   {
    "file": "orks/body/work.png",
@@ -3304,7 +3329,12 @@
    "scale": 1.2,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
-   "fps": 8
+   "fps": 8,
+   "hd": {
+    "1": "orks/body/work@hd1.png",
+    "1.5": "orks/body/work@hd1_5.png",
+    "2": "orks/body/work@hd2.png"
+   }
   },
   {
    "file": "orks/inside/carry.png",
@@ -3333,7 +3363,12 @@
     "#6a5240",
     "#4a3a30",
     "#8a7a64"
-   ]
+   ],
+   "hd": {
+    "1": "orks/inside/carry@hd1.png",
+    "1.5": "orks/inside/carry@hd1_5.png",
+    "2": "orks/inside/carry@hd2.png"
+   }
   },
   {
    "file": "orks/inside/lens.png",
@@ -3362,7 +3397,12 @@
     "#6a5240",
     "#4a3a30",
     "#8a7a64"
-   ]
+   ],
+   "hd": {
+    "1": "orks/inside/lens@hd1.png",
+    "1.5": "orks/inside/lens@hd1_5.png",
+    "2": "orks/inside/lens@hd2.png"
+   }
   },
   {
    "file": "orks/inside/pin.png",
@@ -3391,7 +3431,12 @@
     "#6a5240",
     "#4a3a30",
     "#8a7a64"
-   ]
+   ],
+   "hd": {
+    "1": "orks/inside/pin@hd1.png",
+    "1.5": "orks/inside/pin@hd1_5.png",
+    "2": "orks/inside/pin@hd2.png"
+   }
   },
   {
    "file": "orks/inside/quill.png",
@@ -3420,7 +3465,12 @@
     "#6a5240",
     "#4a3a30",
     "#8a7a64"
-   ]
+   ],
+   "hd": {
+    "1": "orks/inside/quill@hd1.png",
+    "1.5": "orks/inside/quill@hd1_5.png",
+    "2": "orks/inside/quill@hd2.png"
+   }
   },
   {
    "file": "orks/prospector/carry.png",
@@ -3441,7 +3491,12 @@
    "scale": 1.404,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
-   "fps": 8
+   "fps": 8,
+   "hd": {
+    "1": "orks/prospector/carry@hd1.png",
+    "1.5": "orks/prospector/carry@hd1_5.png",
+    "2": "orks/prospector/carry@hd2.png"
+   }
   },
   {
    "file": "orks/prospector/dig.png",
@@ -3462,7 +3517,12 @@
    "scale": 1.404,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
-   "fps": 8
+   "fps": 8,
+   "hd": {
+    "1": "orks/prospector/dig@hd1.png",
+    "1.5": "orks/prospector/dig@hd1_5.png",
+    "2": "orks/prospector/dig@hd2.png"
+   }
   },
   {
    "file": "orks/prospector/walk.png",
@@ -3483,7 +3543,12 @@
    "scale": 1.404,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
-   "fps": 8
+   "fps": 8,
+   "hd": {
+    "1": "orks/prospector/walk@hd1.png",
+    "1.5": "orks/prospector/walk@hd1_5.png",
+    "2": "orks/prospector/walk@hd2.png"
+   }
   },
   {
    "file": "orks/roles/alchemist.png",
@@ -3506,7 +3571,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/alchemist@hd1.png",
+    "1.5": "orks/roles/alchemist@hd1_5.png",
+    "2": "orks/roles/alchemist@hd2.png"
+   }
   },
   {
    "file": "orks/roles/artisan.png",
@@ -3529,7 +3599,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/artisan@hd1.png",
+    "1.5": "orks/roles/artisan@hd1_5.png",
+    "2": "orks/roles/artisan@hd2.png"
+   }
   },
   {
    "file": "orks/roles/farseer.png",
@@ -3552,7 +3627,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/farseer@hd1.png",
+    "1.5": "orks/roles/farseer@hd1_5.png",
+    "2": "orks/roles/farseer@hd2.png"
+   }
   },
   {
    "file": "orks/roles/grunt.png",
@@ -3575,7 +3655,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/grunt@hd1.png",
+    "1.5": "orks/roles/grunt@hd1_5.png",
+    "2": "orks/roles/grunt@hd2.png"
+   }
   },
   {
    "file": "orks/roles/loader.png",
@@ -3598,7 +3683,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/loader@hd1.png",
+    "1.5": "orks/roles/loader@hd1_5.png",
+    "2": "orks/roles/loader@hd2.png"
+   }
   },
   {
    "file": "orks/roles/lookout.png",
@@ -3621,7 +3711,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/lookout@hd1.png",
+    "1.5": "orks/roles/lookout@hd1_5.png",
+    "2": "orks/roles/lookout@hd2.png"
+   }
   },
   {
    "file": "orks/roles/mason.png",
@@ -3644,7 +3739,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/mason@hd1.png",
+    "1.5": "orks/roles/mason@hd1_5.png",
+    "2": "orks/roles/mason@hd2.png"
+   }
   },
   {
    "file": "orks/roles/mechanic.png",
@@ -3667,7 +3767,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/mechanic@hd1.png",
+    "1.5": "orks/roles/mechanic@hd1_5.png",
+    "2": "orks/roles/mechanic@hd2.png"
+   }
   },
   {
    "file": "orks/roles/pathfinder.png",
@@ -3690,7 +3795,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/pathfinder@hd1.png",
+    "1.5": "orks/roles/pathfinder@hd1_5.png",
+    "2": "orks/roles/pathfinder@hd2.png"
+   }
   },
   {
    "file": "orks/roles/prospector.png",
@@ -3710,7 +3820,12 @@
    "source": "o7-prospector.png",
    "scale": 2.7,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
+   "hd": {
+    "1": "orks/roles/prospector@hd1.png",
+    "1.5": "orks/roles/prospector@hd1_5.png",
+    "2": "orks/roles/prospector@hd2.png"
+   }
   },
   {
    "file": "orks/roles/quartermaster.png",
@@ -3733,7 +3848,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/quartermaster@hd1.png",
+    "1.5": "orks/roles/quartermaster@hd1_5.png",
+    "2": "orks/roles/quartermaster@hd2.png"
+   }
   },
   {
    "file": "orks/roles/seer.png",
@@ -3756,7 +3876,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/seer@hd1.png",
+    "1.5": "orks/roles/seer@hd1_5.png",
+    "2": "orks/roles/seer@hd2.png"
+   }
   },
   {
    "file": "orks/roles/taskmaster.png",
@@ -3779,7 +3904,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/taskmaster@hd1.png",
+    "1.5": "orks/roles/taskmaster@hd1_5.png",
+    "2": "orks/roles/taskmaster@hd2.png"
+   }
   },
   {
    "file": "orks/roles/treasurer.png",
@@ -3802,7 +3932,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/treasurer@hd1.png",
+    "1.5": "orks/roles/treasurer@hd1_5.png",
+    "2": "orks/roles/treasurer@hd2.png"
+   }
   },
   {
    "file": "orks/roles/warchief.png",
@@ -3825,7 +3960,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/warchief@hd1.png",
+    "1.5": "orks/roles/warchief@hd1_5.png",
+    "2": "orks/roles/warchief@hd2.png"
+   }
   },
   {
    "file": "orks/roles/warder.png",
@@ -3848,7 +3988,12 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py",
    "slots": [
     "role"
-   ]
+   ],
+   "hd": {
+    "1": "orks/roles/warder@hd1.png",
+    "1.5": "orks/roles/warder@hd1_5.png",
+    "2": "orks/roles/warder@hd2.png"
+   }
   },
   {
    "file": "orks/states/asks.png",
@@ -3879,7 +4024,12 @@
    ],
    "slots": [
     "state"
-   ]
+   ],
+   "hd": {
+    "1": "orks/states/asks@hd1.png",
+    "1.5": "orks/states/asks@hd1_5.png",
+    "2": "orks/states/asks@hd2.png"
+   }
   },
   {
    "file": "orks/states/doze.png",
@@ -3910,7 +4060,12 @@
    ],
    "slots": [
     "state"
-   ]
+   ],
+   "hd": {
+    "1": "orks/states/doze@hd1.png",
+    "1.5": "orks/states/doze@hd1_5.png",
+    "2": "orks/states/doze@hd2.png"
+   }
   },
   {
    "file": "orks/states/held.png",
@@ -3941,7 +4096,12 @@
    ],
    "slots": [
     "state"
-   ]
+   ],
+   "hd": {
+    "1": "orks/states/held@hd1.png",
+    "1.5": "orks/states/held@hd1_5.png",
+    "2": "orks/states/held@hd2.png"
+   }
   },
   {
    "file": "orks/states/stuck.png",
@@ -3972,7 +4132,12 @@
    ],
    "slots": [
     "state"
-   ]
+   ],
+   "hd": {
+    "1": "orks/states/stuck@hd1.png",
+    "1.5": "orks/states/stuck@hd1_5.png",
+    "2": "orks/states/stuck@hd2.png"
+   }
   },
   {
    "file": "orks/states/working.png",
@@ -4003,7 +4168,12 @@
    ],
    "slots": [
     "state"
-   ]
+   ],
+   "hd": {
+    "1": "orks/states/working@hd1.png",
+    "1.5": "orks/states/working@hd1_5.png",
+    "2": "orks/states/working@hd2.png"
+   }
   },
   {
    "file": "people/aso_manager.png",

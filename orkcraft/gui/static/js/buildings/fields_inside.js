@@ -13,7 +13,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say, details } from "../link.js";
-import { V3, kit, loadKit, has } from "../camp/sprites.js";
+import { V3, kit, loadKit, has, orkFile } from "../camp/sprites.js";
 import { thought } from "../camp/steward.js";
 import { selected, pick, dragCard, Marks, Acts, setDialog, planCard, allCards, noteLanes } from "./fields.js";
 
@@ -139,8 +139,9 @@ function Pose({ pose }) {
   const file = `orks/inside/${pose}.png`;
   const s = kit.value && kit.value[file];
   if (!s) return html`<span class="fields-in__body is-stand-in" data-pose=${pose}></span>`;
-  return html`<span class="fields-in__body" data-pose=${pose}
-    style=${`--w:${s.w}px;--h:${s.h}px;--frames:${s.frames};background-image:url(${V3}${file})`}></span>`;
+  const f = orkFile(file, 2);                               // drawn at ×2: on a dense screen, its cut at one to one
+  return html`<span class=${cls("fields-in__body", { "is-hd": f.hd })} data-pose=${pose}
+    style=${`--w:${s.w}px;--h:${s.h}px;--frames:${s.frames};background-image:url(${f.url})`}></span>`;
 }
 
 /** The orks of the booth: each walks to a board, works there a while, walks on; its bubble its task. */

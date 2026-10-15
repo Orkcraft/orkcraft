@@ -27,11 +27,19 @@ export function signalOf(b, asking) {
 }
 
 let kit = null;                           // the v3 manifest: file → [w, h] of a frame, art px
+let hds = {};                             // an ork's file → its high-density cuts, step → file (tools/camp_hd.py)
 const sizeOf = (file) => (kit && kit[file]) || null;
+/** An ork's file at zoom S: on a dense screen its cut at one image px per device px (`S × dpr / 2` its step). */
+function orkFile(file, S) {
+  const d = window.devicePixelRatio || 1, k = (S * d) / 2;
+  const hd = d >= 2 && hds[file] && Object.entries(hds[file]).find(([step]) => Math.abs(Number(step) - k) < 1e-6);
+  return hd ? { url: V3 + hd[1], hd: true } : { url: V3 + file, hd: false };
+}
 function loadKit(done) {
   if (kit) return done();
   fetch(`${V3}manifest.json`).then((r) => (r.ok ? r.json() : { sprites: [] })).catch(() => ({ sprites: [] })).then((m) => {
     kit = Object.fromEntries((m.sprites || []).map((s) => [s.file, s.frame || s.size]));
+    hds = Object.fromEntries((m.sprites || []).filter((s) => s.hd).map((s) => [s.file, s.hd]));
     done();
   });
 }
@@ -177,7 +185,9 @@ export function makeCamp(ctx) {
             const fy = sig === "asks" ? p.feet + 2 * B : p.stop.y - L.T / 2 - 2 * S;
             const ork = h("button", { class: "camp-ork", type: "button", "aria-label": `${b.ork_name}: its console` });
             put(ork, fx - (sz[0] * S) / 2, fy - sz[1] * S, sz[0] * S, sz[1] * S);
-            ork.style.backgroundImage = `url(${V3}${file})`;
+            const f = orkFile(file, S);
+            ork.style.backgroundImage = `url(${f.url})`;
+            if (f.hd) ork.classList.add("is-hd");
             ork.style.backgroundSize = `${sz[0] * S}px ${sz[1] * S}px`;
             ork.style.zIndex = String(11 + Math.round(fy / 8));
             ork.addEventListener("click", (e) => { e.stopPropagation(); if (!moved) ctx.ork(b); });

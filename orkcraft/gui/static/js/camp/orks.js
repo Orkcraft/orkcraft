@@ -8,7 +8,7 @@ import { html, cls } from "../html.js";
 import { say } from "../link.js";
 import { busy as busyOf } from "../fold.js";
 import { PATH_W } from "./layout.js";
-import { V3, sizeOf, orkSprite, dev } from "./sprites.js";
+import { sizeOf, orkSprite, orkFile, dev } from "./sprites.js";
 import { Bubble, thought } from "./steward.js";
 
 const LIFT_S = 2.5;                        // a load lifted off and carried in
@@ -27,11 +27,11 @@ export function stewardAt(b, p, L, takesWork) {
 function Ork({ name, file, at, S, cl = "", style = "", onClick = null }) {
   const s = sizeOf(file);
   if (!s) return null;
-  const w = dev(s[0] * S), h = dev(s[1] * S);
-  return html`<span class=${cls("gui-camp__ork", `is-${at.pose}${cl ? ` ${cl}` : ""}`)} title=${say(name)} aria-label=${say(name)}
+  const w = dev(s[0] * S), h = dev(s[1] * S), f = orkFile(file, S);
+  return html`<span class=${cls("gui-camp__ork", `is-${at.pose}${cl ? ` ${cl}` : ""}${f.hd ? " is-hd" : ""}`)} title=${say(name)} aria-label=${say(name)}
       role=${onClick ? "button" : "img"} onClick=${onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined}
       style=${`left:${dev(at.x - w / 2)}px;top:${dev(at.y - h)}px;width:${w}px;height:${h}px;z-index:${10 + Math.round(at.y / 8)};`
-        + `background:url(${V3 + file}) 0 0 / auto ${h}px no-repeat;--w:${w}px;${style}`}></span>`;
+        + `background:url(${f.url}) 0 0 / auto ${h}px no-repeat;--w:${w}px;${style}`}></span>`;
 }
 
 /** One steward. Waiting at the stop, it lifts the load off a cart the moment one arrives (`soon`: in how many seconds

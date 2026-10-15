@@ -1,7 +1,9 @@
 """Every ork is drawn crisp (the owner, 15 October: the small orks looked smoothed): each ork image — a steward, the
 Prospector pacing, the ork out of its door, the Task board's walkers, the Workchief's face in the HUD — has
 `image-rendering: pixelated`, a box of whole device pixels, and no transform that scales it or moves it across a
-device pixel, at every zoom step, on a 1× and a 2× screen."""
+device pixel, at every zoom step, on a 1× and a 2× screen. On a 2× screen an ork with a high-density cut
+(tools/camp_hd.py) is drawn from it at one image pixel per device pixel: its box × the density is the image's own frame,
+and it is smooth (`image-rendering: auto`), as nothing is resampled."""
 from __future__ import annotations
 
 import pytest
@@ -11,18 +13,28 @@ pytest.importorskip("playwright.sync_api")
 from tests.test_gui_browser import WAIT_MS, gui  # noqa: E402,F401  (fixtures)
 
 # the ork images on the page, and what in each would draw it across a device pixel
-CHECK = r"""() => {
+CHECK = r"""async () => {
   const d = devicePixelRatio, off = (v) => Math.abs(v * d - Math.round(v * d)) > 0.01, bad = [];
-  let n = 0;
+  const natural = (url) => new Promise((ok) => { const i = new Image(); i.onload = () => ok([i.naturalWidth, i.naturalHeight]);
+    i.onerror = () => ok(null); i.src = url; });
+  let n = 0, hd = 0;
   for (const e of document.querySelectorAll('img, span, i')) {
     const cs = getComputedStyle(e);
     const src = (e.tagName === 'IMG' ? e.currentSrc || e.src : '') + ' ' + cs.backgroundImage;
     if (!/\/orks\/|\/faces\//.test(src) || !e.offsetWidth) continue;
     n += 1;
-    const what = `${e.className} ${(src.match(/[\w-]+\.png/) || [''])[0]}`;
-    if (cs.imageRendering !== 'pixelated') bad.push(`${what}: image-rendering ${cs.imageRendering}`);
+    const what = `${e.className} ${(src.match(/[\w@-]+\.png/) || [''])[0]}`;
     const w = parseFloat(cs.width), h = parseFloat(cs.height);
     if (off(w) || off(h)) bad.push(`${what}: ${w} x ${h}`);
+    if (/@hd/.test(src)) {                                 // one image px on one device px
+      hd += 1;
+      if (d < 2) bad.push(`${what}: a high-density cut on a ${d}x screen`);
+      if (cs.imageRendering !== 'auto') bad.push(`${what}: image-rendering ${cs.imageRendering}`);
+      const nat = await natural(src.match(/url\("?([^")]+)"?\)/)[1]);
+      const frames = nat ? Math.round(nat[0] / (w * d)) : 0;
+      if (!nat || Math.abs(nat[1] - h * d) > 0.01 || Math.abs(nat[0] - frames * w * d) > 0.01)
+        bad.push(`${what}: box ${w} x ${h} at ${d}x, image ${nat}`);
+    } else if (cs.imageRendering !== 'pixelated') bad.push(`${what}: image-rendering ${cs.imageRendering}`);
     for (let a = e; a; a = a.parentElement) {
       const t = getComputedStyle(a).transform;
       if (t === 'none') continue;
@@ -31,7 +43,7 @@ CHECK = r"""() => {
         bad.push(`${what}: ${a.className} ${t}`);
     }
   }
-  return { n, bad };
+  return { n, hd, bad };
 }"""
 
 
@@ -64,6 +76,8 @@ def test_every_ork_lands_on_whole_device_pixels_at_every_zoom_step(gui, dpr):
                 got = pg.evaluate(CHECK)
                 assert got["n"] >= 3, (level, got)
                 assert not got["bad"], (dpr, level, got["bad"])
+                if dpr == 2 and level != "a":                                     # ×1, ×1.5, ×2: from the cut
+                    assert got["hd"] >= 2, (level, got)
                 pg.wait_for_timeout(230)
             pg.mouse.move(2, 450)
         pg.evaluate("l => import('/static/js/zoom.js').then(z => { z.zoomLevel.value = l; })", "b")
@@ -75,6 +89,7 @@ def test_every_ork_lands_on_whole_device_pixels_at_every_zoom_step(gui, dpr):
         pg.wait_for_timeout(500)
         got = pg.evaluate(CHECK)
         assert not got["bad"], (dpr, "inside", got["bad"])
+        assert (got["hd"] > 0) == (dpr == 2), (dpr, "inside", got)
     finally:
         for bid in built:
             call("town.demolish", {"id": bid})

@@ -12,7 +12,7 @@ import { busy as busyOf } from "../fold.js";
 import { brokenOf } from "../hut.js";
 import { openBuilding } from "../windows.js";
 import { openOrders } from "../orders.js";
-import { V3, sizeOf, orkSprite, doorwayOf, dev } from "./sprites.js";
+import { V3, sizeOf, orkSprite, orkFile, doorwayOf, dev } from "./sprites.js";
 
 export const hovered = signal(null);       // the building under the mouse
 const WORDS = 3;
@@ -74,8 +74,8 @@ function OutOfDoor({ b, p, S, O = S, B, onOrk }) {
   const clip = `polygon(${side}px ${h}px, ${side + R.w}px ${h}px, ${side + R.w}px ${sill}px, ${W}px ${sill}px, ${W}px ${H}px, 0 ${H}px, 0 ${sill}px, ${side}px ${sill}px)`;
   return html`<span class="gui-camp__exit" role="button" title=${say(`${b.ork_name}: its terminal`)} onClick=${click}
       style=${`left:${Math.round(R.x - side)}px;top:${Math.round(R.y - h)}px;width:${Math.round(W)}px;height:${Math.round(H)}px;clip-path:${clip}`}>
-    <span class=${cls("gui-camp__ork is-out", { "is-behind": !d })} style=${`left:${Math.round(side + R.w / 2 - w / 2)}px;top:${Math.round(sill - h)}px;`
-      + `width:${w}px;height:${h}px;--out:${out}px;--n:${out};background:url(${V3 + file}) 0 0 / auto ${h}px no-repeat`}></span>
+    <span class=${cls("gui-camp__ork is-out", { "is-behind": !d, "is-hd": orkFile(file, O).hd })} style=${`left:${Math.round(side + R.w / 2 - w / 2)}px;top:${Math.round(sill - h)}px;`
+      + `width:${w}px;height:${h}px;--out:${out}px;--n:${out};background:url(${orkFile(file, O).url}) 0 0 / auto ${h}px no-repeat`}></span>
   </span>`;
 }
 

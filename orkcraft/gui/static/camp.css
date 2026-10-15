@@ -71,6 +71,8 @@
 
 /* orks: at the small layer's zoom */
 .gui-camp__ork { position: absolute; image-rendering: pixelated; image-rendering: crisp-edges; pointer-events: auto; }
+/* its high-density cut at one image px per device px (tools/camp_hd.py): nothing resampled, so never made blocky */
+.gui-camp__ork.is-hd { image-rendering: auto; }
 
 /* the second click on a type with no Work window: its large card beside it (until I2 draws the inside) */
 .gui-camp__card { position: absolute; z-index: 2100; width: 460px; cursor: default; user-select: text; }

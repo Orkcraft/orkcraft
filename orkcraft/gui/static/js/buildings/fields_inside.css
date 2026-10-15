@@ -83,6 +83,7 @@ button.fields-in__flag:hover i, button.fields-in__flag:focus-visible i { backgro
   background-repeat: no-repeat; background-size: calc(var(--w) * var(--frames) * 2) calc(var(--h) * 2);
   animation: fields-in-frames 0.8s steps(var(--frames, 4)) infinite; }
 .fields-in__ork.is-left .fields-in__body { transform: scaleX(-1); }
+.fields-in__body.is-hd { image-rendering: auto; }   /* its high-density cut at one image px per device px */
 .fields-in__body.is-stand-in { width: 44px; height: 60px; animation: none; border-radius: 22px 22px 6px 6px;
   background: var(--art-skin); box-shadow: inset 0 -22px 0 var(--art-wood-dark), 0 0 0 2px var(--art-outline); }
 @keyframes fields-in-frames { from { background-position: 0 0; } to { background-position: calc(var(--w) * var(--frames) * -2) 0; } }
