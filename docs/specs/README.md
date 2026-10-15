@@ -59,6 +59,7 @@ Run tests with: `uv run --extra gui --extra dev pytest -q <files>` (browser test
 | 02 | [Mission 1 blockers](02-mission1-blockers.md) (filled after the owner plays it) | before the testers | flash |
 | 03 | [the charter: "My project"](03-charter.md) | before the testers | pro |
 | 04 | [Halloween decor](04-halloween-decor.md) (art card + items) | before 31 October | flash |
+| 12 | [the v4 kit on the remaining screens](12-v4-remaining-screens.md) (audit, then move) | before the testers | flash |
 | 05 | [release 0.3.0](05-release-0.3.0.md) | Thu 22 October | flash-low |
 | E1 | [the clean-install check](e1-clean-install.md) (the owner runs it, no agy) | Wed 21 October | — |
 | 06 | [three bands: the camp lays itself out](06-three-bands.md) | after Halloween | pro |
