@@ -104,7 +104,7 @@ Sizes: `kit-px` 2, `kit-frame` 14, `kit-bar` 10, `kit-bevel` 6, `kit-hud-h` 56, 
 
 | candidate | verdict |
 |---|---|
-| **Pixelify Sans** 500 (shipped since v3) | **out for numbers:** its 5 is drawn like its S (`$5.00` reads `$S.00`, `550` reads `SS0`), its 8 close to its B, and at density 1 the figures blur further. Wide, so the top bar's counters do not fit beside Stop all. Kept where it is today (the map's chips, the War Map, `camp-title`/`camp-heading`) and as the Cyrillic fallback. |
+| **Pixelify Sans** 500 (shipped since v3) | **out for numbers:** its 5 is drawn like its S (`$5.00` reads `$S.00`, `550` reads `SS0`), its 8 close to its B, and at density 1 the figures blur further. Wide, so the top bar's counters do not fit beside Stop all. **Kept only as the Cyrillic fallback** (the owner, through the PM: one pixel face). |
 | **Jersey 15** 400 | **chosen.** Every figure unambiguous (0/O, 1/l/I, 5/S, 8/B, 2/Z, 6/G); heavy strokes that hold on teal, wood and parchment alike; condensed, so `Spend $0.42 / $5.00 · Context 92k / 128k · Orks 3/5` fits the bar; tabular-looking figures; the closest to the target's lettering. Its letters are smaller for their size, so it is set about a quarter larger (its capitals then match the others'). Latin only: a Cyrillic orkspace name falls back to Pixelify Sans's Cyrillic, already shipped. |
 | **Tiny5** 400 | readable, with Cyrillic, but its 5 and S and its 8 and B are near twins, its `%` and `$` break up at 16, and its very wide letters cost a third more width than Jersey 15. |
 
@@ -119,7 +119,10 @@ smoothed by the browser and stay sharp enough on density 2 (the shots).
 | `kit-button` | 20/24 | the words on a button, a tab's badge |
 | `kit-small` | 16/16 | a slot's count; never a sentence |
 
-Everything else (`camp-body`, `camp-label`, `camp-caption`, `code`) is unchanged. A long name in a heading is cut with
+**One pixel face** (the owner, through the PM, after step 2): v3's `--font-pixel` is Jersey 15 too, so the map's
+chips and names (a cart's chip carries $ and token counts), the War Map and `camp-title` / `camp-heading` read the same
+figures; their sizes rose with it (`camp-title` 36/40, `camp-heading` 24/28, `camp-chip` 18/20; the chip's plate
+stays 24 high). Everything else (`camp-body`, `camp-label`, `camp-caption`, `code`) is unchanged. A long name in a heading is cut with
 an ellipsis, never wrapped in the pixel face.
 
 ## 5. Piece by piece onto today's components
@@ -142,7 +145,9 @@ its words, and gains the kit in Camp by `[data-look="camp"]` rules in one sheet,
 | **The Items panel** `.gui-items`, its toggle (js/camp/items.js) | the toggle the kit's button; the panel parchment in `frame`; each picture in a `slot` (`-hover` under the pointer); the notes and the hint Nunito |
 | **The toasts** `.gui-toast.ok-toast`, `.gui-toolerr` (js/chrome.js) | `frame-thin` on parchment (`.kit-paper`); the mark (✓ ⚠ ✗) on a dark square in its signal colour |
 | **The inside's right panel** `.gui-inside__shop-frame` (js/inside.js; the Task board's settings) | `frame` with caps on parchment; its title on a `plate` riding the top edge; Exit the kit's button, under the bar |
-| the map's chips, names and badges `.gui-camp__chip`, `.gui-camp__name`, `.gui-camp__badge` | **unchanged** (layers 8–9 are v3's, design-system-v3 §5) |
+| **The War Map** `.gui-map` (js/warmap.js) | the minimap in `frame` with caps on walnut; its title on a `plate` riding the top edge; the lands keep their biomes' colours, their names in the pixel face |
+| **The portrait** in the corner and its two toggles `.gui-portrait.is-big`, `.gui-portrait__toggle` (js/portrait.js) | the person in a small wooden bevel; the toggles square wooden buttons, pressed in teal when on |
+| the map's chips, names and badges `.gui-camp__chip`, `.gui-camp__name`, `.gui-camp__badge` | their plates unchanged (layers 8–9 are v3's, design-system-v3 §5); their words in Jersey 15 through `--font-pixel` |
 
 ## 6. Steps and checks
 
@@ -163,7 +168,8 @@ its words, and gains the kit in Camp by `[data-look="camp"]` rules in one sheet,
 - **The insides of the building views** (the 19 types' Work and Info, terminals, boards) stay on their dark panel:
   they were drawn for it, and a token remap onto parchment needs a look at each type. The frame, the plate and the tabs
   round them are v4's. Moving a view onto parchment is one line per type (the `.kit-paper` class) once it is checked.
-- **The map's chips, names and badges** (v3 layers 8–9), the War Map, the portrait, and the Workchief's speech bubble.
+- **The map's chips, names and badges'** plates (v3 layers 8–9; their face is Jersey 15 now), the Workchief's speech
+  bubble, the phone app (`gui/static/pwa/`).
 - **Office**, and the narrow window (under 641 px) keep their drawing.
 
 ## 8. For the owner and the other sessions

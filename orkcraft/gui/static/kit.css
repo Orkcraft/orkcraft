@@ -187,3 +187,32 @@
   background-clip: padding-box; image-rendering: pixelated;
   border-image: image-set(url("/ds/sprites/v4/ui/well.png") 1x, url("/ds/sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat; }
 [data-look="camp"] .gui-inside__exit { font: var(--type-kit-button); min-width: 96px; height: 36px; }
+
+/* the War Map (js/warmap.js): its minimap in the thick frame with the teal caps, its title on a teal plate riding the
+   top edge; the lands keep their biomes' colours, their names in the pixel face */
+[data-look="camp"] .gui-map { padding: 18px 6px 6px; box-shadow: none; background: var(--walnut); border: var(--kit-frame) solid transparent;
+  image-rendering: pixelated; background-clip: padding-box; margin-top: 16px;
+  border-image: image-set(url("/ds/sprites/v4/ui/frame.png") 1x, url("/ds/sprites/v4/ui/frame@2x.png") 2x) 14 / var(--kit-frame) round; }
+[data-look="camp"] .gui-map__title { position: absolute; left: 50%; top: -30px; transform: translateX(-50%); margin: 0; height: 32px;
+  box-sizing: border-box; display: flex; align-items: center; padding: 0 12px; white-space: nowrap; font: var(--type-kit-heading);
+  letter-spacing: .02em; text-transform: none; text-shadow: none; color: var(--kit-ink); background: var(--accent-teal);
+  border: var(--kit-bevel) solid transparent; border-image: image-set(url("/ds/sprites/v4/ui/plate.png") 1x, url("/ds/sprites/v4/ui/plate@2x.png") 2x) 6 fill / var(--kit-bevel) repeat; }
+[data-look="camp"] .gui-map__frame { box-shadow: 0 0 0 2px var(--art-outline), 0 0 0 4px var(--kit-wood-dark); }
+[data-look="camp"] .gui-map__name { font-family: var(--font-kit); font-weight: 400; font-size: 18px; text-shadow: 1px 1px 0 var(--art-outline); }
+[data-look="camp"] .gui-map__biome-name { font: 400 14px/14px var(--font-kit); }
+[data-look="camp"] .gui-map__bar { background: var(--kit-teal-light); width: 4px; }
+
+/* the portrait in the corner and its two toggles: the person in a small wooden frame, the toggles square wooden
+   buttons (pressed in teal when on) */
+[data-look="camp"] .gui-portrait.is-big { padding: 0; background: var(--kit-wood); box-shadow: none; border: var(--kit-bevel) solid transparent;
+  image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/btn-wood.png") 1x, url("/ds/sprites/v4/ui/btn-wood@2x.png") 2x) 6 fill / var(--kit-bevel) repeat; }
+[data-look="camp"] .gui-portrait.is-big:is(:hover, .is-open) {
+  border-image-source: image-set(url("/ds/sprites/v4/ui/btn-wood-hover.png") 1x, url("/ds/sprites/v4/ui/btn-wood-hover@2x.png") 2x); }
+[data-look="camp"] .gui-portrait__toggle { box-sizing: border-box; width: 28px; height: 28px; color: var(--kit-ink); background: var(--kit-wood);
+  box-shadow: none; border: var(--kit-bevel) solid transparent; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/btn-wood.png") 1x, url("/ds/sprites/v4/ui/btn-wood@2x.png") 2x) 6 fill / var(--kit-bevel) repeat; }
+[data-look="camp"] .gui-portrait__toggle:hover {
+  border-image-source: image-set(url("/ds/sprites/v4/ui/btn-wood-hover.png") 1x, url("/ds/sprites/v4/ui/btn-wood-hover@2x.png") 2x); }
+[data-look="camp"] .gui-portrait__toggle.is-on { color: var(--kit-ink); box-shadow: none;
+  border-image-source: image-set(url("/ds/sprites/v4/ui/btn-teal-down.png") 1x, url("/ds/sprites/v4/ui/btn-teal-down@2x.png") 2x); }

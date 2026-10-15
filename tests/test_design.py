@@ -474,7 +474,11 @@ def test_v4_kit_tones_read_and_leave_yellow_and_red_to_the_signals():
     family = {st["name"]: st.get("family", g["family"]) for g in tokens.system()["type"]["groups"] for st in g["styles"]}
     for name in ("kit-title", "kit-heading", "kit-number", "kit-button", "kit-small"):
         assert family[name] == "kit", name
-    assert tokens.system()["type"]["families"]["kit"].startswith('"Jersey 15"')
+    families = tokens.system()["type"]["families"]
+    assert families["kit"].startswith('"Jersey 15"')
+    # one pixel face (the owner, through the PM): the map's chips and names and the titles too; Pixelify Sans only for
+    # a Cyrillic letter
+    assert families["pixel"].startswith('"Jersey 15", "Pixelify Sans"')
     assert "jersey-15-latin-400-normal.woff2" in (tokens.SYSTEM / "fonts" / "fonts.css").read_text(encoding="utf-8")
     assert (tokens.SYSTEM / "fonts" / "OFL-Jersey-15.txt").is_file()
 

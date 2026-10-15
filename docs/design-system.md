@@ -196,5 +196,6 @@ art: its `world-*` and `art-*` fall back to its plain greys.
   `design-system/previews/UIKitV4.html`.
 - **Tokens added:** `kit-*` colours (wood, teal, sunk parchment, `kit-ink`), sizes (`kit-frame`, `kit-hud-h`, …) and
   type styles. Yellow and red stay the signals'.
-- **Type:** Jersey 15, a pixel face, for headings, numbers and buttons only (`--font-kit`); every sentence stays Nunito,
-  code JetBrains Mono, the wordmark New Rocker.
+- **Type:** Jersey 15, the one pixel face, for headings, numbers, buttons and the map's chips and names (`--font-kit`,
+  and `--font-pixel` with Pixelify Sans only for Cyrillic); every sentence stays Nunito, code JetBrains Mono, the
+  wordmark New Rocker.
