@@ -29,9 +29,11 @@ const STAND = 52;
 // The zoom steps, buildings / orks and track (§3): whole device pixels at every step. Density 2: ×1 / ×1 (an overview),
 // ×1.5 / ×1 (the default), ×3 / ×2 (close). Density 1: ×1 / ×1, ×2 / ×1 (the default). Density 3 (a phone): ⅔ (two
 // device px an art px, the overview), ×1 (three, the default) and ×2 / ×4⁄3 (close).
-const HI = [{ b: 1, s: 1 }, { b: 1.5, s: 1 }, { b: 3, s: 2 }];
-const LO = [{ b: 1, s: 1 }, { b: 2, s: 1 }];
-const TRI = [{ b: 2 / 3, s: 2 / 3 }, { b: 1, s: 1 }, { b: 2, s: 4 / 3 }];
+// `o`: the orks' own step (decisions §17: about ×1.3 against the buildings), the nearest whole device pixel above `s`
+// (density 1 has none between ×1 and ×2, so its orks stay at `s`).
+const HI = [{ b: 1, s: 1, o: 1.5 }, { b: 1.5, s: 1, o: 1.5 }, { b: 3, s: 2, o: 2.5 }];
+const LO = [{ b: 1, s: 1, o: 1 }, { b: 2, s: 1, o: 1 }];
+const TRI = [{ b: 2 / 3, s: 2 / 3, o: 1 }, { b: 1, s: 1, o: 4 / 3 }, { b: 2, s: 4 / 3, o: 5 / 3 }];
 export const stepsFor = (dpr) => (dpr >= 3 ? TRI : dpr >= 2 ? HI : LO);
 export const DEFAULT_STEP = 1;
 /** A phone's default step: the art at its own pixel (×1), whatever the screen's density. */
