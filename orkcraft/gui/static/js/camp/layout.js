@@ -26,15 +26,16 @@ export const FALLBACK = [128, 112];   // a building with no v3 sprite: a block o
 // room a waiting cart takes there, art px.
 const STAND = 36;
 
-// The zoom steps (§3; decisions §17.6): `b` the buildings, carts, ground and paths, `s` the track, `o` the orks, each a
-// whole number of device pixels an art pixel. The default is ×1, so a MacBook (1512 × 982 or 1470 × 956, density 2)
-// shows three rows of six with their lines and the return line; the overview ×0.5 holds three rows of eight; close up
-// ×2. Orks stand about a quarter of an ordinary building's height, as in the owner's target (references/v4): ×⅔ the
-// buildings' step, the nearest whole step below (×0.5 at the default on density 2). Density 1 has no whole step under
-// ×1: its overview draws every other art pixel. Density 3 (a phone): ⅔, ×1, ×2.
-const HI = [{ b: 0.5, s: 0.5, o: 0.5 }, { b: 1, s: 1, o: 0.5 }, { b: 2, s: 1.5, o: 1 }];
-const LO = [{ b: 0.5, s: 0.5, o: 0.5 }, { b: 1, s: 1, o: 1 }, { b: 2, s: 1, o: 1 }];
-const TRI = [{ b: 2 / 3, s: 2 / 3, o: 1 / 3 }, { b: 1, s: 1, o: 2 / 3 }, { b: 2, s: 4 / 3, o: 4 / 3 }];
+// The zoom steps (§3; decisions §17.6), one for each of the zoom's levels (js/zoom.js: the overview, the default, Camp's
+// own ×1.5, close): `b` the buildings, carts, ground and paths, `s` the track, `o` the orks, each a whole number of
+// device pixels an art pixel. The default is ×1, so a MacBook (1512 × 982 or 1470 × 956, density 2) shows three rows
+// of six with their lines and the return line; the overview ×0.5 holds three rows of eight; ×1.5 is the owner's target
+// scale, one step in; close ×2. Orks keep the buildings' step: their sprites are drawn at about a third of a
+// building's height (the art session's recut, 35b5d6e). Density 1 has no whole step under ×1 or at ×1.5; density 3
+// (a phone) ⅔, ×1, ×4⁄3, ×2.
+const HI = [{ b: 0.5, s: 0.5, o: 0.5 }, { b: 1, s: 1, o: 1 }, { b: 1.5, s: 1, o: 1.5 }, { b: 2, s: 1.5, o: 2 }];
+const LO = [{ b: 0.5, s: 0.5, o: 0.5 }, { b: 1, s: 1, o: 1 }, { b: 2, s: 1, o: 2 }, { b: 2, s: 1, o: 2 }];
+const TRI = [{ b: 2 / 3, s: 2 / 3, o: 2 / 3 }, { b: 1, s: 1, o: 1 }, { b: 4 / 3, s: 1, o: 4 / 3 }, { b: 2, s: 4 / 3, o: 2 }];
 export const stepsFor = (dpr) => (dpr >= 3 ? TRI : dpr >= 2 ? HI : LO);
 export const DEFAULT_STEP = 1;
 /** A phone's default step: the art at its own pixel (×1), whatever the screen's density. */

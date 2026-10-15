@@ -25,7 +25,7 @@ import { foldQuiet, unfoldAll, quiet } from "./fold.js";
 import { Ghost, planned as onboardingPlan, risen } from "./onboarding.js";
 import { activeBiome } from "./icons.js";
 import { FrameSelect, Schemes } from "./frame.js";
-import { zoomLevel, zoomBy, zooming, mapView, toggleMap } from "./zoom.js";
+import { zoomLevel, zoomBy, zooming, mapView, toggleMap, officeLevel } from "./zoom.js";
 
 const room = signal({ w: 1, h: 1, strip: 0 });
 const pinched = { sum: 0, last: 0, at: 0 };   // the pinch under way (js/town.js Town): its wheel deltas so far
@@ -111,7 +111,7 @@ function grow(buildings, spots, rects, held) {
 
 // The zoom changes only how far down the town its buildings stand (docs/design/map-view.md): the map is short and
 // wide, close up the town is taller than the window and scrolls. Across, every building keeps its place.
-const DEPTH = { a: 0.5, b: 1, c: 1.4 };
+const DEPTH = { a: 0.5, b: 1, bc: 1, c: 1.4 };
 
 /** The room a hut's spot is a fraction of: the canvas less a usual hut, the margins and the foot, its height as deep
  *  as the zoom's level. The same for every hut whatever its size, so a hut that grows, shrinks or stands up from its
@@ -669,7 +669,7 @@ export function Town({ buildings, roads }) {
     pinched.sum = 0;
     pinched.at = now;
   };
-  return html`<main ref=${ref} class=${cls(`ok-ground gui-town is-zoom-${zoomLevel.value}`, { "is-map": mapView.value, "is-zooming": zooming.value })} onClick=${bare}
+  return html`<main ref=${ref} class=${cls(`ok-ground gui-town is-zoom-${officeLevel(zoomLevel.value)}`, { "is-map": mapView.value, "is-zooming": zooming.value })} onClick=${bare}
       onContextMenu=${(e) => bareMenu(e, buildings, here)} onWheel=${pinch}>
     <div class="gui-town__room" style=${`width:${wide + panelW}px;height:${tall}px`}>
       <${Schemes} buildings=${buildings} rects=${rects} />

@@ -7,7 +7,12 @@
 import { signal, computed } from "@preact/signals";
 
 const KEY = "orkcraft.zoom";
-export const LEVELS = ["a", "b", "c"];
+// `bc` is Camp's own step between its default and close (×1.5: the owner's target scale, decisions §17.6); Office has
+// no such step and draws it as `b`, and its zoom passes over it
+export const LEVELS = ["a", "b", "bc", "c"];
+const campLook = () => typeof document !== "undefined" && document.documentElement.dataset.look === "camp";
+/** The level as Office draws it: Camp's `bc` is Office's `b`. */
+export const officeLevel = (level) => (level === "bc" ? "b" : level);
 const DEFAULT = "b";
 
 function stored() {
@@ -36,7 +41,8 @@ export function setZoom(level) {
 
 /** One level closer (+1) or further (−1); none past the ends. */
 export function zoomBy(step) {
-  const i = LEVELS.indexOf(zoomLevel.value) + step;
+  let i = LEVELS.indexOf(zoomLevel.value) + step;
+  if (LEVELS[i] === "bc" && !campLook()) i += step;                       // Office passes over Camp's own step
   if (i >= 0 && i < LEVELS.length) setZoom(LEVELS[i]);
 }
 

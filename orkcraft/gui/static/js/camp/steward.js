@@ -49,8 +49,10 @@ export function statusLines(b) {
 }
 
 /** The thought bubble: u1's nine pieces round 2–3 words, its two dots trailing to the head under it. */
-export function Bubble({ x, y, text, onClick = null }) {
-  return html`<button type="button" class=${cls("gui-camp__bubble", { "is-button": !!onClick })} style=${`left:${x}px;top:${y}px`}
+export function Bubble({ x, y, text, onClick = null, through = false }) {
+  // `through`: the hover's bubble lets the mouse through to the building under it (a click on the building selects it)
+  return html`<button type="button" class=${cls("gui-camp__bubble", { "is-button": !!onClick && !through })}
+      style=${`left:${x}px;top:${y}px${through ? ";pointer-events:none" : ""}`}
       onClick=${onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined} tabindex=${onClick ? 0 : -1} aria-label=${text}>
     <span class="gui-camp__bubble-box">${text}</span>
     <span class="gui-camp__bubble-dot is-1"></span><span class="gui-camp__bubble-dot is-2"></span>
@@ -105,10 +107,13 @@ function Scroll({ b, p, grown, seen }) {
  *  of the world in the window, {left, top, right} in its own px. */
 export function StewardOut({ b, p, L, grown, seen, onOrk = null, onBubble = null }) {
   const S = L.step.s, O = L.step.o || S, B = L.step.b;
-  const head = p.feet - 64 * O;
-  return html`<div class="gui-camp__layer is-out">
+  const ork = sizeOf(orkSprite(b.ork_name)), head = p.feet - ((ork ? ork[1] : 38) + 6) * O;   // over its head, whatever its size
+  // the mouse on the steward out of its door, its bubble or its scroll still means its building: hovered stays, no flicker
+  const keep = (e) => { if (e.pointerType === "mouse" && hovered.value !== b.id && !grown) hovered.value = b.id; };
+  const gone = () => { if (hovered.value === b.id && !grown) hovered.value = null; };
+  return html`<div class="gui-camp__layer is-out" onPointerOver=${keep} onPointerLeave=${gone}>
     <${OutOfDoor} b=${b} p=${p} S=${S} O=${O} B=${B} onOrk=${onOrk} />
-    ${!grown && html`<${Bubble} x=${p.door.x + 6 * B} y=${head - 4} text=${thought(b)}
+    ${!grown && html`<${Bubble} x=${p.door.x + 6 * B} y=${head - 4} text=${thought(b)} through=${true}
       onClick=${onBubble ? () => onBubble(b) : null} />`}
     <${Scroll} b=${b} p=${p} grown=${grown} seen=${seen} />
   </div>`;

@@ -14,7 +14,7 @@ import { openOrders } from "../orders.js";
 import { placing, constructing, raised } from "../build.js";
 import { zoomLevel, zoomBy, LEVELS } from "../zoom.js";
 import { bareMenu, setNumbered } from "../town.js";
-import { lay, stepsFor, DEFAULT_STEP, SIDING_SHOWN, PATH_W } from "./layout.js";
+import { lay, stepsFor, SIDING_SHOWN, PATH_W } from "./layout.js";
 import { V3, kit, loadKit, sizeOf, doorwayOf } from "./sprites.js";
 import { grassOf, earthOf, shiftOf, bedOf, hash, STAND_IN } from "./ground.js";
 import { CampCarts, Finale, Switches, arriving, leaving } from "./carts.js";
@@ -51,10 +51,10 @@ const pan = signal({ x: 0, y: 0 });        // the drag's offset from the default
 let panned = false;                        // the last press dragged the town: its click selects nothing
 const DRAG_PX = 5;
 
-/** The zoom step the town's level asks for: the map the overview, the default, close up the last. */
+/** The zoom step the town's level asks for: one for each level (the overview, the default, ×1.5, close). */
 function stepOf(steps) {
   const i = LEVELS.indexOf(zoomLevel.value);
-  return steps[i <= 0 ? 0 : i === 1 ? Math.min(DEFAULT_STEP, steps.length - 1) : steps.length - 1];
+  return steps[Math.min(Math.max(i, 0), steps.length - 1)];
 }
 
 const img = (file, x, y, w, h, extra = "", cl = "gui-camp__px") =>
