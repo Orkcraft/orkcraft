@@ -202,3 +202,11 @@
   background: repeating-linear-gradient(180deg, var(--art-wood) 0 6px, var(--art-wood-dark) 6px 8px) 0 28% / 100% 44% no-repeat; }
 /* the track bed (§4e): the paths' earth a step darker, so the sleepers read on it */
 .gui-camp__px.is-bed { filter: brightness(.9); }
+/* the Prospector's moves (o7-moves): six frames each; it paces beside the shaft, or carries a sack to the stop */
+.gui-camp__ork.is-moving { background-size: auto 100% !important; animation: gui-camp-frames6 .75s steps(6) infinite; }
+.gui-camp__ork.is-pacing { animation: gui-camp-frames6 .75s steps(6) infinite, gui-camp-pace 6s steps(24) infinite; }
+.gui-camp__ork.is-carrying { animation: gui-camp-frames6 .75s steps(6) infinite, gui-camp-carry 2.5s linear 1 both; }
+@keyframes gui-camp-pace { 0%, 100% { transform: translateX(0) scaleX(1); } 49.9% { transform: translateX(var(--dx)) scaleX(1); }
+  50% { transform: translateX(var(--dx)) scaleX(-1); } 99.9% { transform: translateX(0) scaleX(-1); } }
+@keyframes gui-camp-carry { from { transform: translateX(0); } to { transform: translateX(var(--dx)); } }
+@media (prefers-reduced-motion: reduce) { .gui-camp__ork.is-moving { animation: none; } }

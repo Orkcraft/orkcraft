@@ -17,7 +17,7 @@ import { bareMenu, setNumbered } from "../town.js";
 import { lay, stepsFor, DEFAULT_STEP, SIDING_SHOWN, PATH_W } from "./layout.js";
 import { V3, kit, loadKit, sizeOf } from "./sprites.js";
 import { grassOf, earthOf, shiftOf, bedOf, hash, STAND_IN } from "./ground.js";
-import { CampCarts, Finale, Switches, arriving } from "./carts.js";
+import { CampCarts, Finale, Switches, arriving, leaving } from "./carts.js";
 import { hovered, StewardOut } from "./steward.js";
 import { Stewards } from "./orks.js";
 import { Badge } from "./signals.js";
@@ -441,7 +441,7 @@ export function CampTown({ buildings, roads }) {
       <${Siding} L=${L} buildings=${buildings} />
       <${Depot} L=${L} buildings=${buildings} />
       <${CampCarts} L=${L} roads=${here} bays=${Object.fromEntries(buildings.map((b) => [b.id, busyBays(b)]))} carts=${carts} travel=${travel} avg=${averagePerResult(snapshot.value && snapshot.value.score)} />
-      <${Stewards} L=${L} buildings=${buildings} roads=${here} out=${outId} soon=${arriving(L, here, carts, travel)}
+      <${Stewards} L=${L} buildings=${buildings} roads=${here} out=${outId} soon=${arriving(L, here, carts, travel)} left=${leaving(here, carts)}
         onOrk=${onOrk} onBubble=${onBubble} />
       ${finale && html`<div class="gui-camp__layer is-carts"><${Finale} key=${finale.id} L=${L} f=${finale} /></div>`}
       ${outB && html`<${StewardOut} b=${outB} p=${L.buildings[outB.id]} L=${L} grown=${selected.value === outB.id} onOrk=${onOrk} onBubble=${onBubble}

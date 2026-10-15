@@ -28,7 +28,7 @@ function Ork({ name, file, at, S, cl = "", style = "", onClick = null }) {
   const s = sizeOf(file);
   if (!s) return null;
   const w = s[0] * S, h = s[1] * S;
-  return html`<span class=${cls("gui-camp__ork", `is-${at.pose}`, cl)} title=${say(name)} aria-label=${say(name)}
+  return html`<span class=${cls("gui-camp__ork", `is-${at.pose}${cl ? ` ${cl}` : ""}`)} title=${say(name)} aria-label=${say(name)}
       role=${onClick ? "button" : "img"} onClick=${onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined}
       style=${`left:${at.x - w / 2}px;top:${at.y - h}px;width:${w}px;height:${h}px;z-index:${10 + Math.round(at.y / 8)};`
         + `background:url(${V3 + file}) 0 0 / auto ${h}px no-repeat;--w:${w}px;${style}`}></span>`;
@@ -51,10 +51,36 @@ function Steward({ b, at, S, soon, onOrk, onBubble }) {
       style=${`animation-delay:${carry}s, ${carry}s`} />`}`;
 }
 
-export function Stewards({ L, buildings, roads, out = null, soon = {}, onOrk = null, onBubble = null }) {
+/** The Prospector, the mine's keeper (Research, §4.11), in its own moves (o7-moves, `orks/prospector/`): digging by the
+ *  shaft while Research runs; carrying a sack from the door to the stop as a result leaves (`left`: seconds since the
+ *  last cart left it); else pacing its path beside the shaft. Six frames a move. Its ❓ as any steward's. */
+function Prospector({ b, p, L, left, onOrk }) {
+  const B = L.step.b, S = L.step.s, name = b.ork_name || "Prospector", click = onOrk ? () => onOrk(b) : null;
+  // beside the headframe, just off its east side, on the ground before the line; drawn in front of the mine
+  const shaft = { x: Math.round(p.x + p.w + 10 * S), y: Math.round(p.stop.y - L.T / 2 - 2 * S) };
+  const front = `z-index:${12 + Math.round(p.feet / 8)};`;
+  const move = (m) => (sizeOf(`orks/prospector/${m}.png`) ? `orks/prospector/${m}.png` : null);
+  if (b.alert) return html`<${Ork} name=${name} file=${sizeOf("orks/states/asks.png") ? "orks/states/asks.png" : orkSprite(name)}
+    at=${{ x: p.door.x + 14 * B, y: p.feet + 2 * B, pose: "asks" }} S=${S} onClick=${click} />`;
+  const dig = busyOf(b) && move("dig"), carry = left !== null && left !== undefined && left < LIFT_S && move("carry");
+  if (dig) return html`<${Ork} name=${`${name}: digging`} file=${dig} at=${{ ...shaft, pose: "digs" }} S=${S} cl="is-moving" style=${front} onClick=${click} />`;
+  if (carry) {
+    const dx = Math.round(p.stop.x - shaft.x);                      // from beside the shaft to its stop
+    return html`<${Ork} name=${`${name}: a result leaves`} file=${carry} at=${{ ...shaft, pose: "carries" }} S=${S} cl="is-moving is-carrying"
+      style=${`${front}--dx:${dx}px;animation-delay:0s, ${-left}s`} onClick=${click} />`;
+  }
+  const walk = move("walk");
+  return walk ? html`<${Ork} name=${name} file=${walk} at=${{ ...shaft, pose: "walks" }} S=${S} cl="is-moving is-pacing"
+      style=${`${front}--dx:${Math.round(20 * S)}px`} onClick=${click} />`
+    : html`<${Ork} name=${name} file=${orkSprite(name)} at=${{ ...shaft, pose: "waits" }} S=${S} style=${front} onClick=${click} />`;
+}
+
+export function Stewards({ L, buildings, roads, out = null, soon = {}, left = {}, onOrk = null, onBubble = null }) {
   const into = new Set((roads || []).map((r) => r.to));
   return html`<div class="gui-camp__layer is-orks">${buildings.map((b) => {
     if (b.id === out) return null;                          // out of its door instead (js/camp/steward.js)
+    const p = L.buildings[b.id];
+    if (b.type === "mine" && p && !p.wall) return html`<${Prospector} key=${b.id} b=${b} p=${p} L=${L} left=${left[b.id]} onOrk=${onOrk} />`;
     const at = stewardAt(b, L.buildings[b.id], L, into.has(b.id) || b.type === "fields");
     return at && html`<${Steward} key=${b.id} b=${b} at=${at} S=${L.step.s} soon=${soon[b.id]} onOrk=${onOrk} onBubble=${onBubble} />`;
   })}</div>`;

@@ -164,6 +164,17 @@ export function arriving(L, roads, carts = [], travel = 0) {
   return out;
 }
 
+/** How long ago a cart last left each building, seconds: building id → its youngest leaving cart's age. */
+export function leaving(roads, carts = []) {
+  const byId = Object.fromEntries(roads.map((r) => [r.id, r])), out = {};
+  for (const c of carts) {
+    const r = roadOf(byId, c);
+    if (!r || c.stands || c.state === "back") continue;
+    if (out[r.from] === undefined || c.age < out[r.from]) out[r.from] = c.age;
+  }
+  return out;
+}
+
 /** A cart the catapult launches flies over the wall with its cost (the-score.md, v3-prompts §13.4): only what was
  *  recorded — its wood, and its $ where its AI tool bills by an API key (its share of the window is not measured yet:
  *  Later); green when the cart cost less than the town's average per result (`avg`). It leaves the moment the cart

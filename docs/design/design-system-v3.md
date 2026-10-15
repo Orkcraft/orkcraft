@@ -495,6 +495,12 @@ switches on c2's gauge, with the north–east–south junction still owed (§0).
 - **The fit.** Both lines and the return line do not fit the default ×1.5 at 1440 × 900: the return line shows at its
   edge there and whole at the overview. Shots: [img/loop/](img/loop/).
 
+**Built (LOOP, 15 October): the Prospector's moves** (o7-moves, `orks/prospector/walk|dig|carry`, six frames each;
+`js/camp/orks.js` `Prospector`). The mine's keeper stands just east of the headframe, in front of it. It paces its
+ground there while it waits, digs while Research runs (its building busy), and carries a sack to the stop as a
+result leaves. Shots: `img/loop/prospector-moves.png` (walk, dig, carry), `prospector-dig.png`. A dropped-class slip in
+`Ork` that kept every steward's lift animation from showing is fixed with it.
+
 ### 4d. The Agent pool as the depot (the owner, 15 October; not built)
 
 The Agent pool is the camp's heart: the orks build the person's project there. So it becomes **a station, the
