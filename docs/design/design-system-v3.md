@@ -417,6 +417,13 @@ track. Between buildings, three kinds of link, three drawings:
 
 **Rules:**
 
+   **Amended 15 October (the owner): a service stands off the rails, on the grass among its readers.** The Wiki takes
+   no place in a row at all: it stands on free grass **inside the loop**, at the point closest to its readers (the
+   depot, the Calendar, the Review board…), weighted by how often each reads it. A short footpath (16 art px) runs to
+   each of its readers, at most three; a path that must cross a line does so on a level crossing. It never stands on
+   track or its bed, never against a building, and it uses the loop's empty middle (§17.6's dead grass). With no
+   free grass large enough, it falls back to standing beside its busiest reader (as below). In Office it keeps its
+   card where the person put it; this is Camp's drawing only. Not built.
 1. **A service beside its reader** (the owner, 15 October; the back row along the palisade was built and is taken
    out: one building did not earn a row of its own and long paths). A service stands in a row like any building,
    next to its busiest reader, with no stop on the line; one short footpath (16 art px, narrower than a building's)

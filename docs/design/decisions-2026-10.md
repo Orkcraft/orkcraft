@@ -603,3 +603,8 @@ versioned URLs (network-first stays for the shell and data); the v3 sprites pack
 precached once when a phone pairs at home. A native app would not fix this by itself. **Not started: the owner asked
 that nothing more is launched until he says so** (the account's weekly limit is near).
 
+**The Wiki on the grass (the owner, same day).** The Wiki leaves the rows: it stands on free grass inside the loop,
+among its readers (the depot, the Calendar, the Review board), with short footpaths to up to three of them; it fills
+the loop's empty middle. design-system-v3 §4c rule 1 amended. P1, after §19 and the phone; not started (the owner
+asked that nothing is launched until he says so).
+
