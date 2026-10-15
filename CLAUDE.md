@@ -28,6 +28,17 @@
   settings and anything about money or safety say plainly what happens.
 - Tests that check a visible string use the same wording.
 
+## Art: never re-pixelate generated images
+
+- Sprites cut from generated sheets (Gemini or any image model) are **never re-pixelated**: no guessing a pixel grid,
+  no picking one colour per cell (mode, median), no palette reduction, no re-cut at a non-integer ratio. Generated
+  "pixel art" sits on an uneven grid, and re-pixelating it turns it to noise.
+- Cut **once from the source**: crop, key the background out with despill (no coloured fringe), trim, and downscale
+  **once** with a high-quality filter (LANCZOS, premultiplied alpha) straight to the device pixels it is drawn at,
+  one file per zoom step on a dpr-2 screen (`@hd1`, `@hd1_5`, `@hd2`), drawn 1:1 on whole device pixels.
+- Integer nearest-neighbour scaling and `image-rendering: pixelated` are only for art that is truly drawn on a pixel
+  grid: the pieces drawn by code (`tools/ui_kit.py`, `tools/logo.py`) and hand-made pixel art.
+
 ## Where code goes (docs/design/gui-migration.md)
 
 - **The GUI is the one face** (`orkcraft/gui/`). The terminal UI was removed

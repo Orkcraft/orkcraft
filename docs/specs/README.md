@@ -42,7 +42,9 @@ At the end, print: the commits, the tests run and their result, anything you cou
 4. **Looks.** Camp and Office are two looks of one GUI: a look changes drawing, never words. Camp-only styling is
    scoped under `[data-look="camp"]`. Office stays calm and monochrome.
 5. **Signals.** Yellow and red are reserved for ❓, `!` and 🔥. Never use them for decoration.
-6. **Pixel art.** Sprites drawn with `image-rendering: pixelated`, on whole device pixels; no fractional transforms.
+6. **Art.** Never re-pixelate generated images (CLAUDE.md "Art"): cut once from the source with despill and one
+   high-quality downscale to the device pixels drawn; no grid guessing, no palette reduction, no non-integer re-cuts.
+   Everything sits on whole device pixels; no fractional transforms. `pixelated` only for code-drawn pixel art.
 7. **Tests.** Always run the critical tests: `tests/test_architecture.py tests/test_cli.py tests/test_updates.py`,
    plus the test files the spec lists. Never skip, disable or loosen a test to pass.
 8. **Don't** bump the version or touch `updates.json` unless the spec is the release; don't rename files; don't
