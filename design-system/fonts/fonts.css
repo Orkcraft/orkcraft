@@ -3,8 +3,8 @@
    Cyrillic too, for the names people give their orkspaces. v3 (docs/design/design-system-v3.md §6): Camp's
    labels are Nunito, with Cyrillic as well; Titillium Web stays only as its fallback. */
 
-@font-face { font-family: "Almendra SC"; font-style: normal; font-weight: 400; font-display: swap;
-  src: url("almendra-sc-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "New Rocker"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("new-rocker-latin-400-normal.woff2") format("woff2"); }
 @font-face { font-family: "Titillium Web"; font-style: normal; font-weight: 400; font-display: swap;
   src: url("titillium-web-latin-400-normal.woff2") format("woff2"); }
 @font-face { font-family: "Titillium Web"; font-style: normal; font-weight: 600; font-display: swap;

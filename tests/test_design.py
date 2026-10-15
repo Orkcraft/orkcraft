@@ -231,8 +231,8 @@ def test_v3_parchment_and_the_teal_accent_read():
     assert _contrast(camp["parchment"], camp["walnut"]) >= 3
 
 
-def test_camps_titles_are_pixelify_and_the_wordmark_keeps_almendra():
-    """The owner's answer 3 (design-system-v2.md §12): Camp's titles in Pixelify Sans with C3, Almendra SC the wordmark's alone."""
+def test_camps_titles_are_pixelify_and_the_wordmark_keeps_its_own_face():
+    """The owner's answer 3 (design-system-v2.md §12): Camp's titles in Pixelify Sans with C3, the wordmark's face (New Rocker since 15 October) its alone."""
     styles = {st["name"]: st for g in tokens.system()["type"]["groups"] for st in g["styles"]}
     assert styles["camp-title"]["family"] == styles["camp-heading"]["family"] == "pixel"
     css = (tokens.SYSTEM / "components.css").read_text(encoding="utf-8")

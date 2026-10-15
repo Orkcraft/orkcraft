@@ -51,7 +51,7 @@ def test_the_app_is_its_own_files_and_nothing_else():
     assert "Location: /app/" in _split(pwa.serve("GET", "/app"))[0]
     head, body = _split(pwa.serve("GET", "/app/fonts/titillium-web-latin-400-normal.woff2"))   # the desktop's faces
     assert "Content-Type: font/woff2" in head and body[:4] == b"wOF2"
-    assert b"Almendra SC" in _split(pwa.serve("GET", "/app/fonts/fonts.css"))[1]
+    assert b"New Rocker" in _split(pwa.serve("GET", "/app/fonts/fonts.css"))[1]
     assert _split(pwa.serve("GET", "/app/fonts/OFL-Titillium-Web.txt"))[0].startswith("HTTP/1.1 404")
     head, body = _split(pwa.serve("HEAD", "/app/app.css"))
     assert head.startswith("HTTP/1.1 200") and body == b""

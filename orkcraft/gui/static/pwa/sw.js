@@ -6,7 +6,7 @@ const SHELL = ["./", "app.js", "util.js", "dock.js", "town.js", "fields.js", "ic
   "tokens.css", "components.css", "app.css",
   "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "fonts/fonts.css",
   "fonts/titillium-web-latin-400-normal.woff2", "fonts/titillium-web-latin-600-normal.woff2",
-  "fonts/almendra-sc-latin-400-normal.woff2"];
+  "fonts/new-rocker-latin-400-normal.woff2"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

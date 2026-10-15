@@ -224,7 +224,7 @@ The resource strip along the top of the town: the brand, the menu, the halt stat
 - Each resource carries its Camp icon and its Office word (`ok-word`), following `modes.RESOURCES`: Quota (`icons/res-quota.png`, an hourglass, was ⏳), Spend (`res-gold`, a stack of coins, was 🪙), Context (`res-lumber`, crossed logs, was 🪵) and Agents (`res-meat`, meat on the bone, was 🥩). Each is a 16×16 `icon-resource` sprite `<img class="ok-sprite" data-kind="res">`; Office hides it and keeps the word.
 - States: `is-warn` at 80% or more, `is-over` at 100% or more, and `quiet` for the quiet-hours segment.
 
-**Camp.** A real-time strategy resource bar: a bevelled `panel-raised` strip, the brand in Almendra, and an icon then a number for each resource.
+**Camp.** A real-time strategy resource bar: a bevelled `panel-raised` strip, the brand in New Rocker, and an icon then a number for each resource.
 
 **Office.** A VS Code title bar: flat `panel-inset` with a bottom hairline, the UI face, each word before its value, and no icons.
 

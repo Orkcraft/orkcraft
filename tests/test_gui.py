@@ -222,7 +222,7 @@ async def test_the_page_and_the_design_system_are_served(fake_repo):
         assert status == 200 and b".ok-font-status" in body
         status, kind, _ = await asyncio.to_thread(get, "/static/vendor/preact.mjs")
         assert status == 200 and kind.startswith("text/javascript")
-        status, kind, _ = await asyncio.to_thread(get, "/ds/fonts/almendra-sc-latin-400-normal.woff2")
+        status, kind, _ = await asyncio.to_thread(get, "/ds/fonts/new-rocker-latin-400-normal.woff2")
         assert status == 200 and kind == "font/woff2"
         assert (await asyncio.to_thread(get, "/static/../host.py"))[0] == 404
     finally:

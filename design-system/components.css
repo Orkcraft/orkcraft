@@ -10,7 +10,7 @@
 
 :root, [data-theme="camp"], [data-theme="camp-ice"], [data-theme="camp-void"] {
   --ok-font: var(--font-camp);
-  --ok-head: var(--font-pixel);          /* titles: Pixelify Sans (design-system-v2.md §10); Almendra SC is the wordmark's alone */
+  --ok-head: var(--font-pixel);          /* titles: Pixelify Sans (design-system-v2.md §10); New Rocker is the wordmark's alone */
   --ok-radius: var(--radius-0);
   --ok-radius-md: var(--radius-0);
   --ok-radius-lg: var(--radius-0);

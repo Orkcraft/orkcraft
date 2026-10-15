@@ -237,7 +237,7 @@ code was written by coding agents under the author's direction; the decisions ar
 
 Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE). Copyright 2026 Vadim Sidoryk.
 
-The fonts bundled in `design-system/fonts/` — Almendra SC, Titillium Web, JetBrains Mono and Pixelify
+The fonts bundled in `design-system/fonts/` — New Rocker, Titillium Web, JetBrains Mono and Pixelify
 Sans — are under the SIL Open Font License 1.1; their licences sit beside them.
 
 ---

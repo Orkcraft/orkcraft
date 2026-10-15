@@ -601,7 +601,7 @@ light stone. So signals are **UI drawn by the product** (layer 8), never in the 
 | display: titles, the map's chips | **Pixelify Sans** (500) | a true pixel face that stays readable at 14 px; already the War Map's and Camp's titles' (v2 §12, answer 3) | yes (kept) |
 | labels and running text | **Nunito** (400, 600, 700, 800) | rounded, friendly, very legible at small sizes; fits a cosy camp better than Titillium Web's technical narrowness | **yes, new** (Titillium had none) |
 | the terminal, code | **JetBrains Mono** (400, 700) | unchanged: built for code, clear at 13–14 px | Latin shipped, as today |
-| the wordmark | Almendra SC | unchanged, the product's name only | — |
+| the wordmark | New Rocker (the owner, 15 October; Almendra SC before) | the product's name only | — |
 
 Titillium Web stays shipped as Nunito's fallback (`--font-camp: "Nunito", "Titillium Web", …`), so nothing breaks
 while a machine still has the old page cached.

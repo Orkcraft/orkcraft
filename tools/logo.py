@@ -8,11 +8,11 @@ its shoulders (`MARK_BOX`). Out come, in `design-system/logo/` by default (the G
 
 - `ork-mark.svg`, `ork-mark-camp.svg`, `ork-mark-light.svg`: the head, one path per colour (the art keeps its own);
 - `ork-mark-mono.svg`: one colour (`currentColor`), its darkest pixels cut out;
-- `orkcraft-dark.svg`, `orkcraft-light.svg`: the head with the word, set in Titillium Web 700 and turned into
-  outlines so it needs no font;
+- `orkcraft-dark.svg`, `orkcraft-light.svg`: the head with the word, set in New Rocker (the wordmark's face) and
+  turned into outlines so it needs no font;
 - `favicon-16.png`, `favicon-32.png`, `favicon.ico`, `ork-mark-256.png`: at whole multiples, the 16 px boxed down;
 
-and `docs/img/logo-dark.png`, `logo-light.png` (the README's: the word in Almendra SC with its shadow) and the phone's
+and `docs/img/logo-dark.png`, `logo-light.png` (the README's: the word in New Rocker with its shadow) and the phone's
 `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` (`orkcraft/gui/static/pwa/`).
 
 The agent's small head in the GUI is still the 12×8 grid below: `design-system/sprites/orks/` gets `ork.png` (drawn
@@ -211,9 +211,9 @@ def svg(width: float, height: float, body: str, title: str) -> str:
             f"<title>{title}</title>{body}</svg>\n")
 
 
-def word_path(text: str, cap: float, x: float, baseline: float) -> tuple[str, float]:
+def word_path(text: str, cap: float, x: float, baseline: float, face: pathlib.Path = FONT) -> tuple[str, float]:
     """The word as one SVG path whose capitals stand `cap` units tall; returns it and its width."""
-    font = TTFont(FONT)
+    font = TTFont(face)
     glyphs, cmap = font.getGlyphSet(), font.getBestCmap()
     scale = cap / font["OS/2"].sCapHeight
     hmtx = font["hmtx"]
@@ -233,7 +233,7 @@ def lockup(colours: dict[str, str]) -> str:
     cap = 0.45 * hh
     baseline = (hh + cap) / 2
     gap = 3 * CELL
-    d, width = word_path(WORD, cap, hw + gap, baseline)
+    d, width = word_path(WORD, cap, hw + gap, baseline, WORDMARK_FONT)
     total = hw + gap + width
     body = mark_svg_body(head) + f'<path fill="{colours["word"]}" d="{d}" shape-rendering="geometricPrecision"/>'
     return svg(round(total + 1), hh, body, WORD)
@@ -247,14 +247,53 @@ MARK_SPRITE = ROOT / "design-system" / "sprites" / "v3" / "orks" / "roles" / "me
 MARK_BOX = (5, 6, 34, 30)                   # the head on the sprite, from the cap to the chin's outline
 MARK_CLEAR = [(0, 27, 12, 30), (31, 27, 40, 30)]   # the shoulders beside the chin, on the sprite, left out
 WORD = "Orkline"
-WORDMARK_FONT = ROOT / "design-system" / "fonts" / "almendra-sc-latin-400-normal.woff2"
+WORDMARK_FONT = ROOT / "design-system" / "fonts" / "new-rocker-latin-400-normal.woff2"
+
+
+# Cleaned for a mark (the owner: "too many stray pixels"): every pixel moved onto the sprite's own ten main colours
+# (outline, face and its shade, cap and its shade, the frames' two browns, lens, glint, tusk), then a lone fleck takes
+# its neighbours' colour and a tip of the outline hanging by one pixel goes; the lenses, glints and tusks always stay.
+MARK_PALETTE = ["#1b0a1e", "#6f734b", "#57573c", "#877659", "#67584a", "#553532", "#795540", "#6dcff4", "#defdff",
+                "#f9f9a5"]
+MARK_KEEP = 3                               # the last three: never taken for flecks
+
+
+def _rgb(h: str) -> tuple[int, int, int]:
+    return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def clean(img: Image.Image, passes: int = 2) -> Image.Image:
+    from collections import Counter
+    pal = [_rgb(h) for h in MARK_PALETTE]
+    keep = set(pal[-MARK_KEEP:])
+    out = img.copy()
+    px = out.load()
+    for y in range(out.height):
+        for x in range(out.width):
+            r, g, b, a = px[x, y]
+            px[x, y] = min(pal, key=lambda p: sum((u - v) ** 2 for u, v in zip(p, (r, g, b)))) + (255,) if a else (0, 0, 0, 0)
+    for _ in range(passes):
+        src, px = out.copy().load(), out.load()
+        for y in range(out.height):
+            for x in range(out.width):
+                if not src[x, y][3]:
+                    continue
+                near = [src[x + dx, y + dy] for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
+                        if 0 <= x + dx < out.width and 0 <= y + dy < out.height and src[x + dx, y + dy][3]]
+                if len(near) <= 1:
+                    px[x, y] = (0, 0, 0, 0)
+                elif src[x, y][:3] not in keep and not any(n[:3] == src[x, y][:3] for n in near):
+                    colour, n = Counter(c[:3] for c in near).most_common(1)[0]
+                    if n >= 2:
+                        px[x, y] = colour + (255,)
+    return out
 
 
 def mark() -> Image.Image:
     img = Image.open(MARK_SPRITE).convert("RGBA")
     for box in MARK_CLEAR:
         img.paste((0, 0, 0, 0), box)
-    return img.crop(MARK_BOX)
+    return clean(img.crop(MARK_BOX))
 
 
 def mark_svg_body(img: Image.Image, mono: str | None = None) -> str:
@@ -295,7 +334,7 @@ def mark_raster(size: int, ground: tuple[int, int, int, int] = (0, 0, 0, 0), fil
 
 
 def readme_logo(text: str, shadow: str, height: int = 192) -> Image.Image:
-    """The README's logo: the head at a whole multiple and the word in Almendra SC with its offset shadow, on clear."""
+    """The README's logo: the head at a whole multiple and the word in New Rocker with its offset shadow, on clear."""
     import io
 
     from PIL import ImageDraw, ImageFont
