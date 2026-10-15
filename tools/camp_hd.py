@@ -13,7 +13,11 @@ noise; the ork is only some 45 of its own pixels tall, so nothing is lost by not
    to `w × h × show × 2k` for each step `k`: a dpr-2 screen draws the ork at `k` CSS px per art px (js/camp/layout.js
    HI's `o`: 1, 1.5, 2), so the file is one image pixel per device pixel. Feet stay on the slot's bottom row.
 
-Written next to today's file as `<name>@hd1.png`, `@hd1_5.png`, `@hd2.png`; today's stays the dpr-1 sprite.
+4. what today's sprite took away (a cart's load cut from the cart, a smudge cleared, a cut) is taken away here too:
+   the frame keeps only what lies over today's frame, one art px round it.
+
+Written next to today's file as `<name>@hd1.webp`, `@hd1_5.webp`, `@hd2.webp` (lossy WebP at quality 90, its alpha
+lossless: smooth art, a quarter of a PNG's size); today's stays the dpr-1 sprite.
 """
 from __future__ import annotations
 
@@ -29,8 +33,12 @@ def suffix(k: float) -> str:
 
 
 def hd_name(rel: str, k: float) -> str:
-    stem, ext = rel.rsplit(".", 1)
-    return f"{stem}{suffix(k)}.{ext}"
+    return f"{rel.rsplit('.', 1)[0]}{suffix(k)}.webp"
+
+
+def save(img: np.ndarray, path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(img, "RGBA").save(path, "WEBP", quality=90, alpha_quality=100, method=6)
 
 
 def _near(bg: np.ndarray, n: int) -> np.ndarray:
@@ -84,7 +92,7 @@ def downscale(rgba: np.ndarray, box: tuple[float, float, float, float], size: tu
 
 
 def frame(sheet, b, slot: tuple[int, int], at: tuple[int, int], c: float, out: tuple[int, int],
-          bottom: bool = True) -> np.ndarray:
+          bottom: bool = True, today: np.ndarray | None = None) -> np.ndarray:
     """One frame: the piece at grid box `b`, placed as today's sprite places it in its `slot` (art px) at `at` (its
     top left in the slot), `c` source px per art px, downscaled to `out` device px."""
     pitch, ox, oy = sheet.pitch, sheet.ox, sheet.oy
@@ -108,4 +116,10 @@ def frame(sheet, b, slot: tuple[int, int], at: tuple[int, int], c: float, out: t
     ok = (ys[:, None] >= 0) & (ys[:, None] < cells.shape[0]) & (xs[None] >= 0) & (xs[None] < cells.shape[1])
     keep = ok & cells[np.clip(ys, 0, cells.shape[0] - 1)[:, None], np.clip(xs, 0, cells.shape[1] - 1)[None]]
     rgba[..., 3] *= keep
-    return downscale(rgba, (sx - X0, sy - Y0, sx - X0 + iw * c, sy - Y0 + ih * c), out)
+    img = downscale(rgba, (sx - X0, sy - Y0, sx - X0 + iw * c, sy - Y0 + ih * c), out)
+    if today is not None:                       # only over today's frame (and one art px round it)
+        near = _near(today[..., 3] > 0, 1)
+        ys = np.arange(out[1]) * ih // out[1]
+        xs = np.arange(out[0]) * iw // out[0]
+        img[..., 3] = np.where(near[ys[:, None], xs[None]], img[..., 3], 0)
+    return img

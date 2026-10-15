@@ -236,4 +236,5 @@
   box-shadow: 0 2px 0 #f6efdc; }
 [data-look="camp"] .gui-info-tab .gui-section > h3 { font: var(--type-kit-heading); letter-spacing: 0; text-transform: none; color: var(--parchment-ink); }
 [data-look="camp"] .gui-info__v3 { flex: none; image-rendering: pixelated; image-rendering: crisp-edges; }
+[data-look="camp"] .gui-info__v3.is-hd { image-rendering: auto; }   /* its high-density cut at one to one */
 [data-look="camp"] .gui-info__head { padding-top: 4px; }

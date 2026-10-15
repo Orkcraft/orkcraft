@@ -15,7 +15,7 @@ import { placing, constructing, raised } from "../build.js";
 import { zoomLevel, zoomBy, LEVELS } from "../zoom.js";
 import { bareMenu, setNumbered } from "../town.js";
 import { lay, stepsFor, SIDING_SHOWN, PATH_W } from "./layout.js";
-import { V3, kit, loadKit, sizeOf, doorwayOf } from "./sprites.js";
+import { V3, kit, loadKit, sizeOf, doorwayOf, hdSrc } from "./sprites.js";
 import { grassOf, earthOf, shiftOf, bedOf, hash, STAND_IN } from "./ground.js";
 import { CampCarts, Finale, Switches, arriving, leaving } from "./carts.js";
 import { hovered, StewardOut, Bubble, thought } from "./steward.js";
@@ -59,15 +59,19 @@ function stepOf(steps) {
   return steps[Math.min(Math.max(i, 0), steps.length - 1)];
 }
 
-const img = (file, x, y, w, h, extra = "", cl = "gui-camp__px") =>
-  html`<img class=${cl} src=${V3 + file} alt="" draggable="false" style=${`left:${x}px;top:${y}px;width:${w}px;height:${h}px;${extra}`} />`;
+// on a dense screen a sprite's high-density cut, one image px on one device px (tools/camp_hd.py)
+const img = (file, x, y, w, h, extra = "", cl = "gui-camp__px") => {
+  const f = hdSrc(file, w);
+  return html`<img class=${f.hd ? `${cl} is-hd` : cl} src=${f.url} alt="" draggable="false" style=${`left:${x}px;top:${y}px;width:${w}px;height:${h}px;${extra}`} />`;
+};
 
 /** A sprite repeated over a box (the earth, a palisade's run), at its art size times `k`. */
 function tiled(file, x, y, w, h, k, repeat = "repeat") {
   const s = sizeOf(file);
   if (!s) return null;
-  return html`<div class="gui-camp__px" style=${`left:${x}px;top:${y}px;width:${w}px;height:${h}px;`
-    + `background:url(${V3 + file}) 0 0 / ${s[0] * k}px ${s[1] * k}px ${repeat}`}></div>`;
+  const f = hdSrc(file, s[0] * k);
+  return html`<div class=${cls("gui-camp__px", { "is-hd": f.hd })} style=${`left:${x}px;top:${y}px;width:${w}px;height:${h}px;`
+    + `background:url(${f.url}) 0 0 / ${s[0] * k}px ${s[1] * k}px ${repeat}`}></div>`;
 }
 
 /** The ground (§4e): grass is the token itself, one of g5's grass tiles a cell once they are cut, chosen by a fixed
@@ -208,7 +212,8 @@ function Growth({ L, buildings }) {
       const s = sizeOf(file);
       if (!s) return;
       const w = s[0] * B, h = s[1] * B;
-      out.push(html`<img class="gui-camp__px gui-camp__growth" src=${V3 + file} alt=${label} title=${label} draggable="false"
+      const f = hdSrc(file, w);
+      out.push(html`<img class=${cls("gui-camp__px gui-camp__growth", { "is-hd": f.hd })} src=${f.url} alt=${label} title=${label} draggable="false"
         data-id=${b.id} style=${`left:${left ? x : x - w / 2}px;top:${feet - h}px;width:${w}px;height:${h}px;z-index:${(under ? 9 : 11) + Math.round(p.feet / 8)}`} />`);
     };
     const level = ["", "I", "II", "III"][g.level];

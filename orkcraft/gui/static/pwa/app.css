@@ -266,6 +266,7 @@ p { margin: 0 0 8px; }
 .camp-view { position: relative; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
 .camp-world { position: absolute; left: 0; top: 0; will-change: transform; }
 .camp-px { position: absolute; image-rendering: pixelated; image-rendering: crisp-edges; max-width: none; pointer-events: none; }
+.camp-px.is-hd { image-rendering: auto; }   /* its high-density cut at one image px per device px */
 .camp-earth { position: absolute; background: var(--world-earth, #e4b469); }
 .camp-logs { position: absolute; background: var(--art-wood, #c88444); border-bottom: 2px solid var(--art-outline, #1c1410); }
 .camp-block { position: absolute; background: var(--art-wood, #c88444); border: 2px solid var(--art-outline, #1c1410); }

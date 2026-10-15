@@ -67,6 +67,7 @@ ROUTES = {"/static/": STATIC, "/ds/": tokens.SYSTEM}
 PROTOCOL = 1            # the socket's messages above: a change that breaks a client raises it
 mimetypes.add_type("text/javascript", ".mjs")
 mimetypes.add_type("font/woff2", ".woff2")
+mimetypes.add_type("image/webp", ".webp")
 
 
 def _response(status: HTTPStatus, body: bytes, content_type: str = "text/plain; charset=utf-8") -> Response:

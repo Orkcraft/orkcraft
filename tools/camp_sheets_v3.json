@@ -2,7 +2,7 @@
  "note": "v3's sheets (docs/design/v3-prompts.md §3) and the sprites each is cut into (docs/design/design-system-v3.md §8). A sheet goes into `root` under exactly its `file` name; `python tools/camp_sheet.py --v3` cuts every sheet that is there and lists the rest as awaited. A piece is named by `order`: its place in reading order on the sheet (`--list SHEET` prints it); if the image model drew the sheet in another order, change the numbers, not the names. Sizes are the plan in art px; with `native` the slot is what the sheet draws (rounded up to 8), shown at ×1 (docs/design/design-system-v3.md §3), and `keep_colours` keeps the art's own colours. `degrid` (set on the ork sheets, whose first round came with a box drawn round every cell) drops a drawn grid before the pieces are found; it is off for the others, where it would eat a building's own straight outlines. Each sheet is cut at its own pixel and shown at the whole multiple (`show`, or from `target`) nearest its size on screen; the manifest records each sprite's `pitch` and `show`.",
  "root": "docs/design/img/references/v3",
  "out": "design-system/sprites/v3",
- "native": true,
+ "native": true, "hd": [1, 1.5, 2],
  "keep_colours": true,
  "manifest_note": "v3 sprites cut from the owner's generated sheets by tools/camp_sheet.py --v3 (docs/design/design-system-v3.md §8). Generated art, kept until the product proves itself (docs/design/decisions-2026-10.md §13.4).",
  "sheets": [
@@ -454,7 +454,7 @@
    ]
   },
   {
-   "name": "o7-prospector", "hd": [1, 1.5, 2],
+   "name": "o7-prospector",
    "file": "o7-prospector.png",
    "degrid": true,
    "show": 1,
@@ -482,7 +482,7 @@
    ]
   },
   {
-   "name": "o7-moves", "hd": [1, 1.5, 2],
+   "name": "o7-moves",
    "file": "o7-moves.png",
    "show": 1,
    "about": "round 12 (v3-prompts §18, gen_sheets o7-moves #2): the Prospector walking right, digging (the pick raised, swung, struck, pulled back) and carrying a sack, six frames each; read at merge 1.17 to the standing Prospector's size; read 1.2× coarser since 15 October, by the most frequent colour of each cell (`pick: mode`, so no colour is mixed) (the owner: between the old 56 px and the 38 px of 1.5×, about 47)",
@@ -1258,7 +1258,7 @@
    "wood_pull": true
   },
   {
-   "name": "ork-body-a", "hd": [1, 1.5, 2],
+   "name": "ork-body-a",
    "file": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
    "root": "docs/design/img/references/0.3",
    "about": "the capped ork of 0.3 (v3-prompts §12): walking down, up and to the side, 6 frames each; cut the v3 way at its own pixel; read 1.2× coarser since 15 October, by the most frequent colour of each cell (`pick: mode`, so no colour is mixed) (the owner: between the old 56 px and the 38 px of 1.5×, about 47)",
@@ -1401,7 +1401,7 @@
    ]
   },
   {
-   "name": "ork-body-b", "hd": [1, 1.5, 2],
+   "name": "ork-body-b",
    "file": "Gemini_Generated_Image_4xw8i84xw8i84xw8.jpeg",
    "root": "docs/design/img/references/0.3",
    "about": "the capped ork of 0.3: idle 4, work 6, sit 2. The door-step animation is awaited (o1's was the bald ork's); read 1.2× coarser since 15 October, by the most frequent colour of each cell (`pick: mode`, so no colour is mixed) (the owner: between the old 56 px and the 38 px of 1.5×, about 47)",
@@ -1520,7 +1520,7 @@
    ]
   },
   {
-   "name": "ork-roles-a", "hd": [1, 1.5, 2],
+   "name": "ork-roles-a",
    "file": "Gemini_Generated_Image_7x43gz7x43gz7x43.jpeg",
    "root": "docs/design/img/references/0.3",
    "about": "the capped ork's roles from the 0.3 sheet: warchief, grunt, mason, mechanic, seer, quartermaster, pathfinder; read 1.2× coarser since 15 October, by the most frequent colour of each cell (`pick: mode`, so no colour is mixed) (the owner: between the old 56 px and the 38 px of 1.5×, about 47)",
@@ -1591,7 +1591,7 @@
    ]
   },
   {
-   "name": "ork-roles-b", "hd": [1, 1.5, 2],
+   "name": "ork-roles-b",
    "file": "roles-2.jpg",
    "root": "docs/design/img/references/0.3",
    "about": "the capped ork's roles from 0.3/roles-2: taskmaster, lookout, loader, farseer, warder, artisan, treasurer, alchemist; drawn 1.4× the body's ork, read at `merge: 1.5`; read 1.2× coarser since 15 October, by the most frequent colour of each cell (`pick: mode`, so no colour is mixed) (the owner: between the old 56 px and the 38 px of 1.5×, about 47)",
@@ -1691,7 +1691,7 @@
    "retired": true
   },
   {
-   "name": "o6-door",
+   "name": "o6-door", "hd": [],
    "file": "o6-door.png",
    "degrid": true,
    "show": 1,
@@ -1729,7 +1729,7 @@
    ]
   },
   {
-   "name": "o3-states", "hd": [1, 1.5, 2],
+   "name": "o3-states",
    "file": "o3-states-r1.png",
    "about": "§3b.3 the five state poses of the capped ork (the owner's own o3-states-r1, v3-prompts §12): working, asks, stuck, held, doze; shown at ×1 (its ork about 41 px against the body's 46–51); read 1.2× coarser since 15 October, by the most frequent colour of each cell (`pick: mode`, so no colour is mixed) (the owner: between the old 56 px and the 38 px of 1.5×, about 47)",
    "degrid": true,
@@ -1779,7 +1779,7 @@
    ]
   },
   {
-   "name": "o4-faces",
+   "name": "o4-faces", "hd": [],
    "file": "o4-faces.png",
    "about": "§3b.4 the twelve heads: a row at 16 × 16, a row at 24 × 24",
    "degrid": true,
@@ -1917,7 +1917,7 @@
    ]
   },
   {
-   "name": "o5-inside", "hd": [1, 1.5, 2],
+   "name": "o5-inside",
    "file": "o5-inside-r1.png",
    "about": "§3b.5 the capped ork inside a building (the owner's o5-inside-r1, v3-prompts §12): carrying a slab 6, a magnifying glass 4, a quill at a lectern 4 of 5, pinning a sheet 4 (piece 18, two frames drawn touching, left out); read at `merge: 1.5` (its ork drawn 1.2× the body's); read 1.2× coarser since 15 October, by the most frequent colour of each cell (`pick: mode`, so no colour is mixed) (the owner: between the old 56 px and the 38 px of 1.5×, about 47)",
    "degrid": true,

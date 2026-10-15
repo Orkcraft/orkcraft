@@ -29,7 +29,7 @@ export function signalOf(b, asking) {
 let kit = null;                           // the v3 manifest: file → [w, h] of a frame, art px
 let hds = {};                             // an ork's file → its high-density cuts, step → file (tools/camp_hd.py)
 const sizeOf = (file) => (kit && kit[file]) || null;
-/** An ork's file at zoom S: on a dense screen its cut at one image px per device px (`S × dpr / 2` its step). */
+/** A sprite's file at zoom S: on a dense screen its cut at one image px per device px (`S × dpr / 2` its step). */
 function orkFile(file, S) {
   const d = window.devicePixelRatio || 1, k = (S * d) / 2;
   const hd = d >= 2 && hds[file] && Object.entries(hds[file]).find(([step]) => Math.abs(Number(step) - k) < 1e-6);
@@ -54,14 +54,17 @@ function put(el, x, y, w, hh) {
 function sprite(file, x, y, k, cls = "camp-px") {
   const s = sizeOf(file);
   if (!s) return null;
-  const img = h("img", { class: cls, src: V3 + file, alt: "", draggable: "false" });
+  const f = orkFile(file, k);
+  const img = h("img", { class: f.hd ? `${cls} is-hd` : cls, src: f.url, alt: "", draggable: "false" });
   return put(img, x, y, s[0] * k, s[1] * k);
 }
 function tiled(file, x, y, w, hh, k, repeat = "repeat") {
   const s = sizeOf(file);
   if (!s) return null;
   const d = put(h("div", { class: "camp-px" }), x, y, w, hh);
-  d.style.backgroundImage = `url(${V3}${file})`;
+  const f = orkFile(file, k);
+  if (f.hd) d.classList.add("is-hd");
+  d.style.backgroundImage = `url(${f.url})`;
   d.style.backgroundSize = `${s[0] * k}px ${s[1] * k}px`;
   d.style.backgroundRepeat = repeat;
   return d;

@@ -19,7 +19,7 @@ import { Dialog } from "./dialog.js";
 import { OrdersDialog, ModelDialog, RedesignDialog, Field, Select } from "./acts.js";
 import { StewardTitle, StewardWindow, StewardModels, BuildingSettings } from "./steward.js";
 import { OrkHead, HutSprite, activeBiome, Scheme, TierMark, OrkFace, orkKey } from "./icons.js";
-import { V3, sizeOf, loadKit } from "./camp/sprites.js";
+import { sizeOf, loadKit, hdSrc } from "./camp/sprites.js";
 import { spriteOf } from "./camp/layout.js";
 
 const infos = signal({});          // "<building>" or "<building>|<ork ref>" → what `info` said
@@ -165,7 +165,8 @@ function BuildingPicture({ b, i }) {
   const size = file && sizeOf(file);
   if (!size) return html`<${HutSprite} type=${b.type} biome=${activeBiome()} goal=${i.goal} level=${i.level || 0} />`;
   const k = size[0] > 200 || size[1] > 128 ? 0.5 : 1;
-  return html`<img class="gui-info__v3" src=${V3 + file} width=${size[0] * k} height=${size[1] * k} alt="" draggable="false" />`;
+  const f = hdSrc(file, size[0] * k);                       // on a dense screen its high-density cut at one to one
+  return html`<img class=${f.hd ? "gui-info__v3 is-hd" : "gui-info__v3"} src=${f.url} width=${size[0] * k} height=${size[1] * k} alt="" draggable="false" />`;
 }
 
 function BuildingInfo({ b, i, redo, open }) {

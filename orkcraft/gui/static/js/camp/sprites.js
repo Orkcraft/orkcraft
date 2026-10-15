@@ -30,7 +30,7 @@ export const sizeOf = (file) => {
 /** A length on a whole device pixel (an ork's box and place: no sprite drawn across a pixel's edge, so none smoothed). */
 export const dev = (v) => { const d = (typeof window !== "undefined" && window.devicePixelRatio) || 1; return Math.round(v * d) / d; };
 
-/** An ork's file for a zoom `S` (CSS px per art px): on a screen of density 2 or more, its high-density cut
+/** A sprite's file for a zoom `S` (CSS px per art px): on a screen of density 2 or more, its high-density cut
  *  (tools/camp_hd.py) whose image pixels fall one on one device pixel — `S × dpr / 2` is the cut's step — else today's
  *  sprite. `hd`: whether it is the high-density one (drawn smooth, `is-hd`: at one to one nothing is resampled). */
 export function orkFile(file, S) {
@@ -38,6 +38,9 @@ export function orkFile(file, S) {
   const k = (S * d) / 2, hd = d >= 2 && s && s.hd && Object.entries(s.hd).find(([step]) => Math.abs(Number(step) - k) < 1e-6);
   return hd ? { url: V3 + hd[1], hd: true } : { url: V3 + file, hd: false };
 }
+
+/** The same for a sprite drawn `w` CSS px wide (one frame). */
+export const hdSrc = (file, w) => { const s = sizeOf(file); return orkFile(file, s ? w / s[0] : 0); };
 
 export const has = (file) => !!(kit.value && kit.value[file]);
 

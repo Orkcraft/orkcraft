@@ -71,7 +71,7 @@ BEARER = "bearer."
 TOKEN = re.compile(r"[A-Za-z0-9_-]{20,128}")   # a device token as pairing makes it (token_urlsafe)
 TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
          ".css": "text/css; charset=utf-8", ".webmanifest": "application/manifest+json",
-         ".png": "image/png", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".json": "application/json"}
+         ".png": "image/png", ".webp": "image/webp", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".json": "application/json"}
 # The app's page loads only its own files and talks only to its own listener.
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' wss:; "
        "manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; "
@@ -91,7 +91,7 @@ def files() -> dict[str, Path]:
     res = {f"icons/{p.name}": p for p in sorted(ICONS.iterdir()) if p.name.startswith("res-") and p.suffix == ".png"}
     camp = {"camp/ork-walk.png": ORK_WALK} if ORK_WALK.is_file() else {}
     v3 = {f"v3/{p.relative_to(V3).as_posix()}": p for p in sorted(V3.rglob("*"))
-          if p.is_file() and p.suffix in (".png", ".json")} if V3.is_dir() else {}
+          if p.is_file() and p.suffix in (".png", ".webp", ".json")} if V3.is_dir() else {}
     layout = _camp_modules()
     return {**own, **styles, **faces, **marks, **fence, **res, **camp, **v3, **layout}
 

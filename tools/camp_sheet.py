@@ -988,12 +988,13 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
         hd = {}
         if group.get("_hd"):
             import camp_hd                    # tools/ is on the path when the cutter runs
-        for k in group.get("_hd") or []:      # the orks' high-density cut (tools/camp_hd.py), straight from the sheet
+        for k in [] if item.get("fill") else group.get("_hd") or []:   # the high-density cut (tools/camp_hd.py), straight from the sheet
             fw, fh = frames[0].shape[1::-1]
             size = (int(round(fw * group["_show"] * 2 * k)), int(round(fh * group["_show"] * 2 * k)))
             bottom = item.get("anchor", anchor) in ("feet", "bottom-centre", "bottom-left")
             rel = camp_hd.hd_name(item["file"], k)
-            save(strip([camp_hd.frame(sheet, b, (fw, fh), at, scale * sheet.pitch, size, bottom) for b, at in places]), rel)
+            camp_hd.save(strip([camp_hd.frame(sheet, b, (fw, fh), at, scale * sheet.pitch, size, bottom, today)
+                                for (b, at), today in zip(places, frames)]), OUT / rel)
             hd[f"{k:g}"] = rel
         _write(out, item["file"], group, rows, problems, frames[0].shape[1::-1], len(frames), scale,
                anchor=item.get("anchor"), hd=hd)
@@ -1211,7 +1212,7 @@ def main() -> None:
             for key in ("native", "keep_colours"):              # v3: set once for the whole spec
                 group.setdefault(key, spec.get(key, False))
             group.setdefault("wood_pull", sh.get("wood_pull", False))
-            group["_hd"] = sh.get("hd")
+            group["_hd"] = sh.get("hd", spec.get("hd"))
             cut_group(sheet, group, rows, problems)
     # a one-building sheet (`over`, listed after the sheet it overrides) replaces that sheet's sprite of the same name
     rows = list({r["file"]: r for r in rows}.values())

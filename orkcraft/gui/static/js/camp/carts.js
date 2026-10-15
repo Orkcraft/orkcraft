@@ -9,7 +9,10 @@ import { say } from "../link.js";
 import { chipOf } from "../carts.js";
 import { lengthOf } from "./layout.js";
 import { pointAt, aheadOn, step, thrown } from "./traffic.js";
-import { V3, sizeOf } from "./sprites.js";
+import { sizeOf, hdSrc } from "./sprites.js";
+
+/** A cart's picture `w` CSS px wide: on a dense screen its high-density cut at one to one (tools/camp_hd.py). */
+const src = (file, w) => hdSrc(file, w).url, px = (file, w) => (hdSrc(file, w).hd ? "gui-camp__px is-hd" : "gui-camp__px");
 import { Badge } from "./signals.js";
 import { waybillOf, tokensWord } from "./waybill.js";
 
@@ -31,7 +34,7 @@ const loadOf = (c) => (["code", "asset", "message", "doc", "bundle"].includes(c.
 function Bin({ c, B }) {
   const file = `carts/${loadOf(c)}.png`, s = sizeOf(file) || [40, 48];
   const w = s[0] * B, h = s[1] * B;
-  return html`<img class="gui-camp__px" src=${V3 + file} alt="" draggable="false" style=${`left:${-w / 2}px;top:${-h}px;width:${w}px;height:${h}px`} />`;
+  return html`<img class=${px(file, w)} src=${src(file, w)} alt="" draggable="false" style=${`left:${-w / 2}px;top:${-h}px;width:${w}px;height:${h}px`} />`;
 }
 
 /** The yellow flag of a cart waiting for the person: outlined, a darker lower band (§5). */
@@ -85,8 +88,8 @@ export function Switches({ L }) {
     return html`<div key=${`${w.x},${w.y}`} class="gui-camp__switch" data-i=${i} data-ret=${w.ret ? "1" : ""}
         ref=${(el) => { stands[i] = el; }} title=${say(w.ret ? "Switch: on to the buffer stop, or round again" : "Switch")}
         style=${`left:${Math.round(w.x + dx - (s[0] * S) / 2)}px;top:${Math.round(w.y + dy - s[1] * S)}px;width:${s[0] * S}px;height:${s[1] * S}px`}>
-      <img class="gui-camp__px is-still" src=${`${V3}track/switch-0.png`} alt="" draggable="false" />
-      <img class="gui-camp__px is-thrown" src=${`${V3}track/switch-1.png`} alt="" draggable="false" />
+      <img class=${`${px("track/switch-0.png", s[0] * S)} is-still`} src=${src("track/switch-0.png", s[0] * S)} alt="" draggable="false" />
+      <img class=${`${px("track/switch-1.png", s[0] * S)} is-thrown`} src=${src("track/switch-1.png", s[0] * S)} alt="" draggable="false" />
     </div>`;
   })}</div>`;
 }
@@ -140,7 +143,7 @@ function Standing({ list, p, L }) {
   // on the Review gate's weighbridge it stands in front of the gate's own sprite (a building's z: 10 + its feet / 8)
   const z = p.type === "loot" && p.spur ? `;z-index:${12 + Math.round(p.feet / 8)}` : "";
   return html`<div class=${cls("gui-camp__stand", `is-${loud}`)} data-id=${p.id} style=${`left:${at.x}px;top:${at.y}px${z}`}>
-    ${pile && pileS ? html`<img class="gui-camp__px" src=${`${V3}carts/pile.png`} alt="" style=${`left:${-pileS[0] * B / 2}px;top:${-pileS[1] * B}px;width:${pileS[0] * B}px;height:${pileS[1] * B}px`} />`
+    ${pile && pileS ? html`<img class=${px("carts/pile.png", pileS[0] * B)} src=${src("carts/pile.png", pileS[0] * B)} alt="" style=${`left:${-pileS[0] * B / 2}px;top:${-pileS[1] * B}px;width:${pileS[0] * B}px;height:${pileS[1] * B}px`} />`
       : list.slice(0, SHOWN).map((c, i) => html`<div key=${c.id} class="gui-camp__cart" data-load=${loadOf(c)} style=${`left:${i * at.dx}px;top:0;z-index:${SHOWN - i}`}
           role="button" title=${say(chipOf(c))} aria-label=${say(`${chipOf(c)}: its history`)}
           onClick=${(e) => { e.stopPropagation(); waybillOf.value = { cart: c.id }; }}><${Bin} c=${c} B=${B} /></div>`)}
@@ -193,7 +196,7 @@ function Launch({ c, p, at, avg, B }) {
     + (avg ? ` · the town's average per result is ${tokensWord(Math.round(avg))}` : "") + " · its share of the window is not measured yet");
   return html`<div class=${cls("gui-camp__launch", { "is-lean": lean })} title=${title} aria-label=${title}
       style=${`left:${p.x + p.w * 0.3}px;top:${p.y + p.h * 0.15}px;animation-delay:${at}s;--fly-x:${260 * B}px;--fly-y:${-170 * B}px`}>
-    <img class="gui-camp__px" src=${`${V3}carts/${loadOf(c)}.png`} alt="" style=${`left:-${20 * B}px;top:-${24 * B}px;width:${40 * B}px;height:${48 * B}px`} />
+    <img class=${px(`carts/${loadOf(c)}.png`, 40 * B)} src=${src(`carts/${loadOf(c)}.png`, 40 * B)} alt="" style=${`left:-${20 * B}px;top:-${24 * B}px;width:${40 * B}px;height:${48 * B}px`} />
     ${word && html`<span class="gui-camp__launch-chip">${word}</span>`}
   </div>`;
 }
@@ -293,7 +296,7 @@ export function Finale({ L, f }) {
     </div>
     ${out && html`<div class="gui-camp__launch is-drill" style=${`left:${out.x + out.w * 0.3}px;top:${out.y + out.h * 0.15}px;`
       + `animation-delay:${(dur + delay).toFixed(2)}s;--fly-x:${260 * B}px;--fly-y:${-170 * B}px`}>
-      <img class="gui-camp__px" src=${`${V3}carts/doc.png`} alt="" style=${`left:-${20 * B}px;top:-${24 * B}px;width:${40 * B}px;height:${48 * B}px`} />
+      <img class=${px("carts/doc.png", 40 * B)} src=${src("carts/doc.png", 40 * B)} alt="" style=${`left:-${20 * B}px;top:-${24 * B}px;width:${40 * B}px;height:${48 * B}px`} />
       <span class="gui-camp__launch-chip">${say(f.chip)}</span>
     </div>`}
   </div>`;

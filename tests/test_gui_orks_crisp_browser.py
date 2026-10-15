@@ -78,6 +78,9 @@ def test_every_ork_lands_on_whole_device_pixels_at_every_zoom_step(gui, dpr):
                 assert not got["bad"], (dpr, level, got["bad"])
                 if dpr == 2 and level != "a":                                     # ×1, ×1.5, ×2: from the cut
                     assert got["hd"] >= 2, (level, got)
+            if level != "a":                                                      # the buildings too (tools/camp_hd.py)
+                srcs = pg.eval_on_selector_all(".gui-camp__sprite", "es => es.map(e => [e.currentSrc, e.className])")
+                assert srcs and all(("@hd" in u) == (dpr == 2) and ("is-hd" in c) == (dpr == 2) for u, c in srcs), (dpr, level, srcs)
                 pg.wait_for_timeout(230)
             pg.mouse.move(2, 450)
         pg.evaluate("l => import('/static/js/zoom.js').then(z => { z.zoomLevel.value = l; })", "b")
