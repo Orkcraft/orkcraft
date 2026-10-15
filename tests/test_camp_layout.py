@@ -474,3 +474,16 @@ console.log(JSON.stringify({ h, t, wallY: L.wall.y, line: L.lines[0], spur: spur
     assert h["stop"]["y"] == out["line"] + 32 and out["firstX"] > h["cx"]          # its stop on line 1; the row east
     assert out["second"] >= 0 and out["route"]                                     # a second in the rows; it sends carts
     assert out["workTop"] <= h["y"] - 40                                            # a band over it in the default view
+
+
+def test_the_buildings_doorways_are_in_the_manifest_and_survive_a_recut():
+    """tools/doorways.py writes each building's doorway into the manifest; tools/camp_sheet.py keeps it through a recut
+    (a recut once dropped them all, and no ork stepped out of a door)."""
+    rows = {r["file"]: r for r in json.loads(MANIFEST.read_text(encoding="utf-8"))["sprites"]}
+    for f in ("buildings/depot.png", "buildings/mill.png", "buildings/loot_vault.png", "buildings/council.png"):
+        x, y, w, h = rows[f]["doorway"]
+        fw, fh = rows[f].get("frame") or rows[f]["size"]
+        assert 0 <= x and x + w <= fw and 0 <= y and y + h <= fh and w >= 8 and h >= 8, f
+    assert "doorway" not in rows["buildings/scrolls.png"]                           # the Wiki's shelves: none
+    src = (ROOT / "tools" / "camp_sheet.py").read_text(encoding="utf-8")
+    assert '"doorway"' in src                                                        # kept through a recut

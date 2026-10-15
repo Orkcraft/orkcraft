@@ -92,9 +92,9 @@
   to { transform: translateY(var(--out)); filter: none; } }
 /* the doorway's warm light while an ork works inside (a warm tone well under the question's yellow, §5) */
 .gui-camp__doorlight { position: absolute; pointer-events: none; mix-blend-mode: screen;
-  background: radial-gradient(ellipse at 50% 80%, color-mix(in srgb, var(--art-wood-light) 75%, transparent), transparent 72%);
+  background: radial-gradient(ellipse 70% 90% at 50% 100%, var(--art-wood-light), color-mix(in srgb, var(--art-wood-light) 55%, transparent) 45%, transparent 85%);
   animation: gui-camp-glow 2.4s ease-in-out infinite alternate; }
-@keyframes gui-camp-glow { from { opacity: .7; } to { opacity: 1; } }
+@keyframes gui-camp-glow { from { opacity: .8; } to { opacity: 1; } }
 .gui-camp__bubble { position: absolute; transform: translate(-50%, -100%); padding: 0; border: 0; background: none; z-index: 45;
   font: var(--type-camp-caption); color: var(--parchment-ink); cursor: default; }
 .gui-camp__bubble.is-button { cursor: pointer; }

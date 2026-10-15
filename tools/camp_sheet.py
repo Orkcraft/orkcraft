@@ -1148,6 +1148,12 @@ def main() -> None:
             cut_group(sheet, group, rows, problems)
     # a one-building sheet (`over`, listed after the sheet it overrides) replaces that sheet's sprite of the same name
     rows = list({r["file"]: r for r in rows}.values())
+    # what other tools measured on a sprite (its doorway: tools/doorways.py) stays with it through a recut
+    kept = {r["file"]: r for r in old}
+    for r in rows:
+        for key in ("doorway",):
+            if key in kept.get(r["file"], {}) and key not in r:
+                r[key] = kept[r["file"]][key]
     cut = {r["file"] for r in rows}
     # a `retired` sheet (an ork the owner set aside): its sprites leave the manifest, and their files go unless recut
     retired = {sh["file"] for sh in spec["sheets"] if sh.get("retired")}
