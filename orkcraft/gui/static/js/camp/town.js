@@ -14,7 +14,7 @@ import { openOrders } from "../orders.js";
 import { placing, constructing, raised } from "../build.js";
 import { zoomLevel, zoomBy, LEVELS } from "../zoom.js";
 import { bareMenu, setNumbered } from "../town.js";
-import { lay, stepsFor, DEFAULT_STEP, SIDING_SHOWN, PATH_W } from "./layout.js";
+import { lay, stepsFor, DEFAULT_STEP, SIDING_SHOWN, PATH_W, POCKET } from "./layout.js";
 import { V3, kit, loadKit, sizeOf } from "./sprites.js";
 import { CampCarts, Finale, Switches, arriving } from "./carts.js";
 import { hovered, StewardOut } from "./steward.js";
@@ -99,11 +99,34 @@ function Paths({ L }) {
   return html`<div class="gui-camp__layer is-paths">${rims}${earth}</div>`;
 }
 
+/** A flat pocket's end (layout.js POCKET "flat"): a short diagonal of two rails and two ties from the line's middle up
+ *  to the pocket's rails, drawn in code until a pocket turnout is drawn. (x0, y0) the line's end, (x1, y1) the pocket's. */
+function Diagonal({ x0, y0, x1, y1, S }) {
+  const g = 10 * S, pad = 8 * S, left = Math.min(x0, x1) - pad, top = Math.min(y0, y1) - g - pad;
+  const w = Math.abs(x1 - x0) + 2 * pad, h = Math.abs(y1 - y0) + 2 * (g + pad);
+  const X = (x) => x - left, Y = (y) => y - top, at = (k) => [x0 + (x1 - x0) * k, y0 + (y1 - y0) * k];
+  const rail = (o) => html`<line x1=${X(x0)} y1=${Y(y0 + o)} x2=${X(x1)} y2=${Y(y1 + o)} />`;
+  return html`<svg class="gui-camp__diagonal" style=${`left:${left}px;top:${top}px;width:${w}px;height:${h}px`} viewBox=${`0 0 ${w} ${h}`}>
+    <g class="is-ties">${[0.3, 0.75].map((k) => { const [x, y] = at(k); return html`<line x1=${X(x)} y1=${Y(y - g - 4 * S)} x2=${X(x)} y2=${Y(y + g + 4 * S)} />`; })}</g>
+    <g class="is-rails">${rail(-g)}${rail(g)}</g>
+  </svg>`;
+}
+
 function Track({ L }) {
-  const T = L.T;
-  return html`<div class="gui-camp__layer is-track">${L.tiles.map((t) => sizeOf(`track/${t.name}.png`)
-    ? img(`track/${t.name}.png`, t.x, t.y, T, T, t.rot ? `transform:rotate(${t.rot}deg)` : "")
-    : html`<div class=${cls("gui-camp__rails", { "is-v": t.name === "straight-v" })} style=${`left:${t.x}px;top:${t.y}px;width:${T}px;height:${T}px`}></div>`)}
+  const T = L.T, S = L.step.s;
+  const drawn = (t) => {
+    if (t.py !== undefined) {                                          // a flat pocket: raised to its rails, ends diagonal
+      const yl = t.y + T + T / 2;
+      if (t.name === "corner-se") return html`<${Diagonal} x0=${t.x + T / 2} y0=${yl} x1=${t.x + T} y1=${t.py} S=${S} />`;
+      if (t.name === "corner-sw") return html`<${Diagonal} x0=${t.x} y0=${t.py} x1=${t.x + T / 2} y1=${yl} S=${S} />`;
+      return img("track/straight-h.png", t.x, Math.round(t.py - T / 2), T, T);
+    }
+    const name = L.pocketStyle === "flat" && (t.mouth !== undefined || t.tail !== undefined) ? "straight-h" : t.name;
+    return sizeOf(`track/${name}.png`)
+      ? img(`track/${name}.png`, t.x, t.y, T, T, t.rot && name === t.name ? `transform:rotate(${t.rot}deg)` : "")
+      : html`<div class=${cls("gui-camp__rails", { "is-v": t.name === "straight-v" })} style=${`left:${t.x}px;top:${t.y}px;width:${T}px;height:${T}px`}></div>`;
+  };
+  return html`<div class="gui-camp__layer is-track">${L.tiles.map(drawn)}
     ${(L.crossings || []).map((c) => (sizeOf("track/crossing.png") ? img("track/crossing.png", c.x, c.y, c.w, c.h)
       : html`<div class="gui-camp__crossing" style=${`left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px`}></div>`))}</div>`;
 }
@@ -308,7 +331,7 @@ export function CampTown({ buildings, roads }) {
   for (const b of buildings) typeModule(b.type, b.page);   // each type's page code (its large card, its small windows)
   const you = snapshot.value && snapshot.value.growth && snapshot.value.growth.you;
   const home = you && you.kin ? `homes/${you.kin}.png` : "";
-  const key = JSON.stringify([!!k, step, home, buildings.map((b) => [b.id, b.type, b.hut, b.goal, b.level, b.type === "loot" && !!b.alert]), here.map((r) => [r.from, r.to])]);
+  const key = JSON.stringify([!!k, step, home, POCKET.style, buildings.map((b) => [b.id, b.type, b.hut, b.goal, b.level, b.type === "loot" && !!b.alert]), here.map((r) => [r.from, r.to])]);
   if (k && key !== laid.key) laid = { key, L: lay(buildings, here, step, sizeOf, (b) => !!b.alert, home) };
   const L = k ? laid.L : null;
   const panelW = panelShown() && !opened.value.full ? panelWidth.value : 0;

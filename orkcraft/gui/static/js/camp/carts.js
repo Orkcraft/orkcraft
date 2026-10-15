@@ -73,9 +73,11 @@ const wake = () => { if (!raf && typeof requestAnimationFrame === "function") ra
 export function Switches({ L }) {
   const S = L.step.s, T = L.T;
   stands = stands.slice(0, L.switches.length);
-  const at = (w) => ({ n: [T * 0.78, 4 * S], s: [T * 0.22, T + 2 * S], w: [-6 * S, T * 0.92], e: [T + 6 * S, T * 0.92] }[w]);
+  // drawn at twice the track's zoom (32 × 48 at the default), so the arm's position reads from across the camp
+  const K = 2 * S;
+  const at = (w) => ({ n: [T * 0.8, 6 * S], s: [T * 0.2, T + 16 * S], w: [-12 * S, T * 0.95], e: [T + 12 * S, T * 0.95] }[w]);
   return html`<div class="gui-camp__layer is-switches">${L.switches.map((w, i) => {
-    const [dx, dy] = at(w.side), s = sizeOf("track/switch-0.png") || [16, 24];
+    const [dx, dy] = at(w.side), s = (sizeOf("track/switch-0.png") || [16, 24]).map((v) => v * K / S);
     return html`<div key=${`${w.x},${w.y}`} class="gui-camp__switch" data-i=${i} data-ret=${w.ret ? "1" : ""}
         ref=${(el) => { stands[i] = el; }} title=${say(w.ret ? "Switch: on to the buffer stop, or round again" : "Switch")}
         style=${`left:${Math.round(w.x + dx - (s[0] * S) / 2)}px;top:${Math.round(w.y + dy - s[1] * S)}px;width:${s[0] * S}px;height:${s[1] * S}px`}>
@@ -112,12 +114,13 @@ export function roundWord(c) {
 }
 
 /** Where a building's stopped carts stand, never on the main line (§4c rule 7): in its pocket, close together (more
- *  than three are the pile there); on its weighbridge (the Review gate) or its shaft (the mine); at the buffer stop.
+ *  than three are the pile there), or with no pocket (layout.js POCKET "none") on its path's end just off the line; on its weighbridge (the Review gate) or its shaft (the mine); at the buffer stop.
  *  And how far apart. */
 function standOf(p, B, T) {
   if (p.type === "loot" && p.spur) return { x: p.cx, y: p.y + p.h * 0.69, dx: 0 };
   if (p.spur) return { x: p.cx, y: p.feet - T * 0.45, dx: 0 };
   if (p.wall === "out") return { x: p.stop.x - T * 0.2, y: p.stop.y + T * 0.3, dx: -44 * B };
+  if (!p.pocket && p.waitAt) return { x: p.waitAt.x, y: p.waitAt.y - 2 * B, dx: -12 * B };   // on its path's end
   return { x: p.stop.x, y: p.stop.y + T * 0.3, dx: -12 * B };
 }
 

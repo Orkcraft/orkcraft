@@ -37,8 +37,8 @@ export function loop(T, lines, colL, colR, multi, pockets = []) {
     const pk = new Set(pockets[r] || []);
     for (let x = colL + T; x < colR; x += T) {
       if (pk.has(x + T)) {                                             // a pocket's mouth: east on, or up into it
-        switches.push({ x, y: ly, on: "e", turn: "n", side: "s", tile: tile("t-n", x, ly, 0, "en"), pocket: x + T });
-      } else if (pk.has(x - T)) tile("t-n", x, ly, 0, "e");            // its tail: down from it, east on
+        switches.push({ x, y: ly, on: "e", turn: "n", side: "s", tile: tile("t-n", x, ly, 0, "en", { mouth: x + T }), pocket: x + T });
+      } else if (pk.has(x - T)) tile("t-n", x, ly, 0, "e", { tail: x - T });   // its tail: down from it, east on
       else tile("straight-h", x, ly, 0, "e");
     }
     for (const px of pk) {

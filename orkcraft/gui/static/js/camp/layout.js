@@ -20,7 +20,13 @@ export const WALL_H = 48;        // the low palisade, its foot below the camp's 
 export const ROW_MAX = 5;        // buildings to a row: a sixth starts the next row and its own line
 export const SIDING_TILES = 3;   // the Task board's siding: the carts waiting to go (two straights and the buffer)
 export const SIDING_SHOWN = 5;   // carts drawn on it; the rest a "+N" chip (design-system-v3.md §4, decisions §13.1)
-export const FALLBACK = [128, 112];   // a building with no v3 sprite: a block of this size
+export const FALLBACK = [128, 112];
+// Where a building's carts wait off the line (§4c rule 7): "flat", a pocket track just above the line, joined to it by a
+// short diagonal at each end (a stand-in drawn in code: c2's quarter curves read as arches); "none", no pocket track,
+// the cart standing on the end of the building's path, the line clear. Which is calmer is the owner's call.
+export const POCKET = { style: "none" };
+const FLAT_LIFT = 0.6;           // the flat pocket's rails above the line's, in tiles
+const STAND = 52;                // "none": the room a waiting cart takes at the path's end, art px   // a building with no v3 sprite: a block of this size
 
 // The zoom steps, buildings / orks and track (§3): whole device pixels at every step. Density 2: ×1 / ×1 (an overview),
 // ×1.5 / ×1 (the default), ×3 / ×2 (close). Density 1: ×1 / ×1, ×2 / ×1 (the default). Density 3 (a phone): ⅔ (two
@@ -137,9 +143,12 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   const backD = backs.map((b) => ({ b, d: dims(b) }));
   const backFeet = wallY - 24 * B + Math.max(0, ...backD.map(({ d }) => d.h));
   let lineTop = 0, right = colL + 3 * T;
+  const style = POCKET.style;
+  // how far above the line's top an ordinary building's path ends: at the pocket's top, or above a waiting cart
+  const lift = style === "none" ? Math.round(STAND * B) : style === "flat" ? Math.round(T * FLAT_LIFT) : T;
   rows.forEach((row, r) => {
     const ds = row.map((b) => ({ b, d: dims(b), spur: SPUR.has(b.type), own: SPUR.has(b.type) || b.type === SIDING }));
-    const band = Math.max(64 * B, ...ds.map(({ d, spur, own }) => (spur ? d.h - T / 4 : d.h + PATH_L * B + (own ? 0 : T))),
+    const band = Math.max(64 * B, ...ds.map(({ d, spur, own }) => (spur ? d.h - T / 4 : d.h + PATH_L * B + (own ? 0 : lift))),
                           r === homeRow ? homeS[1] * B + PATH_L * B : 0);
     if (r === 0) lineTop = Math.max((backs.length ? backFeet + PATH_W * B + 12 * B : wallY - 24 * B) + band, wallY + T);
     else {
@@ -153,7 +162,8 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
     for (const { b, d, spur, own } of ds) {
       const w = Math.max(d.w, PATH_W * B);
       let cx;
-      if (own) {
+      const pocketed = !own && style !== "none";
+      if (own || !pocketed) {
         x = Math.max(x, free);
         cx = Math.round(x + w / 2);
       } else {
@@ -163,17 +173,18 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
         free = colL + (k + 2) * T;
         pockets[r].push(colL + k * T);
       }
-      const feet = spur ? lineTop + T / 4 : own ? lineTop - PATH_L * B : lineTop - T - PATH_L * B;
+      const feet = spur ? lineTop + T / 4 : own ? lineTop - PATH_L * B : lineTop - lift - PATH_L * B;
+      const pocketY = style === "flat" ? lineTop + T / 2 - lift : lineTop - T / 2;    // the pocket's rails' middle
       const annexS = ANNEX[b.goal] && size(ANNEX[b.goal]);
       out.buildings[b.id] = { id: b.id, type: b.type, file: d.file, x: Math.round(x + (w - d.w) / 2), y: Math.round(feet - d.h),
-                              w: d.w, h: d.h, cx, feet, row: r, spur, door: { x: cx, y: feet }, pocket: !own,
-                              stop: { x: cx, y: own ? lineTop + T / 2 : lineTop - T / 2 },
+                              w: d.w, h: d.h, cx, feet, row: r, spur, door: { x: cx, y: feet }, pocket: pocketed,
+                              stop: { x: cx, y: pocketed ? pocketY : lineTop + T / 2 }, waitAt: { x: cx, y: pocketed ? pocketY : lineTop },
                               growth: { level: Math.min(Math.max(b.level || 0, 0), 3), annex: annexS ? ANNEX[b.goal] : "" } };
       if (annexS) x += annexS[0] * B + 2 * B;
       if (!spur) out.paths.push({ x: Math.round(cx - PATH_W * B / 2), y: Math.round(feet - 6 * B), w: PATH_W * B,
-                                  h: Math.round((own ? lineTop : lineTop - T) - feet + 6 * B + 2) });
+                                  h: Math.round((pocketed ? lineTop - lift : lineTop) - feet + 6 * B + 2) });
       x += w + GAP * B;
-      if (own) free = Math.max(free, x - GAP * B);
+      if (!pocketed) free = Math.max(free, x - GAP * B);
       if (b.type === SIDING) {                                           // the siding beside the booth, its buffer east
         const sx = Math.round(x - GAP * B / 2), sy = Math.round(feet - T * 0.75);
         out.sidings.push({ id: b.id, x: sx, y: sy, tiles: SIDING_TILES, stand: { x: sx + T * 0.6, y: sy + T * 0.8, dx: T * 0.62 } });
@@ -205,6 +216,10 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   // switch on to the buffer stop or down to the return line, the return line west, up the left column
   const track = loop(T, out.lines, colL, colR, multi, pockets);
   out.tiles = track.tiles;
+  out.pocketStyle = style;
+  if (style === "flat") {                                                // the flat pocket: its rails `lift` over the line's
+    for (const t of out.tiles) if (t.pocket !== undefined) t.py = t.y + T + T / 2 - lift;
+  }
   out.switches = track.switches;
   out.ret = track.ret;
   const endY = out.lines[last];
@@ -280,7 +295,9 @@ function route(out, cells, fromId, toId) {
   const T = out.T;
   const chain = path(cells, T, a.stop, z.stop);
   if (!chain) return null;
-  const mid = (t) => [t.x + T / 2, t.y + T / 2];
+  // a flat pocket (POCKET): its corners are short diagonals from the line's middle to the pocket's rails
+  const mid = (t) => (t.py === undefined ? [t.x + T / 2, t.y + T / 2]
+    : t.name === "corner-se" ? [t.x + T, t.py] : t.name === "corner-sw" ? [t.x, t.py] : [t.x + T / 2, t.py]);
   // a cart from the lookout comes in from outside the wall, down the way in
   const first = a.wall === "in" ? [a.stop.x, -T] : [a.stop.x, a.stop.y];
   const pts = simplify([first, ...chain.slice(1, -1).map(mid), [z.stop.x, z.stop.y]]);

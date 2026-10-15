@@ -200,3 +200,8 @@
 .gui-camp__crossing { position: absolute; box-sizing: border-box; border-left: 2px solid var(--art-outline);
   border-right: 2px solid var(--art-outline);
   background: repeating-linear-gradient(180deg, var(--art-wood) 0 6px, var(--art-wood-dark) 6px 8px) 0 28% / 100% 44% no-repeat; }
+/* a flat pocket's end, drawn in code (layout.js POCKET): the track's own iron and wood, its outline under the rails */
+.gui-camp__diagonal { position: absolute; overflow: visible; pointer-events: none; }
+.gui-camp__diagonal .is-ties line { stroke: var(--art-wood); stroke-width: 6px; stroke-linecap: butt; }
+.gui-camp__diagonal .is-rails line { stroke: var(--art-iron); stroke-width: 4px; stroke-linecap: square;
+  filter: drop-shadow(0 1px 0 var(--art-outline)); }

@@ -56,7 +56,7 @@ console.log(JSON.stringify({ order, rows, lines: L.lines, walls: [L.buildings.in
     for bid, (feet, stop) in out["feet"].items():
         if bid not in ("in", "out"):
             line = out["lines"][0 if bid in out["rows"]["0"] else 1]
-            assert stop == line + t / 2 if bid in stations else stop == line - t / 2   # its pocket over its row's line
+            assert stop == line + t / 2                                          # its stop on its row's line (POCKET "none")
             assert feet <= stop                                                      # its door above its stop
     assert out["outStop"] == out["buffer"]                                            # the catapult at the buffer stop
     assert out["tower"]["cx"] == out["colL"] + t / 2 and out["tower"]["feet"] > out["wallY"] - t   # in the wall, at the way in
@@ -100,7 +100,8 @@ console.log(JSON.stringify(res));
     assert first[0][1] < 0 and first[-1] == out["stops"]["board"]                    # in from outside the wall
     cross = out["r6"]["pts"]                                                         # pool (row 0) → talk (row 1)
     assert cross[0] == out["stops"]["pool"] and cross[-1] == out["stops"]["talk"]
-    assert all(a[0] == b[0] or a[1] == b[1] for a, b in zip(cross, cross[1:]))      # straight runs, square turns
+    assert all(a[0] == b[0] or a[1] == b[1] or abs(b[0] - a[0]) == 32 for a, b in zip(cross, cross[1:]))
+    # straight runs and square turns, but for a flat pocket's short diagonals (half a tile)
 
 
 def test_one_row_has_no_right_column_and_an_empty_town_still_has_its_line(tmp_path):
@@ -283,9 +284,10 @@ console.log(JSON.stringify({ bad, back, retMid, last: L.lines[L.lines.length - 1
 
 
 def test_each_ordinary_building_has_a_pocket_beside_its_stop_and_stations_keep_their_own(tmp_path):
-    """§4c rule 7: one tile above the stop, parallel to the line, entered and left by a T on it; the pockets of a row
-    never share a tile; the Task board, the Review gate and the mine have none."""
+    """§4c rule 7 with POCKET "flat": a pocket track just above the stop, parallel to the line, entered and left by a T on
+    it; the pockets of a row never share a tile; the Task board, the Review gate and the mine have none."""
     out = _run(TOWN + """
+C.POCKET.style = "flat";
 const L = C.lay(B, R, { b: 1.5, s: 1 }, size);
 const T = L.T, res = {};
 for (const p of Object.values(L.buildings)) {
@@ -313,6 +315,7 @@ def test_a_switch_stands_at_every_fork_and_a_route_says_how_each_is_thrown(tmp_p
     """§4c rule 6: a switch at each fork (into a line from the left column, on to the buffer stop or down to the return
     line, into a pocket); a send-back throws the right one to the return line and the pool's to its pocket."""
     out = _run(SEND_BACK + """
+C.POCKET.style = "flat";
 const L = C.lay(B, R, { b: 1.5, s: 1 }, size);
 const forks = L.tiles.filter((t) => t.go && t.go.length > 1).map((t) => t.x + "," + t.y).sort();
 const stands = L.switches.map((s) => s.x + "," + s.y).sort();
@@ -387,3 +390,21 @@ console.log(JSON.stringify({ free, kept, wiki: [wiki.back || false, wiki.row] })
     low = out["kept"]["1"]                                                       # the placed one keeps its row;
     assert "cal" in low and "pool" in low and abs(low.index("cal") - low.index("pool")) == 1   # the one never placed joins it
     assert out["wiki"] == [False, 1]                                             # placed: it keeps its row
+
+
+def test_with_no_pocket_track_a_cart_waits_on_its_path_end_and_the_line_stays_clear(tmp_path):
+    """§4c rule 7, the PM's fallback (layout.js POCKET "none"): no pocket track and no pocket switch; a building's stop is
+    on its line and its waiting cart stands on its path's end just above the line, off the track; carts never park."""
+    out = _run(TOWN + """
+C.POCKET.style = "none";
+const L = C.lay(B, R, { b: 1.5, s: 1 }, size);
+const p = L.buildings.pool, line = L.lines[p.row];
+console.log(JSON.stringify({ pockets: L.tiles.filter((t) => t.pocket !== undefined).length,
+  pocketSwitches: L.switches.filter((s) => s.pocket !== undefined).length, stop: p.stop.y, wait: p.waitAt.y, line,
+  pathFoot: Math.max(...L.paths.filter((q) => q.x < p.cx && p.cx < q.x + q.w).map((q) => q.y + q.h)), parks: p.pocket,
+  route: L.route("board", "pool") }));
+""", tmp_path)
+    assert out["pockets"] == 0 and out["pocketSwitches"] == 0
+    assert out["stop"] == out["line"] + 32 and out["wait"] == out["line"] and out["parks"] is False
+    assert out["line"] <= out["pathFoot"] <= out["line"] + 4                       # its path runs down to the line
+    assert out["route"][-1] == [out["route"][-1][0], out["stop"]]                  # it rolls to its stop on the line
