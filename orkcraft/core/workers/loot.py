@@ -27,6 +27,7 @@ import subprocess
 from pathlib import Path
 from typing import Callable
 
+from orkcraft.core import delivery
 from orkcraft.core.workers import Worker
 from orkcraft.realm import catalog, edits, feedback, gate, generated, gitinfo, jobs, lake, pipes, vault
 
@@ -201,6 +202,7 @@ class LootWorker(Worker):
         for bid in [source] + [h.building for h in reversed(payload.trail) if h.building != source]:
             w = self.town.workers.get(bid) or self.town.worker(bid)
             if how == "rework" and getattr(w, "TAKES_REWORK", False):
+                delivery.went_back(self.town, self.building_id, bid, payload)
                 self.town.deliver(bid, payload, payload.title, payload.value)
                 return bid
             approved = getattr(w, "approved", None) if how == "approved" else None

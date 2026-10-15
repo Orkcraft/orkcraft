@@ -16,7 +16,7 @@ import { zoomLevel, zoomBy, LEVELS } from "../zoom.js";
 import { bareMenu, setNumbered } from "../town.js";
 import { lay, stepsFor, DEFAULT_STEP, SIDING_SHOWN, PATH_W } from "./layout.js";
 import { V3, kit, loadKit, sizeOf } from "./sprites.js";
-import { CampCarts, Finale, arriving } from "./carts.js";
+import { CampCarts, Finale, Switches, arriving } from "./carts.js";
 import { hovered, StewardOut } from "./steward.js";
 import { Stewards } from "./orks.js";
 import { Badge } from "./signals.js";
@@ -364,6 +364,7 @@ export function CampTown({ buildings, roads }) {
       <${Decals} L=${L} />
       <${Paths} L=${L} />
       <${Track} L=${L} />
+      <${Switches} L=${L} />
       <${Palisade} L=${L} />
       <${Placed} L=${L} items=${you && snapshot.value.growth.items} buildings=${buildings} />
       <div class="gui-camp__layer is-buildings">

@@ -107,6 +107,19 @@ def test_plain_road_delivers_and_filter_turns_carts_back():
     assert [c.status for c in rig.engine.carts] == ["delivered", "filtered", "delivered"]
 
 
+def test_a_cart_handed_back_is_kept_with_no_road_and_delivers_nothing():
+    """A rework is handed straight back (core/delivery.py `went_back`): the engine keeps it for the faces, which draw
+    it going round again (design-system-v3.md §4c), and delivers nothing itself."""
+    from orkcraft.core import delivery
+    rig = Rig(ts.default_scroll(PRESETS))
+    town = type("T", (), {"roads": rig.engine})()
+    delivery.went_back(town, "loot", "forge", node("T1001"))
+    delivery.went_back(town, "forge", "forge", node("T1002"))                 # to itself: nothing to draw
+    [cart] = rig.engine.carts
+    assert (cart.road_id, cart.source, cart.target, cart.status) == (roads.SENT_BACK, "loot", "forge", roads.SENT)
+    assert cart.at == rig.clock.t and rig.delivered == []
+
+
 def test_filter_keys():
     p = Payload("file", "loot/pipes/a.md", "loot", "on_selection_change", "a")
     assert roads.passes({"path_prefix": ["loot/"]}, p, {}) == (True, "")

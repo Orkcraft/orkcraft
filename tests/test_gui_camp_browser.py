@@ -93,6 +93,7 @@ def test_a_stopped_cart_stands_at_its_stop_with_its_flag_and_chip(camp_look, gui
     stand.locator(".gui-camp__cart img").first.click()
     bill = pg.locator(".gui-camp__waybill")
     bill.wait_for(state="visible", timeout=WAIT_MS)
+    bill.get_by_text("Now:").first.wait_for(state="visible", timeout=WAIT_MS)
     assert "Fix the login form" in bill.inner_text() and "Now:" in bill.inner_text()
     assert "not recorded" in bill.inner_text()
     pg.keyboard.press("Escape")
@@ -401,7 +402,9 @@ def test_an_item_dragged_from_the_inventory_snaps_to_the_grass_and_stays_after_a
     pg.mouse.move(b["x"] + b["width"] / 2, b["y"] + b["height"] / 2, steps=4)   # over the building: no fit
     assert pg.locator(".gui-items__grid").count() == 1                         # the grid shows while dragging
     assert pg.locator(".gui-items__ghost.is-ok").count() == 0
-    target = (b["x"] + b["width"] / 2, b["y"] + b["height"] + 180)             # the grass below the line
+    foot, k = pg.evaluate("() => [Math.max(...[...document.querySelectorAll('.gui-camp__layer.is-track img')]"
+                          ".map((e) => e.getBoundingClientRect().bottom)), +document.querySelector('.gui-camp').dataset.step.split('/')[0]]")
+    target = (b["x"] + b["width"] / 2, foot + 52 * k)                          # the grass below the return line
     pg.mouse.move(*target, steps=6)
     pg.locator(".gui-items__ghost.is-ok").wait_for(state="visible", timeout=WAIT_MS)
     pg.mouse.up()

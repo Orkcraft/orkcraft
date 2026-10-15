@@ -8,21 +8,13 @@ import { html, cls } from "../html.js";
 import { say } from "../link.js";
 import { chipOf } from "../carts.js";
 import { lengthOf } from "./layout.js";
+import { pointAt, aheadOn, step, thrown } from "./traffic.js";
 import { V3, sizeOf } from "./sprites.js";
 import { Badge } from "./signals.js";
 import { waybillOf, tokensWord } from "./waybill.js";
 
-const started = new Map();               // cart id → its animation-delay, fixed when first seen
 const LOUD = ["ask", "stuck", "held"];   // a pile's flag: its loudest cart's
 const SHOWN = 3;                         // carts drawn standing at a stop; more are a pile
-
-function delayOf(c) {
-  if (!started.has(c.id)) {
-    started.set(c.id, -Math.min(c.age, 30));
-    if (started.size > 400) started.delete(started.keys().next().value);
-  }
-  return started.get(c.id);
-}
 
 const launched = new Map();              // cart id → its launch's delay, fixed when first seen (as `started`)
 function launchAt(c, dur) {
@@ -45,46 +37,80 @@ function Bin({ c, B }) {
 /** The yellow flag of a cart waiting for the person: outlined, a darker lower band (§5). */
 const Flag = ({ B }) => html`<span class="gui-camp__flag" style=${`left:${-18 * B}px;top:${-44 * B - 44}px`}></span>`;
 
-/** Which way the cart faces along its route: east (1) or west (−1) on each straight run, keeping its last facing up
- *  and down the columns — c1 draws carts from the side only (its three-quarter rolling row is not cut), so on a
- *  column it rolls side on. [[offset 0..1, facing], …] where the facing changes. */
-export function facings(pts) {
-  const total = lengthOf(pts) || 1, out = [];
-  let at = 0, face = 1;
-  for (let i = 1; i < pts.length; i++) {
-    const dx = pts[i][0] - pts[i - 1][0];
-    if (dx) face = dx < 0 ? -1 : 1;
-    if (!out.length || out[out.length - 1][1] !== face) out.push([at / total, face]);
-    at += Math.hypot(dx, pts[i][1] - pts[i - 1][1]);
-  }
-  return out.length ? out : [[0, 1]];
+// The rolling carts, moved each frame by the traffic (js/camp/traffic.js): id → { el, pts, len, v, s, rank, parks,
+// throws, done }; the switches' stands by index. One loop for the town, running while a cart rolls.
+const moving = new Map();
+let stands = [], raf = 0, last = 0, keep = { gap: 64, eps: 16, T: 64 };
+const GONE_S = 1.2;                       // an arrived cart stays this long at its stop, then the stop's own drawing
+
+function place(c) {
+  if (!c.el) return;
+  const p = pointAt(c.pts, c.s);
+  c.el.style.transform = `translate(${Math.round(p.x)}px,${Math.round(p.y)}px)`;
+  c.el.classList.toggle("is-west", p.face < 0);
+  c.el.classList.toggle("is-gone", c.done !== null && c.done > GONE_S);
 }
 
-function Rolling({ c, pts, dur, B }) {
-  const d = `M ${pts.map((p) => p.join(" ")).join(" L ")}`;
-  const turns = facings(pts), bin = useRef(null), delay = delayOf(c);
+function frame(now) {
+  const dt = Math.min(0.1, (now - (last || now)) / 1000);
+  last = now;
+  const live = [...moving.values()].filter((c) => c.done === null || c.done <= GONE_S);
+  const held = step(live, dt, keep.gap, keep.eps);
+  for (const c of live) {
+    if (c.s >= c.len) c.done = (c.done || 0) + dt;
+    if (c.el) c.el.classList.toggle("is-waiting", !!held[c.id]);
+    place(c);
+  }
+  const on = thrown(stands.length, live, keep.T * 2.5, keep.T * 0.5);
+  stands.forEach((el, i) => { if (el) el.dataset.thrown = on[i] ? "1" : ""; });
+  raf = live.length || stands.some((el) => el && el.dataset.thrown) ? requestAnimationFrame(frame) : 0;
+  if (!raf) last = 0;
+}
+const wake = () => { if (!raf && typeof requestAnimationFrame === "function") raf = requestAnimationFrame(frame); };
+
+/** A switch stand beside the track (§4c rule 6): its lever and target arm say the way it is set, by position. Drawn
+ *  from the stand-in (track/switch-still|thrown.png, tools/switch_standin.py) until the art session draws it. */
+export function Switches({ L }) {
+  const S = L.step.s, T = L.T;
+  stands = stands.slice(0, L.switches.length);
+  const at = (w) => ({ n: [T * 0.78, 4 * S], s: [T * 0.22, T + 2 * S], w: [-6 * S, T * 0.92], e: [T + 6 * S, T * 0.92] }[w]);
+  return html`<div class="gui-camp__layer is-switches">${L.switches.map((w, i) => {
+    const [dx, dy] = at(w.side), s = sizeOf("track/switch-still.png") || [16, 24];
+    return html`<div key=${`${w.x},${w.y}`} class="gui-camp__switch" data-i=${i} data-ret=${w.ret ? "1" : ""}
+        ref=${(el) => { stands[i] = el; }} title=${say(w.ret ? "Switch: on to the buffer stop, or round again" : "Switch")}
+        style=${`left:${Math.round(w.x + dx - (s[0] * S) / 2)}px;top:${Math.round(w.y + dy - s[1] * S)}px;width:${s[0] * S}px;height:${s[1] * S}px`}>
+      <img class="gui-camp__px is-still" src=${`${V3}track/switch-still.png`} alt="" draggable="false" />
+      <img class="gui-camp__px is-thrown" src=${`${V3}track/switch-thrown.png`} alt="" draggable="false" />
+    </div>`;
+  })}</div>`;
+}
+
+function Rolling({ c, way, B }) {
+  const ref = useRef(null);
+  const m = moving.get(c.id);
   useEffect(() => {
-    const el = bin.current && bin.current.querySelector("img");
-    if (!el || turns.length < 2 || !el.animate) return undefined;
-    const frames = turns.map(([offset, f]) => ({ offset, transform: `scaleX(${f})`, easing: "step-end" }));
-    const a = el.animate([...frames, { offset: 1, transform: `scaleX(${turns[turns.length - 1][1]})` }],
-      { duration: dur * 1000, delay: delay * 1000, fill: "both" });
-    return () => a.cancel();
-  }, [d, dur]);
-  return html`<div ref=${bin} class=${cls("gui-camp__cart is-rolling", { "is-west": turns[0][1] < 0 })} data-load=${loadOf(c)} data-road=${c.road}
+    const e = moving.get(c.id);
+    if (e) { e.el = ref.current; place(e); wake(); }
+    return () => { const x = moving.get(c.id); if (x && x.el === ref.current) x.el = null; };
+  }, [c.id]);
+  const p = m ? pointAt(m.pts, m.s) : { x: way.pts[0][0], y: way.pts[0][1], face: 1 };
+  return html`<div ref=${ref} class=${cls("gui-camp__cart is-driven", { "is-west": p.face < 0, "is-back": !!c.back })} data-load=${loadOf(c)}
+      data-road=${c.road} data-id=${c.id}
       title=${say(chipOf(c))} role="button" aria-label=${say(`${chipOf(c)}: its history`)}
       onClick=${(e) => { e.stopPropagation(); waybillOf.value = { cart: c.id }; }}
-      style=${`offset-path:path("${d}");animation-duration:${dur}s;animation-delay:${delay}s`}>
+      style=${`transform:translate(${Math.round(p.x)}px,${Math.round(p.y)}px)`}>
     <${Bin} c=${c} B=${B} />
   </div>`;
 }
 
-/** Where a building's stopped carts stand: on its weighbridge (the Review gate), else on its line at its stop, the
- *  later ones back along the line; and how far apart. */
+/** Where a building's stopped carts stand, never on the main line (§4c rule 7): in its pocket, close together (more
+ *  than three are the pile there); on its weighbridge (the Review gate) or its shaft (the mine); at the buffer stop.
+ *  And how far apart. */
 function standOf(p, B, T) {
   if (p.type === "loot" && p.spur) return { x: p.cx, y: p.y + p.h * 0.69, dx: 0 };
+  if (p.spur) return { x: p.cx, y: p.feet - T * 0.45, dx: 0 };
   if (p.wall === "out") return { x: p.stop.x - T * 0.2, y: p.stop.y + T * 0.3, dx: -44 * B };
-  return { x: p.stop.x, y: p.stop.y + T * 0.3, dx: -44 * B };
+  return { x: p.stop.x, y: p.stop.y + T * 0.3, dx: -12 * B };
 }
 
 function Standing({ list, p, L }) {
@@ -97,7 +123,7 @@ function Standing({ list, p, L }) {
   const z = p.type === "loot" && p.spur ? `;z-index:${12 + Math.round(p.feet / 8)}` : "";
   return html`<div class=${cls("gui-camp__stand", `is-${loud}`)} data-id=${p.id} style=${`left:${at.x}px;top:${at.y}px${z}`}>
     ${pile && pileS ? html`<img class="gui-camp__px" src=${`${V3}carts/pile.png`} alt="" style=${`left:${-pileS[0] * B / 2}px;top:${-pileS[1] * B}px;width:${pileS[0] * B}px;height:${pileS[1] * B}px`} />`
-      : list.slice(0, SHOWN).map((c, i) => html`<div key=${c.id} class="gui-camp__cart" data-load=${loadOf(c)} style=${`left:${i * at.dx}px;top:0`}
+      : list.slice(0, SHOWN).map((c, i) => html`<div key=${c.id} class="gui-camp__cart" data-load=${loadOf(c)} style=${`left:${i * at.dx}px;top:0;z-index:${SHOWN - i}`}
           role="button" title=${say(chipOf(c))} aria-label=${say(`${chipOf(c)}: its history`)}
           onClick=${(e) => { e.stopPropagation(); waybillOf.value = { cart: c.id }; }}><${Bin} c=${c} B=${B} /></div>`)}
     ${loud === "ask" && html`<${Flag} B=${B} />`}
@@ -116,7 +142,7 @@ export function tripOf(L, pts, travel = 0) {
 export function arriving(L, roads, carts = [], travel = 0) {
   const byId = Object.fromEntries(roads.map((r) => [r.id, r])), out = {};
   for (const c of carts) {
-    const r = byId[c.road];
+    const r = roadOf(byId, c);
     if (!r || c.stands || c.state === "back") continue;
     const pts = L.route(r.from, r.to);
     if (!pts || pts.length < 2) continue;
@@ -143,12 +169,29 @@ function Launch({ c, p, at, avg, B }) {
   </div>`;
 }
 
+/** Where a cart first seen starts: at its share of the way, but never within a cart's distance of one already on it
+ *  (two sent at once would otherwise stand on one another): back behind it, never before its start. */
+function behind(m, k) {
+  let s = m.s;
+  for (const o of moving.values()) {
+    if (o === m || !o.pts) continue;
+    const p = pointAt(o.pts, o.s), d = aheadOn(m.pts, 0, p.x, p.y, k.eps);
+    if (d !== Infinity && Math.abs(d - s) < k.gap) s = Math.max(0, d - k.gap);
+  }
+  return s;
+}
+
+/** A cart's road: its own, or for a cart handed straight back (a rework, `back`) its two ends: it goes round again. */
+export const roadOf = (byId, c) => byId[c.road] || (c.back && c.from && c.to ? { id: c.road, from: c.from, to: c.to } : null);
+
 export function CampCarts({ L, roads, carts = [], travel = 0, avg = null }) {
-  const B = L.step.b;
+  const B = L.step.b, T = L.T;
+  keep = { gap: 88 * B, eps: T * 0.25, T };              // a cart apart: one cart's length between two
   const byId = Object.fromEntries(roads.map((r) => [r.id, r]));
-  const rolling = [], standing = new Map();
+  const rolling = [], standing = new Map(), seen = new Set();
+  const now = (typeof performance !== "undefined" ? performance.now() : Date.now()) / 1000;
   for (const c of carts) {
-    const r = byId[c.road];
+    const r = roadOf(byId, c);
     if (!r) continue;
     if (c.stands) {
       const p = L.buildings[r.to];
@@ -158,15 +201,28 @@ export function CampCarts({ L, roads, carts = [], travel = 0, avg = null }) {
       continue;
     }
     if (c.state === "back") continue;                  // filtered: it never left its source
-    const pts = L.route(r.from, r.to);
-    if (!pts || pts.length < 2) continue;
-    const feet = L.T * 0.3;
-    const dur = tripOf(L, pts, travel);
-    if (c.age > dur + 2.5) continue;                     // gone (a launched one has flown by then)
-    rolling.push({ c, pts: pts.map(([x, y]) => [Math.round(x), Math.round(y + feet)]), dur, out: L.buildings[r.to].wall === "out" ? r.to : "" });
+    const way = L.route(r.from, r.to);
+    if (!way || way.length < 2) continue;
+    const feet = T * 0.3;
+    const pts = way.map(([x, y]) => [Math.round(x), Math.round(y + feet)]);
+    const dur = tripOf(L, pts, travel), len = lengthOf(pts);
+    let m = moving.get(c.id);
+    if (!m && c.age > dur + 2.5) continue;               // gone before it was seen (a launched one has flown by then)
+    if (!m) {
+      m = { id: c.id, el: null, s: Math.min(1, Math.max(0, c.age / dur)) * len, rank: now - c.age, done: null, L: null };
+      moving.set(c.id, m);
+    } else if (m.L !== L) m.s = (m.s / (m.len || 1)) * len;   // the zoom changed: the same share of the way
+    const fresh = m.L === null;
+    Object.assign(m, { pts, len, v: len / dur, L, parks: !!L.buildings[r.to].pocket, throws: way.throws || [] });
+    if (fresh) m.s = behind(m, keep);
+    if (m.done !== null && m.done > GONE_S + 1.5) continue;
+    seen.add(c.id);
+    rolling.push({ c, way: m, dur, out: L.buildings[r.to].wall === "out" ? r.to : "" });
   }
+  for (const id of [...moving.keys()]) if (!seen.has(id)) moving.delete(id);
+  wake();
   return html`<div class="gui-camp__layer is-carts">
-    ${rolling.map(({ c, pts, dur }) => html`<${Rolling} key=${c.id} c=${c} pts=${pts} dur=${dur} B=${B} />`)}
+    ${rolling.map(({ c, way }) => html`<${Rolling} key=${c.id} c=${c} way=${way} B=${B} />`)}
     ${rolling.filter((x) => x.out).map(({ c, dur, out }) => html`<${Launch} key=${`fly-${c.id}`} c=${c} p=${L.buildings[out]}
       at=${launchAt(c, dur)} avg=${avg} B=${B} />`)}
     ${[...standing].map(([id, list]) => html`<${Standing} key=${id} list=${list} p=${L.buildings[id]} L=${L} />`)}

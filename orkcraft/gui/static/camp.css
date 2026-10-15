@@ -183,3 +183,13 @@
 .gui-items__pic > img { max-width: 40px; max-height: 40px; image-rendering: pixelated; }
 .gui-items__words { display: flex; flex-direction: column; min-width: 0; }
 .gui-items__name { font-weight: 600; }
+
+/* the traffic, one way round (design-system-v3.md §4c): a rolling cart moved by js/camp/traffic.js, faded at its stop */
+.gui-camp__cart.is-driven { will-change: transform; transition: opacity .3s; }
+.gui-camp__cart.is-driven.is-gone { opacity: 0; pointer-events: none; }
+/* a switch stand: its lever and target arm by position, never by colour (§4c rule 6) */
+.gui-camp__layer.is-switches { z-index: 4; }
+.gui-camp__switch { position: absolute; pointer-events: auto; }
+.gui-camp__switch > img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.gui-camp__switch > .is-thrown, .gui-camp__switch[data-thrown="1"] > .is-still { visibility: hidden; }
+.gui-camp__switch[data-thrown="1"] > .is-thrown { visibility: visible; }

@@ -145,6 +145,7 @@ def take_back(town, source_id: str, payload: pipes.Payload) -> str:
     trail (past a Signpost or a Mill on the way). Its id, or "" when nobody can take it back."""
     for bid in [source_id] + [h.building for h in reversed(payload.trail) if h.building != source_id]:
         if getattr(town.worker(bid), "TAKES_REWORK", False):
+            delivery.went_back(town, payload.source, bid, payload)
             town.deliver(bid, payload, payload.title, payload.value)
             return bid
     return ""

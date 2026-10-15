@@ -93,6 +93,7 @@ def run_handler_script(path: Path, records: list[dict], repo_root: Path, cancel:
         return proc.returncode, out.read()[:20_000].strip(), err.read()[:4000]
 
 SENT, FILTERED, DELIVERED, ERROR, HELD = "sent", "filtered", "delivered", "error", "held"
+SENT_BACK = "sent-back"           # the road id of a cart handed straight back (a rework): no road carries it
 EXAMPLE_OUTPUT_CHARS = 8000
 CLAUDE_READ_ONLY, CLAUDE_READ_WEB = harnesses.CLAUDE_READ_ONLY, harnesses.CLAUDE_READ_WEB   # 🪔 Clan Fire: web
 CODEX_WEB = harnesses.CODEX_WEB
@@ -459,6 +460,16 @@ class Engine:
         timer = threading.Timer(wait, self._call, (self._deliver, target_id, payload))
         timer.daemon = True
         timer.start()
+
+    def sent_back(self, sender: str, target: str, payload: Payload) -> Cart:
+        """A cart handed straight back to the building that made it (a Review gate's or a Clan Fire's rework): no
+        road carries it, but the faces draw it going round again to `target` (design-system-v3.md §4c)."""
+        cart = Cart(SENT_BACK, sender, target, SENT, payload, "sent back", self._clock())
+        with self._lock:
+            self.carts = (self.carts + [cart])[-500:]
+        if self._on_cart is not None:
+            self._call(self._on_cart, cart)
+        return cart
 
     def _cart(self, road: ts.Road, target: str, status: str, payload: Payload, detail: str, now: float) -> Cart:
         cart = Cart(road.id, road.source, target, status, payload, detail, now)

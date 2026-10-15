@@ -33,3 +33,20 @@ def test_the_demo_results_make_a_lean_week():
     now = dt.datetime(2026, 10, 14, 20, 0).astimezone()
     s = score.town(None, now=now, rows=traffic.results(now))
     assert s["results"] > 0 and s["trend"] < 0 and s["tokens"] is not None
+
+
+def test_a_review_gate_sends_a_cart_back_and_the_snapshot_says_where_it_goes_round(tmp_path: Path, monkeypatch):
+    """design-system-v3.md §4c: a rework is handed straight back, not by a road; the snapshot gives its two ends so
+    Camp draws it going round again to the building that made it."""
+    from orkcraft.gui.host import Host
+    monkeypatch.setattr(traffic.Traffic, "start", lambda self: None)
+    root = demo.build(tmp_path / "d", set_name="dashboard")
+    host = Host(root, False, root / ".orkcraft.json", demo=True)
+    try:
+        back = host.traffic.send_back()
+        assert back and all(c.road_id == "sent-back" for c in back)
+        snap = [c for c in host.snapshot()["carts"] if c.get("back")]
+        assert snap and {(c["from"], c["to"]) for c in snap} == {(c.source, c.target) for c in back}
+        assert all(c["state"] == "moving" and not c["stands"] for c in snap)
+    finally:
+        host.close()

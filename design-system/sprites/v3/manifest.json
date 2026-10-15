@@ -3306,6 +3306,44 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "track/switch-still.png",
+   "size": [
+    16,
+    24
+   ],
+   "frame": [
+    16,
+    24
+   ],
+   "frames": 1,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "stand_in": true,
+   "source": "stand-in (tools/switch_standin.py)",
+   "licence": "stand-in drawn in code from the track's colours until the art session draws the switch stand (design-system-v3.md §4c)",
+   "author": "tools/switch_standin.py"
+  },
+  {
+   "file": "track/switch-thrown.png",
+   "size": [
+    16,
+    24
+   ],
+   "frame": [
+    16,
+    24
+   ],
+   "frames": 1,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "stand_in": true,
+   "source": "stand-in (tools/switch_standin.py)",
+   "licence": "stand-in drawn in code from the track's colours until the art session draws the switch stand (design-system-v3.md §4c)",
+   "author": "tools/switch_standin.py"
+  },
+  {
    "file": "track/t-e.png",
    "size": [
     64,

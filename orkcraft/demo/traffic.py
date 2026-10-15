@@ -6,7 +6,8 @@ barrier, the catapult's launch, the task's history and the score show the real t
 
 Every few seconds a cart sets off along the next road of each orkspace (round its roads, the roads into a Publisher
 more often), so whichever orkspace is shown has carts on it, carrying a trail of hops with the tokens, spend and time a run like it would have recorded. A cart waits at
-every Review gate (held for the person) and is sent again before it would leave the snapshot. Two weeks of accepted
+every Review gate (held for the person) and is sent again before it would leave the snapshot; now and then a gate sends
+one back for rework to the building that made it, so it goes round again (design-system-v3.md §4c). Two weeks of accepted
 results (`results`) feed the score. All of it is demo data: every hop's model is "demo", and it lives in memory only
 (nothing is written to the town's logs; the demo has none).
 """
@@ -22,6 +23,7 @@ from orkcraft.realm import pipes
 from orkcraft.realm.roads import Cart
 
 EVERY_S = 3.5                    # a new cart this often
+BACK_EVERY = 3                   # a Review gate sends a cart back for rework every this many ticks
 STAND_S = 50 * 60                # a waiting cart is sent again before the snapshot lets it go (gui/state.py)
 DEMO = "demo"                    # the model every demo hop names: never a real run
 TITLES = ("Fix the login form", "Release notes v0.3", "Triage: billing mail", "Add the export button",
@@ -94,6 +96,8 @@ class Traffic:
                 source, target, road = mine[self._turn % len(mine)]
                 self.send(source, target, road)
         self._turn += 1
+        if self._turn % BACK_EVERY == 0:
+            self.send_back()
         now = time.monotonic()
         for b in self.town.scroll.buildings:
             if b.demolished or (self.town.spec_of(b.id) or {}).get("type") != "loot" or not b.roads:
@@ -102,6 +106,23 @@ class Traffic:
             if self.town.scroll.building(road.source) is not None and now - self._held.get(b.id, -1e9) > STAND_S:
                 self._held[b.id] = now
                 self.send(road.source, b.id, road, title="Fix the parser")
+
+    def send_back(self) -> list[Cart]:
+        """Each Review gate hands a cart back for rework to the building its first road comes from (as a rework is
+        handed back, not sent down a road: core/delivery.py `went_back`)."""
+        out = []
+        for b in self.town.scroll.buildings:
+            if b.demolished or (self.town.spec_of(b.id) or {}).get("type") != "loot" or not b.roads:
+                continue
+            maker = b.roads[0].source
+            if self.town.scroll.building(maker) is None:
+                continue
+            title = self.rnd.choice(TITLES)
+            now = dt.datetime.now().astimezone()
+            payload = pipes.Payload(kind="text", value=title, source=b.id, mode="loot.rework", title=title,
+                                    ref=str(self.rnd.randint(10, 99)), trail=_hops(self.town, maker, self.rnd, now), want="change")
+            out.append(self.town.roads.sent_back(b.id, maker, payload))
+        return out
 
     def _run(self) -> None:
         while not self._stop.wait(EVERY_S):

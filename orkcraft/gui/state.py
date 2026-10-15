@@ -27,6 +27,7 @@ from orkcraft.gui import projects as gui_projects
 from orkcraft.gui import views
 from orkcraft.realm import card_docs, catalog, halt, lexicon, modes, motion, pipes, score, script_first, status, steward_models
 from orkcraft.realm.buildings import TOWN_HALL
+from orkcraft.realm import roads as roads_mod
 from orkcraft.scroll import road_key
 
 HUT_WIDTHS = [40, 40, 40]      # characters a status line may take on an Office hut card
@@ -295,7 +296,9 @@ def carts(town: Town, now: float | None = None, muster: Muster | None = None) ->
         out.append({"id": f"{key}@{c.at:.3f}", "road": key, "status": c.status, "title": modes.strip_emoji(title)[:80],
                     "tokens": tokens, "cost": cost,
                     "age": round(age, 2), "load": load_of(c.payload, source_type), "ref": short_ref(ref),
-                    "state": state, "stands": stands})
+                    "state": state, "stands": stands,
+                    # a cart handed straight back (a rework) has no road: its two ends, and the faces draw it round again
+                    **({"back": True, "from": c.source, "to": c.target} if c.road_id == roads_mod.SENT_BACK else {})})
     out.reverse()
     return out
 

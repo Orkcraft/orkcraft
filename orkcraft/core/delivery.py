@@ -39,6 +39,14 @@ def cart_went(town, cart) -> None:
     town.publish(bus.CART, cart=cart)
 
 
+def went_back(town, sender: str, target: str, payload: pipes.Payload) -> None:
+    """A cart handed straight back (a rework): the road engine keeps it, so the faces draw it going round again to
+    `target` (realm/roads.py `sent_back`, design-system-v3.md §4c)."""
+    engine = getattr(town, "roads", None)
+    if engine is not None and hasattr(engine, "sent_back") and sender and sender != target:
+        engine.sent_back(sender, target, payload)
+
+
 def aim_now(town, building_id: str) -> str | None:
     """The goal in force for a building's road rules: its worker's (thrift while the quota is tight), else
     its own (None: the engine reads it from the scroll). Read on a run's thread: a worker is never made here."""
