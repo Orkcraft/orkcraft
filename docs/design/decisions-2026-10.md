@@ -492,3 +492,12 @@ growth (v3-prompts §14), then Mission 1 on the stations and mission 1b (first-m
 
   The full suite passed twice at `-n auto` (2150). All sessions are idle; the morning summary is at the top of this
   section, and the check-ins have stopped.
+
+## 15. Loops on the line (15 October, with the owner)
+
+The line shows the flow; an agent's own loop is drawn inside the session (its bubble, the building's inside). Between
+buildings: **returns** ride back as the same cart wearing `↩`, the pair standing as neighbours; **services** (the Wiki)
+stand in a **back row along the palisade** with no track, an ork walking to them by a path. The person's Office places
+win over neighbours (the owner: "it is their right"); what is guaranteed is the track: fixed topology, full-width lines,
+no crossings, whatever is moved. Full rules and priorities: [design-system-v3.md](design-system-v3.md) §4c. P0: the
+return cart on a send-back; the rest P1.

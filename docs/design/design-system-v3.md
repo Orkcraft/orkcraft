@@ -402,6 +402,43 @@ glossary).
 **Layers** (v2 §3, revised): ground · paths and track · buildings · carts · orks · **doors** (the patch over a
 building, sorted with it) · signals · chips · UI. The covers' layer is gone. Shadows stay the product's.
 
+### 4c. Loops, services and the person's places (the owner, 15 October; not built)
+
+The line shows **the flow**: work that changes hands. An agent's own loop (think, read, edit, test, again) is one
+session and is drawn **inside it**: the ork's bubble (its phase as 📖 ✏️ 🧪) and the building's inside, never on the
+track. Between buildings, three kinds of link, three drawings:
+
+| link | examples | drawn as |
+|---|---|---|
+| **flow**: the work changes hands | Task board → Agent pool → Review gate → catapult | carts on the line (§4) |
+| **return**: the answer goes back to who asked (`returns: true`, a send-back) | the Calendar → Agent pool → the brief back; the Review gate's send-back to the pool; 1b's rework | **the same cart** (one id) rolls back along the line wearing `↩` and what it brings (`↩ brief · Standup`); a frequent loop gets a siding of its own, as 1b's proving siding, never the main line |
+| **service**: consulted, never passed through | the Wiki read by an Agent pool (`notes`); later the Town Hall | **no track.** It stands in the **back row** along the palisade; an ork walks the path to it with a scroll before the run and back with the excerpt: one walk per run, never one per `wiki_search` |
+
+**Rules:**
+
+1. **The back row.** Services stand between the back wall and the upper row, with no line and no stop; the way-in
+   column and the lookout stay clear. A path runs from a service down to each building that reads it, through the
+   gaps between the upper row's buildings (a gap is one path wide, §4.8). A path to the lower row crosses line 1 at a
+   **level crossing** (planks between the rails, square to the line). Paths never run along the track.
+2. **Neighbours.** Two buildings joined by a return road stand in the same row, at most one place apart, so the cart
+   backs a short way. A service stands above its busiest reader.
+3. **The person's places win.** A building the person placed in Office keeps its row and place; neighbours and the
+   back row place only buildings never placed. A far placement costs a longer trip, shown as it is. The Warchief may
+   say once, as a 💡 improvement, never forced: "The brief rides across the whole camp. Put the Calendar next to the
+   Agent pool?"
+4. **The track is the product's, the places are the person's.** The person chooses a building's row and its order,
+   never its coordinates, so the track comes out right whatever they do:
+   - the topology is fixed: a line per row, the two columns, the split, the merge, the buffer stop; placing only
+     changes which stop is where. No crossings of track, no spurs, no diagonals;
+   - every line runs the camp's full width (the loop stays a rectangle); a short row's buildings stand from the left,
+     and the grass left over is where the person places items (v3-prompts §14);
+   - rows hold at most five; a sixth placed in a full row passes to the next, as today;
+   - stations keep their track (§4.11) wherever their row is.
+
+**Priority:** the return cart on a send-back is **P0** (Mission 1 and 1b show it); the back row, the neighbours, the
+ork's walk to the Wiki and the 💡 line are **P1** (the owner's own town; Mission 1 has no Wiki or Calendar). **No:**
+drawing each tool call or MCP read of an agent as a cart or a flash.
+
 ## 5. Signals win by value
 
 The grey test of F1 (v3-prompts §5.2) showed the yellow flag turning into a white flag and the ❓ smaller than the
