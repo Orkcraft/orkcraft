@@ -3656,220 +3656,220 @@
   {
    "file": "people/stages/aso_manager-2.png",
    "size": [
-    32,
+    48,
     40
    ],
    "frame": [
-    32,
+    48,
     40
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/aso_manager-3.png",
    "size": [
-    32,
-    40
+    48,
+    48
    ],
    "frame": [
-    32,
-    40
+    48,
+    48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/aso_manager-4.png",
    "size": [
-    32,
+    48,
     40
    ],
    "frame": [
-    32,
+    48,
     40
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/data_analyst-2.png",
    "size": [
-    40,
+    48,
     40
    ],
    "frame": [
-    40,
+    48,
     40
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/data_analyst-3.png",
    "size": [
-    40,
-    48
+    48,
+    40
    ],
    "frame": [
-    40,
-    48
+    48,
+    40
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/data_analyst-4.png",
    "size": [
-    40,
-    56
+    48,
+    48
    ],
    "frame": [
-    40,
-    56
+    48,
+    48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/designer-2.png",
    "size": [
-    32,
+    40,
     48
    ],
    "frame": [
-    32,
+    40,
     48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/designer-3.png",
    "size": [
-    40,
+    48,
     48
    ],
    "frame": [
-    40,
+    48,
     48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/designer-4.png",
    "size": [
-    40,
-    56
+    48,
+    48
    ],
    "frame": [
-    40,
-    56
+    48,
+    48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/eng_manager-2.png",
    "size": [
-    40,
-    40
+    48,
+    48
    ],
    "frame": [
-    40,
-    40
+    48,
+    48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/eng_manager-3.png",
    "size": [
-    40,
+    48,
     48
    ],
    "frame": [
-    40,
+    48,
     48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -3877,19 +3877,19 @@
    "file": "people/stages/eng_manager-4.png",
    "size": [
     40,
-    48
+    40
    ],
    "frame": [
     40,
-    48
+    40
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -3897,39 +3897,39 @@
    "file": "people/stages/engineer-2.png",
    "size": [
     40,
-    40
+    48
    ],
    "frame": [
     40,
-    40
+    48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/engineer-3.png",
    "size": [
-    40,
-    40
+    48,
+    48
    ],
    "frame": [
-    40,
-    40
+    48,
+    48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -3937,6 +3937,26 @@
    "file": "people/stages/engineer-4.png",
    "size": [
     48,
+    40
+   ],
+   "frame": [
+    48,
+    40
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "k3-stages.png",
+   "scale": 1.1,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "people/stages/founder-2.png",
+   "size": [
+    48,
     48
    ],
    "frame": [
@@ -3946,70 +3966,50 @@
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
-   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
-  },
-  {
-   "file": "people/stages/founder-2.png",
-   "size": [
-    32,
-    48
-   ],
-   "frame": [
-    32,
-    48
-   ],
-   "frames": 1,
-   "pitch": 5.73,
-   "show": 1,
-   "anchor": "centre",
-   "placeholder": true,
-   "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/founder-3.png",
    "size": [
-    40,
-    64
+    48,
+    48
    ],
    "frame": [
-    40,
-    64
+    48,
+    48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/founder-4.png",
    "size": [
-    32,
+    48,
     40
    ],
    "frame": [
-    32,
+    48,
     40
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -4026,50 +4026,50 @@
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/game_designer-3.png",
    "size": [
-    32,
+    48,
     48
    ],
    "frame": [
-    32,
+    48,
     48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/game_designer-4.png",
    "size": [
-    32,
-    48
+    48,
+    40
    ],
    "frame": [
-    32,
-    48
+    48,
+    40
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -4086,170 +4086,170 @@
    "frames": 1,
    "pitch": 11.47,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-marketing.png",
-   "scale": 1.3,
+   "scale": 1.14,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/marketing-3.png",
    "size": [
-    64,
+    48,
     48
    ],
    "frame": [
-    64,
+    48,
     48
    ],
    "frames": 1,
    "pitch": 11.47,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-marketing.png",
-   "scale": 1.3,
+   "scale": 1.14,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/marketing-4.png",
    "size": [
-    56,
+    48,
     48
    ],
    "frame": [
-    56,
+    48,
     48
    ],
    "frames": 1,
    "pitch": 11.47,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-marketing.png",
-   "scale": 1.3,
+   "scale": 1.14,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/other-2.png",
    "size": [
-    40,
-    48
+    48,
+    40
    ],
    "frame": [
-    40,
-    48
+    48,
+    40
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/other-3.png",
    "size": [
-    40,
-    48
+    48,
+    40
    ],
    "frame": [
-    40,
-    48
+    48,
+    40
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/other-4.png",
    "size": [
-    40,
-    56
+    48,
+    48
    ],
    "frame": [
-    40,
-    56
+    48,
+    48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/product_manager-2.png",
    "size": [
-    40,
+    48,
     48
    ],
    "frame": [
-    40,
+    48,
     48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/product_manager-3.png",
    "size": [
-    32,
+    40,
     48
    ],
    "frame": [
-    32,
+    40,
     48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
    "file": "people/stages/product_manager-4.png",
    "size": [
-    32,
-    56
+    40,
+    48
    ],
    "frame": [
-    32,
-    56
+    40,
+    48
    ],
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -4266,10 +4266,10 @@
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
@@ -4277,6 +4277,26 @@
    "file": "people/stages/qa-3.png",
    "size": [
     40,
+    48
+   ],
+   "frame": [
+    40,
+    48
+   ],
+   "frames": 1,
+   "pitch": 5.73,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "k3-stages.png",
+   "scale": 1.1,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "people/stages/qa-4.png",
+   "size": [
+    40,
     40
    ],
    "frame": [
@@ -4286,30 +4306,10 @@
    "frames": 1,
    "pitch": 5.73,
    "show": 1,
-   "anchor": "centre",
+   "anchor": "feet",
    "placeholder": true,
    "source": "k3-stages.png",
-   "scale": 1.4,
-   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
-   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
-  },
-  {
-   "file": "people/stages/qa-4.png",
-   "size": [
-    32,
-    48
-   ],
-   "frame": [
-    32,
-    48
-   ],
-   "frames": 1,
-   "pitch": 5.73,
-   "show": 1,
-   "anchor": "centre",
-   "placeholder": true,
-   "source": "k3-stages.png",
-   "scale": 1.4,
+   "scale": 1.1,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },

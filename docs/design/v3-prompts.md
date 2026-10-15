@@ -720,4 +720,9 @@ Calls spent of the queue's 30: 12 (c3 3, c1 3, st-depot 6).
   Not yet drawn by the GUI (the Prospector stands by the shaft; its walk to the Wiki is §4c's P1).
 
 Calls spent of the queue's 30: 23 (P0 12, P1 9, k3-marketing 2); the logo 3 of its 6.
+- **The stages reframed** (the PM's review): the first cut mixed close heads with busts and kept the arrows drawn
+  beside two gnomes. Now every stage head is framed as the first stage's (a square on the face, the chin at its
+  bottom, the hats cut at the top), one face size for all (`merge` 1.1 on k3, 1.14 on k3-marketing), the neighbours'
+  specks dropped, the arrows left out of the frame, the ghost's crest kept: `img/v3-preview/portrait-stages.png`
+  (row 1 the first stage, rows 2–4 the stages). No call spent.
 

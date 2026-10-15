@@ -603,141 +603,314 @@
   {
    "name": "k3-stages",
    "file": "k3-stages.png",
-   "close": 0,
    "show": 1,
-   "about": "round 12 (v3-prompts §18, gen_sheets k3-stages #3): the portrait's stages 2–4 (growth.md §7.2), a row per stage, ten heads a row in k1's order without the Growth-Hack Gnome (k3-marketing draws it); read at merge 1.4 to the heads' size; the ghost's crest of tabs at 4 is cut with its head (box)",
+   "about": "round 12 (v3-prompts §18, gen_sheets k3-stages #3): the portrait's stages 2–4 (growth.md §7.2), a row per stage, ten heads a row in k1's order without the Growth-Hack Gnome (k3-marketing draws it). Framed as the first stage's heads: a square of 44 sheet px on the face, its chin at the bottom, read at merge 1.1 into 40 × 40 (the face's centre and chin read off a ruler); the hats cut at the top as the first stage's; the arrow drawn under the Keyword Gnome's beard at 4 left out; specks of the neighbours dropped (`largest`), but the ghost's crest of tabs at 4 kept (its frame raised to hold it)",
    "groups": [
     {
      "size": [
       40,
       40
      ],
-     "anchor": "centre",
-     "merge": 1.4,
+     "anchor": "feet",
+     "merge": 1.1,
      "items": [
       {
        "file": "people/stages/engineer-2.png",
-       "order": 0
+       "box": [
+        0.0104,
+        0.0597,
+        0.1021,
+        0.2239
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/qa-2.png",
-       "order": 1
+       "box": [
+        0.1125,
+        0.041,
+        0.2042,
+        0.2052
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/eng_manager-2.png",
-       "order": 2
+       "box": [
+        0.225,
+        0.0634,
+        0.3167,
+        0.2276
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/product_manager-2.png",
-       "order": 3
+       "box": [
+        0.3396,
+        0.0709,
+        0.4313,
+        0.2351
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/designer-2.png",
-       "order": 4
+       "box": [
+        0.4375,
+        0.0597,
+        0.5292,
+        0.2239
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/game_designer-2.png",
-       "order": 5
+       "box": [
+        0.5333,
+        0.0597,
+        0.625,
+        0.2239
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/aso_manager-2.png",
-       "order": 6
+       "box": [
+        0.6167,
+        0.0634,
+        0.7083,
+        0.2276
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/data_analyst-2.png",
-       "order": 7
+       "box": [
+        0.7083,
+        0.0522,
+        0.8,
+        0.2164
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/founder-2.png",
-       "order": 8
+       "box": [
+        0.8042,
+        0.0597,
+        0.8958,
+        0.2239
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/other-2.png",
-       "order": 9
+       "box": [
+        0.8958,
+        0.041,
+        0.9875,
+        0.2052
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/engineer-3.png",
-       "order": 10
+       "box": [
+        0.0208,
+        0.4067,
+        0.1125,
+        0.5709
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/qa-3.png",
-       "order": 11
+       "box": [
+        0.1208,
+        0.4067,
+        0.2125,
+        0.5709
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/eng_manager-3.png",
-       "order": 12
+       "box": [
+        0.2458,
+        0.4254,
+        0.3375,
+        0.5896
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/product_manager-3.png",
-       "order": 13
+       "box": [
+        0.3458,
+        0.4142,
+        0.4375,
+        0.5784
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/designer-3.png",
-       "order": 14
+       "box": [
+        0.4375,
+        0.4142,
+        0.5292,
+        0.5784
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/game_designer-3.png",
-       "order": 15
+       "box": [
+        0.5333,
+        0.4142,
+        0.625,
+        0.5784
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/aso_manager-3.png",
-       "order": 16
+       "box": [
+        0.6167,
+        0.4142,
+        0.7083,
+        0.5784
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/data_analyst-3.png",
-       "order": 17
+       "box": [
+        0.7042,
+        0.4067,
+        0.7958,
+        0.5709
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/founder-3.png",
-       "order": 18
+       "box": [
+        0.8083,
+        0.4142,
+        0.9,
+        0.5784
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/other-3.png",
-       "order": 19
+       "box": [
+        0.8958,
+        0.3993,
+        0.9875,
+        0.5634
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/engineer-4.png",
-       "order": 20
+       "box": [
+        0.0208,
+        0.7575,
+        0.1125,
+        0.9216
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/qa-4.png",
-       "order": 21
+       "box": [
+        0.1313,
+        0.7575,
+        0.2229,
+        0.9216
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/eng_manager-4.png",
-       "order": 22
+       "box": [
+        0.2313,
+        0.7575,
+        0.3229,
+        0.9216
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/product_manager-4.png",
-       "order": 23
+       "box": [
+        0.3292,
+        0.7649,
+        0.4208,
+        0.9291
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/designer-4.png",
-       "order": 24
+       "box": [
+        0.4229,
+        0.75,
+        0.5146,
+        0.9142
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/game_designer-4.png",
-       "order": 25
+       "box": [
+        0.5208,
+        0.7463,
+        0.6125,
+        0.9104
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/aso_manager-4.png",
-       "order": 26
+       "box": [
+        0.6167,
+        0.7388,
+        0.7083,
+        0.903
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/data_analyst-4.png",
-       "order": 27
+       "box": [
+        0.7042,
+        0.7649,
+        0.7958,
+        0.9291
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/founder-4.png",
-       "order": 28
+       "box": [
+        0.7979,
+        0.7575,
+        0.8896,
+        0.9216
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/other-4.png",
        "box": [
-        0.885,
-        0.705,
-        0.996,
-        0.96
+        0.8958,
+        0.7351,
+        0.9875,
+        0.8993
        ]
       }
      ]
@@ -748,42 +921,45 @@
    "name": "k3-marketing",
    "file": "k3-marketing.png",
    "show": 1,
-   "about": "round 12 (gen_sheets k3-marketing #1): the Growth-Hack Gnome at stages 2–4, drawn full-length; its head and shoulders boxed (the horn at 3, the arrow at 4 with them), read at merge 1.3",
+   "about": "round 12 (gen_sheets k3-marketing #1): the Growth-Hack Gnome at stages 2–4, drawn full-length; framed as k3-stages (a square on the face, the chin at the bottom) at merge 1.14 to the same face size; the arrow at 4 left out of the frame",
    "groups": [
     {
      "size": [
       40,
       40
      ],
-     "anchor": "centre",
-     "merge": 1.3,
+     "anchor": "feet",
+     "merge": 1.14,
      "items": [
       {
        "file": "people/stages/marketing-2.png",
        "box": [
-        0.05,
-        0.11,
-        0.27,
-        0.57
-       ]
+        0.084,
+        0.203,
+        0.2773,
+        0.5489
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/marketing-3.png",
        "box": [
-        0.355,
-        0.165,
-        0.7,
-        0.57
-       ]
+        0.3824,
+        0.203,
+        0.5756,
+        0.5489
+       ],
+       "largest": true
       },
       {
        "file": "people/stages/marketing-4.png",
        "box": [
-        0.7,
-        0.14,
-        0.99,
-        0.57
-       ]
+        0.7059,
+        0.203,
+        0.8992,
+        0.5489
+       ],
+       "largest": true
       }
      ]
     }
