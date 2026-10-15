@@ -344,3 +344,24 @@ contract. The Workchief's lines may joke; the goal line and the cards' prices ar
 **Size:** the charter screen and the banner, about 1 day; the first cards from the repository and the goal, one
 model call with its price said, about 1 day; the routine path reuses Mission 2's design. **Priority:** P0 for
 activation, built after the owner has played Mission 1 (§9) and with 1b's order decided then. Not started.
+
+### 11.1 The project connected at the charter (the owner: "it turns straight into the Wiki and all that")
+
+"My project" connects the repository the town already has, in three steps by price:
+
+1. **The survey, free, no model:** the languages and size, the README, the test command (found as 1b's quest 1
+   finds it), the open issues (`gh`), the `docs/` folder. The first cards are proposed from it (one model call, price
+   said, as above).
+2. **The project's own docs become the Wiki at once, free:** when the repository has Markdown docs (`docs/`, ADRs,
+   the README), the Wiki opens on that folder as its source (any folder can be a source,
+   [wiki-folders-rules.md](wiki-folders-rules.md) §1), indexed with no model, read by the orks through its MCP
+   server. It stands on the grass among its readers (decisions §20) as the charter's gift: "the library came with
+   your project". This **amends §8's rule 3** for this one case: the Wiki leaves the More shelf here because the
+   person's own docs make it free and useful at once; its mission (3) still comes later for what it adds (notes and
+   decisions the orks keep).
+3. **The whole code read into the Wiki** (the librarian, a model over every file): offered, never by default, with
+   its price and time said first ("about 1,200 files: about $3 or 40 % of your window, about 25 minutes"); otherwise
+   offered later when the orks are seen reading the same files again (mission 3's moment).
+
+Not started; built with §11.
+
