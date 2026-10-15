@@ -450,8 +450,9 @@ track. Between buildings, three kinds of link, three drawings:
    return line and the cart goes round again. Switches still for a cart going on.
 7. **Carts keep their distance and wait off the line.** On one line carts follow one another a cart apart and never
    overtake; one that catches up waits behind, and the reason stands in front of it. **A cart never waits on the main
-   line:** each building has a **pocket**, one track tile beside its stop and parallel to the line, entered and left by
-   a switch; the cart stands there while the ork works, and a pile of more than three stands as the pile there.
+   line:** it stands just off the line at the end of its building's path while the ork works (a pile of more than
+   three stands there as the pile). **Decided 15 October (PM, from the screenshots `img/loop/pocket-none.png` and
+   `pocket-flat.png`): no pocket track** — the calmer of the two; a pocket track (arched or flat) doubled the rails.
    Stations keep their own (the Task board's siding, the Review gate's weighbridge, the mine's shaft). This amends
    §4.1's "no rail spurs" for pockets only: one tile, parallel, never a branch to a building.
 
