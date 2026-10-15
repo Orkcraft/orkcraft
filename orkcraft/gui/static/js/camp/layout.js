@@ -42,12 +42,18 @@ export const phoneStep = (steps) => Math.max(0, steps.findIndex((s) => s.b === 1
 export const WAY_IN = "watchtower";          // stands in the back wall; the track comes in at its foot
 export const WAY_OUT = "catapult";           // stands against the right wall at the line's buffer stop
 export const SIDING = "fields";              // the Task board: the dispatcher's booth and its siding
+export const DEPOT = "barracks";             // the Agent pool: the depot, a shed on its line, the track through it (§4d)
+export const DEPOT_FILE = "buildings/depot.png";
+const DEPOT_RAIL = 98;                       // the depot sprite's rails' middle, art px from its top
+export const DEPOT_BAYS = [110, 175, 240];   // its three bays' middles along it, art px from its west end
+const DEPOT_DOORS = [30, 300];               // its west and east gateways' middles
 const SPUR = new Set(["loot", "mine"]);
 // growth (growth.md §5, v3-prompts §13.4): a goal other than balance builds its annex against the building's east wall
 export const ANNEX = { thrift: "growth/annex-thrift.png", quality: "growth/annex-quality.png" };      // their sprite draws its own track down to the line (gate, headframe)
 
 /** A building's v3 sprite (design-system/sprites/v3/): its type's, the Review gate's barrier up or down. */
 export function spriteOf(b, waiting = false) {
+  if (b.type === DEPOT) return DEPOT_FILE;
   if (b.type === "loot") return waiting ? "buildings/loot_vault.png" : "buildings/loot_vault-up.png";
   return `buildings/${b.type}.png`;
 }
@@ -78,22 +84,26 @@ export function order(buildings, roads) {
  *  its place in the row by its x, so moving a card in Office moves the building in Camp; one never placed fills the
  *  room left, top row first, in the work's order (decisions-2026-10.md §14). */
 export function rowsOf(list) {
+  // the depot (§4d) is about two buildings wide: it takes two of a row's five places
+  const wt = (b) => (b.type === DEPOT ? 2 : 1), size = list.reduce((n, b) => n + wt(b), 0);
   // a second row as soon as one building was placed in the lower half (Build's "Bottom row" in Camp, a card in Office)
   const low = list.length >= 2 && list.some((b) => Array.isArray(b.hut) && b.hut[1] >= 0.5);
-  const n = Math.max(low ? 2 : 1, Math.ceil(list.length / ROW_MAX));
-  const per = Math.max(1, Math.ceil(list.length / n));
+  const n = Math.max(low ? 2 : 1, Math.ceil(size / ROW_MAX));
+  const per = Math.max(1, Math.ceil(size / n));
   const rows = Array.from({ length: n }, () => []);
+  const load = (r) => rows[r].reduce((k, b) => k + wt(b), 0);
+  const full = (r, b) => rows[r].length > 0 && load(r) + wt(b) > per;
   const placed = list.filter((b) => Array.isArray(b.hut));
   const band = (b) => Math.min(n - 1, Math.max(0, Math.floor(b.hut[1] * n)));
   for (const b of [...placed].sort((a, c) => a.hut[1] - c.hut[1] || a.hut[0] - c.hut[0])) {
     let r = band(b);
-    while (r < n - 1 && rows[r].length >= per) r++;
-    while (rows[r].length >= per && r > 0 && rows[r - 1].length < per) r--;
+    while (r < n - 1 && full(r, b)) r++;
+    while (full(r, b) && r > 0 && !full(r - 1, b)) r--;
     rows[r].push(b);
   }
   for (const row of rows) row.sort((a, c) => a.hut[0] - c.hut[0]);
   for (const b of list.filter((x) => !Array.isArray(x.hut))) {
-    const r = rows.findIndex((row) => row.length < per);
+    const r = rows.findIndex((row, k) => !full(k, b));
     rows[r < 0 ? n - 1 : r].push(b);
   }
   return rows;
@@ -105,8 +115,9 @@ export function rowsOf(list) {
  *  (§4.13); with no gate, at the first row's end. */
 export function lay(buildings, roads, step, size, waiting = () => false, home = "") {
   const B = step.b, S = step.s, T = TILE * S;
+  const depotOf = (b) => b.type === DEPOT && !!size(DEPOT_FILE);       // the depot once its sprite is cut, else a building
   const dims = (b) => {
-    const file = spriteOf(b, waiting(b));
+    const file = b.type === DEPOT && !depotOf(b) ? `buildings/${b.type}.png` : spriteOf(b, waiting(b));
     const got = size(file);
     const [w, h] = got || FALLBACK;
     return { file: got ? file : "", w: w * B, h: h * B };
@@ -147,8 +158,10 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   // how far above the line's top an ordinary building's path ends: at the pocket's top, or above a waiting cart
   const lift = style === "none" ? Math.round(STAND * B) : style === "flat" ? Math.round(T * FLAT_LIFT) : T;
   rows.forEach((row, r) => {
-    const ds = row.map((b) => ({ b, d: dims(b), spur: SPUR.has(b.type), own: SPUR.has(b.type) || b.type === SIDING }));
-    const band = Math.max(64 * B, ...ds.map(({ d, spur, own }) => (spur ? d.h - T / 4 : d.h + PATH_L * B + (own ? 0 : lift))),
+    const ds = row.map((b) => ({ b, d: dims(b), spur: SPUR.has(b.type), depot: depotOf(b),
+                                 own: SPUR.has(b.type) || b.type === SIDING || depotOf(b) }));
+    const band = Math.max(64 * B, ...ds.map(({ d, spur, own, depot }) => (depot ? DEPOT_RAIL * B - T / 2
+      : spur ? d.h - T / 4 : d.h + PATH_L * B + (own ? 0 : lift))),
                           r === homeRow ? homeS[1] * B + PATH_L * B : 0);
     if (r === 0) lineTop = Math.max((backs.length ? backFeet + PATH_W * B + 12 * B : wallY - 24 * B) + band, wallY + T);
     else {
@@ -159,7 +172,7 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
     out.lines.push(lineTop);
     pockets.push([]);
     let x = colL + T + GAP * B, free = colL + T;                       // the next box's x; the pocket row free from
-    for (const { b, d, spur, own } of ds) {
+    for (const { b, d, spur, own, depot } of ds) {
       const w = Math.max(d.w, PATH_W * B);
       let cx;
       const pocketed = !own && style !== "none";
@@ -173,15 +186,23 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
         free = colL + (k + 2) * T;
         pockets[r].push(colL + k * T);
       }
-      const feet = spur ? lineTop + T / 4 : own ? lineTop - PATH_L * B : lineTop - lift - PATH_L * B;
+      // the depot stands on its line, its own rails over the line's; a spur station reaches down to it
+      const feet = depot ? Math.round(lineTop + T / 2 - DEPOT_RAIL * B) + d.h
+        : spur ? lineTop + T / 4 : own ? lineTop - PATH_L * B : lineTop - lift - PATH_L * B;
       const pocketY = style === "flat" ? lineTop + T / 2 - lift : lineTop - T / 2;    // the pocket's rails' middle
       const annexS = ANNEX[b.goal] && size(ANNEX[b.goal]);
       out.buildings[b.id] = { id: b.id, type: b.type, file: d.file, x: Math.round(x + (w - d.w) / 2), y: Math.round(feet - d.h),
                               w: d.w, h: d.h, cx, feet, row: r, spur, door: { x: cx, y: feet }, pocket: pocketed,
                               stop: { x: cx, y: pocketed ? pocketY : lineTop + T / 2 }, waitAt: { x: cx, y: pocketed ? pocketY : lineTop },
                               growth: { level: Math.min(Math.max(b.level || 0, 0), 3), annex: annexS ? ANNEX[b.goal] : "" } };
+      if (depot) {                                                       // its bays along the through track, its gateways
+        const p = out.buildings[b.id], at = (v) => Math.round(p.x + v * B);
+        Object.assign(p, { depot: true, spur: false, bays: DEPOT_BAYS.map(at), gates: DEPOT_DOORS.map(at),
+                           stop: { x: at(DEPOT_BAYS[0]), y: lineTop + T / 2 }, door: { x: at(DEPOT_DOORS[0]), y: lineTop },
+                           rail: lineTop + T / 2, semaphore: { x: at(DEPOT_DOORS[1]) + Math.round(24 * B), y: lineTop + T } });
+      }
       if (annexS) x += annexS[0] * B + 2 * B;
-      if (!spur) out.paths.push({ x: Math.round(cx - PATH_W * B / 2), y: Math.round(feet - 6 * B), w: PATH_W * B,
+      if (!spur && !depot) out.paths.push({ x: Math.round(cx - PATH_W * B / 2), y: Math.round(feet - 6 * B), w: PATH_W * B,
                                   h: Math.round((pocketed ? lineTop - lift : lineTop) - feet + 6 * B + 2) });
       x += w + GAP * B;
       if (!pocketed) free = Math.max(free, x - GAP * B);

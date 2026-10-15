@@ -57,7 +57,7 @@ console.log(JSON.stringify({ order, rows, lines: L.lines, walls: [L.buildings.in
         if bid not in ("in", "out"):
             line = out["lines"][0 if bid in out["rows"]["0"] else 1]
             assert stop == line + t / 2                                          # its stop on its row's line (POCKET "none")
-            assert feet <= stop                                                      # its door above its stop
+            assert feet <= stop or bid == "pool"                                     # its door above it; the depot on it
     assert out["outStop"] == out["buffer"]                                            # the catapult at the buffer stop
     assert out["tower"]["cx"] == out["colL"] + t / 2 and out["tower"]["feet"] > out["wallY"] - t   # in the wall, at the way in
 
@@ -303,11 +303,11 @@ for (const q of L.tiles.filter((x) => !x.siding)) { const k = q.x + "," + q.y; i
 console.log(JSON.stringify({ res, clash }));
 """, tmp_path)
     assert out["clash"] == []                                                       # no two tiles on one cell
-    for bid in ("pool", "bench", "ux", "talk", "lone"):
+    for bid in ("bench", "ux", "talk", "lone"):
         r = out["res"][bid]
         assert r["pocket"] and r["on"] and r["above"], bid
         assert r["mouth"] == ["t-n", "t-n"], bid                                    # in and out by a T on the line
-    for bid in ("board", "gate", "mine"):
+    for bid in ("board", "gate", "mine", "pool"):                                   # stations, and the depot
         assert out["res"][bid]["pocket"] is False and not out["res"][bid]["on"], bid
 
 
@@ -322,13 +322,11 @@ const stands = L.switches.map((s) => s.x + "," + s.y).sort();
 const name = (i) => (L.switches[i].ret ? "ret" : L.switches[i].pocket !== undefined ? "pocket:" + L.switches[i].pocket : "left");
 const back = L.route("gate", "pool").throws.map((t) => [name(t.i), t.way]);
 const on = L.route("pool", "gate").throws.map((t) => [name(t.i), t.way]);
-const poolPocket = L.tiles.find((t) => t.name === "straight-h" && t.pocket !== undefined && t.x <= L.buildings.pool.stop.x
-                                && L.buildings.pool.stop.x < t.x + L.T && t.y === L.lines[0] - L.T).pocket;
-console.log(JSON.stringify({ forks, stands, back, on, poolPocket, n: L.switches.length }));
+console.log(JSON.stringify({ forks, stands, back, on, n: L.switches.length }));
 """, tmp_path)
-    assert out["forks"] == out["stands"] and out["n"] >= 1 + 1 + 5                  # every fork has its stand
+    assert out["forks"] == out["stands"] and out["n"] >= 1 + 1 + 4                  # every fork has its stand
     back = out["back"]
-    assert ["ret", "turn"] in back and back[-1] == [f"pocket:{out['poolPocket']}", "turn"]
+    assert ["ret", "turn"] in back and not any(n.startswith("pocket") and w == "turn" for n, w in back)   # round again; no pocket at the depot
     assert ["ret", "turn"] not in out["on"]                                          # going on: the right switch still
 
 
@@ -398,13 +396,38 @@ def test_with_no_pocket_track_a_cart_waits_on_its_path_end_and_the_line_stays_cl
     out = _run(TOWN + """
 C.POCKET.style = "none";
 const L = C.lay(B, R, { b: 1.5, s: 1 }, size);
-const p = L.buildings.pool, line = L.lines[p.row];
+const p = L.buildings.bench, line = L.lines[p.row];
 console.log(JSON.stringify({ pockets: L.tiles.filter((t) => t.pocket !== undefined).length,
   pocketSwitches: L.switches.filter((s) => s.pocket !== undefined).length, stop: p.stop.y, wait: p.waitAt.y, line,
   pathFoot: Math.max(...L.paths.filter((q) => q.x < p.cx && p.cx < q.x + q.w).map((q) => q.y + q.h)), parks: p.pocket,
-  route: L.route("board", "pool") }));
+  route: L.route("pool", "bench") }));
 """, tmp_path)
     assert out["pockets"] == 0 and out["pocketSwitches"] == 0
     assert out["stop"] == out["line"] + 32 and out["wait"] == out["line"] and out["parks"] is False
     assert out["line"] <= out["pathFoot"] <= out["line"] + 4                       # its path runs down to the line
     assert out["route"][-1] == [out["route"][-1][0], out["stop"]]                  # it rolls to its stop on the line
+
+
+def test_the_agent_pool_is_the_depot_on_its_line_with_three_bays_and_the_track_through_it(tmp_path):
+    """design-system-v3.md §4d: the Agent pool's depot stands on its line, its sprite's rails over the line's, no path
+    and no pocket; three bays along the through track, in order inside it; a cart for the pool stops at a bay, a cart
+    for a building east of it rolls straight through on the line; it takes two of a row's five places."""
+    out = _run(TOWN + """
+C.POCKET.style = "none";
+const L = C.lay(B, R, { b: 1.5, s: 1 }, size);
+const p = L.buildings.pool, g = L.buildings.gate, rail = L.lines[p.row] + L.T / 2;
+const through = L.route("board", "gate");
+const rows = C.rowsOf([{ id: "d", type: "barracks" }, ...["a", "b", "c", "e"].map((id) => ({ id, type: "forge" }))]);
+console.log(JSON.stringify({ p, rail, gateX: g.cx, toPool: L.route("board", "pool"), through,
+  path: L.paths.some((q) => !q.service && q.x <= p.bays[1] && p.bays[1] <= q.x + q.w && q.y + q.h >= p.y),
+  rows: rows.map((r) => r.map((b) => b.id)) }));
+""", tmp_path)
+    p, rail = out["p"], out["rail"]
+    assert p["depot"] and not p["pocket"] and p["file"] == "buildings/depot.png"
+    assert p["rail"] == rail and p["y"] + round(98 * 1.5) == round(rail)                  # its rails over the line's
+    assert p["x"] < p["bays"][0] < p["bays"][1] < p["bays"][2] < p["x"] + p["w"] and len(p["bays"]) == 3
+    assert out["path"] is False                                                           # no path, no pocket
+    assert out["toPool"][-1] == [p["bays"][0], rail]                                      # a cart for it: at a bay
+    if out["gateX"] > p["x"] + p["w"]:                                                    # one for beyond: through it
+        assert any(a[1] == b[1] == rail and a[0] <= p["x"] and b[0] >= p["x"] + p["w"] for a, b in zip(out["through"], out["through"][1:]))
+    assert out["rows"] == [["d", "a"], ["b", "c", "e"]]                                  # the depot is two places of six

@@ -118,6 +118,7 @@ export function roundWord(c) {
  *  And how far apart. */
 function standOf(p, B, T) {
   if (p.type === "loot" && p.spur) return { x: p.cx, y: p.y + p.h * 0.69, dx: 0 };
+  if (p.depot) return { x: p.bays[0], y: p.rail + T * 0.3, dx: p.bays[1] - p.bays[0] };          // in its bays
   if (p.spur) return { x: p.cx, y: p.feet - T * 0.45, dx: 0 };
   if (p.wall === "out") return { x: p.stop.x - T * 0.2, y: p.stop.y + T * 0.3, dx: -44 * B };
   if (!p.pocket && p.waitAt) return { x: p.waitAt.x, y: p.waitAt.y - 2 * B, dx: -12 * B };   // on its path's end
@@ -180,6 +181,16 @@ function Launch({ c, p, at, avg, B }) {
   </div>`;
 }
 
+/** A cart for the depot (§4d) rolls in at its west gateway to its first free bay and stops there, on the through track
+ *  (a cart behind it waits, §4c rule 7); with every bay busy it stops on the line before the west gateway. */
+export function intoDepot(pts, p, busy, B) {
+  const last = pts[pts.length - 1], y = last[1];
+  const x = busy < p.bays.length ? p.bays[busy] : p.gates[0] - Math.round(36 * B);
+  const out = pts.slice(0, -1);
+  while (out.length > 1 && out[out.length - 1][1] === y && out[out.length - 1][0] > x) out.pop();
+  return [...out, [x, y]];
+}
+
 /** Where a cart first seen starts: at its share of the way, but never within a cart's distance of one already on it
  *  (two sent at once would otherwise stand on one another): back behind it, never before its start. */
 function behind(m, k) {
@@ -195,7 +206,7 @@ function behind(m, k) {
 /** A cart's road: its own, or for a cart handed straight back (a rework, `back`) its two ends: it goes round again. */
 export const roadOf = (byId, c) => byId[c.road] || (c.back && c.from && c.to ? { id: c.road, from: c.from, to: c.to } : null);
 
-export function CampCarts({ L, roads, carts = [], travel = 0, avg = null }) {
+export function CampCarts({ L, roads, carts = [], travel = 0, avg = null, bays = {} }) {
   const B = L.step.b, T = L.T;
   keep = { gap: 88 * B, eps: T * 0.25, T };              // a cart apart: one cart's length between two
   const byId = Object.fromEntries(roads.map((r) => [r.id, r]));
@@ -214,8 +225,9 @@ export function CampCarts({ L, roads, carts = [], travel = 0, avg = null }) {
     if (c.state === "back") continue;                  // filtered: it never left its source
     const way = L.route(r.from, r.to);
     if (!way || way.length < 2) continue;
-    const feet = T * 0.3;
-    const pts = way.map(([x, y]) => [Math.round(x), Math.round(y + feet)]);
+    const feet = T * 0.3, to = L.buildings[r.to];
+    let pts = way.map(([x, y]) => [Math.round(x), Math.round(y + feet)]);
+    if (to.depot) pts = intoDepot(pts, to, bays[r.to] || 0, L.step.b);
     const dur = tripOf(L, pts, travel), len = lengthOf(pts);
     let m = moving.get(c.id);
     if (!m && c.age > dur + 2.5) continue;               // gone before it was seen (a launched one has flown by then)
@@ -224,7 +236,7 @@ export function CampCarts({ L, roads, carts = [], travel = 0, avg = null }) {
       moving.set(c.id, m);
     } else if (m.L !== L) m.s = (m.s / (m.len || 1)) * len;   // the zoom changed: the same share of the way
     const fresh = m.L === null;
-    Object.assign(m, { pts, len, v: len / dur, L, parks: !!L.buildings[r.to].pocket, throws: way.throws || [] });
+    Object.assign(m, { pts, len, v: len / dur, L, parks: !!(to.pocket || to.depot), throws: way.throws || [] });
     if (fresh) m.s = behind(m, keep);
     if (m.done !== null && m.done > GONE_S + 1.5) continue;
     seen.add(c.id);

@@ -110,7 +110,7 @@ export function pathTo(s, p, L, w) {
   const strip = Math.min(p.feet, L.lines[r] - T - foot);                // the reader's row's front strip
   const front = [...all.filter((q) => q.id !== p.id && q.row === r).map((q) => ({ x: q.x, y: q.y, w: q.w, h: q.feet - q.y })),
                  ...home.filter((h) => h.row === r)];
-  const end = (gx) => (!p.spur ? p.door.x : gx < p.cx ? p.x + 8 : p.x + p.w - 8);
+  const end = (gx) => (!p.spur && !p.depot ? p.door.x : gx < p.cx ? p.x + 8 : p.x + p.w - 8);
   const inside = (g, x) => Math.min(Math.max(x, g[0] + half), g[1] - half);
   const stubOf = (gx) => ({ x: Math.min(gx, end(gx)) - half, y: strip, w: Math.abs(end(gx) - gx) + w, h: foot });
   const near = (gs, x) => gs.map((g) => inside(g, x)).sort((m, n) => Math.abs(m - x) - Math.abs(n - x));

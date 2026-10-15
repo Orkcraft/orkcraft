@@ -46,7 +46,7 @@ def test_the_town_stands_on_rows_and_lines_with_the_lookout_and_the_catapult_in_
         _building(pg, bid).wait_for(state="visible", timeout=WAIT_MS)
     assert pg.locator(".gui-hut").count() == 0                              # no cards in Camp: v3's sprites
     src = _building(pg, pool).locator("img").get_attribute("src")
-    assert src.endswith("/ds/sprites/v3/buildings/barracks.png")
+    assert src.endswith("/ds/sprites/v3/buildings/depot.png")                 # the Agent pool is the depot (§4d)
     assert "Agent pool" in _building(pg, pool).inner_text()                 # its name, in today's word
     tiles = pg.locator(".gui-camp__layer.is-track img")
     assert tiles.count() > 6
@@ -464,11 +464,11 @@ def test_a_building_that_takes_an_items_cell_sends_it_back_with_a_line_in_the_pa
     pg.keyboard.press("Escape")
     _building(pg, pool).wait_for(state="visible", timeout=WAIT_MS)
     pg.get_by_role("button", name="Items", exact=True).click()
-    r, b = pg.locator('.gui-items__row[data-item="bush-small"]').bounding_box(), _building(pg, pool).bounding_box()
+    r = pg.locator('.gui-items__row[data-item="bush-small"]').bounding_box()
     pg.mouse.move(r["x"] + 20, r["y"] + 20)
     pg.mouse.down()
     h = pg.locator(".gui-camp__home").bounding_box()
-    pg.mouse.move(h["x"] + h["width"] + 90, b["y"] + b["height"] - 40, steps=6)   # the row's grass past the home
+    pg.mouse.move(h["x"] + h["width"] + 90, h["y"] + h["height"] - 40, steps=6)   # the row's grass past the home
     pg.locator(".gui-items__ghost.is-ok").wait_for(state="visible", timeout=WAIT_MS)
     pg.mouse.up()
     pg.locator('.gui-items__placed[data-item="bush-small"]').wait_for(state="visible", timeout=WAIT_MS)

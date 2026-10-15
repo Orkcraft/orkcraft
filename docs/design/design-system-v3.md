@@ -523,6 +523,19 @@ shutters, and the semaphore in two positions (`depot/semaphore-0|1`).
 **Priority: P0**, the next work of the LOOP session after its fixes and before its step 4 (they share `layout.js` and
 `track.js`); about 2 days. The pool's old building sprite stays for Office's card if wanted.
 
+**Built (LOOP, 15 October).**
+- **On its line.** The Agent pool draws `buildings/depot.png` in Camp, its own rails laid over its line's
+  (`layout.js` `DEPOT`, `DEPOT_BAYS`), with no path and no pocket. It takes two of a row's five places. Its steward
+  stands by the west gateway.
+- **Bays.** A cart for the pool rolls in at the west gateway to its first free bay and stops on the through track; a
+  cart behind it waits. With every bay busy it stops on the line before the gateway. A cart for a building beyond
+  rolls through.
+- **Busy or free.** Busy bays (its Grunts at work) show the cart in hand, free ones their shutters
+  (`depot/doors.png`), more than three a `+N` chip.
+- **The exit.** `depot/semaphore-0` stands at the east gateway where the exit track begins. Raising it, the verdict
+  and the shunt back into a bay are Mission 1b's.
+- Shots: `img/loop/depot.png`, `depot-busy.png` (its bays and queue injected by the shot script).
+
 ### 4e. Ground: a track bed under every rail, narrower paths, varied tiles (the owner, 15 October; not built)
 
 1. **A track bed under all track.** Every track tile (lines, columns, the return line, sidings, pockets, the depot's

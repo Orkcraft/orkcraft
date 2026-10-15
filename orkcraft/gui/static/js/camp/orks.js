@@ -17,6 +17,7 @@ const LIFT_S = 2.5;                        // a load lifted off and carried in
 export function stewardAt(b, p, L, takesWork) {
   if (!p || p.wall || !takesWork) return null;
   const B = L.step.b, S = L.step.s, lineTop = p.back ? p.feet + L.T / 2 : p.stop.y - L.T / 2;   // the back row: on its path
+  if (p.depot) return { x: p.gates[0] - 18 * B, y: p.door.y - 2 * S, pose: b.alert ? "asks" : "waits" };   // by the west doors (§4d)
   if (b.alert) return { x: p.door.x + 14 * B, y: p.feet + 2 * B, pose: "asks" };
   if (busyOf(b)) return { x: p.cx, y: p.y + 10 * B, pose: "inside" };
   const side = p.spur ? p.w * 0.36 : (PATH_W / 2) * B + 14 * S;
