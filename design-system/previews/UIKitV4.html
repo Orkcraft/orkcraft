@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en" data-theme="camp" data-look="camp">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI kit v4 · Camp</title>
+<!-- Camp's interface kit v4 (docs/design/design-system-v4.md): every piece drawn by tools/ui_kit.py, and a mock of the
+     top bar, the command bar and one side panel over a Camp screenshot. Open it from the folder; no server needed. -->
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="../kit.css">
+<style>
+  body { margin: 0; background: #2a1d17; color: var(--chip-ink); font: var(--type-camp-body); }
+  .page { padding: 24px 32px 48px; max-width: 1440px; box-sizing: border-box; }
+  .page > h1 { font: var(--type-kit-title); margin: 0 0 4px; color: var(--kit-ink); }
+  .page > p, .note { margin: 0 0 16px; font: var(--type-camp-caption); opacity: .85; max-width: 980px; }
+  .page h2 { font: var(--type-kit-heading); color: var(--kit-ink); margin: 32px 0 8px; }
+  .grid { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .cell { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .cap { font: var(--type-camp-caption); opacity: .8; }
+  .cap code { font: var(--type-code-small); }
+
+  /* the mock: a Camp screenshot at 1440 × 900 with v4's chrome over it */
+  .stage { position: relative; width: 1440px; height: 900px; overflow: hidden; background: #000 url("../../docs/design/img/v4/camp-bare.png") 0 0 / 1440px 900px no-repeat; }
+  .stage.is-target { background-image: url("../../docs/design/img/references/v4/target-ui.jpg"); background-size: cover; }
+  .hud { position: absolute; left: 8px; right: 8px; top: 6px; height: var(--kit-hud-h); display: flex; gap: 8px; pointer-events: none; }
+  .hud > * { pointer-events: auto; }
+  .hud__group { display: flex; align-items: center; gap: 8px; padding: 0 8px; height: var(--kit-hud-h); }
+  .hud__brand { font: 400 22px/1 var(--font-display); color: var(--parchment-ink); padding: 0 4px; }
+  .hud__spacer { flex: 1; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 8px; white-space: nowrap; }
+  .chip img { width: 24px; height: 24px; image-rendering: pixelated; }
+  .chip .w { font: var(--type-camp-label); letter-spacing: 0; }
+  .chip .n { font: var(--type-kit-number); }
+  .chip .sig-fire { color: var(--signal-fire); font: var(--type-kit-number); }
+  .chip .sig-ask { font: var(--type-kit-number); }
+  .chip .sig-ask b { display: inline-block; width: 20px; height: 20px; line-height: 20px; text-align: center; background: var(--chip);
+    color: var(--signal-ask); font: 400 18px/20px var(--font-kit); box-shadow: 0 0 0 1px var(--art-outline); }
+
+  .side { position: absolute; right: 8px; top: 72px; width: 440px; display: flex; align-items: flex-start; }
+  .side .kit-tabs { margin-top: 52px; margin-right: -2px; position: relative; z-index: 1; }
+  .panel { position: relative; flex: 1; padding: 30px 12px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .panel > .kit-plate { position: absolute; top: -18px; left: 20px; max-width: calc(100% - 120px); }
+  .panel__tools { position: absolute; top: -16px; right: 12px; display: flex; gap: 4px; }
+  .panel .kit-row { color: var(--parchment-ink); }
+  .panel .kit-row img.face { width: 32px; height: 24px; }
+  .line { font: var(--type-camp-caption); color: var(--parchment-ink); opacity: .85; margin: -4px 0 0 40px; }
+  .console { padding: 10px 12px; font: var(--type-code-small); white-space: pre; min-height: 84px; }
+  .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .slots { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .items { position: absolute; left: 8px; top: 72px; width: 300px; padding: 0 0 12px; }
+  .items .kit-band { margin: 0 0 8px; }
+  .items .slots, .items p { padding: 0 12px; }
+  .items p { margin: 0 0 8px; font: var(--type-camp-caption); color: var(--parchment-ink); }
+
+  .cmd { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); width: 980px; display: flex; align-items: center; gap: 8px; padding: 6px 8px; }
+  .cmd__face { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+  .cmd__face img { width: 32px; height: 24px; image-rendering: pixelated; }
+  .cmd__input { flex: 1; height: 40px; display: flex; align-items: center; padding: 0 10px; font: var(--type-camp-body); color: color-mix(in srgb, var(--parchment-ink) 60%, transparent); }
+
+  .toast { position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 8px; font: var(--type-camp-body); }
+  .toast__mark { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font: var(--type-kit-heading); }
+  .toast a { color: var(--accent-teal); }
+
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .compare img { width: 100%; display: block; }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>UI kit v4 · Camp</h1>
+<p>Camp's chrome in wood, teal and parchment (docs/design/design-system-v4.md). Every piece below is a nine-slice drawn in
+code by <code>tools/ui_kit.py</code>, one art pixel = 2 CSS px; the words are today's. Headings, numbers and buttons are in
+Jersey 15; every sentence stays Nunito. Yellow and red are only the signals'. Office is not changed.</p>
+
+<h2>The mock: the top bar, the command bar, a side panel and Items over today's camp</h2>
+<div class="stage" id="mock">
+  <header class="hud">
+    <div class="hud__group kit-bar">
+      <span class="hud__brand">Orkline</span>
+      <button class="kit-btn">Menu · demo ▾</button>
+      <span class="chip kit-well"><span class="w">per result</span><span class="n">9.2k</span><span class="n" style="color:var(--accent-teal)">↓18%</span></span>
+    </div>
+    <span class="hud__spacer"></span>
+    <div class="hud__group kit-bar">
+      <button class="kit-btn is-icon" title="Day: orks work"><img class="kit-ico" src="../sprites/icons/day@2x.png" alt=""></button>
+      <span class="chip kit-well"><img src="../sprites/icons/res-gold@2x.png" alt=""><span class="w">Spend</span><span class="n">$0.42 / $5.00</span></span>
+      <span class="chip kit-well"><img src="../sprites/icons/res-quota@2x.png" alt=""><span class="w">Context</span><span class="n">92k / 128k</span></span>
+      <span class="chip kit-well"><img src="../sprites/icons/res-meat@2x.png" alt=""><span class="w">Orks</span><span class="n">3/5</span>
+        <span class="sig-fire">🔥1</span><span class="sig-ask"><b>?</b> 3</span></span>
+      <button class="kit-btn is-teal">Stop all</button>
+    </div>
+  </header>
+
+  <section class="items kit-frame">
+    <div class="kit-band">Items</div>
+    <p>Drag one onto the camp's grass.</p>
+    <div class="slots">
+      <span class="kit-slot"><img src="../sprites/v3/items/pennant.png" alt=""><span class="kit-slot__count">1</span></span>
+      <span class="kit-slot is-on"><img src="../sprites/v3/items/sundial.png" alt=""><span class="kit-slot__count">2</span></span>
+      <span class="kit-slot"><img src="../sprites/v3/items/proving-stone.png" alt=""><span class="kit-slot__count">1</span></span>
+      <span class="kit-slot"><img src="../sprites/v3/items/first-cart.png" alt=""></span>
+      <span class="kit-slot"></span>
+    </div>
+  </section>
+
+  <aside class="side">
+    <nav class="kit-tabs" role="tablist" aria-label="Agent pool">
+      <button class="kit-tab is-on" role="tab" aria-selected="true" title="Work"><img class="kit-ico" src="../sprites/v4/ui/icons/work@2x.png" alt="Work"></button>
+      <button class="kit-tab" role="tab" aria-selected="false" title="Info"><img class="kit-ico" src="../sprites/v4/ui/icons/info@2x.png" alt="Info"></button>
+      <button class="kit-tab" role="tab" aria-selected="false" title="Waybill"><img class="kit-ico" src="../sprites/v4/ui/icons/quest@2x.png" alt="Waybill"></button>
+    </nav>
+    <section class="panel kit-frame">
+      <span class="kit-plate">Agent pool</span>
+      <span class="panel__tools">
+        <button class="kit-btn is-icon is-small" title="The whole town"><img class="kit-ico" src="../sprites/v4/ui/icons/whole@2x.png" alt=""></button>
+        <button class="kit-btn is-icon is-small" title="More"><img class="kit-ico" src="../sprites/v4/ui/icons/more@2x.png" alt=""></button>
+        <button class="kit-btn is-icon is-small" title="Close (Esc)"><img class="kit-ico" src="../sprites/v4/ui/icons/close@2x.png" alt=""></button>
+      </span>
+      <h3 class="kit-legend">At work</h3>
+      <div class="kit-row"><img class="face" src="../sprites/camp/orks/faces/mechanic.png" alt=""><span>Grub, the Mechanic</span><span>2</span></div>
+      <p class="line">Fix the parser: the tests run</p>
+      <div class="kit-row"><img class="face" src="../sprites/camp/orks/faces/alchemist.png" alt=""><span>Snaga, the Alchemist</span><span>1</span></div>
+      <p class="line">Login form: reading the diff</p>
+      <h3 class="kit-legend">Carts waiting</h3>
+      <div class="slots">
+        <span class="kit-slot"><img src="../sprites/v3/carts/code.png" alt=""><span class="kit-slot__count">3</span></span>
+        <span class="kit-slot"><img src="../sprites/v3/carts/doc.png" alt=""><span class="kit-slot__count">1</span></span>
+        <span class="kit-slot"><img src="../sprites/v3/carts/message.png" alt=""><span class="kit-slot__count">2</span></span>
+        <span class="kit-slot"></span><span class="kit-slot"></span>
+      </div>
+      <h3 class="kit-legend">Today</h3>
+      <div class="kit-row"><span>Tasked</span><span>4</span></div>
+      <div class="kit-row"><span>Waiting for review</span><span>3</span></div>
+      <div class="kit-row"><span>Spent today</span><span>$1.08</span></div>
+      <div class="console kit-well" style="background:var(--chip);color:var(--chip-ink)">$ pytest -q tests/test_parser.py
+....F...
+1 failed, 7 passed in 0.42s</div>
+      <div class="acts">
+        <button class="kit-btn is-teal">Open</button>
+        <button class="kit-btn">Pause</button>
+        <button class="kit-btn">Orks (2)</button>
+        <button class="kit-btn" disabled>Publish</button>
+      </div>
+    </section>
+  </aside>
+
+  <div class="toast kit-frame-thin"><span class="toast__mark kit-well" style="color:var(--signal-ask);background:var(--chip)">?</span>
+    Quartermaster: 3 carts wait for review — Fix the parser: needs you · <a href="#">answer</a>
+    <button class="kit-btn is-icon is-small" title="Close"><img class="kit-ico" src="../sprites/v4/ui/icons/close@2x.png" alt=""></button></div>
+
+  <div class="cmd kit-bar">
+    <span class="cmd__face kit-well" style="background:var(--chip)"><img src="../sprites/camp/orks/faces/warchief.png" alt=""></span>
+    <button class="kit-btn">Build</button>
+    <button class="kit-btn">Answers (3)</button>
+    <button class="kit-btn">Improve</button>
+    <span class="cmd__input kit-well">Ask the Workchief… or / for commands</span>
+  </div>
+</div>
+
+<h2>Beside the target</h2>
+<div class="compare">
+  <div class="cell"><img src="../../docs/design/img/references/v4/target-ui.jpg" alt="The owner's target UI"><span class="cap">the target (only a picture: its words are not ours)</span></div>
+  <div class="cell"><img src="../../docs/design/img/loop/depot-busy.png" alt="Today's Camp"><span class="cap">today's Camp (v3 chrome)</span></div>
+</div>
+
+<h2>Frames</h2>
+<div class="grid">
+  <div class="cell"><div class="kit-frame" style="width:240px;height:140px"></div><span class="cap"><code>frame</code> · inset 7 (14 px) · teal caps</span></div>
+  <div class="cell"><div class="kit-frame" style="width:120px;height:72px"></div><span class="cap">small</span></div>
+  <div class="cell"><div class="kit-frame-thin" style="width:240px;height:140px"></div><span class="cap"><code>frame-thin</code> · inset 7</span></div>
+  <div class="cell"><div class="kit-frame is-dark" style="width:240px;height:140px"></div><span class="cap"><code>frame</code> · <code>.is-dark</code> (a console)</span></div>
+  <div class="cell"><div class="kit-bar" style="width:320px;height:56px"></div><span class="cap"><code>bar</code> · inset 5 (10 px)</span></div>
+</div>
+
+<h2>Buttons</h2>
+<div class="grid">
+  <div class="cell"><span class="acts"><button class="kit-btn">Build</button><button class="kit-btn is-hover" style="border-image-source:image-set(url('../sprites/v4/ui/btn-wood-hover.png') 1x, url('../sprites/v4/ui/btn-wood-hover@2x.png') 2x)">Build</button><button class="kit-btn is-down">Build</button><button class="kit-btn" disabled>Build</button></span>
+    <span class="cap"><code>btn-wood</code>: normal · hover · down · off</span></div>
+  <div class="cell"><span class="acts"><button class="kit-btn is-teal">Stop all</button><button class="kit-btn is-teal" style="border-image-source:image-set(url('../sprites/v4/ui/btn-teal-hover.png') 1x, url('../sprites/v4/ui/btn-teal-hover@2x.png') 2x)">Stop all</button><button class="kit-btn is-on">Build</button><button class="kit-btn is-teal" disabled>Open</button></span>
+    <span class="cap"><code>btn-teal</code>: primary · hover · on (down) · off</span></div>
+  <div class="cell"><span class="acts">
+    <button class="kit-btn is-icon" title="Work"><img class="kit-ico" src="../sprites/v4/ui/icons/work@2x.png" alt=""></button>
+    <button class="kit-btn is-icon" title="Info"><img class="kit-ico" src="../sprites/v4/ui/icons/info@2x.png" alt=""></button>
+    <button class="kit-btn is-icon" title="Day"><img class="kit-ico" src="../sprites/icons/day@2x.png" alt=""></button>
+    <button class="kit-btn is-icon is-teal" title="Settings"><img class="kit-ico" src="../sprites/icons/settings@2x.png" alt=""></button>
+    <button class="kit-btn is-icon is-small" title="Close"><img class="kit-ico" src="../sprites/v4/ui/icons/close@2x.png" alt=""></button>
+    <button class="kit-btn is-icon is-small" title="Copy"><img class="kit-ico" src="../sprites/v4/ui/icons/copy@2x.png" alt=""></button></span>
+    <span class="cap">square icon buttons · 36 (<code>kit-icon-btn</code>) · 28 small</span></div>
+</div>
+
+<h2>Plates, tabs, bands, wells, slots</h2>
+<div class="grid">
+  <div class="cell"><span class="kit-plate">Task board</span><span class="cap"><code>plate</code> · <code>kit-heading</code></span></div>
+  <div class="cell"><nav class="kit-tabs"><button class="kit-tab is-on" title="Work"><img class="kit-ico" src="../sprites/v4/ui/icons/work@2x.png" alt=""></button>
+    <button class="kit-tab" title="Info"><img class="kit-ico" src="../sprites/v4/ui/icons/info@2x.png" alt=""></button>
+    <button class="kit-tab" style="border-image-source:image-set(url('../sprites/v4/ui/tab-hover.png') 1x, url('../sprites/v4/ui/tab-hover@2x.png') 2x)" title="Items"><img class="kit-ico" src="../sprites/v4/ui/icons/items@2x.png" alt=""></button></nav>
+    <span class="cap"><code>tab</code>: on · normal · hover</span></div>
+  <div class="cell" style="width:260px"><div class="kit-band" style="width:100%">Items</div><span class="cap"><code>band</code></span></div>
+  <div class="cell"><div class="kit-frame" style="padding:12px;width:260px"><span class="chip kit-well"><img src="../sprites/icons/res-gold@2x.png" alt=""><span class="w">Spend</span><span class="n">$0.42 / $5.00</span></span></div><span class="cap"><code>well</code>: a counter's chip</span></div>
+  <div class="cell"><div class="kit-frame" style="padding:12px"><div class="slots">
+    <span class="kit-slot"><img src="../sprites/v3/carts/code.png" alt=""><span class="kit-slot__count">30</span></span>
+    <span class="kit-slot" style="border-image-source:image-set(url('../sprites/v4/ui/slot-hover.png') 1x, url('../sprites/v4/ui/slot-hover@2x.png') 2x)"><img src="../sprites/v3/items/sundial.png" alt=""><span class="kit-slot__count">2</span></span>
+    <span class="kit-slot is-on"><img src="../sprites/v3/items/pennant.png" alt=""></span><span class="kit-slot"></span></div></div>
+    <span class="cap"><code>slot</code>: normal · hover · on · empty</span></div>
+</div>
+
+<h2>Type</h2>
+<div class="kit-frame" style="padding:16px 20px;max-width:900px">
+  <div class="kit-title">Agent pool <span class="cap">kit-title · 27/32 · Jersey 15</span></div>
+  <div class="kit-heading">Task board · Waiting for review <span class="cap">kit-heading · 22/24</span></div>
+  <div class="kit-number">$0.42 / $5.00 · 92k / 128k · 1300 550 307 <span class="cap">kit-number · 22/24</span></div>
+  <div style="font:var(--type-kit-button)">Stop all · Build · Answers (3) <span class="cap">kit-button · 20/24</span></div>
+  <div class="kit-small">30 20 10 3 128 <span class="cap">kit-small · 16/16</span></div>
+  <p style="font:var(--type-camp-body);margin:8px 0 0">The Mechanic finished the parser fix; one cart waits at the Review gate for your answer. <span class="cap">camp-body · Nunito: every sentence, settings, waybills, consoles</span></p>
+  <p style="font:var(--type-code-small);margin:4px 0 0">$ pytest -q · 1 failed, 7 passed <span class="cap">code-small · JetBrains Mono</span></p>
+  <p style="font:400 22px/1 var(--font-display);margin:8px 0 0">Orkline <span class="cap">the wordmark · New Rocker</span></p>
+</div>
+
+<h2>Icons (12 × 12, drawn from grids)</h2>
+<div class="kit-frame is-dark" style="padding:12px;display:inline-flex;gap:16px">
+  <img class="kit-ico" src="../sprites/v4/ui/icons/work@2x.png" alt="work" title="work">
+  <img class="kit-ico" src="../sprites/v4/ui/icons/info@2x.png" alt="info" title="info">
+  <img class="kit-ico" src="../sprites/v4/ui/icons/close@2x.png" alt="close" title="close">
+  <img class="kit-ico" src="../sprites/v4/ui/icons/whole@2x.png" alt="whole" title="whole town">
+  <img class="kit-ico" src="../sprites/v4/ui/icons/more@2x.png" alt="more" title="more">
+  <img class="kit-ico" src="../sprites/v4/ui/icons/copy@2x.png" alt="copy" title="copy">
+  <img class="kit-ico" src="../sprites/v4/ui/icons/items@2x.png" alt="items" title="items">
+  <img class="kit-ico" src="../sprites/v4/ui/icons/quest@2x.png" alt="quest" title="quest log, waybill">
+</div>
+</div>
+</body>
+</html>

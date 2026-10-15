@@ -502,3 +502,21 @@ def test_v4_kit_pieces_are_the_drawers_output_at_whole_multiples():
                 want = g.img.resize((g.w * scale, g.h * scale), Image.NEAREST)
                 assert im.convert("RGBA").tobytes() == want.tobytes(), f"{name}{suffix}: run python tools/ui_kit.py"
         assert 2 * inset < min(g.w, g.h) or inset == 0, name
+
+
+def test_v4_kit_css_and_its_preview_name_only_files_that_are_there():
+    """design-system-v4.md §2, §6: design-system/kit.css and previews/UIKitV4.html draw from the kit's pieces, its icons
+    and today's sprites; every file they name is shipped, and every kit rule is Camp's alone."""
+    import re
+    css = (tokens.SYSTEM / "kit.css").read_text(encoding="utf-8")
+    for url in re.findall(r'url\("([^"]+)"\)', css):
+        assert (tokens.SYSTEM / url).is_file(), url
+    for rule in re.findall(r"(?m)^([^\s/@}][^{}]*)\{", css):
+        assert all(sel.strip().startswith('[data-look="camp"]') for sel in rule.split(",")), rule
+    page = tokens.SYSTEM / "previews" / "UIKitV4.html"
+    text = page.read_text(encoding="utf-8")
+    for ref in re.findall(r'(?:src|href)="(\.\./[^"#]+)"', text) + re.findall(r"url\(['\"]?(\.\./[^'\")]+)", text):
+        assert (page.parent / ref).resolve().is_file(), ref
+    kit = json.loads((tokens.SYSTEM / "sprites" / "v4" / "ui" / "kit.json").read_text(encoding="utf-8"))
+    for name in kit["icons"]:
+        assert (tokens.SYSTEM / "sprites" / "v4" / "ui" / "icons" / f"{name}@2x.png").is_file(), name

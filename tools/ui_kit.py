@@ -21,6 +21,9 @@ The pieces (a nine-slice unless said):
 - `band`: a section's wooden strip inside a panel ("Items").
 - `parchment`: a 32 × 32 tile of the panels' parchment with a few fibres (not a nine-slice: a background).
 
+And the icons of the icon buttons and tabs, 12 × 12 in `kit-ink` with an outline, from the grids in `ICONS`, into
+`icons/<name>.png` (`work`, `info`, `close`, `whole`, `more`, `copy`, `items`, `quest`).
+
 Needs `pip install pillow`.
 """
 from __future__ import annotations
@@ -218,16 +221,50 @@ def band() -> tuple[Grid, int]:
 
 
 def parchment() -> tuple[Grid, int]:
-    """32 × 32 parchment with a few fibres and flecks, tiling seamlessly (the fibres wrap)."""
+    """32 × 32 parchment with a few faint fibres, tiling seamlessly (the fibres wrap). A fibre is halfway between the
+    parchment and its sunk step, so it reads as grain, never as a mark."""
     g = Grid(32, 32, C["parchment"])
+    fibre = tuple((a + b) // 2 for a, b in zip(C["parchment"], C["kit-parchment-deep"]))
     rnd = random.Random(23)
-    for _ in range(14):
-        x, y, n = rnd.randrange(32), rnd.randrange(32), rnd.randint(2, 4)
+    for _ in range(8):
+        x, y, n = rnd.randrange(32), rnd.randrange(32), rnd.randint(3, 5)
         for i in range(n):
-            g.px((x + i) % 32, y, C["kit-parchment-deep"])
-    for _ in range(6):
-        g.px(rnd.randrange(32), rnd.randrange(32), C["kit-parchment-rule"])
+            g.px((x + i) % 32, y, fibre)
     return g, 0
+
+
+# '#' the glyph; its outline is added round it. 10 × 10, drawn 12 × 12 with the outline.
+ICONS = {
+    "work": [".####.....", "######....", "######....", ".#####....", "....##....", ".....##...", "......##..",
+             ".......##.", "........##", ".........#"],
+    "info": ["....##....", "....##....", "..........", "...###....", "....##....", "....##....", "....##....",
+             "....##....", "...####...", ".........."],
+    "close": ["##......##", "###....###", ".###..###.", "..######..", "...####...", "...####...", "..######..",
+              ".###..###.", "###....###", "##......##"],
+    "whole": ["####..####", "#........#", "#........#", "#........#", "..........", "..........", "#........#",
+              "#........#", "#........#", "####..####"],
+    "more": ["..........", "..........", "..........", "..........", "##..##..##", "##..##..##", "..........",
+             "..........", "..........", ".........."],
+    "copy": ["######....", "#....#....", "#..######.", "#..#....#.", "#..#....#.", "####....#.", "...#....#.",
+             "...#....#.", "...######.", ".........."],
+    "items": [".########.", "#........#", "#........#", "##########", "#...##...#", "#...##...#", "#........#",
+              "#........#", "##########", ".........."],
+    "quest": ["########..", "#......#..", "#.####.#..", "#......#..", "#.####.#..", "#......#..", "#.###..#..",
+              "#......###", "#........#", "##########"],
+}
+
+
+def icon(rows: list[str]) -> Grid:
+    """A glyph in `kit-ink`, outlined in `art-outline` all round (8 neighbours), 1 px of room each side."""
+    g = Grid(len(rows[0]) + 2, len(rows) + 2)
+    on = {(x + 1, y + 1) for y, row in enumerate(rows) for x, ch in enumerate(row) if ch == "#"}
+    for x, y in on:
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                g.px(x + dx, y + dy, C["art-outline"])
+    for x, y in on:
+        g.px(x, y, C["kit-ink"])
+    return g
 
 
 def pieces() -> dict[str, tuple[Grid, int]]:
@@ -250,6 +287,12 @@ def write(out: pathlib.Path = OUT) -> dict:
         for scale, suffix in ((2, ""), (4, "@2x")):
             g.img.resize((g.w * scale, g.h * scale), Image.NEAREST).save(out / f"{name}{suffix}.png", optimize=True)
         kit["pieces"][name] = {"size": [g.w, g.h], "inset": inset}
+    (out / "icons").mkdir(exist_ok=True)
+    for name, rows in ICONS.items():
+        g = icon(rows)
+        for scale, suffix in ((2, ""), (4, "@2x")):
+            g.img.resize((g.w * scale, g.h * scale), Image.NEAREST).save(out / "icons" / f"{name}{suffix}.png", optimize=True)
+    kit["icons"] = sorted(ICONS)
     (out / "kit.json").write_text(json.dumps(kit, indent=1) + "\n", encoding="utf-8")
     return kit
 

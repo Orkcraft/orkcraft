@@ -149,5 +149,15 @@
    ],
    "inset": 3
   }
- }
+ },
+ "icons": [
+  "close",
+  "copy",
+  "info",
+  "items",
+  "more",
+  "quest",
+  "whole",
+  "work"
+ ]
 }

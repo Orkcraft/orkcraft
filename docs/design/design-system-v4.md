@@ -1,6 +1,6 @@
 # Design — the design system, v4: Camp's chrome in wood, teal and parchment
 
-Status: step 1 of 3 (V4, [decisions-2026-10.md](decisions-2026-10.md) §17.1), 15 October. The target is the owner's
+Status: steps 1 and 2 of 3 (V4, [decisions-2026-10.md](decisions-2026-10.md) §17.1), 15 October. The target is the owner's
 frame [img/references/v4/target-ui.jpg](img/references/v4/target-ui.jpg): thick wooden frames with a teal inner border,
 parchment panels, square bevelled icon buttons, a column of icon tabs at a panel's side, counters in framed chips,
 tab headers on teal plates, inventory slots. Today's Camp, for comparison: [img/loop/depot-busy.png](img/loop/depot-busy.png).
@@ -16,7 +16,8 @@ only a picture: v4 writes today's words, orks by their orkish names, buildings b
 | the tokens (added, none renamed) | `design-system/tokens.json` → `tokens.css`: `kit-*` colours, `kit-*` sizes, the `kit` family, the `kit-*` type styles |
 | the pixel face | `design-system/fonts/jersey-15-latin-400-normal.woff2` (OFL, `OFL-Jersey-15.txt`), in `fonts.css` |
 | the comparison of faces | [img/v4/pixel-faces.png](img/v4/pixel-faces.png) (density 2), [img/v4/pixel-faces-dpr1.png](img/v4/pixel-faces-dpr1.png) |
-| the preview (step 2) | `design-system/previews/UIKitV4.html` |
+| the kit's classes (`.kit-frame`, `.kit-btn`, …), Camp only | `design-system/kit.css` (served at `/ds/kit.css`) |
+| the preview (step 2) | `design-system/previews/UIKitV4.html`; shots: [the mock](img/v4/step2-mock.png), [beside the target](img/v4/step2-mock-vs-target.png), [the pieces](img/v4/step2-kit-page.png) |
 
 ## 1. Rules
 
@@ -63,8 +64,9 @@ square icon button `kit-icon-btn` 36 (a 20–24 glyph inside); an icon tab `kit-
 `kit-slot` 48 (its item 32, its count in the lower right in `kit-small`); a text button 36 high, 12 px of padding.
 
 **Icons** on icon buttons and tabs are today's sprites (`design-system/sprites/icons/`, the harness marks, the ork
-faces) or a glyph in `--font-kit`; a missing icon is drawn into `tools/ui_kit.py` from a pixel grid (as
-`tools/logo.py` draws the mark), never generated.
+faces) or the kit's own, 12 × 12 in `kit-ink` with an outline, drawn by `tools/ui_kit.py` from the grids in its
+`ICONS` into `sprites/v4/ui/icons/`: `work`, `info`, `close`, `whole` (the whole town), `more`, `copy`, `items`,
+`quest`. A new one is a new grid there, never generated.
 
 **Textures.** Every piece above is flat pixel colour and needs no image model. If the owner wants a painted wood grain
 or a parchment with stains later, that request goes to the art session through the PM session (§7), and its result
@@ -145,8 +147,12 @@ its markup and its words, and gains the kit in Camp by `[data-look="camp"]` rule
 
 1. This document, `tools/ui_kit.py` and its pieces, the tokens, the face. Checks: `tests/test_design.py`
    (the tokens, the kit's pieces are the drawer's output, the contrasts), `tests/test_architecture.py`.
-2. `design-system/previews/UIKitV4.html`: every piece and state, the type, and a mock of the top bar and one side
-   panel over a Camp screenshot. Shots at 1440 × 900, density 2, into `img/v4/`.
+2. `design-system/previews/UIKitV4.html` (done): every piece and state, the type, the icons, and a mock of the top
+   bar, the command bar, a building's side panel with its icon tabs, Items and a toast over a Camp screenshot
+   (`img/v4/camp-bare.png`, today's camp with its chrome hidden). The kit's classes are `design-system/kit.css`;
+   `tests/test_design.py` checks every file it and the preview name, and that every rule is scoped to Camp. Shots
+   at 1440 × 900, density 2: [step2-mock.png](img/v4/step2-mock.png),
+   [step2-mock-vs-target.png](img/v4/step2-mock-vs-target.png), [step2-kit-page.png](img/v4/step2-kit-page.png).
 3. Camp's real chrome, in §5's order; the browser tests stay green; shots into `img/v4/`, beside the target.
 
 ## 7. For the owner and the other sessions
