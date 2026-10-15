@@ -578,3 +578,13 @@ wilderness, the UI kit's textures if V4 asks).
 8. **No palisade down the side (the owner: "it looks very strange").** The palisade runs along the back only; the
    sides are trees and bushes (the wilderness), the catapult against a short end of wall. design-system-v3 §4.6.
 
+## 18. Reachable from the phone all day (15 October, the owner, from work)
+
+The owner may be silent for three hours and then drop a task from the phone. Keeping the Mac awake only while carts
+work (W3, `gui/awake.py`) lets it sleep in between, and then the phone cannot reach the town. **Decided:** a third
+setting for `keep_awake`, **"Stay reachable from your phone"**: the machine is held awake whenever Orkline runs, a
+phone is paired and the computer is on power — carts or not. The display still sleeps; on battery it falls back to
+"while carts work" and the phone says so ("Your Mac is on battery and may sleep"). Offered once when a phone is paired;
+plain words in Town settings. A laptop with its lid closed still sleeps unless a display is attached (macOS's rule):
+said in the setting's hint. P0, small (about half a day).
+
