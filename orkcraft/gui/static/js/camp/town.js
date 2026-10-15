@@ -48,8 +48,8 @@ const averagePerResult = (s) => (!s ? null : s.tokens !== null && s.tokens !== u
 const onOrk = (b) => { const key = orkKey(b); if (key) { stewardOf.value = null; showConsole(key, true); } else openStewardConsole(b.id); };
 const onBubble = (b) => { waybillOf.value = { building: b.id }; };   // the task's history
 
-const pan = signal({ x: 0, y: 0 });
-const ease = signal(0);                    // how far the view eases down for a herald's notice (§4f)        // the drag's offset from the default view, CSS px
+const pan = signal({ x: 0, y: 0 });        // the drag's offset from the default view, CSS px
+const ease = signal(0);                    // how far the view eases down for a herald's notice (§4f)
 let panned = false;                        // the last press dragged the town: its click selects nothing
 const DRAG_PX = 5;
 

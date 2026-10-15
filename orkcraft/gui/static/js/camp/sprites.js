@@ -27,6 +27,9 @@ export const sizeOf = (file) => {
   return s ? [s.w * s.show, s.h * s.show] : null;
 };
 
+/** A length on a whole device pixel (an ork's box and place: no sprite drawn across a pixel's edge, so none smoothed). */
+export const dev = (v) => { const d = (typeof window !== "undefined" && window.devicePixelRatio) || 1; return Math.round(v * d) / d; };
+
 export const has = (file) => !!(kit.value && kit.value[file]);
 
 /** A building sprite's doorway, [x, y, w, h] in art px from its top left (tools/doorways.py), or null when it has none. */

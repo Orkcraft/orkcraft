@@ -87,7 +87,7 @@
 .gui-camp__layer.is-out > * , .gui-camp__layer.is-orks .gui-camp__bubble { pointer-events: auto; }
 /* out of its building: from the darkness of the real doorway (clipped to it and below its sill), or from behind the foot */
 .gui-camp__exit { position: absolute; cursor: pointer; }
-.gui-camp__ork.is-out { animation: gui-camp-step .6s ease-out both; }
+.gui-camp__ork.is-out { animation: gui-camp-step .6s steps(var(--n, 14)) both; }   /* a whole pixel a step: never drawn across one */
 @keyframes gui-camp-step { from { transform: translateY(0); filter: brightness(.3); } 40% { filter: brightness(.6); }
   to { transform: translateY(var(--out)); filter: none; } }
 /* the doorway's warm light while an ork works inside (a warm tone well under the question's yellow, §5) */
@@ -209,10 +209,11 @@
 .gui-camp__px.is-bed { filter: brightness(.9); }
 /* the Prospector's moves (o7-moves): six frames each; it paces beside the shaft, or carries a sack to the stop */
 .gui-camp__ork.is-moving { background-size: auto 100% !important; animation: gui-camp-frames6 .75s steps(6) infinite; }
-.gui-camp__ork.is-pacing { animation: gui-camp-frames6 .75s steps(6) infinite, gui-camp-pace 6s steps(24) infinite; }
-.gui-camp__ork.is-carrying { animation: gui-camp-frames6 .75s steps(6) infinite, gui-camp-carry 2.5s linear 1 both; }
-@keyframes gui-camp-pace { 0%, 100% { transform: translateX(0) scaleX(1); } 49.9% { transform: translateX(var(--dx)) scaleX(1); }
-  50% { transform: translateX(var(--dx)) scaleX(-1); } 99.9% { transform: translateX(0) scaleX(-1); } }
+.gui-camp__ork.is-pacing { animation: gui-camp-frames6 .75s steps(6) infinite, gui-camp-pace 6s steps(var(--n, 20)) infinite; }
+.gui-camp__ork.is-carrying { animation: gui-camp-frames6 .75s steps(6) infinite, gui-camp-carry 2.5s steps(var(--n, 40)) 1 both; }
+@keyframes gui-camp-pace { 0%, 100% { transform: translateX(0) scaleX(1); }
+  49.9% { transform: translateX(var(--dx)) scaleX(1); animation-timing-function: steps(1); }   /* it turns at once, never half-scaled */
+  50% { transform: translateX(var(--dx)) scaleX(-1); } 99.9% { transform: translateX(0) scaleX(-1); animation-timing-function: steps(1); } }
 @keyframes gui-camp-carry { from { transform: translateX(0); } to { transform: translateX(var(--dx)); } }
 @media (prefers-reduced-motion: reduce) { .gui-camp__ork.is-moving { animation: none; } }
 .gui-camp__over { position: absolute; left: 0; top: 0; width: 0; height: 0; }

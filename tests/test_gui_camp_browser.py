@@ -272,7 +272,7 @@ def test_the_task_board_is_entered_its_cards_move_between_boards_and_exit_goes_b
     pane = room.locator(".gui-inside__room").bounding_box()
     boards = room.locator(".fields-in__boards").bounding_box()
     floor = room.locator(".fields-in__floor").bounding_box()
-    steward = room.locator(".fields-in__ork.is-steward").bounding_box()
+    steward = room.locator(".fields-in__ork.is-steward .fields-in__body").bounding_box()   # the ork as drawn
     assert boards["y"] + boards["height"] <= floor["y"] + 1 and floor["height"] >= 100
     assert floor["y"] + floor["height"] <= pane["y"] + pane["height"] + 1               # no scrolling to find the floor
     assert steward["x"] >= pane["x"] and steward["x"] + steward["width"] <= pane["x"] + pane["width"]

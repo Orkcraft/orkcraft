@@ -156,7 +156,7 @@ function Walkers({ orks, boards }) {
     const walking = tick % 2 === 1 && here !== before;
     const x = ((here + 0.5) / n) * 100 + (i % 2 ? 6 : -6);
     return html`<div key=${o.key} class=${cls("fields-in__ork", { "is-walking": walking, "is-left": here < before, "is-steward": o.steward })}
-        style=${`left:${x}%`} data-ork=${o.key} title=${say(`${o.name}: ${o.task}`)}>
+        style=${`left:${x}%;left:round(${x}%, 1px)`} data-ork=${o.key} title=${say(`${o.name}: ${o.task}`)}>
       <span class="fields-in__bubble">${say(cut(o.task))}</span>
       <${Pose} pose=${walking ? "carry" : POSES[(tick + i) % POSES.length]} />
       <span class="fields-in__name">${say(o.name)}</span>

@@ -12,7 +12,7 @@ import { busy as busyOf } from "../fold.js";
 import { brokenOf } from "../hut.js";
 import { openBuilding } from "../windows.js";
 import { openOrders } from "../orders.js";
-import { V3, sizeOf, orkSprite, doorwayOf } from "./sprites.js";
+import { V3, sizeOf, orkSprite, doorwayOf, dev } from "./sprites.js";
 
 export const hovered = signal(null);       // the building under the mouse
 const WORDS = 3;
@@ -66,15 +66,16 @@ function OutOfDoor({ b, p, S, O = S, B, onOrk }) {
   const click = onOrk ? (e) => { e.stopPropagation(); onOrk(b); } : undefined;
   const file = orkSprite(b.ork_name), s = sizeOf(file);
   if (!s) return null;
-  const w = s[0] * O, h = s[1] * O, d = p.file ? doorwayOf(p.file) : null;
+  const w = dev(s[0] * O), h = dev(s[1] * O), d = p.file ? doorwayOf(p.file) : null;
   // the opening in world px; without one, a slot at the building's foot (nothing of the ork shows above it)
   const R = d ? { x: p.x + d[0] * B, y: p.y + d[1] * B, w: d[2] * B, h: d[3] * B } : { x: p.door.x - w / 2, y: p.feet, w, h: 0 };
   const side = w, W = R.w + 2 * side, H = h + R.h + 24 * O, sill = h + R.h;
+  const out = Math.round((d ? 14 : 18) * O + (d ? 0 : h * 0.6));   // how far it steps out, a pixel a step
   const clip = `polygon(${side}px ${h}px, ${side + R.w}px ${h}px, ${side + R.w}px ${sill}px, ${W}px ${sill}px, ${W}px ${H}px, 0 ${H}px, 0 ${sill}px, ${side}px ${sill}px)`;
   return html`<span class="gui-camp__exit" role="button" title=${say(`${b.ork_name}: its terminal`)} onClick=${click}
       style=${`left:${Math.round(R.x - side)}px;top:${Math.round(R.y - h)}px;width:${Math.round(W)}px;height:${Math.round(H)}px;clip-path:${clip}`}>
     <span class=${cls("gui-camp__ork is-out", { "is-behind": !d })} style=${`left:${Math.round(side + R.w / 2 - w / 2)}px;top:${Math.round(sill - h)}px;`
-      + `width:${w}px;height:${h}px;--out:${Math.round((d ? 14 : 18) * O + (d ? 0 : h * 0.6))}px;background:url(${V3 + file}) 0 0 / auto ${h}px no-repeat`}></span>
+      + `width:${w}px;height:${h}px;--out:${out}px;--n:${out};background:url(${V3 + file}) 0 0 / auto ${h}px no-repeat`}></span>
   </span>`;
 }
 

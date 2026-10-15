@@ -8,7 +8,7 @@ import { html, cls } from "../html.js";
 import { say } from "../link.js";
 import { busy as busyOf } from "../fold.js";
 import { PATH_W } from "./layout.js";
-import { V3, sizeOf, orkSprite } from "./sprites.js";
+import { V3, sizeOf, orkSprite, dev } from "./sprites.js";
 import { Bubble, thought } from "./steward.js";
 
 const LIFT_S = 2.5;                        // a load lifted off and carried in
@@ -27,10 +27,10 @@ export function stewardAt(b, p, L, takesWork) {
 function Ork({ name, file, at, S, cl = "", style = "", onClick = null }) {
   const s = sizeOf(file);
   if (!s) return null;
-  const w = s[0] * S, h = s[1] * S;
+  const w = dev(s[0] * S), h = dev(s[1] * S);
   return html`<span class=${cls("gui-camp__ork", `is-${at.pose}${cl ? ` ${cl}` : ""}`)} title=${say(name)} aria-label=${say(name)}
       role=${onClick ? "button" : "img"} onClick=${onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined}
-      style=${`left:${at.x - w / 2}px;top:${at.y - h}px;width:${w}px;height:${h}px;z-index:${10 + Math.round(at.y / 8)};`
+      style=${`left:${dev(at.x - w / 2)}px;top:${dev(at.y - h)}px;width:${w}px;height:${h}px;z-index:${10 + Math.round(at.y / 8)};`
         + `background:url(${V3 + file}) 0 0 / auto ${h}px no-repeat;--w:${w}px;${style}`}></span>`;
 }
 
@@ -67,11 +67,11 @@ function Prospector({ b, p, L, left, onOrk }) {
   if (carry) {
     const dx = Math.round(p.stop.x - shaft.x);                      // from beside the shaft to its stop
     return html`<${Ork} name=${`${name}: a result leaves`} file=${carry} at=${{ ...shaft, pose: "carries" }} S=${O} cl="is-moving is-carrying"
-      style=${`${front}--dx:${dx}px;animation-delay:0s, ${-left}s`} onClick=${click} />`;
+      style=${`${front}--dx:${dx}px;--n:${Math.max(1, Math.abs(dx))};animation-delay:0s, ${-left}s`} onClick=${click} />`;
   }
   const walk = move("walk");
   return walk ? html`<${Ork} name=${name} file=${walk} at=${{ ...shaft, pose: "walks" }} S=${O} cl="is-moving is-pacing"
-      style=${`${front}--dx:${Math.round(20 * S)}px`} onClick=${click} />`
+      style=${`${front}--dx:${Math.round(20 * S)}px;--n:${Math.round(20 * S)}`} onClick=${click} />`
     : html`<${Ork} name=${name} file=${orkSprite(name)} at=${{ ...shaft, pose: "waits" }} S=${O} style=${front} onClick=${click} />`;
 }
 
