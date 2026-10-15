@@ -4,7 +4,9 @@ a stopped cart standing at its building's stop with its flag and chip; the wheel
 selects a building and a second enters it. Office draws the same town as cards (tests/test_gui_browser.py)."""
 from __future__ import annotations
 
+import os
 import time
+from pathlib import Path
 
 import pytest
 
@@ -238,8 +240,6 @@ def test_the_task_board_is_entered_its_cards_move_between_boards_and_exit_goes_b
     three boards (To do, Doing, Done) with its cards pinned, the Taskmaster walking with its bubble, its settings on
     the right in plain words; a card dragged to another board moves there; a to-do's flag ticks it off; Exit and Esc
     go back to the camp. Office keeps the card."""
-    import os
-    from pathlib import Path
     server, _ = gui
     pg = camp_look
     _clear(pg)
@@ -362,6 +362,10 @@ def test_the_persons_home_stands_by_the_review_gate_and_opens_their_own(camp_loo
     assert home.locator("img").get_attribute("src").endswith(f"/ds/sprites/v3/homes/{kin}.png")
     g, h = _building(pg, gate).bounding_box(), home.bounding_box()
     assert g["x"] + g["width"] <= h["x"] + 1 and abs((g["y"] + g["height"]) - (h["y"] + h["height"])) < g["height"]
+    assert home.locator(".gui-camp__name").inner_text() == "Home"          # its name on it, as a building's
+    shots = os.environ.get("ORKCRAFT_SHOTS")
+    if shots:
+        pg.screenshot(path=str(Path(shots) / "i1-home.png"))
     home.click()
     menu = pg.locator(".gui-menu")
     assert menu.locator(".gui-menu__item").all_inner_texts() == ["Since your last look", "You: profile and deeds",

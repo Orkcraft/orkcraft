@@ -6,12 +6,13 @@
 // dragged to Done is ticked off, back to To do put back. A click selects a card (its acts over the boards, as on the
 // card), a double click opens it. The Taskmaster and the orks at work walk between the boards, tools in hand (the
 // inside poses: carry, lens, quill, pin), a bubble over each with its task in two or three words.
-// Art: the orks are v3's sprites; the booth, the cards and the flags are drawn in CSS in the same palette until
-// u6-inside and u6-cards are cut — each piece is one element with its own class, so a sprite drops in by CSS alone.
+// Art: v3's sprites (design-system-v3.md §8): the booth's backdrop and a board's frame from u6-inside, the parchment
+// sheet, the stone slab, the bone pin and the cloth flag from u6-cards, the orks from o5. Each piece is one element with
+// its own class, so a sprite drops in by CSS alone (`.has-art`); while the manifest is not read, CSS draws them.
 import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say, details } from "../link.js";
-import { V3, kit, loadKit } from "../camp/sprites.js";
+import { V3, kit, loadKit, has } from "../camp/sprites.js";
 import { thought } from "../camp/steward.js";
 import { selected, pick, dragCard, Marks, Acts, setDialog, planCard, allCards, noteLanes } from "./fields.js";
 
@@ -25,7 +26,11 @@ if (typeof document !== "undefined" && !document.querySelector(`link[href="${she
 
 // The standard lanes in the words of the booth; a lane the person named keeps its name.
 const WORD = { todo: "To do", in_progress: "Doing", done: "Done" };
-const POSES = ["pin", "lens", "quill"];          // what an ork does at a board; it carries between them
+const POSES = ["pin", "lens", "quill"];
+// the u6 sprites as CSS variables on the room, so the stylesheet draws them by `.has-art`
+const ART = { booth: "booth", board: "board", sheet: "sheet", slab: "slab", pin: "pin",
+  "flag-down": "flag-down", "flag-half": "flag-half", "flag-up": "flag-up" };
+const artStyle = () => Object.keys(ART).map((k) => `--in-${k}:url(${V3}inside/${ART[k]}.png)`).join(";");          // what an ork does at a board; it carries between them
 const STEP_MS = 2600;                            // a walk from one board to the next
 
 const cut = (s, n = 3) => {
@@ -177,7 +182,8 @@ function Booth({ b }) {
     if (k === 0) return { label: "+ New task", run: () => setDialog(id, { lane: { ...ln, kind: "task" } }) };
     return null;
   };
-  return html`<div class="fields-in" data-id=${id}>
+  const art = has("inside/booth.png") && has("inside/sheet.png");
+  return html`<div class=${cls("fields-in", { "has-art": art })} data-id=${id} style=${art ? artStyle() : undefined}>
     <div class="fields-in__wall">
       ${sel && html`<${Acts} id=${id} sel=${sel} lanes=${tasks} setDialog=${(x) => setDialog(id, x)}
         onPlan=${(card) => planCard(id, card)} wiki=${data.wiki} sendsItself=${data.settle !== null && data.settle !== undefined} />`}

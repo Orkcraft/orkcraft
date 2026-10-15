@@ -355,8 +355,9 @@ a larger scale, which v3 does not use. To get F1's fill, the sheets must draw th
     the roof (`growth/footing-N`, `banner-N`); a goal's annex (Thrift, Quality) stands against its east wall. The
     preview shows the Agent pool at III, the Test bench at II with the Quality annex, the Town Hall at I with the
     Thrift annex.
-13. **The person's home stands beside the Review gate**, east of it on the upper row, its feet just above line 1
-    (no path: carts do not stop there): the person is the one who approves at the gate. One home per kin (k2).
+13. **The person's home stands beside the Review gate**, east of it on the upper row, its door a path above line 1
+    like a building's, its name *Home* on it (no stop: carts do not stop there): the person is the one who approves
+    at the gate. One home per kin (k2).
     **Built (INV):** `layout.js` `lay(…, home)` puts `homes/<kin>.png` east of the gate on the gate's row (with no
     gate, at the first row's end), the row as tall as it needs; `js/camp/town.js` `Home` draws it, and a click opens
     the town's menu with *Since your last look* (`look.show`: the digest since the last look ended, on demand),
@@ -636,8 +637,9 @@ cannot be averaged away. The Agent pool went from 6 530 colours to 24, its floor
 | `g3-palisade.png` | §3d.3 | `edge/` palisade-h, corner-nw, corner-ne, end-w, end-e, gap; 32 wide |
 | `u3-icons.png` | §3e.3 | `icons/` the eighteen action icons, 24×24 |
 | `u4-signals.png` | §3e.4 | `signals/` ask, fire, held at 16 and 24; flame, flag-ask, flag-fire 16 |
-| `u1-bubble.png`, `u2-panels.png`, `u5-hud.png` | §3e.1, .2, .5 | nine-slices and the HUD: listed, cut by I1 |
-| `u6-inside.png` | §3e.6 | the Task board's inside: listed, cut by I2 |
+| `u1-bubble.png`, `u5-hud.png` | §3e.1, .5 | nine-slices and the HUD: listed, cut by I1 |
+| `u2-panels.png` | §3e.2 | `ui/panel/` parchment, terminal (its tabs cropped off); `ui/tab/` active, inactive; `ui/button/` normal, hover, pressed — cut (round 11), not yet drawn by the GUI |
+| `u6-inside.png`, `u6-cards.png` | §3e.6 | `inside/` booth (the backdrop), board (one board's frame), sheet, slab, pin, flag-down, flag-half, flag-up, lever — drawn by the Task board's inside (round 11) |
 
 PNG is best (a JPEG's noise blurs the key and the colours); a sheet saved as `.jpg` or `.jpeg` under the same name is
 found as well.

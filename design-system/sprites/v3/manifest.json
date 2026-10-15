@@ -1923,6 +1923,186 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "inside/board.png",
+   "size": [
+    25,
+    39
+   ],
+   "frame": [
+    25,
+    39
+   ],
+   "frames": 1,
+   "pitch": 11.46,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u6-inside.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "inside/booth.png",
+   "size": [
+    200,
+    109
+   ],
+   "frame": [
+    200,
+    109
+   ],
+   "frames": 1,
+   "pitch": 11.46,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u6-inside.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "inside/flag-down.png",
+   "size": [
+    16,
+    24
+   ],
+   "frame": [
+    16,
+    24
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "u6-cards.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "inside/flag-half.png",
+   "size": [
+    24,
+    32
+   ],
+   "frame": [
+    24,
+    32
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "u6-cards.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "inside/flag-up.png",
+   "size": [
+    24,
+    32
+   ],
+   "frame": [
+    24,
+    32
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "u6-cards.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "inside/lever.png",
+   "size": [
+    32,
+    32
+   ],
+   "frame": [
+    32,
+    32
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "u6-cards.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "inside/pin.png",
+   "size": [
+    16,
+    16
+   ],
+   "frame": [
+    16,
+    16
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "u6-cards.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "inside/sheet.png",
+   "size": [
+    54,
+    36
+   ],
+   "frame": [
+    54,
+    36
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u6-cards.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "inside/slab.png",
+   "size": [
+    52,
+    36
+   ],
+   "frame": [
+    52,
+    36
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u6-cards.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
    "file": "orks/body/door.png",
    "size": [
     384,
@@ -3406,6 +3586,106 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "ui/button/hover.png",
+   "size": [
+    26,
+    28
+   ],
+   "frame": [
+    26,
+    28
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u2-panels.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/button/normal.png",
+   "size": [
+    25,
+    27
+   ],
+   "frame": [
+    25,
+    27
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u2-panels.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/button/pressed.png",
+   "size": [
+    25,
+    28
+   ],
+   "frame": [
+    25,
+    28
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u2-panels.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/panel/parchment.png",
+   "size": [
+    62,
+    61
+   ],
+   "frame": [
+    62,
+    61
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u2-panels.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/panel/terminal.png",
+   "size": [
+    61,
+    55
+   ],
+   "frame": [
+    61,
+    55
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u2-panels.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
    "file": "ui/ring-l.png",
    "size": [
     80,
@@ -3661,6 +3941,46 @@
    "anchor": "top-left",
    "placeholder": true,
    "source": "u1-bubble.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/tab/active.png",
+   "size": [
+    28,
+    11
+   ],
+   "frame": [
+    28,
+    11
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u2-panels.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "ui/tab/inactive.png",
+   "size": [
+    29,
+    13
+   ],
+   "frame": [
+    29,
+    13
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "top-left",
+   "placeholder": true,
+   "source": "u2-panels.png",
    "scale": 1.0,
    "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"

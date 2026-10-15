@@ -190,7 +190,8 @@ function Growth({ L, buildings }) {
   return html`<div class="gui-camp__layer is-growth">${out}</div>`;
 }
 
-/** The person's home beside the Review gate (design-system-v3.md §4.13, v3-prompts §13): their kin's house; a click
+/** The person's home beside the Review gate (design-system-v3.md §4.13, v3-prompts §13): their kin's house, its name
+ *  on it as a building's and its path down to the line (laid with the others, layout.js); a click
  *  opens what is the person's own — since your last look, their profile and deeds, the town's settings. */
 function Home({ L, you }) {
   const h = L.home;
@@ -208,6 +209,7 @@ function Home({ L, you }) {
       role="button" tabindex="0" aria-label=${say("Your home")} title=${say(`Your home · ${you.name}`)}
       onClick=${open} onContextMenu=${open} onKeyDown=${(e) => { if (e.key === "Enter") open(e); }}>
     ${img(h.file, 0, 0, h.w, h.h, "", "gui-camp__px gui-camp__sprite")}
+    <span class="gui-camp__name is-name is-top" style=${`left:${h.w / 2}px;top:${Math.round(h.h * 0.14)}px`}>${say("Home")}</span>
   </div>`;
 }
 

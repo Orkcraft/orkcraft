@@ -246,41 +246,274 @@
    "show": 1,
    "wood_pull": true
   },
-  {"name": "st-dispatch", "file": "st-dispatch.png", "over": "b1-core", "show": 1,
+  {
+   "name": "st-dispatch",
+   "file": "st-dispatch.png",
+   "over": "b1-core",
+   "show": 1,
    "about": "v3-prompts §13.1: the Task board as a dispatcher's booth (gen_sheets st-dispatch #2): booth, board, lever and semaphore cut above the siding (`crop`); the siding and its carts are not cut, the product draws carts from c1",
-   "groups": [{"size": [208, 112], "anchor": "feet", "slots": ["door", "signal", "count"],
-               "items": [{"file": "buildings/fields.png", "order": 0, "crop": [0, 0, 1, 0.66], "size": [208, 112]}]}]},
-  {"name": "st-gate", "file": "st-gate.png", "over": "b1-core", "show": 1,
+   "groups": [
+    {
+     "size": [
+      208,
+      112
+     ],
+     "anchor": "feet",
+     "slots": [
+      "door",
+      "signal",
+      "count"
+     ],
+     "items": [
+      {
+       "file": "buildings/fields.png",
+       "order": 0,
+       "crop": [
+        0,
+        0,
+        1,
+        0.66
+       ],
+       "size": [
+        208,
+        112
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "st-gate",
+   "file": "st-gate.png",
+   "over": "b1-core",
+   "show": 1,
    "about": "v3-prompts §13.1: the Review gate with a boom barrier and a weighbridge (gen_sheets st-gate #2): frame 0, the barrier down, replaces B1's",
-   "groups": [{"size": [160, 216], "anchor": "feet", "slots": ["door", "signal", "count"],
-               "items": [{"file": "buildings/loot_vault.png", "order": 0, "size": [160, 216]}]}]},
-  {"name": "st-gate-up", "file": "st-gate.png", "show": 1,
+   "groups": [
+    {
+     "size": [
+      160,
+      216
+     ],
+     "anchor": "feet",
+     "slots": [
+      "door",
+      "signal",
+      "count"
+     ],
+     "items": [
+      {
+       "file": "buildings/loot_vault.png",
+       "order": 0,
+       "size": [
+        160,
+        216
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "st-gate-up",
+   "file": "st-gate.png",
+   "show": 1,
    "about": "the same sheet's frame 1: the barrier up",
-   "groups": [{"size": [160, 216], "anchor": "feet", "slots": ["door", "signal", "count"],
-               "items": [{"file": "buildings/loot_vault-up.png", "order": 1, "size": [160, 216]}]}]},
-  {"name": "st-mine", "file": "st-mine.png", "over": "b2-town", "show": 1,
+   "groups": [
+    {
+     "size": [
+      160,
+      216
+     ],
+     "anchor": "feet",
+     "slots": [
+      "door",
+      "signal",
+      "count"
+     ],
+     "items": [
+      {
+       "file": "buildings/loot_vault-up.png",
+       "order": 1,
+       "size": [
+        160,
+        216
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "st-mine",
+   "file": "st-mine.png",
+   "over": "b2-town",
+   "show": 1,
    "about": "v3-prompts §13.1: Research as a mine with a headframe (gen_sheets st-mine #2); replaces B2's",
-   "groups": [{"size": [184, 240], "anchor": "feet", "merge": 2, "slots": ["door", "signal", "count"],
-               "items": [{"file": "buildings/mine.png", "order": 0, "size": [184, 240]}]}]},
-  {"name": "o7-prospector", "file": "o7-prospector.png", "degrid": true, "show": 1,
+   "groups": [
+    {
+     "size": [
+      184,
+      240
+     ],
+     "anchor": "feet",
+     "merge": 2,
+     "slots": [
+      "door",
+      "signal",
+      "count"
+     ],
+     "items": [
+      {
+       "file": "buildings/mine.png",
+       "order": 0,
+       "size": [
+        184,
+        240
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "o7-prospector",
+   "file": "o7-prospector.png",
+   "degrid": true,
+   "show": 1,
    "about": "v3-prompts §13.1: the capped ork as the Prospector, keeper of the mine (gen_sheets o7-prospector #1): standing (0); walking, digging, the sack (1–3) not cut",
-   "groups": [{"size": [72, 128], "anchor": "feet", "merge": 2.25, "items": [{"file": "orks/roles/prospector.png", "order": 0, "size": [72, 128]}]}]},
-  {"name": "k1-classes", "file": "k1-classes.png", "show": 1,
+   "groups": [
+    {
+     "size": [
+      72,
+      128
+     ],
+     "anchor": "feet",
+     "merge": 2.25,
+     "items": [
+      {
+       "file": "orks/roles/prospector.png",
+       "order": 0,
+       "size": [
+        72,
+        128
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "k1-classes",
+   "file": "k1-classes.png",
+   "show": 1,
    "about": "v3-prompts §13.3: the person's eleven classes (gen_sheets k1-classes #1), named by realm/intents.py ROLES",
-   "groups": [{"size": [96, 112], "anchor": "feet", "items": [
-     {"file": "people/engineer.png", "order": 0}, {"file": "people/qa.png", "order": 1},
-     {"file": "people/eng_manager.png", "order": 2}, {"file": "people/product_manager.png", "order": 3},
-     {"file": "people/designer.png", "order": 4}, {"file": "people/game_designer.png", "order": 5},
-     {"file": "people/aso_manager.png", "order": 6}, {"file": "people/marketing.png", "order": 7},
-     {"file": "people/data_analyst.png", "order": 8}, {"file": "people/founder.png", "order": 9},
-     {"file": "people/other.png", "order": 10}]}]},
-  {"name": "g4-growth", "file": "g4-growth.png", "show": 1, "wood_pull": true,
+   "groups": [
+    {
+     "size": [
+      96,
+      112
+     ],
+     "anchor": "feet",
+     "items": [
+      {
+       "file": "people/engineer.png",
+       "order": 0
+      },
+      {
+       "file": "people/qa.png",
+       "order": 1
+      },
+      {
+       "file": "people/eng_manager.png",
+       "order": 2
+      },
+      {
+       "file": "people/product_manager.png",
+       "order": 3
+      },
+      {
+       "file": "people/designer.png",
+       "order": 4
+      },
+      {
+       "file": "people/game_designer.png",
+       "order": 5
+      },
+      {
+       "file": "people/aso_manager.png",
+       "order": 6
+      },
+      {
+       "file": "people/marketing.png",
+       "order": 7
+      },
+      {
+       "file": "people/data_analyst.png",
+       "order": 8
+      },
+      {
+       "file": "people/founder.png",
+       "order": 9
+      },
+      {
+       "file": "people/other.png",
+       "order": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "g4-growth",
+   "file": "g4-growth.png",
+   "show": 1,
+   "wood_pull": true,
    "about": "v3-prompts §13.4: a building's level I–III as a stone footing and a roof banner, the goal's annexes (gen_sheets g4-growth #1)",
-   "groups": [{"size": [64, 64], "anchor": "feet", "items": [
-     {"file": "growth/footing-1.png", "order": 0}, {"file": "growth/footing-2.png", "order": 1},
-     {"file": "growth/footing-3.png", "order": 2}, {"file": "growth/banner-1.png", "order": 3},
-     {"file": "growth/banner-2.png", "order": 4}, {"file": "growth/banner-3.png", "order": 5},
-     {"file": "growth/annex-thrift.png", "order": 6}, {"file": "growth/annex-quality.png", "order": 7}]}]},
+   "groups": [
+    {
+     "size": [
+      64,
+      64
+     ],
+     "anchor": "feet",
+     "items": [
+      {
+       "file": "growth/footing-1.png",
+       "order": 0
+      },
+      {
+       "file": "growth/footing-2.png",
+       "order": 1
+      },
+      {
+       "file": "growth/footing-3.png",
+       "order": 2
+      },
+      {
+       "file": "growth/banner-1.png",
+       "order": 3
+      },
+      {
+       "file": "growth/banner-2.png",
+       "order": 4
+      },
+      {
+       "file": "growth/banner-3.png",
+       "order": 5
+      },
+      {
+       "file": "growth/annex-thrift.png",
+       "order": 6
+      },
+      {
+       "file": "growth/annex-quality.png",
+       "order": 7
+      }
+     ]
+    }
+   ]
+  },
   {
    "name": "b3-plumbing",
    "file": "b3-plumbing.png",
@@ -950,10 +1183,42 @@
    },
    "retired": true
   },
-  {"name": "o6-door", "file": "o6-door.png", "degrid": true, "show": 1,
+  {
+   "name": "o6-door",
+   "file": "o6-door.png",
+   "degrid": true,
+   "show": 1,
    "about": "v3-prompts §13.2: the capped ork stepping out of a wooden door (gen_sheets o6-door #2), four frames: closed, opening, half out, out",
-   "groups": [{"size": [96, 176], "anchor": "feet", "fps": 8,
-               "items": [{"file": "orks/body/door.png", "frames": [{"order": 0}, {"order": 1}, {"order": 2}, {"order": 3}]}]}]},
+   "groups": [
+    {
+     "size": [
+      96,
+      176
+     ],
+     "anchor": "feet",
+     "fps": 8,
+     "items": [
+      {
+       "file": "orks/body/door.png",
+       "frames": [
+        {
+         "order": 0
+        },
+        {
+         "order": 1
+        },
+        {
+         "order": 2
+        },
+        {
+         "order": 3
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
   {
    "name": "o3-states",
    "file": "o3-states-r1.png",
@@ -1699,27 +1964,146 @@
     }
    ]
   },
-  {"name": "c2-more", "file": "c2-more.png", "degrid": true, "show": 1,
+  {
+   "name": "c2-more",
+   "file": "c2-more.png",
+   "degrid": true,
+   "show": 1,
    "about": "track pieces c2 lacked (round 8, gen_sheets c2-more #1): the north-west curve (5) and the junction north-east-south (4), fitted to c2's tile and gauge (`tile_from`); its other curves (0, 2, 3) and the crossing with a branch (1) not used",
-   "groups": [{"kind": "track", "size": [64, 64], "anchor": "top-left", "tile_from": "track/straight-h.png",
-               "items": [{"file": "track/corner-nw.png", "order": 5, "exits": "nw"},
-                         {"file": "track/t-e.png", "order": 4, "exits": "nes"}]}]},
-  {"name": "k2-homes", "file": "k2-homes.png", "show": 1,
+   "groups": [
+    {
+     "kind": "track",
+     "size": [
+      64,
+      64
+     ],
+     "anchor": "top-left",
+     "tile_from": "track/straight-h.png",
+     "items": [
+      {
+       "file": "track/corner-nw.png",
+       "order": 5,
+       "exits": "nw"
+      },
+      {
+       "file": "track/t-e.png",
+       "order": 4,
+       "exits": "nes"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "k2-homes",
+   "file": "k2-homes.png",
+   "show": 1,
    "about": "v3-prompts §13.3 P1: a home per kin (gen_sheets k2-homes #1, picked by the PM session overnight), named by the kin of realm/intents.py ROLES",
-   "groups": [{"size": [128, 128], "anchor": "feet", "items": [
-     {"file": "homes/lich.png", "order": 0}, {"file": "homes/elf.png", "order": 1},
-     {"file": "homes/gnome.png", "order": 2}, {"file": "homes/knight.png", "order": 3},
-     {"file": "homes/skeleton.png", "order": 4}, {"file": "homes/orc.png", "order": 5},
-     {"file": "homes/goblin.png", "order": 6}]}]},
-  {"name": "g3-sides", "file": "g3-sides.png", "show": 1,
+   "groups": [
+    {
+     "size": [
+      128,
+      128
+     ],
+     "anchor": "feet",
+     "items": [
+      {
+       "file": "homes/lich.png",
+       "order": 0
+      },
+      {
+       "file": "homes/elf.png",
+       "order": 1
+      },
+      {
+       "file": "homes/gnome.png",
+       "order": 2
+      },
+      {
+       "file": "homes/knight.png",
+       "order": 3
+      },
+      {
+       "file": "homes/skeleton.png",
+       "order": 4
+      },
+      {
+       "file": "homes/orc.png",
+       "order": 5
+      },
+      {
+       "file": "homes/goblin.png",
+       "order": 6
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "g3-sides",
+   "file": "g3-sides.png",
+   "show": 1,
    "about": "the palisade's sides (round 8, gen_sheets g3-sides #1): the side wall as a column of log tops (0), the corners as a run with one log dropping where the wall turns (3 north-west, 5 north-east, 6 south-west, 1 south-east), an end post (7); 2, 4 and 8 not used",
-   "groups": [{"size": [32, 32], "anchor": "feet",
-               "items": [{"file": "edge/palisade-v.png", "order": 0, "size": [40, 120]},
-                         {"file": "edge/palisade-corner-nw.png", "order": 3, "size": [72, 56]},
-                         {"file": "edge/palisade-corner-ne.png", "order": 5, "size": [56, 56]},
-                         {"file": "edge/palisade-corner-sw.png", "order": 6, "size": [56, 56]},
-                         {"file": "edge/palisade-corner-se.png", "order": 1, "size": [40, 56]},
-                         {"file": "edge/palisade-post.png", "order": 7, "size": [16, 56]}]}]},
+   "groups": [
+    {
+     "size": [
+      32,
+      32
+     ],
+     "anchor": "feet",
+     "items": [
+      {
+       "file": "edge/palisade-v.png",
+       "order": 0,
+       "size": [
+        40,
+        120
+       ]
+      },
+      {
+       "file": "edge/palisade-corner-nw.png",
+       "order": 3,
+       "size": [
+        72,
+        56
+       ]
+      },
+      {
+       "file": "edge/palisade-corner-ne.png",
+       "order": 5,
+       "size": [
+        56,
+        56
+       ]
+      },
+      {
+       "file": "edge/palisade-corner-sw.png",
+       "order": 6,
+       "size": [
+        56,
+        56
+       ]
+      },
+      {
+       "file": "edge/palisade-corner-se.png",
+       "order": 1,
+       "size": [
+        40,
+        56
+       ]
+      },
+      {
+       "file": "edge/palisade-post.png",
+       "order": 7,
+       "size": [
+        16,
+        56
+       ]
+      }
+     ]
+    }
+   ]
+  },
   {
    "name": "u4-signals",
    "file": "u4-signals.png",
@@ -2025,8 +2409,61 @@
   {
    "name": "u2-panels",
    "file": "u2-panels.png",
-   "about": "§3e.2 parchment and terminal panels, tabs, buttons",
-   "later": "I1 (nine-slices on an 8-px grid; the 48 × 48 action button in three states)"
+   "about": "§3e.2 (round 11, #2): the parchment panel and the terminal panel in walnut with teal studs (the terminal's tabs cropped off), the tabs active and inactive, the square action button normal, hover and pressed; its Exit button has the word baked in and is not cut",
+   "show": 1,
+   "wood_pull": true,
+   "groups": [
+    {
+     "size": [
+      64,
+      64
+     ],
+     "anchor": "top-left",
+     "exact": true,
+     "items": [
+      {
+       "file": "ui/panel/parchment.png",
+       "order": 0
+      },
+      {
+       "file": "ui/panel/terminal.png",
+       "order": 1,
+       "crop": [
+        0,
+        0.13,
+        1,
+        1
+       ]
+      },
+      {
+       "file": "ui/tab/active.png",
+       "order": 7
+      },
+      {
+       "file": "ui/tab/inactive.png",
+       "order": 6,
+       "crop": [
+        0.5,
+        0,
+        1,
+        1
+       ]
+      },
+      {
+       "file": "ui/button/normal.png",
+       "order": 10
+      },
+      {
+       "file": "ui/button/hover.png",
+       "order": 11
+      },
+      {
+       "file": "ui/button/pressed.png",
+       "order": 12
+      }
+     ]
+    }
+   ]
   },
   {
    "name": "u5-hud",
@@ -2037,8 +2474,92 @@
   {
    "name": "u6-inside",
    "file": "u6-inside.png",
-   "about": "§3e.6 the Task board's inside: the hall 480 × 360, boards 96 × 200, cards, flags, pins",
-   "later": "I2"
+   "about": "§3e.6 for I2 (round 11, #2): the dispatcher's booth from inside, front-on, three blank boards and a window to the track; cut whole (the room's backdrop) and one board (its frame for the boards the product draws)",
+   "show": 1,
+   "wood_pull": true,
+   "groups": [
+    {
+     "size": [
+      208,
+      112
+     ],
+     "anchor": "top-left",
+     "exact": true,
+     "items": [
+      {
+       "file": "inside/booth.png",
+       "order": 0
+      },
+      {
+       "file": "inside/board.png",
+       "order": 0,
+       "crop": [
+        0.18,
+        0.3,
+        0.302,
+        0.652
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "u6-cards",
+   "file": "u6-cards.png",
+   "about": "§3e.6 for I2 (round 11, #3), cut apart with close 0. The model drew no nine-slice that joins (each piece is outlined on its own), so a card is one whole piece the product stretches as a border-image: the parchment sheet (row 2's middle, its wood foot) and the stone slab (the slab of row 2). Bone pin, the cloth flag lowered (plum, drooping), half (plum, up) and raised (teal), a lever",
+   "close": 0,
+   "show": 1,
+   "wood_pull": true,
+   "groups": [
+    {
+     "size": [
+      24,
+      24
+     ],
+     "anchor": "top-left",
+     "exact": true,
+     "items": [
+      {
+       "file": "inside/sheet.png",
+       "order": 7
+      },
+      {
+       "file": "inside/slab.png",
+       "order": 10
+      }
+     ]
+    },
+    {
+     "size": [
+      32,
+      32
+     ],
+     "anchor": "feet",
+     "items": [
+      {
+       "file": "inside/pin.png",
+       "order": 18
+      },
+      {
+       "file": "inside/flag-down.png",
+       "order": 21
+      },
+      {
+       "file": "inside/flag-half.png",
+       "order": 22
+      },
+      {
+       "file": "inside/flag-up.png",
+       "order": 20
+      },
+      {
+       "file": "inside/lever.png",
+       "order": 26
+      }
+     ]
+    }
+   ]
   }
  ]
 }

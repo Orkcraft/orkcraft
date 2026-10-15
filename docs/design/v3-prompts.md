@@ -641,3 +641,24 @@ project pays from prepaid credits (it is not the free tier, as GEN first reporte
 `python tools/gen_sheets.py k2-homes c2-fix -n 3` runs them as written; the PM session's rules for picking them are:
 front-on, no text baked in, no magenta smear, passes the signal check, closest to the request; for c2-fix the rails
 closest to 32 art px apart and reaching the tile's edges.
+
+## 16. Round 11: u6-inside, u6-cards, u2-panels (2026-10-15)
+
+`python tools/gen_sheets.py u6-inside u6-cards u2-panels -n 3 --max-calls 9`, the owner's yes; nine calls, no 402.
+Picked in the art session by the rules of §15 (front-on, no text baked in, no magenta smear, closest to the request):
+
+- **u6-inside #2**: the only one front-on with its three boards blank (#1 drew cards on them, #3 is oblique). Cut whole
+  as `inside/booth.png` (the room's backdrop, ×4, its floor on the orks' floor) and one board cropped as
+  `inside/board.png` (the frame of each board the product draws, a border-image ×3, cut below its arch so no plaster
+  shows in its corners).
+- **u6-cards #3**: the only one laid out as slices. They do not join (every piece is outlined on its own, the paper's
+  torn edge on each), so a card is **one whole piece** stretched as a border-image: `inside/sheet.png` (parchment
+  with its wood foot) and `inside/slab.png` (the stone slab); the bone `pin`, the cloth `flag-down` (plum, drooping:
+  To do), `flag-half` (plum, up: Doing), `flag-up` (teal: Done) and the `lever`. Cut with `close: 0`.
+- **u2-panels #2**: #1 has magenta smeared under its tabs and buttons, #3 bakes "TAB", "INACTIVE" and "Exit" in and
+  grids its panels. Cut: the parchment and terminal panels, the tabs, the square button in three states; its Exit
+  button has the word baked in and is not cut (the GUI writes Exit).
+
+The Task board's inside draws them by `.has-art` (`js/buildings/fields_inside.css`); its CSS stand-ins stay for a
+manifest that cannot be read. Screens: `img/i2/inside-v3.png`.
+

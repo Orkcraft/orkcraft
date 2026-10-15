@@ -70,6 +70,7 @@ TERMS: tuple[Term, ...] = (
     _t("deed", "deed", "deeds"),                                   # what the camp learned to do
     # -- you: the portrait's menu (docs/design/portrait.md) -------------------------------------------
     _t("portrait", "portrait"),                                    # the person in the HUD's left corner
+    _t("home", "Home"),                                            # the person's house by the Review gate (v3 §4.13)
     _t("look", "Look", "Looks"),                                   # how the town is drawn: never its words
     _t("look.camp", "Camp"),                                       # the default look: sprites, the mascot, flames
     _t("look.office", "Office"),                                   # the calm look: monochrome, no sprites

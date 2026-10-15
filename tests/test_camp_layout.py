@@ -156,17 +156,22 @@ console.log(JSON.stringify([two.map((r) => r.map((b) => b.id)), one.map((r) => r
 
 
 def test_the_persons_home_stands_east_of_the_review_gate_just_above_its_line(tmp_path):
-    """design-system-v3.md §4.13: the home beside the gate where the person approves, on the gate's row, no path."""
+    """design-system-v3.md §4.13: the home beside the gate where the person approves, on the gate's row, its door a
+    path above the line like a building's."""
     out = _run(TOWN + """
 const L = C.lay(B, R, { b: 1.5, s: 1 }, size, () => false, "homes/lich.png");
 const N = C.lay(B.filter((b) => b.type !== "loot"), R, { b: 1.5, s: 1 }, size, () => false, "homes/orc.png");
+const bare = C.lay(B, R, { b: 1.5, s: 1 }, size);
 console.log(JSON.stringify({ home: L.home, gate: L.buildings.gate, bench: L.buildings.bench, line: L.lines[0],
-  paths: L.paths.length, none: C.lay(B, R, { b: 1.5, s: 1 }, size).home, alone: N.home, first: N.lines[0] }));
+  path: L.paths.find((p) => p.home), paths: L.paths.length - bare.paths.length, none: C.lay(B, R, { b: 1.5, s: 1 }, size).home, alone: N.home, first: N.lines[0] }));
 """, tmp_path)
     h, g, b = out["home"], out["gate"], out["bench"]
     assert h["file"] == "homes/lich.png" and h["row"] == g["row"] == 0
     assert g["x"] + g["w"] <= h["x"] < b["x"]                       # east of the gate, before the next building
-    assert h["feet"] < out["line"] and out["line"] - h["feet"] <= 4  # just above line 1
+    assert h["feet"] < out["line"] and out["line"] - h["feet"] == 24 * 1.5   # a path's length above line 1
+    p = out["path"]
+    assert out["paths"] == 1 and p["x"] < h["cx"] < p["x"] + p["w"]   # one more path: from its door…
+    assert p["y"] < h["feet"] and p["y"] + p["h"] >= out["line"]      # …down to the line
     assert out["none"] is None                                       # no kin known: no home
     assert out["alone"]["row"] == 0 and out["alone"]["feet"] < out["first"]   # no gate: at the first row's end
 

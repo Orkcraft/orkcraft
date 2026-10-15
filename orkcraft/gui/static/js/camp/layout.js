@@ -100,8 +100,8 @@ export function exitsOf(name, rot = 0) {
 
 /** The town laid out at one zoom step. `size(file)`: a v3 sprite's [w, h] in art px, or null when it is not cut.
  *  `waiting(b)`: a cart waits at it for the person (the Review gate's barrier is down). `home`: the person's home
- *  (`homes/<kin>.png`), east of the Review gate on its row, its feet just above the line, no path (§4.13); with no
- *  gate, at the first row's end. */
+ *  (`homes/<kin>.png`), east of the Review gate on its row, its door a path above the line like a building's
+ *  (§4.13); with no gate, at the first row's end. */
 export function lay(buildings, roads, step, size, waiting = () => false, home = "") {
   const B = step.b, S = step.s, T = TILE * S;
   const dims = (b) => {
@@ -125,8 +125,10 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   const homeS = home ? size(home) : null;
   const homeRow = homeS ? Math.max(0, rows.findIndex((row) => row.some((b) => b.type === "loot"))) : -1;
   const putHome = (x, lineTop, r) => {
-    const w = homeS[0] * B, h = homeS[1] * B, feet = lineTop - 2 * B;
-    out.home = { file: home, x: Math.round(x), y: Math.round(feet - h), w, h, feet, row: r, cx: Math.round(x + w / 2) };
+    const w = homeS[0] * B, h = homeS[1] * B, feet = lineTop - PATH_L * B, cx = Math.round(x + w / 2);
+    out.home = { file: home, x: Math.round(x), y: Math.round(feet - h), w, h, feet, row: r, cx };
+    out.paths.push({ x: Math.round(cx - PATH_W * B / 2), y: Math.round(feet - 6 * B), w: PATH_W * B,
+                     h: Math.round(lineTop - feet + 6 * B + 2), home: true });
     return w + GAP * B;
   };
 
@@ -135,7 +137,7 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   rows.forEach((row, r) => {
     const ds = row.map((b) => ({ b, d: dims(b), spur: SPUR.has(b.type) }));
     const band = Math.max(64 * B, ...ds.map(({ d, spur }) => (spur ? d.h - T / 4 : d.h + PATH_L * B)),
-                          r === homeRow ? homeS[1] * B + 2 * B : 0);
+                          r === homeRow ? homeS[1] * B + PATH_L * B : 0);
     if (r === 0) lineTop = Math.max(wallY - 24 * B + band, wallY + T);
     else {
       const prev = out.lines[r - 1];

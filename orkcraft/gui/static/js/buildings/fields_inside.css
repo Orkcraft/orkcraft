@@ -86,3 +86,27 @@ button.fields-in__flag:hover i, button.fields-in__flag:focus-visible i { backgro
   .fields-in__ork { transition: none; }
   .fields-in__body { animation: none; }
 }
+
+/* v3's sprites (u6-inside, u6-cards; design-system-v3.md §8), once the manifest says they are cut. Drawn at whole
+   multiples of their art pixel, never smoothed: the booth ×4 behind the boards, its floor on the orks' floor; a board's
+   frame ×3 and the cards ×2 as border-images (the model drew whole pieces, not a nine-slice, so the edges repeat round
+   and the middle fills); the pin and the flags ×1. */
+.fields-in.has-art .fields-in__wall { image-rendering: pixelated;
+  background: var(--in-booth) center bottom / 800px 436px no-repeat, var(--art-wood-deep); }
+.fields-in.has-art .fields-in__board { image-rendering: pixelated; padding: 6px 4px 8px; background: none; box-shadow: none;
+  border-style: solid; border-width: 36px 12px 12px; border-image: var(--in-board) 12 4 4 fill / 36px 12px 12px stretch; }
+.fields-in.has-art .fields-in__board.gui-drop { outline: 3px solid var(--accent-teal); outline-offset: 2px; }
+.fields-in.has-art .fields-in__plaque { margin: -30px 0 12px; padding: 0 6px; background: none; border: 0; color: var(--parchment); }
+.fields-in.has-art .fields-in__card { image-rendering: pixelated; background: none; box-shadow: none; border-style: solid;
+  padding: 6px 6px 4px; color: var(--parchment-ink); }
+.fields-in.has-art .fields-in__card.is-sheet { border-width: 8px 8px 16px; border-image: var(--in-sheet) 4 4 8 fill / 8px 8px 16px round; }
+.fields-in.has-art .fields-in__card.is-slab { border-width: 10px 10px 12px; border-image: var(--in-slab) 5 5 6 fill / 10px 10px 12px round; }
+.fields-in.has-art .fields-in__card.is-selected { outline: 3px solid var(--accent-teal); outline-offset: 1px; }
+.fields-in.has-art .fields-in__pin { top: -14px; width: 16px; height: 16px; margin-left: -8px; border-radius: 0; box-shadow: none;
+  background: var(--in-pin) center bottom / auto no-repeat; image-rendering: pixelated; }
+.fields-in.has-art .fields-in__flag { width: 24px; height: 32px; image-rendering: pixelated; background: center bottom / auto no-repeat; }
+.fields-in.has-art .fields-in__flag::before, .fields-in.has-art .fields-in__flag i { display: none; }
+.fields-in.has-art .fields-in__flag.is-down { background-image: var(--in-flag-down); }
+.fields-in.has-art .fields-in__flag.is-half { background-image: var(--in-flag-half); }
+.fields-in.has-art .fields-in__flag.is-up { background-image: var(--in-flag-up); }
+.fields-in.has-art button.fields-in__flag:hover, .fields-in.has-art button.fields-in__flag:focus-visible { filter: brightness(1.15); }

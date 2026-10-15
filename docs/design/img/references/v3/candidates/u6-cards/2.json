@@ -1,0 +1,173 @@
+{
+ "returned": "image/jpeg",
+ "model": "gemini-3.1-flash-image",
+ "said": "",
+ "prompt": "No shadows. Pixel-art sprite sheet in exactly the style and palette of the attached image. Crisp hard pixels on a strict grid, no anti-aliasing, no blur, no gradients, each sprite with a dark 1-pixel outline, drawn at its final size with no finer detail than that size can hold. One three-quarter top-down projection, never isometric. Sprites in a neat grid with even spacing on a flat solid #FF00FF magenta background, nothing touching, no ground under them, no text unless asked. Bright yellow and bright red appear nowhere.\n\nPieces for cards on the boards inside the booth, on magenta: a parchment sheet and a light stone slab, each as nine-slice pieces (top with corners, a middle that repeats downward, bottom with corners); bone pins; a small cloth flag on a pin, lowered and raised, in teal and plum; a lever.\n\nNo frames, no boxes, no grid lines, no borders between sprites; each sprite floats alone on the magenta.\n\nNo shadows, no smoke, no glow.\n\nKeep exactly the colours of the attached frame F1: the grass as saturated and bright as in it (about #7cbd40), the paths warm sand (about #e4b469); warm honey wood, light cool stone, teal and plum cloth, cream bone.\n\nNo yellow, no orange and no red anywhere: those colours are reserved for the product's signals. The wood a muted honey brown, never orange.\n\nOutput the sheet as a PNG image.\n\nAttached, in order: f1-town, st-dispatch. F1 is the approved frame: its style and colours rule.",
+ "sheet": "u6-cards",
+ "file": "2.jpg",
+ "image": [
+  2752,
+  1536
+ ],
+ "pitch": 5.73,
+ "art_px": 48,
+ "art_range": null,
+ "grid": [
+  480,
+  268
+ ],
+ "pieces": 35,
+ "expected": 12,
+ "sizes": [
+  [
+   46,
+   46
+  ],
+  [
+   48,
+   46
+  ],
+  [
+   46,
+   46
+  ],
+  [
+   46,
+   46
+  ],
+  [
+   50,
+   45
+  ],
+  [
+   46,
+   46
+  ],
+  [
+   48,
+   48
+  ],
+  [
+   50,
+   48
+  ],
+  [
+   48,
+   48
+  ],
+  [
+   46,
+   48
+  ],
+  [
+   48,
+   48
+  ],
+  [
+   48,
+   48
+  ],
+  [
+   46,
+   48
+  ],
+  [
+   50,
+   46
+  ],
+  [
+   46,
+   48
+  ],
+  [
+   48,
+   50
+  ],
+  [
+   50,
+   50
+  ],
+  [
+   48,
+   50
+  ],
+  [
+   46,
+   47
+  ],
+  [
+   48,
+   47
+  ],
+  [
+   48,
+   47
+  ],
+  [
+   46,
+   47
+  ],
+  [
+   50,
+   45
+  ],
+  [
+   47,
+   47
+  ],
+  [
+   48,
+   50
+  ],
+  [
+   50,
+   50
+  ],
+  [
+   48,
+   50
+  ],
+  [
+   17,
+   50
+  ],
+  [
+   40,
+   40
+  ],
+  [
+   35,
+   55
+  ],
+  [
+   53,
+   55
+  ],
+  [
+   37,
+   55
+  ],
+  [
+   54,
+   55
+  ],
+  [
+   64,
+   50
+  ],
+  [
+   62,
+   54
+  ]
+ ],
+ "degrid": false,
+ "signal_px": 0,
+ "signal_pct": 0.0,
+ "cast_px": 859,
+ "cast_pct": 1.37,
+ "ok": false,
+ "issues": [
+  "35 pieces found, 12 expected",
+  "magenta cast on 1.4 % of the art"
+ ]
+}
