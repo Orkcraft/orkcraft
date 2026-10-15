@@ -335,6 +335,53 @@ class Sheet:
 
 # --- 4–5. trim, pad, anchor ------------------------------------------------------------------------------------
 
+def mode_down(img: np.ndarray, scale: float) -> np.ndarray:
+    """Read an art-pixel grid `scale` times coarser without mixing colours (`pick: mode`): each new pixel takes the
+    most frequent colour of the old pixels its cell covers (by area), the darker on a tie so outlines hold, and is
+    clear when most of the cell is. No colour is made that the sprite did not have, so a non-whole step stays crisp."""
+    h, w = img.shape[:2]
+    H, W = max(1, round(h / scale)), max(1, round(w / scale))
+    out = np.zeros((H, W, 4), np.uint8)
+    for y in range(H):
+        y0, y1 = y * scale, (y + 1) * scale
+        for x in range(W):
+            x0, x1 = x * scale, (x + 1) * scale
+            votes: dict[tuple, float] = {}
+            for sy in range(int(y0), min(h, int(np.ceil(y1)))):
+                fy = min(y1, sy + 1) - max(y0, sy)
+                for sx in range(int(x0), min(w, int(np.ceil(x1)))):
+                    a = fy * (min(x1, sx + 1) - max(x0, sx))
+                    px = tuple(int(v) for v in img[sy, sx])
+                    key = px if px[3] else (0, 0, 0, 0)
+                    votes[key] = votes.get(key, 0) + a
+            clear = votes.pop((0, 0, 0, 0), 0)
+            if not votes or clear > sum(votes.values()):
+                continue
+            out[y, x] = max(votes.items(), key=lambda kv: kv[1])[0]
+    return despeckle(out)
+
+
+def despeckle(img: np.ndarray, passes: int = 1) -> np.ndarray:
+    """A lone pixel, unlike all four of its neighbours, takes the colour most of them share (at least three); the
+    outline's darkest pixels stay, so a thin line is never broken."""
+    out = img.copy()
+    h, w = out.shape[:2]
+    for _ in range(passes):
+        src = out.copy()
+        for y in range(1, h - 1):
+            for x in range(1, w - 1):
+                c = tuple(int(v) for v in src[y, x])
+                if not c[3] or sum(c[:3]) < 90:
+                    continue
+                near = [tuple(int(v) for v in src[y + dy, x + dx]) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))]
+                if c in near:
+                    continue
+                top = max(set(near), key=near.count)
+                if near.count(top) >= 3 and top[3]:
+                    out[y, x] = top
+    return out
+
+
 def trim(img: np.ndarray) -> np.ndarray:
     ys, xs = np.nonzero(img[..., 3])
     if not len(xs):
@@ -890,10 +937,13 @@ def cut_group(sheet: Sheet, group: dict, rows: list[dict], problems: list[str]) 
     for item, bs in zip(group["items"], boxes):
         frames = []
         if group.get("native"):                 # v3: the slot is what the sheet draws, on the grid of 8, never resampled
-            imgs = [trim(sheet.native(b) if scale == 1 else sheet.coarse(b, scale)) for b in bs]
+            pick = group.get("pick") == "mode"
+            imgs = [trim(sheet.native(b) if scale == 1 else mode_down(sheet.native(b), scale) if pick
+                         else sheet.coarse(b, scale)) for b in bs]
             r8 = (lambda n: n) if group.get("exact") else up8          # `exact`: nine-slice pieces keep their size
             item = {**item, "size": (r8(max(i.shape[1] for i in imgs)), r8(max(i.shape[0] for i in imgs)))}
-        read = lambda box: trim(sheet.native(box) if scale == 1 else sheet.coarse(box, scale))  # noqa: E731
+        read = lambda box: trim(sheet.native(box) if scale == 1 else  # noqa: E731
+                                mode_down(sheet.native(box), scale) if group.get("pick") == "mode" else sheet.coarse(box, scale))
         for b in bs:
             img = read(b)
             if "load_of" in item:

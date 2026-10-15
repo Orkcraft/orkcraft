@@ -760,5 +760,9 @@ The camp after the round: `img/v3-preview/camp-round13.png`.
   1.2× (`merge` ×1.2 on every ork sheet: the bodies, the roles, the states, the inside poses, the door, the
   Prospector standing and moving): about 44 px drawn where they were 53, in their own colours, under their old names.
   The goblin is a class, not an ork, and the UI's faces are unchanged. The three sizes beside two buildings:
-  `img/v3-preview/orks-sizes.png`. No call spent.
+  `img/v3-preview/orks-sizes.png`. No call spent. At a step that is not whole, reading by the median of each cell
+  mixed neighbouring pixels (the owner: "smoothed"), so the ork sheets now read by the most frequent colour of each
+  cell's art pixels (`pick: mode`, `camp_sheet.mode_down`) and a lone fleck takes its neighbours' colour: no colour
+  the sprite did not have, the outline dark and whole, the eyes and tusks kept. No whole step sits near 47 px (×1 is
+  56, ×2 is 28). Now and after at 8×: `img/v3-preview/orks-crisp-8x.png`.
 

@@ -3854,11 +3854,11 @@
    "file": "orks/states/asks.png",
    "size": [
     32,
-    40
+    32
    ],
    "frame": [
     32,
-    40
+    32
    ],
    "frames": 1,
    "pitch": 8.34,
@@ -3885,11 +3885,11 @@
    "file": "orks/states/doze.png",
    "size": [
     32,
-    40
+    32
    ],
    "frame": [
     32,
-    40
+    32
    ],
    "frames": 1,
    "pitch": 8.34,
@@ -3978,11 +3978,11 @@
    "file": "orks/states/working.png",
    "size": [
     32,
-    40
+    32
    ],
    "frame": [
     32,
-    40
+    32
    ],
    "frames": 1,
    "pitch": 8.34,
