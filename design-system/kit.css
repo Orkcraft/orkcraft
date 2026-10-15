@@ -129,3 +129,42 @@
   border-image: image-set(url("sprites/v4/ui/well.png") 1x, url("sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat; }
 [data-look="camp"] .kit-paper .ok-input:focus { outline: 2px solid var(--accent-teal); outline-offset: 0; }
 [data-look="camp"] .kit-paper .ok-input::placeholder { color: #8a7458; }
+
+/* the herald's notice (design-system-v3 §4f, v4 §2): parchment in the thin frame, up to 360 px, opening upwards from
+   its building on the back wall with a tail pointing down at it; its title in the pixel face, its details in the
+   text face, up to three actions. More notices behind it stack as "+N"; folded, it is a small count chip. Never
+   yellow unless it is a question (.is-ask). */
+[data-look="camp"] .kit-notice { position: relative; box-sizing: border-box; width: max-content; min-width: 200px; max-width: 360px;
+  padding: 6px 10px 8px; display: flex; flex-direction: column; gap: 4px; color: var(--parchment-ink); image-rendering: pixelated;
+  border: var(--kit-frame) solid transparent;
+  border-image: image-set(url("sprites/v4/ui/frame-thin.png") 1x, url("sprites/v4/ui/frame-thin@2x.png") 2x) 14 / var(--kit-frame) round;
+  background: var(--parchment) image-set(url("sprites/v4/ui/parchment.png") 1x, url("sprites/v4/ui/parchment@2x.png") 2x) repeat;
+  background-clip: padding-box; filter: drop-shadow(0 6px 0 color-mix(in srgb, var(--art-outline) 25%, transparent)); }
+[data-look="camp"] .kit-notice::after { content: ""; position: absolute; left: calc(50% - 14px); bottom: calc(-1 * var(--kit-frame) - 14px);
+  width: 28px; height: 16px; image-rendering: pixelated;
+  background: image-set(url("sprites/v4/ui/notice-tail.png") 1x, url("sprites/v4/ui/notice-tail@2x.png") 2x) 0 0 / 28px 16px no-repeat; }
+[data-look="camp"] .kit-notice__head { display: flex; align-items: center; gap: 8px; }
+[data-look="camp"] .kit-notice__head > img { width: 24px; height: 24px; image-rendering: pixelated; flex: none; }
+[data-look="camp"] .kit-notice__title { flex: 1; min-width: 0; font: var(--type-kit-heading); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[data-look="camp"] .kit-notice__when { flex: none; font: var(--type-kit-small); color: #6b5440; }
+[data-look="camp"] .kit-notice__line { margin: 0; font: var(--type-camp-body); }
+[data-look="camp"] .kit-notice__line.is-small { font: var(--type-camp-caption); color: #6b5440; }
+[data-look="camp"] .kit-notice__acts { display: flex; gap: 4px; margin-top: 4px; }
+[data-look="camp"] .kit-notice__acts > .kit-btn { height: 30px; font-size: 18px; padding: 0 8px; }
+/* more behind it: two sheets peeking out at its top right, and the count on a wooden plate */
+[data-look="camp"] .kit-notice.is-stacked { box-shadow: 6px -6px 0 -2px var(--kit-parchment-deep), 6px -6px 0 0 var(--kit-wood-dark),
+  12px -12px 0 -2px var(--kit-parchment-deep), 12px -12px 0 0 var(--kit-wood-dark); }
+[data-look="camp"] .kit-notice__more { position: absolute; right: -22px; top: -26px; height: 24px; padding: 0 6px; display: flex; align-items: center;
+  font: var(--type-kit-small); color: var(--kit-ink); background: var(--kit-wood); box-shadow: inset 0 0 0 2px var(--art-outline), inset 2px 2px 0 2px var(--kit-wood-light); }
+/* a question that asks the person: the one notice that may wear the signal's yellow, on its mark only */
+[data-look="camp"] .kit-notice__ask { width: 24px; height: 24px; display: grid; place-items: center; background: var(--chip); color: var(--signal-ask);
+  font: 400 20px/1 var(--font-kit); box-shadow: inset 0 0 0 1px var(--chip-ink), 0 0 0 1px var(--art-outline); }
+/* folded: a small count chip over the herald ("3 new"), opened by a click */
+[data-look="camp"] .kit-notice-chip { appearance: none; position: relative; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px;
+  cursor: pointer; font: var(--type-kit-button); font-size: 18px; color: var(--parchment-ink); background: var(--parchment);
+  border: 4px solid transparent; image-rendering: pixelated; margin-bottom: 10px;
+  border-image: image-set(url("sprites/v4/ui/btn-wood.png") 1x, url("sprites/v4/ui/btn-wood@2x.png") 2x) 6 / 4px repeat; }
+[data-look="camp"] .kit-notice-chip::after { content: ""; position: absolute; left: calc(50% - 7px); bottom: -14px; width: 14px; height: 8px;
+  background: image-set(url("sprites/v4/ui/notice-tail.png") 1x, url("sprites/v4/ui/notice-tail@2x.png") 2x) 0 0 / 14px 8px no-repeat; image-rendering: pixelated; }
+[data-look="camp"] .kit-notice-chip:hover { background: #f6efdc; }
+[data-look="camp"] .kit-notice-chip:focus-visible { outline: 2px solid var(--parchment-ink); box-shadow: 0 0 0 4px var(--kit-ink); }

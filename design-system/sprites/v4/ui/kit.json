@@ -2,6 +2,13 @@
  "note": "Written by tools/ui_kit.py (docs/design/design-system-v4.md \u00a72). Sizes and insets in art px; <piece>.png is 2 CSS px an art px, <piece>@2x.png 4.",
  "px": 2,
  "pieces": {
+  "notice-tail": {
+   "size": [
+    14,
+    8
+   ],
+   "inset": 0
+  },
   "frame": {
    "size": [
     22,

@@ -63,6 +63,9 @@
   .toast__mark { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font: var(--type-kit-heading); }
   .toast a { color: var(--accent-teal); }
 
+  .heralds { display: flex; flex-wrap: wrap; gap: 32px 40px; align-items: flex-end; padding: 40px 24px 32px;
+    background: url("../../docs/design/img/v4/camp-bare.png") -120px -40px / 1440px 900px; }
+  .heralds .cap { background: var(--chip); padding: 2px 6px; margin-top: 18px; }
   .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .compare img { width: 100%; display: block; }
 </style>
@@ -216,6 +219,32 @@ Jersey 15; every sentence stays Nunito. Yellow and red are only the signals'. Of
   <p style="font:var(--type-camp-body);margin:8px 0 0">The Mechanic finished the parser fix; one cart waits at the Review gate for your answer. <span class="cap">camp-body · Nunito: every sentence, settings, waybills, consoles</span></p>
   <p style="font:var(--type-code-small);margin:4px 0 0">$ pytest -q · 1 failed, 7 passed <span class="cap">code-small · JetBrains Mono</span></p>
   <p style="font:400 22px/1 var(--font-display);margin:8px 0 0">Orkline <span class="cap">the wordmark · New Rocker</span></p>
+</div>
+
+<h2>The herald's notice (design-system-v3 §4f)</h2>
+<p class="note">A building that brings news (External listeners, the Calendar) opens a notice upwards from the back wall: parchment
+in the thin frame, up to 360 px, its tail pointing down at the building; title in the pixel face, details in the text face,
+up to three actions. More behind it stack as "+N"; after about a minute it folds into a count chip. Only a question wears
+the signal's yellow, on its mark.</p>
+<div class="heralds">
+  <div class="cell"><div class="kit-notice">
+      <div class="kit-notice__head"><span class="kit-notice__title">Design sync in 20 min</span><span class="kit-notice__when">09:40</span></div>
+      <p class="kit-notice__line">Town Hall · 10:00–10:30 · Ann Lee, Grub</p>
+      <p class="kit-notice__line is-small">No brief yet: the Mechanic can prepare one from the task board.</p>
+      <div class="kit-notice__acts"><button class="kit-btn is-teal">Open</button><button class="kit-btn">Prepare</button><button class="kit-btn">Dismiss</button></div>
+    </div><span class="cap">Calendar: a meeting soon, it asks something, so it stays</span></div>
+  <div class="cell"><div class="kit-notice is-stacked">
+      <span class="kit-notice__more">+2</span>
+      <div class="kit-notice__head"><span class="kit-notice__title">Ann Lee: offsite dates</span><span class="kit-notice__when">2 min</span></div>
+      <p class="kit-notice__line is-small">gmail · routed to the Task board</p>
+      <div class="kit-notice__acts"><button class="kit-btn is-teal">Open</button><button class="kit-btn">Dismiss</button></div>
+    </div><span class="cap">External listeners: a mail, two more behind it</span></div>
+  <div class="cell"><div class="kit-notice">
+      <div class="kit-notice__head"><span class="kit-notice__ask">?</span><span class="kit-notice__title">Where does this go?</span></div>
+      <p class="kit-notice__line">An issue came in that no road takes: "Login fails on Safari".</p>
+      <div class="kit-notice__acts"><button class="kit-btn is-teal">Open</button><button class="kit-btn">Dismiss</button></div>
+    </div><span class="cap">a question: its mark alone is yellow</span></div>
+  <div class="cell"><button class="kit-notice-chip">3 new</button><span class="cap">folded: a count chip over the herald</span></div>
 </div>
 
 <h2>Icons (12 × 12, drawn from grids)</h2>

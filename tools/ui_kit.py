@@ -20,6 +20,8 @@ The pieces (a nine-slice unless said):
 - `slot`, `slot-hover`, `slot-on`: an inventory slot, sunk into the parchment.
 - `band`: a section's wooden strip inside a panel ("Items").
 - `parchment`: a 32 × 32 tile of the panels' parchment with a few fibres (not a nine-slice: a background).
+- `notice-tail`: the herald's notice's tail, 14 × 8, pointing down from the frame's bottom edge to its building (not a
+  nine-slice: an image under the notice).
 
 And the icons of the icon buttons and tabs, 12 × 12 in `kit-ink` with an outline, from the grids in `ICONS`, into
 `icons/<name>.png` (`work`, `info`, `close`, `whole`, `more`, `copy`, `items`, `quest`).
@@ -267,8 +269,27 @@ def icon(rows: list[str]) -> Grid:
     return g
 
 
+def notice_tail() -> tuple[Grid, int]:
+    """The notice's tail: the frame's wood narrowing to a point, outlined, its top row the frame's bottom ring."""
+    g = Grid(14, 8)
+    for y in range(g.h):
+        x0, x1 = y, g.w - 1 - y
+        if x0 > x1:
+            break
+        g.rect(x0, y, x1, y, C["kit-wood"])
+        g.px(x0, y, C["art-outline"])
+        g.px(x1, y, C["art-outline"])
+        if x0 + 1 < x1:
+            g.px(x0 + 1, y, C["kit-wood-light"])
+            g.px(x1 - 1, y, C["kit-wood-dark"])
+    g.rect(1, 0, g.w - 2, 0, C["kit-wood-dark"])
+    last = max(y for y in range(g.h) if y <= g.w - 1 - y)
+    g.rect(last, last, g.w - 1 - last, last, C["art-outline"])
+    return g, 0
+
+
 def pieces() -> dict[str, tuple[Grid, int]]:
-    out = {"frame": frame(), "frame-thin": frame(caps=False), "bar": bar(), "well": well(), "plate": plate(),
+    out = {"notice-tail": notice_tail(), "frame": frame(), "frame-thin": frame(caps=False), "bar": bar(), "well": well(), "plate": plate(),
            "band": band(), "parchment": parchment()}
     for kind in BUTTONS:
         for state in ("", "hover", "down", "off"):

@@ -59,6 +59,7 @@ target by a tool. `kit.json` beside the files carries the same numbers.
 | `slot` | 10 × 10 | 3 | an inventory slot sunk into parchment: wood rim, shade top-left, light bottom-right | `-hover` (rim lit), `-on` (teal rim) |
 | `band` | 6 × 6 | **2** (4) | a section's wooden strip across a panel (outline above and below) | — |
 | `parchment` | 32 × 32 | — (a tile) | parchment with a few fibres, seamless | — |
+| `notice-tail` | 14 × 8 | — (an image) | the herald's notice's tail: the frame's wood narrowing to a point under it | — |
 
 **Sizes of the controls** (tokens, CSS px): the top bar `kit-hud-h` 56 (a 36-px row inside its 10-px frame); a
 square icon button `kit-icon-btn` 36 (a 20–24 glyph inside); an icon tab `kit-tab` 44 (its icon 24); a slot
@@ -124,6 +125,25 @@ chips and names (a cart's chip carries $ and token counts), the War Map and `cam
 figures; their sizes rose with it (`camp-title` 36/40, `camp-heading` 24/28, `camp-chip` 18/20; the chip's plate
 stays 24 high). Everything else (`camp-body`, `camp-label`, `camp-caption`, `code`) is unchanged. A long name in a heading is cut with
 an ellipsis, never wrapped in the pixel face.
+
+### 2.1 The herald's notice (design-system-v3 §4f; P1, the PM)
+
+A building that brings news on its own (External listeners, the Calendar) stands on the back wall and opens a
+**notice** upwards over the wilderness, never over the camp's buildings. The kit draws it (`design-system/kit.css`);
+where it stands is LOOP's.
+
+- **`.kit-notice`**: parchment in `frame-thin`, 200–360 px wide, with `notice-tail` under its middle pointing down at
+  its building. `.kit-notice__head` holds the title (`.kit-notice__title`, `kit-heading`, cut with an ellipsis) and
+  an optional time (`.kit-notice__when`, `kit-small`); `.kit-notice__line` the details in `camp-body` (`.is-small`:
+  `camp-caption`, muted); `.kit-notice__acts` up to three kit buttons (Open teal, Prepare, Dismiss).
+- **Stacked:** `.is-stacked` shows two sheets peeking out at its top right and `.kit-notice__more` a wooden plate
+  with the count ("+2").
+- **A question:** `.kit-notice__ask`, the ❓ on the dark plate in the signal's yellow; nothing else on a notice is
+  yellow.
+- **Folded:** `.kit-notice-chip`, a small parchment chip in a wooden bevel with its own small tail ("3 new"), opened
+  by a click.
+
+Preview: the section *The herald's notice* in `UIKitV4.html`; shot [herald-notice.png](img/v4/herald-notice.png).
 
 ## 5. Piece by piece onto today's components
 
