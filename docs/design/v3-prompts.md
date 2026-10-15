@@ -712,4 +712,7 @@ Calls spent of the queue's 30: 12 (c3 3, c1 3, st-depot 6).
   d20 and a red pin). Cut at `close: 0` and `merge: 1.4` into `people/stages/<role id>-<2|3|4>.png`.
   **k3-marketing #1** (2 calls) draws the class it left out, the Growth-Hack Gnome, full-length; its heads boxed.
   `js/portrait.js` shows the stage's own head from stage 2 and drops the CSS marks over it.
+- **i1-items #1**: all sixteen asked, in order (#2 repeats and drops some, #3 fills the beetle's glass with magenta).
+  Cut into `items/<id>.png`; the fourteen earned items' files point at them and are no longer stand-ins;
+  `items/sundial.png` and `items/proving-stone.png` wait for their item files (Mission 2, Mission 1b).
 

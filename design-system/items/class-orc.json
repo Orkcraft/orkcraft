@@ -1,10 +1,9 @@
 {
  "id": "class-orc",
  "name": "Beetle-in-a-jar statue",
- "sprite": "sprites/v3/decor/stump.png",
+ "sprite": "sprites/v3/items/class-orc.png",
  "by": "stage",
  "stage": 2,
  "kin": "orc",
- "why": "Your portrait's second stage",
- "stand_in": true
+ "why": "Your portrait's second stage"
 }

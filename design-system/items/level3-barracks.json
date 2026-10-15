@@ -1,9 +1,8 @@
 {
  "id": "level3-barracks",
  "name": "Anvil",
- "sprite": "sprites/v3/decor/stump.png",
+ "sprite": "sprites/v3/items/level3-barracks.png",
  "by": "level",
  "type": "barracks",
- "why": "A building at III",
- "stand_in": true
+ "why": "A building at III"
 }

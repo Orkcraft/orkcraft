@@ -1,9 +1,8 @@
 {
  "id": "first-cart",
  "name": "The first cart",
- "sprite": "items/first-cart.png",
+ "sprite": "sprites/v3/items/first-cart.png",
  "by": "mission",
  "chapter": 1,
- "why": "Mission 1 finished",
- "stand_in": true
+ "why": "Mission 1 finished"
 }

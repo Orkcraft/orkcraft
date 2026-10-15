@@ -2268,6 +2268,326 @@
    "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
   },
   {
+   "file": "items/class-elf.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/class-gnome.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/class-goblin.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/class-knight.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/class-lich.png",
+   "size": [
+    32,
+    48
+   ],
+   "frame": [
+    32,
+    48
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/class-orc.png",
+   "size": [
+    32,
+    48
+   ],
+   "frame": [
+    32,
+    48
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/class-skeleton.png",
+   "size": [
+    16,
+    48
+   ],
+   "frame": [
+    16,
+    48
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/first-cart.png",
+   "size": [
+    40,
+    40
+   ],
+   "frame": [
+    40,
+    40
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/lean-month.png",
+   "size": [
+    32,
+    40
+   ],
+   "frame": [
+    32,
+    40
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/lean-week.png",
+   "size": [
+    40,
+    40
+   ],
+   "frame": [
+    40,
+    40
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/level3-barracks.png",
+   "size": [
+    40,
+    32
+   ],
+   "frame": [
+    40,
+    32
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/level3-fields.png",
+   "size": [
+    24,
+    48
+   ],
+   "frame": [
+    24,
+    48
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/level3-loot.png",
+   "size": [
+    32,
+    48
+   ],
+   "frame": [
+    32,
+    48
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/pennant.png",
+   "size": [
+    24,
+    48
+   ],
+   "frame": [
+    24,
+    48
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/proving-stone.png",
+   "size": [
+    40,
+    48
+   ],
+   "frame": [
+    40,
+    48
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
+   "file": "items/sundial.png",
+   "size": [
+    32,
+    48
+   ],
+   "frame": [
+    32,
+    48
+   ],
+   "frames": 1,
+   "pitch": 11.47,
+   "show": 1,
+   "anchor": "feet",
+   "placeholder": true,
+   "source": "i1-items.png",
+   "scale": 1.0,
+   "licence": "placeholder: generated reference art, not for release (docs/design/color-pass.md §10b)",
+   "author": "generated (docs/design/img/references/), cut by tools/camp_sheet.py"
+  },
+  {
    "file": "orks/body/door.png",
    "size": [
     384,

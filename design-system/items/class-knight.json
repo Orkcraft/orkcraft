@@ -1,10 +1,9 @@
 {
  "id": "class-knight",
  "name": "Crest banner",
- "sprite": "sprites/v3/growth/banner-3.png",
+ "sprite": "sprites/v3/items/class-knight.png",
  "by": "stage",
  "stage": 2,
  "kin": "knight",
- "why": "Your portrait's second stage",
- "stand_in": true
+ "why": "Your portrait's second stage"
 }

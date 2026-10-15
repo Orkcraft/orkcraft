@@ -1,9 +1,8 @@
 {
  "id": "level3-loot",
  "name": "Statue of scales",
- "sprite": "sprites/v3/decor/rocks.png",
+ "sprite": "sprites/v3/items/level3-loot.png",
  "by": "level",
  "type": "loot",
- "why": "A building at III",
- "stand_in": true
+ "why": "A building at III"
 }

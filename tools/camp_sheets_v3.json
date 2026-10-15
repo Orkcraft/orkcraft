@@ -2879,6 +2879,88 @@
      ]
     }
    ]
+  },
+  {
+   "name": "i1-items",
+   "file": "i1-items.png",
+   "show": 1,
+   "wood_pull": true,
+   "about": "round 12 (v3-prompts §18, gen_sheets i1-items #1): the earned items drawn at last (they were stand-ins), the second chapter's sundial and first-mission's proving stone (no item files yet); 4 (a plain tombstone) and 5 (crystals in a jar) not used",
+   "groups": [
+    {
+     "size": [
+      40,
+      48
+     ],
+     "anchor": "feet",
+     "items": [
+      {
+       "file": "items/class-elf.png",
+       "order": 0
+      },
+      {
+       "file": "items/class-gnome.png",
+       "order": 1
+      },
+      {
+       "file": "items/class-goblin.png",
+       "order": 2
+      },
+      {
+       "file": "items/class-knight.png",
+       "order": 3
+      },
+      {
+       "file": "items/class-lich.png",
+       "order": 6
+      },
+      {
+       "file": "items/class-orc.png",
+       "order": 7
+      },
+      {
+       "file": "items/class-skeleton.png",
+       "order": 8
+      },
+      {
+       "file": "items/first-cart.png",
+       "order": 9
+      },
+      {
+       "file": "items/lean-month.png",
+       "order": 10
+      },
+      {
+       "file": "items/level3-fields.png",
+       "order": 11
+      },
+      {
+       "file": "items/level3-loot.png",
+       "order": 12
+      },
+      {
+       "file": "items/lean-week.png",
+       "order": 13
+      },
+      {
+       "file": "items/level3-barracks.png",
+       "order": 14
+      },
+      {
+       "file": "items/pennant.png",
+       "order": 15
+      },
+      {
+       "file": "items/sundial.png",
+       "order": 16
+      },
+      {
+       "file": "items/proving-stone.png",
+       "order": 17
+      }
+     ]
+    }
+   ]
   }
  ]
 }

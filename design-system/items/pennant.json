@@ -1,9 +1,8 @@
 {
  "id": "pennant",
  "name": "Pennant",
- "sprite": "sprites/v3/growth/banner-3.png",
+ "sprite": "sprites/v3/items/pennant.png",
  "by": "level",
  "type": "",
- "why": "A building at III",
- "stand_in": true
+ "why": "A building at III"
 }

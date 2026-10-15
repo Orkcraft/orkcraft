@@ -1,10 +1,9 @@
 {
  "id": "class-lich",
  "name": "Tombstone with a ticket",
- "sprite": "sprites/v3/decor/boulder.png",
+ "sprite": "sprites/v3/items/class-lich.png",
  "by": "stage",
  "stage": 2,
  "kin": "lich",
- "why": "Your portrait's second stage",
- "stand_in": true
+ "why": "Your portrait's second stage"
 }
