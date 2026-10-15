@@ -15,25 +15,25 @@ import { BED, hash } from "./ground.js";
 export { exitsOf, simplify, lengthOf };
 export const TILE = 64;          // a track tile, art px (c2's 64 × 64), shown at step.s
 export const PATH_W = 24;        // a dirt path's width, art px at step.b: the orks' footway (§4e; the track bed is wide)
-export const PATH_L = 24;        // from a building's door down to its line
+export const PATH_L = 16;        // from a building's door down to where its waiting cart stands
 export const GAP = 32;           // between two buildings in a row (one path's width, §3)
 export const WALL_H = 48;        // the low palisade, its foot below the camp's top
-export const ROW_MAX = 5;        // buildings to a row: a sixth starts the next row and its own line
+export const ROW_MAX = 8;        // places in a row (the depot takes two): a ninth starts the next row (decisions §17.6)
 export const SIDING_TILES = 3;   // the Task board's siding: the carts waiting to go (two straights and the buffer)
 export const SIDING_SHOWN = 5;   // carts drawn on it; the rest a "+N" chip (design-system-v3.md §4, decisions §13.1)
 export const FALLBACK = [128, 112];   // a building with no v3 sprite: a block of this size
 // A building's waiting carts stand off the line on the end of its path, no pocket track (§4c rule 7, the owner): the
 // room a waiting cart takes there, art px.
-const STAND = 52;
+const STAND = 36;
 
-// The zoom steps, buildings / orks and track (§3): whole device pixels at every step. Density 2: ×1 / ×1 (an overview),
-// ×1.5 / ×1 (the default), ×3 / ×2 (close). Density 1: ×1 / ×1, ×2 / ×1 (the default). Density 3 (a phone): ⅔ (two
-// device px an art px, the overview), ×1 (three, the default) and ×2 / ×4⁄3 (close).
-// `o`: the orks' own step (decisions §17: about ×1.3 against the buildings), the nearest whole device pixel above `s`
-// (density 1 has none between ×1 and ×2, so its orks stay at `s`).
-const HI = [{ b: 1, s: 1, o: 1.5 }, { b: 1.5, s: 1, o: 1.5 }, { b: 3, s: 2, o: 2.5 }];
-const LO = [{ b: 1, s: 1, o: 1 }, { b: 2, s: 1, o: 1 }];
-const TRI = [{ b: 2 / 3, s: 2 / 3, o: 1 }, { b: 1, s: 1, o: 4 / 3 }, { b: 2, s: 4 / 3, o: 5 / 3 }];
+// The zoom steps (§3; decisions §17.6): `b` the buildings, carts, ground and paths, `s` the track, `o` the orks, each a
+// whole number of device pixels an art pixel. The default is ×1, so a MacBook (1512 × 982 or 1470 × 956, density 2)
+// shows three rows of six with their lines and the return line; the overview ×0.5 holds three rows of eight; close up
+// ×2. Orks keep the buildings' step: against the old default (buildings ×1.5, orks ×1) they read ×1.5 larger.
+// Density 1 has no whole step under ×1: its overview draws every other art pixel. Density 3 (a phone): ⅔, ×1, ×2.
+const HI = [{ b: 0.5, s: 0.5, o: 0.5 }, { b: 1, s: 1, o: 1 }, { b: 2, s: 1.5, o: 2 }];
+const LO = [{ b: 0.5, s: 0.5, o: 0.5 }, { b: 1, s: 1, o: 1 }, { b: 2, s: 1, o: 2 }];
+const TRI = [{ b: 2 / 3, s: 2 / 3, o: 2 / 3 }, { b: 1, s: 1, o: 1 }, { b: 2, s: 4 / 3, o: 2 }];
 export const stepsFor = (dpr) => (dpr >= 3 ? TRI : dpr >= 2 ? HI : LO);
 export const DEFAULT_STEP = 1;
 /** A phone's default step: the art at its own pixel (×1), whatever the screen's density. */
@@ -83,8 +83,8 @@ export function order(buildings, roads) {
  *  placed in Office (`hut`: [x, y] as fractions of the room) takes its row by its y (the top band the top row) and
  *  its place in the row by its x, so moving a card in Office moves the building in Camp; one never placed fills the
  *  room left, top row first, in the work's order (decisions-2026-10.md §14). */
-export function rowsOf(list) {
-  // the depot (§4d) is about two buildings wide: it takes two of a row's five places
+export function rowsOf(list, wide = null) {
+  // the depot (§4d) is about two buildings wide: it takes two of a row's places
   const wt = (b) => (b.type === DEPOT ? 2 : 1), size = list.reduce((n, b) => n + wt(b), 0);
   // a second row as soon as one building was placed in the lower half (Build's "Bottom row" in Camp, a card in Office)
   const low = list.length >= 2 && list.some((b) => Array.isArray(b.hut) && b.hut[1] >= 0.5);
@@ -102,9 +102,22 @@ export function rowsOf(list) {
     rows[r].push(b);
   }
   for (const row of rows) row.sort((a, c) => a.hut[0] - c.hut[0]);
-  for (const b of list.filter((x) => !Array.isArray(x.hut))) {
-    const r = rows.findIndex((row, k) => !full(k, b));
-    rows[r < 0 ? n - 1 : r].push(b);
+  const free = list.filter((x) => !Array.isArray(x.hut));
+  if (!wide) {
+    for (const b of free) {
+      const r = rows.findIndex((row, k) => !full(k, b));
+      rows[r < 0 ? n - 1 : r].push(b);
+    }
+    return rows;
+  }
+  // balanced by width (decisions §17.6): each row about the same length, so the widest row sets the camp's width and
+  // no row runs on alone; in the work's order, row after row, a row closed once the next would pass its share
+  const span = (r) => rows[r].reduce((k, b) => k + wide(b), 0);
+  const target = list.reduce((k, b) => k + wide(b), 0) / n;
+  let r = 0;
+  for (const b of free) {
+    while (r < n - 1 && rows[r].length && (full(r, b) || span(r) + wide(b) / 2 > target)) r++;
+    rows[r].push(b);
   }
   return rows;
 }
@@ -127,7 +140,11 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
   const cata = [...sorted].reverse().find((b) => b.type === WAY_OUT) || null;
   const inRows = sorted.filter((b) => b !== tower && b !== cata);
   // a service never placed beside its busiest reader, the two ends of a road back as neighbours (§4c rules 1–2)
-  const rows = neighbours(rowsOf(inRows), roads, ROW_MAX, (b) => (b.type === DEPOT ? 2 : 1));
+  // a building's room along its row in art px, the zoom aside: its sprite, a gap, the Task board's siding, the home
+  const homeArt = home && size(home) ? size(home)[0] + GAP : 0;
+  const wide = (b) => dims(b).w / B + GAP + (b.type === SIDING ? SIDING_TILES * TILE + GAP / 2 : 0)
+    + (b.type === "loot" ? homeArt : 0);
+  const rows = neighbours(rowsOf(inRows, wide), roads, ROW_MAX, (b) => (b.type === DEPOT ? 2 : 1));
 
   const td = tower ? dims(tower) : null, cd = cata ? dims(cata) : null;
   const M = Math.round(160 * B);                                        // the wilderness round the camp
@@ -160,7 +177,7 @@ export function lay(buildings, roads, step, size, waiting = () => false, home = 
     if (r === 0) lineTop = Math.max(wallY - 24 * B + band, wallY + T);
     else {
       const prev = out.lines[r - 1];
-      lineTop = Math.round(prev + T + 8 * B + band);                     // as close as the row allows (decisions §17.4)
+      lineTop = Math.round(prev + T + 4 * B + band);                     // as close as the row allows (decisions §17.4)
     }
     out.lines.push(lineTop);
     let x = colL + T + GAP * B, free = colL + T;                       // the next box's x; the line's front free from

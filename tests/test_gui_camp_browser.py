@@ -124,9 +124,9 @@ def test_the_wheel_steps_the_zoom_a_drag_pans_and_a_click_selects_then_enters(ca
     w = house.bounding_box()["width"]
     tb = town.bounding_box()
     pg.mouse.move(tb["x"] + 300, tb["y"] + 300)
-    assert step == "2/1"                                                      # density 1: buildings ×2, orks ×1
-    pg.mouse.wheel(0, 120)                                                    # further: the overview, ×1 / ×1
-    pg.wait_for_function("() => document.querySelector('.gui-camp').dataset.step === '1/1'", timeout=WAIT_MS)
+    assert step == "1/1"                                                      # the default: the art at its own pixel
+    pg.mouse.wheel(0, 120)                                                    # further: the overview, ×0.5
+    pg.wait_for_function("() => document.querySelector('.gui-camp').dataset.step === '0.5/0.5'", timeout=WAIT_MS)
     assert house.bounding_box()["width"] == w / 2
     pg.wait_for_timeout(300)
     pg.mouse.wheel(0, -120)                                                   # back
@@ -139,10 +139,11 @@ def test_the_wheel_steps_the_zoom_a_drag_pans_and_a_click_selects_then_enters(ca
     after = house.bounding_box()
     assert round(after["x"] - before["x"]) == 120 and round(after["y"] - before["y"]) == 60
     assert pg.locator(".gui-camp__building.is-selected").count() == 0         # a drag selects nothing
-    house.click()
+    corner = {"x": 6, "y": house.bounding_box()["height"] * 0.55}            # its side: clear of its steward's bubble
+    house.click(position=corner)
     pg.locator(f'.gui-camp__building.is-selected[data-id="{forge}"]').wait_for(timeout=WAIT_MS)
     assert pg.locator(".gui-panel").count() == 0
-    house.click()                                                             # the second click enters it
+    house.click(position=corner)                                              # the second click enters it
     pg.locator(".gui-panel").wait_for(state="visible", timeout=WAIT_MS)
     pg.keyboard.press("Escape")
     pg.keyboard.press("Escape")
@@ -417,9 +418,8 @@ def test_an_item_dragged_from_the_inventory_snaps_to_the_grass_and_stays_after_a
     pg.mouse.move(b["x"] + b["width"] / 2, b["y"] + b["height"] / 2, steps=4)   # over the building: no fit
     assert pg.locator(".gui-items__grid").count() == 1                         # the grid shows while dragging
     assert pg.locator(".gui-items__ghost.is-ok").count() == 0
-    foot, k = pg.evaluate("() => [Math.max(...[...document.querySelectorAll('.gui-camp__layer.is-track img')]"
-                          ".map((e) => e.getBoundingClientRect().bottom)), +document.querySelector('.gui-camp').dataset.step.split('/')[0]]")
-    target = (b["x"] + b["width"] / 2, foot + 52 * k)                          # the grass below the return line
+    h = pg.locator(".gui-camp__home").bounding_box()
+    target = (h["x"] + h["width"] + 120, h["y"] + h["height"] - 12)            # the row's open grass past the home
     pg.mouse.move(*target, steps=6)
     pg.locator(".gui-items__ghost.is-ok").wait_for(state="visible", timeout=WAIT_MS)
     pg.mouse.up()

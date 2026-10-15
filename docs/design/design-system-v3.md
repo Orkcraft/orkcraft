@@ -592,6 +592,17 @@ gauge; the track bed's curve and junction pieces to match c2's curves and c3's j
 - Shots: `img/loop/v4-before|after.png`, `density-before|after.png`, `wilderness-after.png`.
 - **Not mine.** The steel-grey rails await the art session's track (the names stay).
 
+**Density target (decisions §17.6), built.**
+- **Steps.** The default step is ×1 (it was ×1.5, a third smaller); the overview is ×0.5; close up is ×2. Each is a
+  whole number of device pixels at density 2. Orks keep the buildings' step, so against the old default they read
+  ×1.5 larger.
+- **Rows.** A row holds up to eight places (the depot is two), balanced by width rather than count, filled row after
+  row in the work's order.
+- **Tighter rows.** The door's path is 16, the waiting cart's room 36, and the line margin 4.
+- **3 × 6** fits the default view at 1512 × 982 and 1470 × 956 with its lines and the return line.
+- **3 × 8** fits the overview with room to spare, but not the default: it would need about ×0.85, not a whole step.
+- Shots: `img/loop/rows18|24-1512|1470-default|overview.jpg` and `scale-vs-target.jpg`.
+
 ## 5. Signals win by value
 
 The grey test of F1 (v3-prompts §5.2) showed the yellow flag turning into a white flag and the ❓ smaller than the
