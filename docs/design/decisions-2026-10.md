@@ -703,3 +703,16 @@ the owner says so, and as few at once as possible.
 the grass, Mission 1b, the phone's v4 screen and landscape view, the charter's routine path. The look stays as it is
 on `main`. launch-prep.md §4's measures move to about 1 December.
 
+**The wall band holds the border and the dispatcher (the owner, same day; amends the three bands above).**
+- **The wall band, left to right:** the lookout (the way in) · Drop file here · the **Task board** (the dispatcher's
+  booth with its siding, between the wall and row 1) · the Calendar and any other notice-giving building · Metrics ·
+  the **Publisher's catapult at the right end** (the way out, throwing over the back wall). Everything that crosses
+  the camp's border, in or out, stands on the wall; the dispatcher stands among them.
+- **The Task board dispatches to every row:** its siding joins line 1 at its start; a cart for a building in any row
+  goes from the siding along the loop (line 1, the right column down to line 2, the return line) to its stop, so the
+  board visibly feeds the processing row and the person's quarter alike.
+- **The catapult's track** is a spur up from line 1's east end to a buffer stop by the wall; the Review gate stands
+  at the east end of row 1, so a passed cart rolls a short way to the catapult. The buffer stop on line 2 is retired.
+- **Row 1 (processing):** Router · Transformer · the depot · Research · Script · the benches · Review board ·
+  Inspector · the Review gate (with the person's home beside it).
+
