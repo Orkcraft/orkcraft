@@ -455,3 +455,50 @@ def test_a_steward_redesigns_from_a_wish_and_is_sent_back_when_wrong(fake_repo):
     assert steward.apply_proposal(trial, "insight", report.proposals[0].to_dict()) == "a new layout"
     assert trial.building("insight").ui == good
     assert steward.redesign(fake_repo, town.scroll, "insight", "lake", "x", budget_ok=False).error
+
+
+def test_v4_kit_tones_read_and_leave_yellow_and_red_to_the_signals():
+    """design-system-v4.md §1, §3: Camp's chrome is wood, teal and parchment; words on wood and teal read at 4.5:1, words
+    on sunk parchment at 7:1, and no `kit-*` tone is a signal's yellow or red."""
+    import colorsys
+    camp = {t["name"]: t["value"]["camp"] for t in tokens.system()["color"]["tokens"]}
+    for ground in ("kit-wood", "kit-wood-hover", "accent-teal", "kit-teal-hover"):
+        assert _contrast(camp["kit-ink"], camp[ground]) >= 4.5, ground
+    assert _contrast(camp["parchment-ink"], camp["kit-parchment-deep"]) >= 7
+    assert _contrast(camp["parchment-ink"], camp["parchment"]) >= 7
+    for name, value in camp.items():
+        if name.startswith("kit-"):
+            r, g, b = (int(value[i:i + 2], 16) / 255 for i in (1, 3, 5))
+            h, _, s = colorsys.rgb_to_hls(r, g, b)
+            assert not (s > 0.6 and (h * 360 < 15 or h * 360 > 345 or 45 <= h * 360 <= 65)), name
+    family = {st["name"]: st.get("family", g["family"]) for g in tokens.system()["type"]["groups"] for st in g["styles"]}
+    for name in ("kit-title", "kit-heading", "kit-number", "kit-button", "kit-small"):
+        assert family[name] == "kit", name
+    assert tokens.system()["type"]["families"]["kit"].startswith('"Jersey 15"')
+    assert "jersey-15-latin-400-normal.woff2" in (tokens.SYSTEM / "fonts" / "fonts.css").read_text(encoding="utf-8")
+    assert (tokens.SYSTEM / "fonts" / "OFL-Jersey-15.txt").is_file()
+
+
+def test_v4_kit_pieces_are_the_drawers_output_at_whole_multiples():
+    """design-system-v4.md §2: the kit's pieces are drawn by tools/ui_kit.py on their art grid, never generated, and
+    shipped at 2 and 4 image px an art px; kit.json names each piece's size and inset."""
+    import importlib.util
+    root = Path(__file__).resolve().parent.parent
+    try:
+        from PIL import Image
+        spec = importlib.util.spec_from_file_location("ui_kit", root / "tools" / "ui_kit.py")
+        kit = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(kit)
+    except ImportError:
+        pytest.skip("the kit's drawer needs pillow")
+    out = tokens.SYSTEM / "sprites" / "v4" / "ui"
+    shipped = json.loads((out / "kit.json").read_text(encoding="utf-8"))
+    drawn = kit.pieces()
+    assert set(shipped["pieces"]) == set(drawn)
+    for name, (g, inset) in drawn.items():
+        assert shipped["pieces"][name] == {"size": [g.w, g.h], "inset": inset}, name
+        for scale, suffix in ((2, ""), (4, "@2x")):
+            with Image.open(out / f"{name}{suffix}.png") as im:
+                want = g.img.resize((g.w * scale, g.h * scale), Image.NEAREST)
+                assert im.convert("RGBA").tobytes() == want.tobytes(), f"{name}{suffix}: run python tools/ui_kit.py"
+        assert 2 * inset < min(g.w, g.h) or inset == 0, name

@@ -45,3 +45,7 @@
 @font-face { font-family: "Nunito"; font-style: normal; font-weight: 800; font-display: swap;
   src: url("nunito-cyrillic-800-normal.woff2") format("woff2");
   unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+/* v4 (docs/design/design-system-v4.md §4): Camp's chrome sets headings, numbers and buttons in Jersey 15, Latin only;
+   a Cyrillic letter falls back to Pixelify Sans's. Its pixel is 1/27 em: crisp at 27 px (13.5 on a density-2 screen). */
+@font-face { font-family: "Jersey 15"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("jersey-15-latin-400-normal.woff2") format("woff2"); }

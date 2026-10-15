@@ -1,0 +1,153 @@
+{
+ "note": "Written by tools/ui_kit.py (docs/design/design-system-v4.md \u00a72). Sizes and insets in art px; <piece>.png is 2 CSS px an art px, <piece>@2x.png 4.",
+ "px": 2,
+ "pieces": {
+  "frame": {
+   "size": [
+    22,
+    22
+   ],
+   "inset": 7
+  },
+  "frame-thin": {
+   "size": [
+    22,
+    22
+   ],
+   "inset": 7
+  },
+  "bar": {
+   "size": [
+    16,
+    16
+   ],
+   "inset": 5
+  },
+  "well": {
+   "size": [
+    8,
+    8
+   ],
+   "inset": 2
+  },
+  "plate": {
+   "size": [
+    10,
+    10
+   ],
+   "inset": 3
+  },
+  "band": {
+   "size": [
+    6,
+    6
+   ],
+   "inset": 2
+  },
+  "parchment": {
+   "size": [
+    32,
+    32
+   ],
+   "inset": 0
+  },
+  "btn-wood": {
+   "size": [
+    10,
+    10
+   ],
+   "inset": 3
+  },
+  "btn-wood-hover": {
+   "size": [
+    10,
+    10
+   ],
+   "inset": 3
+  },
+  "btn-wood-down": {
+   "size": [
+    10,
+    10
+   ],
+   "inset": 3
+  },
+  "btn-wood-off": {
+   "size": [
+    10,
+    10
+   ],
+   "inset": 3
+  },
+  "btn-teal": {
+   "size": [
+    10,
+    10
+   ],
+   "inset": 3
+  },
+  "btn-teal-hover": {
+   "size": [
+    10,
+    10
+   ],
+   "inset": 3
+  },
+  "btn-teal-down": {
+   "size": [
+    10,
+    10
+   ],
+   "inset": 3
+  },
+  "btn-teal-off": {
+   "size": [
+    10,
+    10
+   ],
+   "inset": 3
+  },
+  "tab": {
+   "size": [
+    12,
+    12
+   ],
+   "inset": 4
+  },
+  "slot": {
+   "size": [
+    10,
+    10
+   ],
+   "inset": 3
+  },
+  "tab-hover": {
+   "size": [
+    12,
+    12
+   ],
+   "inset": 4
+  },
+  "slot-hover": {
+   "size": [
+    10,
+    10
+   ],
+   "inset": 3
+  },
+  "tab-on": {
+   "size": [
+    12,
+    12
+   ],
+   "inset": 4
+  },
+  "slot-on": {
+   "size": [
+    10,
+    10
+   ],
+   "inset": 3
+  }
+ }
+}
