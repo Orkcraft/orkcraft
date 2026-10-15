@@ -628,3 +628,17 @@ where the person put them: that is the work look's own drawing and does not move
 
 P1 with the Wiki on the grass (one pass over `layout.js`); not started (nothing is launched until the owner says so).
 
+**Plots: the empty places invite (the owner, same day; PM's rules).** With the camp laying itself out, the place a
+building *could* stand is drawn as a **plot**: a lot staked out with rope, and a blank wooden sign or a blueprint on
+a post. A tap (hover on the desktop) shows the building's **silhouette** standing there (its v3 sprite in shadow,
+drawn by code) and one plain line: what it would do for this camp, why now, and its cost ("A Test bench: checks the
+Grunts' work before it reaches your gate. Free to build; its runs cost as the pool's"). **Build…** opens the usual
+build flow; **Not now** turns the plot back to grass for 14 days.
+- **Few and earned by the camp's story:** at most two plots at once, chosen by what would help next (the campaign's
+  next mission, a pain the town shows: failed tests → the Test bench, many meetings → the Calendar), never a
+  catalogue.
+- **Calm (decisions §1 rule 3, v3-prompts §14 rule 4):** no badge, no count, no animation calling for attention, no
+  yellow; Office draws none. Nothing is locked behind a plot: everything stays buildable from Build at any time.
+- The Workchief may name a plot once in its line when it appears.
+P1, with §20's layout; not started.
+
