@@ -795,3 +795,14 @@ to an ork; it is an order on the work, and it visibly makes the camp stronger.**
 Priority: wording and the sleeves frame are small (P1 with the next gate work); the lesson scroll comes with Mission
 5b (the outer loop). Not started.
 
+## 25. The settlement: joy from decisions, leisure on the grass, the home's room (15 October, the owner)
+
+From the owner's note on the settlement and his answers: the orks are **glad after the person's decisions** (pass or
+send back at the gate, a question answered, a building fixed) and **neutral otherwise, never sad, nothing decays**;
+joy shows on the orks and on their icons at the bottom, no scale in the HUD; **the grass is the person's** for
+relaxing pieces placed freely (bushes, benches, fountains, a bar, a carousel, the class's piece), and **idle orks
+walk to them**; **work buildings have no levels** (the Renown footings and banners leave the map; quality by look
+later); **the home becomes a room** with the person's growing figure and the deeds as trophies on its walls
+(silhouettes for the rest, no "?"); coins and furniture are a second stage; **names stay**, the trains are the look.
+The score stays the honest measure. [settlement.md](settlement.md). Not started; specs on the owner's word.
+
