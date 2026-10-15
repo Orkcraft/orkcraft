@@ -539,4 +539,11 @@ depot; art `g5-ground`. Rules: [design-system-v3.md](design-system-v3.md) §4e.
   the docs, the README, the marketing drafts). Code keeps its names (`warchief`, `orc.town_hall`, files, event ids);
   the old word stays in the glossary's `was`. It also takes the word "war" out of the product's main character
   (Q18's care).
+- **The logo is the Mechanic's head** from the role sprites, as drawn (to the chin, cleaned of stray pixels); the
+  wordmark's font is **New Rocker** (the owner, in the art session; 96a17a3, 4cf46af). `tools/logo.py` builds the
+  SVG, favicons, README logo and PWA icons from it. The landing draft keeps its own copy of the old font for now.
+- **The depot's bays are openings, not tracks** (780747a): the line runs under the depot; a cart shows in a free bay's
+  opening and leaves by the east gateway, so parallel work blocks no one.
+- **Gemini's monthly spending cap is reached** (HTTP 429, 15 October). `g5-ground` (the varied grass and earth, the
+  track bed's curves) waits until the owner raises the cap in AI Studio; the camp uses today's tiles meanwhile.
 
