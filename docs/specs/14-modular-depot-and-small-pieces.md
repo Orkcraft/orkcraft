@@ -1,6 +1,7 @@
 # Spec 14 — the modular depot (an ork in every bay), the council fire of parts (an ork on every seat), the small barrier
 
 Branch `spec/14-modular-depot` · model **flash** · design: process-lines.md §2–§5; design-system-v3.md §4d (the depot)
+**Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 
 ## Part A — art (the owner generates in the Gemini app or agy; no API)
 Attach: `design-system/sprites/v3/buildings/depot.png` (the depot today), `docs/design/img/references/v3/f1-town.jpg`.

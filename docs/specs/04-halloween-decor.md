@@ -1,6 +1,7 @@
 # Spec 04 — Halloween decor (an art card for the owner + items for agy)
 
 Branch `spec/04-halloween-decor` · model **flash** · design: v3-prompts.md §14 (items), decisions §22
+**Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 
 ## Part A — the owner generates the art (Gemini app or agy, no API)
 Attach these references: `docs/design/img/references/v3/f1-town.jpg`, `b1-core.jpg` (same folder).

@@ -1,6 +1,7 @@
 # Spec 13 — no Town Hall in the camp; the home's menu takes its door and the Items
 
 Branch `spec/13-home-menu` · model **flash** · design: decisions-2026-10.md §20 ("No Town Hall in the camp…")
+**Builds:** agy (round 2) · **Review:** light (docs/specs/README.md "Who builds")
 
 ## Round 2 (15 October): fix the first round, nothing else
 The branch is `spec/13-home-instead-of-town-hall` (not the name above); it already holds round 1 (`330857f`). Work on

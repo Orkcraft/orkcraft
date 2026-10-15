@@ -1,6 +1,7 @@
 # Spec 01 — the phone app's fast first load
 
 Branch `spec/01-phone-fast-load` · model **flash** · design: decisions-2026-10.md §19
+**Builds:** agy (round 2); Claude if the cache fix misses · **Review:** full (docs/specs/README.md "Who builds")
 
 ## Round 2 (15 October): fix the first round, nothing else
 The branch `spec/01-phone-fast-load` already holds round 1 (`9d8d46c`). Work on it, on top of that commit. Change

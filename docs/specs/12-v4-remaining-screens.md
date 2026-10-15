@@ -1,6 +1,7 @@
 # Spec 12 — the v4 kit on the screens it has not reached yet
 
 Branch `spec/12-v4-remaining-screens` · model **flash** · design: design-system-v4.md (the kit), decisions §17.1
+**Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 
 ## Tonight's limits (15 October: runs beside 01 and 13)
 Specs 13 and 01 run on other branches the same night. So in this spec: **skip the portrait's / home's menu and the

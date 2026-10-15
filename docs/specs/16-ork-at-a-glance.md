@@ -2,6 +2,7 @@
 
 Branch `spec/16-ork-at-a-glance` · model **pro** · design: ork-console.md (§5 one status, §14 the lanes), decisions
 §20.7 (📖 for readers), process-lines.md, spec 14 (an ork in every bay, an ork on every seat)
+**Builds:** Claude · **Review:** full (docs/specs/README.md "Who builds")
 
 ## The rule: two levels, calm by default (the owner, 15 October)
 - **On the map:** only **whether an ork works or not**, by its pose (working / idle), plus the signals that already

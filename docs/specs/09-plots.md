@@ -1,6 +1,7 @@
 # Spec 09 — plots: empty places that invite a building
 
 Branch `spec/09-plots` · model **flash** · design: decisions §20 ("Plots…", "Plots come after Mission 1") · after 07
+**Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 
 ## Art (the owner, Gemini app or agy): one small sheet
 Attach `docs/design/img/references/v3/f1-town.jpg`. Prompt: "Pixel-art, same style as the attached frame: on flat

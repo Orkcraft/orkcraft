@@ -1,6 +1,7 @@
 # Spec 07 — the person's quarter: drag buildings in Camp
 
 Branch `spec/07-quarter-drag` · model **flash** · design: decisions §20 · after spec 06
+**Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 
 ## Do
 1. In Camp, a building in the quarter (band 2+) can be dragged with the mouse (and a long press on touch). While
