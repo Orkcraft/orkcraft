@@ -1969,7 +1969,7 @@
    "file": "c2-more.png",
    "degrid": true,
    "show": 1,
-   "about": "track pieces c2 lacked (round 8, gen_sheets c2-more #1): the north-west curve (5) and the junction north-east-south (4), fitted to c2's tile and gauge (`tile_from`); its other curves (0, 2, 3) and the crossing with a branch (1) not used",
+   "about": "track pieces c2 lacked (round 8, gen_sheets c2-more #1): the north-west curve (5), fitted to c2's tile and gauge (`tile_from`); its junction north-east-south (4, its gauge off: c3-switches redraws it), its other curves (0, 2, 3) and the crossing with a branch (1) not used",
    "groups": [
     {
      "kind": "track",
@@ -1984,11 +1984,6 @@
        "file": "track/corner-nw.png",
        "order": 5,
        "exits": "nw"
-      },
-      {
-       "file": "track/t-e.png",
-       "order": 4,
-       "exits": "nes"
       }
      ]
     }
