@@ -57,6 +57,35 @@ def test_the_app_is_its_own_files_and_nothing_else():
     assert head.startswith("HTTP/1.1 200") and body == b""
 
 
+def test_every_import_of_a_served_module_is_a_served_module_with_the_names_it_takes():
+    """The app's module graph, as the phone loads it (the owner's phone stuck on "Loading…" when the desktop's layout
+    gained imports /app/ did not serve, and one name that resolved to the app's own ground.js): every relative import
+    in a served .js resolves, under /app/, to a served .js that exports each name taken from it."""
+    import posixpath
+    import re
+    served = pwa.files()
+    imports = re.compile(r'import\s*\{([^}]*)\}\s*from\s*"(\.{1,2}/[^"]+)"|import\s*"(\.{1,2}/[^"]+)"')
+    exports = re.compile(r"export\s+(?:async\s+)?(?:function\*?|const|let|var|class)\s+([\w$]+)|export\s*\{([^}]*)\}")
+    for name, path in served.items():
+        if not name.endswith(".js") or name == "sw.js":
+            continue
+        for names, rel, bare in imports.findall(path.read_text(encoding="utf-8")):
+            target = posixpath.normpath(posixpath.join(posixpath.dirname(name), rel or bare))
+            assert target in served, f"{name} imports {rel or bare}: /app/{target} is not served"
+            text = served[target].read_text(encoding="utf-8")
+            has = {m[0] for m in exports.findall(text) if m[0]}
+            has |= {x.split(" as ")[-1].strip() for m in exports.findall(text) if m[1] for x in m[1].split(",")}
+            for one in filter(None, (x.split(" as ")[0].strip() for x in names.split(","))):
+                assert one in has, f"{name} takes {one} from {target}, which does not export it"
+
+
+def test_the_service_worker_keeps_every_module_the_app_loads():
+    import re
+    sw = (pwa.ROOT / "sw.js").read_text(encoding="utf-8")
+    shell = set(re.findall(r'"([^"]+)"', sw[sw.index("SHELL"):sw.index("];")]))
+    assert {k for k in pwa.files() if k.endswith(".js") and k != "sw.js"} <= shell
+
+
 def test_the_manifest_carries_a_token_only_as_a_token():
     plain = json.loads(_split(pwa.serve("GET", "/app/manifest.webmanifest"))[1])
     assert plain["start_url"] == "./" and plain["display"] == "standalone"

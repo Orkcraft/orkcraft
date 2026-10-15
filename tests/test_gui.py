@@ -238,7 +238,7 @@ def test_every_module_the_page_imports_is_there():
     for path in re.findall(r'"(/static/[^"]+)"', index):
         assert (static / path.removeprefix("/static/")).is_file(), path
     from orkcraft.gui import pwa
-    served = pwa.files()                      # the phone's app serves some files under names of their own (camp-layout.js)
+    served = pwa.files()                      # the phone's app serves some files under names of their own (camp/layout.js)
     for js in static.rglob("*.js"):
         for rel in re.findall(r'from "(\.{1,2}/[^"]+)"', js.read_text(encoding="utf-8")):
             ok = (js.parent / rel).resolve().is_file() or (js.parent == pwa.ROOT and rel.removeprefix("./") in served)

@@ -1,5 +1,5 @@
 // The living camp on the phone, in v3 (docs/design/design-system-v3.md §3–§4, mobile.md §12): the desktop's own layout
-// (camp-layout.js, the same module) — the buildings on rows, a line of track under each, the loop, the lookout in the
+// (camp/layout.js, the same module) — the buildings on rows, a line of track under each, the loop, the lookout in the
 // wall at the way in and the catapult at the buffer stop — drawn from the v3 sprites at a whole number of device pixels
 // an art pixel. A finger pans; two fingers pinch to the next zoom step (never between steps); the camera starts on what
 // waits (the first building that asks, else the first in trouble), else on the work. A first tap on a building is the
@@ -10,7 +10,7 @@
 // CSSOM. Carts roll by CSS alone, paused while the page is hidden.
 
 import { h } from "./util.js";
-import { lay, stepsFor, phoneStep, lengthOf } from "./camp-layout.js";
+import { lay, stepsFor, phoneStep, lengthOf } from "./camp/layout.js";
 
 const V3 = "v3/";
 const AT_WORK = new Set(["WORKING", "BUSY", "PENDING", "EDITING"]);

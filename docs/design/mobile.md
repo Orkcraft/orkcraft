@@ -459,7 +459,7 @@ Checked by `tests/test_phone_console.py` and, in Chromium at 390 px, `tests/test
 ## 12. The camp in v3 on the phone (I1, 2026-10-14)
 
 The phone's living camp (`pwa/camp.js`) draws the desktop's v3 town: the same layout module (`js/camp/layout.js`,
-served to the app as `camp-layout.js`), the same sprites (`v3/…`), the same rows taken from the desktop's spots.
+served to the app as `camp/layout.js` with the modules it imports), the same sprites (`v3/…`), the same rows taken from the desktop's spots.
 
 - **Zoom by whole device pixels:** on a density-3 phone ⅔ (an overview), ×1 (the default: the art at its own pixel)
   and ×2 / ×4⁄3 (close); two fingers pinch to the next step, never between; one finger pans.
