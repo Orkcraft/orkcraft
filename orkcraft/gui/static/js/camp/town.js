@@ -104,7 +104,8 @@ function Track({ L }) {
   return html`<div class="gui-camp__layer is-track">${L.tiles.map((t) => sizeOf(`track/${t.name}.png`)
     ? img(`track/${t.name}.png`, t.x, t.y, T, T, t.rot ? `transform:rotate(${t.rot}deg)` : "")
     : html`<div class=${cls("gui-camp__rails", { "is-v": t.name === "straight-v" })} style=${`left:${t.x}px;top:${t.y}px;width:${T}px;height:${T}px`}></div>`)}
-    ${(L.crossings || []).map((c) => html`<div class="gui-camp__crossing" style=${`left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px`}></div>`)}</div>`;
+    ${(L.crossings || []).map((c) => (sizeOf("track/crossing.png") ? img("track/crossing.png", c.x, c.y, c.w, c.h)
+      : html`<div class="gui-camp__crossing" style=${`left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px`}></div>`))}</div>`;
 }
 
 /** The low palisade of rounded logs: along the back (open where the track comes in under the lookout), down the right

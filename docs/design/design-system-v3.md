@@ -475,13 +475,15 @@ switches on c2's gauge, with the north–east–south junction still owed (§0).
 - **Track and traffic.** `js/camp/track.js` gives each tile the ways a cart may leave it (`go`), so routes run one way
   round and a cart for a building behind it goes round the return line, one tile under the lowest line.
   `js/camp/traffic.js` keeps carts a cart apart, never overtaking, one that catches up waiting behind.
-- **Switches and pockets.** A switch stand stands at every fork and throws while a cart that turns there is near: a
-  stand-in by `tools/switch_standin.py`, `track/switch-still|thrown.png`, `stand_in` in the manifest. Pockets are
-  curve, straight and curve above the stop, entered and left by a T on the line. Stations keep their own track.
+- **Switches and pockets.** A switch stand (c3's `track/switch-0|1`) stands at every fork and throws while a cart
+  that turns there is near. The split on the left is c3's `t-e`. Pockets are curve, straight and curve above the stop,
+  entered and left by a T on the line: c3's `switch-e` and `merge-e` are blades on one straight, which would leave the
+  cart on the line. Stations keep their own track.
 - **Send-backs.** A rework handed straight back is kept by the road engine (`sent_back`) and wears
   `round N · 🪵 …` (`gui/state.py`).
 - **Back row and neighbours.** `js/camp/backrow.js` stands an unplaced Wiki in the back row with paths to its
-  readers: down a gap, across a line on planks, a jog under the line when no gap runs straight through. It also makes
+  readers: down a gap, across a line on c3's `track/crossing`, a jog under the line when no gap runs straight
+  through. It also makes
   return pairs among unplaced buildings neighbours.
 - **The fit.** Both lines and the return line do not fit the default ×1.5 at 1440 × 900: the return line shows at its
   edge there and whole at the overview. A back row adds its height and a path's room under each line above a lower

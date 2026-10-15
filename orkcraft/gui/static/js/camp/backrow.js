@@ -136,6 +136,6 @@ export function pathTo(s, p, L, w) {
     ...(jog ? [jog, { x: g2 - half, y: jog.y, w, h: strip - jog.y + foot }] : []),          // across, down the second
     stubOf(g2),                                                                             // along the reader's front
   ].map((b) => ({ ...b, x: Math.round(b.x), y: Math.round(b.y), service: s.id, reader: p.id }));
-  const crossings = Array.from({ length: r }, (_, k) => ({ x: g1 - half, y: L.lines[k], w, h: T, service: s.id }));
+  const crossings = Array.from({ length: r }, (_, k) => ({ x: Math.round(g1 - T / 2), y: L.lines[k], w: T, h: T, service: s.id }));
   return { boxes, crossings, x: g1 };
 }

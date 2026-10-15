@@ -7,10 +7,10 @@
 //
 // Pure: no page (tests/test_camp_layout.py runs it in Node). Every number is CSS px in the world's frame.
 
-// A tile's ways out (n e s w), turned a quarter clockwise `rot` / 90 times. c2 has no junction with exits north, east
-// and south yet: its north T turned stands in (a flat track from above reads the same turned, §4.1).
+// A tile's ways out (n e s w), turned a quarter clockwise `rot` / 90 times. `t-e` is c3's north–east–south junction
+// (the split on the left), `t-n` c2's north T (a pocket's mouth and tail; turned, the right column's T).
 const EXITS = { "straight-h": "ew", "straight-v": "ns", "corner-ne": "ne", "corner-sw": "sw", "corner-se": "se",
-                "corner-nw": "nw", "t-n": "new", "stop-e": "w" };
+                "corner-nw": "nw", "t-n": "new", "t-e": "nes", "stop-e": "w" };
 const CW = { n: "e", e: "s", s: "w", w: "n" };
 export function exitsOf(name, rot = 0) {
   let out = [...(EXITS[name] || "")];
@@ -32,7 +32,7 @@ export function loop(T, lines, colL, colR, multi, pockets = []) {
   for (let y = lines[0] - T; y > -T; y -= T) tile("straight-v", colL, y, 0, "s");
   lines.forEach((ly, r) => {
     // the split on the left: in from the way in (line 1) or up from the return line; east into the line, or on up
-    const sw = tile("t-n", colL, ly, 90, r === 0 ? "e" : "en");
+    const sw = tile("t-e", colL, ly, 0, r === 0 ? "e" : "en");
     if (r > 0) switches.push({ x: colL, y: ly, on: "n", turn: "e", side: "w", tile: sw });
     const pk = new Set(pockets[r] || []);
     for (let x = colL + T; x < colR; x += T) {

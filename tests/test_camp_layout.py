@@ -80,7 +80,7 @@ console.log(JSON.stringify({ broken, names, sidings: L.sidings.length }));
 """, tmp_path)
     assert out["broken"] == []                                                      # every exit meets its neighbour
     names = out["names"]
-    assert "t-n@90" in names and "corner-ne" in names                               # the split, the left turn
+    assert "t-e" in names and "corner-ne" in names                                  # the split, the left turn
     assert "corner-sw" in names and "t-n" in names                                  # the right turn, the merge
     assert names.count("stop-e") == 2 and out["sidings"] == 1                       # the buffer; the Task board's siding
 

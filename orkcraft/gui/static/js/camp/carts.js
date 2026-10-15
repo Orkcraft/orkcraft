@@ -68,19 +68,19 @@ function frame(now) {
 }
 const wake = () => { if (!raf && typeof requestAnimationFrame === "function") raf = requestAnimationFrame(frame); };
 
-/** A switch stand beside the track (§4c rule 6): its lever and target arm say the way it is set, by position. Drawn
- *  from the stand-in (track/switch-still|thrown.png, tools/switch_standin.py) until the art session draws it. */
+/** A switch stand beside the track (§4c rule 6): its lever and target arm say the way it is set, by position
+ *  (c3's `track/switch-0.png` still, `switch-1.png` thrown). */
 export function Switches({ L }) {
   const S = L.step.s, T = L.T;
   stands = stands.slice(0, L.switches.length);
   const at = (w) => ({ n: [T * 0.78, 4 * S], s: [T * 0.22, T + 2 * S], w: [-6 * S, T * 0.92], e: [T + 6 * S, T * 0.92] }[w]);
   return html`<div class="gui-camp__layer is-switches">${L.switches.map((w, i) => {
-    const [dx, dy] = at(w.side), s = sizeOf("track/switch-still.png") || [16, 24];
+    const [dx, dy] = at(w.side), s = sizeOf("track/switch-0.png") || [16, 24];
     return html`<div key=${`${w.x},${w.y}`} class="gui-camp__switch" data-i=${i} data-ret=${w.ret ? "1" : ""}
         ref=${(el) => { stands[i] = el; }} title=${say(w.ret ? "Switch: on to the buffer stop, or round again" : "Switch")}
         style=${`left:${Math.round(w.x + dx - (s[0] * S) / 2)}px;top:${Math.round(w.y + dy - s[1] * S)}px;width:${s[0] * S}px;height:${s[1] * S}px`}>
-      <img class="gui-camp__px is-still" src=${`${V3}track/switch-still.png`} alt="" draggable="false" />
-      <img class="gui-camp__px is-thrown" src=${`${V3}track/switch-thrown.png`} alt="" draggable="false" />
+      <img class="gui-camp__px is-still" src=${`${V3}track/switch-0.png`} alt="" draggable="false" />
+      <img class="gui-camp__px is-thrown" src=${`${V3}track/switch-1.png`} alt="" draggable="false" />
     </div>`;
   })}</div>`;
 }
