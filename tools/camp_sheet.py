@@ -42,6 +42,11 @@ at about 4.17 image px per art px and smooths it, and JPEG blurs again), so each
 inner pixels, then the magenta cast near the key is removed and the sprite is reduced to its own 24 colours (a median
 cut on its own pixels), with a hard alpha.
 
+**The rule (CLAUDE.md, "Art: never re-pixelate generated images"):** the re-pixelating path above (the grid, `pick:
+mode`, the palette, `merge`) is kept only for the dpr-1 sprite and the manifest's sizes and anchors. What a dense screen
+draws is the high-density cut (tools/camp_hd.py, the spec's `hd`): cut once from the source, despilled, downscaled once
+to device pixels, never re-pixelated.
+
 Every sprite it writes is a **placeholder** (generated art, docs/design/color-pass.md §10b), to be replaced by the
 commissioned artist's; the manifest says so on every row. Needs `pip install pillow numpy`.
 """
