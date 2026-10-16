@@ -1034,3 +1034,17 @@ and the person does not see it before the work. So:
 Mission 1 keeps working (its drill card). Track 1, P1, a spec after 28 (it touches the board and the pool), together
 with §39's daily batch. "A product keeper that prioritises" is a hypothesis after the testers.
 
+## 42. The gate merges into a branch it names; the owner tests function in Office first (16 October, the owner)
+
+1. **The Review gate merges, it does not ask anyone to read a PR** (§39, the interview of 16 October: nobody reads the
+   PRs). Each code result (or the day's batch) at the gate shows **its tests' status** (passed / failed, how many,
+   the failing names) and one action: **Merge into `<branch>`**, the branch a setting of the gate (default `dev`,
+   created if missing), changeable right at the gate (e.g. to `main`) before the press. A merge conflict or red
+   tests put the result in **Needs you**, never merged. A PR stays possible as an option of the gate, not the way.
+2. **How the owner tests:** he tests what the five buildings do in **Office** (no sprites: the layout, the flow, the
+   words), and builds Camp's look (sprites, animation) from what he learns. Function first, look second, the same
+   data (§35's order). Two limits: what exists only in Camp (Mission 1 as a scene, 17b; the rooms, 22–23; walking
+   orks and carts) is tested in Camp; and since testers start in Camp, the **first day is played in Camp once
+   before each release**. The fix lists the PM writes say which look a finding was seen in.
+Both improve existing mechanics (§27). Item 1 joins §39's spec (gate-kinds); track 1, P1.
+
