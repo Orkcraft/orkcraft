@@ -858,3 +858,13 @@ Camp's light grass draws the eye from the buildings and the signals. Of four pre
 ([img/grass-variants.png](img/grass-variants.png)) the owner chose **B**: saturation +30 %, brightness −25 %,
 contrast −10 %, applied once to the grass tiles (the grass pixels only in the tiles shared with the path) and to the
 Camp grass tokens. A colour change, not a re-cut (CLAUDE.md "Art"). Spec 18.
+
+## 30. Camp's camera stays close; the wilderness is composed (16 October, the owner)
+
+1. **No far zoom-out in Camp.** Pulled back, the buildings stop reading and the empty wilderness fills the screen.
+   The default view (the railway across the whole screen) is the farthest; the wheel scrolls **down** the lines,
+   since new lines are added at the bottom; closer zooms stay. Office keeps its map. Spec 19 (agy).
+2. **Trees and bushes are placed, not scattered.** Today's hash on a grid reads as random. Hand-composed groves on
+   named places round the camp (a pine band behind the wall, groves down the sides with gaps, the corners, the pond),
+   the grass by the camp left open for the person's own pieces. Spec 20 (Claude); the owner signs off the shots.
+Both improve existing mechanics (§27).
