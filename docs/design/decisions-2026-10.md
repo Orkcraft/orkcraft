@@ -868,3 +868,13 @@ Camp grass tokens. A colour change, not a re-cut (CLAUDE.md "Art"). Spec 18.
    named places round the camp (a pine band behind the wall, groves down the sides with gaps, the corners, the pond),
    the grass by the camp left open for the person's own pieces. Spec 20 (Claude); the owner signs off the shots.
 Both improve existing mechanics (§27).
+
+## 31. Entering a building; its things are its data; doors (16 October, the owner)
+
+A click on a building in Camp dims the camp and shows the building **in the middle, roof off, on the whole screen**;
+settings behind a gear, no permanent panel; Exit and Esc. In every room **the building's data are things** and the
+person acts on them (the Task board's cards already are). Before the testers: the screen and the **Agent pool's** and
+the **Review gate's** rooms (their art made by the owner, inside only); External listeners if time allows; the rest
+after. **Doors:** an ork walks only into a building with a doorway; the 13 without one are open-air, their ork works
+beside them; a building redrawn from now on gets a standard front door, its outside and inside made on one sheet.
+[interiors.md](interiors.md), specs 21–24. An improvement of existing mechanics (§27).

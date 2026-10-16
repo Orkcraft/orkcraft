@@ -17,7 +17,8 @@ Workchief speak on the map, and walk the person through each building.
    a speech bubble anchored above him in the v4 kit (parchment, his face on a teal plate) shows the quest's lines one
    at a time: *Next*, Space or a click; the quest's press on its last line; *Skip the mission* in the corner. The
    lines live in `realm/mission.py` with the quests (more than one line per quest now), through `say()`.
-3. **The walk:** after a quest raises its building, the building's own view opens and two or three steps highlight
+3. **The walk:** after a quest raises its building, the building's room opens (spec 21's screen; the Agent pool's and the
+   Review gate's rooms from specs 22 and 23 once merged, else the plain room) and two or three steps highlight
    one part each (the rest of the view dimmed), the Workchief's line beside it; *Next*, *Got it* (ends the walk),
    *Back to the camp*. Task board: the drill card, how cards arrive. Agent pool: the bays and the orks, where ❓ shows.
    Review gate: the barrier, pass or send back, the waybill. Each step names its target by a stable selector in the
