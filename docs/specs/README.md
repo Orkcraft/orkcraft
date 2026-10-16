@@ -132,7 +132,7 @@ open-questions.md "After the testers" (§36). Within a track, P0 first.
 | # | spec | priority | who builds | review |
 |---|---|---|---|---|
 | 26 | [five buildings at the first start; the others hidden](26-five-buildings.md) (merged) | P0 | **Claude** | light |
-| 28 | [the lean Agent pool: fewer tokens for the same parallel work](28-lean-pool.md) (round 2 at the top) | P1, before 17b | **Claude** | full |
+| 28 | [the lean Agent pool: fewer tokens for the same parallel work](28-lean-pool.md) (merged) | P1 | **Claude** | full |
 | fix lists | one short spec per building from what the owner finds testing it (`docs/specs/fix-<building>.md`) | P0, as they come | agy or Claude | light |
 | idea-to-plan | an idea on the Task board → the keeper's questions → to-dos for the person + ork cards under the idea, *parallel* / *after X* → the person passes the plan → the pool; the board without In progress / Done, one **Needs you** lane (decisions §41); spec after 28 | P1 | **Claude** | full |
 | gate-kinds | the Review gate by what the result is: what goes to people one by one, code as one batch a day (decisions §39); code merges into a branch chosen at the gate (default `dev`), tests' status on each result (§42); the spec after the owner's tests | P1 | **Claude** | full |

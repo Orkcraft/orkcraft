@@ -50,8 +50,9 @@ The state a new product-and-marketing session starts from. Update it when you ha
   Discord, places).
 
 ## State on 16 October (~11:00 Berlin)
-- **Specs 26 and 27 merged** (16 October afternoon). Spec 28 round 2 (the rollover counts billed tokens, not context;
-  tests can be gamed) in a new dev session. Then 17b.
+- **Specs 26, 27 and 28 merged** (16 October afternoon and evening). Next Claude spec: 17b (after 19 is merged).
+- Flaky browser tests seen in full runs, passing alone: `test_every_type_built_draws_three_ways[watchtower]`,
+  `test_a_building_is_copied_to_another_orkspace_from_its_menu`. Not fixed; watch them.
 - Merged to `main` today: spec 01 round 3 and **01b** (`2ecd9f1`), 12, 13b, 17a, 21, 24, icon-hd, art s1-steampunk.
   `interiors.md` defines all 23 buildings for the shared room kit; specs 22–23 updated for it.
 - **Not merged: spec 18** (grass). `spec/18-darker-grass` holds round 1 only (`3a60b44`, the tiles are right);
