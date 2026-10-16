@@ -3,6 +3,16 @@
 Branch `spec/13-home-menu` · model **flash** · design: decisions-2026-10.md §20 ("No Town Hall in the camp…")
 **Builds:** agy (round 2) · **Review:** light (docs/specs/README.md "Who builds")
 
+## Merged (16 October); a small cleanup left for a later run
+Rounds 1 and 2 are in `main` (`541f2ef`). Left, on a new branch `spec/13b-home-cleanup` from `main`, changing only
+`tests/test_pwa_browser.py`, `js/camp/town.js`, `js/camp/notices.js`:
+1. In `tests/test_pwa_browser.py`, drop the `notice_reaches_home` assertion: it compares a lambda defined in the test,
+   so it proves nothing (the phone's Camp, `pwa/camp.js`, does not load `notices.js`). Keep the no-hall and
+   draws-without-error checks.
+2. `town.js` (~247): the charter entry calls `command("charter.open")`, which does not exist until spec 03; remove it
+   until then.
+3. `notices.js`: one `isHall(id)` helper on `HALL` instead of `id === "town_hall" || id === HALL` twice.
+
 ## Round 2 (15 October): fix the first round, nothing else
 The branch is `spec/13-home-instead-of-town-hall` (not the name above); it already holds round 1 (`330857f`). Work on
 it, on top of that commit. Change only `orkcraft/gui/static/js/camp/layout.js`, `town.js`, `notices.js`,
