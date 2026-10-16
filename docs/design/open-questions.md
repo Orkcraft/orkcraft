@@ -237,4 +237,5 @@ New mechanics, buildings or systems wait here, one line each, until the concept 
   - the Review gate in a batch: results gather, the person passes them once a day with one look at the whole;
   - deterministic buildings without a model (Script, Test bench, UX bench: perf, logs, visual regression) back in
     the Build menu.
-
+- A product keeper on the Task board that prioritises the ideas against a stated goal (decisions §41: the person orders
+  the cards for now).

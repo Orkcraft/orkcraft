@@ -1008,3 +1008,21 @@ at most once and lightly, else the question goes to the person; tests are the re
 short; a full context rolls over. The waybill shows where the tokens went, so the owner's tests measure it. A
 simplification of the existing pool (§27), track 1, P1. Spec 28, after 26 and 27, before 17b.
 
+## 41. From an idea to work: the Task board's keeper plans, the person passes the plan (16 October, the owner)
+
+Turning ideas into specs and small tasks is the step everything after depends on (our own process, the interview of
+16 October, the owner). Today the plan lives inside the Agent pool (`realm/plans.py`: parts, `after`, `max_parallel`)
+and the person does not see it before the work. So:
+1. **A raw idea goes on the Task board** to its keeper. If it is unclear, the keeper asks: a few questions on the card,
+   answered in the console (the existing ask path), not a new chat. One keeper with stages (triage, plan), as the
+   pool's steward already has (`steward.pick(use=…)`); **not several keepers** (each would be calls and handed
+   context, what §40 cuts). Prioritising stays the person's: the order of the cards.
+2. **The keeper turns the idea into two lists, grouped under the idea** (one colour, like an epic): **to-dos for the
+   person** (the board's to-do lane) and **task cards for the orks**, each marked *in parallel* or *after X*.
+3. **The person passes the plan before the work** (the Review gate before the work: three voices now). Then the cards
+   go to the Agent pool, separately, as today's Send.
+4. **The board loses In progress and Done.** Progress is seen on the map (carts, the pool), results at the Review
+   gate. The board keeps its to-do lanes and one lane, **Needs you**, for what failed or is stuck. A simplification.
+Mission 1 keeps working (its drill card). Track 1, P1, a spec after 28 (it touches the board and the pool), together
+with §39's daily batch. "A product keeper that prioritises" is a hypothesis after the testers.
+
