@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from orkcraft import settings
 from orkcraft.core import buildings, roads
 from orkcraft.realm import catalog, intents, lake, modes, naming, script_first
 
@@ -31,7 +32,7 @@ def for_role(role_id: str) -> list[str]:
     count: dict[str, int] = {}
     for i in intents.INTENTS:
         if i.role == role_id:
-            for b in i.plan.get("buildings", []):
+            for b in intents.offered_plan(i.plan)["buildings"]:
                 count[b["type"]] = count.get(b["type"], 0) + 1
     return sorted(count, key=lambda t: -count[t])[:FOR_YOU]
 
@@ -46,7 +47,8 @@ def catalog_types(profile: dict | None = None) -> list[dict[str, Any]]:
               | {catalog.DEFAULT_TYPE})
     intent = {tid: need for need, ids in catalog.INTENTS for tid in ids}
     order = {tid: n for n, tid in enumerate(tid for _, ids in catalog.INTENTS for tid in ids)}
-    types = sorted((t for t in catalog.TYPES.values() if t.id not in hidden),
+    machine = settings._raw(settings.path())
+    types = sorted((t for t in catalog.TYPES.values() if t.id not in hidden and catalog.offered(t.id, machine)),
                    key=lambda t: (t.landscape, order.get(t.id, len(order))))
     return [{"id": t.id, "title": t.title, "summary": modes.strip_emoji(t.summary), "agentic": t.agentic,
              "landscape": t.landscape, "takes": catalog.takes(t.id), "sends": [e.label for e in t.events][:6],

@@ -304,7 +304,8 @@ def propose(request: str, repo_root: Path, type_id: str | None = None,
         return BuildResult(None, [], error=RETIRED)
     types = [catalog.TYPES[type_id]] if type_id in catalog.TYPES else \
         [t for t in catalog.TYPES.values()
-         if t.id not in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES]
+         if t.id not in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES
+         and catalog.offered(t.id)]
     text_catalog = catalog.catalog_text(types)
     pick = f"Its type is fixed: {type_id}." if type_id else "Pick the type that fits the request best."
     attempts: list[Attempt] = []
