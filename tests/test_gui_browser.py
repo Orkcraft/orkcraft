@@ -2546,11 +2546,11 @@ def test_mission_1_shows_its_quest_in_the_warchiefs_line_and_sets_up_the_board(p
     server, _ = gui
     pg = page
     server.host.town.call(server.host.mission.begin)
-    log = pg.locator(".gui-warchief__setup", has_text="Mission 1 · quest 1 of 5")
+    log = pg.locator(".gui-warchief__setup", has_text="Mission 1 · quest 1 of 4")
     log.wait_for(state="visible", timeout=WAIT_MS)
     assert "the work needs somewhere to lie" in log.inner_text() and "free, no model" in log.inner_text()
     log.get_by_role("button", name="Set up the Task board").click()
-    pg.locator(".gui-warchief__setup", has_text="quest 2 of 5").wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".gui-warchief__setup", has_text="quest 2 of 4").wait_for(state="visible", timeout=WAIT_MS)
     board = server.host.mission.mission.state["built"]["board"]
     _hut(pg, board).wait_for(state="visible", timeout=WAIT_MS)
     pg.locator(".gui-warchief__setup").get_by_role("button", name="Skip the mission").click()
@@ -2564,8 +2564,8 @@ def test_mission_1_asks_for_the_hooks_once_before_quest_4_showing_what_is_writte
     server, _ = gui
     pg = page
     root = server.host.town.repo_root
-    mission.save(root, {"on": True, "quest": "listen", "done": ["board", "pool", "gate", "office"], "built": {}})
-    log = pg.locator(".gui-warchief__setup", has_text="quest 4 of 5")
+    mission.save(root, {"on": True, "quest": "listen", "done": ["board", "pool", "gate"], "built": {}})
+    log = pg.locator(".gui-warchief__setup", has_text="quest 4 of 4")
     log.wait_for(state="visible", timeout=WAIT_MS)
     assert ".claude/settings.json" in log.inner_text() and "orkline hooks remove" in log.inner_text()
     assert log.get_by_role("button", name="Set up External listeners").count() == 0     # the answer first
