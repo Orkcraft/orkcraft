@@ -851,3 +851,10 @@ window's chrome is put away and the stage zoomed, the Workchief walks in and spe
 the foot; each building raised opens and is walked through in two or three steps (spec 17b, Claude). The first win
 moves to about 4 minutes. An improvement of an existing mechanic, so inside §27. [first-mission.md](first-mission.md)
 §12. P0 before the testers.
+
+## 29. Darker, richer grass (16 October, the owner)
+
+Camp's light grass draws the eye from the buildings and the signals. Of four previews
+([img/grass-variants.png](img/grass-variants.png)) the owner chose **B**: saturation +30 %, brightness −25 %,
+contrast −10 %, applied once to the grass tiles (the grass pixels only in the tiles shared with the path) and to the
+Camp grass tokens. A colour change, not a re-cut (CLAUDE.md "Art"). Spec 18.

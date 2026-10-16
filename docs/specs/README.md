@@ -103,6 +103,7 @@ Every spec carries two lines, for agy above all: **"Change nothing outside these
 | 02 | [Mission 1 blockers](02-mission1-blockers.md) (filled after the owner plays it) | before the testers | flash | agy | light |
 | 17a | [the onboarding's one fork](17a-mission-starts-at-once.md) (the tutorial, or a ready town) | before the testers | flash | agy | light |
 | 17b | [Mission 1 as a scene](17b-mission-scene.md) (the Workchief on the map, a walk through each building) | before the testers, after 17a | — | **Claude** | full |
+| 18 | [darker, richer grass](18-darker-grass.md) (variant B) | before the testers | flash | agy | light |
 | 03 | [the charter: "My project"](03-charter.md) | before the testers | pro | **Claude** | full |
 | 04 | [Halloween decor](04-halloween-decor.md) (art card + items) | before 31 October | flash | agy | light |
 | 12 | [the v4 kit on the remaining screens](12-v4-remaining-screens.md) (audit, then move; round 2 at the top) | before the testers | flash | agy | light |
