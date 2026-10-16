@@ -9,6 +9,8 @@ come to is applied on the town's thread.
 """
 from __future__ import annotations
 
+import re
+import shlex
 import threading
 import time
 from pathlib import Path
@@ -21,6 +23,30 @@ if TYPE_CHECKING:
     from orkcraft.core.workers.barracks import RunOutcome
 
 DUPLICATE_LABELS = frozenset({"duplicate", "superseded"})   # a closed pull request so labelled is no 👎
+TEST_DIRS = frozenset({"test", "tests", "__tests__", "spec", "specs", "testing"})
+TEST_NAME = re.compile(r"^(test_.*|.*_test\.\w+|.*\.(test|spec)\.\w+|conftest\.py|pytest\.ini|tox\.ini|setup\.cfg|"
+                       r"pyproject\.toml|noxfile\.py|\.coveragerc|jest\.config\.\w+|vitest\.config\.\w+|"
+                       r"karma\.conf\.\w+|playwright\.config\.\w+)$", re.I)
+RUNNER_FILES = {"make": "Makefile", "npm": "package.json", "yarn": "package.json", "pnpm": "package.json",
+                "tox": "tox.ini", "nox": "noxfile.py", "cargo": "Cargo.toml", "go": "go.mod"}
+
+
+def touches_tests(files: list[str], test_cmd: str) -> bool:
+    """The change touches what judges it: a test file, the test config (conftest, pytest / pyproject settings…)
+    or a file the repo's `test_cmd` names or runs through. Then green tests are no review: the steward reads it."""
+    try:
+        words = shlex.split(test_cmd or "")
+    except ValueError:
+        words = (test_cmd or "").split()
+    named = {w.strip("./") for w in words if "/" in w or "." in w.lstrip(".")}
+    named |= {RUNNER_FILES[w] for w in words if w in RUNNER_FILES}
+    for f in files:
+        parts = f.replace("\\", "/").split("/")
+        if TEST_DIRS & {p.lower() for p in parts[:-1]} or TEST_NAME.match(parts[-1]):
+            return True
+        if any(f == n or f.startswith(n.rstrip("/") + "/") or parts[-1] == n for n in named if n):
+            return True
+    return False
 
 
 class ReviewMixin:
@@ -127,8 +153,9 @@ class ReviewMixin:
                 return
             else:
                 tests = f"`{cmd}` passes: the barracks ran it on the branch itself, after the ork"
-                green = self.review_by == "tests"          # the tests were the review: no steward's call
+                green = self.review_by == "tests" and not touches_tests(files, cmd)   # not judged by what it changed
         extra, out.clashes, met = self._review_context(task, files, git, task.branch)
+        green = green and not met and not out.clashes     # a design brief or a clash: the steward reads it
         if task.parent:                                   # a part: no pull request of its own
             if self.goal.sub_review and not green:
                 verdict = self._steward(bk.review_prompt(self.keeper, self.orders, task, out.text, diff, tests, bk.LOCAL),
@@ -147,7 +174,7 @@ class ReviewMixin:
                 out.pr, out.pr_note = git.publish(workdir, task.branch, task.base, task.title, body)
             return
         if green:                                         # it still stops at the Review gate for the person
-            out.accepted, out.notes, out.scope = True, tests, rule or bk.EXTERNAL
+            out.accepted, out.notes, out.scope = True, tests, rule or (bk.EXTERNAL if commits else bk.LOCAL)
             out.designs = briefs.states(met, files, "")
             if git is not None and out.scope == bk.EXTERNAL:
                 body = f"{task.text}\n\n---\n\n{out.text}\n\n_Its tests are its review: {tests}_" + self.pr_notes(task, out)

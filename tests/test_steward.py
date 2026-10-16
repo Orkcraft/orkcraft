@@ -184,7 +184,7 @@ def test_a_steward_runs_each_task_on_its_own_tier(monkeypatch, tmp_path):
             scroll = s
     BarracksWorker._steward(Pool(), "review it", tmp_path, threading.Event(), RunOutcome(), use="review")
     BarracksWorker._steward(Pool(), "answer it", tmp_path, threading.Event(), RunOutcome(), use="answer")
-    assert seen == [("claude", "opus"), ("claude", "sonnet")]      # review: elder; answer: its setting's
+    assert seen == [("claude", "opus"), ("claude", "haiku")]       # review: elder; answer: the light tier (spec 28)
     Pool.config = {"steward": "claude"}                              # its tool, no model of its own
     BarracksWorker._steward(Pool(), "the whole", tmp_path, threading.Event(), RunOutcome(), use="final")
     Pool.aim_now = "thrift"                                          # a tight quota runs it as 🪙

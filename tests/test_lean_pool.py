@@ -3,6 +3,7 @@ at most one light steward answer, tests as the review of code, few and short rol
 the waybill says where the tokens went."""
 from __future__ import annotations
 
+import json
 import threading
 from pathlib import Path
 
@@ -11,7 +12,8 @@ import pytest
 from orkcraft.core.workers.barracks import BarracksWorker, RunOutcome
 from orkcraft.gui import waybill
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import personas, pipes, plans, pool_spend
+from orkcraft.realm import briefs, personas, pipes, plans, pool_spend, tiers
+from orkcraft.sources import sessions
 from tests.pool_fakes import FakeGit, Steward
 from tests.test_gui_pool_clan import _host, _raised, _until
 
@@ -161,17 +163,36 @@ def test_removing_a_persona_frees_its_ork(fake_repo, monkeypatch, steward):
 
 # -- 5. a full context rolls over ----------------------------------------------------------------------------------
 
-def test_a_run_over_60_percent_of_lumber_makes_the_next_task_cold(fake_repo, monkeypatch, steward):
-    resumes, tokens = [], []
+def _turns(workdir, session: str, contexts: list[int]) -> int:
+    """Claude Code's transcript of a session gets one assistant turn per context (input + cache read); returns
+    what the run bills for them: every turn's input, cache and output summed, as the tool's JSON reports it."""
+    path = sessions.claude_projects_dir(Path(workdir)) / f"{session}.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    billed = 0
+    with path.open("a", encoding="utf-8") as f:
+        for i, ctx in enumerate(contexts):
+            usage = {"input_tokens": 50, "cache_read_input_tokens": ctx - 50, "cache_creation_input_tokens": 0,
+                     "output_tokens": 400}
+            billed += ctx + 400
+            f.write(json.dumps({"type": "assistant", "message": {"id": f"{session}-{path.stat().st_size}-{i}",
+                                                                 "role": "assistant", "content": [], "usage": usage}})
+                    + "\n")
+    return billed
+
+
+def test_a_run_over_60_percent_of_lumber_makes_the_next_task_cold(fake_repo, monkeypatch, steward, tmp_path):
+    monkeypatch.setenv("CLAUDE_HOME", str(tmp_path / "claude"))
+    resumes, contexts = [], []
 
     def work(harness, prompt, workdir, cancel, model, env, resume):
         resumes.append(resume)
-        return "done", 0.1, tokens.pop(0), resume or f"s{len(resumes)}"
+        session = resume or f"s{len(resumes)}"
+        return "done", 0.1, _turns(workdir, session, [contexts.pop(0)]), session
 
     host, bid, w = _pool(fake_repo, monkeypatch, work)
     limit = host.town.scroll.budget.lumber_context_limit_tokens
     assert w.foreman.context_limit == limit
-    tokens[:] = [int(limit * 0.5), int(limit * 0.7), 10]
+    contexts[:] = [int(limit * 0.5), int(limit * 0.7), 1000]
     for i in range(3):                                   # the same ticket: a follow-up of the same ork each time
         w.new_task(f"ABC-12 part {i}", f"ABC-12: step {i}")
         assert _until(lambda: len(resumes) == i + 1 and all(o.status == "idle" for o in w.state.orcs))
@@ -180,6 +201,31 @@ def test_a_run_over_60_percent_of_lumber_makes_the_next_task_cold(fake_repo, mon
     f = bk.Foreman({}, context_limit=1000)
     assert f.can_resume(bk.PoolOrc("G", "claude", session="s", context=600))
     assert not f.can_resume(bk.PoolOrc("G", "claude", session="s", context=601))
+
+
+def test_the_context_is_the_last_turn_s_not_the_run_s_billed_sum(fake_repo, monkeypatch, steward, tmp_path):
+    """Round 2: an agentic run of many turns bills far more than 60 % of 🪵 while its context (the last turn's input
+    and cache) stays under it — the ork stays warm."""
+    monkeypatch.setenv("CLAUDE_HOME", str(tmp_path / "claude"))
+    resumes, billed = [], []
+
+    def work(harness, prompt, workdir, cancel, model, env, resume):
+        resumes.append(resume)
+        session = resume or f"s{len(resumes)}"
+        limit = host.town.scroll.budget.lumber_context_limit_tokens
+        steps = [int(limit * x) for x in (0.08, 0.12, 0.17, 0.22, 0.28, 0.35)]   # the context grows turn by turn
+        billed.append(_turns(workdir, session, steps))
+        return "done", 0.4, billed[-1], session
+
+    host, bid, w = _pool(fake_repo, monkeypatch, work)
+    limit = host.town.scroll.budget.lumber_context_limit_tokens
+    for i in range(2):
+        w.new_task(f"ABC-7 part {i}", f"ABC-7: step {i}")
+        assert _until(lambda: len(resumes) == i + 1 and all(o.status == "idle" for o in w.state.orcs))
+    assert billed[0] > 0.6 * limit                       # the sum over turns: well over 60 %
+    assert resumes == ["", "s1"]                         # the last turn read 35 %: the next task resumes
+    assert not any(d.action == "rollover" for d in w.state.decisions(30))
+    assert w.state.orcs[0].context == int(limit * 0.35) and w.state.orcs[0].tokens == sum(billed)
 
 
 # -- 6. where the tokens went --------------------------------------------------------------------------------------
@@ -205,3 +251,51 @@ def test_the_waybill_shows_the_ork_s_and_the_steward_s_spend_split(fake_repo, mo
     again = pipes.trail_of([hop.as_dict()])[0]                            # as it is kept on the cart, and read back
     assert again.spend == hop.spend and waybill._stop(host.town, again)["split"] == split
     assert pool_spend.part_of("triage") == pool_spend.part_of("plan") == "planning"
+
+
+# -- round 2 -------------------------------------------------------------------------------------------------------
+
+@pytest.mark.parametrize("changed", [("tests/test_login.py",), ("app.py", "conftest.py"), ("pyproject.toml",),
+                                     ("src/login.test.ts",), ("app.py", "scripts/check.sh")])
+def test_green_tests_are_no_review_when_the_change_touches_the_tests_or_their_config(fake_repo, monkeypatch,
+                                                                                    steward, changed):
+    host, bid, w = _pool(fake_repo, monkeypatch, lambda *a: ("ok", 0.0, 0, ""),
+                         test_cmd="pytest -q && ./scripts/check.sh")
+    _review(w, FakeGit(tests=(True, "1 passed"), files=changed))
+    assert _reviews(steward) == 1                        # it changed what judges it: the steward reads the diff
+
+
+def test_green_tests_are_no_review_when_a_design_brief_or_a_clash_is_met(fake_repo, monkeypatch, steward):
+    host, bid, w = _pool(fake_repo, monkeypatch, lambda *a: ("ok", 0.0, 0, ""), test_cmd="pytest -q")
+    brief = briefs.Brief("docs/design/login.md", "The login", ["app.py"])
+    monkeypatch.setattr(w, "_review_context", lambda *a: ("", {}, [brief]))
+    _review(w, FakeGit(tests=(True, "1 passed")))
+    assert _reviews(steward) == 1
+    monkeypatch.setattr(w, "_review_context", lambda *a: ("", {"other": ["app.py"]}, []))
+    _review(w, FakeGit(tests=(True, "1 passed")))
+    assert _reviews(steward) == 2
+    monkeypatch.setattr(w, "_review_context", lambda *a: ("", {}, []))
+    _review(w, FakeGit(tests=(True, "1 passed"), files=("src/app.py", "README.md")))
+    assert _reviews(steward) == 2                        # plain code, green: still no steward's call
+
+
+def test_removing_a_persona_clears_it_on_every_unfinished_task(fake_repo, monkeypatch, steward):
+    host, bid, w = _pool(fake_repo, monkeypatch, lambda *a: ("ok", 0.0, 0, ""))
+    personas.save(w.state_dir, personas.Persona("backend", "You build APIs.", "warrior", True))
+    st = w.state
+    for i, status in enumerate(("working", "reviewing", "asked", "done", "failed")):
+        st.tasks.append(bk.PoolTask(f"t{i}", status, "", status=status, persona="backend"))
+    st.queue.append(bk.PoolTask("q", "queued", "", persona="backend"))
+    assert w.remove_persona("backend") is True
+    left = {t.title: t.persona for t in st.tasks + st.queue}
+    assert left == {"working": "", "reviewing": "", "asked": "", "queued": "", "done": "backend", "failed": "backend"}
+
+
+def test_the_answer_runs_on_the_light_tier_whatever_the_steward_s_model(fake_repo, monkeypatch, steward):
+    host, bid, w = _pool(fake_repo, monkeypatch, lambda *a: ("ok", 0.0, 0, ""), steward="claude:elder")
+    light, heavy = tiers.resolve("claude", "laborer"), tiers.resolve("claude", "elder")
+    assert light != heavy
+    task = bk.PoolTask("t1", "Fix the login", "the form hangs")
+    w._steward_answer(task, "which page?", w.code_root, threading.Event(), RunOutcome())
+    w._steward("Judge whether the task is done", w.code_root, threading.Event(), RunOutcome())
+    assert steward.models == [light, heavy]              # the answer light, the review on its set model

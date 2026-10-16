@@ -122,7 +122,7 @@ class RunOutcome:
     steward_cost: float = 0.0
     steward_tokens: int = 0
     steward_uses: dict = field(default_factory=dict)     # the steward's spend by part (realm/pool_spend.py)
-    context: int = 0                                     # the tokens the ork's last call reported (🪵)
+    context: int = 0                                     # 🪵: what the last turn read (input + cache)
     qa: list[list[str]] = field(default_factory=list)   # questions the steward answered in this run
     asked: str = ""                                      # a question for the operator
     questions: list[dict] = field(default_factory=list)  # its questions with their options (barracks_asks.py)
@@ -518,7 +518,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
         def run(p: str, r: str) -> None:
             text, cost, tokens, session = runner(orc.harness, p, workdir, cancel, orc.model, env, r)
             out.text, out.cost, out.tokens = text, out.cost + (cost or 0.0), out.tokens + (tokens or 0)
-            out.session, out.context = session or out.session, tokens or 0
+            out.session = session or out.session
+            out.context = jobs.context_of(orc.harness, out.session, workdir)    # the last turn's, not the sum
 
         if task.want == pipes.REPLY and not task.publish:     # a reply only reads: never `work` mode (§7)
             self.work_reply(task, orc, cancel)
@@ -597,12 +598,17 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
                  use: str = "review", light: bool = False) -> str:
         """One model call of the steward's: `use` is its task (triage | plan | answer | review | final), on the
         model `steward.pick` names — the tier picked for it, else its `steward` setting, else its goal's; `light`:
-        the goal's is the light tier (a meeting's brief is read for its sections and facts, not reasoned over)."""
+        the goal's is the light tier (a meeting's brief is read for its sections and facts, not reasoned over). An
+        answer (`use="answer"`, from the card alone) runs on the light tier whatever the steward's set model, unless a
+        tier was picked for answers in its window."""
         harness, setting = bk.parse_provider(str(self.config.get("steward") or "main"))
         scroll = getattr(self.town, "scroll", None)
         p = steward.pick(scroll.building(self.building_id) if scroll is not None else None, use, harness,
                          type_id=self.TYPE, goal=self.aim_now, setting=setting)
-        model = tiers.resolve(harness, "laborer") if light and p.by == "level" else p.model
+        if (use == "answer" and p.by not in ("own", "picked")) or (light and p.by == "level"):
+            model = tiers.resolve(harness, "laborer")
+        else:
+            model = p.model
         if type(self).steward_runner is not None:
             runner = type(self).steward_runner
         elif self.simulated:

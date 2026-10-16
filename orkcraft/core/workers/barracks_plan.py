@@ -373,7 +373,7 @@ class PlanMixin:
             if o.persona == name:
                 o.persona, o.session, o.session_tasks, o.context = "", "", 0, 0
         for t in st.queue + st.tasks:
-            if t.persona == name and t.status in ("queued", "blocked", "asked"):
+            if t.persona == name and t.status not in ("done", "failed"):     # every unfinished one
                 t.persona = ""
             if t.persona_waits == name:
                 self._release(t)
