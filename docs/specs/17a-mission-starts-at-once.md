@@ -5,7 +5,8 @@ Branch `spec/17a-mission-starts-at-once` · model **flash** · design: first-mis
 
 ## Do
 Change only `orkcraft/gui/onboarding.py`, `orkcraft/gui/static/js/onboarding.js`, `orkcraft/gui/static/onboarding.css`,
-`tests/test_gui_onboarding.py` and the onboarding's browser test. Change nothing outside these files.
+`tests/test_gui_onboarding.py` and a new `tests/test_gui_onboarding_browser.py` (modelled on
+`tests/test_gui_mission_browser.py`). Change nothing outside these files.
 1. In a first session (not *Set up again*), after the AI tools and the class, the town step opens **Mission 1** as
    its only primary choice: the Mission 1 card with its one button (*Set up the camp myself*), full width.
 2. The ready towns (tabs), *Doesn't fit: tell the planner* and *Empty town, I'll build it myself* move under one
@@ -14,6 +15,6 @@ Change only `orkcraft/gui/onboarding.py`, `orkcraft/gui/static/js/onboarding.js`
 4. No word changes except the new link's text, "Other ways to start".
 
 ## Tests
-Critical tests, plus `tests/test_gui_onboarding.py` and the onboarding's browser test: a first session shows the
+Critical tests, plus `tests/test_gui_onboarding.py tests/test_gui_onboarding_browser.py`: a first session shows the
 Mission 1 button and no town tabs until *Other ways to start* is pressed; pressing it shows the three ways; *Set up
 again* is as before.
