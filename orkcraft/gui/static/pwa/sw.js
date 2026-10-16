@@ -14,6 +14,15 @@ function isCacheFirst(key) {
   return CACHE_PREFIXES.some((p) => key.startsWith(p)) || key.endsWith(".png") || key.endsWith(".webp");
 }
 
+// What the worker hands the page is never fresh to the page's own memory cache: a reloaded page asks the worker
+// again (it answers from its cache, no network), so a picture the map dropped is not drawn old from memory.
+function toPage(resp) {
+  if (!resp.ok) return resp;
+  const headers = new Headers(resp.headers);
+  headers.set("Cache-Control", "no-cache");
+  return new Response(resp.body, { status: resp.status, statusText: resp.statusText, headers });
+}
+
 async function updateAssets(newAssets) {
   if (!newAssets || typeof newAssets !== "object") return;
   const cache = await caches.open(CACHE);
@@ -40,8 +49,20 @@ async function updateAssets(newAssets) {
   }));
 }
 
+// A new cache is filled from the town, never from the browser's HTTP cache (the PNGs and fonts are immutable
+// there), and starts with the assets' map, so the next sync has one to compare against.
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(CACHE).then(async (c) => {
+    await Promise.all(SHELL.map(async (path) => {
+      const resp = await fetch(path, { cache: "reload" });
+      if (!resp.ok) throw new Error(`${path}: ${resp.status}`);
+      await c.put(path, resp);
+    }));
+    try {
+      const map = await fetch("assets.json", { cache: "reload" });
+      if (map.ok) await c.put("assets.json", map);
+    } catch {}
+  }).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (e) => {
@@ -59,10 +80,10 @@ self.addEventListener("fetch", (e) => {
   if (isCacheFirst(key)) {
     e.respondWith(caches.open(CACHE).then(async (cache) => {
       const hit = (await cache.match(e.request)) || (await cache.match(key));
-      if (hit) return hit;
+      if (hit) return toPage(hit);
       const resp = await fetch(e.request, { cache: "reload" });
       if (resp.ok) cache.put(key, resp.clone());
-      return resp;
+      return toPage(resp);
     }));
     return;
   }

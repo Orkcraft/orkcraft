@@ -47,8 +47,6 @@ async function syncAssets() {
     await fetch("assets.json");
   } catch {}
 }
-window.syncAssets = syncAssets;
-syncAssets();
 
 // -- pairing ----------------------------------------------------------------------------------------
 

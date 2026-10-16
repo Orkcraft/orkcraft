@@ -5,6 +5,11 @@ the version."""
 from __future__ import annotations
 
 import asyncio
+import base64
+import hashlib
+import re
+import struct
+import zlib
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -13,28 +18,41 @@ import pytest
 pw = pytest.importorskip("playwright.async_api")
 
 from orkcraft import __version__  # noqa: E402
+from orkcraft.gui import phone_http, phone_tls, pwa  # noqa: E402
 from tests.test_phones import _listening, _serve  # noqa: E402
 
 CHROMIUM = next((p for p in ("/opt/pw-browsers/chromium",) if Path(p).exists()), None)
 WAIT_MS = 10_000
 
 
+def _spki(cert: Path) -> str:
+    """The certificate's public key as Chromium names one it trusts: base64 of the SPKI's sha256."""
+    from cryptography import x509
+    from cryptography.hazmat.primitives import serialization
+    key = x509.load_pem_x509_certificate(cert.read_bytes()).public_key()
+    der = key.public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
+    return base64.b64encode(hashlib.sha256(der).digest()).decode()
+
+
 @asynccontextmanager
-async def _phone(repo: Path, scheme: str = "dark"):
-    """A paired phone's page on the town of `repo`: (server, page)."""
+async def _phone(repo: Path, scheme: str = "dark", trusted: bool = False):
+    """A paired phone's page on the town of `repo`: (server, page). `trusted`: the browser trusts the listener's
+    certificate as a phone trusts a *.ts.net one, so its HTTP cache keeps what it gets (it keeps nothing from a
+    certificate it only ignores the errors of)."""
     server, task = await _serve(repo)
     try:
         offer = server.host.command("phones.pair")
         await _listening(server)
         async with pw.async_playwright() as p:
-            flags = ["--ignore-certificate-errors"]
+            flags = [f"--ignore-certificate-errors-spki-list={_spki(phone_tls.paths(server.phones.cert_folder)[0])}"] \
+                if trusted else []
             try:
                 browser = await (p.chromium.launch(executable_path=CHROMIUM, args=flags) if CHROMIUM
                                  else p.chromium.launch(args=flags))
             except Exception as e:                         # noqa: BLE001 — no browser here
                 pytest.skip(f"no Chromium for Playwright here: {e}")
             try:
-                ctx = await browser.new_context(viewport={"width": 390, "height": 844}, ignore_https_errors=True,
+                ctx = await browser.new_context(viewport={"width": 390, "height": 844}, ignore_https_errors=not trusted,
                                                 has_touch=True, color_scheme=scheme)
                 page = await ctx.new_page()
                 await page.goto(f"{server.phones.address}/app/#pair={offer['code']}")
@@ -109,7 +127,7 @@ async def test_stop_all_stops_on_a_hold_or_a_tap_and_a_confirm_never_on_a_tap(fa
             await page.wait_for_timeout(100)
         assert halts == [1, 1] and await page.locator("dialog.sheet[open]").count() == 0
         await page.mouse.down()                             # let go early: nothing
-        await page.wait_for_timeout(50)
+        await page.wait_for_timeout(300)
         await page.mouse.up()
         await page.locator("dialog.sheet[open]", has_text="Stop every ork").wait_for(timeout=WAIT_MS)
         assert halts == [1, 1]
@@ -373,71 +391,85 @@ async def test_the_phone_shows_one_orkspace_at_a_time_without_moving_the_desktop
         assert server.host.command("mobile.snapshot")["active_orkspace"] == first != lab     # the desktop's stays
 
 
+def _png(width: int) -> bytes:
+    """A PNG `width` pixels wide and one high: what it draws says which bytes the page got."""
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
+    rows = (b"\x00" + b"\x80\x40\x20\xff" * width)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, 1, 8, 6, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(rows)) + chunk(b"IEND", b""))
+
+
+CACHE = re.search(r'const CACHE = "([^"]+)"', (pwa.ROOT / "sw.js").read_text(encoding="utf-8")).group(1)
+
+
+async def _until(page, script: str, arg, what: str, seconds: float = 60) -> None:
+    """Poll an async `script` in the page until it is true."""
+    for _ in range(int(seconds * 10)):
+        if await page.evaluate(script, arg):
+            return
+        await page.wait_for_timeout(100)
+    pytest.fail(f"never: {what}")
+
+
 @pytest.mark.asyncio
-async def test_sprite_update_and_cache_first_zero_network_requests(fake_repo, tmp_path, monkeypatch):
-    """load the app, then change one sprite's bytes (and so its hash) on the server and reload:
-    the next load shows the new bytes; and a second open with nothing changed makes zero network requests for sprites."""
-    from orkcraft.gui import pwa
+async def test_a_changed_sprite_is_drawn_new_on_the_next_open_and_an_unchanged_one_costs_no_request(
+        fake_repo, tmp_path, monkeypatch):
+    """With the browser's HTTP cache alive (the certificate trusted, as a phone trusts *.ts.net): the precache done,
+    one sprite changes on the town (its hash with it); the page, reloaded as a person reopens it, draws the new
+    picture, fetched past the HTTP cache (`cache: "reload"` sends no-cache); an open with nothing changed asks the
+    town for no sprite at all."""
+    name = "icons/res-gold.png"                        # drawn in the head on every open
+    sprite = tmp_path / "res-gold.png"
+    sprite.write_bytes(_png(3))
+    real = pwa.files()
+    monkeypatch.setattr(pwa, "files", lambda: {**real, name: sprite})
+    seen: list[tuple[str, dict]] = []                 # every request the listener read: (target, headers)
+    parse = phone_http._parse_head
 
-    dummy_sprite = tmp_path / "custom_town_hall.png"
-    v1_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x00\x00\x02\x00\x01H\xaf\xa4q\x00\x00\x00\x00IEND\xaeB`\x82_V1"
-    v2_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x00\x00\x02\x00\x01H\xaf\xa4q\x00\x00\x00\x00IEND\xaeB`\x82_V2_CHANGED"
-    dummy_sprite.write_bytes(v1_bytes)
+    def record(head: bytes):
+        got = parse(head)
+        if got:
+            seen.append((got[1], got[2]))
+        return got
+    monkeypatch.setattr(phone_http, "_parse_head", record)
+    drawn = "(name) => [...document.querySelectorAll(`img[src='${name}']`)].map((i) => i.complete && i.naturalWidth)"
 
-    real_files = pwa.files()
-    monkeypatch.setattr(pwa, "files", lambda: {**real_files, "sprites/town_hall.png": dummy_sprite})
+    async with _phone(fake_repo, trusted=True) as (_, page):
+        await _until(page, "() => !!navigator.serviceWorker.controller", None, "the worker controls the page")
+        hd = re.compile(r"@hd(1|1_5|2)\.webp$")        # a dpr-1 phone precaches the PNGs (app.js precacheCamp)
+        wanted = [p for p in pwa._ASSETS if not hd.search(p)]
+        await _until(page, """async ([cache, wanted]) => {
+            const keys = new Set((await (await caches.open(cache)).keys()).map((r) => new URL(r.url).pathname));
+            return wanted.every((p) => keys.has('/app/' + p));
+        }""", [CACHE, wanted], "the precache finished")
+        assert 3 in await page.evaluate(drawn, name)
 
-    async with _phone(fake_repo) as (_, page):
-        await page.evaluate("navigator.serviceWorker.ready")
-        await page.evaluate("window.syncAssets ? window.syncAssets() : null")
+        sprite.write_bytes(_png(5))                    # an update: the listener's warm-up hashes anew
+        new_hash = pwa.assets()[name]
+        seen.clear()
+        await page.reload()                            # the open that learns the new map…
+        await _until(page, """async ([cache, name, hash]) => {
+            const r = await (await caches.open(cache)).match('assets.json');
+            return !!r && (await r.json())[name] === hash;
+        }""", [CACHE, name, new_hash], "the worker kept the new map")
+        await page.reload()                            # …and the next one draws the new picture
         await page.locator(".dock").wait_for(timeout=WAIT_MS)
-        await page.locator("img[src*='town_hall']").first.wait_for(timeout=WAIT_MS)
+        try:
+            await page.wait_for_function(f"() => ({drawn})({name!r}).includes(5)", timeout=WAIT_MS)
+        except pw.TimeoutError:
+            pytest.fail(f"the old picture is drawn: widths {await page.evaluate(drawn, name)}")
+        assert 3 not in await page.evaluate(drawn, name)
+        fetched = [h for target, h in seen if target == "/app/" + name]
+        assert fetched, "the new picture never came from the town"
+        assert all(h.get("cache-control") == "no-cache" for h in fetched), fetched
 
-        body1 = await page.evaluate("""async () => {
-            const r = await fetch("sprites/town_hall.png");
-            return Array.from(new Uint8Array(await r.arrayBuffer()));
-        }""")
-        assert bytes(body1) == v1_bytes
-
-        # Change one sprite's bytes (and so its hash) on the server and reload
-        dummy_sprite.write_bytes(v2_bytes)
-        import os
-        os.utime(dummy_sprite, None)
-
-        await page.reload()
+        seen.clear()
+        await page.reload()                            # nothing changed: no sprite asked of the town
         await page.locator(".dock").wait_for(timeout=WAIT_MS)
-        await page.evaluate("navigator.serviceWorker.ready")
-        await page.evaluate("window.syncAssets ? window.syncAssets() : null")
-
-        # The next load shows the new bytes
-        body2 = await page.evaluate("""async () => {
-            const r = await fetch("sprites/town_hall.png");
-            return Array.from(new Uint8Array(await r.arrayBuffer()));
-        }""")
-        assert bytes(body2) == v2_bytes
-        assert bytes(body1) != bytes(body2)
-
-        # Track network requests on the server for sprites
-        sprite_requests = []
-        orig_serve = pwa.serve
-        monkeypatch.setattr(pwa, "serve", lambda method, target, **kwargs: (
-            sprite_requests.append(target) if pwa.is_cache_first(target.removeprefix("/app/")) else None,
-            orig_serve(method, target, **kwargs)
-        )[1])
-
-        # Second open with nothing changed makes zero network requests for sprites
-        await page.reload()
-        await page.locator(".dock").wait_for(timeout=WAIT_MS)
-        await page.evaluate("navigator.serviceWorker.ready")
-        await page.evaluate("window.syncAssets ? window.syncAssets() : null")
-        await page.locator("img[src*='town_hall']").first.wait_for(timeout=WAIT_MS)
-
-        body3 = await page.evaluate("""async () => {
-            const r = await fetch("sprites/town_hall.png");
-            return Array.from(new Uint8Array(await r.arrayBuffer()));
-        }""")
-        assert bytes(body3) == v2_bytes
-        assert sprite_requests == []
+        await page.wait_for_function(f"() => ({drawn})({name!r}).includes(5)", timeout=WAIT_MS)
+        await page.wait_for_timeout(500)
+        assert [t for t, _ in seen if pwa.is_cache_first(t.removeprefix(pwa.PREFIX).split("?")[0])] == []
 
 
 @pytest.mark.asyncio

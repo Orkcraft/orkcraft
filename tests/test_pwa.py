@@ -7,6 +7,7 @@ import hashlib
 import http.client
 import json
 import subprocess
+from pathlib import Path
 
 import pytest
 from websockets.asyncio.client import connect
@@ -297,6 +298,7 @@ def test_the_phone_stands_on_the_desktops_ground():
 
 
 def test_assets_json_lists_every_cache_first_file_with_a_hash():
+    pwa.assets()                                     # the listener's warm-up
     head, body = _split(pwa.serve("GET", "/app/assets.json"))
     assert head.startswith("HTTP/1.1 200") and "application/json" in head
     assert "public, max-age=" not in head
@@ -310,6 +312,7 @@ def test_assets_json_lists_every_cache_first_file_with_a_hash():
 
 
 def test_a_changed_file_changes_its_hash(tmp_path, monkeypatch):
+    monkeypatch.setattr(pwa, "_ASSETS", pwa._ASSETS)  # the map this test warms up goes with it
     dummy = tmp_path / "custom.png"
     dummy.write_bytes(b"content_version_one")
     real_files = pwa.files()
@@ -323,6 +326,24 @@ def test_a_changed_file_changes_its_hash(tmp_path, monkeypatch):
     assert h1 != h2
     _, body = _split(pwa.serve("GET", "/app/assets.json"))
     assert json.loads(body)["sprites/custom.png"] == h2
+
+
+def test_a_request_only_reads_the_map_the_warm_up_hashed(tmp_path, monkeypatch):
+    """Only the warm-up hashes: a request for assets.json reads the map it kept and touches no file."""
+    monkeypatch.setattr(pwa, "_ASSETS", None)
+    head, _ = _split(pwa.serve("GET", "/app/assets.json"))
+    assert head.startswith("HTTP/1.1 503")             # not warmed yet: no map rather than a wrong one
+    dummy = tmp_path / "custom.png"
+    dummy.write_bytes(b"one")
+    real_files = pwa.files()
+    monkeypatch.setattr(pwa, "files", lambda: {**real_files, "sprites/custom.png": dummy})
+    h1 = pwa.assets()["sprites/custom.png"]
+    dummy.write_bytes(b"two")
+    with monkeypatch.context() as m:
+        m.setattr(pwa.hashlib, "sha1", lambda *a: pytest.fail("a request hashed"))
+        m.setattr(Path, "stat", lambda *a, **k: pytest.fail("a request looked at a file"))
+        _, body = _split(pwa.serve("GET", "/app/assets.json"))
+    assert json.loads(body)["sprites/custom.png"] == h1
 
 
 def test_service_worker_names_cache_version_and_cache_first_prefixes():

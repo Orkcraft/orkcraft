@@ -109,29 +109,24 @@ def is_cache_first(name: str) -> bool:
     return name.startswith(CACHE_PREFIXES) or name.endswith((".png", ".webp"))
 
 
-_HASH_LOCK = threading.Lock()
-_HASH_CACHE: dict[str, tuple[float, int, str]] = {}
+_ASSETS: dict[str, str] | None = None   # the map the warm-up computed; requests only read it
+READY = threading.Event()                # set once it is there
 
 
 def assets() -> dict[str, str]:
-    """A map {path: short content hash} of the cache-first files (first 10 hex of sha1)."""
-    all_files = files()
+    """The warm-up (a thread when the listener starts, gui/phones.py): hash the cache-first files, a map
+    {path: short content hash} (first 10 hex of sha1), and keep it for the requests."""
+    global _ASSETS
     out: dict[str, str] = {}
-    with _HASH_LOCK:
-        for name, path in all_files.items():
-            if not is_cache_first(name):
-                continue
-            try:
-                st = path.stat()
-                cached = _HASH_CACHE.get(name)
-                if cached and cached[0] == st.st_mtime and cached[1] == st.st_size:
-                    out[name] = cached[2]
-                else:
-                    h = hashlib.sha1(path.read_bytes()).hexdigest()[:10]
-                    _HASH_CACHE[name] = (st.st_mtime, st.st_size, h)
-                    out[name] = h
-            except OSError:
-                pass
+    for name, path in files().items():
+        if not is_cache_first(name):
+            continue
+        try:
+            out[name] = hashlib.sha1(path.read_bytes()).hexdigest()[:10]
+        except OSError:
+            pass
+    _ASSETS = out
+    READY.set()
     return out
 
 
@@ -166,7 +161,12 @@ def serve(method: str, target: str, keep_alive: bool = False) -> bytes:
                      keep_alive=keep_alive)
     name = parts.path[len(PREFIX):] or "index.html"
     if name == "assets.json":
-        body = json.dumps(assets(), ensure_ascii=False).encode("utf-8")
+        if _ASSETS is None:                  # the warm-up has not hashed yet: no map rather than a wrong one
+            body = b"Not ready"
+            head = _head(HTTPStatus.SERVICE_UNAVAILABLE, "text/plain; charset=utf-8", len(body), "Retry-After: 1\r\n",
+                         keep_alive=keep_alive)
+            return head if method == "HEAD" else head + body
+        body = json.dumps(_ASSETS, ensure_ascii=False).encode("utf-8")
         head = _head(HTTPStatus.OK, "application/json", len(body), cache_first=False, keep_alive=keep_alive)
         return head if method == "HEAD" else head + body
     path = files().get(name)

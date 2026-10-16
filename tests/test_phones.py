@@ -17,7 +17,7 @@ from websockets.exceptions import ConnectionClosed, InvalidStatus
 
 from orkcraft import settings
 from orkcraft.core import buildings
-from orkcraft.gui import mobile, pairing, phone_tls, phones
+from orkcraft.gui import mobile, pairing, phone_http, phone_tls, phones
 from orkcraft.gui.host import Host
 from orkcraft.gui.server import PROTOCOL, Server
 from orkcraft.realm import checkpoint
@@ -542,7 +542,7 @@ async def test_idle_timeout_closes_connection(fake_repo, monkeypatch):
     try:
         offer = server.host.command("phones.pair")
         await _listening(server)
-        monkeypatch.setattr(phones, "IDLE_S", 0.2)
+        monkeypatch.setattr(phone_http, "IDLE_S", 0.2)
         def run():
             import time
             host, port = offer["address"].removeprefix("https://").rsplit(":", 1)
@@ -559,6 +559,54 @@ async def test_idle_timeout_closes_connection(fake_repo, monkeypatch):
             finally:
                 conn.close()
         await asyncio.to_thread(run)
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)
+
+
+def _raw_exchange(address: str, data: bytes) -> bytes:
+    """Send `data` on one TLS connection and read until the listener closes it: all it answered."""
+    import socket
+    host, port = address.removeprefix("https://").rsplit(":", 1)
+    with socket.create_connection((host, int(port)), timeout=5) as raw, _pinned().wrap_socket(raw) as tls:
+        tls.sendall(data)
+        out = b""
+        while chunk := tls.recv(65536):           # b"": the listener closed the connection
+            out += chunk
+    return out
+
+
+@pytest.mark.asyncio
+async def test_a_post_with_a_body_then_a_get_on_one_connection_gets_one_answer_and_the_close(fake_repo):
+    server, task = await _serve(fake_repo)
+    try:
+        offer = server.host.command("phones.pair")
+        await _listening(server)
+        body = json.dumps({"code": "guess", "name": "x"}).encode()
+        data = (b"POST /api/pair HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\n"
+                + f"Content-Length: {len(body)}\r\n\r\n".encode() + body
+                + b"GET /app/ HTTP/1.1\r\nHost: x\r\n\r\n")
+        got = await asyncio.to_thread(_raw_exchange, offer["address"], data)
+        assert got.count(b"HTTP/1.1 ") == 1                 # one answer: the GET behind it is never read
+        head = got.split(b"\r\n\r\n", 1)[0].decode("latin-1")
+        assert "Connection: close" in head and "keep-alive" not in head
+        assert b"Orkline" not in got
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)
+
+
+@pytest.mark.asyncio
+async def test_an_http_1_0_request_without_keep_alive_is_answered_with_the_close(fake_repo):
+    server, task = await _serve(fake_repo)
+    try:
+        offer = server.host.command("phones.pair")
+        await _listening(server)
+        data = b"GET /app/ HTTP/1.0\r\nHost: x\r\n\r\nGET /app/app.js HTTP/1.0\r\nHost: x\r\n\r\n"
+        got = await asyncio.to_thread(_raw_exchange, offer["address"], data)
+        assert got.count(b"HTTP/1.1 200") == 1
+        head = got.split(b"\r\n\r\n", 1)[0].decode("latin-1")
+        assert "Connection: close" in head and "keep-alive" not in head
     finally:
         server.stop()
         await asyncio.wait_for(task, 10)

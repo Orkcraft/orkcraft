@@ -34,8 +34,8 @@ def _json(status: HTTPStatus, data: Any, keep_alive: bool = False) -> bytes:
                      keep_alive=keep_alive)
 
 
-def _parse_head(head: bytes) -> tuple[str, str, dict[str, str]] | None:
-    """(method, target, headers by lower-case name) of a request's head; None when it is not HTTP/1.1."""
+def _parse_head(head: bytes) -> tuple[str, str, dict[str, str], str] | None:
+    """(method, target, headers by lower-case name, version) of a request's head; None when it is not HTTP/1.x."""
     try:
         lines = head.decode("latin-1").split("\r\n")
         method, target, version = lines[0].split(" ")
@@ -51,18 +51,15 @@ def _parse_head(head: bytes) -> tuple[str, str, dict[str, str]] | None:
         if not sep:
             return None
         headers.setdefault(name.strip().lower(), value.strip())
-    return method, target, headers
+    return method, target, headers, version
 
 
 async def handle_conn(listener: Any, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
     """Handle requests on a connection with keep-alive for body-less GETs."""
     try:
-        from orkcraft.gui import phones
-        max_reqs = getattr(phones, "KEEP_ALIVE_MAX", KEEP_ALIVE_MAX)
-        idle_s = getattr(phones, "IDLE_S", IDLE_S)
-        head_s = getattr(phones, "HEAD_S", HEAD_S)
+        max_reqs = KEEP_ALIVE_MAX
         for req_count in range(max_reqs):
-            timeout = head_s if req_count == 0 else idle_s
+            timeout = HEAD_S if req_count == 0 else IDLE_S
             try:
                 head = await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), timeout)
             except (asyncio.IncompleteReadError, asyncio.LimitOverrunError, TimeoutError, ConnectionError,
@@ -72,7 +69,7 @@ async def handle_conn(listener: Any, reader: asyncio.StreamReader, writer: async
             if parsed is None:
                 writer.write(_response(HTTPStatus.BAD_REQUEST, keep_alive=False))
                 return
-            method, target, headers = parsed
+            method, target, headers, version = parsed
             path = urlsplit(target).path
             if path == "/ws":
                 if method != "GET":
@@ -86,7 +83,9 @@ async def handle_conn(listener: Any, reader: asyncio.StreamReader, writer: async
             # post) answers with Connection: close and ends the keep-alive loop. Only body-less GETs
             # are kept alive.
             has_body = (method != "GET") or ("content-length" in headers) or ("transfer-encoding" in headers)
-            close_conn = headers.get("connection", "").lower() == "close"
+            conn_header = headers.get("connection", "").lower()
+            # HTTP/1.0 closes unless it asked for keep-alive; HTTP/1.1 keeps it unless it asked to close
+            close_conn = conn_header == "close" or (version == "HTTP/1.0" and conn_header != "keep-alive")
             is_post_endpoint = path in ("/api/pair", "/api/place")
             is_last = (req_count == max_reqs - 1) or close_conn or has_body or is_post_endpoint
             keep = not is_last
@@ -98,6 +97,8 @@ async def handle_conn(listener: Any, reader: asyncio.StreamReader, writer: async
             elif path == "/api/place":
                 writer.write(await listener._place(method, headers, reader))
             elif pwa.wants(path):
+                if path == pwa.PREFIX + "assets.json" and not pwa.READY.is_set():
+                    await asyncio.to_thread(pwa.READY.wait, HEAD_S)   # the warm-up is hashing: off the loop
                 writer.write(pwa.serve(method, target, keep_alive=keep))
             else:
                 writer.write(_response(HTTPStatus.NOT_FOUND, keep_alive=keep))
@@ -109,9 +110,8 @@ async def handle_conn(listener: Any, reader: asyncio.StreamReader, writer: async
         pass
     finally:
         try:
-            head_s = getattr(phones, "HEAD_S", HEAD_S)
             if not writer.is_closing():
-                await asyncio.wait_for(writer.drain(), head_s)
+                await asyncio.wait_for(writer.drain(), HEAD_S)
             writer.close()
         except Exception:
             pass
