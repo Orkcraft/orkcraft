@@ -903,3 +903,10 @@ existing look (§27).
 5. **A room is seen top-down, as an old JRPG's interior** (the owner, same day): the floor from above, the back wall
    a band with its face, the other walls thin rims. s1's side view sets the style only, not the view. Every room
    card asks for it ([interiors.md](interiors.md) §1, §6).
+
+## 34. The daily rhythm: product here, art and easy code in agy, hard code in Claude (16 October, the owner)
+
+The PM session prepares a **batch** twice a day (morning, as the owner leaves for work; night, as he goes to bed):
+the agy tabs to open, files not overlapping. **Art** goes wholly to agy, 2–3 candidates each, the owner picks and
+the PM session cuts. **Code** splits by difficulty: easy specs to agy, hard ones to Claude sessions the PM session
+runs. Reviews and merges stay with the PM session. [specs/README.md](../specs/README.md) "The daily rhythm".

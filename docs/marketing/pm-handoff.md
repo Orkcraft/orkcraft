@@ -30,6 +30,9 @@ The state a new product-and-marketing session starts from. Update it when you ha
   Next: owner runs `art/steampunk-all` (23 sheets × 3 candidates + `a-room-kit`); `interiors.md` updated for the
   shared room kit and all 23 buildings; specs 22 and 23 updated for kit/furniture pieces.
 
+- **The daily rhythm** (decisions §34): a batch file twice a day in `docs/specs/batches/`; art and easy code to agy
+  (2–3 candidates for art), hard code to Claude sessions run by the PM session; reviews and merges here.
+
 ## Where things are
 - Decisions: `docs/design/decisions-2026-10.md` §15–§25 (the camp's shape §20, timeline §22, process lines §23,
   negative feedback §24, settlement §25). Design system v3: `docs/design/design-system-v3.md`. Phone: `mobile.md` §13.

@@ -20,6 +20,20 @@ screenshots, and merges into `main` when it holds. (Orkline itself never wraps a
 - `gemini-flash-low` for text-only changes (a release note).
 Run `agy models` once to see the exact names your agy offers for these families.
 
+## The daily rhythm (decided 16 October, the owner; decisions §34)
+
+Three tracks, every day:
+- **Product (the PM session):** priorities, specs, art cards, reviews, merges. Before each agy run it writes the
+  **batch**: `docs/specs/batches/<date>-am.md` (the owner leaves for work) and `<date>-night.md` (the owner goes to
+  bed): the agy tabs to open, each with its `<SPEC>` or art card, none touching another's files.
+- **Art → agy, always 2–3 candidates** (agy often misses): the owner picks, the PM session cuts the pick once
+  (CLAUDE.md "Art"), marks doorways, merges.
+- **Code, split by difficulty:** easy specs → agy (in the batch); hard specs (caching, networking, security, data
+  loss, multi-module, design-heavy) → Claude sessions the PM session starts with the batch and watches.
+
+The owner opens the batch file, starts one agy tab per line, and goes. The PM session reviews what comes back
+(light or full, as each spec says) and merges what holds; what does not gets a "Round N" list for the next batch.
+
 ## The prompt every spec uses
 
 Start agy in the repository (`cd ~/orkcraft && git pull && agy`), pick the spec's model, paste this with `<SPEC>` =
