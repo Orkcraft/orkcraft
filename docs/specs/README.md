@@ -120,10 +120,10 @@ Every spec carries two lines, for agy above all: **"Change nothing outside these
 | 18 | [darker, richer grass](18-darker-grass.md) (variant B; round 2 at the top) | before the testers | flash | agy | light |
 | 19 | [Camp's camera](19-camp-camera.md) (no far zoom-out; the wheel scrolls down) | before the testers | flash | agy | light |
 | 20 | [the wilderness composed](20-composed-wilderness.md) (groves on places, not a hash on a grid) | after 18 and 19 | — | **Claude** | light + the owner's look |
-| 21 | [entering a building](21-building-screen.md) (the room on the whole screen, settings behind a gear) | before the testers | — | **Claude** | light |
+| 21 | [entering a building](21-building-screen.md) (the room on the whole screen, settings behind a gear; merged) | before the testers | — | **Claude** | light |
 | 22 | [the Agent pool's room](22-agent-pool-room.md) (art card + code) | before the testers, after 21 | — | **Claude** | light + the owner's look |
 | 23 | [the Review gate's room](23-review-gate-room.md) (art card + code) | before the testers, after 21 | — | **Claude** | light + the owner's look |
-| 24 | [doors: open-air buildings](24-open-air-buildings.md) | before the testers | flash | agy | light |
+| 24 | [doors: open-air buildings](24-open-air-buildings.md) (merged) | before the testers | flash | agy | light |
 | art | [every building in steampunk, outside and inside](art-steampunk-all.md) (23 sheets × 3 candidates) | now | pro | agy | the owner picks |
 | 03 | [the charter: "My project"](03-charter.md) | before the testers | pro | **Claude** | full |
 | 04 | [Halloween decor](04-halloween-decor.md) (art card + items) | before 31 October | flash | agy | light |

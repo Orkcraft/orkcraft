@@ -1,15 +1,17 @@
 # Design — entering a building: the room on the whole screen, its things are its data
 
-Status: decided with the owner, 16 October 2026 (decisions §31). Builds on decisions §13.2 (the inside of a building,
-the Task board first), js/inside.js (today's screen), first-mission.md §12 (the walk through each building).
+Status: decided with the owner, 16 October 2026 (decisions §31–§33). Builds on decisions §13.2 (the inside of a building,
+the Task board first), js/inside.js, first-mission.md §12 (the walk through each building).
 An improvement of an existing mechanic (decisions §27).
+Specs 21 (screen foundation, black stage) and 24 (doors: open-air buildings) merged to `main`.
+Art frame s1 approved (`docs/design/img/references/v3/s1-steampunk.png`); all sheets follow docs/specs/art-steampunk-all.md.
 
 ## 1. The screen
 
 - **Enter:** a click on a building (as today's second click, js/windows.js `openBuilding`) in Camp. The camp goes
   away entirely: **a black screen**, and on it the building **in the middle, roof off, as large as the screen
   allows**, whole device pixels, lit like a stage (a soft light on its floor, black round it). No camp behind it, so
-  nothing distracts (the owner, same day). No permanent settings panel (today's right-hand "shop" goes).
+  nothing distracts (the owner, 16 October). No permanent settings panel (today's right-hand "shop" goes; spec 21).
 - **The view is top-down, as in the old JRPGs' interiors** (the owner, same day): the floor seen from above, the back
   (north) wall shown as a band with its face, the side and front walls as thin rims, furniture and props seen from
   above with a little of their front. Not a side view, not the camp's front-top angle. Every room, now and later.
@@ -18,9 +20,9 @@ An improvement of an existing mechanic (decisions §27).
   generated whole room comes out too small and in side view. The kit and the pieces: docs/specs/art-steampunk-all.md.
 - **Settings behind a gear** in the room's top-right corner: a panel slides in (today's Info, js/console.js
   `InfoTab`, as it is), and out again. Money and safety stay in plain words, never drawn into the room (§13.2).
-- **Exit** always in view, and Esc, back to the camp where it was.
+- **Exit** always in view, and Esc, back to the camp where it was (restoring previous pan and zoom).
 - **Office** keeps its card: Office draws no rooms (a look changes drawing, never words).
-- A building whose room is not drawn yet gets a plain room: its floor and walls in the kit, its things as cards.
+- A building whose furniture is not drawn yet gets a plain room: its floor and walls in the kit, its things as cards (spec 21).
 
 ## 2. The rule: a building's data are things in its room
 
@@ -28,27 +30,51 @@ An improvement of an existing mechanic (decisions §27).
 so the work is drawn as **few, large props on the floor**, never small items on furniture:
 - **Size:** a work item is at least about a sixth of the room's width; its title readable at the default size (the
   kit's label size or larger). At most six to eight items show; more stand as a pile with `+N`.
-- **Shape by meaning:** a task is a **stone slab** or a **long plank** on the floor with its title carved or painted
-  on it; a result to judge is a **large crate** with a **speech bubble** over it holding its title; a source is a
-  **horn** or a **letterbox** as tall as an ork. The prop says *what* it is, the bubble or the carving says *which*.
-- **Lots, not tables:** the floor has marked places (chalk squares, pallets, rail stops) where the props stand; the
-  furniture is scenery round the edge.
+- **Shape by meaning:**
+  - A task is a **stone slab** or a **long plank** on the floor with its title carved or painted on it.
+  - A result to judge is a **large crate** as tall as an ork with a **speech bubble** over it holding its title and state.
+  - A source or listener is a **tall brass horn** or a **letterbox** as tall as an ork.
+  - A code branch or PR is an **iron ingot or glowing blade** resting on a heavy anvil.
+  - A metric or chart is a **large blackboard or brass dial board** set upright on a floor lot.
+  - A document or guide is a **giant open tome** on a heavy wooden lectern.
+  - An audio note or briefing is a **wax cylinder** sitting in a brass cradle.
+  The prop says *what* it is, the bubble or the carving says *which*.
+- **Lots, not tables:** the floor has marked places (chalk squares, pallets, rail stops, painted circles) where the
+  props stand; the furniture is scenery round the edge.
 - **Detail on a click:** the prop shows its title and its one state (❓, 🔥, done); everything else opens on a click
-  (the card, the waybill, the ork's console).
+  (the card, the waybill, the ork's console, the markdown viewer).
 - Orks are drawn at the room's scale, as large as the props.
 
 What the building holds is drawn as objects in the room, and what the person can do is done on those objects. One
 click on a thing opens what it is (a card, an ork's console, a waybill); no second list beside the room.
 
-| building (type) | the things in its room | what the person does on them |
-|---|---|---|
-| **Task board** (`fields`) — built; its cards grow to the slab size of §2 | the cards as large slabs or planks, a to-do's checkbox as a flag | open, move, send a card |
-| **Agent pool** (`barracks`, drawn as the depot) | a big bay per run (🥩 n / 8, at most six shown): in each, its ork with its cart, its task in a bubble over
-them; idle orks on a bench by the wall; an empty bay with a sign | a click on an ork opens its console; ❓ hangs over the ork who asks; the empty bay's sign is *Add ork* |
-| **Review gate** (`loot_vault`) | the results waiting on the floor's lots, each a **large crate** with a bubble holding its title; the barrier at the
-far door; the last passed stacked by the exit | a click on a result lays its waybill open: **Pass**, **Needs another round**, **Not this** (the words of decisions §24); passed, it rolls out through the far door |
-| **External listeners** (`watchtower`) | the sources as tall horns and letterboxes; what came in as large letters or slabs on the floor | a click on a letter opens what it became (a card on the Task board) |
-| Wiki, Calendar, Metrics, the Publisher, the rest | a library's shelves, a wall calendar, a board of charts, crates by the catapult | after the testers |
+### All 23 buildings: rooms, things, and actions
+
+| building (type) | door / open | floor & wall (kit) | floor lots & scenery | the things in its room | what the person does on them |
+|---|---|---|---|---|---|
+| **Task board** (`fields`) | open | wooden planks, wood wall | yard before board; 6 slab lots | cards as large slabs or planks; to-do checkbox as a flag | open, move, send a card |
+| **Agent pool** (`barracks`, drawn as depot) | door | wooden planks, stone wall | 6 rail stops with workbenches; bench by back wall | ork with cart in each busy bay; bubble over cart; idle orks on bench; empty bay with sign | click opens ork's console; ❓ over asking ork; empty bay's sign is *Add ork* |
+| **Review gate** (`loot_vault`) | door | stone flags, stone wall | 3 crate pallets; barrier arm at far door; stamp on post | results waiting on lots (crates + bubbles); last passed stacked by exit | click opens waybill: **Pass**, **Needs another round**, **Not this**; rolls out through far door |
+| **External listeners** (`watchtower`) | open | wooden planks, low rail rim | platform rim; 4 horn/letterbox lots; telescope | sources as tall horns and letterboxes; incoming letters/slabs on floor | click on letter/horn opens what came in or the generated card on Task board |
+| **Review board** (`council`) | door | stone flags, wood wall | round floor; ring of seats; open centre | debating orks on seats; subject of debate displayed on stone in centre | click opens debate transcript, vote, or ork consensus |
+| **Research** (`mine`) | door | packed earth, stone wall | cart tracks from mine shaft; 4 cart lots | carts of findings, scrolls, reference docs from the deep shaft | click opens finding note or assigns a new research dig |
+| **Transformer** (`mill`) | door | wooden planks, stone wall | steam wheel at back; input lot (left), output lot (right) | input crate/text on left lot; transformed output on right lot; machine status | click inspects before/after transformation or reconfigures recipe |
+| **Test bench** (`lab`) | door | metal grate, stone wall | test stands; big lever & gauge panel | test suites as test stands with pass/fail gauges; broken test sparks 🔥 | click opens test report, logs, or triggers test run |
+| **UX bench** (`ux_lab`) | door | wooden planks, wood wall | studio window; 4 easel lots | visual drafts and screenshots mounted on easels side by side | click opens full screenshot, before/after diff, approves look |
+| **Branches & PRs** (`forge`) | door | stone flags, stone wall | roaring forge at back; 4 anvil lots | active branches / PRs as glowing metal ingots on anvils | click opens git diff, merges PR, or rebases branch |
+| **Publisher** (`catapult`) | open | packed earth, stone wall | catapult cradle; 3 crate lots on loading ground | releases and packaged builds on crates waiting to be flung | click triggers launch/publish, opens release notes |
+| **Metrics** (`crag`) | open | stone flags, rock wall | wall of brass dials; 4 chart board lots | token spend, speed, acceptance rate on large chalkboard slates | click drills into period stats, tokens, charts |
+| **Inspector** (`lake`) | open | stone flags, rim railing | crane over deep inspection pit; 4 lots round rim | cart suspended over pit; payload broken down on stone slabs | click inspects raw payload, trace events, JSON viewer |
+| **Wiki** (`scrolls`) | open | wooden planks, wood wall | scroll racks round rim; 4 lectern lots | knowledge base topics as giant open tomes on heavy wooden lecterns | click opens markdown document reader / editor |
+| **Router** (`signpost`) | open | packed earth, low rim | track junction; switch levers; 4 track lots | task queue at each rail branch; switch state indicator | click re-routes task flow or configures route filter |
+| **Calendar** (`war_drum`) | open | packed earth, stone wall | drum frame; clockwork ground dial; 4 calendar lots | scheduled cron automations, quiet hours, milestones on dial lots | click sets schedule, toggles quiet hours, adds event |
+| **Drop file here** (`pit`) | open | metal grate, stone wall | chute over pit; lots round hopper rim | recently ingested files / payloads waiting to be dispatched | click inspects file content or routes it to a building |
+| **Script** (`workshop`) | open | wooden planks, wood wall | clockwork machine; workbench; 3 lots before machine | deterministic recipes / scripts as punch-cards or gear sets | click edits script code or runs job manually |
+| **File tree** (`forest`) | open | packed earth, grove rim | brass labels on trees; 4 clearing lots | file directory clusters shown as clearings between labelled trees | click browses files in folder, views file code |
+| **Output** (`loot`) | open | wooden planks, low rim | dock crane; loading dock; 4 pallet lots | finished deliverables, exported assets, packages on pallets | click downloads or opens final product deliverable |
+| **Audio briefing** (`gramophone`) | open | wooden planks, wood wall | giant brass horn on stand; 3 cylinder lots | audio summaries and podcasts as wax cylinders in brass holders | click plays audio playback or shows text transcript |
+| **Sound alerts** (`horn`) | open | packed earth, post rim | brass horn on tall post; slate lot at base | alert sounds and notification rules carved on slate | click previews chime sounds, configures notification thresholds |
+| **Custom building** (`custom`) | door | wooden planks, wood wall | sturdy open room; 4 general lots; tool rack | user-defined agent or integration props | click opens custom extension config or agent console |
 
 ## 3. Doors: who walks in, who works outside
 
@@ -59,73 +85,71 @@ wrong. So:
 - **A building with a doorway is entered:** its ork walks to the doorway, passes behind the jamb, and comes out the
   same way (js/camp/steward.js `OutOfDoor`, as today for those).
 - **A building with none is open-air:** its ork works beside it on its stop's side (at the board, at the catapult)
-  and never walks in or out. Spec 24.
-- **New art keeps the rule** (the owner, same day): a building that orks enter has a **visible doorway an ork fits
+  and never walks in or out. Spec 24 (merged).
+- **New art keeps the rule** (the owner, 16 October): a building that orks enter has a **visible doorway an ork fits
   through**, not always in the same place (front, side, a ramp, a hatch), but **always marked at the cut**: its
   rectangle in the manifest's `doorway` (tools/doorways.py), so the ork walks to it, passes behind its jamb and comes
   out of it, wherever it is. A sheet whose doorway can't be marked is not cut. When a building is redrawn, its outside
-  and its inside (roof off) are made **on one sheet**, so the two match; cut once from the source (CLAUDE.md "Art").
+  and its inside (furniture pieces) are made **on one sheet**, so the two match; cut once from the source (CLAUDE.md "Art").
 
-## 4. The order
+## 4. The room construction kit: code & art
 
-Before the testers: the screen (spec 21); the Agent pool's and the Review gate's rooms (specs 22, 23; their art
-first); doors (spec 24). If time allows, External listeners. The rest after the testers, in the order people reach
-them. Mission 1's walk (spec 17b) opens these rooms.
+Rooms are assembled dynamically in code (`InsideStage`, `RoomLayout`) rather than baked into static single-image rooms.
+This ensures crisp pixel-art, scale flexibility across screen sizes, and room for big props.
 
-## 5. The look of the new art: cute orkish steampunk (the owner, same day)
+### The shared kit (`a-room-kit`)
+From `docs/specs/art-steampunk-all.md`, drawn top-down in s1's cute orkish steampunk style:
+1. **Floors (seamless square tiles):**
+   - Wooden planks (warm timber, nails, slight grain).
+   - Stone flags (weathered grey stone blocks).
+   - Packed earth (trodden dirt with small pebbles).
+   - Metal grate (industrial iron/copper mesh over dark ground).
+2. **Back wall band (north wall face):**
+   - Wooden horizontal planks, stone brickwork, and variants with brass pipe runs and pressure gauges.
+   - West and east end caps.
+3. **Wall rims & corners:**
+   - Thin 1–2 pixel dark wooden/stone borders for west, east, and south edges to define the room bounds against the black screen.
+4. **Floor markers (lots):**
+   - Chalk square (for slabs, tomes, easels).
+   - Wooden pallet (for crates, barrels, heavy machinery).
+   - Rail stop with short rail segment (for orks with carts).
+   - Painted circle (for debate spots, dials, horns).
+5. **Lighting & props (scenery):**
+   - Lantern on a post, hanging brass wall lamp.
+   - Small boiler puffing steam, copper pipes with valves.
+   - Stacked crates, wooden barrels, tool racks.
 
-Every sheet made from now on keeps the camp's cartoon, cute orkish style (the same pixel size, outlines and warm
+### Dynamic layout & data binding
+1. **Stage viewport:** The room is sized to fit the available viewport (maintaining whole device pixels, `dpr`).
+   A soft radial vignette illuminates the floor while the surround remains jet black (#000000).
+2. **Perimeter furniture:** Placed along the north wall band and corners from the building's own sprite sheet.
+3. **Data lots grid:** The floor space is divided into marked lots (at least 1/6th of room width each). Up to 6–8
+   active items are rendered directly on their markers. If more items exist, the last lot renders a `+N` stack.
+4. **Interactive props:** Each item renders its custom SVG/sprite prop (slab, crate, anvil, easel) with readable text
+   and state indicator (❓, 🔥, ✓). A click invokes the corresponding handler (open waybill, open console, edit card).
+
+## 5. The look of the new art: cute orkish steampunk
+
+Every sheet made keeps the camp's cartoon, cute orkish style (the same pixel size, outlines and warm
 woods) and adds **steampunk**: brass and copper fittings, pipes and gauges, cogs, rivets, little boilers and
-chimneys puffing steam, valves and levers, patched leather. Orkish first, steampunk as the trimming: crude, bolted on,
-cheerful, never a clean Victorian machine. Yellow and red stay reserved for signals (brass leans to warm ochre, never
-signal yellow). A **style frame** comes first (§6, card s1), approved by the owner; the rooms and every redrawn
-building follow it.
+chimneys puffing steam, valves and levers, patched leather.
 
-## 6. Art cards (the owner generates; the PM session cuts)
+- **Orkish first, steampunk as trimming:** crude, bolted on, cheerful, never a cold Victorian engine.
+- **Signals reserved:** pure yellow and pure red remain strictly reserved for signals (❓, 🔥, !). Brass leans to warm ochre, never signal yellow.
+- **Approved style frame:** `docs/design/img/references/v3/s1-steampunk.png` (s1 candidate 1, approved 16 October). Every sheet attaches it.
 
-**s1-steampunk (the style frame) — approved 16 October: candidate 1, kept as
-`docs/design/img/references/v3/s1-steampunk.png`.** Every sheet below attaches it as the style to follow. Attach `docs/design/img/references/v3/f1-town.jpg`,
-`design-system/sprites/v3/buildings/depot.png`, `design-system/sprites/v3/buildings/loot_vault.png`.
-> Pixel-art, the same cartoon style, pixel size, outlines and front-top view as the attached camp and buildings, made
-> **orkish steampunk**: the same two buildings (the long engine shed and the gatehouse) redrawn with crude bolted-on
-> brass and copper pipes, a small boiler with a chimney puffing steam, gauges, cogs, rivets, valves and levers,
-> patched leather; still cute, chunky and cheerful, warm woods with brass and teal. Each building **with a clear
-> doorway an ork could walk through** (the shed's on its front, the gatehouse's under its arch). Beside each, **the
-> same building from inside with its roof removed**, seen **top-down as an old JRPG's interior** (the
-> floor from above, the back wall a band, the other walls thin rims). On a flat magenta (#ff00ff) background, every piece
-> fully inside its area, crisp dark 1-pixel outline, no text, no characters. No bright yellow, no red.
+## 6. Implementation roadmap & specs
 
-The two room cards below are made in s1's style. **s1's rooms are a shallow stage seen from the front** (a back wall,
-a narrow floor): too little floor for §2's big props. So the final rooms are asked for **top-down, as in the old JRPGs' interiors**: the
-floor from above, most of the picture; the back wall a band with its face; the other walls thin rims.
-
-
-If s1's insides are good enough they are cut directly; otherwise: Three candidates each, saved as `docs/design/img/references/v3/candidates/<sheet>/1.png … 3.png`.
-
-**i-depot (the Agent pool, inside).** Attach `docs/design/img/references/v3/s1-steampunk.png` (the style),
-`docs/design/img/references/v3/st-depot.jpg` and `design-system/sprites/v3/buildings/depot.png`.
-> Pixel-art, exactly the style (the approved steampunk frame s1), palette, pixel size and front-top view of the attached engine
-> shed. The same shed
-> seen **from inside with its roof removed**, **seen top-down, as an old JRPG's interior**: the floor seen from
-> above and taking most of the picture, the back wall a band showing its face, the side and front walls thin rims,
-> furniture and props from above with a little of their front: a long plank floor with **six large empty bays** marked out on it
-> (chalk lines and a rail stop each, big enough for an ork and a cart), a tool rack between bays; a long bench by
-> the back wall; lanterns on posts;
-> crates and barrels in the corners; brass pipes along the walls, a small boiler, gauges. **No characters.** One bay empty, with a small blank wooden sign on a post. On a
-> flat magenta (#ff00ff) background, the room fully inside the frame, crisp dark 1-pixel outline, no text, no
-> shadows outside the room. Warm woods and teal cloth; no bright yellow, no red.
-
-**i-gate (the Review gate, inside).** Attach `docs/design/img/references/v3/s1-steampunk.png` (the style),
-`docs/design/img/references/v3/st-gate.jpg` and `design-system/sprites/v3/buildings/loot_vault.png`.
-> Pixel-art, exactly the style (the approved steampunk frame s1), palette, pixel size and front-top view of the attached
-> gatehouse. The same gatehouse
-> seen **from inside with its roof removed**, **seen top-down, as an old JRPG's interior**: the floor seen from
-> above and taking most of the picture, the back wall a band showing its face, the side and front walls thin rims,
-> furniture and props from above with a little of their front: a stone floor with **three large empty lots** marked on it
-> (painted squares or pallets, each big enough for a crate as tall as an ork), open space between them; a wooden barrier arm at the far doorway, closed; a shelf on the side wall
-> with a few small sealed crates; a stamp and an ink pot on the table; a lantern. **No characters, no crates on the
-> table.** On a flat magenta (#ff00ff) background, the room fully inside the frame, crisp dark 1-pixel outline, no
-> text, no shadows outside the room. Warm woods and grey stone with teal accents; no bright yellow, no red.
-
-The crates, scrolls and orks on the table and in the bays are drawn by the code from today's sprites, so one room
-serves any number of results and runs.
+1. **Screen foundation (Spec 21) — MERGED:**
+   Full-screen black stage, centred room, gear slides settings panel in/out, Esc/Exit returns to camp with view preserved, plain room fallback.
+2. **Doors & open-air stewards (Spec 24) — MERGED:**
+   Buildings with doorways step out; open-air buildings show their steward beside the building at its foot without exit door.
+3. **Art generation (`art-steampunk-all.md`) — IN PROGRESS:**
+   Owner runs agy pro across the 23 sheets + `a-room-kit` (3 candidates each). PM session cuts chosen candidates and records doorways.
+4. **Room layout engine (Spec 25):**
+   The Preact component that tiles the `a-room-kit` floor and wall band, places perimeter furniture, and provides the lot grid for props.
+5. **Mission 1 core rooms:**
+   - **Agent pool room (Spec 22):** 6 bays with rail stops, busy orks with carts, idle bench, *Add ork* sign.
+   - **Review gate room (Spec 23):** 3 crate lots, barrier arm at exit, waybill overlay (Pass, Needs another round, Not this).
+   - **Task board room:** finished; cards scaled to large slabs on chalk lots.
+6. **Remaining rooms:** rolled out in order of player progression (External listeners, Forge/PRs, Wiki, Metrics).

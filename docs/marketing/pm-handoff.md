@@ -23,10 +23,12 @@ The state a new product-and-marketing session starts from. Update it when you ha
 - **Who builds** (decisions §26): the PM marks each spec agy or Claude when writing it; the owner starts both in the
   evening; the PM reviews every branch in the morning (specs/README.md "Who builds").
 
-- **Dev sessions running (16 October, morning):** spec 01 round 3 `session_015VpnNP4rjdC4UL1VQcHTxu` (branch
-  `spec/01-phone-fast-load`), spec 21 `session_01ReyYTVQzzWZphXokBVzFZr` (branch `spec/21-building-screen`). The icon from the HD sprite (light model)
-  `session_01GMDHkpuJGv7Qc4EP8mWJyg` (branch `spec/icon-hd`; the owner uploads the avatar to GitHub by hand). The owner's
-  agy runs 12, 13b, 17a, 18, 24 and the art card s1-steampunk. The PM session reviews each branch and merges what holds.
+- **State of morning runs (16 October):** Merged to `main`: spec 01 round 3 (`spec/01-phone-fast-load`),
+  spec 13b (`spec/13b-home-cleanup`), spec 17a (`spec/17a-mission-starts-at-once`), spec 18 (`spec/18-darker-grass`),
+  spec icon-hd (`spec/icon-hd`), art s1-steampunk (`s1-steampunk`), spec 21 (`spec/21-building-screen`),
+  and spec 24 (`spec/24-open-air-buildings`).
+  Next: owner runs `art/steampunk-all` (23 sheets × 3 candidates + `a-room-kit`); `interiors.md` updated for the
+  shared room kit and all 23 buildings; specs 22 and 23 updated for kit/furniture pieces.
 
 ## Where things are
 - Decisions: `docs/design/decisions-2026-10.md` §15–§25 (the camp's shape §20, timeline §22, process lines §23,
