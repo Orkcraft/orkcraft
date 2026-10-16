@@ -68,9 +68,9 @@ The state a new product-and-marketing session starts from. Update it when you ha
   repository himself (17 October): don't touch "Grunt" or the repo name.
 - **decisions §38: the orks stay**; looked at again only if ≥2 testers unprompted call it a copy (of AgentCraft or that
   game). Count it from their answers.
-- Dev session for 26: `session_01GT2jie5yC5t9tua8JLyfXW` (branch `spec/26-five-buildings`); 27 goes to it after 26
-  is merged, on `spec/27-mission-four-quests`. Tonight's batch: `docs/specs/batches/2026-10-16-night.md` (agy: 18 r2, 19, 12b,
-  `art-steampunk-all` if unfinished). Claude: **17b** in tomorrow's morning batch, after 19 is merged.
+- Dev session for 26 round 2 and 27: `session_01B4Y1kqtJ7Henb6Qdargwcc` (branches `spec/26-five-buildings`,
+  `spec/27-mission-four-quests`). A dev session refuses tasks sent later by send_message (it treats them as a peer's,
+  not the owner's): give every task in the session's first prompt; a new task means a new session.
 - **decisions §36: the scope is the three tracks only**; everything else is a one-line hypothesis in open-questions.md
   "After the testers". Parked: 10, 04, 06–09, 15, 11, 12b, devlog 02. The list by track: specs/README.md.
 - Claude specs next: 27 → 17b → 03; 22/23 wait on the five-building art; 20 waits on 18 and 19.
