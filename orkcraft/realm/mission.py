@@ -7,8 +7,8 @@ the roads and watches each quest's goal; the GUI draws the quest log in the Work
     mission.load(root)              where the mission stands: {"on", "quest", "started", "done", "skipped", …}
     mission.save(root, state)
 
-Quests 1 to 3½ run no model and spend nothing: the drill is a practice task, called a drill on its card and in the
-Workchief's words (§2 rule 5). Quests 4 and 5 are real work (core/mission.py). A deed for each quest and Mission 1's
+Quests 1 to 3 run no model and spend nothing: the drill is a practice task, called a drill on its card and in the
+Workchief's words (§2 rule 5). Quest 4 reads only and calls no model (core/mission.py). A deed for each quest and Mission 1's
 stage and first item: realm/growth.py.
 """
 from __future__ import annotations
@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import threading
+from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -39,15 +40,12 @@ QUESTS = (
           "answer it in the console.", "barracks", "Set up the Agent pool"),
     Quest("gate", "Nothing leaves without a check.", "Set up the Review gate. The drill's cart stops at its barrier: "
           "lift it to pass the cart.", "loot", "Set up the Review gate"),
-    Quest("office", "Boss, in working hours the camp can look like an office.",
-          "Switch to the Office look and back to Camp: the same town, the same carts and orks."),
     Quest("listen", "Listen to what goes on outside.", "Set up External listeners on GitHub: your notifications "
           "and open issues of this project become cards on the Task board (without gh: its TODO and FIXME lines). "
           "Read only.", "watchtower", "Set up External listeners", "free, read only, no model"),
-    Quest("two", "Two at once.", "Two cards go to two orks at once, each on a branch of its own; both results wait "
-          "at the Review gate. Nothing is merged without you.", "", "Send two cards", ""),
 )
 IDS = tuple(q.id for q in QUESTS)
+LEGACY = ("office", "two")      # quests an older mission state may still name (they left Mission 1: spec 27)
 DONE_SAYS = "The camp stands and works. The rest is yours: send cards, answer the orks, pass what is good."
 LIFT = "Lift the barrier"          # quest 3's press once the drill waits at the gate: the person's pass
 # The finale after quest 3 (first-mission.md §9.2): the passed drill cart rolls on and is launched, or leaves along the
@@ -55,13 +53,8 @@ LIFT = "Lift the barrier"          # quest 3's press once the drill waits at the
 FINALE_S = 14.0
 FINALE_SAYS = "The barrier is up: the drill cart rolls on. A drill, so nothing left the town."
 FINALE_CHIP = "Drill · free"
-# Mission 1 done (the quests up to 4; quest 5 may be put off, §3): the portrait's stage 2 opens by it (v3-prompts.md
-# §14), and the first item is earned, for the inventory to read (realm/growth.py `ITEMS`).
-# Quest 5 is real work: its price is said before the press (core/mission.py `two_cost`).
-TWO_BUDGET_USD = 2.0
-TWO_COST = ("Real work on {tool}: two runs, each on its own branch, with the Security reviewer on. No new run "
-            "starts once the Agent pool has spent ${budget:.2f}; a run under way finishes. On a subscription it "
-            "counts against your plan's limits.")
+# Mission 1 done (after quest 4): the portrait's stage 2 opens by it (v3-prompts.md §14), and the first item is
+# earned, for the inventory to read (realm/growth.py `ITEMS`).
 # Asked once, before quest 4 (open-questions.md Q16): the hooks the Security reviewer and the session log stand on.
 HOOKS_SAYS = "Before real work: may the Security reviewer guard this project?"
 
@@ -96,12 +89,26 @@ def drill_script() -> dict:
                      {"match": "Drill", "say": DRILL_ASK, "seconds": 1.5}]}
 
 
+def migrate(state: dict) -> dict:
+    """A state saved when Mission 1 had six quests, read as it is now: one at `office` moves on to `listen`; one at
+    `two`, or with a `two` key, counts Mission 1 as done. Nothing earned is removed (`done`, `two`, `office_seen`)."""
+    if state.get("quest") == "office":
+        state["quest"] = "listen"
+        state.setdefault("started", {}).setdefault("listen", datetime.now().astimezone().isoformat(timespec="seconds"))
+    if state.get("quest") == "two" or ("two" in state and "listen" in (state.get("done") or [])):
+        if state.get("on") or state.get("quest") == "two":
+            state["finished"] = True
+        state["on"], state["quest"] = False, ""
+        state.setdefault("mission_done", datetime.now().astimezone().isoformat(timespec="seconds"))
+    return state
+
+
 def load(root: Path) -> dict:
     try:
         data = json.loads((Path(root) / PATH).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
-    return data if isinstance(data, dict) else {}
+    return migrate(data) if isinstance(data, dict) else {}
 
 
 def save(root: Path, state: dict) -> None:

@@ -9,11 +9,10 @@ its road, and is done when its goal holds — looked at on every tick, so it not
     m.leave()        # skipped: the quest under way counted as skipped, the town stays as it stands
     m.view()         # what the quest log draws, None when no mission is under way
 
-Quests 1 to 3½ call no model: the Agent pool runs the drill by a script while its `drill.json` is there
+Quests 1 to 3 call no model: the Agent pool runs the drill by a script while its `drill.json` is there
 (core/workers/barracks.py DRILL), and the drill is called a drill on its card and in the Workchief's words.
 Before quest 4 the hooks are asked for once (`hooks`), showing what is written where. Quest 4 reads only (realm/
-mission_work.py: GitHub with the person's `gh`, else the TODO and FIXME lines) and calls no model; quest 5 is real
-work, its price said before the press, on branches, the Security reviewer on, nothing merged without the person.
+mission_work.py: GitHub with the person's `gh`, else the TODO and FIXME lines) and calls no model.
 Each quest's start, end and skip go to the local event log (realm/event_log.py). No face here.
 """
 from __future__ import annotations
@@ -23,13 +22,12 @@ import json
 import threading
 from typing import Any
 
-from orkcraft import settings
 from orkcraft.core import buildings, roads
 from orkcraft.hooks import install as hooks_install
-from orkcraft.realm import builders, event_log, harnesses, mission, mission_work, quickadd
+from orkcraft.realm import event_log, mission, mission_work, quickadd
 
 PLOTS = {"board": [0.0, 0.0], "pool": [0.333, 0.0], "gate": [0.667, 0.0], "listen": [1.0, 0.0]}   # each quest's
-LABELS = {"board": "1", "pool": "2", "gate": "3", "office": "3½", "listen": "4", "two": "5"}     # building's plot
+LABELS = {"board": "1", "pool": "2", "gate": "3", "listen": "4"}      # building's plot
 
 
 def _now() -> dt.datetime:
@@ -80,7 +78,7 @@ class Mission:
         q = s.get("quest", "")
         s["on"], s["quest"] = False, ""
         s.setdefault("skipped", []).append(q)
-        if "listen" in (s.get("done") or []):                 # quest 5 may be put off: Mission 1 is done
+        if "listen" in (s.get("done") or []):                 # Mission 1 is done after quest 4, though it is left
             s.setdefault("mission_done", _now().isoformat(timespec="seconds"))
         self._save(s)
         self._record(event_log.QUEST_SKIPPED, quest=q)
@@ -92,8 +90,6 @@ class Mission:
         "" when the quest raises nothing or raised it already."""
         s = self.state
         q = mission.quest(s.get("quest", "")) if s.get("on") else None
-        if q is not None and q.id == "two":
-            return self._send_two(s)
         if q is not None and q.id == "gate" and (s.get("built") or {}).get("gate"):
             return self._lift(s)
         if q is None or not q.raises or (s.get("built") or {}).get(q.id) or self._asks_hooks(s, q.id):
@@ -127,11 +123,9 @@ class Mission:
 
     def _asks_hooks(self, s: dict, quest_id: str) -> bool:
         """Quest 4 waits on the answer, unless Orkline's Claude Code plugin is in (installing it was the yes to the
-        session log); quest 5 needs the Security reviewer on, which the plugin does not bring."""
-        if quest_id not in ("listen", "two") or hooks_install.installed(self.root):
+        session log)."""
+        if quest_id != "listen" or hooks_install.installed(self.root):
             return False
-        if quest_id == "two":
-            return True
         return s.get("hooks") not in ("yes", "no") and not hooks_install.plugin_in(self.root)
 
     def hooks(self, yes: bool) -> list[str]:
@@ -181,44 +175,6 @@ class Mission:
         s.pop("looking", None)
         s["listen"] = {"source": source, "cards": cards}
         self._save(s)
-
-    # -- quest 5: two at once, real work ---------------------------------------------------------------
-
-    def _pool(self, s: dict):
-        pool = (s.get("built") or {}).get("pool", "")
-        return self.town.worker(pool) if pool and self.town.scroll.building(pool) is not None else None
-
-    def _two_cards(self, s: dict) -> list[str]:
-        board = (s.get("built") or {}).get("board", "")
-        w = self.town.worker(board) if board and self.town.scroll.building(board) is not None else None
-        if w is None:
-            return []
-        return [c.id for c in w.cards if c.column == "todo" and c.id != s.get("card")][:2]
-
-    def two_cost(self, s: dict | None = None) -> str:
-        s = self.state if s is None else s
-        w = self._pool(s)
-        spent = w.state.spent if w is not None else 0.0
-        return mission.TWO_COST.format(tool=harnesses.title(builders.main_tool(self.town.machine)),
-                                       budget=spent + mission.TWO_BUDGET_USD)
-
-    def _send_two(self, s: dict) -> str:
-        """The press of quest 5: two cards from the board to the pool, on branches, under a budget."""
-        board = (s.get("built") or {}).get("board", "")
-        w = self._pool(s)
-        cards = self._two_cards(s)
-        if s.get("two") or w is None or len(cards) < 2 or self._asks_hooks(s, "two"):
-            return ""
-        (w.state_dir / "drill.json").unlink(missing_ok=True)
-        w.save_config({"worktrees": True, "max_orcs": 2,
-                       "budget_usd": round(w.state.spent + mission.TWO_BUDGET_USD, 2)})
-        s["two"] = [f"{board}:{c}" for c in cards]
-        s["two_seen"] = []
-        self._save(s)
-        b = self.town.worker(board)
-        for c in cards:
-            b.send(c)
-        return w.building_id
 
     def _after_board(self, s: dict, board: str) -> None:
         card = self.town.worker(board).add(mission.DRILL_TITLE, "todo", mission.DRILL_BODY)
@@ -313,27 +269,8 @@ class Mission:
             if held:
                 s["held"] = True
             return bool(s.get("held")) and not held
-        if quest_id == "office":                                  # Office seen, then Camp again
-            look = settings.look_now(self.town.machine)
-            if look == "office":
-                s["office_seen"] = True
-            return bool(s.get("office_seen")) and look != "office"
         if quest_id == "listen":                                  # what it found is on the board
             return "listen" in s
-        if quest_id == "two":                                     # both results came to the gate
-            gate = built.get("gate", "")
-            w = self.town.worker(gate) if gate and self.town.scroll.building(gate) is not None else None
-            if w is None or not s.get("two"):
-                return False
-            seen = set(s.get("two_seen") or [])
-            seen |= {ref for ref in s["two"] if w.queue.by_ref(ref) is not None}
-            s["two_seen"] = sorted(seen)
-            if len(seen) < len(s["two"]):
-                return False
-            pool = self._pool(s)
-            if pool is not None:
-                pool.save_config({"budget_usd": None})           # the mission's budget ends with it
-            return True
         return False
 
     def tick(self) -> bool:
@@ -407,13 +344,6 @@ class Mission:
             out["hooks"], out["press"] = self._hooks_view(), ""
         if q.id == "listen" and s.get("looking"):
             out["needs"] = "Looking at what waits for you…"
-        if q.id == "two":
-            out["cost"] = self.two_cost(s)
-            if s.get("two"):
-                out["press"] = ""
-                out["needs"] = f"At the Review gate: {len(s.get('two_seen') or [])} of {len(s['two'])}"
-            elif len(self._two_cards(s)) < 2:
-                out["press"], out["needs"] = "", "Write two cards on the Task board first, or skip the mission"
         return out
 
     def seen_end(self) -> None:

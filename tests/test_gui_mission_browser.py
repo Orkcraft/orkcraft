@@ -54,10 +54,10 @@ def test_the_drill_waits_on_the_siding_the_barrier_lifts_and_the_drill_rolls_on(
     _clear(pg)
     host = server.host
     host.town.call(host.mission.begin)
-    log = pg.locator(".gui-warchief__setup", has_text="Mission 1 · quest 1 of 5")
+    log = pg.locator(".gui-warchief__setup", has_text="Mission 1 · quest 1 of 4")
     log.wait_for(state="visible", timeout=WAIT_MS)
     log.get_by_role("button", name="Set up the Task board").click()          # quest 1: the booth, the drill on its siding
-    pg.locator(".gui-warchief__setup", has_text="quest 2 of 5").wait_for(state="visible", timeout=WAIT_MS)
+    pg.locator(".gui-warchief__setup", has_text="quest 2 of 4").wait_for(state="visible", timeout=WAIT_MS)
     built = lambda: host.mission.mission.state["built"]                     # noqa: E731
     board = built()["board"]
     siding = pg.locator(f'.gui-camp__siding[data-id="{board}"] img')
@@ -77,7 +77,7 @@ def test_the_drill_waits_on_the_siding_the_barrier_lifts_and_the_drill_rolls_on(
         pg.wait_for_timeout(100)
     assert task is not None
     _call(pg, "act", {"id": w.building_id, "act": "answer", "args": {"task": task.id, "text": "Green"}})
-    log = pg.locator(".gui-warchief__setup", has_text="quest 3 of 5")
+    log = pg.locator(".gui-warchief__setup", has_text="quest 3 of 4")
     log.wait_for(state="visible", timeout=WAIT_MS)
     log.get_by_role("button", name="Set up the Review gate").click()         # quest 3: the drill stops at the barrier
     lift = pg.locator(".gui-warchief__setup").get_by_role("button", name="Lift the barrier")
@@ -96,7 +96,7 @@ def test_the_drill_waits_on_the_siding_the_barrier_lifts_and_the_drill_rolls_on(
     assert finale.locator(".gui-camp__launch-chip").first.inner_text() == "Drill · free"
     pg.wait_for_function(f"() => document.querySelector('.gui-camp__building[data-id=\"{gate}\"] img')"
                          f".src.endsWith('/buildings/loot_vault-up.png')", timeout=WAIT_MS)   # the barrier up
-    log = pg.locator(".gui-warchief__setup", has_text="quest 3½ of 5")
+    log = pg.locator(".gui-warchief__setup", has_text="quest 4 of 4")
     log.wait_for(state="visible", timeout=WAIT_MS)
     assert mission.FINALE_SAYS in log.inner_text()
     pg.wait_for_timeout(1200)
@@ -118,7 +118,7 @@ def test_the_finale_is_launched_by_the_publisher_when_the_town_has_one(camp_look
     pg.keyboard.press("Escape")
     _building(pg, out).wait_for(state="visible", timeout=WAIT_MS)
     at = dt.datetime.now().astimezone().isoformat(timespec="milliseconds")
-    mission.save(server.host.town.repo_root, {"on": True, "quest": "office", "done": ["board", "pool", "gate"],
+    mission.save(server.host.town.repo_root, {"on": True, "quest": "listen", "done": ["board", "pool", "gate"],
                                               "built": {"board": board, "gate": gate},
                                               "finale": {"at": at, "gate": gate, "out": out}})
     server.host.town.call(server.host.on_change)
