@@ -3,6 +3,11 @@
 Branch `spec/12-v4-remaining-screens` · model **flash** · design: design-system-v4.md (the kit), decisions §17.1
 **Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 
+## Merged (16 October); left for a later round (12b, optional)
+1. Town settings' section headings (shot 03) are still uppercase in the text face: Jersey 15, as the kit's headings.
+2. Contrast on parchment (shot 13): the disabled *Cancel* and the tool warning line read too faintly.
+3. `audit.md`: the Improve row says it moved, but it was already on the kit (06 before = after); say so.
+
 ## Round 2 (16 October): make the kit actually show, nothing else
 The branch `spec/12-v4-remaining-screens` holds round 1 (`64082f8`). Work on it, on top of that commit. The limits
 below still hold (only CSS and HTML templates of the desktop GUI, plus `docs/design/img/v4/`).
