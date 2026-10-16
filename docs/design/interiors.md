@@ -10,6 +10,9 @@ An improvement of an existing mechanic (decisions §27).
   away entirely: **a black screen**, and on it the building **in the middle, roof off, as large as the screen
   allows**, whole device pixels, lit like a stage (a soft light on its floor, black round it). No camp behind it, so
   nothing distracts (the owner, same day). No permanent settings panel (today's right-hand "shop" goes).
+- **The view is top-down, as in the old JRPGs' interiors** (the owner, same day): the floor seen from above, the back
+  (north) wall shown as a band with its face, the side and front walls as thin rims, furniture and props seen from
+  above with a little of their front. Not a side view, not the camp's front-top angle. Every room, now and later.
 - **Settings behind a gear** in the room's top-right corner: a panel slides in (today's Info, js/console.js
   `InfoTab`, as it is), and out again. Money and safety stay in plain words, never drawn into the room (§13.2).
 - **Exit** always in view, and Esc, back to the camp where it was.
@@ -85,12 +88,13 @@ building follow it.
 > brass and copper pipes, a small boiler with a chimney puffing steam, gauges, cogs, rivets, valves and levers,
 > patched leather; still cute, chunky and cheerful, warm woods with brass and teal. Each building **with a clear
 > doorway an ork could walk through** (the shed's on its front, the gatehouse's under its arch). Beside each, **the
-> same building from inside with its roof removed** as a cutaway. On a flat magenta (#ff00ff) background, every piece
+> same building from inside with its roof removed**, seen **top-down as an old JRPG's interior** (the
+> floor from above, the back wall a band, the other walls thin rims). On a flat magenta (#ff00ff) background, every piece
 > fully inside its area, crisp dark 1-pixel outline, no text, no characters. No bright yellow, no red.
 
 The two room cards below are made in s1's style. **s1's rooms are a shallow stage seen from the front** (a back wall,
-a narrow floor): too little floor for §2's big props. So the final rooms are asked for with **a deep floor seen from
-above at the camp's angle**, most of the picture floor, the walls a low rim round it.
+a narrow floor): too little floor for §2's big props. So the final rooms are asked for **top-down, as in the old JRPGs' interiors**: the
+floor from above, most of the picture; the back wall a band with its face; the other walls thin rims.
 
 
 If s1's insides are good enough they are cut directly; otherwise: Three candidates each, saved as `docs/design/img/references/v3/candidates/<sheet>/1.png … 3.png`.
@@ -99,8 +103,9 @@ If s1's insides are good enough they are cut directly; otherwise: Three candidat
 `docs/design/img/references/v3/st-depot.jpg` and `design-system/sprites/v3/buildings/depot.png`.
 > Pixel-art, exactly the style (the approved steampunk frame s1), palette, pixel size and front-top view of the attached engine
 > shed. The same shed
-> seen **from inside with its roof removed**, as a cutaway **from above at the camp's front-top angle, the floor
-> taking most of the picture and the walls a low rim round it**: a long plank floor with **six large empty bays** marked out on it
+> seen **from inside with its roof removed**, **seen top-down, as an old JRPG's interior**: the floor seen from
+> above and taking most of the picture, the back wall a band showing its face, the side and front walls thin rims,
+> furniture and props from above with a little of their front: a long plank floor with **six large empty bays** marked out on it
 > (chalk lines and a rail stop each, big enough for an ork and a cart), a tool rack between bays; a long bench by
 > the back wall; lanterns on posts;
 > crates and barrels in the corners; brass pipes along the walls, a small boiler, gauges. **No characters.** One bay empty, with a small blank wooden sign on a post. On a
@@ -111,8 +116,9 @@ If s1's insides are good enough they are cut directly; otherwise: Three candidat
 `docs/design/img/references/v3/st-gate.jpg` and `design-system/sprites/v3/buildings/loot_vault.png`.
 > Pixel-art, exactly the style (the approved steampunk frame s1), palette, pixel size and front-top view of the attached
 > gatehouse. The same gatehouse
-> seen **from inside with its roof removed**, as a cutaway **from above at the camp's front-top angle, the floor
-> taking most of the picture and the walls a low rim round it**: a stone floor with **three large empty lots** marked on it
+> seen **from inside with its roof removed**, **seen top-down, as an old JRPG's interior**: the floor seen from
+> above and taking most of the picture, the back wall a band showing its face, the side and front walls thin rims,
+> furniture and props from above with a little of their front: a stone floor with **three large empty lots** marked on it
 > (painted squares or pallets, each big enough for a crate as tall as an ork), open space between them; a wooden barrier arm at the far doorway, closed; a shelf on the side wall
 > with a few small sealed crates; a stamp and an ink pot on the table; a lantern. **No characters, no crates on the
 > table.** On a flat magenta (#ff00ff) background, the room fully inside the frame, crisp dark 1-pixel outline, no
