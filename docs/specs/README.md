@@ -133,6 +133,7 @@ open-questions.md "After the testers" (§36). Within a track, P0 first.
 |---|---|---|---|---|
 | 26 | [five buildings at the first start; the others hidden](26-five-buildings.md) | P0 | **Claude** | light |
 | fix lists | one short spec per building from what the owner finds testing it (`docs/specs/fix-<building>.md`) | P0, as they come | agy or Claude | light |
+| gate-kinds | the Review gate by what the result is: what goes to people one by one, code as one batch a day (decisions §39); the spec after the owner's tests | P1 | **Claude** | full |
 | 22 | [the Agent pool's room](22-agent-pool-room.md) (art card + code) | P1, after the art | **Claude** | light + the owner's look |
 | 23 | [the Review gate's room](23-review-gate-room.md) (art card + code) | P1, after the art | **Claude** | light + the owner's look |
 | 16 | [every ork at a glance: state, phase icon, task on hover](16-ork-at-a-glance.md) | Later | **Claude** | full |

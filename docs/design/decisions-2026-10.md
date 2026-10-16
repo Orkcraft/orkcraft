@@ -982,3 +982,16 @@ now, the owner; looked at again after the rename or if testers notice).
 looks like AgentCraft or like a copy of that game (the guide's questions "what is Orkline for" and "a game or a
 tool" are where it shows). Otherwise the question is closed.
 
+## 39. The Review gate checks by what the result is (16 October, the owner)
+
+Two voices now (the interview of 16 October and the owner): **code** results are not read one by one, there are
+too many; **what goes to people** (tasks, documents, replies, posts) is read by eye, each one, before it is sent. So
+the Review gate asks for the person's look where it is worth it:
+- **what leaves to people** (a reply, a post, a task or a document for someone else): stops at the gate, one by one,
+  read before it goes. This is what "nothing passes without you" means;
+- **code**: passes on its checks (tests, the Warder, the budget) and gathers at the gate as **one batch a day**; the
+  person looks at the batch once (what changed, what it cost, what failed) and passes or sends back what needs it.
+An improvement of the existing gate (§27), track 1, **P1**: its spec is written after the owner has tested the five
+buildings, so it carries what he finds. Mission 1 stays as it is (its drill is one cart, passed by hand). The tester
+question on how they check agents' work counts towards it. "The plan passed before the work" stays a hypothesis.
+
