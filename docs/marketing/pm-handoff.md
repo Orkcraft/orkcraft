@@ -68,6 +68,7 @@ The state a new product-and-marketing session starts from. Update it when you ha
   repository himself (17 October): don't touch "Grunt" or the repo name.
 - **decisions §38: the orks stay**; looked at again only if ≥2 testers unprompted call it a copy (of AgentCraft or that
   game). Count it from their answers.
+- **Spec 28 (lean Agent pool, decisions §40)**: next Claude session after 26 r2 and 27 are merged, before 17b.
 - Dev session for 26 round 2 and 27: `session_01B4Y1kqtJ7Henb6Qdargwcc` (branches `spec/26-five-buildings`,
   `spec/27-mission-four-quests`). A dev session refuses tasks sent later by send_message (it treats them as a peer's,
   not the owner's): give every task in the session's first prompt; a new task means a new session.

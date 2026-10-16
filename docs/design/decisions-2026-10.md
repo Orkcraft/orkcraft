@@ -1000,3 +1000,11 @@ An improvement of the existing gate (§27), track 1, **P1**: its spec is written
 buildings, so it carries what he finds. Mission 1 stays as it is (its drill is one cart, passed by hand). The tester
 question on how they check agents' work counts towards it. "The plan passed before the work" stays a hypothesis.
 
+## 40. The lean Agent pool (16 October, the owner)
+
+Coordination without a big token cost: the card is the contract (a clear card, passed before the work, needs fewer
+questions); orks coordinate through files (claims, the decisions list), not through talk; the steward answers an ork
+at most once and lightly, else the question goes to the person; tests are the review of code; roles stay few and
+short; a full context rolls over. The waybill shows where the tokens went, so the owner's tests measure it. A
+simplification of the existing pool (§27), track 1, P1. Spec 28, after 26 and 27, before 17b.
+
