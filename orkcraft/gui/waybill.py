@@ -13,7 +13,7 @@ from __future__ import annotations
 import datetime as dt
 from typing import Any
 
-from orkcraft.realm import pipes
+from orkcraft.realm import pipes, pool_spend
 from orkcraft.scroll import road_key
 
 
@@ -40,9 +40,16 @@ def _find(town, cart: str = "", building: str = ""):
     return next((c for c in reversed(every) if c.target == building), None) if building else None
 
 
+def _split(rows) -> list[dict[str, Any]]:
+    """An Agent pool's split of a stop (realm/pool_spend.py): the ork's work, the steward's answers, review and
+    planning, each with its tokens and cost; a part nothing was spent on is left out."""
+    return [{"part": p, "tokens": int(t), "cost": c} for p, t, c in rows or ()]
+
+
 def _stop(town, h: pipes.Hop) -> dict[str, Any]:
     return {"building": h.building, "title": _title_of(town, h.building), "ork": h.orc, "kind": h.kind,
-            "tokens": h.tokens, "cost": h.cost, "ms": h.ms, "at": _clock(h.at), "outcome": h.outcome, "model": h.model}
+            "tokens": h.tokens, "cost": h.cost, "ms": h.ms, "at": _clock(h.at), "outcome": h.outcome, "model": h.model,
+            "split": _split(h.spend)}
 
 
 def _task(town, building: str, task: str) -> dict[str, Any] | None:
@@ -54,7 +61,8 @@ def _task(town, building: str, task: str) -> dict[str, Any] | None:
     hops = [pipes.Hop(**h) if isinstance(h, dict) else h for h in t.trail or []]
     stops = [_stop(town, h) for h in hops]
     stops.append({"building": building, "title": _title_of(town, building), "ork": t.orc, "kind": "agent",
-                  "tokens": t.tokens, "cost": t.cost_usd, "ms": None, "at": "", "outcome": t.status, "model": ""})
+                  "tokens": t.tokens, "cost": t.cost_usd, "ms": None, "at": "", "outcome": t.status, "model": "",
+                  "split": _split(pool_spend.rows(t.spend))})
     toks = [s["tokens"] for s in stops if s["tokens"] is not None]
     costs = [s["cost"] for s in stops if s["cost"] is not None]
     times = [s["ms"] for s in stops if s["ms"] is not None]

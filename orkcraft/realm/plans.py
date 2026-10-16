@@ -155,10 +155,11 @@ class Sub:
 
 def plan_prompt(keeper: str, orders: str, title: str, text: str, aim: str, max_parallel: int,
                 personas: list[tuple[str, str, str]], designs: str = "", brief: bool = False,
-                short: bool = False) -> str:
+                short: bool = False, new_roles: bool = True) -> str:
     """`personas`: (name, tier, its first line) of those the barracks keeps. `designs`: the design briefs the
     task concerns (realm/briefs.py `section`); `brief`: a plan of parts leaves a design brief (`design`),
-    in two lines when `short` (🪙 thrift) — docs/design/barracks-designs.md §5–6."""
+    in two lines when `short` (🪙 thrift) — docs/design/barracks-designs.md §5–6. `new_roles`: it may write a new
+    persona; else it names one of those it keeps, or none."""
     known = "\n".join(f"- `{n}` ({t}): {line}" for n, t, line in personas) or "(none yet)"
     rules = f"## Your rules\n\n{orders.strip()}" if orders.strip() else ""
     return "\n\n".join(p for p in [
@@ -177,9 +178,10 @@ def plan_prompt(keeper: str, orders: str, title: str, text: str, aim: str, max_p
         f"- at most {MAX_SUBTASKS} subtasks; `id`: lowercase letters, digits and dashes;\n"
         "- `touches`: the files or folders it changes — parts that touch the same ones never run at once;\n"
         "- `after`: the ids it needs done first (no cycles); it starts from their merged work;\n"
-        "- `persona`: one of those above, or a new name with `persona_prompt` — a few lines on who this agent "
-        "is and how it works;\n"
-        "- `cheaper_ok`: true when a lighter tier would still do, should the budget be short.",
+        + ("- `persona`: one of those above, or a new name with `persona_prompt` — a few lines on who this agent "
+         "is and how it works;\n" if new_roles else
+         "- `persona`: one of those above, or \"\" — no new ones: leave `persona_prompt` empty;\n")
+        + "- `cheaper_ok`: true when a lighter tier would still do, should the budget be short.",
         ("With two subtasks or more, add next to `subtasks` a `design` object — the design brief kept with the "
          'code: {"why": "…", "decisions": ["…"], "invariants": ["…"], "out_of_scope": ["…"]}'
          + (" — two lines in all, it is a thrifty barracks." if short else " — short and concrete.")) if brief else "",

@@ -17,7 +17,8 @@ end. Nobody hires by hand. Then the foreman decides, by rules:
 Context is reused, not re-sent. An orc whose earlier work is close to the new task (same ticket,
 or overlapping words with what it recently did) is preferred, and it resumes its own session: the
 prompt is then only the task — the orders and the briefing are already in the session. A session
-is rolled over after `session_tasks` tasks (it only grows); the next run starts fresh with a short
+is rolled over after `session_tasks` tasks (it only grows), or once its last run read more than
+`ROLLOVER_SHARE` of 🪵 (the town's `lumber_context_limit_tokens`); the next run starts fresh with a short
 handoff of the orc's recent work. A cold start on an unrelated task gets no history at all.
 
 Rules first, a model only when in doubt (not wired yet: a doubtful follow-up goes to the most
@@ -64,7 +65,9 @@ RELATED = 0.2                              # word overlap from which a task coun
 LOOKAHEAD = 5                              # a freed orc looks this far into the queue for related work
 KEEP_RECENT = 3
 DEFAULT_MAX_REWORKS = 3
-MAX_STEWARD_ANSWERS = 3                    # questions the steward answers in one run before the operator is asked
+MAX_STEWARD_ANSWERS = 1                    # questions the steward answers in one run before the operator is asked
+ROLLOVER_SHARE = 0.6                       # of 🪵: a session whose last run read more rolls over (a fresh one)
+REVIEWS = ("tests", "steward")             # `review`: green tests are the review of code, or the steward reads it
 DIFF_LIMIT = 20_000                        # characters of the diff the steward reads
 QUESTION = re.compile(r"^\s*\**\s*QUESTION\b\s*:?\s*(.+)", re.I | re.S | re.M)
 ACCEPT = re.compile(r"^\s*\**\s*ACCEPT\b", re.I)
@@ -100,6 +103,7 @@ class PoolOrc:
     last: str = ""                  # when it last finished
     recent: list[str] = field(default_factory=list)  # its last tasks, a line each: what it knows
     session_tasks: int = 0          # tasks the current session carries
+    context: int = 0                # the tokens its session's last run reported (🪵: a full one rolls over)
     tokens: int = 0
     persona: str = ""               # who it was hired as (realm/personas.py); "" — any work
     error: str = ""                 # its last run failed: what broke, until it takes work again or you clear it
@@ -184,6 +188,7 @@ class PoolTask:
     against: list[dict] = field(default_factory=list)   # the briefs its plan goes against: {with, why}
     pending: dict = field(default_factory=dict)         # a plan that waits for the operator on such a conflict
     designs: list[dict] = field(default_factory=list)   # the briefs its change met: {path, state}
+    spend: dict = field(default_factory=dict)           # where its tokens went: {part: [tokens, cost]} (realm/pool_spend.py)
 
 
 @dataclass
@@ -346,14 +351,18 @@ def _rules(orders: str) -> str:
     return f"## Your rules\n\n{orders.strip()}" if orders.strip() else "## Your rules\n\n(none written yet)"
 
 
-def steward_question_prompt(keeper: str, orders: str, task: PoolTask, question: str) -> str:
-    return "\n\n".join([
+def steward_question_prompt(keeper: str, orders: str, task: PoolTask, question: str,
+                            decisions: list[list[str]] | None = None) -> str:
+    """Only the card, the decisions so far and the question (no diff, nothing to read in the repository)."""
+    qa = task.qa + list(decisions or [])
+    return "\n\n".join(p for p in [
         f"You are {keeper}, the steward of a barracks of coding agents: you keep its rules and judge.",
         _rules(orders), f"## The task: {task.title}", body_of(task),
+        "## Decisions so far\n\n" + "\n".join(f"- {q} → {a}" for q, a, *_ in qa) if qa else "",
         f"## The orc working on it asks\n\n{question}",
         "If your rules, the task or plain good practice settle it, answer `ANSWER: …` with the decision. "
         "If only the operator can decide (taste, scope, money, anything your rules do not cover), answer "
-        "`ASK` and nothing else.", FROM_ABOVE])
+        "`ASK` and nothing else.", FROM_ABOVE] if p)
 
 
 def review_prompt(keeper: str, orders: str, task: PoolTask, report: str, diff: str, tests: str,
@@ -394,7 +403,7 @@ def parse_provider(entry: str) -> tuple[str, str]:
 
 
 class Foreman:
-    def __init__(self, config: dict, stats: dict | None = None) -> None:
+    def __init__(self, config: dict, stats: dict | None = None, context_limit: int = 0) -> None:
         self.max_orcs = int(config.get("max_orcs") or DEFAULT_MAX_ORCS)
         self.budget = float(config.get("budget_usd") or 0.0)          # 0: no budget of its own
         self.providers = [parse_provider(p) for p in (config.get("providers") or DEFAULT_PROVIDERS)]
@@ -403,6 +412,7 @@ class Foreman:
         self.session_tasks = int(config.get("session_tasks") or DEFAULT_SESSION_TASKS)
         self.max_reworks = int(config["max_reworks"]) if config.get("max_reworks") is not None else DEFAULT_MAX_REWORKS
         self.stats = stats or {}
+        self.context_limit = int(context_limit or 0)                   # 🪵; 0: its sessions roll over by count only
 
     @property
     def priced(self) -> bool:
@@ -473,7 +483,12 @@ class Foreman:
         return (not task.tier or orc.tier == task.tier) and (not task.persona or orc.persona == task.persona)
 
     def can_resume(self, orc: PoolOrc) -> bool:
-        return orc.harness in RESUMABLE and bool(orc.session) and orc.session_tasks < self.session_tasks
+        return orc.harness in RESUMABLE and bool(orc.session) and orc.session_tasks < self.session_tasks \
+            and not self.full(orc)
+
+    def full(self, orc: PoolOrc) -> bool:
+        """Its session's last run read more than `ROLLOVER_SHARE` of 🪵: the next task starts a fresh one."""
+        return bool(self.context_limit) and orc.context > ROLLOVER_SHARE * self.context_limit
 
     # -- the decision -----------------------------------------------------------------------------------
 

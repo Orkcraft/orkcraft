@@ -104,9 +104,14 @@ class Hop:
     round: int | None = None      # 1 + how many times the same work came back here (None: the first time)
     run: str = ""                 # its own record of the work: a handler run, a task, a discussion
     want: str = ""                # the kind of work this building set on the cart (WANTS), when it set one
+    spend: tuple = ()             # an Agent pool's split: ((part, tokens, cost), …) — realm/pool_spend.py
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.spend, tuple) or any(not isinstance(r, tuple) for r in self.spend):   # read from JSON
+            object.__setattr__(self, "spend", tuple(tuple(r) for r in self.spend or ()))
 
     def as_dict(self) -> dict:
-        return {k: v for k, v in self.__dict__.items() if v not in (None, "")}
+        return {k: v for k, v in self.__dict__.items() if v not in (None, "", ())}
 
     @property
     def started(self) -> str:
@@ -158,7 +163,7 @@ def least_want(*wants: str) -> str:
 def hop(building: str, orc: str = "", kind: str = "", tokens: int | None = None, cost: float | None = None,
         worktree: str = "", branch: str = "", outcome: str = "", now: dt.datetime | None = None,
         base: str = "", since: str | float | None = None, model: str = "", decision: str = "",
-        round: int | None = None, run: str = "", want: str = "") -> Hop:
+        round: int | None = None, run: str = "", want: str = "", spend: tuple = ()) -> Hop:
     """One hop, ending now. `since`: when the cart came in (an ISO time, or seconds before now), for `ms`."""
     now = now or dt.datetime.now()
     first_line = " ".join(str(decision or "").strip().splitlines()[:1]).strip()
@@ -166,7 +171,7 @@ def hop(building: str, orc: str = "", kind: str = "", tokens: int | None = None,
                float(cost) if cost is not None else None, worktree, branch, outcome,
                now.isoformat(timespec="seconds"), base, _ms(since, now), str(model or ""),
                first_line[:DECISION_CHARS - 1] + "…" if len(first_line) > DECISION_CHARS else first_line,
-               int(round) if round and int(round) > 1 else None, str(run or ""), want_of(want))
+               int(round) if round and int(round) > 1 else None, str(run or ""), want_of(want), tuple(spend or ()))
 
 
 def _ms(since: str | float | None, now: dt.datetime) -> int | None:

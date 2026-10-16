@@ -89,8 +89,15 @@ class ReviewMixin:
 
     def _steward_answer(self, task: bk.PoolTask, question: str, workdir: Path, cancel: threading.Event,
                         out: RunOutcome) -> str:
-        prompt = bk.steward_question_prompt(self.keeper, self.orders, task, question)
-        return bk.steward_answer_of(self._steward(prompt, workdir, cancel, out, use="answer"))
+        """At most once a run (bk.MAX_STEWARD_ANSWERS) and lightly: the card, the decisions so far and the question."""
+        prompt = bk.steward_question_prompt(self.keeper, self.orders, task, question, out.qa)
+        return bk.steward_answer_of(self._steward(prompt, workdir, cancel, out, use="answer", light=True))
+
+    @property
+    def review_by(self) -> str:
+        """`review`: `tests` (green tests are the review of code) or `steward` (it reads every diff)."""
+        got = str(self.config.get("review") or "tests")
+        return got if got in bk.REVIEWS else "tests"
 
     def _review(self, task: bk.PoolTask, workdir: Path, git: jobs.TaskGit | None, cancel: threading.Event,
                 out: RunOutcome) -> None:
@@ -98,7 +105,7 @@ class ReviewMixin:
         and documents that go out. A local document (a meeting's prep, notes for the operator) gets no PR."""
         meeting = self._meeting(task)
         draft = bool(bk.publish_of(out.text)[2])          # a post prepared for a service: the report is the work
-        diff, tests, files, commits = "", "", [], 0
+        diff, tests, files, commits, green = "", "", [], 0, False
         if git is not None:
             commits, diff = git.diff(workdir, task.base, task.branch)
             files = out.files = bk.changed_files(diff)
@@ -120,9 +127,10 @@ class ReviewMixin:
                 return
             else:
                 tests = f"`{cmd}` passes: the barracks ran it on the branch itself, after the ork"
+                green = self.review_by == "tests"          # the tests were the review: no steward's call
         extra, out.clashes, met = self._review_context(task, files, git, task.branch)
         if task.parent:                                   # a part: no pull request of its own
-            if self.goal.sub_review:
+            if self.goal.sub_review and not green:
                 verdict = self._steward(bk.review_prompt(self.keeper, self.orders, task, out.text, diff, tests, bk.LOCAL),
                                         workdir, cancel, out)
                 out.accepted, out.notes = bk.verdict_of(verdict)
@@ -136,6 +144,13 @@ class ReviewMixin:
             out.scope = rule or (bk.EXTERNAL if commits else bk.LOCAL)
             if git is not None and commits and out.scope == bk.EXTERNAL:
                 body = f"{task.text}\n\n---\n\n{out.text}\n\n_Trivial: not reviewed by {self.keeper}_"
+                out.pr, out.pr_note = git.publish(workdir, task.branch, task.base, task.title, body)
+            return
+        if green:                                         # it still stops at the Review gate for the person
+            out.accepted, out.notes, out.scope = True, tests, rule or bk.EXTERNAL
+            out.designs = briefs.states(met, files, "")
+            if git is not None and out.scope == bk.EXTERNAL:
+                body = f"{task.text}\n\n---\n\n{out.text}\n\n_Its tests are its review: {tests}_" + self.pr_notes(task, out)
                 out.pr, out.pr_note = git.publish(workdir, task.branch, task.base, task.title, body)
             return
         verdict = self._steward(bk.review_prompt(self.keeper, self.orders, task, out.text, diff, tests, rule, extra),

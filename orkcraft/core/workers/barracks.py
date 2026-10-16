@@ -59,7 +59,7 @@ from orkcraft.core.workers.barracks_console import ConsoleMixin
 from orkcraft.core.workers.barracks_limits import LimitsMixin
 from orkcraft.core.workers.barracks_status import StatusMixin
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, roads, settle, steward, tiers, tool_errors
+from orkcraft.realm import daybook, gate, jobs, personas, pipes, plans, pool_spend, roads, settle, steward, tiers, tool_errors
 from orkcraft.sources import telemetry
 
 ICON = {"idle": "💤", "working": "⚒"}
@@ -121,6 +121,8 @@ class RunOutcome:
     session: str = ""
     steward_cost: float = 0.0
     steward_tokens: int = 0
+    steward_uses: dict = field(default_factory=dict)     # the steward's spend by part (realm/pool_spend.py)
+    context: int = 0                                     # the tokens the ork's last call reported (🪵)
     qa: list[list[str]] = field(default_factory=list)   # questions the steward answered in this run
     asked: str = ""                                      # a question for the operator
     questions: list[dict] = field(default_factory=list)  # its questions with their options (barracks_asks.py)
@@ -175,7 +177,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
 
     @property
     def foreman(self) -> bk.Foreman:
-        return bk.Foreman(self.config, self.state.stats)
+        budget = getattr(getattr(self.town, "scroll", None), "budget", None)
+        return bk.Foreman(self.config, self.state.stats, getattr(budget, "lumber_context_limit_tokens", 0))
 
     @property
     def state(self) -> bk.Barracks:
@@ -448,6 +451,9 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
         self.refresh_overlaps(task)
         related = follow or foreman.related(task, orc)
         task.warm = related and foreman.can_resume(orc)
+        if related and orc.session and foreman.full(orc):
+            st.log(bk.Decision(bk.now_iso(), task.id, "rollover", orc.name, f"its last run read over "
+                               f"{bk.ROLLOVER_SHARE:.0%} of 🪵: a fresh session with a handoff"))
         cancel = threading.Event()               # before it is seen working: Stop and Take over find its run at once
         self._cancels[orc.name] = cancel
         orc.status, orc.task = "working", task.id
@@ -512,7 +518,7 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
         def run(p: str, r: str) -> None:
             text, cost, tokens, session = runner(orc.harness, p, workdir, cancel, orc.model, env, r)
             out.text, out.cost, out.tokens = text, out.cost + (cost or 0.0), out.tokens + (tokens or 0)
-            out.session = session or out.session
+            out.session, out.context = session or out.session, tokens or 0
 
         if task.want == pipes.REPLY and not task.publish:     # a reply only reads: never `work` mode (§7)
             self.work_reply(task, orc, cancel)
@@ -609,8 +615,10 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
             with telemetry.tagged(steward.purpose_of(use, self.TYPE), self.building_id):
                 got = runner(harness, prompt, workdir, cancel, model)     # (text, cost[, tokens])
             text, cost = got[0], got[1]
+            spent = int((got[2] if len(got) > 2 else 0) or 0)
             out.steward_cost += cost or 0.0
-            out.steward_tokens += int((got[2] if len(got) > 2 else 0) or 0)
+            out.steward_tokens += spent
+            pool_spend.add(out.steward_uses, pool_spend.part_of(use), spent, cost)
             if (text or "").strip():
                 break
         return text or ""
@@ -636,15 +644,19 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
                 f"Your branch is now `{task.branch}`." if task.branch else "", self.overlap_md(task),
                 "Same rules as before: commit on your branch, then a short Markdown report."] if p)
         persona = personas.load(self.state_dir, orc.persona) if orc.persona else None
-        parts = [f"You are {orc.name}, one of several agents working in parallel, each in its own git worktree.",
-                 f"## Who you are: {persona.name}\n\n{persona.prompt}" if persona is not None else "",
-                 f"Work on the branch `{task.branch}` (it is checked out)." if task.branch else "",
+        # The same for every task of this pool first, in a fixed order (the tools' prompt cache matches it), then the
+        # task's own: who works on it, its branch, the task and what came with it.
+        parts = ["You are one of several agents working in parallel, each in its own git worktree.",
                  "Do the task below in this directory. Commit your work on the branch with a clear message; do not "
                  f"push and do not open a pull request — {self.keeper}, the steward, reviews it and does that.",
                  f"## {self.keeper}'s rules\n\n{self.orders}" if self.orders else "",
+                 ask, bk.OUTSIDE_RULE, bk.ANSWER_RULE,
+                 f"You are {orc.name}.",
+                 f"## Who you are: {persona.name}\n\n{persona.prompt}" if persona is not None else "",
+                 f"Work on the branch `{task.branch}` (it is checked out)." if task.branch else "",
                  f"## Task{' (a follow-up of your earlier work)' if follow else ''}: {task.title}", bk.body_of(task),
                  self.designs_md(task), self.overlap_md(task),
-                 decisions, sent_back, ask, bk.OUTSIDE_RULE, bk.ANSWER_RULE,
+                 decisions, sent_back,
                  bk.PART_RULE if task.parent and not plans.holds_all(self.children(self.state.task(task.parent) or task),
                                                                         task.sub) else "",
                  "This is a local document for a meeting: your answer IS the document. Write the whole of it in your "
@@ -666,7 +678,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
                                                        task.cost_usd, orc.worktree, task.branch, outcome,
                                                        base=task.base, since=task.arrived,
                                                        model=orc.model or orc.harness, decision=task.decided,
-                                                       round=task.attempts, run=task.id),)
+                                                       round=task.attempts, run=task.id,
+                                                       spend=pool_spend.rows(task.spend)),)
 
     def finish(self, task_id: str, orc_name: str, out: RunOutcome) -> None:
         st = self.state
@@ -679,6 +692,8 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
         task.cost_usd = round((task.cost_usd or 0.0) + out.cost + out.steward_cost, 4)
         task.tokens = (task.tokens or 0) + out.tokens if out.tokens else task.tokens
         task.qa += out.qa
+        pool_spend.add(task.spend, "ork", out.tokens, out.cost)
+        task.spend = pool_spend.merge(task.spend, out.steward_uses)
         self._note_asks(task, orc, out)
         orc.status, orc.task, orc.last = "idle", "", bk.now_iso()
         orc.cost_usd = round(orc.cost_usd + out.cost, 4)
@@ -686,9 +701,9 @@ class BarracksWorker(PathsMixin, PlanMixin, ReviewMixin, ClaimsMixin, AsksMixin,
         st.steward_spent(out.steward_cost, out.steward_tokens)
         if out.session:
             orc.session_tasks = orc.session_tasks + 1 if task.warm else 1
-            orc.session = out.session
+            orc.session, orc.context = out.session, out.context
         elif not out.error:              # a harness without sessions: nothing to resume
-            orc.session, orc.session_tasks = "", 0
+            orc.session, orc.session_tasks, orc.context = "", 0, 0
         ok = out.accepted is True
         failed = out.accepted is False or (bool(out.error) and not out.limit)
         orc.done, orc.failed = orc.done + int(ok), orc.failed + int(failed)

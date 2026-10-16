@@ -33,7 +33,7 @@ from dataclasses import asdict
 
 from orkcraft import autonomy, schedule
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import briefs, claims, personas, pipes, plans, steward, worktrees
+from orkcraft.realm import briefs, claims, personas, pipes, plans, pool_spend, steward, worktrees
 
 NO = frozenset({"no", "n", "nope", "нет", "не"})
 
@@ -136,6 +136,7 @@ class PlanMixin:
         if task is None or task.status != "planning":
             return
         task.cost_usd = round((task.cost_usd or 0.0) + out.steward_cost, 4) or None
+        task.spend = pool_spend.merge(task.spend, out.steward_uses)
         if sort is not None and sort.touches:
             task.claimed = claims.narrow(sort.touches)   # its likely area: the briefs it concerns, the claim
         if out.error == "stopped":
@@ -164,7 +165,7 @@ class PlanMixin:
         prompt = plans.plan_prompt(self.keeper, self.orders, task.title, bk.body_of(task), self.aim,
                                    self.goal.parallel or self.foreman.max_orcs, personas.listing(self.state_dir),
                                    designs=self.plan_designs(task), brief=self.briefs_on,
-                                   short=self.goal == plans.GOALS["thrift"])
+                                   short=self.goal == plans.GOALS["thrift"], new_roles=self.new_roles)
 
         def work() -> None:
             from orkcraft.core.workers.barracks import RunOutcome
@@ -195,6 +196,7 @@ class PlanMixin:
         if task is None or task.status != "planning":
             return
         task.cost_usd = round((task.cost_usd or 0.0) + out.steward_cost, 4) or None
+        task.spend = pool_spend.merge(task.spend, out.steward_uses)
         design, against = extra
         if against and not out.error and not errors:      # it goes against a design brief: said, maybe asked
             task.against = against
@@ -232,13 +234,18 @@ class PlanMixin:
         st.log(bk.Decision(bk.now_iso(), task.id, "plan", why=f"whole, {task.tier}: {why}"))
         self._dispatch(task)
 
+    @property
+    def new_roles(self) -> bool:
+        """`new_roles`: the steward may write new personas while it plans (off: it assigns the ones kept)."""
+        return self.config.get("new_roles") is True
+
     def _persona_of(self, sub: plans.Sub) -> str:
         """The persona a part names, kept or written now (unapproved); "" when it names none it can have."""
         if not sub.persona:
             return ""
         if personas.load(self.state_dir, sub.persona) is not None:
             return sub.persona
-        if not sub.persona_prompt:
+        if not sub.persona_prompt or not self.new_roles:
             return ""
         personas.save(self.state_dir, personas.Persona(sub.persona, sub.persona_prompt, sub.tier))
         self.state.log(bk.Decision(bk.now_iso(), "", "persona", why=f"{self.keeper} wrote `{sub.persona}` ({sub.tier})"))
@@ -356,6 +363,26 @@ class PlanMixin:
             for pid in dict.fromkeys(t.parent for t in self.state.tasks if t.parent):
                 self._advance(self.state.task(pid))
 
+    def remove_persona(self, name: str) -> bool:
+        """The person removes a persona: its file goes, an ork hired as it goes back to none (a fresh session) and a
+        task that waits for it takes any ork. False when there was none of that name."""
+        if not personas.remove(self.state_dir, name):
+            return False
+        st = self.state
+        for o in st.orcs:
+            if o.persona == name:
+                o.persona, o.session, o.session_tasks, o.context = "", "", 0, 0
+        for t in st.queue + st.tasks:
+            if t.persona == name and t.status in ("queued", "blocked", "asked"):
+                t.persona = ""
+            if t.persona_waits == name:
+                self._release(t)
+        st.log(bk.Decision(bk.now_iso(), "", "persona", why=f"`{name}` removed"))
+        self._pump()
+        st.save()
+        self.changed()
+        return True
+
     def tick_asks(self, now: float | None = None) -> bool:
         """🕰 What waited for the operator its minutes (at once in quiet hours, or unchained): the orks decide —
         a new persona is approved, a question the steward answers itself, a task sent back too often is
@@ -431,6 +458,7 @@ class PlanMixin:
         task = st.task(task_id)
         if task is None or task.status != "asked":          # the operator answered meanwhile
             return
+        task.spend = pool_spend.merge(task.spend, out.steward_uses)
         if answer:
             self.answer(task.id, answer, who=self.keeper)
             return
@@ -541,6 +569,7 @@ class PlanMixin:
         if parent is None or parent.status != "reviewing":
             return
         kids = self.children(parent)
+        parent.spend = pool_spend.merge(parent.spend, out.steward_uses)
         parent.cost_usd = round((parent.cost_usd or 0.0) + out.steward_cost + sum(k.cost_usd or 0.0 for k in kids), 4)
         parent.files = out.files or parent.files
         if out.error:
@@ -623,7 +652,9 @@ class PlanMixin:
                                                          parent.cost_usd, "", parent.branch, outcome,
                                                          base=parent.base, since=parent.arrived,
                                                          decision=parent.decided or parts,
-                                                         round=parent.attempts, run=parent.id),)
+                                                         round=parent.attempts, run=parent.id,
+                                                         spend=pool_spend.rows(pool_spend.merge(
+                                                             parent.spend, *(k.spend for k in self.children(parent))))),)
 
 
 class _Done(Exception):

@@ -9,7 +9,7 @@ from pathlib import Path
 from orkcraft.gui import folders
 from orkcraft.gui.views import ActError, text
 from orkcraft.realm import barracks as bk
-from orkcraft.realm import catalog, harnesses, lexicon, paths, pipes, status, tiers
+from orkcraft.realm import catalog, harnesses, lexicon, paths, personas, pipes, status, tiers
 from orkcraft.sources import sessions as past
 
 OWN_QUICK = True              # its quick actions are in its preview (js/buildings/), not the generic buttons
@@ -193,6 +193,9 @@ def detail(w) -> dict:
         "providers": [h + (":" + m if m else "") for h, m in f.providers],
         "steward": str(w.config.get("steward") or "main"), "steward_cost": _money(st.steward_cost),
         "test_cmd": str(w.config.get("test_cmd") or ""), "worktrees": w.worktrees,
+        "review": w.review_by, "new_roles": w.new_roles,
+        "personas": [{"name": p.name, "tier": tiers.TIER_LABELS.get(p.tier, p.tier), "line": p.first_line(),
+                      "approved": p.approved} for p in personas.all_of(w.state_dir)],
         "repo": str(w.code_root), "repo_own": bool(str(w.config.get("repo") or "").strip()),
         "repo_project": _project_name(w),
         "recent": folders.recent(getattr(w.town, "machine", None)),
@@ -422,6 +425,13 @@ def _drop(w, args: dict) -> bool:
     return True
 
 
+def _remove_persona(w, args: dict) -> bool:
+    """A persona goes: an ork hired as it goes back to any work."""
+    if not w.remove_persona(text(args, "name", 40)):
+        raise ActError("No such role")
+    return True
+
+
 def _picked(w, args: dict) -> dict:
     return folders.result(text(args, "token", 40))
 
@@ -429,4 +439,4 @@ def _picked(w, args: dict) -> dict:
 ACTS = {"task": _new_task, "pause": _pause, "answer": _answer, "add_rule": _add_rule,
         "diff": _diff, "terminal": _terminal, "take_over": _take_over, "hand_back": _hand_back, "stop_ork": _stop_ork,
         "run_again": _run_again, "run_anyway": _run_anyway, "clear_error": _clear_error, "drop": _drop, "wants": _wants, "want_by_source": _want_by_source,
-        "repo": _repo, "pick": _pick, "picked": _picked}
+        "repo": _repo, "pick": _pick, "picked": _picked, "remove_persona": _remove_persona}
