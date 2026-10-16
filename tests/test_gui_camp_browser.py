@@ -284,6 +284,7 @@ def test_open_air_buildings_and_doorway_stewards(camp_look):
     console.wait_for(state="visible", timeout=WAIT_MS)
     console.get_by_text("This week").wait_for(timeout=WAIT_MS)
     assert "Smith" in console.inner_text()
+    pg.wait_for_timeout(150)
     pg.keyboard.press("Escape")
     console.wait_for(state="detached", timeout=WAIT_MS)
 
