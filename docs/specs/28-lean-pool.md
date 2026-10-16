@@ -1,5 +1,22 @@
 # Spec 28 — the lean Agent pool: fewer tokens for the same parallel work
 
+## Round 2 (16 October): five fixes from the full review — nothing else
+On `spec/28-lean-pool` (round 1 `0fd452f`). First `git merge origin/main` (specs 26 and 27 are merged).
+1. **High — the rollover fires almost always.** `core/workers/barracks.py:521` stores the run's total billed tokens
+   (input + output + cache reads over every turn, `harnesses.py:41-51`) as the ork's context, so a normal agentic run
+   passes 60 % of 🪵 and every task starts cold: more tokens, the opposite of this spec. Store the real context size:
+   the **last turn's** input + cache tokens (or the transcript's context figure, `sources/telemetry.py`), and add a
+   test with a realistic multi-turn usage where the sum is over 60 % and the last turn is under it (stays warm).
+2. **Medium — tests can be gamed.** Under `review: tests`, skip the steward only if the diff touches **no** test files
+   or test config (tests/, conftest, pytest/pyproject test settings, the repo's `test_cmd` files) **and** there are no
+   design-brief or overlap concerns (`met` / `out.clashes` empty). Otherwise the steward reviews as with `steward`.
+3. **Low.** The green path: scope EXTERNAL (open a PR) only when the run made commits; else LOCAL as before.
+4. **Low.** `remove_persona`: clear `t.persona` on every unfinished task (working, reviewing included), not only
+   queued / blocked / asked.
+5. **Low.** `use="answer"` always runs on the light tier, whatever the steward's set model (`barracks.py:607`).
+Tests: the critical tests, `tests/test_lean_pool.py`, `tests/test_lean_pool_browser.py`, `tests/test_steward*.py`,
+`tests/test_pool_*.py`, `tests/test_typed_pool.py`.
+
 Branch `spec/28-lean-pool` · design: decisions §39, the owner's ask of 16 October (fewer tokens on roles and on the
 talk between the pool and its orks) · **Builds:** Claude · **Review:** full · track 1, P1 (a simplification)
 
