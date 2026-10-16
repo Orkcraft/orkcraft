@@ -26,28 +26,31 @@ LANDSCAPE_GROUP = "Landscape: works by itself, needs no ork"   # the wizard's la
 FOR_YOU = 6               # the role's buildings the tray may offer first; it shows three not standing yet
 
 
-def for_role(role_id: str) -> list[str]:
+def for_role(role_id: str, machine: dict | None = None) -> list[str]:
     """The building types the onboarding's role uses most, most first: counted over its ready towns
     (realm/intents.py INTENTS), the order they first come in breaking a tie."""
+    if machine is None:
+        machine = settings._raw(settings.path())
     count: dict[str, int] = {}
     for i in intents.INTENTS:
         if i.role == role_id:
-            for b in intents.offered_plan(i.plan)["buildings"]:
+            for b in intents.offered_plan(i.plan, machine)["buildings"]:
                 count[b["type"]] = count.get(b["type"], 0) + 1
     return sorted(count, key=lambda t: -count[t])[:FOR_YOU]
 
 
-def catalog_types(profile: dict | None = None) -> list[dict[str, Any]]:
+def catalog_types(profile: dict | None = None, machine: dict | None = None) -> list[dict[str, Any]]:
     """Every type a building can be raised from, as the wizard lists them, each with what it is for
     (`intent`: the catalog's "What do you need?" groups, in their order). Buildings come first;
     the landscape (no ork, docs/design/landscape.md) is a group of its own after them. `yours`: its place among
     the role's own (`for_role`, the onboarding's `profile`), -1 when it is not one (the Build row's first icons)."""
-    mine = for_role(intents.role(str((profile or {}).get("role") or "")).id)
+    if machine is None:
+        machine = settings._raw(settings.path())          # read once; `offered` and `for_role` take the dict
+    mine = for_role(intents.role(str((profile or {}).get("role") or "")).id, machine)
     hidden = (catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES | lake.WINDOW_TYPES
               | {catalog.DEFAULT_TYPE})
     intent = {tid: need for need, ids in catalog.INTENTS for tid in ids}
     order = {tid: n for n, tid in enumerate(tid for _, ids in catalog.INTENTS for tid in ids)}
-    machine = settings._raw(settings.path())
     types = sorted((t for t in catalog.TYPES.values() if t.id not in hidden and catalog.offered(t.id, machine)),
                    key=lambda t: (t.landscape, order.get(t.id, len(order))))
     return [{"id": t.id, "title": t.title, "summary": modes.strip_emoji(t.summary), "agentic": t.agentic,
