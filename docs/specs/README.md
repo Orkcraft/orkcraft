@@ -117,7 +117,7 @@ Every spec carries two lines, for agy above all: **"Change nothing outside these
 | 02 | [Mission 1 blockers](02-mission1-blockers.md) (filled after the owner plays it) | before the testers | flash | agy | light |
 | 17a | [the onboarding's one fork](17a-mission-starts-at-once.md) (the tutorial, or a ready town) | before the testers | flash | agy | light |
 | 17b | [Mission 1 as a scene](17b-mission-scene.md) (the Workchief on the map, a walk through each building) | before the testers, after 17a | — | **Claude** | full |
-| 18 | [darker, richer grass](18-darker-grass.md) (variant B) | before the testers | flash | agy | light |
+| 18 | [darker, richer grass](18-darker-grass.md) (variant B; round 2 at the top) | before the testers | flash | agy | light |
 | 19 | [Camp's camera](19-camp-camera.md) (no far zoom-out; the wheel scrolls down) | before the testers | flash | agy | light |
 | 20 | [the wilderness composed](20-composed-wilderness.md) (groves on places, not a hash on a grid) | after 18 and 19 | — | **Claude** | light + the owner's look |
 | 21 | [entering a building](21-building-screen.md) (the room on the whole screen, settings behind a gear) | before the testers | — | **Claude** | light |
