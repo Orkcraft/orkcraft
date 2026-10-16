@@ -148,6 +148,8 @@ def test_onboarding_one_fork_and_ready_towns_in_browser(onboarding_gui):
     pg.evaluate("() => import('/static/js/link.js').then(m => m.command('onboarding.start'))")
     pg.wait_for_selector(".gui-onb", timeout=WAIT_MS)
     assert pg.locator(".gui-onb__title").text_content() in ("Your AI tools", "No AI tool here yet")
+    assert pg.locator(".gui-onb__tagline").text_content() == (       # spec 27: the one line of difference, under the title
+        "A camp where work rides from the board through the orks to the Review gate, and nothing passes without you.")
     assert "town" not in host.snapshot()["onboarding"]["steps"]
     pg.get_by_role("button", name="Cancel").click()
     pg.wait_for_selector(".gui-onb", state="detached", timeout=WAIT_MS)

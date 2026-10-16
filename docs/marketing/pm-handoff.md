@@ -50,8 +50,8 @@ The state a new product-and-marketing session starts from. Update it when you ha
   Discord, places).
 
 ## State on 16 October (~11:00 Berlin)
-- **Spec 26 merged** (`72d253b`, 16 October afternoon). Spec 27 round 2 (three old test strings) + spec 28 in one
-  dev session.
+- **Specs 26 and 27 merged** (16 October afternoon). Spec 28 round 2 (the rollover counts billed tokens, not context;
+  tests can be gamed) in a new dev session. Then 17b.
 - Merged to `main` today: spec 01 round 3 and **01b** (`2ecd9f1`), 12, 13b, 17a, 21, 24, icon-hd, art s1-steampunk.
   `interiors.md` defines all 23 buildings for the shared room kit; specs 22–23 updated for it.
 - **Not merged: spec 18** (grass). `spec/18-darker-grass` holds round 1 only (`3a60b44`, the tiles are right);

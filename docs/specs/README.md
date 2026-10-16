@@ -132,10 +132,10 @@ open-questions.md "After the testers" (§36). Within a track, P0 first.
 | # | spec | priority | who builds | review |
 |---|---|---|---|---|
 | 26 | [five buildings at the first start; the others hidden](26-five-buildings.md) (merged) | P0 | **Claude** | light |
-| 28 | [the lean Agent pool: fewer tokens for the same parallel work](28-lean-pool.md) | P1, after 26 and 27, before 17b | **Claude** | full |
+| 28 | [the lean Agent pool: fewer tokens for the same parallel work](28-lean-pool.md) (round 2 at the top) | P1, before 17b | **Claude** | full |
 | fix lists | one short spec per building from what the owner finds testing it (`docs/specs/fix-<building>.md`) | P0, as they come | agy or Claude | light |
 | idea-to-plan | an idea on the Task board → the keeper's questions → to-dos for the person + ork cards under the idea, *parallel* / *after X* → the person passes the plan → the pool; the board without In progress / Done, one **Needs you** lane (decisions §41); spec after 28 | P1 | **Claude** | full |
-| gate-kinds | the Review gate by what the result is: what goes to people one by one, code as one batch a day (decisions §39); the spec after the owner's tests | P1 | **Claude** | full |
+| gate-kinds | the Review gate by what the result is: what goes to people one by one, code as one batch a day (decisions §39); code merges into a branch chosen at the gate (default `dev`), tests' status on each result (§42); the spec after the owner's tests | P1 | **Claude** | full |
 | 22 | [the Agent pool's room](22-agent-pool-room.md) (art card + code) | P1, after the art | **Claude** | light + the owner's look |
 | 23 | [the Review gate's room](23-review-gate-room.md) (art card + code) | P1, after the art | **Claude** | light + the owner's look |
 | 16 | [every ork at a glance: state, phase icon, task on hover](16-ork-at-a-glance.md) | Later | **Claude** | full |
@@ -156,7 +156,7 @@ open-questions.md "After the testers" (§36). Within a track, P0 first.
 |---|---|---|---|---|
 | E1 | [the clean-install check](e1-clean-install.md) (the owner runs it) | P0, Wed 21 October | owner | — |
 | 05 | [release 0.3.0](05-release-0.3.0.md) | P0, Thu 22 October | agy | light |
-| 27 | [Mission 1 in four quests](27-mission-four-quests.md) | P0, before 17b | **Claude** | light |
+| 27 | [Mission 1 in four quests](27-mission-four-quests.md) (merged) | P0, before 17b | **Claude** | light |
 | 17b | [Mission 1 as a scene](17b-mission-scene.md) | P0, after 19 and 27 | **Claude** | full |
 | 02 | [Mission 1 blockers](02-mission1-blockers.md) (filled after the owner plays it) | P0 | agy | light |
 | 03 | [the charter: "My project"](03-charter.md) | P1, after 17b | **Claude** | full |

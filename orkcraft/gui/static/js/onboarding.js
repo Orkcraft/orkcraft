@@ -34,13 +34,14 @@ function Ground({ biome, children, className = "" }) {
       style=${`--ground:${b.ground};--land:${b.land};--glyphs:${glyphs ? `url("${glyphs}")` : "none"}`}>${children}</div>`;
 }
 
-function Head({ o, title, lead }) {
+function Head({ o, title, lead, tagline }) {
   return html`<header class="gui-onb__head">
     <div class="gui-onb__steps" aria-label=${say(`Step ${o.n + 1} of ${o.steps.length}`)}>
       ${o.steps.map((s, i) => html`<span key=${s} class=${cls("gui-onb__pip", { "is-done": i <= o.n })}></span>`)}
       <span class="ok-font-status ok-tone-muted">${say(`Setting up · step ${o.n + 1} of ${o.steps.length}`)}</span>
     </div>
     <h1 class="gui-onb__title">${title}</h1>
+    ${tagline && html`<p class="gui-onb__lead gui-onb__tagline ok-font-body">${tagline}</p>`}
     ${lead && html`<p class="gui-onb__lead ok-font-body ok-tone-muted">${lead}</p>`}
   </header>`;
 }
@@ -137,6 +138,7 @@ function ToolsStep({ o }) {
   const none = t.ready && t.rows.length === 0;
   return html`<section class="gui-onb__card">
     <${Head} o=${o} title=${none ? "No AI tool here yet" : "Your AI tools"}
+      tagline="A camp where work rides from the board through the orks to the Review gate, and nothing passes without you."
       lead=${none ? "Nothing was found on this computer that orks can run on. Install one, or open the town without AI."
         : "Orks run on the ones you check. Found on this machine: nothing was run and no key was read. Check sends one short request to its lightest model."} />
     ${!t.ready ? html`<p class="ok-font-body ok-tone-muted">Looking for your AI tools…</p>` : none ? html`<${NoTools} t=${t} />` : html`
