@@ -332,6 +332,7 @@ def test_the_task_board_is_entered_its_cards_move_between_boards_and_exit_goes_b
     assert steward["x"] >= pane["x"] and steward["x"] + steward["width"] <= pane["x"] + pane["width"]
     assert floor["y"] - 60 <= steward["y"] and steward["y"] + steward["height"] <= pane["y"] + pane["height"] + 1
     shop = room.locator(".gui-inside__shop")
+    room.locator(".gui-inside__gear").click()                                # spec 21: the settings behind the gear
     assert "Settings" in shop.inner_text() and "Task board" in shop.inner_text()
     # the description folds at a word with "more" and unfolds whole; the runs line wraps, never cut
     about = shop.locator(".gui-info__about").first
@@ -365,6 +366,163 @@ def test_the_task_board_is_entered_its_cards_move_between_boards_and_exit_goes_b
     pg.keyboard.press("Escape")                                              # Esc: back too
     house.wait_for(state="visible", timeout=WAIT_MS)
     _call(pg, "town.demolish", {"id": board})
+
+
+def _pixel(pg, x, y):
+    """The colour drawn at one CSS pixel of the page, as (r, g, b): its top-left device pixel, from the PNG's data."""
+    import struct
+    import zlib
+    png = pg.screenshot(clip={"x": x, "y": y, "width": 1, "height": 1})
+    at, data, width, depth = 8, b"", 1, 3
+    while at < len(png):
+        n, kind = struct.unpack(">I4s", png[at:at + 8])
+        if kind == b"IHDR":
+            width = struct.unpack(">I", png[at + 8:at + 12])[0]
+            depth = 4 if png[at + 17] == 6 else 3                            # RGBA or RGB, 8 bits
+        elif kind == b"IDAT":
+            data += png[at + 8:at + 8 + n]
+        at += 12 + n
+    row = zlib.decompress(data)[:1 + width * depth]                          # the first row: filter 0 or 1 alike here
+    return tuple(row[1:4])
+
+
+def _camp_view(pg, house):
+    """Where the camp stands: its zoom step and a building's box (the pan moves it)."""
+    pg.locator(".gui-camp").wait_for(state="visible", timeout=WAIT_MS)
+    house.wait_for(state="visible", timeout=WAIT_MS)
+    pg.wait_for_timeout(200)
+    return pg.locator(".gui-camp").get_attribute("data-step"), house.bounding_box()
+
+
+def test_entering_a_building_is_a_black_screen_its_room_centred_its_settings_behind_a_gear(camp_look, gui):
+    """interiors.md §1, spec 21: the second click hides the camp: a black screen, the Task board's room in the middle as
+    large as it fits, on whole device pixels, and no settings panel; the gear slides the settings in and out; the cards
+    are large slabs (a sixth of the room at least, titles at the kit's label size or larger), more than eight on a board
+    a pile with +N; Exit and Esc go back to the camp with its zoom and pan as they were."""
+    server, _ = gui
+    pg = camp_look
+    _clear(pg)
+    board = _call(pg, "town.build", {"type": "fields"})
+    pg.keyboard.press("Escape")
+    w = server.host.town.worker(board)
+    for n in range(10):
+        w.add(f"Task number {n + 1} for the orks", "todo")
+    w.add("Write the release notes", "in_progress")
+    house = _building(pg, board)
+    house.wait_for(state="visible", timeout=WAIT_MS)
+    town = pg.locator(".gui-camp").bounding_box()
+    pg.mouse.move(town["x"] + town["width"] / 2, town["y"] + 60)              # the camp dragged off its default view
+    pg.mouse.down()
+    pg.mouse.move(town["x"] + town["width"] / 2 + 80, town["y"] + 100, steps=6)
+    pg.mouse.up()
+    before = _camp_view(pg, house)
+    house.click()
+    house.click()                                                            # the second click enters it
+    screen = pg.locator(f'.gui-inside[data-id="{board}"]')
+    screen.wait_for(state="visible", timeout=WAIT_MS)
+    room = screen.locator(".gui-inside__room")
+    screen.locator(".fields-in__plaque").first.wait_for(state="visible", timeout=WAIT_MS)
+    pg.wait_for_timeout(300)
+    assert pg.locator(".gui-camp").count() == 0                              # the camp gone entirely
+    assert screen.get_attribute("data-room") == "drawn"
+    assert not screen.locator(".gui-inside__shop").is_visible()              # no settings panel
+    s, r = screen.bounding_box(), room.bounding_box()
+    stage = screen.locator(".gui-inside__stage").evaluate(
+        "e => { const c = getComputedStyle(e), b = e.getBoundingClientRect(); return { x: b.x + parseFloat(c.paddingLeft),"
+        " y: b.y + parseFloat(c.paddingTop), w: e.clientWidth - parseFloat(c.paddingLeft) - parseFloat(c.paddingRight),"
+        " h: e.clientHeight - parseFloat(c.paddingTop) - parseFloat(c.paddingBottom) }; }")
+    assert abs((r["x"] + r["width"] / 2) - (stage["x"] + stage["w"] / 2)) <= 1      # in the middle
+    assert abs((r["y"] + r["height"] / 2) - (stage["y"] + stage["h"] / 2)) <= 1
+    assert r["width"] >= stage["w"] * 0.8 or r["height"] >= stage["h"] * 0.8         # as large as it fits
+    assert r["width"] <= stage["w"] + 1 and r["height"] <= stage["h"] + 1
+    dpr = pg.evaluate("() => window.devicePixelRatio")
+    assert (r["width"] * dpr) == round(r["width"] * dpr) and (r["height"] * dpr) == round(r["height"] * dpr)   # whole device px
+    assert r["x"] - s["x"] >= 8                                              # black round the room
+    for x, y in [(s["x"] + 3, r["y"] + r["height"] / 2), (s["x"] + s["width"] - 3, r["y"] + r["height"] - 4)]:
+        assert max(_pixel(pg, x, y)) <= 8, (x, y)
+    # the cards: large slabs, readable; more than eight on To do: seven and a pile with +N
+    todo = screen.locator('.fields-in__board[data-lane="todo"]')
+    shown = todo.locator(".fields-in__card")
+    assert shown.count() == 7
+    piled = todo.locator(".fields-in__pile").inner_text().strip()
+    card = screen.locator('.fields-in__board[data-lane="in_progress"] .fields-in__card').first
+    assert card.bounding_box()["width"] >= r["width"] / 6
+    size = card.locator(".fields-in__title").evaluate("e => parseFloat(getComputedStyle(e).fontSize)")
+    assert size >= 14
+    shots = os.environ.get("ORKCRAFT_SHOTS")
+    if shots:
+        pg.wait_for_timeout(600)
+        pg.screenshot(path=str(Path(shots) / "inside-task-board-entered.png"))
+    # the gear at the room's top right slides the settings in, and out again
+    gear = room.get_by_role("button", name="Settings")
+    g = gear.bounding_box()
+    assert g["x"] + g["width"] >= r["x"] + r["width"] - 24 and g["y"] <= r["y"] + 24
+    gear.click()
+    shop = screen.locator(".gui-inside__shop")
+    shop.wait_for(state="visible", timeout=WAIT_MS)
+    assert "Settings" in shop.inner_text() and "Task board" in shop.inner_text()
+    pg.wait_for_timeout(400)
+    assert room.bounding_box()["x"] + room.bounding_box()["width"] <= shop.bounding_box()["x"]   # the room beside it
+    if shots:
+        pg.screenshot(path=str(Path(shots) / "inside-task-board-settings.png"))
+    room.get_by_role("button", name="Hide the settings").click()
+    shop.wait_for(state="hidden", timeout=WAIT_MS)
+    todo.locator(".fields-in__pile").click()                                 # the pile: all of them
+    todo.locator(".fields-in__card").nth(9).wait_for(state="attached", timeout=WAIT_MS)
+    assert todo.locator(".fields-in__pile").count() == 0 and piled == f"+{shown.count() - 7}"
+    # Esc: back to the camp as it was; entered again, Exit too
+    pg.keyboard.press("Escape")
+    assert _camp_view(pg, house) == before
+    house.click()
+    screen.wait_for(state="visible", timeout=WAIT_MS)
+    screen.get_by_role("button", name="Exit").click()
+    assert _camp_view(pg, house) == before
+    _call(pg, "town.demolish", {"id": board})
+
+
+def test_a_building_with_no_room_enters_its_plain_room_and_office_opens_its_card(camp_look):
+    """interiors.md §1, spec 21: a building whose room is not drawn yet (the Agent pool) is entered the same way: the
+    black screen, a plain room with its large card in it, the gear; Office opens its card as today."""
+    pg = camp_look
+    _clear(pg)
+    pool = _call(pg, "town.build", {"type": "barracks"})
+    pg.keyboard.press("Escape")
+    house = _building(pg, pool)
+    house.wait_for(state="visible", timeout=WAIT_MS)
+    house.click()
+    house.click()                                                            # entered
+    screen = pg.locator(f'.gui-inside[data-id="{pool}"]')
+    screen.wait_for(state="visible", timeout=WAIT_MS)
+    assert screen.get_attribute("data-room") == "plain"
+    assert pg.locator(".gui-camp").count() == 0
+    plain = screen.locator(".gui-inside__room .gui-inside__plain")
+    card = plain.locator(f'.gui-inside__card[data-id="{pool}"]')
+    card.locator(".pool-large").first.wait_for(state="visible", timeout=WAIT_MS)   # its large card, in the room
+    s, r = screen.bounding_box(), screen.locator(".gui-inside__room").bounding_box()
+    assert r["x"] - s["x"] >= 8 and max(_pixel(pg, s["x"] + 3, r["y"] + r["height"] / 2)) <= 8
+    assert not screen.locator(".gui-inside__shop").is_visible()
+    screen.locator(".gui-inside__room").get_by_role("button", name="Settings").click()
+    screen.locator(".gui-inside__shop").wait_for(state="visible", timeout=WAIT_MS)
+    shots = os.environ.get("ORKCRAFT_SHOTS")
+    if shots:
+        pg.keyboard.press("Escape")
+        house.click()
+        screen.wait_for(state="visible", timeout=WAIT_MS)
+        pg.wait_for_timeout(600)
+        pg.screenshot(path=str(Path(shots) / "inside-plain-room.png"))
+    pg.keyboard.press("Escape")
+    house.wait_for(state="visible", timeout=WAIT_MS)
+    # Office: its card, grown in place, as today
+    _call(pg, "you.look", {"look": "office"})
+    pg.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
+    hut = pg.locator(f'.gui-hut[data-id="{pool}"]')
+    hut.wait_for(state="visible", timeout=WAIT_MS)
+    hut.locator(".gui-hut__title").dblclick()
+    hut.locator(".pool-large").wait_for(state="visible", timeout=WAIT_MS)
+    assert "is-size-l" in (hut.get_attribute("class") or "")
+    assert pg.locator(".gui-inside").count() == 0
+    pg.keyboard.press("Escape")
+    _call(pg, "town.demolish", {"id": pool})
 
 
 def test_a_launched_cart_flies_with_its_cost_and_the_hud_shows_the_score(camp_look, gui):

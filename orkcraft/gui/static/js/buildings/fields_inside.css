@@ -1,14 +1,15 @@
 /* The dispatcher's booth from inside (fields_inside.js): CSS stand-ins in v3's palette until u6-inside and u6-cards
    are cut. Each piece is one class — the wall (.fields-in__wall), a board (.fields-in__board), its plaque, a sheet
    (.is-sheet), a slab (.is-slab), a pin, a flag, the floor — so a sprite replaces it by its background alone. */
-/* The room fills its pane without scrolling: the wall above (the boards on it, each scrolling its own cards), the floor
-   below at the booth's own floor line (--floor, set by the room from its art scale --s), where the orks walk. */
+/* The room is the booth's own box at its art scale --s (set by the room to fit the stage, js/inside.js), never scrolled:
+   the wall above (the boards on it, each scrolling its own cards), the floor below at the booth's own floor line
+   (--floor), where the orks walk. */
 .fields-in { position: relative; height: 100%; min-height: 0; display: flex; flex-direction: column; box-sizing: border-box;
   overflow: hidden; color: var(--parchment-ink); font: var(--type-camp-body); }
 
 /* the booth's back wall: planks of wood, a beam at the top */
 .fields-in__wall { flex: 1; min-height: 0; display: flex; flex-direction: column; box-sizing: border-box;
-  padding: calc(var(--space-4) * 4) var(--space-4) var(--space-3);   /* clear of the portrait */
+  padding: calc(var(--s, 4) * 8px) calc(var(--s, 4) * 3px) var(--space-3);   /* under the booth's beam */
   background: linear-gradient(var(--art-wood-deep) 0 14px, var(--art-outline) 14px 16px, transparent 16px),
     repeating-linear-gradient(90deg, var(--art-wood-dark) 0 46px, var(--art-wood-deep) 46px 48px); }
 .fields-in__wall > .fields-sel { margin-bottom: var(--space-3); background: var(--parchment); color: var(--parchment-ink);
@@ -36,9 +37,11 @@
   color: var(--parchment); background: var(--accent-teal); border: 2px solid var(--walnut); }
 .fields-in__add:hover, .fields-in__add:focus-visible { background: color-mix(in srgb, var(--accent-teal) 80%, var(--parchment)); }
 
-/* a card pinned: a parchment sheet (a task, a note) or a light stone slab (my to-do) */
-.fields-in__card { position: relative; flex: none; display: flex; align-items: flex-start; gap: 6px; padding: 14px 12px 10px; min-height: 56px;
+/* a card pinned: a parchment sheet (a task, a note) or a light stone slab (my to-do); large, read at a glance
+   (interiors.md §2): the board's width, its title larger than the kit's label */
+.fields-in__card { position: relative; flex: none; display: flex; align-items: flex-start; gap: 8px; padding: 18px 14px 12px; min-height: 76px;
   box-sizing: border-box; cursor: grab; transform: rotate(calc(var(--tilt, 0) * 0.6deg)); font: var(--type-camp-label);
+  font-size: 18px; line-height: 24px;
   box-shadow: 0 0 0 2px var(--art-outline), 3px 4px 0 color-mix(in srgb, var(--art-outline) 45%, transparent); }
 .fields-in__card.is-sheet { background: var(--parchment); color: var(--parchment-ink);
   background-image: linear-gradient(transparent 0 calc(100% - 6px), color-mix(in srgb, var(--art-bone) 70%, var(--walnut)) calc(100% - 6px)); }
@@ -51,6 +54,13 @@
 .fields-in__card .fields-marks { flex: none; }
 .fields-in__pin { position: absolute; top: -5px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%;
   background: var(--accent-teal); box-shadow: 0 0 0 2px var(--art-outline), inset -2px -2px 0 color-mix(in srgb, var(--accent-teal) 60%, var(--art-outline)); }
+
+/* more than eight on a board: the rest as one pile of slabs with +N; a press shows them all */
+.fields-in__pile { flex: none; position: relative; min-height: 64px; margin: 4px 8px 10px 0; cursor: pointer; border: 0;
+  font: var(--type-kit-number); color: var(--parchment-ink); background: color-mix(in srgb, var(--art-stone) 55%, var(--parchment));
+  box-shadow: 0 0 0 2px var(--art-outline), 4px 4px 0 0 color-mix(in srgb, var(--art-stone) 70%, var(--art-outline)),
+    4px 4px 0 2px var(--art-outline), 8px 8px 0 0 var(--art-stone-dark), 8px 8px 0 2px var(--art-outline); }
+.fields-in__pile:hover, .fields-in__pile:focus-visible { background: color-mix(in srgb, var(--art-stone) 35%, var(--parchment)); }
 
 /* the cloth flag on a pole: lowered, half up, raised; a to-do's is its checkbox */
 .fields-in__flag { position: relative; flex: none; width: 22px; height: 30px; padding: 0; border: 0; background: none; }
@@ -113,7 +123,7 @@ button.fields-in__flag:hover i, button.fields-in__flag:focus-visible i { backgro
 .fields-in.has-art .fields-in__fold { margin: 0; padding: 10px 4px; background: var(--walnut); border: 2px solid var(--art-outline); }
 .fields-in.has-art .fields-in__plaque:not(.fields-in__fold) { margin: -30px 0 12px; padding: 0 6px; background: none; border: 0; color: var(--parchment); }
 .fields-in.has-art .fields-in__card { image-rendering: pixelated; background: none; box-shadow: none; border-style: solid;
-  padding: 6px 6px 4px; color: var(--parchment-ink); }
+  padding: 10px 8px 6px; color: var(--parchment-ink); }
 .fields-in.has-art .fields-in__card.is-sheet { border-width: 8px 8px 16px; border-image: var(--in-sheet) 4 4 8 fill / 8px 8px 16px round; }
 .fields-in.has-art .fields-in__card.is-slab { border-width: 10px 10px 12px; border-image: var(--in-slab) 5 5 6 fill / 10px 10px 12px round; }
 .fields-in.has-art .fields-in__card.is-selected { outline: 3px solid var(--accent-teal); outline-offset: 1px; }
