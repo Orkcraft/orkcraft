@@ -22,12 +22,29 @@ Run `agy models` once to see the exact names your agy offers for these families.
 
 ## The prompt every spec uses
 
+Start agy in the repository (`cd ~/orkcraft && git pull && agy`), pick the spec's model, paste this with `<SPEC>` =
+the spec's file name without `.md` (e.g. `12-v4-remaining-screens`). Several specs at once: one terminal tab each.
+
 ```
-Read CLAUDE.md, then docs/specs/README.md (the rules), then docs/specs/<NN-name>.md.
-Work only on the branch spec/<NN-name> (create it from main). Do exactly what the spec says, nothing else.
-Run the tests the spec lists; all must pass. Commit with a short message in English, then push the branch.
-At the end, print: the commits, the tests run and their result, anything you could not do.
+git fetch origin. Make a worktree ../ork-<SPEC> on the branch spec/<SPEC>: if origin/spec/<SPEC> exists, start from it and merge origin/main into it; otherwise create it from origin/main. Work only in that folder.
+Read CLAUDE.md, docs/specs/README.md (the rules, including "Before you commit"), then docs/specs/<SPEC>.md. A "Round N" or "Tonight's limits" section at the top comes first and wins. Do exactly what the spec says, nothing else.
+Run the tests the spec lists, with --extra browser; all must pass. Do the four checks of "Before you commit". Commit with a short message in English, then git push -u origin spec/<SPEC>.
+At the end print: the commits, the files changed, the tests run and their result, the four checks with their output, and anything you could not do.
 ```
+
+## Before you commit: four checks (decided 16 October, after the first agy nights)
+
+1. **Scope.** Run `git diff --name-only origin/main`. Every file must be one the spec allows. Revert any other change,
+   however useful it looks: a fix the spec did not ask for goes in the final report as a suggestion, not in the code.
+2. **Every new test can fail.** For each test you added: undo your fix (`git stash` the code, keep the test), run the
+   test and see it **fail**, restore the fix and see it pass. Print both outputs. A test that passes without the fix
+   proves nothing: rewrite it until it fails.
+3. **Old tests are untouched.** Run `git diff origin/main -- tests/`. You may add tests and files; you may not remove
+   or weaken an existing assertion, skip a test, or change an existing test's timing, waits, timeouts or flags. If an
+   old test fails, the code is wrong, not the test.
+4. **Look at what you made.** For a spec that changes what is drawn: take the screenshots after a fresh page load,
+   open each one, and write one line per shot on what it shows. If it doesn't show what the spec asks, fix and retake.
+   Two shots of different screens must never be the same file.
 
 ## The rules agy must keep (from CLAUDE.md, the essentials)
 
