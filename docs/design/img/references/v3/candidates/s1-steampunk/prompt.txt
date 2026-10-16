@@ -1,0 +1,22 @@
+Pixel-art sprite sheet in exactly the style and palette of the attached images (f1-town.jpg, depot.png, loot_vault.png, u6-inside.jpg).
+CRITICAL PERSPECTIVE REQUIREMENT:
+Strictly straight-on front/side view (flat 2D orthogonal / front-top view, exactly like depot.png and loot_vault.png). Every building faces the viewer with its walls strictly horizontal and parallel to the bottom edge of the frame. NEVER turned at an angle, NEVER rotated, NEVER isometric! No 3/4 corner view, no diagonal perspective.
+
+Content:
+The same two buildings redrawn as cute orkish steampunk:
+1. The long engine shed (depot) made orkish steampunk: crude bolted-on brass and copper pipes, a small boiler with a chimney puffing steam, gauges, cogs, rivets, valves, levers, patched leather/cloth; warm woods with brass and teal. A clear front doorway an ork could walk through.
+2. Beside it, the engine shed seen from inside with its roof removed as a straight-on stage cutaway (exactly the flat stage perspective of u6-inside.jpg: flat horizontal plank floor, straight flat back wall, front wall removed like a theater stage / dollhouse).
+3. The stone gatehouse (loot_vault) made orkish steampunk: stone blocks, crude bolted-on brass pipes, cogs, gears, gauges, levers, steam chimney; clear arch doorway an ork fits through.
+4. Beside it, the gatehouse seen from inside with its roof removed as a straight-on stage cutaway (like u6-inside.jpg: stone floor, straight back wall, winch/mechanism).
+
+Rules:
+- On a flat solid magenta (#FF00FF) background.
+- Crisp dark 1-pixel outline.
+- No characters, no text, no ground under buildings, no shadows outside.
+- Warm woods, stone, brass, copper, teal. No bright yellow, no bright red.
+
+Attached references:
+- /Users/etb/orkcraft/docs/design/img/references/v3/f1-town.jpg
+- /Users/etb/orkcraft/design-system/sprites/v3/buildings/depot.png
+- /Users/etb/orkcraft/design-system/sprites/v3/buildings/loot_vault.png
+- /Users/etb/orkcraft/docs/design/img/references/v3/u6-inside.jpg
