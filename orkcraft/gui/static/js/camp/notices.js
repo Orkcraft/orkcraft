@@ -9,6 +9,8 @@ import { say } from "../link.js";
 import { HALL, hallTab } from "../tent.js";
 import { openBuilding } from "../windows.js";
 
+export const isHall = (id) => id === "town_hall" || id === HALL;
+
 export function openCouncil() {
   hallTab.value = "hall";
   openBuilding(HALL, "work");
@@ -26,15 +28,15 @@ function Notice({ id, n }) {
     return html`<button type="button" class="kit-notice-chip" onClick=${(e) => { e.stopPropagation(); showNotice(id, { ...n, folded: false }); }}>
       ${say(`${n.count || 1} new`)}</button>`;
   }
-  const isHall = id === "town_hall" || id === HALL;
-  const acts = n.acts || (isHall ? [{ label: "Open", primary: true, run: openCouncil }, { label: "Dismiss" }] : [{ label: "Dismiss" }]);
+  const hall = isHall(id);
+  const acts = n.acts || (hall ? [{ label: "Open", primary: true, run: openCouncil }, { label: "Dismiss" }] : [{ label: "Dismiss" }]);
   const onAct = (a) => {
     if (a.run) a.run();
-    else if (isHall && (a.primary || a.label === "Open")) openCouncil();
+    else if (hall && (a.primary || a.label === "Open")) openCouncil();
     else foldNotice(id);
   };
   return html`<div class=${cls("kit-notice", { "is-stacked": n.more > 0 })} role="dialog" aria-label=${say(n.title)}
-      onClick=${isHall ? (e) => { e.stopPropagation(); openCouncil(); } : undefined}>
+      onClick=${hall ? (e) => { e.stopPropagation(); openCouncil(); } : undefined}>
     ${n.more > 0 && html`<span class="kit-notice__more">+${n.more}</span>`}
     <div class="kit-notice__head">${n.ask && html`<span class="kit-notice__ask">?</span>`}
       <span class="kit-notice__title">${say(n.title)}</span>${n.when && html`<span class="kit-notice__when">${say(n.when)}</span>`}</div>
@@ -51,7 +53,6 @@ const SWAY = 150;         // how far a notice may stand aside of its herald, its
 /** The open notices, each over its herald's top, its tail pointing down at it; one by the window's edge stands aside
  *  into the window, its tail still at the herald. `seen`: the part of the world in the window, {left, right}. */
 export function Notices({ L, seen }) {
-  const isHall = (id) => id === "town_hall" || id === HALL;
   const open = Object.entries(notices.value).filter(([id]) => (L.buildings[id] && L.buildings[id].wall) || (isHall(id) && L.home));
   if (!open.length) return null;
   return html`<div class="gui-camp__layer is-notices">${open.map(([id, n]) => {

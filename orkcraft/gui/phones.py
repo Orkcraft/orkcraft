@@ -34,6 +34,7 @@ import json
 import os
 import socket
 import ssl
+import threading
 import time
 from http import HTTPStatus
 from pathlib import Path
@@ -45,16 +46,23 @@ from websockets.http11 import Request
 from websockets.server import ServerProtocol
 
 from orkcraft import env
-from orkcraft.gui import mobile, phone_tls, pwa, tailnet
+from orkcraft.gui import mobile, phone_http, phone_tls, pwa, tailnet
 from orkcraft.gui import places as places_http
 from orkcraft.gui.host import CommandError
 from orkcraft.gui.pairing import Bucket, PairError, Pairing, clean_name
+from orkcraft.gui.phone_http import (
+    BODY_LIMIT,
+    HEAD_LIMIT,
+    HEAD_S,
+    IDLE_S,
+    KEEP_ALIVE_MAX,
+    _json,
+    _parse_head,
+    _response,
+)
 from orkcraft.realm import places
 
 PUSH_S = 2.0             # a phone gets the compact snapshot at most this often, and only when its rev changed
-HEAD_LIMIT = 16 * 1024   # an HTTP request's head
-HEAD_S = 10.0            # …and how long it may take to come
-BODY_LIMIT = 4096        # POST /api/pair's body
 MAX_FRAME = 8 * 2**20    # as the page's socket: a dropped file comes base64 in one frame
 HOST_ENV = "PHONE_HOST"  # ORKCRAFT_PHONE_HOST: the address to listen on, when the LAN's own is not the one
 
@@ -93,38 +101,6 @@ def qr_data_uri(text: str) -> str | None:
     buf = io.BytesIO()
     segno.make(text, error="m").save(buf, kind="svg", scale=6, border=2, dark="#000", light="#fff", xmldecl=False)
     return "data:image/svg+xml;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
-
-
-def _response(status: HTTPStatus, body: bytes = b"", content_type: str = "text/plain; charset=utf-8") -> bytes:
-    body = body or status.phrase.encode()
-    head = (f"HTTP/1.1 {status.value} {status.phrase}\r\nContent-Type: {content_type}\r\n"
-            f"Content-Length: {len(body)}\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\n"
-            "Connection: close\r\n\r\n")
-    return head.encode("ascii") + body
-
-
-def _json(status: HTTPStatus, data: Any) -> bytes:
-    return _response(status, json.dumps(data, ensure_ascii=False).encode("utf-8"), "application/json")
-
-
-def _parse_head(head: bytes) -> tuple[str, str, dict[str, str]] | None:
-    """(method, target, headers by lower-case name) of a request's head; None when it is not HTTP/1.1."""
-    try:
-        lines = head.decode("latin-1").split("\r\n")
-        method, target, version = lines[0].split(" ")
-    except ValueError:
-        return None
-    if version not in ("HTTP/1.1", "HTTP/1.0"):
-        return None
-    headers: dict[str, str] = {}
-    for line in lines[1:]:
-        if not line:
-            continue
-        name, sep, value = line.partition(":")
-        if not sep:
-            return None
-        headers.setdefault(name.strip().lower(), value.strip())
-    return method, target, headers
 
 
 def _bearer(value: str) -> str:
@@ -217,6 +193,7 @@ class Listener:
         port is the one phones were given; a `move` (a new pairing) takes another when that one is taken."""
         if self.listening:
             return
+        threading.Thread(target=pwa.assets, name="orkcraft-assets", daemon=True).start()
         ip = self.bind or lan_ip()
         tail = None if self.bind else self.tail_find()
         if not ip and tail is None:
@@ -339,55 +316,20 @@ class Listener:
     # -- HTTP ----------------------------------------------------------------------------------------
 
     async def _conn(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-        try:
-            try:
-                head = await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), HEAD_S)
-            except (asyncio.IncompleteReadError, asyncio.LimitOverrunError, TimeoutError, ConnectionError,
-                    ssl.SSLError, OSError):
-                return
-            parsed = _parse_head(head)
-            if parsed is None:
-                writer.write(_response(HTTPStatus.BAD_REQUEST))
-                return
-            method, target, headers = parsed
-            path = urlsplit(target).path
-            if path == "/ws":
-                if method != "GET":
-                    writer.write(_response(HTTPStatus.METHOD_NOT_ALLOWED))
-                    return
-                await self._websocket(head, headers, reader, writer)
-            elif path == "/api/version":
-                writer.write(self._version(method, headers))
-            elif path == "/api/pair":
-                writer.write(await self._pair(method, headers, reader))
-            elif path == "/api/place":
-                writer.write(await self._place(method, headers, reader))
-            elif pwa.wants(path):
-                writer.write(pwa.serve(method, target))
-            else:
-                writer.write(_response(HTTPStatus.NOT_FOUND))
-        except Exception:                          # one phone's broken request never stops the listener
-            pass
-        finally:
-            try:
-                if not writer.is_closing():
-                    await asyncio.wait_for(writer.drain(), HEAD_S)
-                writer.close()
-            except Exception:
-                pass
+        await phone_http.handle_conn(self, reader, writer)
 
-    def _version(self, method: str, headers: dict[str, str]) -> bytes:
+    def _version(self, method: str, headers: dict[str, str], keep_alive: bool = False) -> bytes:
         if method != "GET":
-            return _response(HTTPStatus.METHOD_NOT_ALLOWED)
+            return _response(HTTPStatus.METHOD_NOT_ALLOWED, keep_alive=keep_alive)
         token = _bearer(headers.get("authorization", ""))
         if self.pairing.device(token) is None:
             # Before pairing a phone shows the code it scanned; a wrong one counts as an attempt.
             if not token or not self.pairing.attempt() or not self.pairing.code_ok(token):
-                return _response(HTTPStatus.FORBIDDEN)
+                return _response(HTTPStatus.FORBIDDEN, keep_alive=keep_alive)
         from orkcraft import __version__
         from orkcraft.gui.server import PROTOCOL
         return _json(HTTPStatus.OK, {"name": "orkcraft", "version": __version__, "protocol": PROTOCOL,
-                                     "api": mobile.API})
+                                     "api": mobile.API}, keep_alive=keep_alive)
 
     async def _pair(self, method: str, headers: dict[str, str], reader: asyncio.StreamReader) -> bytes:
         if method != "POST":

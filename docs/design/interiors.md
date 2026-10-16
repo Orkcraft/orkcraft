@@ -10,6 +10,12 @@ An improvement of an existing mechanic (decisions §27).
   away entirely: **a black screen**, and on it the building **in the middle, roof off, as large as the screen
   allows**, whole device pixels, lit like a stage (a soft light on its floor, black round it). No camp behind it, so
   nothing distracts (the owner, same day). No permanent settings panel (today's right-hand "shop" goes).
+- **The view is top-down, as in the old JRPGs' interiors** (the owner, same day): the floor seen from above, the back
+  (north) wall shown as a band with its face, the side and front walls as thin rims, furniture and props seen from
+  above with a little of their front. Not a side view, not the camp's front-top angle. Every room, now and later.
+- **Rooms are built, not drawn whole** (the owner, same day): the code lays a room from a shared kit (floor tiles,
+  the back wall band, rims and corners, floor markers) and the building's own furniture pieces, all top-down; a
+  generated whole room comes out too small and in side view. The kit and the pieces: docs/specs/art-steampunk-all.md.
 - **Settings behind a gear** in the room's top-right corner: a panel slides in (today's Info, js/console.js
   `InfoTab`, as it is), and out again. Money and safety stay in plain words, never drawn into the room (§13.2).
 - **Exit** always in view, and Esc, back to the camp where it was.
@@ -77,37 +83,45 @@ building follow it.
 
 ## 6. Art cards (the owner generates; the PM session cuts)
 
-**s1-steampunk (the style frame, first).** Attach `docs/design/img/references/v3/f1-town.jpg`,
+**s1-steampunk (the style frame) — approved 16 October: candidate 1, kept as
+`docs/design/img/references/v3/s1-steampunk.png`.** Every sheet below attaches it as the style to follow. Attach `docs/design/img/references/v3/f1-town.jpg`,
 `design-system/sprites/v3/buildings/depot.png`, `design-system/sprites/v3/buildings/loot_vault.png`.
 > Pixel-art, the same cartoon style, pixel size, outlines and front-top view as the attached camp and buildings, made
 > **orkish steampunk**: the same two buildings (the long engine shed and the gatehouse) redrawn with crude bolted-on
 > brass and copper pipes, a small boiler with a chimney puffing steam, gauges, cogs, rivets, valves and levers,
 > patched leather; still cute, chunky and cheerful, warm woods with brass and teal. Each building **with a clear
 > doorway an ork could walk through** (the shed's on its front, the gatehouse's under its arch). Beside each, **the
-> same building from inside with its roof removed** as a cutaway. On a flat magenta (#ff00ff) background, every piece
+> same building from inside with its roof removed**, seen **top-down as an old JRPG's interior** (the
+> floor from above, the back wall a band, the other walls thin rims). On a flat magenta (#ff00ff) background, every piece
 > fully inside its area, crisp dark 1-pixel outline, no text, no characters. No bright yellow, no red.
 
-The two room cards below are made **after s1 is approved**, in its style.
+The two room cards below are made in s1's style. **s1's rooms are a shallow stage seen from the front** (a back wall,
+a narrow floor): too little floor for §2's big props. So the final rooms are asked for **top-down, as in the old JRPGs' interiors**: the
+floor from above, most of the picture; the back wall a band with its face; the other walls thin rims.
 
 
 If s1's insides are good enough they are cut directly; otherwise: Three candidates each, saved as `docs/design/img/references/v3/candidates/<sheet>/1.png … 3.png`.
 
-**i-depot (the Agent pool, inside).** Attach `docs/design/img/references/v3/st-depot.jpg` and
-`design-system/sprites/v3/buildings/depot.png`.
+**i-depot (the Agent pool, inside).** Attach `docs/design/img/references/v3/s1-steampunk.png` (the style),
+`docs/design/img/references/v3/st-depot.jpg` and `design-system/sprites/v3/buildings/depot.png`.
 > Pixel-art, exactly the style (the approved steampunk frame s1), palette, pixel size and front-top view of the attached engine
 > shed. The same shed
-> seen **from inside with its roof removed**, as a cutaway: a long plank floor with **six large empty bays** marked out on it
+> seen **from inside with its roof removed**, **seen top-down, as an old JRPG's interior**: the floor seen from
+> above and taking most of the picture, the back wall a band showing its face, the side and front walls thin rims,
+> furniture and props from above with a little of their front: a long plank floor with **six large empty bays** marked out on it
 > (chalk lines and a rail stop each, big enough for an ork and a cart), a tool rack between bays; a long bench by
 > the back wall; lanterns on posts;
 > crates and barrels in the corners; brass pipes along the walls, a small boiler, gauges. **No characters.** One bay empty, with a small blank wooden sign on a post. On a
 > flat magenta (#ff00ff) background, the room fully inside the frame, crisp dark 1-pixel outline, no text, no
 > shadows outside the room. Warm woods and teal cloth; no bright yellow, no red.
 
-**i-gate (the Review gate, inside).** Attach `docs/design/img/references/v3/st-gate.jpg` and
-`design-system/sprites/v3/buildings/loot_vault.png`.
+**i-gate (the Review gate, inside).** Attach `docs/design/img/references/v3/s1-steampunk.png` (the style),
+`docs/design/img/references/v3/st-gate.jpg` and `design-system/sprites/v3/buildings/loot_vault.png`.
 > Pixel-art, exactly the style (the approved steampunk frame s1), palette, pixel size and front-top view of the attached
 > gatehouse. The same gatehouse
-> seen **from inside with its roof removed**, as a cutaway: a stone floor with **three large empty lots** marked on it
+> seen **from inside with its roof removed**, **seen top-down, as an old JRPG's interior**: the floor seen from
+> above and taking most of the picture, the back wall a band showing its face, the side and front walls thin rims,
+> furniture and props from above with a little of their front: a stone floor with **three large empty lots** marked on it
 > (painted squares or pallets, each big enough for a crate as tall as an ork), open space between them; a wooden barrier arm at the far doorway, closed; a shelf on the side wall
 > with a few small sealed crates; a stamp and an ink pot on the table; a lantern. **No characters, no crates on the
 > table.** On a flat magenta (#ff00ff) background, the room fully inside the frame, crisp dark 1-pixel outline, no

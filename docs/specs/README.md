@@ -117,13 +117,14 @@ Every spec carries two lines, for agy above all: **"Change nothing outside these
 | 02 | [Mission 1 blockers](02-mission1-blockers.md) (filled after the owner plays it) | before the testers | flash | agy | light |
 | 17a | [the onboarding's one fork](17a-mission-starts-at-once.md) (the tutorial, or a ready town) | before the testers | flash | agy | light |
 | 17b | [Mission 1 as a scene](17b-mission-scene.md) (the Workchief on the map, a walk through each building) | before the testers, after 17a | — | **Claude** | full |
-| 18 | [darker, richer grass](18-darker-grass.md) (variant B) | before the testers | flash | agy | light |
+| 18 | [darker, richer grass](18-darker-grass.md) (variant B; round 2 at the top) | before the testers | flash | agy | light |
 | 19 | [Camp's camera](19-camp-camera.md) (no far zoom-out; the wheel scrolls down) | before the testers | flash | agy | light |
 | 20 | [the wilderness composed](20-composed-wilderness.md) (groves on places, not a hash on a grid) | after 18 and 19 | — | **Claude** | light + the owner's look |
 | 21 | [entering a building](21-building-screen.md) (the room on the whole screen, settings behind a gear) | before the testers | — | **Claude** | light |
 | 22 | [the Agent pool's room](22-agent-pool-room.md) (art card + code) | before the testers, after 21 | — | **Claude** | light + the owner's look |
 | 23 | [the Review gate's room](23-review-gate-room.md) (art card + code) | before the testers, after 21 | — | **Claude** | light + the owner's look |
 | 24 | [doors: open-air buildings](24-open-air-buildings.md) | before the testers | flash | agy | light |
+| art | [every building in steampunk, outside and inside](art-steampunk-all.md) (23 sheets × 3 candidates) | now | pro | agy | the owner picks |
 | 03 | [the charter: "My project"](03-charter.md) | before the testers | pro | **Claude** | full |
 | 04 | [Halloween decor](04-halloween-decor.md) (art card + items) | before 31 October | flash | agy | light |
 | 12 | [the v4 kit on the remaining screens](12-v4-remaining-screens.md) (audit, then move; round 2 at the top) | before the testers | flash | agy | light |

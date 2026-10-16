@@ -3,6 +3,17 @@
 Branch `spec/18-darker-grass` · model **flash** · design: decisions §29, color-pass.md (quiet ground, loud signals)
 **Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 
+## Round 2 (16 October): two fixes, nothing else
+On the branch `spec/18-darker-grass` (round 1 `3a60b44`; the tiles are right). Change only `design-system/tokens.json`,
+`design-system/tokens.css` (regenerated, not hand-edited) and `tests/test_grass_grade.py`.
+1. `tokens.css` is generated from `design-system/tokens.json` (`python -m orkcraft.design.tokens`); round 1 edited
+   the CSS by hand, so `tests/test_design.py::test_tokens_css_is_written_from_tokens_json` fails. Put the three
+   `world-grass*` values in `tokens.json`'s Camp block only, regenerate `tokens.css`, and check every other block is
+   unchanged.
+2. `tests/test_grass_grade.py`: PIL is not a project dependency; use `pytest.importorskip("PIL.Image")` as
+   `tests/test_logo.py` does, instead of the bare import.
+Tests: critical tests, plus `tests/test_design.py tests/test_grass_grade.py tests/test_gui_camp_browser.py`.
+
 ## Why
 The owner, 16 October: Camp's light grass catches the eye and distracts from the buildings and the signals. Of four
 previews ([img/grass-variants.png](../design/img/grass-variants.png)) he chose **B: darker and richer**.

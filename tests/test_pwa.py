@@ -3,9 +3,11 @@ names its token as a subprotocol, the pairing link on the tailnet, and Tailscale
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import http.client
 import json
 import subprocess
+from pathlib import Path
 
 import pytest
 from websockets.asyncio.client import connect
@@ -293,3 +295,70 @@ def test_the_phone_stands_on_the_desktops_ground():
     assert desk_biomes and dict(re.findall(r'(\w+): "(#\w+)"', phone[:phone.index("};")])) == desk_biomes
     glyphs = lambda t: re.findall(r'^\s+(\w+): \{ glyphs: (\[[^\]]*\]), ink: "([^"]*)" \}', t, re.M)  # noqa: E731
     assert glyphs(phone) and glyphs(phone) == glyphs((static / "js" / "terrain.js").read_text())
+
+
+def test_assets_json_lists_every_cache_first_file_with_a_hash():
+    pwa.assets()                                     # the listener's warm-up
+    head, body = _split(pwa.serve("GET", "/app/assets.json"))
+    assert head.startswith("HTTP/1.1 200") and "application/json" in head
+    assert "public, max-age=" not in head
+    data = json.loads(body)
+    cf_files = {k: v for k, v in pwa.files().items() if pwa.is_cache_first(k)}
+    assert set(data.keys()) == set(cf_files.keys())
+    for path, h in data.items():
+        assert len(h) == 10 and all(c in "0123456789abcdef" for c in h)
+        real_hash = hashlib.sha1(cf_files[path].read_bytes()).hexdigest()[:10]
+        assert h == real_hash
+
+
+def test_a_changed_file_changes_its_hash(tmp_path, monkeypatch):
+    monkeypatch.setattr(pwa, "_ASSETS", pwa._ASSETS)  # the map this test warms up goes with it
+    dummy = tmp_path / "custom.png"
+    dummy.write_bytes(b"content_version_one")
+    real_files = pwa.files()
+    monkeypatch.setattr(pwa, "files", lambda: {**real_files, "sprites/custom.png": dummy})
+    h1 = pwa.assets()["sprites/custom.png"]
+    assert h1 == hashlib.sha1(b"content_version_one").hexdigest()[:10]
+
+    dummy.write_bytes(b"content_version_two_changed")
+    h2 = pwa.assets()["sprites/custom.png"]
+    assert h2 == hashlib.sha1(b"content_version_two_changed").hexdigest()[:10]
+    assert h1 != h2
+    _, body = _split(pwa.serve("GET", "/app/assets.json"))
+    assert json.loads(body)["sprites/custom.png"] == h2
+
+
+def test_a_request_only_reads_the_map_the_warm_up_hashed(tmp_path, monkeypatch):
+    """Only the warm-up hashes: a request for assets.json reads the map it kept and touches no file."""
+    monkeypatch.setattr(pwa, "_ASSETS", None)
+    head, _ = _split(pwa.serve("GET", "/app/assets.json"))
+    assert head.startswith("HTTP/1.1 503")             # not warmed yet: no map rather than a wrong one
+    dummy = tmp_path / "custom.png"
+    dummy.write_bytes(b"one")
+    real_files = pwa.files()
+    monkeypatch.setattr(pwa, "files", lambda: {**real_files, "sprites/custom.png": dummy})
+    h1 = pwa.assets()["sprites/custom.png"]
+    dummy.write_bytes(b"two")
+    with monkeypatch.context() as m:
+        m.setattr(pwa.hashlib, "sha1", lambda *a: pytest.fail("a request hashed"))
+        m.setattr(Path, "stat", lambda *a, **k: pytest.fail("a request looked at a file"))
+        _, body = _split(pwa.serve("GET", "/app/assets.json"))
+    assert json.loads(body)["sprites/custom.png"] == h1
+
+
+def test_service_worker_names_cache_version_and_cache_first_prefixes():
+    sw = (pwa.ROOT / "sw.js").read_text(encoding="utf-8")
+    assert "orkcraft-app-v11" in sw
+    for prefix in ("v3/", "sprites/", "icons/", "fence/", "fonts/"):
+        assert prefix in sw
+
+
+def test_cache_control_headers_for_cache_first_and_shell():
+    head_cf, _ = _split(pwa.serve("GET", "/app/camp/ork-walk.png"))
+    assert "Cache-Control: public, max-age=31536000, immutable" in head_cf
+    head_shell, _ = _split(pwa.serve("GET", "/app/app.js"))
+    assert "Cache-Control: no-cache" in head_shell
+    head_html, _ = _split(pwa.serve("GET", "/app/"))
+    assert "Cache-Control: no-cache" in head_html
+    head_assets, _ = _split(pwa.serve("GET", "/app/assets.json"))
+    assert "Cache-Control: no-cache" in head_assets

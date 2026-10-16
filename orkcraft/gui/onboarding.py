@@ -424,6 +424,8 @@ class Onboarding:
             self.host.on_change()
             return self.snapshot()
         if args.get("empty"):
+            if not self.again:
+                raise OnboardingError("Empty town is not an option in a first session")
             return self._begin(None, "")
         it = intents.intent(str(args.get("preset") or ""))
         if it is None or it.role != self.profile.get("role"):
