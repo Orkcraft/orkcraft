@@ -118,10 +118,17 @@ class TownPlan:
         return bool(self.specs) and not self.error
 
 
-def offered_types() -> list[catalog.BuildingType]:
+def allowed_types() -> list[catalog.BuildingType]:
     """The types a plan may use: the camp's, without the system ones, the Builder's scratch type and the retired ones."""
     return [t for t in catalog.TYPES.values()
             if t.id not in catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES]
+
+
+def offered_types() -> list[catalog.BuildingType]:
+    """The types the planner shows the model: the allowed ones that are offered (`catalog.offered`)."""
+    from orkcraft import settings
+    machine = settings._raw(settings.path())
+    return [t for t in allowed_types() if catalog.offered(t.id, machine)]
 
 
 def _free_id(base: str, taken: set[str]) -> str:
@@ -157,7 +164,7 @@ def check(answer: dict, repo_root: Path, taken: set[str] | frozenset[str]) -> tu
     """The plan in an answer, with every problem; a plan with problems is never raised."""
     problems: list[str] = []
     plan = TownPlan(title=str(answer.get("title") or "")[:60], summary=str(answer.get("summary") or "")[:200])
-    allowed = {t.id: t for t in offered_types()}
+    allowed = {t.id: t for t in allowed_types()}
     existing = set(taken)
     taken = existing | set(masonry.ID_RESERVED)
     items = answer.get("buildings")

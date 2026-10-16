@@ -254,7 +254,7 @@ class Onboarding:
         glyphs = [s.glyph or s.id for s in self.servers if s.id in on]
         out = []
         for it in intents.for_role(role):
-            plan = it.plan
+            plan = intents.offered_plan(it.plan)
             out.append({
                 "id": it.id, "title": it.title, "icon": it.icon, "blurb": it.blurb,
                 "rhythm": intents.RHYTHMS.get(it.rhythm, ""),
@@ -501,7 +501,7 @@ class Onboarding:
                 hooks_install.install_all(town.repo_root, agy=None if town.machine.agy_warder_checked else False)
             self._step("The Security reviewer guards this project", guard)
         if it is not None:
-            plan, errors = town_builder.check(it.plan, town.repo_root, town.taken_ids())
+            plan, errors = town_builder.check(intents.offered_plan(it.plan), town.repo_root, town.taken_ids())
             if errors:                                  # the templates are tested; never expected
                 self._fail("; ".join(errors[:3]))
             else:

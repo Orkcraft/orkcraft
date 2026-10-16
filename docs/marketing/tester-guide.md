@@ -32,8 +32,10 @@ prompts, paths or names. The first real work (quest 4) only reads your repositor
 4. Did you finish quest 4? If not, why?
 5. At the Review gate: how long did it take you to decide to pass or send back a result? Was it clear what was
    done and what it cost?
-6. Did it feel like a game or like a tool? (1 = a tool, 5 = a game) What made it feel so?
-7. Do you need icons, illustrations or sprites for what you build, and where do you get them today?
+6. How do you check your agents' work today: each result (diff, PR), the plan before they start, or in a batch once a
+   day? Which of these would you want at the Review gate?
+7. Did it feel like a game or like a tool? (1 = a tool, 5 = a game) What made it feel so?
+8. Do you need icons, illustrations or sprites for what you build, and where do you get them today?
 
 **After a week**
 1. How many times did you open it? On which device, and when (evenings, between work tasks, on the way home)?

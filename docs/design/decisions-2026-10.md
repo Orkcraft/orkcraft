@@ -982,3 +982,55 @@ now, the owner; looked at again after the rename or if testers notice).
 looks like AgentCraft or like a copy of that game (the guide's questions "what is Orkline for" and "a game or a
 tool" are where it shows). Otherwise the question is closed.
 
+## 39. The Review gate checks by what the result is (16 October, the owner)
+
+Two voices now (the interview of 16 October and the owner): **code** results are not read one by one, there are
+too many; **what goes to people** (tasks, documents, replies, posts) is read by eye, each one, before it is sent. So
+the Review gate asks for the person's look where it is worth it:
+- **what leaves to people** (a reply, a post, a task or a document for someone else): stops at the gate, one by one,
+  read before it goes. This is what "nothing passes without you" means;
+- **code**: passes on its checks (tests, the Warder, the budget) and gathers at the gate as **one batch a day**; the
+  person looks at the batch once (what changed, what it cost, what failed) and passes or sends back what needs it.
+**The daily check** (the owner, same day): once a day, at an hour the person sets, one ork at the Review gate checks
+everything code that reached the branch that day against its spec and tests and fixes what fails, on that branch, on
+a budget said first; then the batch waits with its report (what changed, what it fixed, what it could not, what it
+cost). Nothing is merged by it: the person passes the batch. No new building: it is the gate's own run (the hour is a
+setting of the gate, not the Calendar).
+An improvement of the existing gate (§27), track 1, **P1**: its spec is written after the owner has tested the five
+buildings, so it carries what he finds. Mission 1 stays as it is (its drill is one cart, passed by hand). The tester
+question on how they check agents' work counts towards it. "The plan passed before the work" stays a hypothesis.
+
+## 40. The lean Agent pool (16 October, the owner)
+
+Coordination without a big token cost: the card is the contract (a clear card, passed before the work, needs fewer
+questions); orks coordinate through files (claims, the decisions list), not through talk; the steward answers an ork
+at most once and lightly, else the question goes to the person; tests are the review of code; roles stay few and
+short; a full context rolls over. The waybill shows where the tokens went, so the owner's tests measure it. A
+simplification of the existing pool (§27), track 1, P1. Spec 28, after 26 and 27, before 17b.
+
+## 41. From an idea to work: the Task board's keeper plans, the person passes the plan (16 October, the owner)
+
+Turning ideas into specs and small tasks is the step everything after depends on (our own process, the interview of
+16 October, the owner). Today the plan lives inside the Agent pool (`realm/plans.py`: parts, `after`, `max_parallel`)
+and the person does not see it before the work. So:
+1. **A raw idea goes on the Task board** to its keeper. If it is unclear, the keeper asks: a few questions on the card,
+   answered in the console (the existing ask path), not a new chat. One keeper with stages (triage, plan), as the
+   pool's steward already has (`steward.pick(use=…)`); **not several keepers** (each would be calls and handed
+   context, what §40 cuts). Prioritising stays the person's: the order of the cards.
+2. **The keeper turns the idea into two lists, grouped under the idea** (one colour, like an epic): **to-dos for the
+   person** (the board's to-do lane) and **task cards for the orks**, each marked *in parallel* or *after X*.
+3. **The person passes the plan before the work** (the Review gate before the work: three voices now). Then the cards
+   go to the Agent pool, separately, as today's Send.
+4. **The board loses In progress and Done.** Progress is seen on the map (carts, the pool), results at the Review
+   gate. The board keeps its to-do lanes and one lane, **Needs you**, for what failed or is stuck. A simplification.
+5. **The person never waits on the card** (the owner's UX question, same day). The keeper works in the background:
+   the card shows *the keeper is reading* and the person goes on. When questions or the plan are ready, the card goes
+   to **Needs you** with ❓ on the board, as an ork's question does; that is when the person comes back, not after
+   10–20 seconds of staring.
+6. **The keeper reads only its own Wiki, and little of it.** Only a Wiki joined to the Task board (by default the
+   camp's first Wiki, the project's), never every Wiki in the camp; first the index and `wiki_search` (no model,
+   seconds), then at most three pages. One idea counts as one read, so the footpaths (§22.7: a Wiki's three heaviest
+   readers) keep meaning "who uses this Wiki", and the other Wikis get no path to the board.
+Mission 1 keeps working (its drill card). Track 1, P1, a spec after 28 (it touches the board and the pool), together
+with §39's daily batch. "A product keeper that prioritises" is a hypothesis after the testers.
+

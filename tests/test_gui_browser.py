@@ -27,7 +27,7 @@ from orkcraft.realm.buildings import TOWN_HALL  # noqa: E402
 pytestmark = pytest.mark.browser
 
 CHROMIUM = [p for p in (os.environ.get("ORKCRAFT_CHROMIUM", ""), "/opt/pw-browsers/chromium") if p and Path(p).exists()]
-TYPES = [t["id"] for t in builder.catalog_types()]
+TYPES = [t["id"] for t in builder.catalog_types(machine={"catalog.all_types": True})]   # every type keeps its test
 WAIT_MS = 10_000
 
 
@@ -85,7 +85,9 @@ def gui(tmp_path_factory):
 def page(gui):
     """The town in a fresh tab; after the test, every page error and console error it logged fails it."""
     server, browser = gui
-    pg = browser.new_page(viewport={"width": 1440, "height": 900})
+    from orkcraft import settings
+    settings.path().write_text(json.dumps({"catalog.all_types": True}), encoding="utf-8")   # spec 26: the Build dialog offers every type
+    pg = browser.new_page(viewport={"width": 1440, "height": 900})                          # (this test's own settings file)
     errors: list[str] = []
     pg.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
     pg.on("console", lambda m: m.type == "error" and errors.append(f"console: {m.text}"))

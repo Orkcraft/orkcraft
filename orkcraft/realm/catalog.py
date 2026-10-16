@@ -509,6 +509,26 @@ RETIRED_TYPES = frozenset({DEFAULT_TYPE, "forest", "lake"})   # an old scroll's 
 # Lake window, never a building (realm/lake.py: a road into an old one becomes "open in Lake" on its source)
 LANDSCAPE = frozenset(t.id for t in TYPES.values() if t.landscape)   # the land between the buildings: no ork
 SCRATCH_TYPES = frozenset({"workshop"})        # only the Builder's interview makes these
+# The five buildings a person is offered at the first start (decisions §35, spec 26); the rest stay hidden from every
+# place that offers a building to raise, and keep working where they already stand. `loot` is the Review gate's type id
+# in code (`loot_vault` is its art and word).
+FIRST_TYPES = frozenset({"fields", "barracks", "loot", "loot_vault", "watchtower", "scrolls"})
+
+
+def offered(type_id: str, settings: dict | None = None) -> bool:
+    """Is this type offered to raise: one of the five, the landscape, or any type when the machine settings' key
+    `catalog.all_types` is true (a key in settings.json only; `settings` is that file's dict, read when None)."""
+    if settings is None:
+        from orkcraft import settings as machine
+        settings = machine._raw(machine.path())
+    tid = ALIASES.get(type_id, type_id)
+    if tid in FIRST_TYPES or tid in LANDSCAPE:
+        return True
+    nested = settings.get("catalog")
+    return (settings.get("catalog.all_types") is True
+            or (isinstance(nested, dict) and nested.get("all_types") is True))
+
+
 GUI_ONLY = frozenset({"mine", "gramophone", "lab", "ux_lab"})   # built after the TUI was deprecated: no terminal view (calm-town.md §9)
 MAX_QUICK_ACTIONS = 2
 

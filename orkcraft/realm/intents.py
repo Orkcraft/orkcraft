@@ -736,6 +736,19 @@ INTENTS: tuple[Intent, ...] = (
 )
 
 
+def offered_plan(plan: dict, settings: dict | None = None) -> dict:
+    """A ready town's plan with only the buildings `catalog.offered` lets through, and no road to or from one
+    that was dropped (a copy; the plan itself stays as written)."""
+    from orkcraft.realm import catalog
+    if settings is None:
+        from orkcraft import settings as machine
+        settings = machine._raw(machine.path())
+    kept = [b for b in plan.get("buildings", []) if catalog.offered(str(b.get("type")), settings)]
+    dropped = {b["key"] for b in plan.get("buildings", [])} - {b["key"] for b in kept}
+    return {**plan, "buildings": kept,
+            "roads": [r for r in plan.get("roads", []) if r.get("from") not in dropped and r.get("to") not in dropped]}
+
+
 def role(role_id: str) -> Role:
     return next((r for r in ROLES if r.id == role_id), ROLES[-1])
 
@@ -798,4 +811,4 @@ def nick(role_id: str) -> str:
 
 def templates_text(role_id: str) -> str:
     """The role's templates as JSON, for the Town Builder to start from."""
-    return "\n".join(json.dumps(i.plan, ensure_ascii=False) for i in for_role(role_id))
+    return "\n".join(json.dumps(offered_plan(i.plan), ensure_ascii=False) for i in for_role(role_id))
