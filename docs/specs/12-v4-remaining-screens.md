@@ -3,6 +3,28 @@
 Branch `spec/12-v4-remaining-screens` · model **flash** · design: design-system-v4.md (the kit), decisions §17.1
 **Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 
+## Round 2 (16 October): make the kit actually show, nothing else
+The branch `spec/12-v4-remaining-screens` holds round 1 (`64082f8`). Work on it, on top of that commit. The limits
+below still hold (only CSS and HTML templates of the desktop GUI, plus `docs/design/img/v4/`).
+Round 1's CSS is scoped right, but the screenshots show the dialogs, Town settings and the Town Hall's Work panel
+**still in the old look**: dark brown, no teal title plate, no parchment, old segmented controls.
+1. **Find why the rules don't take effect** in Camp: `.ok-dialog`, `.gui-steps`, and the Town Hall
+   `[data-type="town_hall"]` rules in `orkcraft/gui/static/kit.css`. `data-look="camp"` sits on `<html>` and
+   `kit.css` loads last, so check what still wins (the dialog's own rules in `/ds/components.css` and `layout.css`,
+   a more specific selector, an inline style or a CSS variable set later) with the browser's computed style, and fix
+   it in CSS. Don't use `!important`.
+2. **Retake every screenshot** after a fresh page load: each shot a different screen (01 and 05 are the same file
+   today), the missing `10` added or its absence said in `audit.md`. Each moved screen visibly shows parchment, a
+   wood frame, a teal title plate, and Jersey 15 only on headings, numbers and buttons. Put one **before** shot (from
+   `main`) beside each after shot: `NN-name-before.png`.
+3. In `audit.md`, list the Town Hall's Work chat as **"needs JS"** (its panel is missing from `PAPER` in
+   `windows.js`) instead of a CSS `:has()` workaround; remove that workaround.
+4. Remove the `.ok-dialog.is-warn, .ok-dialog.is-error` rule that only repeats the base frame, and scope the Camp
+   `.gui-steps` rules to the dialogs and the shop frame the audit names.
+
+Tests: as below. A browser test checks one moved dialog's computed style in Camp (a background that is the
+parchment token, a title on the plate) and that the same dialog in Office is unchanged.
+
 ## Tonight's limits (15 October: runs beside 01 and 13)
 Specs 13 and 01 run on other branches the same night. So in this spec: **skip the portrait's / home's menu and the
 Items panel** (13 changes them; they move to the kit in a later round), and change **only CSS files and HTML
