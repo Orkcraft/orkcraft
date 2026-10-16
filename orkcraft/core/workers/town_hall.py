@@ -64,10 +64,13 @@ The buildings that can be built (type id — what it does):
 The person asks: {question}"""
 
 
-def buildable() -> list[catalog.BuildingType]:
+def buildable(machine: dict | None = None) -> list[catalog.BuildingType]:
     """The catalog a person builds from (the Build dialog's list)."""
     hidden = catalog.SYSTEM_TYPES | catalog.SCRATCH_TYPES | catalog.RETIRED_TYPES
-    return [t for t in catalog.TYPES.values() if t.id not in hidden]
+    if machine is None:
+        from orkcraft import settings
+        machine = settings._raw(settings.path())
+    return [t for t in catalog.TYPES.values() if t.id not in hidden and catalog.offered(t.id, machine)]
 
 
 def _when(ts_: str) -> str:
