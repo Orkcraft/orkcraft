@@ -65,10 +65,11 @@ The state a new product-and-marketing session starts from. Update it when you ha
 - Dev session for 26: `session_01GT2jie5yC5t9tua8JLyfXW` (branch `spec/26-five-buildings`); 27 goes to it after 26
   is merged, on `spec/27-mission-four-quests`. Tonight's batch: `docs/specs/batches/2026-10-16-night.md` (agy: 18 r2, 19, 12b,
   `art-steampunk-all` if unfinished). Claude: **17b** in tomorrow's morning batch, after 19 is merged.
-- Claude specs unblocked and waiting: **10a** (phone cards; 01 and 01b are merged), **03** (charter). 22/23 wait on
-  the steampunk room-kit art; 20 waits on 18 and 19.
+- **decisions §36: the scope is the three tracks only**; everything else is a one-line hypothesis in open-questions.md
+  "After the testers". Parked: 10, 04, 06–09, 15, 11, 12b, devlog 02. The list by track: specs/README.md.
+- Claude specs next: 27 → 17b → 03; 22/23 wait on the five-building art; 20 waits on 18 and 19.
 - Weekly usage limit is at its warning; it resets Wed 21 October 11:00 UTC. One Claude dev session at a time;
-  10a and 03 only after 17b, or if the owner asks.
+  03 after 17b.
 - Local `main` in a PM container may be a stale design branch: work on a branch from `origin/main`.
 
 ## Waiting on the owner
@@ -82,7 +83,6 @@ The state a new product-and-marketing session starts from. Update it when you ha
   before 31 October; testers after that (timeline: decisions §22).
 
 ## Marketing next (P1)
-- Tester wave: invite and guide are written; refresh the screenshots with the HD camp once 13 and 01 are merged.
-- Devlog 02: the HD orks before/after (`docs/design/img/hd-orks/orks-before-4x.png`, `orks-after-4x.png`) is the
-  strongest visual we have.
-- Halloween post with the decor from spec 04.
+- Only what the testers need (track 3): the tester invite and guide are written; refresh their screenshots once the
+  five buildings' art and 17b are merged; add the question "Did it feel like a game or a tool? (1–5)" to the guide.
+- Devlog 02, the Halloween post and other posts: parked as hypotheses (decisions §36).

@@ -1,5 +1,7 @@
 # Spec 09 — plots: empty places that invite a building
 
+> **Parked (decisions §36, 16 October):** outside the three tracks; a hypothesis for after the testers. Do not build.
+
 Branch `spec/09-plots` · model **flash** · design: decisions §20 ("Plots…", "Plots come after Mission 1") · after 07
 **Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 

@@ -1,5 +1,7 @@
 # Spec 06 — the camp lays itself out: the wall, line 0.5, the processing line, the quarter
 
+> **Parked (decisions §36, 16 October):** outside the three tracks; a hypothesis for after the testers. Do not build.
+
 Branch `spec/06-three-bands` · model **pro** · design: decisions-2026-10.md §20 (all of it), design-system-v3.md §4,
 §4b, §4c, §4f · after Halloween
 **Builds:** Claude · **Review:** full (docs/specs/README.md "Who builds")

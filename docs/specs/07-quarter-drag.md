@@ -1,5 +1,7 @@
 # Spec 07 — the person's quarter: drag buildings in Camp
 
+> **Parked (decisions §36, 16 October):** outside the three tracks; a hypothesis for after the testers. Do not build.
+
 Branch `spec/07-quarter-drag` · model **flash** · design: decisions §20 · after spec 06
 **Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 

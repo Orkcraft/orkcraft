@@ -122,37 +122,43 @@ twentieth), so a review mostly reads and costs little next to writing the code.
 Every spec carries two lines, for agy above all: **"Change nothing outside these files"** (the files named), and
 **a browser test that proves the behaviour**, not only strings.
 
-## The list, in the order of decisions §22
+## The list: only the three tracks (decisions §35, §36)
 
-| # | spec | when | model | who builds | review |
-|---|---|---|---|---|---|
-| 01 | [the phone's fast first load](01-phone-fast-load.md) (round 3 at the top) | before the testers | — | **Claude** (round 3) | full |
-| 10 | [the phone's new UX](10-phone-v4.md) (four parts: cards, motion, full view, v4 look) | right after 01 (the owner) | pro / flash | Claude (pro part) · agy (flash parts) | full (10a) · light (10b–10d) |
-| 02 | [Mission 1 blockers](02-mission1-blockers.md) (filled after the owner plays it) | before the testers | flash | agy | light |
-| 17a | [the onboarding's one fork](17a-mission-starts-at-once.md) (the tutorial, or a ready town) | before the testers | flash | agy | light |
-| 17b | [Mission 1 as a scene](17b-mission-scene.md) (the Workchief on the map, a walk through each building) | before the testers, after 17a, 19 and 27 | — | **Claude** | full |
-| 18 | [darker, richer grass](18-darker-grass.md) (variant B; round 2 at the top) | before the testers | flash | agy | light |
-| 19 | [Camp's camera](19-camp-camera.md) (no far zoom-out; the wheel scrolls down) | before the testers | flash | agy | light |
-| 20 | [the wilderness composed](20-composed-wilderness.md) (groves on places, not a hash on a grid) | after 18 and 19 | — | **Claude** | light + the owner's look |
-| 21 | [entering a building](21-building-screen.md) (the room on the whole screen, settings behind a gear; merged) | before the testers | — | **Claude** | light |
-| 22 | [the Agent pool's room](22-agent-pool-room.md) (art card + code) | before the testers, after 21 | — | **Claude** | light + the owner's look |
-| 23 | [the Review gate's room](23-review-gate-room.md) (art card + code) | before the testers, after 21 | — | **Claude** | light + the owner's look |
-| 24 | [doors: open-air buildings](24-open-air-buildings.md) (merged) | before the testers | flash | agy | light |
-| 27 | [Mission 1 in four quests](27-mission-four-quests.md) (no Office quest, no "Two at once") | before 17b | — | **Claude** | light |
-| 26 | [five buildings at the first start; the others hidden](26-five-buildings.md) | before the testers | — | **Claude** | light |
-| art | [the five buildings in steampunk, outside and inside](art-steampunk-all.md) (kit + 5 sheets × 3 candidates; the rest Later) | now | pro | agy | the owner picks |
-| 03 | [the charter: "My project"](03-charter.md) | before the testers | pro | **Claude** | full |
-| 04 | [Halloween decor](04-halloween-decor.md) (art card + items) | before 31 October | flash | agy | light |
-| 12 | [the v4 kit on the remaining screens](12-v4-remaining-screens.md) (merged; optional 12b at the top) | before the testers | flash | agy | light |
-| 05 | [release 0.3.0](05-release-0.3.0.md) | Thu 22 October | flash-low | agy | light |
-| E1 | [the clean-install check](e1-clean-install.md) (the owner runs it, no agy) | Wed 21 October | — | owner | — |
-| 13 | [no Town Hall in the camp; the home's menu](13-home-instead-of-town-hall.md) (merged) | before the testers | flash | agy (round 2) | light |
-| 13b | [the home's menu: a small cleanup](13b-home-cleanup.md) | before the testers | flash | agy | light |
-| 06 | [three bands: the camp lays itself out](06-three-bands.md) | after Halloween | pro | **Claude** | full |
-| 07 | [the person's quarter: drag in Camp](07-quarter-drag.md) | after 06 | flash | agy | light |
-| 08 | [the Wiki on the grass](08-wiki-on-grass.md) | after 06 | flash | agy | light |
-| 09 | [plots](09-plots.md) | after 07 | flash | agy | light |
-| 14 | [the modular depot (an ork in every bay), the small campfire and barrier](14-modular-depot-and-small-pieces.md) (art card + code) | after Halloween | flash | agy | light |
-| 16 | [every ork at a glance: state, phase icon, task on hover; tools in the building](16-ork-at-a-glance.md) | with 14 (medium) | pro | **Claude** | full |
-| 15 | [the BMAD line template](15-bmad-line.md) | after 06 and 14 (medium priority) | pro | **Claude** | full |
-| 11 | [Mission 1b](11-mission-1b.md) (three parts) | after the testers' feedback | pro | **Claude** | full |
+Work is only on these three tracks until the testers' numbers. Anything else is a one-line hypothesis in
+open-questions.md "After the testers" (§36). Within a track, P0 first.
+
+**Track 1 — the five buildings work** (Task board, Agent pool, Review gate, External listeners, Wiki)
+
+| # | spec | priority | who builds | review |
+|---|---|---|---|---|
+| 26 | [five buildings at the first start; the others hidden](26-five-buildings.md) | P0 | **Claude** | light |
+| fix lists | one short spec per building from what the owner finds testing it (`docs/specs/fix-<building>.md`) | P0, as they come | agy or Claude | light |
+| 22 | [the Agent pool's room](22-agent-pool-room.md) (art card + code) | P1, after the art | **Claude** | light + the owner's look |
+| 23 | [the Review gate's room](23-review-gate-room.md) (art card + code) | P1, after the art | **Claude** | light + the owner's look |
+| 16 | [every ork at a glance: state, phase icon, task on hover](16-ork-at-a-glance.md) | Later | **Claude** | full |
+
+**Track 2 — it reads as a game** (the five buildings, the orks, the carts, the camp)
+
+| # | spec | priority | who builds | review |
+|---|---|---|---|---|
+| art | [the five buildings in steampunk, outside and inside](art-steampunk-all.md) (kit + 5 sheets × 3 candidates) | P0 | agy | the owner picks |
+| 18 | [darker, richer grass](18-darker-grass.md) (round 2 at the top) | P0 | agy | light |
+| 19 | [Camp's camera](19-camp-camera.md) (no far zoom-out; the wheel scrolls down) | P0 | agy | light |
+| 20 | [the wilderness composed](20-composed-wilderness.md) | P1, after 18 and 19 | **Claude** | light + the owner's look |
+| 14 | [the modular depot (an ork in every bay)](14-modular-depot-and-small-pieces.md) (art card + code) | Later | agy | light |
+
+**Track 3 — the first day** (install, onboarding, Mission 1); its dated items run alongside tracks 1 and 2
+
+| # | spec | priority | who builds | review |
+|---|---|---|---|---|
+| E1 | [the clean-install check](e1-clean-install.md) (the owner runs it) | P0, Wed 21 October | owner | — |
+| 05 | [release 0.3.0](05-release-0.3.0.md) | P0, Thu 22 October | agy | light |
+| 27 | [Mission 1 in four quests](27-mission-four-quests.md) | P0, before 17b | **Claude** | light |
+| 17b | [Mission 1 as a scene](17b-mission-scene.md) | P0, after 19 and 27 | **Claude** | full |
+| 02 | [Mission 1 blockers](02-mission1-blockers.md) (filled after the owner plays it) | P0 | agy | light |
+| 03 | [the charter: "My project"](03-charter.md) | P1, after 17b | **Claude** | full |
+
+**Merged:** 01 and 01b (the phone's fast load), 12, 13, 13b, 17a, 21, 24, icon-hd, s1-steampunk.
+
+**Parked as hypotheses (decisions §36):** 10 (the phone's new UX), 04 (Halloween), 06, 07, 08, 09 (the camp's
+layout), 15 (BMAD line), 11 (Mission 1b), 12b. Their files stay; nobody builds them.

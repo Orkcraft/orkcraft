@@ -1,5 +1,7 @@
 # Spec 04 — Halloween decor (an art card for the owner + items for agy)
 
+> **Parked (decisions §36, 16 October):** outside the three tracks; a hypothesis for after the testers. Do not build.
+
 Branch `spec/04-halloween-decor` · model **flash** · design: v3-prompts.md §14 (items), decisions §22
 **Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 

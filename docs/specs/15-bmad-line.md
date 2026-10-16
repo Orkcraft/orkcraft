@@ -1,5 +1,7 @@
 # Spec 15 — a process as a line: the BMAD line template
 
+> **Parked (decisions §36, 16 October):** outside the three tracks; a hypothesis for after the testers. Do not build.
+
 Branch `spec/15-bmad-line` · model **pro** · design: docs/design/process-lines.md (all of it) · after specs 06 and 14
 **Builds:** Claude · **Review:** full (docs/specs/README.md "Who builds")
 

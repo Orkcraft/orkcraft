@@ -1,5 +1,7 @@
 # Spec 12 — the v4 kit on the screens it has not reached yet
 
+> **12b parked (decisions §36, 16 October):** the optional round is not built.
+
 Branch `spec/12-v4-remaining-screens` · model **flash** · design: design-system-v4.md (the kit), decisions §17.1
 **Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 

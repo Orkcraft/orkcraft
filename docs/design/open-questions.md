@@ -222,3 +222,14 @@ New mechanics, buildings or systems wait here, one line each, until the concept 
 
 - The settlement: leisure pieces on the grass, idle orks walking to them, the home's room, coins and furniture
   ([settlement.md](settlement.md), decisions §25).
+- **Hypotheses parked by decisions §36** (outside the three tracks; back only if the testers ask):
+  - the phone's new UX: one building in view, the asks in a swiped sheet (spec 10);
+  - Halloween decor and its post (spec 04);
+  - the camp lays itself out in three bands (spec 06), with the person's quarter (07), the Wiki on the grass (08) and
+    plots (09);
+  - the BMAD line template (spec 15);
+  - Mission 1b, proof before the gate (spec 11);
+  - the v4 kit's optional nits on the remaining screens (12b);
+  - devlog 02 (HD orks before/after) and other posts before the testers;
+  - the other 18 building types back in the Build menu (hidden by spec 26), one by one, if testers ask.
+

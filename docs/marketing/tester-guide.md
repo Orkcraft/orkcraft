@@ -12,7 +12,6 @@
    nothing and call no model.
 3. Before quest 4 the camp asks to connect its hooks to your AI tool. It shows exactly what it writes and how to take
    it back. Quest 4 does real, read-only work on your repository; its price is said first.
-4. Quest 5 (optional): two orks work in parallel on branches. Nothing is merged without you.
 
 ## During the week
 - Try "I'm off" in the morning and "since your last look" when you come back.
@@ -26,7 +25,8 @@
 2. Where did you get stuck or confused? (the quest, the screen)
 3. Was the first win (an ork's question answered) clear? How long did it take?
 4. Did you finish quest 4? If not, why?
-5. Do you need icons, illustrations or sprites for what you build, and where do you get them today?
+5. Did it feel like a game or like a tool? (1 = a tool, 5 = a game) What made it feel so?
+6. Do you need icons, illustrations or sprites for what you build, and where do you get them today?
 
 **After a week**
 1. How many times did you open it? On which device, and when (evenings, between work tasks, on the way home)?

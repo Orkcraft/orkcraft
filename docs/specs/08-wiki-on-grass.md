@@ -1,5 +1,7 @@
 # Spec 08 — the Wiki on the grass among its readers
 
+> **Parked (decisions §36, 16 October):** outside the three tracks; a hypothesis for after the testers. Do not build.
+
 Branch `spec/08-wiki-on-grass` · model **flash** · design: design-system-v3.md §4c rule 1 (amended 15 October) · after spec 06
 **Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 

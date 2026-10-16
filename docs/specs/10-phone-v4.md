@@ -1,5 +1,7 @@
 # Spec 10 — the phone's new UX (v4): one building in view, the orks' asks in a swiped sheet
 
+> **Parked (decisions §36, 16 October):** outside the three tracks; a hypothesis for after the testers. Do not build.
+
 Model **pro** for 10a, **flash** for 10b–10d · design: docs/design/mobile.md §13 (read it first) · after spec 01
 (the fast first load), so the new screen doesn't load slowly.
 **Builds:** Claude (10a) · agy (10b–10d) · **Review:** full (10a) · light (10b–10d) (docs/specs/README.md "Who builds")

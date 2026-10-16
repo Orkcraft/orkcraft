@@ -930,3 +930,17 @@ runs. Reviews and merges stay with the PM session. [specs/README.md](../specs/RE
 4. **Mission 1 is four quests** (the owner agreed with the PM, same day): board → pool → gate → listen. Quest 3½
    (the Office look) and quest 5 (two cards at once) leave the first day; the Office look and parallel runs stay in
    the product. A simplification (§27). Spec 27, before 17b.
+
+## 36. The scope is the three tracks; everything else is a hypothesis for later (16 October, the owner)
+
+Until the testers' numbers (§27), work is only on **the three tracks of §35**: (1) the five buildings work,
+(2) it reads as a game, (3) the first day. **Any idea outside them**, the owner's, the PM's or an agent's, and any
+spec already written that serves none of them, goes to [open-questions.md](open-questions.md) "After the testers"
+as **one line, a hypothesis**: no doc, no spec, no session, no art. It comes back only after the testers, if their
+numbers or words ask for it.
+
+Parked by this decision: the phone's new UX (spec 10), Halloween decor (spec 04, and its post), the camp laying
+itself out and what hangs on it (specs 06, 07, 08, 09), the BMAD line (15), Mission 1b (11), the optional 12b, devlog
+02. Kept, with their track: specs/README.md "The list". The phone that already works stays as it is; it gets fixes
+only if it breaks.
+

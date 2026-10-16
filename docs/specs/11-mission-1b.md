@@ -1,5 +1,7 @@
 # Spec 11 — Mission 1b, Proof before the gate (three parts, three branches)
 
+> **Parked (decisions §36, 16 October):** outside the three tracks; a hypothesis for after the testers. Do not build.
+
 model **pro** · design: first-mission.md §10 (all of it; its table §10.5 is the plan) · after the testers' feedback
 **Builds:** Claude · **Review:** full (docs/specs/README.md "Who builds")
 
