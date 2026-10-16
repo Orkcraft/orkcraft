@@ -897,3 +897,6 @@ existing look (§27).
 3. **Big things, not papers on a table:** a room is large, so its work is a few large props on the floor's lots
    (stone slabs and planks with carved titles, large crates with a bubble holding the title), each at least about a
    sixth of the room's width, at most six to eight shown; detail opens on a click. [interiors.md](interiors.md) §2.
+4. **The style frame s1 is approved: candidate 1** (the owner, same day), kept as
+   `docs/design/img/references/v3/s1-steampunk.png`; every new sheet follows it. Its rooms are too shallow for big
+   props, so the final rooms (cards i-depot, i-gate) ask for a deep floor seen from above.
