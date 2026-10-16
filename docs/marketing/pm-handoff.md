@@ -24,7 +24,8 @@ The state a new product-and-marketing session starts from. Update it when you ha
   evening; the PM reviews every branch in the morning (specs/README.md "Who builds").
 
 - **Dev sessions running (16 October, morning):** spec 01 round 3 `session_015VpnNP4rjdC4UL1VQcHTxu` (branch
-  `spec/01-phone-fast-load`), spec 21 `session_01ReyYTVQzzWZphXokBVzFZr` (branch `spec/21-building-screen`). The owner's
+  `spec/01-phone-fast-load`), spec 21 `session_01ReyYTVQzzWZphXokBVzFZr` (branch `spec/21-building-screen`). The icon from the HD sprite (light model)
+  `session_01GMDHkpuJGv7Qc4EP8mWJyg` (branch `spec/icon-hd`; the owner uploads the avatar to GitHub by hand). The owner's
   agy runs 12, 13b, 17a, 18, 24 and the art card s1-steampunk. The PM session reviews each branch and merges what holds.
 
 ## Where things are
