@@ -223,7 +223,7 @@ def deeds_done(scroll, root: Path, machine, changes: list[evolution.Change] | No
         done.add("mature")
     if any(b.autonomy == "free" for b in standing):
         done.add("trusted")
-    done |= {f"quest.{q}" for q in mission.load(root).get("done") or [] if q in mission.IDS}
+    done |= {f"quest.{q}" for q in mission.load(root).get("done") or [] if q in mission.IDS + mission.LEGACY}   # a deed earned stays
     facts = facts if facts is not None else read_facts(root, now)
     if facts.get("chapters"):
         done.add("mission")
@@ -247,7 +247,7 @@ def chapters(root: Path) -> int:
         n = int(state.get("chapters") or 0)
     except (TypeError, ValueError):
         n = 0
-    # Mission 1 is done when its last quest is, or when it is left after quest 4 (quest 5 may be put off, §3)
+    # Mission 1 is done when its last quest is, or when it is left after quest 4
     return max(n, 1 if state.get("finished") or state.get("mission_done") else 0)
 
 
