@@ -117,6 +117,12 @@
 .gui-onb__choose { display: flex; flex-direction: column; gap: var(--space-2); }
 .gui-onb__choose .ok-btn { justify-content: center; }
 
+/* The onboarding's one fork (first-mission.md §12.1, spec 17a): two cards side by side. */
+.gui-onb__fork { display: flex; gap: var(--space-4); width: min(880px, 100%); justify-content: center; align-items: stretch; }
+.gui-onb__fork .gui-onb__card { width: auto; flex: 1 1 0; min-width: 0; justify-content: space-between; }
+.gui-onb__fork-body { display: flex; flex-direction: column; gap: var(--space-2); }
+.gui-onb__fork-act { display: flex; align-items: center; justify-content: flex-end; margin-top: auto; }
+
 /* Doesn't fit: the words, three examples to start from, and what the planner will use (prefilled). */
 .gui-onb__words { font-size: 16px; line-height: 24px; resize: vertical; min-height: 96px; }
 .gui-onb__starters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
@@ -188,4 +194,5 @@
   .gui-onb__checked { grid-column: 1 / -1; }
   .gui-onb__over { flex-direction: column; align-items: stretch; }
   .gui-onb__setup { width: auto; }
+  .gui-onb__fork { flex-direction: column; align-items: stretch; }
 }

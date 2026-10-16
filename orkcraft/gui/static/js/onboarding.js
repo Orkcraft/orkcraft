@@ -45,9 +45,9 @@ function Head({ o, title, lead }) {
   </header>`;
 }
 
-function Foot({ back = true, skip = true, next, nextLabel = "Next", children }) {
+function Foot({ back = true, onBack, skip = true, next, nextLabel = "Next", children }) {
   return html`<footer class="gui-onb__foot">
-    ${back && html`<button class="ok-btn" onClick=${() => send("onboarding.back")}>Back</button>`}
+    ${back && html`<button class="ok-btn" onClick=${onBack || (() => send("onboarding.back"))}>Back</button>`}
     ${skip && html`<button class="ok-btn gui-onb__quiet" onClick=${() => send("onboarding.skip")}>
       ${town.value?.onboarding?.again ? "Cancel" : "Skip: empty town"}</button>`}
     <span class="gui-onb__spacer">${children}</span>
@@ -317,16 +317,40 @@ function TownPreview({ it, biome }) {
   </${Ground}>`;
 }
 
-function TownStep({ o }) {
+const townReady = signal(false);
+
+function TownFork() {
+  return html`<div class="gui-onb__fork">
+    <section class="gui-onb__card gui-onb__fork-card">
+      <div class="gui-onb__fork-body">
+        <h2 class="gui-onb__title">${say("I'm new: show me around")}</h2>
+        <p class="gui-onb__lead ok-font-body ok-tone-muted">${say("Build your camp one building at a time with the Workchief. About 5 minutes, free, no model.")}</p>
+      </div>
+      <div class="gui-onb__fork-act">
+        <button class="ok-btn primary" onClick=${() => send("onboarding.town", { mission: true })}>
+          ${say("Start the tutorial")}
+        </button>
+      </div>
+    </section>
+    <section class="gui-onb__card gui-onb__fork-card">
+      <div class="gui-onb__fork-body">
+        <h2 class="gui-onb__title">${say("Punk ork: I know orkestration")}</h2>
+        <p class="gui-onb__lead ok-font-body ok-tone-muted">${say("Start with a ready town, or describe the one you want.")}</p>
+      </div>
+      <div class="gui-onb__fork-act">
+        <button class="ok-btn" onClick=${() => { townReady.value = true; }}>
+          ${say("Get a ready town")}
+        </button>
+      </div>
+    </section>
+  </div>`;
+}
+
+function ReadyTowns({ o }) {
   const [pick, setPick] = useState(0);
   const it = o.towns[Math.min(pick, o.towns.length - 1)];
   return html`<section class="gui-onb__card is-wide">
     <${Head} o=${o} title="Your first town" lead=${o.nick ? say(`For a ${o.nick}`) : ""} />
-    <div class="gui-onb__mission">
-      <div><span class="ok-font-label">Mission 1 · Set up the camp</span>
-        <p class="ok-font-body">${say("Build your first town yourself, one building a quest: a Task board, an Agent pool, a Review gate. A drill shows what each one does. About 5 minutes, free, no model.")}</p></div>
-      <span><button class="ok-btn primary" onClick=${() => send("onboarding.town", { mission: true })}>Set up the camp myself</button></span>
-    </div>
     ${it ? html`
       <div class="ok-tabs" role="tablist">
         ${o.towns.map((x, i) => html`<button key=${x.id} role="tab" aria-selected=${i === pick}
@@ -336,17 +360,22 @@ function TownStep({ o }) {
       <div class="gui-onb__how">
         <div><span class="ok-font-label">How it works</span><p class="ok-font-body">${it.summary || it.blurb}</p></div>
         <div class="gui-onb__choose">
-          <button class="ok-btn" onClick=${() => send("onboarding.town", { preset: it.id })}>Use this town</button>
+          <button class="ok-btn" onClick=${() => send("onboarding.town", { preset: it.id })}>${say("Use this town")}</button>
           <button class="ok-btn" disabled=${!o.planner} title=${o.planner ? "" : say("No AI tool that can plan a town is on")}
-            onClick=${() => send("onboarding.town", { custom: true })}>Doesn't fit: tell the planner</button>
-          <button class="ok-btn gui-onb__quiet" onClick=${() => send("onboarding.town", { empty: true })}>Empty town, I'll build it myself</button>
+            onClick=${() => send("onboarding.town", { custom: true })}>${say("Describe your town")}</button>
+          ${!o.planner && html`<span class="ok-font-status ok-tone-muted">${say("No AI tool that can plan a town is on.")}</span>`}
         </div>
-      </div>` : html`<p class="ok-font-body">No ready town for this class yet.</p>
+      </div>` : html`<p class="ok-font-body">${say("No ready town for this class yet.")}</p>
       <div class="gui-onb__choose">
-        <button class="ok-btn primary" disabled=${!o.planner} onClick=${() => send("onboarding.town", { custom: true })}>Tell the planner</button>
-        <button class="ok-btn" onClick=${() => send("onboarding.town", { empty: true })}>Empty town</button></div>`}
-    <${Foot} skip=${false} />
+        <button class="ok-btn primary" disabled=${!o.planner} onClick=${() => send("onboarding.town", { custom: true })}>${say("Describe your town")}</button>
+        ${!o.planner && html`<span class="ok-font-status ok-tone-muted">${say("No AI tool that can plan a town is on.")}</span>`}
+      </div>`}
+    <${Foot} skip=${false} onBack=${() => { townReady.value = false; }} />
   </section>`;
+}
+
+function TownStep({ o }) {
+  return townReady.value ? html`<${ReadyTowns} o=${o} />` : html`<${TownFork} />`;
 }
 
 // -- 4b · Doesn't fit: one question, the rest prefilled ------------------------------------------------
@@ -503,6 +532,7 @@ export function Onboarding() {
   const t = town.value;
   const o = t && t.onboarding;
   if (!o) return null;
+  if (o.step !== "town" && o.step !== "survey") townReady.value = false;
   if (o.step === "raising") return o.raising ? html`<${Raising} o=${o} />` : null;
   const Step = STEPS[o.step];
   return html`<div class="gui-onb" role="dialog" aria-modal="true" aria-label=${say("Setting up")}>

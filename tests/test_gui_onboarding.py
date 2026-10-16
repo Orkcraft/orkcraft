@@ -348,3 +348,27 @@ def test_a_service_two_servers_reach_is_used_through_one(fake_repo: Path, onboar
     assert o["mcp"]["services"] == [{"title": "Amplitude", "glyph": "", "ids": ["amplitude"]},
                                     {"title": "GitHub", "glyph": "github", "ids": ["github", "github-enterprise"]}]
     assert o["mcp"]["on"] == ["amplitude", "github"]                         # the one in the most AI tools
+
+
+def test_start_the_tutorial_starts_mission_when_town_opens(fake_repo: Path, onboard):
+    """Spec 17a: Start the tutorial -> Mission 1 as Set up the camp myself does."""
+    settings.preset_role("marketing")
+    host = _host(fake_repo)
+    host.command("onboarding.tools", {"next": True})
+    o = host.command("onboarding.town", {"mission": True})
+    assert o["step"] == "raising" and o["raising"]["title"] == "Your camp"
+    _raise_all(host)
+    host.command("onboarding.close", {})
+    assert host.snapshot()["onboarding"] is None
+    assert host.mission.mission is not None
+    assert host.mission.mission.state["on"] is True
+
+
+def test_no_empty_town_in_a_first_session(fake_repo: Path, onboard):
+    """Spec 17a: Gone from the first session: Empty town, I'll build it myself."""
+    settings.preset_role("marketing")
+    host = _host(fake_repo)
+    host.command("onboarding.tools", {"next": True})
+    with pytest.raises(CommandError, match="Empty town is not an option in a first session"):
+        host.command("onboarding.town", {"empty": True})
+
