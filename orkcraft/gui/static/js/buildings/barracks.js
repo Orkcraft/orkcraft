@@ -443,11 +443,25 @@ function Folder({ id, data }) {
   </section>`;
 }
 
+/** The roles it keeps (realm/personas.py), each with Remove: an ork hired as it goes back to any work. */
+function Roles({ id, personas }) {
+  return html`<section class="gui-section pool-roles"><h3 class="ok-font-heading">${say("Roles")}</h3>
+    ${personas.length ? html`<ul class="gui-rows">${personas.map((p) => html`<li key=${p.name} class="pool-roles__row">
+        <span><b>${p.name}</b> <span class="ok-tone-muted">· ${say(p.tier)}${p.approved ? "" : ` · ${say("waits for approval")}`}</span>
+          ${p.line && html`<span class="ok-tone-muted"> · ${p.line}</span>`}</span>
+        <button type="button" class="ok-btn" aria-label=${`${say("Remove")} ${p.name}`}
+          onClick=${() => act(id, "remove_persona", { name: p.name }).catch(() => {})}>${say("Remove")}</button></li>`)}</ul>`
+      : html`<p class="ok-tone-muted">${say("None yet: every ork takes any work.")}</p>`}
+  </section>`;
+}
+
 /** Rules, settings and the foreman's decisions: one line until opened — they are read rarely. */
 function Rules({ id, data }) {
   const settings = [["Tests", data.test_cmd || "none — the review reads the diff only"], ["Steward", `${data.steward} · spent ${data.steward_cost}`],
     ["Providers", data.providers.join(", ")], ["Orks at most", data.max], ["Budget", data.budget || "none of its own"],
-    ["Reworks at most", data.max_reworks], ["Worktrees", say(data.worktrees ? "one per ork" : "off: they work in the project")]];
+    ["Reworks at most", data.max_reworks], ["Worktrees", say(data.worktrees ? "one per ork" : "off: they work in the project")],
+    ["Review", say(data.review === "steward" ? "the steward reads every diff" : "its tests when they pass, else the steward")],
+    ["New roles", say(data.new_roles ? "the steward may write them" : "off: the roles it keeps")]];
   return html`<details class="pool-rules">
     <summary><span>${say("Rules")} ${data.rules.length} · ${say("Settings")} · ${say("Areas in work")} ${data.areas.length} · ${say("Decisions")} ${data.decisions.length}</span>
       <span class="pool-rules__sum ok-font-status">${say("Tests")}: ${data.test_cmd || say("none")} · ${say("reworks")} ≤ ${data.max_reworks}${data.budget ? ` · ${data.budget}` : ""}</span></summary>
@@ -460,6 +474,7 @@ function Rules({ id, data }) {
     <section class="gui-section"><h3 class="ok-font-heading">Settings</h3>
       <ul class="gui-rows">${settings.map(([k, v]) => html`<li key=${k}><span class="ok-tone-muted">${say(k)}</span> · ${v}</li>`)}</ul></section>
     <${Kinds} id=${id} kinds=${data.kinds} />
+    <${Roles} id=${id} personas=${data.personas || []} />
     <section class="gui-section"><h3 class="ok-font-heading">Areas in work</h3>
       <p class="ok-tone-muted">${say("The files open tasks change, until their pull requests are merged. A new task on an area being built waits for it.")}</p>
       <${Areas} id=${id} areas=${data.areas} /></section>

@@ -233,6 +233,10 @@ CONFIG_HELP: dict[str, dict[str, str]] = {
         "session_tasks": "tasks one ork session takes before it rolls over with a handoff (default 5)",
         "max_reworks": "how many times the steward sends a task back before asking the operator (default 3)",
         "test_cmd": "the command that must pass before the steward reads the diff, e.g. `pytest -q`",
+        "review": "`tests` (default): a task whose tests ran and passed needs no steward's review, it goes to the "
+                  "Review gate; `steward`: the steward reads every diff",
+        "new_roles": "true: the steward may write new personas while it plans; false (default): it gives parts the "
+                     "personas the pool keeps",
         "repo": "the folder of code its orks work in (a project the town does not live in); empty: the town's own",
         "steward": "`harness[:model]` of the steward that plans, answers and reviews (default main, the main tool: an elder plans, "
                    "a warrior reviews a part, the building's goal picks who looks at the whole)",

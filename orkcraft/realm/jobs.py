@@ -150,6 +150,17 @@ def run_work(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     return text, cost, tokens, session
 
 
+def context_of(harness: str, session: str, workdir: Path) -> int:
+    """🪵 of a work session: what the model read on its last turn (input + cache), from Claude Code's transcript of
+    the session. Not the run's billed tokens: those sum every turn, and each turn re-reads the context. 0 when the
+    tool keeps no transcript we read (the 5-task rollover still holds)."""
+    from orkcraft.sources import sessions, transcripts
+    if harness != "claude" or not session or not session.replace("-", "").replace("_", "").isalnum():
+        return 0                                            # a session id is a name, never a path
+    path = sessions.claude_projects_dir(workdir) / f"{session}.jsonl"
+    return transcripts.read_run(path).context_tokens if path.is_file() else 0
+
+
 def run_read(harness: str, prompt: str, workdir: Path, cancel: threading.Event, model: str = "",
              env: dict | None = None, resume: str = "",
              timeout_s: int = WORK_TIMEOUT_S) -> tuple[str, float | None, int | None, str]:

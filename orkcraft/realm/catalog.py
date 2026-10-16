@@ -192,6 +192,7 @@ TYPES: dict[str, BuildingType] = {t.id: t for t in (
         config={"max_orcs": (int, (1, 10), False), "budget_usd": (float, (0, 200), False),
                 "providers": (list, None, False), "worktrees": (bool, None, False), "orders": (str, None, False),
                 "session_tasks": (int, (1, 20), False), "max_reworks": (int, (0, 10), False),
+                "review": (str, ("tests", "steward"), False), "new_roles": (bool, None, False),
                 "test_cmd": (str, None, False), "steward": (str, None, False), "base": (str, None, False),
                 "repo": (str, None, False),       # the folder of code its orks work in; "" the town's own
                 "plan": (bool, None, False), "escalate": (bool, None, False),

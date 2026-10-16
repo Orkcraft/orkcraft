@@ -11,6 +11,10 @@ A new persona is the orks' decision, so it waits as the autonomy level says (aut
     p = personas.load(state_dir, "backend")      # None when there is none
     personas.save(state_dir, p)
     personas.listing(state_dir)                  # [(name, tier, first line)] for the steward's plan
+    personas.remove(state_dir, "backend")        # True when it was there
+
+Roles stay few and short (docs/specs/28-lean-pool.md §4): a persona's prompt is cut to `MAX_CHARS` at a sentence's
+end, when it is written and when it is read.
 """
 from __future__ import annotations
 
@@ -23,6 +27,21 @@ from orkcraft.realm import tiers
 
 DIR = "personas"
 NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,29}$")
+MAX_CHARS = 600                  # a persona's prompt at most
+_SENTENCE_END = re.compile(r"[.!?…](?=[\s\"')\]]|$)")
+
+
+def cap(prompt: str, limit: int = MAX_CHARS) -> str:
+    """The prompt cut to `limit` characters at its last sentence's end within them (at a word, when no sentence
+    ends there)."""
+    text = (prompt or "").strip()
+    if len(text) <= limit:
+        return text
+    head = text[:limit]
+    ends = [m.end() for m in _SENTENCE_END.finditer(head)]
+    if ends:
+        return head[:ends[-1]].rstrip()
+    return (head.rsplit(None, 1)[0] if " " in head else head).rstrip()
 
 
 @dataclass
@@ -56,7 +75,7 @@ def load(state_dir: Path, name: str) -> Persona | None:
             k, _, v = line.partition(":")
             head[k.strip()] = v.strip()
     tier = head.get("tier", "warrior")
-    return Persona(name, body.strip(), tier if tier in tiers.TIERS else "warrior",
+    return Persona(name, cap(body), tier if tier in tiers.TIERS else "warrior",
                    head.get("approved", "").lower() == "true", head.get("created", ""), head.get("by", "steward"))
 
 
@@ -67,7 +86,18 @@ def save(state_dir: Path, p: Persona) -> None:
     f.parent.mkdir(parents=True, exist_ok=True)
     created = p.created or dt.datetime.now().isoformat(timespec="seconds")
     f.write_text(f"---\ntier: {p.tier}\napproved: {str(p.approved).lower()}\ncreated: {created}\nby: {p.by}\n---\n\n"
-                 f"{p.prompt.strip()}\n", encoding="utf-8")
+                 f"{cap(p.prompt)}\n", encoding="utf-8")
+
+
+def remove(state_dir: Path, name: str) -> bool:
+    """The persona is gone (its file removed); False when there was none of that name."""
+    if not NAME.match(name or ""):
+        return False
+    try:
+        _file(state_dir, name).unlink()
+    except OSError:
+        return False
+    return True
 
 
 def all_of(state_dir: Path) -> list[Persona]:

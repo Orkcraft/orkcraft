@@ -31,6 +31,18 @@ export function useWaybill(of) {
   return d;
 }
 
+// An Agent pool's stop says where its tokens went (gui/waybill.py `split`, realm/pool_spend.py).
+const PART = { ork: "The ork's work", answers: "the steward's answers", review: "its review", planning: "its planning" };
+
+/** "The ork's work 12k tokens · $0.40 · the steward's answers 1.2k tokens · $0.01 · its review none …": every part,
+ *  "none" for one nothing was spent on. */
+function Split({ split }) {
+  const got = Object.fromEntries(split.map((x) => [x.part, x]));
+  return html`<tr class="gui-camp__waybill-split"><td colspan="5" class="ok-font-status ok-tone-muted">
+    ${Object.keys(PART).map((p, i) => html`${i ? " · " : ""}${say(PART[p])} ${got[p]
+      ? `${tokensWord(got[p].tokens)} ${say("tokens")}, ${moneyWord(got[p].cost)}` : say("none")}`)}</td></tr>`;
+}
+
 /** Its stops, the ork at each, the tokens, the spend and the time there; where it is now; the sum. */
 export function WaybillBody({ d }) {
   if (d === undefined) return html`<p class="ok-tone-muted">${say("Opening…")}</p>`;
@@ -42,7 +54,8 @@ export function WaybillBody({ d }) {
       <tbody>
         ${d.stops.map((s, i) => html`<tr key=${i}><td>${say(s.title)}${s.at ? html` <span class="ok-tone-muted">${s.at}</span>` : ""}
           ${s.outcome ? html` <span class="ok-tone-muted">· ${say(s.outcome)}</span>` : ""}</td>
-          <td>${s.ork ? say(s.ork) : "—"}</td><td>${or(tokensWord(s.tokens))}</td><td>${or(moneyWord(s.cost))}</td><td>${or(timeWord(s.ms))}</td></tr>`)}
+          <td>${s.ork ? say(s.ork) : "—"}</td><td>${or(tokensWord(s.tokens))}</td><td>${or(moneyWord(s.cost))}</td><td>${or(timeWord(s.ms))}</td></tr>
+          ${s.split && s.split.length > 0 && html`<${Split} key=${`${i}-split`} split=${s.split} />`}`)}
         <tr class="is-now"><td colspan="5">▸ ${say(`Now: ${d.now.title}`)} <span class="ok-tone-muted">· ${say(d.now.status)}</span></td></tr>
       </tbody>
     </table>
