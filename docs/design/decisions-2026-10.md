@@ -887,3 +887,13 @@ orkish first. A style frame first (interiors.md §6, card s1: the depot and the 
 inside roof off, on one sheet), approved by the owner, then building by building. **Doors** need not be in one place,
 but every doorway is marked at the cut (manifest `doorway`), so the ork walks to it wherever it is. A change of the
 existing look (§27).
+
+## 33. Steampunk before the testers; the room on black; big things (16 October, the owner)
+
+1. **The steampunk art comes before the testers** (the owner: the art is generated, through agy, not drawn by an
+   artist, so it is fast): style frame s1 first, then the depot and the Review gate outside and inside, then the
+   other buildings Mission 1 shows. The testers' date stays (§22).
+2. **A building is entered on a black screen**, not over the dimmed camp: nothing of the town distracts.
+3. **Big things, not papers on a table:** a room is large, so its work is a few large props on the floor's lots
+   (stone slabs and planks with carved titles, large crates with a bubble holding the title), each at least about a
+   sixth of the room's width, at most six to eight shown; detail opens on a click. [interiors.md](interiors.md) §2.

@@ -6,9 +6,10 @@ An improvement of an existing mechanic (decisions §27).
 
 ## 1. The screen
 
-- **Enter:** a click on a building (as today's second click, js/windows.js `openBuilding`) in Camp. The camp dims and
-  the building appears **in the middle, roof off, as large as the screen allows**, whole device pixels, drawn on
-  its own ground. Nothing else on the screen: no permanent settings panel (today's right-hand "shop" goes).
+- **Enter:** a click on a building (as today's second click, js/windows.js `openBuilding`) in Camp. The camp goes
+  away entirely: **a black screen**, and on it the building **in the middle, roof off, as large as the screen
+  allows**, whole device pixels, lit like a stage (a soft light on its floor, black round it). No camp behind it, so
+  nothing distracts (the owner, same day). No permanent settings panel (today's right-hand "shop" goes).
 - **Settings behind a gear** in the room's top-right corner: a panel slides in (today's Info, js/console.js
   `InfoTab`, as it is), and out again. Money and safety stay in plain words, never drawn into the room (§13.2).
 - **Exit** always in view, and Esc, back to the camp where it was.
@@ -17,15 +18,30 @@ An improvement of an existing mechanic (decisions §27).
 
 ## 2. The rule: a building's data are things in its room
 
+**Big things, not papers on a table** (the owner, same day). A room is large and what it holds must read at a glance,
+so the work is drawn as **few, large props on the floor**, never small items on furniture:
+- **Size:** a work item is at least about a sixth of the room's width; its title readable at the default size (the
+  kit's label size or larger). At most six to eight items show; more stand as a pile with `+N`.
+- **Shape by meaning:** a task is a **stone slab** or a **long plank** on the floor with its title carved or painted
+  on it; a result to judge is a **large crate** with a **speech bubble** over it holding its title; a source is a
+  **horn** or a **letterbox** as tall as an ork. The prop says *what* it is, the bubble or the carving says *which*.
+- **Lots, not tables:** the floor has marked places (chalk squares, pallets, rail stops) where the props stand; the
+  furniture is scenery round the edge.
+- **Detail on a click:** the prop shows its title and its one state (❓, 🔥, done); everything else opens on a click
+  (the card, the waybill, the ork's console).
+- Orks are drawn at the room's scale, as large as the props.
+
 What the building holds is drawn as objects in the room, and what the person can do is done on those objects. One
 click on a thing opens what it is (a card, an ork's console, a waybill); no second list beside the room.
 
 | building (type) | the things in its room | what the person does on them |
 |---|---|---|
-| **Task board** (`fields`) — built | the cards as sheets of parchment on the board, a to-do's checkbox as a flag | open, move, send a card |
-| **Agent pool** (`barracks`, drawn as the depot) | a bay per run (🥩 n / 8): in each, its ork at a workbench with its cart, its task in a bubble; idle orks on a bench by the wall; an empty bay with a sign | a click on an ork opens its console; ❓ hangs over the ork who asks; the empty bay's sign is *Add ork* |
-| **Review gate** (`loot_vault`) | the results waiting on a long table, each a crate or a scroll with its waybill tag; the barrier at the far door; the last passed on a shelf | a click on a result lays its waybill open: **Pass**, **Needs another round**, **Not this** (the words of decisions §24); passed, it rolls out through the far door |
-| **External listeners** (`watchtower`) | the sources as horns and letterboxes on the wall; what came in as letters pinned up | a click on a letter opens what it became (a card on the Task board) |
+| **Task board** (`fields`) — built; its cards grow to the slab size of §2 | the cards as large slabs or planks, a to-do's checkbox as a flag | open, move, send a card |
+| **Agent pool** (`barracks`, drawn as the depot) | a big bay per run (🥩 n / 8, at most six shown): in each, its ork with its cart, its task in a bubble over
+them; idle orks on a bench by the wall; an empty bay with a sign | a click on an ork opens its console; ❓ hangs over the ork who asks; the empty bay's sign is *Add ork* |
+| **Review gate** (`loot_vault`) | the results waiting on the floor's lots, each a **large crate** with a bubble holding its title; the barrier at the
+far door; the last passed stacked by the exit | a click on a result lays its waybill open: **Pass**, **Needs another round**, **Not this** (the words of decisions §24); passed, it rolls out through the far door |
+| **External listeners** (`watchtower`) | the sources as tall horns and letterboxes; what came in as large letters or slabs on the floor | a click on a letter opens what it became (a card on the Task board) |
 | Wiki, Calendar, Metrics, the Publisher, the rest | a library's shelves, a wall calendar, a board of charts, crates by the catapult | after the testers |
 
 ## 3. Doors: who walks in, who works outside
@@ -80,8 +96,9 @@ If s1's insides are good enough they are cut directly; otherwise: Three candidat
 `design-system/sprites/v3/buildings/depot.png`.
 > Pixel-art, exactly the style (the approved steampunk frame s1), palette, pixel size and front-top view of the attached engine
 > shed. The same shed
-> seen **from inside with its roof removed**, as a cutaway: a long plank floor; along it six work bays, each with a
-> workbench, a tool rack and a rail stop where a small cart stands; a long bench by the back wall; lanterns on posts;
+> seen **from inside with its roof removed**, as a cutaway: a long plank floor with **six large empty bays** marked out on it
+> (chalk lines and a rail stop each, big enough for an ork and a cart), a tool rack between bays; a long bench by
+> the back wall; lanterns on posts;
 > crates and barrels in the corners; brass pipes along the walls, a small boiler, gauges. **No characters.** One bay empty, with a small blank wooden sign on a post. On a
 > flat magenta (#ff00ff) background, the room fully inside the frame, crisp dark 1-pixel outline, no text, no
 > shadows outside the room. Warm woods and teal cloth; no bright yellow, no red.
@@ -90,8 +107,8 @@ If s1's insides are good enough they are cut directly; otherwise: Three candidat
 `design-system/sprites/v3/buildings/loot_vault.png`.
 > Pixel-art, exactly the style (the approved steampunk frame s1), palette, pixel size and front-top view of the attached
 > gatehouse. The same gatehouse
-> seen **from inside with its roof removed**, as a cutaway: a stone floor; a long wooden inspection table across the
-> room with three empty spots for crates; a wooden barrier arm at the far doorway, closed; a shelf on the side wall
+> seen **from inside with its roof removed**, as a cutaway: a stone floor with **three large empty lots** marked on it
+> (painted squares or pallets, each big enough for a crate as tall as an ork), open space between them; a wooden barrier arm at the far doorway, closed; a shelf on the side wall
 > with a few small sealed crates; a stamp and an ink pot on the table; a lantern. **No characters, no crates on the
 > table.** On a flat magenta (#ff00ff) background, the room fully inside the frame, crisp dark 1-pixel outline, no
 > text, no shadows outside the room. Warm woods and grey stone with teal accents; no bright yellow, no red.

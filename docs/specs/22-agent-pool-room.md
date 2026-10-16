@@ -9,9 +9,9 @@ Branch `spec/22-agent-pool-room` · design: interiors.md §2 (the Agent pool row
 ## Part B — the room
 Change only a new `orkcraft/gui/static/js/buildings/barracks_inside.js`, `js/buildings/barracks.js` (to export
 `inside`), its CSS, and tests.
-1. The room: `depot-room` as the floor. A bay per run slot of the pool (🥩 n / 8, as many bays as the room has; more
-   slots than bays show `+N` on the last). In a bay with a run: its ork (today's ork sprite at the room's scale) at
-   the bench, its cart, its task in a bubble (the same words as the camp's bubble); ❓ over an ork who asks.
+1. The room: `depot-room` as the floor. A big bay per run slot of the pool (🥩 n / 8, at most six bays; more show `+N`),
+   sized by interiors.md §2. In a bay with a run: its ork at the room's scale, as large as its cart, its task in a
+   bubble over them, readable at the kit's label size (the same words as the camp's bubble); ❓ over an ork who asks.
 2. Idle orks sit on the bench by the back wall.
 3. A click on an ork opens its console (as the camp's click does). The empty bay's sign is **Add ork** (the existing
    command).
