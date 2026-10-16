@@ -54,8 +54,6 @@ from orkcraft.gui.phone_http import (
     BODY_LIMIT,
     HEAD_LIMIT,
     HEAD_S,
-    IDLE_S,
-    KEEP_ALIVE_MAX,
     _json,
     _parse_head,
     _response,

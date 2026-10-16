@@ -6,7 +6,9 @@ import asyncio
 import hashlib
 import http.client
 import json
+import re
 import subprocess
+import threading
 from pathlib import Path
 
 import pytest
@@ -297,7 +299,9 @@ def test_the_phone_stands_on_the_desktops_ground():
     assert glyphs(phone) and glyphs(phone) == glyphs((static / "js" / "terrain.js").read_text())
 
 
-def test_assets_json_lists_every_cache_first_file_with_a_hash():
+def test_assets_json_lists_every_cache_first_file_with_a_hash(monkeypatch):
+    monkeypatch.setattr(pwa, "_ASSETS", pwa._ASSETS)  # the map this test warms up goes with it
+    monkeypatch.setattr(pwa, "READY", threading.Event())
     pwa.assets()                                     # the listener's warm-up
     head, body = _split(pwa.serve("GET", "/app/assets.json"))
     assert head.startswith("HTTP/1.1 200") and "application/json" in head
@@ -313,6 +317,7 @@ def test_assets_json_lists_every_cache_first_file_with_a_hash():
 
 def test_a_changed_file_changes_its_hash(tmp_path, monkeypatch):
     monkeypatch.setattr(pwa, "_ASSETS", pwa._ASSETS)  # the map this test warms up goes with it
+    monkeypatch.setattr(pwa, "READY", threading.Event())
     dummy = tmp_path / "custom.png"
     dummy.write_bytes(b"content_version_one")
     real_files = pwa.files()
@@ -331,6 +336,7 @@ def test_a_changed_file_changes_its_hash(tmp_path, monkeypatch):
 def test_a_request_only_reads_the_map_the_warm_up_hashed(tmp_path, monkeypatch):
     """Only the warm-up hashes: a request for assets.json reads the map it kept and touches no file."""
     monkeypatch.setattr(pwa, "_ASSETS", None)
+    monkeypatch.setattr(pwa, "READY", threading.Event())   # not warmed: neither the map nor the flag
     head, _ = _split(pwa.serve("GET", "/app/assets.json"))
     assert head.startswith("HTTP/1.1 503")             # not warmed yet: no map rather than a wrong one
     dummy = tmp_path / "custom.png"
@@ -344,6 +350,34 @@ def test_a_request_only_reads_the_map_the_warm_up_hashed(tmp_path, monkeypatch):
         m.setattr(Path, "stat", lambda *a, **k: pytest.fail("a request looked at a file"))
         _, body = _split(pwa.serve("GET", "/app/assets.json"))
     assert json.loads(body)["sprites/custom.png"] == h1
+
+
+def test_a_warm_up_that_fails_still_says_it_ended_and_logs_why(monkeypatch, caplog):
+    """A request never waits HEAD_S for a warm-up that died: READY is set, the error logged, assets.json a 503."""
+    monkeypatch.setattr(pwa, "_ASSETS", None)
+    monkeypatch.setattr(pwa, "READY", threading.Event())
+
+    def broken():
+        raise RuntimeError("the sprites folder went away")
+    monkeypatch.setattr(pwa, "files", broken)
+    with caplog.at_level("ERROR", logger=pwa.__name__):
+        pwa.assets()
+    assert pwa.READY.is_set()
+    assert "the sprites folder went away" in caplog.text
+    head, _ = _split(pwa.serve("GET", "/app/assets.json"))
+    assert head.startswith("HTTP/1.1 503")
+
+
+def test_the_workers_install_fills_its_cache_past_the_http_cache():
+    """A new cache is filled from the town, never from the HTTP cache (its PNGs and fonts are immutable there): the
+    install fetches every SHELL file and assets.json with cache "reload", and stores the map."""
+    sw = (pwa.ROOT / "sw.js").read_text(encoding="utf-8")
+    install = sw[sw.index('addEventListener("install"'):sw.index('addEventListener("activate"')]
+    assert "addAll" not in install                    # addAll fetches with the default cache mode
+    assert re.search(r'SHELL\.map\(async \(path\) => \{\s*const resp = await fetch\(path, \{ cache: "reload" \}\)',
+                     install)
+    assert 'fetch("assets.json", { cache: "reload" })' in install
+    assert 'put("assets.json"' in install
 
 
 def test_service_worker_names_cache_version_and_cache_first_prefixes():

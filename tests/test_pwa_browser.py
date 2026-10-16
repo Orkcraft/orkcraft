@@ -9,6 +9,7 @@ import base64
 import hashlib
 import re
 import struct
+import threading
 import zlib
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -419,6 +420,8 @@ async def test_a_changed_sprite_is_drawn_new_on_the_next_open_and_an_unchanged_o
     one sprite changes on the town (its hash with it); the page, reloaded as a person reopens it, draws the new
     picture, fetched past the HTTP cache (`cache: "reload"` sends no-cache); an open with nothing changed asks the
     town for no sprite at all."""
+    monkeypatch.setattr(pwa, "_ASSETS", pwa._ASSETS)  # the maps the warm-ups below keep go with the test
+    monkeypatch.setattr(pwa, "READY", threading.Event())
     name = "icons/res-gold.png"                        # drawn in the head on every open
     sprite = tmp_path / "res-gold.png"
     sprite.write_bytes(_png(3))
@@ -470,6 +473,43 @@ async def test_a_changed_sprite_is_drawn_new_on_the_next_open_and_an_unchanged_o
         await page.wait_for_function(f"() => ({drawn})({name!r}).includes(5)", timeout=WAIT_MS)
         await page.wait_for_timeout(500)
         assert [t for t, _ in seen if pwa.is_cache_first(t.removeprefix(pwa.PREFIX).split("?")[0])] == []
+
+
+@pytest.mark.asyncio
+async def test_a_new_workers_cache_is_filled_from_the_town_not_from_a_stale_http_cache(fake_repo, tmp_path, monkeypatch):
+    """With the HTTP cache alive: a shell picture (immutable there) changes on the town and the worker's cache version
+    goes up; the new worker's install fills its new cache with the new picture, not the HTTP cache's old one, and
+    keeps the assets' map in it."""
+    monkeypatch.setattr(pwa, "_ASSETS", pwa._ASSETS)
+    monkeypatch.setattr(pwa, "READY", threading.Event())
+    name = "camp/ork-walk.png"                         # in SHELL: the install fetches it
+    walk = tmp_path / "ork-walk.png"
+    walk.write_bytes(_png(3))
+    real = pwa.files()
+    monkeypatch.setattr(pwa, "files", lambda: {**real, name: walk})
+    stored = """async ([cache, name]) => {
+        const r = await (await caches.open(cache)).match(name);
+        return r ? Array.from(new Uint8Array(await r.arrayBuffer())) : null;
+    }"""
+
+    async with _phone(fake_repo, trusted=True) as (_, page):
+        await _until(page, "() => !!navigator.serviceWorker.controller", None, "the worker controls the page")
+        assert bytes(await page.evaluate(stored, [CACHE, name])) == _png(3)
+        # the old picture is in the HTTP cache too: the install fetched it (reload writes it there), immutable
+        walk.write_bytes(_png(5))
+        pwa.assets()                                   # the warm-up of the town that changed
+        bumped = tmp_path / "sw.js"
+        new_cache = CACHE + "-bumped"
+        bumped.write_text((pwa.ROOT / "sw.js").read_text(encoding="utf-8").replace(CACHE, new_cache), encoding="utf-8")
+        monkeypatch.setattr(pwa, "files", lambda: {**real, name: walk, "sw.js": bumped})
+        await page.evaluate("navigator.serviceWorker.getRegistration().then((r) => r.update())")
+        await _until(page, """async (cache) => (await caches.keys()).includes(cache)
+            && !!(await (await caches.open(cache)).match('assets.json'))""", new_cache, "the new worker installed")
+        got = await page.evaluate(stored, [new_cache, name])
+        assert got is not None and bytes(got) == _png(5), "the new cache was filled from the stale HTTP cache"
+        kept = await page.evaluate("""async (cache) => (await (await caches.open(cache)).match('assets.json')).json()""",
+                                   new_cache)
+        assert kept[name] == pwa._ASSETS[name]
 
 
 @pytest.mark.asyncio

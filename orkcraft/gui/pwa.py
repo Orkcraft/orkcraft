@@ -29,6 +29,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 import re
 import threading
 import time
@@ -109,6 +110,7 @@ def is_cache_first(name: str) -> bool:
     return name.startswith(CACHE_PREFIXES) or name.endswith((".png", ".webp"))
 
 
+log = logging.getLogger(__name__)
 _ASSETS: dict[str, str] | None = None   # the map the warm-up computed; requests only read it
 READY = threading.Event()                # set once it is there
 
@@ -118,15 +120,19 @@ def assets() -> dict[str, str]:
     {path: short content hash} (first 10 hex of sha1), and keep it for the requests."""
     global _ASSETS
     out: dict[str, str] = {}
-    for name, path in files().items():
-        if not is_cache_first(name):
-            continue
-        try:
-            out[name] = hashlib.sha1(path.read_bytes()).hexdigest()[:10]
-        except OSError:
-            pass
-    _ASSETS = out
-    READY.set()
+    try:
+        for name, path in files().items():
+            if not is_cache_first(name):
+                continue
+            try:
+                out[name] = hashlib.sha1(path.read_bytes()).hexdigest()[:10]
+            except OSError:
+                pass
+        _ASSETS = out
+    except Exception:
+        log.exception("the app's asset map could not be made: assets.json answers 503")
+    finally:
+        READY.set()                      # a request never waits for a warm-up that ended, kept a map or not
     return out
 
 
