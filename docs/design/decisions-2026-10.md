@@ -991,6 +991,11 @@ the Review gate asks for the person's look where it is worth it:
   read before it goes. This is what "nothing passes without you" means;
 - **code**: passes on its checks (tests, the Warder, the budget) and gathers at the gate as **one batch a day**; the
   person looks at the batch once (what changed, what it cost, what failed) and passes or sends back what needs it.
+**The daily check** (the owner, same day): once a day, at an hour the person sets, one ork at the Review gate checks
+everything code that reached the branch that day against its spec and tests and fixes what fails, on that branch, on
+a budget said first; then the batch waits with its report (what changed, what it fixed, what it could not, what it
+cost). Nothing is merged by it: the person passes the batch. No new building: it is the gate's own run (the hour is a
+setting of the gate, not the Calendar).
 An improvement of the existing gate (§27), track 1, **P1**: its spec is written after the owner has tested the five
 buildings, so it carries what he finds. Mission 1 stays as it is (its drill is one cart, passed by hand). The tester
 question on how they check agents' work counts towards it. "The plan passed before the work" stays a hypothesis.
