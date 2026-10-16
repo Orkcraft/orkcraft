@@ -845,7 +845,8 @@ Below that, the work goes to what stopped them (install, Mission 1, the first fi
 
 ## 28. Mission 1 as a scene (16 October, the owner)
 
-From the owner's look at Mission 1: it starts at once after the class (the other ways under one link, spec 17a); the
+From the owner's look at Mission 1: the onboarding is one fork after the class: *I'm new* → Mission 1, *Punk ork* → a ready town from the presets or
+the planner; the empty town leaves the first session (spec 17a); the
 window's chrome is put away and the stage zoomed, the Workchief walks in and speaks **on the map**, not in the line at
 the foot; each building raised opens and is walked through in two or three steps (spec 17b, Claude). The first win
 moves to about 4 minutes. An improvement of an existing mechanic, so inside §27. [first-mission.md](first-mission.md)

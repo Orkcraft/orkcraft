@@ -372,9 +372,10 @@ The owner's review of today's Mission 1: the quest log sits in the Workchief's l
 person does not see that something is asked of them; and a building, once raised, is not shown, so the person does
 not learn what it does. It improves an existing mechanic (decisions §27). The changes:
 
-1. **Mission 1 starts at once.** After the AI tools and the class, the onboarding opens Mission 1; the town step's
-   other ways (a ready town, the planner, an empty town) move under one quiet link, *Other ways to start*
-   (gui-onboarding.md §5). A simplification. Spec 17a.
+1. **The onboarding has one fork** (the owner, same day). After the AI tools and the class, two cards and nothing
+   else: **"I'm new: show me around"** → Mission 1; **"Punk ork: I know orkestration"** → a ready town, chosen from
+   the class's presets or described to the planner. The empty town leaves the first session. A simplification.
+   Spec 17a.
 2. **The opening scene.** The window's chrome (the command bar, the HUD, the camp's foot line, the panels) fades out
    and the map dims, except **the mission's stage**: the empty plots and the place the Workchief stands, zoomed in so
    they fill the view. The Workchief walks in (his camp sprite; under `prefers-reduced-motion` he is simply there)
