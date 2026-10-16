@@ -795,3 +795,72 @@ def test_the_camps_bottom_line_stands_above_the_quest_log(camp_look):
     pg.wait_for_function(f"() => ({lowest})() > 420", timeout=WAIT_MS)      # no panel: the work is centred again
     for bid in ids:
         _call(pg, "town.demolish", {"id": bid})
+
+
+def test_dialog_computed_style_in_camp_shows_v4_kit_and_office_is_unchanged(page):
+    """Spec 12: A moved dialog's computed style in Camp shows the parchment token and a title on the teal plate,
+    while the same dialog in Office is unchanged."""
+    pg = page
+    pg.set_viewport_size({"width": 1440, "height": 900})
+
+    # In Office (default look for `page` fixture):
+    pg.evaluate("() => import('/static/js/settings.js').then(m => m.settingsOpen.value = true)")
+    dialog = pg.locator(".ok-dialog")
+    dialog.wait_for(state="visible", timeout=WAIT_MS)
+
+    office_styles = pg.evaluate("""() => {
+        const d = document.querySelector('.ok-dialog');
+        const t = document.querySelector('.ok-dialog__title');
+        const csD = window.getComputedStyle(d);
+        const csT = window.getComputedStyle(t);
+        return {
+            bgD: csD.backgroundColor,
+            bgImageD: csD.backgroundImage,
+            borderImageD: csD.borderImageSource,
+            bgT: csT.backgroundColor,
+            borderImageT: csT.borderImageSource,
+        };
+    }""")
+    pg.keyboard.press("Escape")
+    dialog.wait_for(state="hidden", timeout=WAIT_MS)
+
+    # Switch to Camp look
+    pg.evaluate("() => import('/static/js/link.js').then(m => m.command('you.look', { look: 'camp' }))")
+    pg.wait_for_function("() => document.documentElement.dataset.look === 'camp'", timeout=WAIT_MS)
+
+    # In Camp:
+    pg.evaluate("() => import('/static/js/settings.js').then(m => m.settingsOpen.value = true)")
+    dialog = pg.locator(".ok-dialog")
+    dialog.wait_for(state="visible", timeout=WAIT_MS)
+
+    camp_styles = pg.evaluate("""() => {
+        const d = document.querySelector('.ok-dialog');
+        const t = document.querySelector('.ok-dialog__title');
+        const csD = window.getComputedStyle(d);
+        const csT = window.getComputedStyle(t);
+        return {
+            bgD: csD.backgroundColor,
+            bgImageD: csD.backgroundImage,
+            borderImageD: csD.borderImageSource,
+            bgT: csT.backgroundColor,
+            borderImageT: csT.borderImageSource,
+        };
+    }""")
+    pg.keyboard.press("Escape")
+    dialog.wait_for(state="hidden", timeout=WAIT_MS)
+    pg.evaluate("() => import('/static/js/link.js').then(m => m.command('you.look', { look: 'office' }))")
+    pg.wait_for_function("() => document.documentElement.dataset.look === 'office'", timeout=WAIT_MS)
+
+    # Camp: parchment token (#ebdebb -> rgb(235, 222, 187)), title on plate (plate.png, teal #216564 -> rgb(33, 101, 100))
+    assert camp_styles["bgD"] == "rgb(235, 222, 187)"
+    assert "parchment.png" in camp_styles["bgImageD"]
+    assert "frame.png" in camp_styles["borderImageD"]
+    assert camp_styles["bgT"] == "rgb(33, 101, 100)"
+    assert "plate.png" in camp_styles["borderImageT"]
+
+    # Office: unchanged (no parchment, no plate, no wood frame)
+    assert "parchment.png" not in office_styles["bgImageD"]
+    assert "frame.png" not in office_styles["borderImageD"]
+    assert "plate.png" not in office_styles["borderImageT"]
+    assert office_styles["bgT"] != "rgb(33, 101, 100)"
+

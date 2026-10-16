@@ -238,3 +238,212 @@
 [data-look="camp"] .gui-info__v3 { flex: none; image-rendering: pixelated; image-rendering: crisp-edges; }
 [data-look="camp"] .gui-info__v3.is-hd { image-rendering: auto; }   /* its high-density cut at one to one */
 [data-look="camp"] .gui-info__head { padding-top: 4px; }
+
+/* dialogs and modals (Settings, Demolish, Road, Usage, etc.): thick wooden frame with teal caps,
+   parchment ground, title on a teal plate, words on parchment */
+[data-look="camp"] .ok-dialog {
+  box-sizing: border-box; image-rendering: pixelated; border: var(--kit-frame) solid transparent; border-radius: 0;
+  border-image: image-set(url("/ds/sprites/v4/ui/frame.png") 1x, url("/ds/sprites/v4/ui/frame@2x.png") 2x) 14 / var(--kit-frame) round;
+  background: var(--parchment) image-set(url("/ds/sprites/v4/ui/parchment.png") 1x, url("/ds/sprites/v4/ui/parchment@2x.png") 2x) repeat;
+  background-clip: padding-box; box-shadow: 0 10px 0 color-mix(in srgb, var(--art-outline) 35%, transparent);
+  color: var(--parchment-ink); padding: 12px 16px 14px; overflow: visible;
+  --ink: var(--parchment-ink); --ink-muted: #6b5440; --ink-comment: #8a7458; --ink-gold: var(--kit-wood);
+  --panel: var(--parchment); --panel-raised: var(--kit-parchment-deep); --panel-inset: #f6efdc;
+  --frame: var(--kit-parchment-rule); --frame-strong: var(--kit-wood); --frame-focus: var(--accent-teal);
+  --selection: color-mix(in srgb, var(--accent-teal) 22%, var(--parchment));
+}
+[data-look="camp"] .ok-dialog__head { margin: -26px 0 6px -4px; }
+[data-look="camp"] .ok-dialog__title {
+  display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px;
+  font: var(--type-kit-heading); letter-spacing: 0; color: var(--kit-ink); background: var(--accent-teal);
+  border: var(--kit-bevel) solid transparent; image-rendering: pixelated; max-width: calc(100% - 16px);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border-image: image-set(url("/ds/sprites/v4/ui/plate.png") 1x, url("/ds/sprites/v4/ui/plate@2x.png") 2x) 6 fill / var(--kit-bevel) repeat;
+}
+[data-look="camp"] .ok-dialog__portrait {
+  border: var(--kit-bevel) solid transparent; box-shadow: none;
+  border-image: image-set(url("/ds/sprites/v4/ui/slot.png") 1x, url("/ds/sprites/v4/ui/slot@2x.png") 2x) 6 fill / var(--kit-bevel) repeat;
+}
+[data-look="camp"] .ok-dialog__section {
+  display: flex; align-items: center; gap: 8px; font: var(--type-kit-heading); letter-spacing: 0;
+  text-transform: none; color: var(--parchment-ink); margin: 6px 0 2px;
+}
+[data-look="camp"] .ok-dialog__section::after {
+  content: ""; flex: 1; height: 2px; background: var(--kit-parchment-rule); box-shadow: 0 1px 0 #f6efdc;
+}
+[data-look="camp"] .ok-dialog__text, [data-look="camp"] .ok-dialog__hint { font: var(--type-camp-body); color: var(--parchment-ink); }
+[data-look="camp"] .ok-dialog__hint { color: #6b5440; }
+[data-look="camp"] .ok-dialog .ok-input, [data-look="camp"] .ok-dialog textarea.ok-input {
+  background: #f6efdc; color: var(--parchment-ink); border: 4px solid transparent; border-radius: 0; box-shadow: none;
+  image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/well.png") 1x, url("/ds/sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat;
+}
+[data-look="camp"] .ok-dialog .ok-input:focus, [data-look="camp"] .ok-dialog textarea.ok-input:focus {
+  outline: 2px solid var(--accent-teal); outline-offset: 0;
+}
+
+/* segmented controls (Town settings, steward settings): wooden tabs / buttons in Camp */
+[data-look="camp"] :is(.ok-dialog, .gui-inside__shop-frame) .gui-steps { border: 0; border-radius: 0; overflow: visible; gap: 2px; background: none; }
+[data-look="camp"] :is(.ok-dialog, .gui-inside__shop-frame) .gui-steps__one {
+  box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+  height: 28px; padding: 0 8px; font: var(--type-kit-button); font-size: 16px; letter-spacing: 0.02em;
+  color: var(--kit-ink); background: var(--kit-wood); border: var(--kit-bevel) solid transparent; border-radius: 0;
+  image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/btn-wood.png") 1x, url("/ds/sprites/v4/ui/btn-wood@2x.png") 2x) 6 fill / var(--kit-bevel) repeat;
+}
+[data-look="camp"] :is(.ok-dialog, .gui-inside__shop-frame) .gui-steps__one + .gui-steps__one { border-left: var(--kit-bevel) solid transparent; }
+[data-look="camp"] :is(.ok-dialog, .gui-inside__shop-frame) .gui-steps__one:hover {
+  filter: none;
+  border-image-source: image-set(url("/ds/sprites/v4/ui/btn-wood-hover.png") 1x, url("/ds/sprites/v4/ui/btn-wood-hover@2x.png") 2x);
+}
+[data-look="camp"] :is(.ok-dialog, .gui-inside__shop-frame) .gui-steps__one.is-on, [data-look="camp"] :is(.ok-dialog, .gui-inside__shop-frame) .gui-steps__one[aria-pressed="true"] {
+  background: var(--accent-teal); color: var(--kit-ink);
+  border-image-source: image-set(url("/ds/sprites/v4/ui/btn-teal-down.png") 1x, url("/ds/sprites/v4/ui/btn-teal-down@2x.png") 2x);
+  box-shadow: none;
+}
+
+/* Onboarding in v4 kit: thick wooden frame, parchment ground, Jersey 15 titles, wooden bevel class cards */
+[data-look="camp"] .gui-onb { background: color-mix(in srgb, var(--art-wood-deep) 85%, black); }
+[data-look="camp"] .gui-onb__card {
+  box-sizing: border-box; image-rendering: pixelated; border: var(--kit-frame) solid transparent; border-radius: 0;
+  border-image: image-set(url("/ds/sprites/v4/ui/frame.png") 1x, url("/ds/sprites/v4/ui/frame@2x.png") 2x) 14 / var(--kit-frame) round;
+  background: var(--parchment) image-set(url("/ds/sprites/v4/ui/parchment.png") 1x, url("/ds/sprites/v4/ui/parchment@2x.png") 2x) repeat;
+  background-clip: padding-box; box-shadow: 0 12px 0 color-mix(in srgb, var(--art-outline) 40%, transparent);
+  color: var(--parchment-ink);
+  --ink: var(--parchment-ink); --ink-muted: #6b5440; --ink-comment: #8a7458; --panel: var(--parchment);
+  --panel-raised: var(--kit-parchment-deep); --panel-inset: #f6efdc; --frame: var(--kit-parchment-rule);
+  --frame-focus: var(--accent-teal);
+}
+[data-look="camp"] .gui-onb__title { font: var(--type-kit-title); color: var(--parchment-ink); letter-spacing: 0; }
+[data-look="camp"] .gui-onb__lead { font: var(--type-camp-body); color: #6b5440; }
+[data-look="camp"] .gui-onb__pip { background: var(--kit-parchment-rule); box-shadow: none; border-radius: 0; }
+[data-look="camp"] .gui-onb__pip.is-done { background: var(--accent-teal); }
+[data-look="camp"] .gui-onb__table, [data-look="camp"] .gui-onb__warder {
+  background: #f6efdc; border: 4px solid transparent; border-radius: 0; box-shadow: none; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/well.png") 1x, url("/ds/sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat;
+}
+[data-look="camp"] .gui-onb__row { border-bottom: 1px solid var(--kit-parchment-rule); }
+[data-look="camp"] .gui-onb__row.is-head { border-bottom: 2px solid var(--kit-parchment-rule); font: var(--type-kit-small); color: var(--parchment-ink); }
+[data-look="camp"] .gui-onb__row:last-child { border-bottom: 0; }
+[data-look="camp"] .gui-onb__kin {
+  box-sizing: border-box; background: var(--kit-wood); color: var(--kit-ink); border: var(--kit-bevel) solid transparent;
+  border-radius: 0; box-shadow: none; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/btn-wood.png") 1x, url("/ds/sprites/v4/ui/btn-wood@2x.png") 2x) 6 fill / var(--kit-bevel) repeat;
+}
+[data-look="camp"] .gui-onb__kin:hover {
+  border-image-source: image-set(url("/ds/sprites/v4/ui/btn-wood-hover.png") 1x, url("/ds/sprites/v4/ui/btn-wood-hover@2x.png") 2x);
+}
+[data-look="camp"] .gui-onb__kin.is-on, [data-look="camp"] .gui-onb__kin[aria-pressed="true"] {
+  background: var(--accent-teal); color: var(--kit-ink);
+  border-image-source: image-set(url("/ds/sprites/v4/ui/btn-teal-down.png") 1x, url("/ds/sprites/v4/ui/btn-teal-down@2x.png") 2x);
+  box-shadow: none;
+}
+[data-look="camp"] .gui-onb__kin-name { font: var(--type-kit-heading); letter-spacing: 0; color: var(--kit-ink); }
+[data-look="camp"] .gui-onb__kin .ok-font-status { color: color-mix(in srgb, var(--kit-ink) 80%, transparent); }
+[data-look="camp"] .gui-onb__mission {
+  background: #f6efdc; border: 4px solid transparent; border-radius: 0; box-shadow: none;
+  border-image: image-set(url("/ds/sprites/v4/ui/well.png") 1x, url("/ds/sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat;
+  color: var(--parchment-ink);
+}
+[data-look="camp"] .gui-onb__setup {
+  border: var(--kit-frame) solid transparent; border-radius: 0; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/frame-thin.png") 1x, url("/ds/sprites/v4/ui/frame-thin@2x.png") 2x) 14 / var(--kit-frame) round;
+  background: var(--parchment) image-set(url("/ds/sprites/v4/ui/parchment.png") 1x, url("/ds/sprites/v4/ui/parchment@2x.png") 2x) repeat;
+  background-clip: padding-box; box-shadow: 0 8px 0 color-mix(in srgb, var(--art-outline) 30%, transparent);
+  color: var(--parchment-ink); --ink: var(--parchment-ink); --ink-muted: #6b5440; --ink-comment: #8a7458;
+  --panel: var(--parchment); --panel-inset: #f6efdc; --frame: var(--kit-parchment-rule);
+}
+[data-look="camp"] .gui-onb__corner-title { font: var(--type-kit-heading); color: var(--parchment-ink); }
+[data-look="camp"] .gui-onb__level {
+  background: var(--kit-wood); color: var(--kit-ink); border: var(--kit-bevel) solid transparent; border-radius: 0;
+  box-shadow: none;
+  border-image: image-set(url("/ds/sprites/v4/ui/btn-wood.png") 1x, url("/ds/sprites/v4/ui/btn-wood@2x.png") 2x) 6 fill / var(--kit-bevel) repeat;
+}
+[data-look="camp"] .gui-onb__level.is-on {
+  background: var(--accent-teal);
+  border-image-source: image-set(url("/ds/sprites/v4/ui/btn-teal-down.png") 1x, url("/ds/sprites/v4/ui/btn-teal-down@2x.png") 2x);
+}
+[data-look="camp"] .gui-onb__quiet { color: #6b5440; }
+
+/* Build menu inside: sentence case Jersey 15 headers with engraved parchment rules */
+[data-look="camp"] .gui-build__group-word {
+  font: var(--type-kit-small); text-transform: none; letter-spacing: 0; color: var(--parchment-ink);
+  border-bottom: 2px solid var(--kit-parchment-rule);
+}
+[data-look="camp"] .gui-build__tile {
+  box-sizing: border-box; border-radius: 0; border: var(--kit-bevel) solid transparent;
+}
+[data-look="camp"] .gui-build__tile:hover {
+  background: color-mix(in srgb, var(--kit-parchment-deep) 60%, transparent);
+  border-image: image-set(url("/ds/sprites/v4/ui/slot-hover.png") 1x, url("/ds/sprites/v4/ui/slot-hover@2x.png") 2x) 6 fill / var(--kit-bevel) repeat;
+}
+[data-look="camp"] .gui-build__tile.is-yours {
+  border-image: image-set(url("/ds/sprites/v4/ui/slot-on.png") 1x, url("/ds/sprites/v4/ui/slot-on@2x.png") 2x) 6 fill / var(--kit-bevel) repeat;
+}
+
+
+[data-look="camp"] .ok-win__body[data-type="town_hall"] {
+  color: var(--parchment-ink); --ink: var(--parchment-ink); --ink-muted: #6b5440; --ink-comment: #8a7458;
+  --panel: var(--parchment); --panel-raised: var(--kit-parchment-deep); --panel-inset: #f6efdc;
+  --frame: var(--kit-parchment-rule); --frame-strong: var(--kit-wood); --frame-focus: var(--accent-teal);
+  --selection: color-mix(in srgb, var(--accent-teal) 22%, var(--parchment));
+}
+[data-look="camp"] .ok-win__body[data-type="town_hall"] .th-chat__bar {
+  border-bottom: 2px solid var(--kit-parchment-rule); padding-bottom: 4px;
+}
+[data-look="camp"] .ok-win__body[data-type="town_hall"] .th-chat__list > li > .ok-font-label {
+  color: var(--kit-wood); font: var(--type-kit-heading);
+}
+[data-look="camp"] .ok-win__body[data-type="town_hall"] .th-compose > textarea.gui-textarea {
+  background: #f6efdc; color: var(--parchment-ink); border: 4px solid transparent; border-radius: 0; box-shadow: none;
+  image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/well.png") 1x, url("/ds/sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat;
+}
+[data-look="camp"] .ok-win__body[data-type="town_hall"] .th-compose > textarea.gui-textarea:focus {
+  outline: 2px solid var(--accent-teal); outline-offset: 0;
+}
+[data-look="camp"] .ok-win__body[data-type="town_hall"] .gui-card-order {
+  background: #f6efdc; border: 4px solid transparent; border-radius: 0; box-shadow: none;
+  border-image: image-set(url("/ds/sprites/v4/ui/well.png") 1x, url("/ds/sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat;
+  color: var(--parchment-ink); padding: 8px 10px;
+}
+
+/* "Since your last look" quiet bar */
+[data-look="camp"] .gui-lastlook.is-quiet {
+  border: var(--kit-frame) solid transparent; border-radius: 0; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/frame-thin.png") 1x, url("/ds/sprites/v4/ui/frame-thin@2x.png") 2x) 14 / var(--kit-frame) round;
+  background: var(--parchment) image-set(url("/ds/sprites/v4/ui/parchment.png") 1x, url("/ds/sprites/v4/ui/parchment@2x.png") 2x) repeat;
+  background-clip: padding-box; color: var(--parchment-ink);
+  box-shadow: 0 6px 0 color-mix(in srgb, var(--art-outline) 25%, transparent);
+}
+
+/* Meat slots list dropdown under HUD: thin frame on parchment */
+[data-look="camp"] .gui-slots__list {
+  border: var(--kit-frame) solid transparent; border-radius: 0; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/frame-thin.png") 1x, url("/ds/sprites/v4/ui/frame-thin@2x.png") 2x) 14 / var(--kit-frame) round;
+  background: var(--parchment) image-set(url("/ds/sprites/v4/ui/parchment.png") 1x, url("/ds/sprites/v4/ui/parchment@2x.png") 2x) repeat;
+  background-clip: padding-box; color: var(--parchment-ink);
+  box-shadow: 0 8px 0 color-mix(in srgb, var(--art-outline) 30%, transparent);
+  --ink: var(--parchment-ink); --ink-muted: #6b5440;
+}
+[data-look="camp"] .gui-slots__head { border-bottom: 2px solid var(--kit-parchment-rule); padding-bottom: 6px; }
+
+/* Road bar toast */
+[data-look="camp"] .gui-roadbar.ok-toast {
+  border: var(--kit-frame) solid transparent; border-radius: 0; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/frame-thin.png") 1x, url("/ds/sprites/v4/ui/frame-thin@2x.png") 2x) 14 / var(--kit-frame) round;
+  background: var(--parchment) image-set(url("/ds/sprites/v4/ui/parchment.png") 1x, url("/ds/sprites/v4/ui/parchment@2x.png") 2x) repeat;
+  background-clip: padding-box; color: var(--parchment-ink);
+  box-shadow: 0 6px 0 color-mix(in srgb, var(--art-outline) 25%, transparent);
+}
+
+/* Context menu on right click */
+[data-look="camp"] .gui-menu {
+  border: var(--kit-bevel) solid transparent; border-radius: 0; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/btn-wood.png") 1x, url("/ds/sprites/v4/ui/btn-wood@2x.png") 2x) 6 fill / var(--kit-bevel) repeat;
+  background: var(--kit-wood); color: var(--kit-ink);
+  box-shadow: 0 6px 0 color-mix(in srgb, var(--art-outline) 30%, transparent);
+}
+[data-look="camp"] .gui-menu__item:hover { background: var(--kit-wood-hover); color: var(--kit-ink); }
+[data-look="camp"] .gui-menu__sep { border-top-color: var(--kit-wood-dark); }
+
