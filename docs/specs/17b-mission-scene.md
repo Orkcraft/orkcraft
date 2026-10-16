@@ -23,7 +23,7 @@ Workchief speak on the map, and walk the person through each building.
    *Back to the camp*. Task board: the drill card, how cards arrive. Agent pool: the bays and the orks, where ❓ shows.
    Review gate: the barrier, pass or send back, the waybill. Each step names its target by a stable selector in the
    view, so a view change breaks a test, not the walk silently.
-4. **The chrome returns** on quest 3½ with one line naming the command bar; from quest 4 the quest log works as today,
+4. **The chrome returns** after quest 3 (the finale), with one line naming the command bar (quest 3½ is gone: spec 27); from quest 4 the quest log works as today,
    the bubble on the map only for each quest's first line.
 5. **Office:** the same steps without sprites: the bubble a plain card beside the plot; the dim kept.
 6. Events for the dogfood log (`dogfood-logs.md`): a walk started, ended by *Got it* or finished, per building; the
@@ -36,5 +36,5 @@ New art (the Workchief's existing camp sprite is used), sound, the charter (spec
 Critical tests, plus `tests/test_mission.py tests/test_gui_mission_browser.py tests/test_gui_camp_browser.py`:
 focus hides the chrome and dims the map; the bubble sits on the map near the Workchief, not at the foot; *Next*
 walks the lines; the press raises the building and opens its walk; *Got it* ends it; *Skip the mission* restores the
-chrome and the zoom; reduced motion has no walk-in; Office shows the card, no sprites; the chrome is back on quest 3½.
+chrome and the zoom; reduced motion has no walk-in; Office shows the card, no sprites; the chrome is back after quest 3.
 Every new test shown to fail without its code (README "Before you commit").

@@ -927,3 +927,6 @@ runs. Reviews and merges stay with the PM session. [specs/README.md](../specs/RE
    3. **the first day**: install, the onboarding, Mission 1.
    The first day's dated items run alongside, not after (the PM, agreed by the owner): E1 on Wed 21 October,
    release 0.3.0 on Thu 22 October, spec 17b (Mission 1 as a scene). The testers' date stays (§22).
+4. **Mission 1 is four quests** (the owner agreed with the PM, same day): board → pool → gate → listen. Quest 3½
+   (the Office look) and quest 5 (two cards at once) leave the first day; the Office look and parallel runs stay in
+   the product. A simplification (§27). Spec 27, before 17b.

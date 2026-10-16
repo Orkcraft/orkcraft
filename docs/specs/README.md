@@ -130,7 +130,7 @@ Every spec carries two lines, for agy above all: **"Change nothing outside these
 | 10 | [the phone's new UX](10-phone-v4.md) (four parts: cards, motion, full view, v4 look) | right after 01 (the owner) | pro / flash | Claude (pro part) · agy (flash parts) | full (10a) · light (10b–10d) |
 | 02 | [Mission 1 blockers](02-mission1-blockers.md) (filled after the owner plays it) | before the testers | flash | agy | light |
 | 17a | [the onboarding's one fork](17a-mission-starts-at-once.md) (the tutorial, or a ready town) | before the testers | flash | agy | light |
-| 17b | [Mission 1 as a scene](17b-mission-scene.md) (the Workchief on the map, a walk through each building) | before the testers, after 17a | — | **Claude** | full |
+| 17b | [Mission 1 as a scene](17b-mission-scene.md) (the Workchief on the map, a walk through each building) | before the testers, after 17a, 19 and 27 | — | **Claude** | full |
 | 18 | [darker, richer grass](18-darker-grass.md) (variant B; round 2 at the top) | before the testers | flash | agy | light |
 | 19 | [Camp's camera](19-camp-camera.md) (no far zoom-out; the wheel scrolls down) | before the testers | flash | agy | light |
 | 20 | [the wilderness composed](20-composed-wilderness.md) (groves on places, not a hash on a grid) | after 18 and 19 | — | **Claude** | light + the owner's look |
@@ -138,6 +138,7 @@ Every spec carries two lines, for agy above all: **"Change nothing outside these
 | 22 | [the Agent pool's room](22-agent-pool-room.md) (art card + code) | before the testers, after 21 | — | **Claude** | light + the owner's look |
 | 23 | [the Review gate's room](23-review-gate-room.md) (art card + code) | before the testers, after 21 | — | **Claude** | light + the owner's look |
 | 24 | [doors: open-air buildings](24-open-air-buildings.md) (merged) | before the testers | flash | agy | light |
+| 27 | [Mission 1 in four quests](27-mission-four-quests.md) (no Office quest, no "Two at once") | before 17b | — | **Claude** | light |
 | 26 | [five buildings at the first start; the others hidden](26-five-buildings.md) | before the testers | — | **Claude** | light |
 | art | [the five buildings in steampunk, outside and inside](art-steampunk-all.md) (kit + 5 sheets × 3 candidates; the rest Later) | now | pro | agy | the owner picks |
 | 03 | [the charter: "My project"](03-charter.md) | before the testers | pro | **Claude** | full |

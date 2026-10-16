@@ -61,7 +61,9 @@ The state a new product-and-marketing session starts from. Update it when you ha
   owner's order: the five work → it reads as a game → the first day (its dated items run alongside).
 - Old unmerged branches (4–12 October) judged No/Later; the owner agreed to delete them, but this session may not
   delete remote branches: the owner deletes them on GitHub.
-- No dev session is running. Tonight's batch: `docs/specs/batches/2026-10-16-night.md` (agy: 18 r2, 19, 12b,
+- Mission 1 is four quests (decisions §35.4): spec 27, Claude, after 26 and before 17b.
+- Dev session for 26: `session_01GT2jie5yC5t9tua8JLyfXW` (branch `spec/26-five-buildings`); 27 goes to it after 26
+  is merged, on `spec/27-mission-four-quests`. Tonight's batch: `docs/specs/batches/2026-10-16-night.md` (agy: 18 r2, 19, 12b,
   `art-steampunk-all` if unfinished). Claude: **17b** in tomorrow's morning batch, after 19 is merged.
 - Claude specs unblocked and waiting: **10a** (phone cards; 01 and 01b are merged), **03** (charter). 22/23 wait on
   the steampunk room-kit art; 20 waits on 18 and 19.
