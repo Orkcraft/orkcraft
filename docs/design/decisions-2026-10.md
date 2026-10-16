@@ -910,3 +910,20 @@ The PM session prepares a **batch** twice a day (morning, as the owner leaves fo
 the agy tabs to open, files not overlapping. **Art** goes wholly to agy, 2–3 candidates each, the owner picks and
 the PM session cuts. **Code** splits by difficulty: easy specs to agy, hard ones to Claude sessions the PM session
 runs. Reviews and merges stay with the PM session. [specs/README.md](../specs/README.md) "The daily rhythm".
+
+## 35. Five buildings; three tracks (16 October, the owner)
+
+1. **The product's buildings for the first start are five:** the Task board (`fields`), the Agent pool
+   (`barracks`), the Review gate (`loot_vault`), External listeners (`watchtower`) and the Wiki (`scrolls`). The other
+   types are **hidden** from everything that offers a building (the Build dialog, the Workchief's planner, the ready
+   towns of *Punk ork*); a town that already has one keeps it working. A simplification (§27). Spec 26. The Review
+   board (`council`) is not among the five.
+2. **The art goes to the five only:** `art-steampunk-all` is cut to `a-room-kit` and the five sheets; the other
+   buildings' sheets wait (Later). agy's limits are not spent on what the first start does not show.
+3. **Three tracks, in the owner's order of importance:**
+   1. **the five buildings work**: the owner tests them on the product; the PM turns what he finds into short fix
+      lists, building by building, for their work and their UX;
+   2. **it reads as a game**: sprites, animations, the camp's look, on those five buildings, the orks and the carts;
+   3. **the first day**: install, the onboarding, Mission 1.
+   The first day's dated items run alongside, not after (the PM, agreed by the owner): E1 on Wed 21 October,
+   release 0.3.0 on Thu 22 October, spec 17b (Mission 1 as a scene). The testers' date stays (§22).

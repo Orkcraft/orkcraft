@@ -145,7 +145,7 @@ chimneys puffing steam, valves and levers, patched leather.
 2. **Doors & open-air stewards (Spec 24) — MERGED:**
    Buildings with doorways step out; open-air buildings show their steward beside the building at its foot without exit door.
 3. **Art generation (`art-steampunk-all.md`) — IN PROGRESS:**
-   Owner runs agy pro across the 23 sheets + `a-room-kit` (3 candidates each). PM session cuts chosen candidates and records doorways.
+   Owner runs agy pro on `a-room-kit` and the five buildings of decisions §35 (3 candidates each); the other sheets Later. PM session cuts chosen candidates and records doorways.
 4. **Room layout engine (Spec 25):**
    The Preact component that tiles the `a-room-kit` floor and wall band, places perimeter furniture, and provides the lot grid for props.
 5. **Mission 1 core rooms:**

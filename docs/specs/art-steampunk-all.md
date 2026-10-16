@@ -1,4 +1,8 @@
-# Art run — every building in cute orkish steampunk: its outside, and its room's furniture (3 candidates each)
+# Art run — the five buildings in cute orkish steampunk: its outside, and its room's furniture (3 candidates each)
+
+**Cut to five (decisions §35, 16 October):** generate only `a-room-kit`, `a-depot`, `a-gate`, `a-taskboard`,
+`a-external`, `a-wiki`, in that order. Every other row of the table waits (Later): skip it. Sheets of other rows already
+on the branch stay; don't add more.
 
 Branch `art/steampunk-all` · agy (pro) generates; the owner picks; the PM session cuts the picks once
 (CLAUDE.md "Art") and marks each doorway · design: decisions §32–§33, interiors.md §1–§3, §5

@@ -56,6 +56,11 @@ The state a new product-and-marketing session starts from. Update it when you ha
   round 2 (tokens through `tokens.json`, `importorskip` PIL) is agy's tab 1 in tonight's batch.
 - Known gap (Later): the browser test can't catch a revert of the phone's install path to `c.addAll(SHELL)`; only the
   static check in `tests/test_pwa.py` does.
+- **decisions §35 (the owner, 16 October): five buildings** (Task board, Agent pool, Review gate, External
+  listeners, Wiki); the rest hidden at the first start (spec 26, Claude); the art cut to them; three tracks in the
+  owner's order: the five work → it reads as a game → the first day (its dated items run alongside).
+- Old unmerged branches (4–12 October) judged No/Later; the owner agreed to delete them, but this session may not
+  delete remote branches: the owner deletes them on GitHub.
 - No dev session is running. Tonight's batch: `docs/specs/batches/2026-10-16-night.md` (agy: 18 r2, 19, 12b,
   `art-steampunk-all` if unfinished). Claude: **17b** in tomorrow's morning batch, after 19 is merged.
 - Claude specs unblocked and waiting: **10a** (phone cards; 01 and 01b are merged), **03** (charter). 22/23 wait on
@@ -65,7 +70,9 @@ The state a new product-and-marketing session starts from. Update it when you ha
 - Local `main` in a PM container may be a stale design branch: work on a branch from `origin/main`.
 
 ## Waiting on the owner
-- Tonight: start the agy tabs of `2026-10-16-night.md`.
+- Tonight: start the agy tabs of `2026-10-16-night.md` (the art tab cut to five).
+- Delete the old branches on GitHub (list in the PM's reply of 16 October).
+- Test the five buildings on the product and send what gets in the way, building by building.
 - Play Mission 1 → fill spec 02 (Mission 1 blockers). P0 before the testers.
 - Test on `main` (phone): the fast first load and install (01, 01b); the building screen (21); open-air buildings (24).
 - Written IP confirmation.

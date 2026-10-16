@@ -138,7 +138,8 @@ Every spec carries two lines, for agy above all: **"Change nothing outside these
 | 22 | [the Agent pool's room](22-agent-pool-room.md) (art card + code) | before the testers, after 21 | — | **Claude** | light + the owner's look |
 | 23 | [the Review gate's room](23-review-gate-room.md) (art card + code) | before the testers, after 21 | — | **Claude** | light + the owner's look |
 | 24 | [doors: open-air buildings](24-open-air-buildings.md) (merged) | before the testers | flash | agy | light |
-| art | [every building in steampunk, outside and inside](art-steampunk-all.md) (23 sheets × 3 candidates) | now | pro | agy | the owner picks |
+| 26 | [five buildings at the first start; the others hidden](26-five-buildings.md) | before the testers | — | **Claude** | light |
+| art | [the five buildings in steampunk, outside and inside](art-steampunk-all.md) (kit + 5 sheets × 3 candidates; the rest Later) | now | pro | agy | the owner picks |
 | 03 | [the charter: "My project"](03-charter.md) | before the testers | pro | **Claude** | full |
 | 04 | [Halloween decor](04-halloween-decor.md) (art card + items) | before 31 October | flash | agy | light |
 | 12 | [the v4 kit on the remaining screens](12-v4-remaining-screens.md) (merged; optional 12b at the top) | before the testers | flash | agy | light |
