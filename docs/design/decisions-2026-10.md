@@ -1023,6 +1023,14 @@ and the person does not see it before the work. So:
    go to the Agent pool, separately, as today's Send.
 4. **The board loses In progress and Done.** Progress is seen on the map (carts, the pool), results at the Review
    gate. The board keeps its to-do lanes and one lane, **Needs you**, for what failed or is stuck. A simplification.
+5. **The person never waits on the card** (the owner's UX question, same day). The keeper works in the background:
+   the card shows *the keeper is reading* and the person goes on. When questions or the plan are ready, the card goes
+   to **Needs you** with ❓ on the board, as an ork's question does; that is when the person comes back, not after
+   10–20 seconds of staring.
+6. **The keeper reads only its own Wiki, and little of it.** Only a Wiki joined to the Task board (by default the
+   camp's first Wiki, the project's), never every Wiki in the camp; first the index and `wiki_search` (no model,
+   seconds), then at most three pages. One idea counts as one read, so the footpaths (§22.7: a Wiki's three heaviest
+   readers) keep meaning "who uses this Wiki", and the other Wikis get no path to the board.
 Mission 1 keeps working (its drill card). Track 1, P1, a spec after 28 (it touches the board and the pool), together
 with §39's daily batch. "A product keeper that prioritises" is a hypothesis after the testers.
 
