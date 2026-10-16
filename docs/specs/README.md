@@ -32,6 +32,20 @@ Run the tests the spec lists, with --extra browser; all must pass. Do the four c
 At the end print: the commits, the files changed, the tests run and their result, the four checks with their output, and anything you could not do.
 ```
 
+## The art prompt (agy generates the images itself; no API key)
+
+An art card (interiors.md §6, a spec's "Part A") is run in agy the same way as a spec, with this prompt and
+`<CARD>` = the card's name (e.g. `s1-steampunk`), `<DOC>` = the file that holds it:
+
+```
+git fetch origin. Make a worktree ../ork-art-<CARD> on a new branch art/<CARD> from origin/main. Work only in that folder.
+Read CLAUDE.md ("Art"), then the art card <CARD> in <DOC>. Look at every reference image the card names (open the files) and match their style, palette, pixel size and view.
+Generate the image the card describes, 3 candidates, each a separate PNG, and save them as docs/design/img/references/v3/candidates/<CARD>/1.png, 2.png, 3.png. Do not resize, crop, re-pixelate or recolour what you generate.
+Commit them with a short message in English, then git push -u origin art/<CARD>. At the end print the three paths and one line per candidate on what it shows and how it differs.
+```
+
+The PM session shows the owner the candidates, cuts the chosen one once (CLAUDE.md "Art") and merges.
+
 ## Before you commit: four checks (decided 16 October, after the first agy nights)
 
 1. **Scope.** Run `git diff --name-only origin/main`. Every file must be one the spec allows. Revert any other change,
