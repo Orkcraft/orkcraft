@@ -1,4 +1,4 @@
-# PM & marketing: handoff (15 October 2026)
+# PM & marketing: handoff (16 October 2026)
 
 The state a new product-and-marketing session starts from. Update it when you hand over again.
 
@@ -23,13 +23,6 @@ The state a new product-and-marketing session starts from. Update it when you ha
   ~14 November if ≥3 testers finish Mission 1 and ≥2 come back within 7 days.
 - **Who builds** (decisions §26): the PM marks each spec agy or Claude when writing it; the owner starts both in the
   evening; the PM reviews every branch in the morning (specs/README.md "Who builds").
-
-- **State of morning runs (16 October):** Merged to `main`: spec 01 round 3 (`spec/01-phone-fast-load`),
-  spec 13b (`spec/13b-home-cleanup`), spec 17a (`spec/17a-mission-starts-at-once`), spec 18 (`spec/18-darker-grass`),
-  spec icon-hd (`spec/icon-hd`), art s1-steampunk (`s1-steampunk`), spec 21 (`spec/21-building-screen`),
-  and spec 24 (`spec/24-open-air-buildings`).
-  Next: owner runs `art/steampunk-all` (23 sheets × 3 candidates + `a-room-kit`); `interiors.md` updated for the
-  shared room kit and all 23 buildings; specs 22 and 23 updated for kit/furniture pieces.
 
 - **The daily rhythm** (decisions §34): a batch file twice a day in `docs/specs/batches/`; art and easy code to agy
   (2–3 candidates for art), hard code to Claude sessions run by the PM session; reviews and merges here.
@@ -56,18 +49,25 @@ The state a new product-and-marketing session starts from. Update it when you ha
 - Marketing: `docs/marketing/` (README: the launch has no fixed date; tester guide and invite, devlog 01, FAQ,
   Discord, places).
 
-## State on 15 October
-- HD sprites done and merged (`043322e`, `5889b9b`): every sprite cut once from the source to `@hd1/@hd1_5/@hd2`
-  WebP, drawn 1:1 on dpr ≥ 2. Not converted: ground/track tiles, palisades, nine-slice kits, depot bays, faces,
-  portrait heads (Later).
-- Sessions: HD-ORKS `session_01CWnjWCfQe3DDQrcRwEZ8L6` (idle, done); art `session_01LH9oFPc3MsWB5z8qs6bW39`
-  (told not to recut old art). Previous PM session: `session_01MGnfd3VpATycMySTQKmnRK`.
-- The owner's next agy runs: spec **13** (home instead of Town Hall) and **01** (phone fast load, updated for the
-  WebP cuts in `5dab93d`) in parallel; then **03** (charter, pro).
-- Weekly usage limit resets Wed 21 October 11:00 UTC: keep sessions few.
+## State on 16 October (~11:00 Berlin)
+- Merged to `main` today: spec 01 round 3 and **01b** (`2ecd9f1`), 12, 13b, 17a, 21, 24, icon-hd, art s1-steampunk.
+  `interiors.md` defines all 23 buildings for the shared room kit; specs 22–23 updated for it.
+- **Not merged: spec 18** (grass). `spec/18-darker-grass` holds round 1 only (`3a60b44`, the tiles are right);
+  round 2 (tokens through `tokens.json`, `importorskip` PIL) is agy's tab 1 in tonight's batch.
+- Known gap (Later): the browser test can't catch a revert of the phone's install path to `c.addAll(SHELL)`; only the
+  static check in `tests/test_pwa.py` does.
+- No dev session is running. Tonight's batch: `docs/specs/batches/2026-10-16-night.md` (agy: 18 r2, 19, 12b,
+  `art-steampunk-all` if unfinished). Claude: **17b** in tomorrow's morning batch, after 19 is merged.
+- Claude specs unblocked and waiting: **10a** (phone cards; 01 and 01b are merged), **03** (charter). 22/23 wait on
+  the steampunk room-kit art; 20 waits on 18 and 19.
+- Weekly usage limit is at its warning; it resets Wed 21 October 11:00 UTC. One Claude dev session at a time;
+  10a and 03 only after 17b, or if the owner asks.
+- Local `main` in a PM container may be a stale design branch: work on a branch from `origin/main`.
 
 ## Waiting on the owner
-- Play Mission 1 → fill spec 02 (Mission 1 blockers).
+- Tonight: start the agy tabs of `2026-10-16-night.md`.
+- Play Mission 1 → fill spec 02 (Mission 1 blockers). P0 before the testers.
+- Test on `main` (phone): the fast first load and install (01, 01b); the building screen (21); open-air buildings (24).
 - Written IP confirmation.
 - E1 clean-install check on Wed 21 October; release 0.3.0 (spec 05) on Thu 22 October; Halloween decor (spec 04)
   before 31 October; testers after that (timeline: decisions §22).
