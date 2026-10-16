@@ -252,11 +252,6 @@
   --frame: var(--kit-parchment-rule); --frame-strong: var(--kit-wood); --frame-focus: var(--accent-teal);
   --selection: color-mix(in srgb, var(--accent-teal) 22%, var(--parchment));
 }
-[data-look="camp"] .ok-dialog.is-warn, [data-look="camp"] .ok-dialog.is-error {
-  /* Yellow and red are reserved for signals, never the frame */
-  border-color: transparent;
-  border-image: image-set(url("/ds/sprites/v4/ui/frame.png") 1x, url("/ds/sprites/v4/ui/frame@2x.png") 2x) 14 / var(--kit-frame) round;
-}
 [data-look="camp"] .ok-dialog__head { margin: -26px 0 6px -4px; }
 [data-look="camp"] .ok-dialog__title {
   display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px;
@@ -288,20 +283,20 @@
 }
 
 /* segmented controls (Town settings, steward settings): wooden tabs / buttons in Camp */
-[data-look="camp"] .gui-steps { border: 0; border-radius: 0; overflow: visible; gap: 2px; background: none; }
-[data-look="camp"] .gui-steps__one {
+[data-look="camp"] :is(.ok-dialog, .gui-inside__shop-frame) .gui-steps { border: 0; border-radius: 0; overflow: visible; gap: 2px; background: none; }
+[data-look="camp"] :is(.ok-dialog, .gui-inside__shop-frame) .gui-steps__one {
   box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   height: 28px; padding: 0 8px; font: var(--type-kit-button); font-size: 16px; letter-spacing: 0.02em;
   color: var(--kit-ink); background: var(--kit-wood); border: var(--kit-bevel) solid transparent; border-radius: 0;
   image-rendering: pixelated;
   border-image: image-set(url("/ds/sprites/v4/ui/btn-wood.png") 1x, url("/ds/sprites/v4/ui/btn-wood@2x.png") 2x) 6 fill / var(--kit-bevel) repeat;
 }
-[data-look="camp"] .gui-steps__one + .gui-steps__one { border-left: var(--kit-bevel) solid transparent; }
-[data-look="camp"] .gui-steps__one:hover {
+[data-look="camp"] :is(.ok-dialog, .gui-inside__shop-frame) .gui-steps__one + .gui-steps__one { border-left: var(--kit-bevel) solid transparent; }
+[data-look="camp"] :is(.ok-dialog, .gui-inside__shop-frame) .gui-steps__one:hover {
   filter: none;
   border-image-source: image-set(url("/ds/sprites/v4/ui/btn-wood-hover.png") 1x, url("/ds/sprites/v4/ui/btn-wood-hover@2x.png") 2x);
 }
-[data-look="camp"] .gui-steps__one.is-on, [data-look="camp"] .gui-steps__one[aria-pressed="true"] {
+[data-look="camp"] :is(.ok-dialog, .gui-inside__shop-frame) .gui-steps__one.is-on, [data-look="camp"] :is(.ok-dialog, .gui-inside__shop-frame) .gui-steps__one[aria-pressed="true"] {
   background: var(--accent-teal); color: var(--kit-ink);
   border-image-source: image-set(url("/ds/sprites/v4/ui/btn-teal-down.png") 1x, url("/ds/sprites/v4/ui/btn-teal-down@2x.png") 2x);
   box-shadow: none;
@@ -386,11 +381,7 @@
   border-image: image-set(url("/ds/sprites/v4/ui/slot-on.png") 1x, url("/ds/sprites/v4/ui/slot-on@2x.png") 2x) 6 fill / var(--kit-bevel) repeat;
 }
 
-/* Town Hall Work view on parchment in Camp */
-[data-look="camp"] .gui-panel > .ok-win__frame:has(> .ok-win__body[data-type="town_hall"]) {
-  background: var(--parchment) image-set(url("/ds/sprites/v4/ui/parchment.png") 1x, url("/ds/sprites/v4/ui/parchment@2x.png") 2x) repeat;
-  background-clip: padding-box;
-}
+
 [data-look="camp"] .ok-win__body[data-type="town_hall"] {
   color: var(--parchment-ink); --ink: var(--parchment-ink); --ink-muted: #6b5440; --ink-comment: #8a7458;
   --panel: var(--parchment); --panel-raised: var(--kit-parchment-deep); --panel-inset: #f6efdc;

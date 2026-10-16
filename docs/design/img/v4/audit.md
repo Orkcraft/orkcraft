@@ -17,7 +17,7 @@ Tonight's limits: Skip portrait's / home's menu and Items panel (spec 13 changes
 | **You** (in portrait menu) | Old look | No | **Skipped** | Tonight's limits: skip portrait's / home's menu (spec 13 changes them) |
 | **Build menu & steps** | Frame on kit, inner text old | Partially (frame only) | **Yes** | Inner group headers moved to Jersey 15 sentence case; rules engraved in parchment |
 | **Improve** | Frame on kit; dialog uses `ok-dialog` | Partially | **Yes** | Moves onto kit when `.ok-dialog` moves; days list on parchment |
-| **Workchief's chat** (Town Hall & thread) | Town Hall omitted from `PAPER` | Thread yes; Town Hall Work no | **Yes** | Town Hall Work view moved onto parchment & `.kit-paper` roles in Camp |
+| **Workchief's chat** (Town Hall & thread) | Town Hall omitted from `PAPER` | Thread yes; Town Hall Work no | **Needs JS** | Town Hall panel is omitted from `PAPER` in `windows.js`, so it stays dark; requires a JS change to add to `PAPER`, left for a later round |
 | **"Since your last look"** | Old dark dialog | No | **Yes** | Uses `.ok-dialog`; moves onto kit (wood frame, parchment, Jersey 15 sections) |
 | **Portrait's menu and deeds** | Old look | No | **Skipped** | Tonight's limits: skip portrait's / home's menu (spec 13) |
 | **Items panel** | On kit in `kit.css` | Yes (`.kit-frame`, slots) | **Skipped** | Tonight's limits: skip Items panel (spec 13) |
@@ -25,6 +25,7 @@ Tonight's limits: Skip portrait's / home's menu and Items panel (spec 13 changes
 | **Every modal or confirm dialog** | Old dark panel look | No | **Yes** | Moved via `.ok-dialog` to thick wood frame, parchment, teal plate title |
 | **Error and empty states** | Toasts on kit; dialogs/lists old | Partially | **Yes** | Error toasts already on kit; error dialogs and list empty states move with containers |
 | **Search / command palette** | On kit | Yes (`.kit-frame-thin`, `.kit-paper`) | **No** (already on kit) | Over bar wears thin frame & parchment; commands in mono on parchment |
+| **Settings (Phones)** (screenshot 10) | Old dark dialog | No | **Yes** | Scrolled view of Phones in Town settings (`10-settings-phones.png`), moved via `.ok-dialog` kit rules |
 | **Meat slots dropdown** (`.gui-slots__list`) | Old dark panel | No | **Yes** | Moved to thin wood frame on parchment under the HUD |
 | **Road bar** (`.gui-roadbar`) | Old toast look | No | **Yes** | Moved to thin wood frame on parchment |
 
@@ -67,12 +68,7 @@ Tonight's limits: Skip portrait's / home's menu and Items panel (spec 13 changes
 - **Move:** Moves onto kit automatically via `.ok-dialog` kit rules; day buttons wear kit buttons.
 
 ### 2.6 Workchief's chat
-- **Before:** Town Hall Work view was omitted from `PAPER` set in `windows.js`, causing it to render on a dark slate panel without parchment or `.kit-paper` variable remapping.
-- **Move:** Scoped under `[data-look="camp"]`:
-  - `.gui-panel > .ok-win__frame:has(> .ok-win__body[data-type="town_hall"])`: parchment background (`sprites/v4/ui/parchment.png`).
-  - `.gui-win__body[data-type="town_hall"]`: full `.kit-paper` role remapping (dark ink, cream background, muted ink, etc.).
-  - Chat composer textarea: sunken well (`sprites/v4/ui/well.png`), send button teal (`.ok-btn.primary`).
-  - Chat cards (`.gui-card-order`): parchment sunken well or thin frame.
+- **Status:** **Needs JS**. Town Hall Work view is omitted from the `PAPER` set in `windows.js`, so its panel does not receive `.kit-paper` styling. A CSS `:has()` workaround was tested in round 1 but removed in round 2 in accordance with tonight's limits (do not touch `.js` or `.py` files; screens needing JS changes are marked "needs JS" and left for a later round).
 
 ### 2.7 "Since your last look"
 - **Before:** Rendered via `.ok-dialog` inside `.gui-lastlook` with dark slate background and old fonts. Quiet bar used dark panel.
@@ -89,3 +85,6 @@ Tonight's limits: Skip portrait's / home's menu and Items panel (spec 13 changes
 ### 2.10 Meat slots dropdown (`.gui-slots__list`) & Road bar (`.gui-roadbar`)
 - **Before:** Meat dropdown under HUD had dark slate panel with 2px stroke. Road bar had basic dark toast styling.
 - **Move:** Meat dropdown moved to thin wooden frame (`frame-thin.png`) on parchment (`sprites/v4/ui/parchment.png`). Road bar moved to thin wooden frame on parchment.
+
+### 2.11 Screenshot index 10: Settings (Phones)
+- In round 1, screenshot 10 was skipped in the numbering sequence between 09 (Task board inside) and 11 (Meat slots dropdown). In round 2, `10-settings-phones.png` captures the Phones pairing section within Town settings, showing the kit's parchment and buttons.
