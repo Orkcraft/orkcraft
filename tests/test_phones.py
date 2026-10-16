@@ -17,7 +17,7 @@ from websockets.exceptions import ConnectionClosed, InvalidStatus
 
 from orkcraft import settings
 from orkcraft.core import buildings
-from orkcraft.gui import mobile, pairing, phone_tls, phones
+from orkcraft.gui import mobile, pairing, phone_http, phone_tls, phones
 from orkcraft.gui.host import Host
 from orkcraft.gui.server import PROTOCOL, Server
 from orkcraft.realm import checkpoint
@@ -476,3 +476,137 @@ def test_settings_phones_offers_keeping_the_computer_awake_once_a_phone_is_paire
     host.command("awake.offer", {"yes": True})
     assert listener.read()["awake_offer"] == "" and host.town.machine.keep_awake == "phone"
     assert settings.load().keep_awake == "phone" and settings.load().phones   # the phone kept by the save
+
+
+@pytest.mark.asyncio
+async def test_two_get_requests_on_one_connection_both_answered_keep_alive(fake_repo):
+    server, task = await _serve(fake_repo)
+    try:
+        offer = server.host.command("phones.pair")
+        await _listening(server)
+        def run():
+            host, port = offer["address"].removeprefix("https://").rsplit(":", 1)
+            conn = http.client.HTTPSConnection(host, int(port), context=_pinned(), timeout=5)
+            try:
+                conn.request("GET", "/app/")
+                r1 = conn.getresponse()
+                assert r1.status == 200
+                assert r1.getheader("Connection", "").lower() == "keep-alive"
+                body1 = r1.read()
+                assert b"Orkline" in body1
+
+                conn.request("GET", "/app/app.js")
+                r2 = conn.getresponse()
+                assert r2.status == 200
+                assert r2.getheader("Connection", "").lower() == "keep-alive"
+                body2 = r2.read()
+                assert len(body2) > 0
+            finally:
+                conn.close()
+        await asyncio.to_thread(run)
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)
+
+
+@pytest.mark.asyncio
+async def test_connection_close_request_ends_the_connection(fake_repo):
+    server, task = await _serve(fake_repo)
+    try:
+        offer = server.host.command("phones.pair")
+        await _listening(server)
+        def run():
+            host, port = offer["address"].removeprefix("https://").rsplit(":", 1)
+            conn = http.client.HTTPSConnection(host, int(port), context=_pinned(), timeout=5)
+            try:
+                conn.request("GET", "/app/", headers={"Connection": "close"})
+                r = conn.getresponse()
+                assert r.status == 200
+                assert r.getheader("Connection", "").lower() == "close"
+                assert r.will_close is True
+                assert conn.sock is None  # Connection: close ended the connection
+                body = r.read()
+                assert b"Orkline" in body
+                assert r.isclosed()
+            finally:
+                conn.close()
+        await asyncio.to_thread(run)
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)
+
+
+@pytest.mark.asyncio
+async def test_idle_timeout_closes_connection(fake_repo, monkeypatch):
+    server, task = await _serve(fake_repo)
+    try:
+        offer = server.host.command("phones.pair")
+        await _listening(server)
+        monkeypatch.setattr(phone_http, "IDLE_S", 0.2)
+        def run():
+            import time
+            host, port = offer["address"].removeprefix("https://").rsplit(":", 1)
+            conn = http.client.HTTPSConnection(host, int(port), context=_pinned(), timeout=5)
+            try:
+                conn.request("GET", "/app/")
+                r = conn.getresponse()
+                assert r.status == 200
+                r.read()
+                time.sleep(0.35)
+                with pytest.raises((http.client.RemoteDisconnected, ConnectionResetError, BrokenPipeError, OSError)):
+                    conn.request("GET", "/app/")
+                    conn.getresponse()
+            finally:
+                conn.close()
+        await asyncio.to_thread(run)
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)
+
+
+def _raw_exchange(address: str, data: bytes) -> bytes:
+    """Send `data` on one TLS connection and read until the listener closes it: all it answered."""
+    import socket
+    host, port = address.removeprefix("https://").rsplit(":", 1)
+    with socket.create_connection((host, int(port)), timeout=5) as raw, _pinned().wrap_socket(raw) as tls:
+        tls.sendall(data)
+        out = b""
+        while chunk := tls.recv(65536):           # b"": the listener closed the connection
+            out += chunk
+    return out
+
+
+@pytest.mark.asyncio
+async def test_a_post_with_a_body_then_a_get_on_one_connection_gets_one_answer_and_the_close(fake_repo):
+    server, task = await _serve(fake_repo)
+    try:
+        offer = server.host.command("phones.pair")
+        await _listening(server)
+        body = json.dumps({"code": "guess", "name": "x"}).encode()
+        data = (b"POST /api/pair HTTP/1.1\r\nHost: x\r\nContent-Type: application/json\r\n"
+                + f"Content-Length: {len(body)}\r\n\r\n".encode() + body
+                + b"GET /app/ HTTP/1.1\r\nHost: x\r\n\r\n")
+        got = await asyncio.to_thread(_raw_exchange, offer["address"], data)
+        assert got.count(b"HTTP/1.1 ") == 1                 # one answer: the GET behind it is never read
+        head = got.split(b"\r\n\r\n", 1)[0].decode("latin-1")
+        assert "Connection: close" in head and "keep-alive" not in head
+        assert b"Orkline" not in got
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)
+
+
+@pytest.mark.asyncio
+async def test_an_http_1_0_request_without_keep_alive_is_answered_with_the_close(fake_repo):
+    server, task = await _serve(fake_repo)
+    try:
+        offer = server.host.command("phones.pair")
+        await _listening(server)
+        data = b"GET /app/ HTTP/1.0\r\nHost: x\r\n\r\nGET /app/app.js HTTP/1.0\r\nHost: x\r\n\r\n"
+        got = await asyncio.to_thread(_raw_exchange, offer["address"], data)
+        assert got.count(b"HTTP/1.1 200") == 1
+        head = got.split(b"\r\n\r\n", 1)[0].decode("latin-1")
+        assert "Connection: close" in head and "keep-alive" not in head
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)
