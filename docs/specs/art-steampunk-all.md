@@ -1,4 +1,4 @@
-# Art run — every building in cute orkish steampunk, outside and inside (3 candidates each)
+# Art run — every building in cute orkish steampunk: its outside, and its room's furniture (3 candidates each)
 
 Branch `art/steampunk-all` · agy (pro) generates; the owner picks; the PM session cuts the picks once
 (CLAUDE.md "Art") and marks each doorway · design: decisions §32–§33, interiors.md §1–§3, §5
@@ -15,11 +15,11 @@ footprint and proportions).
   pipes, a little boiler or chimney with steam, gauges, cogs, rivets, levers, patched leather; warm woods, brass,
   teal accents. **door:** a clear doorway an ork could walk through, visible from the front (anywhere: front, side, an
   arch, a ramp), dark inside. **open:** no doorway; the work happens in the open (a board, a yard, a machine).
-- **Right: the inside, roof off, seen top-down as an old JRPG's interior:** the floor from above taking most of the
-  part, the back wall a band showing its face, the other walls thin rims, furniture from above with a little of its
-  front. The floor mostly **open, with marked places** (chalk squares, pallets, rail stops) where large things will
-  stand later; the furniture round the edge. **No characters, no papers, no small items on tables.** For an open
-  building: its working ground seen the same way, with a low fence or rim.
+- **Right: the room's furniture, as separate pieces** (not a whole room: rooms are built by the code from these
+  pieces and the shared kit, sheet `a-room-kit`). 4–8 pieces for what that building's room holds (the last column),
+  each **seen top-down as in an old JRPG's interior** (from above, a little of its front showing), each standing
+  alone with clear magenta round it, sized to an ork (a bench seats two orks, a workbench is an ork's width).
+  **No characters, no papers, no small items on tables.**
 - Crisp dark 1-pixel outline, no text, no letters, no shadows outside the objects. **No bright yellow, no red**
   (brass is warm ochre). No characters anywhere.
 
@@ -29,7 +29,17 @@ generate.
 
 ## The sheets
 
-| id | building (what it does) | sprite today | door / open | the outside | the inside: what the floor's places are for |
+**First, once: `a-room-kit`** (the shared pieces every room is built from; no "outside" part, the whole sheet is the
+kit), all top-down as an old JRPG's interior, in s1's style:
+- **floors**, each a seamless square tile: wooden planks, stone flags, packed earth, a metal grate;
+- **the back wall** as a band, a tiling segment and its two ends: wooden, stone, and each with a brass pipe run and a
+  gauge variant; **side and front rims** as thin tiling strips and corners;
+- **floor markers** for where large things stand: a chalk square, a wooden pallet, a rail stop with a short rail,
+  a painted circle;
+- **lights and odds**: a lantern on a post, a wall lamp, a pipe with a valve, a small boiler, a crate stack, a barrel.
+
+
+| id | building (what it does) | sprite today | door / open | the outside | the room's furniture (separate pieces; "lots" and "bays" mean their floor markers) |
 |---|---|---|---|---|---|
 | a-depot | Agent pool (orks run the work) | depot | door | a long engine shed with bays along its front | six large bays, each a rail stop and a workbench; a bench by the back wall |
 | a-gate | Review gate (the person passes or sends back) | loot_vault | door | a gatehouse with a barrier arm across its arch; **draw it twice on the left, arm down and arm up** | three large lots for crates; the barrier at the far door; a big stamp on a post |

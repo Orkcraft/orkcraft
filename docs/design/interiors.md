@@ -13,6 +13,9 @@ An improvement of an existing mechanic (decisions §27).
 - **The view is top-down, as in the old JRPGs' interiors** (the owner, same day): the floor seen from above, the back
   (north) wall shown as a band with its face, the side and front walls as thin rims, furniture and props seen from
   above with a little of their front. Not a side view, not the camp's front-top angle. Every room, now and later.
+- **Rooms are built, not drawn whole** (the owner, same day): the code lays a room from a shared kit (floor tiles,
+  the back wall band, rims and corners, floor markers) and the building's own furniture pieces, all top-down; a
+  generated whole room comes out too small and in side view. The kit and the pieces: docs/specs/art-steampunk-all.md.
 - **Settings behind a gear** in the room's top-right corner: a panel slides in (today's Info, js/console.js
   `InfoTab`, as it is), and out again. Money and safety stay in plain words, never drawn into the room (§13.2).
 - **Exit** always in view, and Esc, back to the camp where it was.
