@@ -1,5 +1,11 @@
 # Spec 27 — Mission 1 in four quests: no Office quest, no "Two at once"
 
+## Round 2 (16 October): three old strings, nothing else
+On `spec/27-mission-four-quests` (round 1 `0c10674`). First `git merge origin/main` (spec 26 is merged). Then in
+`tests/test_gui_browser.py` only: the Mission 1 tests still wait for "quest 1 of 5", "quest 2 of 5", "quest 4 of 5"
+(about lines 2549, 2553, 2568) and save a state with `"office"` in `done` (about 2567): make them four quests ("of 4",
+no `office`). Run the critical tests and the whole `tests/test_gui_browser.py` and `tests/test_gui_mission_browser.py`.
+
 Branch `spec/27-mission-four-quests` · design: decisions §35.4, first-mission.md §3 · **Builds:** Claude ·
 **Review:** light · before 17b (17b builds on it)
 
