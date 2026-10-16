@@ -842,3 +842,11 @@ words, a thing removed or merged) is always welcome.
 1. of 3–5 testers, **at least 3 finish Mission 1**;
 2. **at least 2 come back** within 7 days without being asked.
 Below that, the work goes to what stopped them (install, Mission 1, the first five minutes), still under this rule.
+
+## 28. Mission 1 as a scene (16 October, the owner)
+
+From the owner's look at Mission 1: it starts at once after the class (the other ways under one link, spec 17a); the
+window's chrome is put away and the stage zoomed, the Workchief walks in and speaks **on the map**, not in the line at
+the foot; each building raised opens and is walked through in two or three steps (spec 17b, Claude). The first win
+moves to about 4 minutes. An improvement of an existing mechanic, so inside §27. [first-mission.md](first-mission.md)
+§12. P0 before the testers.

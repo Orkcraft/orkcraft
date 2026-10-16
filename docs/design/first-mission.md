@@ -365,3 +365,34 @@ activation, built after the owner has played Mission 1 (§9) and with 1b's order
 
 Not started; built with §11.
 
+
+## 12. Mission 1 as a scene: the Workchief on the map, the rest of the window put away (the owner, 16 October)
+
+The owner's review of today's Mission 1: the quest log sits in the Workchief's line at the camp's foot, and a new
+person does not see that something is asked of them; and a building, once raised, is not shown, so the person does
+not learn what it does. It improves an existing mechanic (decisions §27). The changes:
+
+1. **Mission 1 starts at once.** After the AI tools and the class, the onboarding opens Mission 1; the town step's
+   other ways (a ready town, the planner, an empty town) move under one quiet link, *Other ways to start*
+   (gui-onboarding.md §5). A simplification. Spec 17a.
+2. **The opening scene.** The window's chrome (the command bar, the HUD, the camp's foot line, the panels) fades out
+   and the map dims, except **the mission's stage**: the empty plots and the place the Workchief stands, zoomed in so
+   they fill the view. The Workchief walks in (his camp sprite; under `prefers-reduced-motion` he is simply there)
+   and **speaks on the map**: a speech bubble anchored above him, in the v4 kit (parchment, his face on a teal
+   plate), one line at a time, *Next* (or Space, or a click) for the next, and on the last line of a quest the
+   quest's one press (*Raise the Task board*). *Skip the mission* stays in the bubble's corner and brings everything
+   back. Spec 17b.
+3. **A walk through each building raised.** When a building stands, its own view opens (the window it already has)
+   and the Workchief shows it in two or three steps, each a highlight on one part of the view with his line beside
+   it, then *Back to the camp*:
+   - **Task board:** "This is where work waits": the drill card; how a card gets here.
+   - **Agent pool:** "These are your Grunts": the bays and the orks who will work; where a question shows (❓).
+   - **Review gate:** "Nothing leaves without you": the barrier, pass or send back, the waybill.
+   *Got it* ends a walk at any step. A walk is about 30 seconds.
+4. **The chrome comes back when it is needed.** It stays put away through quests 1–3; on quest 3½ (Camp and Office)
+   it returns with one line from the Workchief naming the command bar ("Ask me anything here"). From quest 4 the
+   mission is the quest log as today, the bubble on the map only for a quest's first line.
+5. **Time.** The first win (quest 2's answer) moves from 3 to **about 4 minutes**: the walks are the reason, and each
+   can be cut short. The rest of the rules (§2) stand: nothing faked, a drill called a drill, skippable at every step.
+6. **Office:** the same steps, drawn as Office draws: no sprites, the bubble a plain card beside the plot, the dim
+   kept. No word changes between looks.
