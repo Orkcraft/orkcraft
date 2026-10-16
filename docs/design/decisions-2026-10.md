@@ -965,3 +965,20 @@ of a result to the person's decision. Taken as P0, all inside §35–§36:
 Not now (the owner): the "Grunt" name and the repository's name; the owner renames the organisation and the repository
 himself. The licence is already Apache 2.0 (README), so the study's "decide the licence" is done: say it.
 
+## 38. The orks stay; when we would look again (16 October, the owner)
+
+The orks stay: they carry the product's meaning (rough, hard-working hands whose work the person checks at the Review
+gate), the art, words, voice and Mission 1 are built on them, and a new image would be a new concept (§27). Orks are
+a common fantasy image; the risk is copying one franchise, not orks. So we keep our own look and never take that
+franchise's frame (minimap, portrait, ability grid), its green-and-red palette, its silhouettes or its words
+(names of units, races, battle cries).
+
+The risks and their answers: looking like a clone of AgentCraft (the one line of §37 leads, not the orks; the
+"-craft" name goes with the owner's rename); orks feeling unserious at work (Office, the same town without sprites,
+offered to the testers as a normal choice); words recognisable from that game, such as "Grunt" (left as they are for
+now, the owner; looked at again after the rename or if testers notice).
+
+**When we look again:** after the testers, only if **two or more** of them say on their own, unprompted, that it
+looks like AgentCraft or like a copy of that game (the guide's questions "what is Orkline for" and "a game or a
+tool" are where it shows). Otherwise the question is closed.
+

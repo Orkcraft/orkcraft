@@ -66,6 +66,8 @@ The state a new product-and-marketing session starts from. Update it when you ha
   headlines, the Review gate as the centre, a short first day, trust said plainly; invite, guide, post rules and
   README's top updated; the onboarding's first screen in spec 27. The owner renames the organisation and the
   repository himself (17 October): don't touch "Grunt" or the repo name.
+- **decisions §38: the orks stay**; looked at again only if ≥2 testers unprompted call it a copy (of AgentCraft or that
+  game). Count it from their answers.
 - Dev session for 26: `session_01GT2jie5yC5t9tua8JLyfXW` (branch `spec/26-five-buildings`); 27 goes to it after 26
   is merged, on `spec/27-mission-four-quests`. Tonight's batch: `docs/specs/batches/2026-10-16-night.md` (agy: 18 r2, 19, 12b,
   `art-steampunk-all` if unfinished). Claude: **17b** in tomorrow's morning batch, after 19 is merged.
