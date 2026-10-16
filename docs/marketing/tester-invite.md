@@ -6,19 +6,21 @@ First from remote workers who build their own things with Claude Code or Codex (
 
 ## Short (a DM or a reply)
 
-> I'm building Orkline: your coding agents (Claude Code, Codex) working on your side project as a small camp of orks,
-> with work flowing through a review gate to a pull request. Local, open source, uses your own subscriptions.
-> I'm looking for 10 people to try the first mission (about 15 minutes) and tell me honestly what's confusing.
+> I'm building Orkline: a camp where work rides from the board through the orks (your Claude Code or Codex) to the
+> Review gate, and nothing passes without you. Local, open source (Apache 2.0), uses your own subscriptions, no
+> accounts, sends nothing by itself.
+> I'm looking for 10 people to try the first mission (about 10 minutes) and tell me honestly what's confusing.
 > Interested? I'll send the install line and a one-page guide.
 
 ## Long (an email or a forum post)
 
 > Hi [name],
 >
-> I saw you're building [their project] with [Claude Code / Codex]. I'm working on Orkline, an open-source tool that
-> runs your coding agents on your own project as a small camp: work comes in from GitHub or a task board, orks do it
-> in your own terminals, nothing leaves without your review, and you see at a glance who's stuck and who's waiting
-> for you.
+> I saw you're building [their project] with [Claude Code / Codex]. I'm working on Orkline, an open-source tool
+> (Apache 2.0): a camp where work rides from the board through the orks to the Review gate, and nothing passes
+> without you. Work comes in from GitHub or a task board, orks (your own Claude Code or Codex) do it in your own
+> terminals, and at the gate you pass each result or send it back, seeing what was done, what was touched and what
+> it cost.
 >
 > It's early (macOS checked; Linux should work). I'm looking for ten people to:
 >

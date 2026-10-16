@@ -62,6 +62,10 @@ The state a new product-and-marketing session starts from. Update it when you ha
 - Old unmerged branches (4–12 October) judged No/Later; the owner agreed to delete them, but this session may not
   delete remote branches: the owner deletes them on GitHub.
 - Mission 1 is four quests (decisions §35.4): spec 27, Claude, after 26 and before 17b.
+- **decisions §37 (AgentCraft study, `docs/marketing/competitors/agentcraft.md`)**: one line of difference, no pun in
+  headlines, the Review gate as the centre, a short first day, trust said plainly; invite, guide, post rules and
+  README's top updated; the onboarding's first screen in spec 27. The owner renames the organisation and the
+  repository himself (17 October): don't touch "Grunt" or the repo name.
 - Dev session for 26: `session_01GT2jie5yC5t9tua8JLyfXW` (branch `spec/26-five-buildings`); 27 goes to it after 26
   is merged, on `spec/27-mission-four-quests`. Tonight's batch: `docs/specs/batches/2026-10-16-night.md` (agy: 18 r2, 19, 12b,
   `art-steampunk-all` if unfinished). Claude: **17b** in tomorrow's morning batch, after 19 is merged.

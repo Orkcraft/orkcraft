@@ -944,3 +944,24 @@ itself out and what hangs on it (specs 06, 07, 08, 09), the BMAD line (15), Miss
 02. Kept, with their track: specs/README.md "The list". The phone that already works stays as it is; it gets fixes
 only if it breaks.
 
+## 37. After AgentCraft: five P0s on positioning and the first day (16 October, the owner)
+
+A study of AgentCraft ([marketing/competitors/agentcraft.md](../marketing/competitors/agentcraft.md)): a closed,
+free, one-person "RTS for agents"; 320k views at launch, ~200 npm installs a week and 309 in its Discord eight months
+on. Interest in the image is proven, the habit is not. Its niche is attention (who waits, who idles); ours is the path
+of a result to the person's decision. Taken as P0, all inside §35–§36:
+1. **One line of difference** everywhere a tester looks (README's top, the onboarding's first screen, the invite,
+   the guide): *a camp where work rides from the board through the orks to the Review gate, and nothing passes
+   without you.* Never "RTS", never "command your agents like units".
+2. **No orc/orchestration pun in headlines**, posts or first lines (the pun is taken by a talk on AgentCraft); the
+   interface keeps its words (ork, orkestration). The public name is **Orkline** everywhere.
+3. **The Review gate is the centre** (track 1): pass or send back at one glance, the waybill says what was done, what
+   was touched, what it cost. The testers are asked how long a decision took and whether they came back for it.
+4. **The first day is no longer than the competitor's**: one install line, the first cart at the Review gate as early
+   as Mission 1 allows (Mission 1 in four quests, §35.4; anything not leading there leaves it).
+5. **Trust said plainly** where the tester reads it first: local, no accounts, no API keys, nothing sent by itself;
+   usage stats off until you say yes; the first real work read-only.
+
+Not now (the owner): the "Grunt" name and the repository's name; the owner renames the organisation and the repository
+himself. The licence is already Apache 2.0 (README), so the study's "decide the licence" is done: say it.
+

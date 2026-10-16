@@ -9,8 +9,8 @@
 <h3 align="center">Build the factory that builds your side project.</h3>
 
 <p align="center">
-  Work comes in, your coding agents (the orks) refine it on the line, and finished goods are
-  catapulted over the wall: a pull request opened, a post published, a reply sent.
+  A camp where work rides from the board through the orks (your Claude Code or Codex) to the Review gate,
+  and nothing passes without you: a pull request opened, a post published, a reply sent.
 </p>
 
 <p align="center">

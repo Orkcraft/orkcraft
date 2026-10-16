@@ -20,6 +20,10 @@ finale after quest 3, *Lift the barrier*, Mission 1 done after `listen`.
    quests numbered 1–4; no dead code paths for `office`/`two`. The building plots' labels follow.
 5. Docs a person reads that list the quests (README, `docs/` guides for people, not design docs): four quests.
 
+6. **The onboarding's first screen** (decisions §37) carries one line under its title, through `say()` if it is
+   data, or written in the template: "A camp where work rides from the board through the orks to the Review gate,
+   and nothing passes without you." Nothing else on that screen changes. Check `tests/test_gui_wording.py`.
+
 ## Not in this spec
 The Office look itself stays (the key, the setting, Office drawing). Running two cards in parallel stays a feature
 of the product; only the quest goes. No new hint or line in its place.
