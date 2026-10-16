@@ -23,6 +23,10 @@ The state a new product-and-marketing session starts from. Update it when you ha
 - **Who builds** (decisions §26): the PM marks each spec agy or Claude when writing it; the owner starts both in the
   evening; the PM reviews every branch in the morning (specs/README.md "Who builds").
 
+- **Dev sessions running (16 October, morning):** spec 01 round 3 `session_015VpnNP4rjdC4UL1VQcHTxu` (branch
+  `spec/01-phone-fast-load`), spec 21 `session_01ReyYTVQzzWZphXokBVzFZr` (branch `spec/21-building-screen`). The owner's
+  agy runs 12, 13b, 17a, 18, 24 and the art card s1-steampunk. The PM session reviews each branch and merges what holds.
+
 ## Where things are
 - Decisions: `docs/design/decisions-2026-10.md` §15–§25 (the camp's shape §20, timeline §22, process lines §23,
   negative feedback §24, settlement §25). Design system v3: `docs/design/design-system-v3.md`. Phone: `mobile.md` §13.
