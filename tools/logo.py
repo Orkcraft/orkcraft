@@ -10,10 +10,13 @@ its shoulders (`MARK_BOX`). Out come, in `design-system/logo/` by default (the G
 - `ork-mark-mono.svg`: one colour (`currentColor`), its darkest pixels cut out;
 - `orkcraft-dark.svg`, `orkcraft-light.svg`: the head with the word, set in New Rocker (the wordmark's face) and
   turned into outlines so it needs no font;
-- `favicon-16.png`, `favicon-32.png`, `favicon.ico`, `ork-mark-256.png`: at whole multiples, the 16 px boxed down;
+- `favicon-16.png`, `favicon-32.png`, `favicon.ico`, `ork-mark-256.png`, `ork-mark-<n>.png` (the head at the source's
+  own pixels): the head cut from the generated sheet itself (`head_source`), downscaled once with LANCZOS on
+  premultiplied alpha to each size, on a clear ground;
 
 and `docs/img/logo-dark.png`, `logo-light.png` (the README's: the word in New Rocker with its shadow) and the phone's
-`icon-192.png`, `icon-512.png`, `apple-touch-icon.png` (`orkcraft/gui/static/pwa/`).
+`icon-192.png`, `icon-512.png` (clear) and `apple-touch-icon.png` (iOS wants it opaque: one token colour behind the
+head) (`orkcraft/gui/static/pwa/`).
 
 The agent's small head in the GUI is still the 12×8 grid below: `design-system/sprites/orks/` gets `ork.png` (drawn
 at 2× (24×16) and 4× (`@2x`)) and its states with their glyph beside the head on a 20×8 grid (40×16): `ork-idle` eyes
@@ -25,10 +28,12 @@ Needs `pip install fonttools brotli pillow` (brotli reads the woff2 font).
 from __future__ import annotations
 
 import argparse
+import json
 import pathlib
 
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.transformPen import TransformPen
+import numpy as np
 from fontTools.ttLib import TTFont
 from PIL import Image
 
@@ -317,20 +322,75 @@ def mark_svg_body(img: Image.Image, mono: str | None = None) -> str:
                                                    for x, y, n in runs_) + '"/>' for c, runs_ in by.items())
 
 
-def mark_raster(size: int, ground: tuple[int, int, int, int] = (0, 0, 0, 0), fill: float = 1.0) -> Image.Image:
-    """The head centred on a square of `size` px: at the largest whole multiple that fits `fill` of it, or, smaller
-    than the head itself (the 16-px favicon), boxed down."""
-    head = mark()
-    room = int(size * fill)
-    k = room // max(head.size)
-    if k >= 1:
-        head = head.resize((head.width * k, head.height * k), Image.NEAREST)
-    else:
-        f = room / max(head.size)
-        head = head.resize((max(1, round(head.width * f)), max(1, round(head.height * f))), Image.BOX)
+SOURCE_FILL = 0.875     # the head fills this much of a raster's longer side, a little clear margin round it
+APPLE_GROUND = "#e3bf9a"    # tokens.css `--ink-gold` (camp): the warm tan of the Mechanic's hat and frames, so the
+                            # head's dark outline and olive face read on it; iOS wants this one icon opaque
+
+
+def head_source() -> np.ndarray:
+    """The Mechanic's head cut once from the generated sheet itself (RGBA floats 0..1, straight alpha), at the
+    sheet's own pixels (about 7 per art px of today's sprite): the background keyed out with despill (tools/camp_hd.py),
+    only the sprite's own cells kept, the shoulders left out, trimmed. Never re-pixelated."""
+    import sys
+    sys.path.insert(0, str(ROOT / "tools"))
+    import camp_hd
+    import camp_sheet
+    spec = json.loads((ROOT / "tools" / "camp_sheets_v3.json").read_text(encoding="utf-8"))
+    sh = next(x for x in spec["sheets"] for g in x.get("groups", []) for i in g["items"]
+              if i["file"] == "orks/roles/mechanic.png")
+    item = next(i for g in sh["groups"] for i in g["items"] if i["file"] == "orks/roles/mechanic.png")
+    row = next(r for r in json.loads((ROOT / "design-system" / "sprites" / "v3" / "manifest.json")
+                                     .read_text(encoding="utf-8"))["sprites"] if r["file"] == "orks/roles/mechanic.png")
+    sheet = camp_sheet.Sheet(ROOT / sh.get("root", spec["root"]) / sh["file"], sh.get("fringe", 60),
+                             sh.get("close", 1), sh.get("degrid", spec.get("degrid", False)))
+    c = row["pitch"] * row["scale"]                 # source px per art px of today's sprite
+    iw, ih = row["size"]
+    today = np.asarray(Image.open(MARK_SPRITE).convert("RGBA"))[..., 3] > 0
+    box = sheet.at(*item["at"])
+    x0, y0, x1, y1 = sheet.screen(box)
+    sx = x0 - np.flatnonzero(today.any(axis=0))[0] * c      # where the sprite's slot starts on the sheet
+    sy = y1 - ih * c                                          # bottom-anchored
+    bx0, by0, bx1, by1 = MARK_BOX
+    X0, Y0 = int(np.floor(sx + (bx0 - 1) * c)), int(np.floor(sy + (by0 - 1) * c))
+    X1, Y1 = int(np.ceil(sx + (bx1 + 1) * c)), int(np.ceil(sy + (by1 + 1) * c))
+    rgba = camp_hd.unkey(sheet.a[Y0:Y1, X0:X1], sheet.bg[Y0:Y1, X0:X1])
+    # keep what lies over the head of today's sprite (one art px round it): inside the box, less the shoulders beside
+    # the chin, and only its biggest piece (a tool of the next frame's hangs at the edge, unjoined)
+    head = today.copy()
+    head[:, :bx0] = head[:, bx1:] = False
+    head[:by0] = head[by1:] = False
+    for cx0, cy0, cx1, cy1 in MARK_CLEAR:
+        head[cy0:cy1, cx0:cx1] = False
+    lab, n = camp_sheet.label(head)
+    if n:
+        head = lab == 1 + int(np.argmax([(lab == i).sum() for i in range(1, n + 1)]))
+    keep = camp_hd._near(np.pad(head, 1), 1)
+    ys = np.clip(np.floor((np.arange(Y0, Y1) - sy) / c).astype(int) + 1, 0, keep.shape[0] - 1)
+    xs = np.clip(np.floor((np.arange(X0, X1) - sx) / c).astype(int) + 1, 0, keep.shape[1] - 1)
+    rgba[..., 3] *= keep[ys[:, None], xs[None]]
+    solid = np.argwhere(rgba[..., 3] > 0.02)
+    (ty0, tx0), (ty1, tx1) = solid.min(axis=0), solid.max(axis=0) + 1
+    return rgba[ty0:ty1, tx0:tx1]
+
+
+def mark_raster(size: int, ground: tuple[int, int, int, int] = (0, 0, 0, 0), fill: float = SOURCE_FILL) -> Image.Image:
+    """The head centred on a square of `size` px, its longer side `fill` of it: one LANCZOS downscale (premultiplied,
+    linear light) straight from the sheet's pixels to `size`, never through a pixel grid."""
+    import sys
+    sys.path.insert(0, str(ROOT / "tools"))
+    import camp_hd
+    src = head_source()
+    f = size * fill / max(src.shape[:2])
+    w, h = max(1, round(src.shape[1] * f)), max(1, round(src.shape[0] * f))
+    head = Image.fromarray(camp_hd.downscale(src, (0, 0, src.shape[1], src.shape[0]), (w, h)), "RGBA")
     img = Image.new("RGBA", (size, size), ground)
-    img.alpha_composite(head, ((size - head.width) // 2, (size - head.height) // 2))
+    img.alpha_composite(head, ((size - w) // 2, (size - h) // 2))
     return img
+
+
+def native_size() -> int:
+    """The square the head fills at the sheet's own pixels (1 source px = 1 image px)."""
+    return round(max(head_source().shape[:2]) / SOURCE_FILL)
 
 
 def readme_logo(text: str, shadow: str, height: int = 192) -> Image.Image:
@@ -374,6 +434,8 @@ def main() -> None:
     for size in (16, 32):
         mark_raster(size).save(out / f"favicon-{size}.png")
     mark_raster(256).save(out / "ork-mark-256.png")
+    native = native_size()      # the largest clean size: the sheet's own pixels (not 1024)
+    mark_raster(native).save(out / f"ork-mark-{native}.png")
     # every size drawn on its own, never scaled down from the largest
     mark_raster(48).save(out / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)],
                          append_images=[mark_raster(16), mark_raster(32)])
@@ -381,8 +443,10 @@ def main() -> None:
     readme_logo("#e8dfc6", "#000000").save(docs / "logo-dark.png")
     readme_logo("#1d1a12", "#cdbf96").save(docs / "logo-light.png")
     pwa = ROOT / "orkcraft" / "gui" / "static" / "pwa"
-    for name, size in (("icon-192.png", 192), ("icon-512.png", 512), ("apple-touch-icon.png", 180)):
-        mark_raster(size, (20, 20, 20, 255), 0.72).convert("RGB").save(pwa / name)
+    for name, size in (("icon-192.png", 192), ("icon-512.png", 512)):
+        mark_raster(size).save(pwa / name)                      # clear: the OS masks it as it likes
+    ground = tuple(int(APPLE_GROUND[i:i + 2], 16) for i in (1, 3, 5)) + (255,)
+    mark_raster(180, ground, 0.8).convert("RGB").save(pwa / "apple-touch-icon.png")   # iOS wants it opaque
     sprites(ROOT / "design-system" / "sprites" / "orks")
     print(f"wrote {out} and the ork sprites")
 
