@@ -83,7 +83,7 @@ The state a new product-and-marketing session starts from. Update it when you ha
 - Local `main` in a PM container may be a stale design branch: work on a branch from `origin/main`.
 
 ## Waiting on the owner
-- Tonight: start the agy tabs of `2026-10-16-night.md` (the art tab cut to five).
+- Tonight: start agy tabs 1, 2 and 4 of `2026-10-16-night.md` (grass round 2, camera, the five buildings' art).
 - Delete the old branches on GitHub (list in the PM's reply of 16 October).
 - Test the five buildings on the product and send what gets in the way, building by building.
 - Play Mission 1 → fill spec 02 (Mission 1 blockers). P0 before the testers.
