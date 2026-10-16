@@ -67,6 +67,8 @@ export function spriteOf(b, waiting = false) {
  *  town lists them; one no road touches after them all. A road back (`returns`) does not count. A loop of roads never
  *  runs away: a depth stops at the number of buildings. */
 export function order(buildings, roads) {
+  buildings = buildings.filter((b) => b.type !== "town_hall" && b.id !== "town_hall");
+  roads = roads.filter((r) => r.from !== "town_hall" && r.to !== "town_hall");
   const at = new Map(buildings.map((b, i) => [b.id, i]));
   const depth = new Map(buildings.map((b) => [b.id, 0]));
   // a road back (`returns`: the answer to who asked, a send-back) is not the work's order: it goes round again (§4c)

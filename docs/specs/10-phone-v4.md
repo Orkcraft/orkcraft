@@ -2,6 +2,7 @@
 
 Model **pro** for 10a, **flash** for 10b–10d · design: docs/design/mobile.md §13 (read it first) · after spec 01
 (the fast first load), so the new screen doesn't load slowly.
+**Builds:** Claude (10a) · agy (10b–10d) · **Review:** full (10a) · light (10b–10d) (docs/specs/README.md "Who builds")
 
 Four parts, each its own branch and review, in order. All in `orkcraft/gui/static/pwa/` (the phone app: `app.js`
 the app, `town.js` today's home screen of tiles, `camp.js` the Camp v3 drawing, `dock.js` the bottom bar, `slots.js`
