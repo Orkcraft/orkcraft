@@ -10,10 +10,11 @@
 // Art: v3's sprites (design-system-v3.md §8): the booth's backdrop and a board's frame from u6-inside, the parchment
 // sheet, the stone slab, the bone pin and the cloth flag from u6-cards, the orks from o5. Each piece is one element with
 // its own class, so a sprite drops in by CSS alone (`.has-art`); while the manifest is not read, CSS draws them.
-import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { act, say, details } from "../link.js";
 import { V3, kit, loadKit, has, orkFile } from "../camp/sprites.js";
+import { useStageScale } from "../inside.js";
 import { thought } from "../camp/steward.js";
 import { selected, pick, dragCard, Marks, Acts, setDialog, planCard, allCards, noteLanes } from "./fields.js";
 
@@ -37,23 +38,10 @@ const STEP_MS = 2600;                            // a walk from one board to the
 // walk below it
 const BOOTH = { w: 200, h: 109, floor: 78 };
 
-/** The whole multiple of the art pixel that fills the room (its height first, then its width), never under ×2. */
-function useScale(ref) {
-  const [s, setS] = useState(4);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el || typeof ResizeObserver === "undefined") return undefined;
-    const fit = () => {
-      const r = el.parentElement ? el.parentElement.getBoundingClientRect() : el.getBoundingClientRect();
-      if (r.width && r.height) setS(Math.max(2, Math.floor(r.height / BOOTH.h), Math.ceil(r.width / BOOTH.w)));
-    };
-    const ro = new ResizeObserver(fit);
-    ro.observe(el.parentElement || el);
-    fit();
-    return () => ro.disconnect();
-  }, []);
-  return s;
-}
+// The room is the booth as large as the stage allows (interiors.md §1): a whole number of device pixels per art pixel
+// (js/inside.js `useStageScale`), the room's box the booth's own, centred on the black.
+// a board shows at most this many cards; more stand as a pile with +N (interiors.md §2)
+const SHOWN = 8;
 
 const cut = (s, n = 3) => {
   const w = String(s || "").replace(/\s+/g, " ").trim().split(" ");
@@ -112,6 +100,10 @@ function Board({ id, lane, todos, mine, sel, onOpen, onMark, onAdd, addLabel, no
   const [over, drop] = useBoardDrop(id, lane, todos);
   const cards = lane.cards.map((c) => ({ c, todo: false })).concat(mine.map((c) => ({ c, todo: true })));
   const word = say(WORD[lane.id] || lane.label);
+  // more than SHOWN: the first ones stand, the rest as one pile with +N (a press on it shows them all)
+  const [all, setAll] = useState(false);
+  const piled = !all && cards.length > SHOWN ? cards.length - (SHOWN - 1) : 0;
+  const shown = piled ? cards.slice(0, SHOWN - 1) : cards;
   if (folded) {
     return html`<section class=${cls("fields-in__board is-notes is-folded", { "gui-drop": over })} data-lane=${lane.id} ...${drop}
         aria-label=${word}>
@@ -124,8 +116,10 @@ function Board({ id, lane, todos, mine, sel, onOpen, onMark, onAdd, addLabel, no
     <header class="fields-in__plaque"><span>${word}</span>${onFold && html`<button type="button" class="fields-in__fold-btn"
       aria-expanded="true" title=${say(`Fold ${word}`)} aria-label=${say(`Fold ${word}`)} onClick=${onFold}>‹</button>`}<b>${cards.length}</b></header>
     <div class="fields-in__cards">
-      ${cards.map(({ c, todo }) => html`<${Pinned} key=${c.id} id=${id} card=${{ ...c, column: todo ? todos.id : lane.id }} laneId=${lane.id}
+      ${shown.map(({ c, todo }) => html`<${Pinned} key=${c.id} id=${id} card=${{ ...c, column: todo ? todos.id : lane.id }} laneId=${lane.id}
         todo=${todo} sel=${c.id === sel} onOpen=${onOpen} onMark=${onMark} tilt=${tiltOf(c.id)} />`)}
+      ${piled > 0 && html`<button type="button" class="fields-in__pile" title=${say(`Show all ${cards.length}`)}
+        aria-label=${say(`${piled} more: show all ${cards.length}`)} onClick=${() => setAll(true)}><b>+${piled}</b></button>`}
       ${!cards.length && html`<p class="fields-in__empty">${say(notes ? "No notes yet" : "Nothing here")}</p>`}
     </div>
     <div class="fields-in__foot">
@@ -190,7 +184,7 @@ export function Room(b) {
 function Booth({ b }) {
   const id = b.id;
   const ref = useRef(null);
-  const scale = useScale(ref);
+  const scale = useStageScale(ref, BOOTH);
   const [unfolded, setUnfolded] = useState({});
   useEffect(() => { act(id, "seen").catch(() => {}); }, [id]);
   const d = details.value[id];
@@ -227,7 +221,8 @@ function Booth({ b }) {
   const cols = boards.map(() => "minmax(0, 1fr)").concat(shelf.map((ln) => (isFolded(ln) ? "44px" : "minmax(0, 0.75fr)"))).join(" ");
   const mineBtn = todos && tasks.length > 0 && html`<button type="button" class="fields-in__add is-mine"
     onClick=${() => setDialog(id, { lane: { id: todos.id, label: todos.label, kind: "mine" } })}>${say("+ My to-do")}</button>`;
-  const geo = `--s:${scale};--floor:${(BOOTH.h - BOOTH.floor) * scale}px;--booth-w:${BOOTH.w * scale}px;--booth-h:${BOOTH.h * scale}px`;
+  const geo = `--s:${scale};--floor:${(BOOTH.h - BOOTH.floor) * scale}px;--booth-w:${BOOTH.w * scale}px;--booth-h:${BOOTH.h * scale}px;`
+    + `width:${BOOTH.w * scale}px;height:${BOOTH.h * scale}px`;
   return html`<div class=${cls("fields-in", { "has-art": art })} data-id=${id} ref=${ref}
       style=${art ? `${artStyle()};${geo}` : geo}>
     <div class="fields-in__wall">
