@@ -232,4 +232,9 @@ New mechanics, buildings or systems wait here, one line each, until the concept 
   - the v4 kit's optional nits on the remaining screens (12b);
   - devlog 02 (HD orks before/after) and other posts before the testers;
   - the other 18 building types back in the Build menu (hidden by spec 26), one by one, if testers ask.
+- **From the interview of 16 October (docs/marketing/interviews/2026-10-16-d-agentcraft.md), to check on testers:**
+  - the Review gate before the work: the person passes an ork's plan or spec before it starts, not only the result;
+  - the Review gate in a batch: results gather, the person passes them once a day with one look at the whole;
+  - deterministic buildings without a model (Script, Test bench, UX bench: perf, logs, visual regression) back in
+    the Build menu.
 
