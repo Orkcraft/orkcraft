@@ -878,3 +878,12 @@ the **Review gate's** rooms (their art made by the owner, inside only); External
 after. **Doors:** an ork walks only into a building with a doorway; the 13 without one are open-air, their ork works
 beside them; a building redrawn from now on gets a standard front door, its outside and inside made on one sheet.
 [interiors.md](interiors.md), specs 21–24. An improvement of existing mechanics (§27).
+
+## 32. The new art is cute orkish steampunk; doors anywhere, but marked (16 October, the owner)
+
+Buildings will be regenerated (for their doors and their rooms), and **the new art adds steampunk** to the camp's
+cute orkish cartoon: brass and copper pipes, boilers with steam, gauges, cogs, rivets, levers, bolted on crudely,
+orkish first. A style frame first (interiors.md §6, card s1: the depot and the Review gate, outside with a doorway and
+inside roof off, on one sheet), approved by the owner, then building by building. **Doors** need not be in one place,
+but every doorway is marked at the cut (manifest `doorway`), so the ork walks to it wherever it is. A change of the
+existing look (§27).

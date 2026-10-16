@@ -38,10 +38,11 @@ wrong. So:
   same way (js/camp/steward.js `OutOfDoor`, as today for those).
 - **A building with none is open-air:** its ork works beside it on its stop's side (at the board, at the catapult)
   and never walks in or out. Spec 24.
-- **New art keeps the rule:** a building drawn from now on that orks enter has a visible doorway at the front, at
-  the bottom, on the track's side, of one height for every building (an ork's height and a little). When a building is
-  redrawn, its outside (with that door) and its inside (roof off) are made **on one sheet**, so the two match; cut
-  once from the source (CLAUDE.md "Art").
+- **New art keeps the rule** (the owner, same day): a building that orks enter has a **visible doorway an ork fits
+  through**, not always in the same place (front, side, a ramp, a hatch), but **always marked at the cut**: its
+  rectangle in the manifest's `doorway` (tools/doorways.py), so the ork walks to it, passes behind its jamb and comes
+  out of it, wherever it is. A sheet whose doorway can't be marked is not cut. When a building is redrawn, its outside
+  and its inside (roof off) are made **on one sheet**, so the two match; cut once from the source (CLAUDE.md "Art").
 
 ## 4. The order
 
@@ -49,23 +50,46 @@ Before the testers: the screen (spec 21); the Agent pool's and the Review gate's
 first); doors (spec 24). If time allows, External listeners. The rest after the testers, in the order people reach
 them. Mission 1's walk (spec 17b) opens these rooms.
 
-## 5. Art cards (the owner generates; the PM session cuts)
+## 5. The look of the new art: cute orkish steampunk (the owner, same day)
 
-Both rooms keep today's outsides (the depot is redrawn with spec 14; the Review gate already has its doorway): only
-the inside is made. Three candidates each, saved as `docs/design/img/references/v3/candidates/<sheet>/1.png … 3.png`.
+Every sheet made from now on keeps the camp's cartoon, cute orkish style (the same pixel size, outlines and warm
+woods) and adds **steampunk**: brass and copper fittings, pipes and gauges, cogs, rivets, little boilers and
+chimneys puffing steam, valves and levers, patched leather. Orkish first, steampunk as the trimming: crude, bolted on,
+cheerful, never a clean Victorian machine. Yellow and red stay reserved for signals (brass leans to warm ochre, never
+signal yellow). A **style frame** comes first (§6, card s1), approved by the owner; the rooms and every redrawn
+building follow it.
+
+## 6. Art cards (the owner generates; the PM session cuts)
+
+**s1-steampunk (the style frame, first).** Attach `docs/design/img/references/v3/f1-town.jpg`,
+`design-system/sprites/v3/buildings/depot.png`, `design-system/sprites/v3/buildings/loot_vault.png`.
+> Pixel-art, the same cartoon style, pixel size, outlines and front-top view as the attached camp and buildings, made
+> **orkish steampunk**: the same two buildings (the long engine shed and the gatehouse) redrawn with crude bolted-on
+> brass and copper pipes, a small boiler with a chimney puffing steam, gauges, cogs, rivets, valves and levers,
+> patched leather; still cute, chunky and cheerful, warm woods with brass and teal. Each building **with a clear
+> doorway an ork could walk through** (the shed's on its front, the gatehouse's under its arch). Beside each, **the
+> same building from inside with its roof removed** as a cutaway. On a flat magenta (#ff00ff) background, every piece
+> fully inside its area, crisp dark 1-pixel outline, no text, no characters. No bright yellow, no red.
+
+The two room cards below are made **after s1 is approved**, in its style.
+
+
+If s1's insides are good enough they are cut directly; otherwise: Three candidates each, saved as `docs/design/img/references/v3/candidates/<sheet>/1.png … 3.png`.
 
 **i-depot (the Agent pool, inside).** Attach `docs/design/img/references/v3/st-depot.jpg` and
 `design-system/sprites/v3/buildings/depot.png`.
-> Pixel-art, exactly the style, palette, pixel size and front-top view of the attached engine shed. The same shed
+> Pixel-art, exactly the style (the approved steampunk frame s1), palette, pixel size and front-top view of the attached engine
+> shed. The same shed
 > seen **from inside with its roof removed**, as a cutaway: a long plank floor; along it six work bays, each with a
 > workbench, a tool rack and a rail stop where a small cart stands; a long bench by the back wall; lanterns on posts;
-> crates and barrels in the corners. **No characters.** One bay empty, with a small blank wooden sign on a post. On a
+> crates and barrels in the corners; brass pipes along the walls, a small boiler, gauges. **No characters.** One bay empty, with a small blank wooden sign on a post. On a
 > flat magenta (#ff00ff) background, the room fully inside the frame, crisp dark 1-pixel outline, no text, no
 > shadows outside the room. Warm woods and teal cloth; no bright yellow, no red.
 
 **i-gate (the Review gate, inside).** Attach `docs/design/img/references/v3/st-gate.jpg` and
 `design-system/sprites/v3/buildings/loot_vault.png`.
-> Pixel-art, exactly the style, palette, pixel size and front-top view of the attached gatehouse. The same gatehouse
+> Pixel-art, exactly the style (the approved steampunk frame s1), palette, pixel size and front-top view of the attached
+> gatehouse. The same gatehouse
 > seen **from inside with its roof removed**, as a cutaway: a stone floor; a long wooden inspection table across the
 > room with three empty spots for crates; a wooden barrier arm at the far doorway, closed; a shelf on the side wall
 > with a few small sealed crates; a stamp and an ink pot on the table; a lantern. **No characters, no crates on the
