@@ -487,3 +487,22 @@ def test_the_buildings_doorways_are_in_the_manifest_and_survive_a_recut():
     assert "doorway" not in rows["buildings/scrolls.png"]                           # the Wiki's shelves: none
     src = (ROOT / "tools" / "camp_sheet.py").read_text(encoding="utf-8")
     assert '"doorway"' in src                                                        # kept through a recut
+
+
+def test_town_hall_is_not_placed_in_camp(tmp_path):
+    """Spec 13, decisions §20: Camp never places the Town Hall building (its door is the person's home)."""
+    out = _run(TOWN + """
+const B_with_hall = [...B, { id: "town_hall", type: "town_hall" }];
+const L = C.lay(B_with_hall, R, { b: 1.5, s: 1 }, size);
+const ord = C.order(B_with_hall, R);
+const rows = C.rowsOf(ord).flat().map((b) => b.id);
+console.log(JSON.stringify({
+  has_hall: "town_hall" in L.buildings,
+  in_order: ord.some((b) => b.id === "town_hall"),
+  in_rows: rows.includes("town_hall")
+}));
+""", tmp_path)
+    assert not out["has_hall"]
+    assert not out["in_order"]
+    assert not out["in_rows"]
+

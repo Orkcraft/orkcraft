@@ -7,7 +7,7 @@ import { signal } from "@preact/signals";
 import { useLayoutEffect, useRef, useState, useEffect } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { command, say, town as snapshot } from "../link.js";
-import { closeBuilding, letGo, panelShown, panelWidth, opened, selected, pickBuilding, grownCard } from "../windows.js";
+import { closeBuilding, letGo, panelShown, panelWidth, opened, selected, pickBuilding, grownCard, openBuilding } from "../windows.js";
 import { buildingMenu, brokenOf, Card } from "../hut.js";
 import { busy as busyOf } from "../fold.js";
 import { openOrders } from "../orders.js";
@@ -29,8 +29,10 @@ import { portraitOpen } from "../portrait.js";
 import { coverTop } from "../inset.js";
 import { settingsOpen } from "../settings.js";
 import { openMenu } from "../menu.js";
-import { Placed, Inventory } from "./items.js";
-import { Notices, notices } from "./notices.js";
+import { HALL, hallTab } from "../tent.js";
+import { Placed, Inventory, inventoryOpen } from "./items.js";
+import { Notices, notices, openCouncil } from "./notices.js";
+export { openCouncil };
 
 /** The ork a click on a building's steward means: the one stopped or asking, else at work, else its first; its
  *  console's key (core/slots.py rows: a roster ork's ref, a pool's `<building>/<name>`); null with none to show. */
@@ -228,16 +230,21 @@ function Growth({ L, buildings }) {
 
 /** The person's home beside the Review gate (design-system-v3.md §4.13, v3-prompts §13): their kin's house, its name
  *  on it as a building's and its path down to the line (laid with the others, layout.js); a click
- *  opens what is the person's own — since your last look, their profile and deeds, the town's settings. */
+ *  opens what is the person's own — since your last look, their profile and deeds, Items, the Workchief's council,
+ *  the charter (when set), the town's settings. */
 function Home({ L, you }) {
   const h = L.home;
   if (!h) return null;
   const open = (e) => {
     e.stopPropagation();
     if (panned) return;
+    const charter = snapshot.value && (snapshot.value.charter || snapshot.value.growth?.charter);
     openMenu(e, [
       { label: "Since your last look", run: () => command("look.show").catch(() => {}) },
       { label: "You: profile and deeds", run: () => { portraitOpen.value = true; } },
+      { label: "Items", run: () => { inventoryOpen.value = true; } },
+      { label: "The Workchief's council", run: openCouncil },
+      charter ? { label: "The charter", run: () => command("charter.open").catch(() => {}) } : null,
       { label: "Town settings…", run: () => { settingsOpen.value = true; } },
     ]);
   };
@@ -401,7 +408,7 @@ export function CampTown({ buildings, roads }) {
     const top = ref.current.getBoundingClientRect().top + ref.current.clientTop;   // the world's place inside its border
     const hud = Math.max(0, ...[...document.querySelectorAll(".gui-hud__group")].map((e) => e.getBoundingClientRect().bottom));
     const tops = [...document.querySelectorAll(".gui-camp__notice")].map((el) => {
-      const p = L.buildings[el.dataset.id];
+      const p = el.dataset.id === "town_hall" ? L.home : L.buildings[el.dataset.id];
       return p ? top + oyBase + p.y - 6 - 16 - el.offsetHeight : Infinity;
     });
     const need = Math.max(0, Math.round(hud + 12 - Math.min(...tops)));
@@ -437,7 +444,11 @@ export function CampTown({ buildings, roads }) {
     if (zoomLevel.value !== before) pan.value = { x: 0, y: 0 };
   };
   const bare = (e) => {
-    if (!panned && !e.target.closest(".gui-camp__building, .gui-camp__card, .gui-camp__home")) { closeBuilding(); letGo(); }
+    if (!panned && !e.target.closest(".gui-camp__building, .gui-camp__card, .gui-camp__home, .gui-items")) {
+      closeBuilding();
+      letGo();
+      inventoryOpen.value = false;
+    }
   };
   const going = constructing.value;
   const carts = (snapshot.value && snapshot.value.carts) || [], travel = (snapshot.value && snapshot.value.travel) || 0;
