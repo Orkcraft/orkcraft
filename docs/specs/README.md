@@ -81,7 +81,7 @@ Every spec carries two lines, for agy above all: **"Change nothing outside these
 
 | # | spec | when | model | who builds | review |
 |---|---|---|---|---|---|
-| 01 | [the phone's fast first load](01-phone-fast-load.md) (round 2 at the top) | before the testers | flash | agy (round 2); Claude if the cache fix misses | full |
+| 01 | [the phone's fast first load](01-phone-fast-load.md) (round 3 at the top) | before the testers | — | **Claude** (round 3) | full |
 | 10 | [the phone's new UX](10-phone-v4.md) (four parts: cards, motion, full view, v4 look) | right after 01 (the owner) | pro / flash | Claude (pro part) · agy (flash parts) | full (10a) · light (10b–10d) |
 | 02 | [Mission 1 blockers](02-mission1-blockers.md) (filled after the owner plays it) | before the testers | flash | agy | light |
 | 03 | [the charter: "My project"](03-charter.md) | before the testers | pro | **Claude** | full |
