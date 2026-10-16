@@ -244,7 +244,7 @@ function Home({ L, you }) {
       { label: "You: profile and deeds", run: () => { portraitOpen.value = true; } },
       { label: "Items", run: () => { inventoryOpen.value = true; } },
       { label: "The Workchief's council", run: openCouncil },
-      charter ? { label: "The charter", run: () => command("charter.open").catch(() => {}) } : null,
+      charter ? { label: "The charter", run: () => {} } : null,
       { label: "Town settings…", run: () => { settingsOpen.value = true; } },
     ]);
   };
