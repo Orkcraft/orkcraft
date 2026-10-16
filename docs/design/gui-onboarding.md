@@ -113,6 +113,9 @@ The servers are read from all six tools already (`realm/mcp.py`: Hermes' `mcp_se
 
 ## 5. Your first town
 
+**Changed 16 October** ([first-mission.md](first-mission.md) §12.1, spec 17a): in a first session this step is one
+fork, *I'm new* (Mission 1) or *Punk ork* (the ready towns below, or 4b); the empty town leaves it.
+
 The class's three towns (`intents.for_role`), one tab each, named by how often they work (`intents.RHYTHMS`):
 
 | Tab | What it does | How it starts |

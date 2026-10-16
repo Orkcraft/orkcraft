@@ -1,6 +1,7 @@
 # Spec 15 — a process as a line: the BMAD line template
 
 Branch `spec/15-bmad-line` · model **pro** · design: docs/design/process-lines.md (all of it) · after specs 06 and 14
+**Builds:** Claude · **Review:** full (docs/specs/README.md "Who builds")
 
 ## Do
 1. **Line templates as data:** `orkcraft/realm/line_templates/bmad.json` (new folder; a loader in a pure module

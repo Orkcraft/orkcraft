@@ -1,6 +1,7 @@
 # Spec 05 — release 0.3.0 "Orkline"
 
 Branch `spec/05-release-0.3.0` · model **flash-low** · design: CLAUDE.md "Releases", docs/updates.md
+**Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 
 Run only when the PM session says the release is ready (decisions §22: Thursday 22 October).
 

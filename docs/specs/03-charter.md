@@ -1,6 +1,7 @@
 # Spec 03 — the charter, "My project" path
 
 Branch `spec/03-charter` · model **pro** · design: first-mission.md §11, §11.1; decisions §21
+**Builds:** Claude · **Review:** full (docs/specs/README.md "Who builds")
 
 ## Why
 Mission 1's quests 1–3 are drills. Before quest 4 (the first real work) the camp is given its purpose. This spec

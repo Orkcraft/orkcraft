@@ -2,6 +2,7 @@
 
 Branch `spec/06-three-bands` · model **pro** · design: decisions-2026-10.md §20 (all of it), design-system-v3.md §4,
 §4b, §4c, §4f · after Halloween
+**Builds:** Claude · **Review:** full (docs/specs/README.md "Who builds")
 
 ## Do
 The shape is decisions §20, "The camp's lines, final shape" (read its diagram first). In

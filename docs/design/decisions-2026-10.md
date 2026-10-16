@@ -817,3 +817,83 @@ in the evening, on different files; the PM session reviews and merges in the mor
 ("change nothing outside them") and asks for a behavioural browser test. The saving is in Claude's weekly limit: a
 review costs about half of writing the code, so agy pays on small specs and barely on hard ones. The split and the
 flow: [specs/README.md](../specs/README.md) "Who builds".
+
+## 27. The concept is frozen: only changes to what exists, and simplifications (15 October, the owner)
+
+The concept is checked on one person and grows faster than the product (92 design docs, no tester yet). So, from
+today, **an idea is taken only if it changes or improves a mechanic that already exists. No new mechanics, buildings,
+systems or concepts.** The one exception: **a simplification** of the product or of a feature (fewer steps, fewer
+words, a thing removed or merged) is always welcome.
+
+**How the PM session applies it.** Every idea, the owner's or an agent's, is sorted before anything is written:
+- **improves an existing mechanic** (Mission 1, the Review gate, carts, the console, the phone, the camp's look,
+  the onboarding, install) → taken, prioritised as usual;
+- **simplifies** → taken, and ranks above an improvement of the same size;
+- **new** (a new mechanic, building, resource, currency, system) → **No** for now; one line in
+  [open-questions.md](open-questions.md) "After the testers", no design doc, no spec.
+
+**What it means for work already designed:**
+- Specs already written keep their order (specs/README.md): they rework existing mechanics (the camp's layout, the
+  home, the depot, the phone).
+- **The settlement (§25)** is new (leisure pieces, idle orks walking, the home's room, coins): no specs; it waits for
+  the testers. **BMAD lines (§23)** and **Mission 1b** stay after the testers, as already planned.
+
+**When it lifts:** after the testers' numbers, about 14 November (§22), and only if they hold:
+1. of 3–5 testers, **at least 3 finish Mission 1**;
+2. **at least 2 come back** within 7 days without being asked.
+Below that, the work goes to what stopped them (install, Mission 1, the first five minutes), still under this rule.
+
+## 28. Mission 1 as a scene (16 October, the owner)
+
+From the owner's look at Mission 1: the onboarding is one fork after the class: *I'm new* → Mission 1, *Punk ork* → a ready town from the presets or
+the planner; the empty town leaves the first session (spec 17a); the
+window's chrome is put away and the stage zoomed, the Workchief walks in and speaks **on the map**, not in the line at
+the foot; each building raised opens and is walked through in two or three steps (spec 17b, Claude). The first win
+moves to about 4 minutes. An improvement of an existing mechanic, so inside §27. [first-mission.md](first-mission.md)
+§12. P0 before the testers.
+
+## 29. Darker, richer grass (16 October, the owner)
+
+Camp's light grass draws the eye from the buildings and the signals. Of four previews
+([img/grass-variants.png](img/grass-variants.png)) the owner chose **B**: saturation +30 %, brightness −25 %,
+contrast −10 %, applied once to the grass tiles (the grass pixels only in the tiles shared with the path) and to the
+Camp grass tokens. A colour change, not a re-cut (CLAUDE.md "Art"). Spec 18.
+
+## 30. Camp's camera stays close; the wilderness is composed (16 October, the owner)
+
+1. **No far zoom-out in Camp.** Pulled back, the buildings stop reading and the empty wilderness fills the screen.
+   The default view (the railway across the whole screen) is the farthest; the wheel scrolls **down** the lines,
+   since new lines are added at the bottom; closer zooms stay. Office keeps its map. Spec 19 (agy).
+2. **Trees and bushes are placed, not scattered.** Today's hash on a grid reads as random. Hand-composed groves on
+   named places round the camp (a pine band behind the wall, groves down the sides with gaps, the corners, the pond),
+   the grass by the camp left open for the person's own pieces. Spec 20 (Claude); the owner signs off the shots.
+Both improve existing mechanics (§27).
+
+## 31. Entering a building; its things are its data; doors (16 October, the owner)
+
+A click on a building in Camp dims the camp and shows the building **in the middle, roof off, on the whole screen**;
+settings behind a gear, no permanent panel; Exit and Esc. In every room **the building's data are things** and the
+person acts on them (the Task board's cards already are). Before the testers: the screen and the **Agent pool's** and
+the **Review gate's** rooms (their art made by the owner, inside only); External listeners if time allows; the rest
+after. **Doors:** an ork walks only into a building with a doorway; the 13 without one are open-air, their ork works
+beside them; a building redrawn from now on gets a standard front door, its outside and inside made on one sheet.
+[interiors.md](interiors.md), specs 21–24. An improvement of existing mechanics (§27).
+
+## 32. The new art is cute orkish steampunk; doors anywhere, but marked (16 October, the owner)
+
+Buildings will be regenerated (for their doors and their rooms), and **the new art adds steampunk** to the camp's
+cute orkish cartoon: brass and copper pipes, boilers with steam, gauges, cogs, rivets, levers, bolted on crudely,
+orkish first. A style frame first (interiors.md §6, card s1: the depot and the Review gate, outside with a doorway and
+inside roof off, on one sheet), approved by the owner, then building by building. **Doors** need not be in one place,
+but every doorway is marked at the cut (manifest `doorway`), so the ork walks to it wherever it is. A change of the
+existing look (§27).
+
+## 33. Steampunk before the testers; the room on black; big things (16 October, the owner)
+
+1. **The steampunk art comes before the testers** (the owner: the art is generated, through agy, not drawn by an
+   artist, so it is fast): style frame s1 first, then the depot and the Review gate outside and inside, then the
+   other buildings Mission 1 shows. The testers' date stays (§22).
+2. **A building is entered on a black screen**, not over the dimmed camp: nothing of the town distracts.
+3. **Big things, not papers on a table:** a room is large, so its work is a few large props on the floor's lots
+   (stone slabs and planks with carved titles, large crates with a bubble holding the title), each at least about a
+   sixth of the room's width, at most six to eight shown; detail opens on a click. [interiors.md](interiors.md) §2.

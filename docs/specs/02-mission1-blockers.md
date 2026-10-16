@@ -1,6 +1,7 @@
 # Spec 02 — Mission 1 blockers (filled after the owner plays it)
 
 Branch `spec/02-mission1-blockers` · model **flash** · design: first-mission.md §3, §9
+**Builds:** agy · **Review:** light (docs/specs/README.md "Who builds")
 
 **Empty until the owner has played Mission 1 to the end on the desktop (decisions §22).** The PM session turns the
 owner's notes into numbered items here, each with: what happens, what should happen, the file it most likely lives

@@ -133,8 +133,8 @@ export function Placed({ L, items, buildings }) {
   </div>`;
 }
 
-/** The inventory: a quiet button in Camp's corner, and its panel. Each row says what the item is and why it is
- *  here; an earned one placed already says so. */
+/** The inventory: its panel in Camp's corner (opened from the home's menu). Each row says what the item is and
+ *  why it is here; an earned one placed already says so. */
 export function Inventory({ items }) {
   const rows = (items && items.inventory) || [];
   const notes = (items && items.notes) || [];
@@ -143,12 +143,19 @@ export function Inventory({ items }) {
     if (!open || !notes.length) return undefined;
     return () => command("items.seen").catch(() => {});
   }, [open, notes.length]);
+  useEffect(() => {
+    if (!open) return undefined;
+    const esc = (e) => { if (e.key === "Escape") inventoryOpen.value = false; };
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [open]);
+  if (!open) return null;
   return html`<div class="gui-items-slot" onPointerDown=${(e) => e.stopPropagation()} onClick=${(e) => e.stopPropagation()}>
-    <button class=${cls("gui-items__toggle ok-btn", { "is-on": open })} aria-expanded=${open}
-        title=${say("Items: things you earned and the starter set, to place on the camp's grass")}
-        onClick=${() => { inventoryOpen.value = !open; }}>${say("Items")}</button>
-    ${open && html`<section class=${cls("gui-items", { "is-target": drag.value && drag.value.placed && drag.value.over === "panel" })}
+    <section class=${cls("gui-items", { "is-target": drag.value && drag.value.placed && drag.value.over === "panel" })}
         role="region" aria-label=${say("Items")}>
+      <div class="gui-head"><h3 class="ok-font-heading">${say("Items")}</h3><span class="gui-head__spacer"></span>
+        <button type="button" class="gui-link" title=${say("Close")} aria-label=${say("Close")}
+          onClick=${() => { inventoryOpen.value = false; }}>✕</button></div>
       ${notes.map((n, k) => html`<p key=${k} class="ok-font-body gui-items__note"><span class="gui-items__who">${say("Workchief")}:</span> ${say(n)}</p>`)}
       <p class="ok-font-status ok-tone-muted gui-items__hint">${say("Drag one onto the camp's grass: the grid shows where it fits. Drag a placed one back here to put it away.")}</p>
       <ul class="gui-items__list">${rows.map((r) => {
@@ -161,6 +168,6 @@ export function Inventory({ items }) {
             <span class="ok-font-status ok-tone-muted">${say(out ? `${r.why} · in the camp` : r.why)}</span></span>
         </li>`;
       })}</ul>
-    </section>`}
+    </section>
   </div>`;
 }

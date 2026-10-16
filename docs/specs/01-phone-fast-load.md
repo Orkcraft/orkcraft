@@ -1,6 +1,33 @@
 # Spec 01 — the phone app's fast first load
 
 Branch `spec/01-phone-fast-load` · model **flash** · design: decisions-2026-10.md §19
+**Builds:** Claude (round 3; agy rounds 1–2 missed the cache) · **Review:** full (docs/specs/README.md "Who builds")
+
+## Round 3 (16 October, Claude): finish the cache and a test that can fail
+On the branch `spec/01-phone-fast-load` (round 2 is `4b6d4e8`). Round 2 got the sockets right (the revert, bodies
+close, the `phone_http` split, `phones.py` at 542 lines). Left:
+1. **Install path:** `sw.js` install `c.addAll(SHELL)` refetches without `{cache: "reload"}`, so a cache bump can fill
+   the new cache from the stale HTTP cache (SHELL holds immutable PNGs and fonts). Fetch SHELL with reload, and on
+   install fetch and store `assets.json` (reload) too, so every new cache has a map to compare against.
+2. `app.js` fetches `assets.json` twice per open: one `syncAssets` per open, after `serviceWorker.ready`.
+3. `pwa.py`: keep the computed map in memory; the request path only reads it (no per-request `stat()` under the
+   lock); only the warm-up thread hashes.
+4. `phone_http.py`: drop the lazy back-import of `gui.phones`; tests patch `phone_http.IDLE_S` / `KEEP_ALIVE_MAX`.
+   Answer `Connection: close` to an HTTP/1.0 request that did not ask for keep-alive.
+5. **Undo the softened test:** `tests/test_pwa_browser.py` ~112, the stop-all test's early release back to 300 ms
+   (round 2 cut it to 50 ms; tests are never loosened). Don't add `--ignore-certificate-errors` to every browser test.
+6. **The update test must be able to fail.** Today it passes with `{cache: "reload"}` removed and with the hash-diff
+   delete disabled (Chromium doesn't HTTP-cache responses with certificate errors; the background precache refetches
+   everything; the test calls `syncAssets()` itself). Rewrite it: wait for the precache to finish; change the bytes;
+   plain `page.reload()`; check the drawn image's bytes; assert the sprite refetch carries `cache-control: no-cache`
+   (what `cache: "reload"` sends), recorded on the server side; make the HTTP cache live (trust the test cert, e.g.
+   `--ignore-certificate-errors-spki-list`). **Show in the commit message that it fails without the reload and without
+   the delete.**
+7. `tests/test_phones.py`: POST with a body, then a GET on the same connection → one answer, `Connection: close`,
+   the connection closed.
+
+Tests: critical tests, plus `tests/test_phones.py tests/test_pwa.py tests/test_pwa_browser.py`, run with
+`--extra browser` so the browser tests are not skipped.
 
 ## Round 2 (15 October): fix the first round, nothing else
 The branch `spec/01-phone-fast-load` already holds round 1 (`9d8d46c`). Work on it, on top of that commit. Change
