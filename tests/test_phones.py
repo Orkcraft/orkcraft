@@ -610,3 +610,23 @@ async def test_an_http_1_0_request_without_keep_alive_is_answered_with_the_close
     finally:
         server.stop()
         await asyncio.wait_for(task, 10)
+
+
+@pytest.mark.asyncio
+async def test_the_connection_header_is_a_list_of_options(fake_repo):
+    """"keep-alive, Upgrade" asks for keep-alive (an HTTP/1.0 request is kept open); "close, x" asks to close."""
+    server, task = await _serve(fake_repo)
+    try:
+        offer = server.host.command("phones.pair")
+        await _listening(server)
+        kept = (b"GET /app/ HTTP/1.0\r\nHost: x\r\nConnection: Keep-Alive, Upgrade\r\n\r\n"
+                b"GET /app/app.js HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n")
+        got = await asyncio.to_thread(_raw_exchange, offer["address"], kept)
+        assert got.count(b"HTTP/1.1 200") == 2
+        assert b"Connection: keep-alive" in got.split(b"\r\n\r\n", 1)[0]
+        closed = b"GET /app/ HTTP/1.1\r\nHost: x\r\nConnection: close, foo\r\n\r\nGET /app/app.js HTTP/1.1\r\nHost: x\r\n\r\n"
+        got = await asyncio.to_thread(_raw_exchange, offer["address"], closed)
+        assert got.count(b"HTTP/1.1 200") == 1
+    finally:
+        server.stop()
+        await asyncio.wait_for(task, 10)

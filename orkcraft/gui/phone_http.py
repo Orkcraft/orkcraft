@@ -83,9 +83,10 @@ async def handle_conn(listener: Any, reader: asyncio.StreamReader, writer: async
             # post) answers with Connection: close and ends the keep-alive loop. Only body-less GETs
             # are kept alive.
             has_body = (method != "GET") or ("content-length" in headers) or ("transfer-encoding" in headers)
-            conn_header = headers.get("connection", "").lower()
-            # HTTP/1.0 closes unless it asked for keep-alive; HTTP/1.1 keeps it unless it asked to close
-            close_conn = conn_header == "close" or (version == "HTTP/1.0" and conn_header != "keep-alive")
+            # a list of options ("keep-alive, Upgrade"); HTTP/1.0 closes unless it asked for keep-alive,
+            # HTTP/1.1 keeps it unless it asked to close
+            conn = {o.strip() for o in headers.get("connection", "").lower().split(",")}
+            close_conn = "close" in conn or (version == "HTTP/1.0" and "keep-alive" not in conn)
             is_post_endpoint = path in ("/api/pair", "/api/place")
             is_last = (req_count == max_reqs - 1) or close_conn or has_body or is_post_endpoint
             keep = not is_last
