@@ -5,7 +5,8 @@ Branch `spec/13b-home-cleanup` · model **flash** · design: spec 13 (merged in 
 
 ## Do
 Change only `tests/test_pwa_browser.py`, `orkcraft/gui/static/js/camp/town.js`, `orkcraft/gui/static/js/camp/notices.js`.
-Change nothing outside these files.
+Change nothing outside these files. Check 3 of "Before you commit" has one exception here: item 1 removes that one
+assertion, because it never tested anything; touch no other assertion.
 1. In `tests/test_pwa_browser.py`, drop the `notice_reaches_home` assertion: it compares a lambda defined in the test,
    so it proves nothing (the phone's Camp, `pwa/camp.js`, does not load `notices.js`). Keep the no-hall and
    draws-without-error checks.
