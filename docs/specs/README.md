@@ -106,7 +106,8 @@ Every spec carries two lines, for agy above all: **"Change nothing outside these
 | 12 | [the v4 kit on the remaining screens](12-v4-remaining-screens.md) (audit, then move; round 2 at the top) | before the testers | flash | agy | light |
 | 05 | [release 0.3.0](05-release-0.3.0.md) | Thu 22 October | flash-low | agy | light |
 | E1 | [the clean-install check](e1-clean-install.md) (the owner runs it, no agy) | Wed 21 October | — | owner | — |
-| 13 | [no Town Hall in the camp; the home's menu](13-home-instead-of-town-hall.md) (merged; cleanup 13b at the top) | before the testers | flash | agy (round 2) | light |
+| 13 | [no Town Hall in the camp; the home's menu](13-home-instead-of-town-hall.md) (merged) | before the testers | flash | agy (round 2) | light |
+| 13b | [the home's menu: a small cleanup](13b-home-cleanup.md) | before the testers | flash | agy | light |
 | 06 | [three bands: the camp lays itself out](06-three-bands.md) | after Halloween | pro | **Claude** | full |
 | 07 | [the person's quarter: drag in Camp](07-quarter-drag.md) | after 06 | flash | agy | light |
 | 08 | [the Wiki on the grass](08-wiki-on-grass.md) | after 06 | flash | agy | light |
