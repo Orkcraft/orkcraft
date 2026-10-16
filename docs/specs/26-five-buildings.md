@@ -1,5 +1,18 @@
 # Spec 26 — five buildings at the first start; the others hidden
 
+## Round 2 (16 October): two test fixes, one small change — nothing else
+On the branch `spec/26-five-buildings` (round 1 `1433e8c`; the code is right). The PM allows these old tests to change:
+1. `tests/test_gui_browser.py::test_a_test_bench_is_set_up_by_a_frame_dragged_round_its_buildings` builds a Test bench
+   through the Build dialog, which spec 26 hides. In that test only, turn `catalog.all_types` on in the test town's
+   settings (the way the suite already writes settings), so the Build dialog offers the Test bench again.
+2. `tests/test_gui_browser.py` builds its per-type `TYPES` list from `catalog_types()`, so it now covers only the five.
+   Build that list with `catalog.all_types` on (pass the settings dict), so every type keeps its browser test.
+3. `builder.catalog_types` and `town_hall.buildable`: read the settings once per call and pass the dict to
+   `offered()`, not once per type.
+Tests: the critical tests, `tests/test_first_types.py`, `tests/test_gui_browser.py` (whole file), and the test files of
+the modules touched.
+
+
 Branch `spec/26-five-buildings` · design: decisions §35 · **Builds:** Claude · **Review:** light
 
 ## What
