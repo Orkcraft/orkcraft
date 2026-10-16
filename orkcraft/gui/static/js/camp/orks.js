@@ -8,8 +8,8 @@ import { html, cls } from "../html.js";
 import { say } from "../link.js";
 import { busy as busyOf } from "../fold.js";
 import { PATH_W } from "./layout.js";
-import { sizeOf, orkSprite, orkFile, dev } from "./sprites.js";
-import { Bubble, thought } from "./steward.js";
+import { sizeOf, orkSprite, orkFile, doorwayOf, dev } from "./sprites.js";
+import { Bubble, thought, hovered } from "./steward.js";
 
 const LIFT_S = 2.5;                        // a load lifted off and carried in
 
@@ -18,18 +18,26 @@ export function stewardAt(b, p, L, takesWork) {
   if (!p || p.wall || !takesWork) return null;
   const B = L.step.b, S = L.step.s, lineTop = p.service ? p.feet + 6 * L.step.b : p.stop.y - L.T / 2;   // a service: by its door
   if (p.depot) return { x: p.gates[0] - 18 * B, y: p.door.y - 2 * S, pose: b.alert ? "asks" : "waits" };   // by the west doors (§4d)
+  const d = p.file ? doorwayOf(p.file) : null;
+  if (!d) {
+    const east = !p.stop || p.stop.x >= p.cx;
+    const x = Math.round(east ? p.x + p.w + 14 * B : p.x - 14 * B);
+    const pose = b.alert ? "asks" : busyOf(b) ? "works" : "waits";
+    return { x, y: p.feet + 2 * B, pose };
+  }
   if (b.alert) return { x: p.door.x + 14 * B, y: p.feet + 2 * B, pose: "asks" };
   if (busyOf(b)) return { x: p.cx, y: p.y + 10 * B, pose: "inside" };
   const side = p.spur ? p.w * 0.36 : (PATH_W / 2) * B + 18 * (L.step.o || S);   // clear of its path, at the orks' own step
   return { x: p.cx + side, y: lineTop - 2 * S, pose: "waits" };
 }
 
-function Ork({ name, file, at, S, cl = "", style = "", onClick = null }) {
+function Ork({ name, file, at, S, cl = "", style = "", onClick = null, onPointerEnter = null, onPointerLeave = null }) {
   const s = sizeOf(file);
   if (!s) return null;
   const w = dev(s[0] * S), h = dev(s[1] * S), f = orkFile(file, S);
   return html`<span class=${cls("gui-camp__ork", `is-${at.pose}${cl ? ` ${cl}` : ""}${f.hd ? " is-hd" : ""}`)} title=${say(name)} aria-label=${say(name)}
       role=${onClick ? "button" : "img"} onClick=${onClick ? (e) => { e.stopPropagation(); onClick(); } : undefined}
+      onPointerEnter=${onPointerEnter} onPointerLeave=${onPointerLeave}
       style=${`left:${dev(at.x - w / 2)}px;top:${dev(at.y - h)}px;width:${w}px;height:${h}px;z-index:${10 + Math.round(at.y / 8)};`
         + `background:url(${f.url}) 0 0 / auto ${h}px no-repeat;--w:${w}px;${style}`}></span>`;
 }
@@ -38,15 +46,24 @@ function Ork({ name, file, at, S, cl = "", style = "", onClick = null }) {
  *  each cart rolling in gets there): the waiting ork gives way to the carrying one for a moment, by CSS alone. */
 function Steward({ b, at, S, soon, onOrk, onBubble }) {
   const name = b.ork_name || "";
+  const keep = (e) => { if (e.pointerType === "mouse" && hovered.value !== b.id) hovered.value = b.id; };
+  const gone = () => { if (hovered.value === b.id) hovered.value = null; };
   if (at.pose === "inside") return html`<${Bubble} x=${at.x} y=${at.y} text=${thought(b)} onClick=${onBubble ? () => onBubble(b) : null} />`;
   if (at.pose === "asks") {
     const file = sizeOf("orks/states/asks.png") ? "orks/states/asks.png" : orkSprite(name);
-    return html`<${Ork} name=${name} file=${file} at=${at} S=${S} onClick=${onOrk ? () => onOrk(b) : null} />`;
+    return html`<${Ork} name=${name} file=${file} at=${at} S=${S} onClick=${onOrk ? () => onOrk(b) : null}
+      onPointerEnter=${keep} onPointerLeave=${gone} />`;
+  }
+  if (at.pose === "works") {
+    const file = sizeOf("orks/states/working.png") ? "orks/states/working.png" : orkSprite(name);
+    return html`<${Ork} name=${name} file=${file} at=${at} S=${S} onClick=${onOrk ? () => onOrk(b) : null}
+      onPointerEnter=${keep} onPointerLeave=${gone} />`;
   }
   const lift = (soon || []).filter((t) => t > -LIFT_S).map((t) => Math.max(t, -LIFT_S + 0.1));
   const carry = sizeOf("orks/inside/carry.png") && lift.length ? lift[0] : null;
   return html`<${Ork} name=${name} file=${orkSprite(name)} at=${at} S=${S} cl=${carry !== null ? "is-giving-way" : ""}
-      style=${carry !== null ? `animation-delay:${carry}s` : ""} onClick=${onOrk ? () => onOrk(b) : null} />
+      style=${carry !== null ? `animation-delay:${carry}s` : ""} onClick=${onOrk ? () => onOrk(b) : null}
+      onPointerEnter=${keep} onPointerLeave=${gone} />
     ${carry !== null && html`<${Ork} name=${name} file="orks/inside/carry.png" at=${{ ...at, pose: "lifts" }} S=${S} cl="is-lifting"
       style=${`animation-delay:${carry}s, ${carry}s`} />`}`;
 }
@@ -78,10 +95,11 @@ function Prospector({ b, p, L, left, onOrk }) {
 export function Stewards({ L, buildings, roads, out = null, soon = {}, left = {}, onOrk = null, onBubble = null }) {
   const into = new Set((roads || []).map((r) => r.to));
   return html`<div class="gui-camp__layer is-orks">${buildings.map((b) => {
-    if (b.id === out) return null;                          // out of its door instead (js/camp/steward.js)
     const p = L.buildings[b.id];
+    const d = p && p.file ? doorwayOf(p.file) : null;
+    if (b.id === out && d) return null;                          // with a doorway: out of its door instead (js/camp/steward.js)
     if (b.type === "mine" && p && !p.wall) return html`<${Prospector} key=${b.id} b=${b} p=${p} L=${L} left=${left[b.id]} onOrk=${onOrk} />`;
-    const at = stewardAt(b, L.buildings[b.id], L, into.has(b.id) || b.type === "fields");
+    const at = stewardAt(b, p, L, into.has(b.id) || b.type === "fields");
     return at && html`<${Steward} key=${b.id} b=${b} at=${at} S=${L.step.o || L.step.s} soon=${soon[b.id]} onOrk=${onOrk} onBubble=${onBubble} />`;
   })}</div>`;
 }

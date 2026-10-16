@@ -60,21 +60,23 @@ export function Bubble({ x, y, text, onClick = null, through = false }) {
 }
 
 /** The steward stepping out of its building (the PM, 15 October: no drawn door leaf). With a doorway (tools/doorways.py)
- *  it steps out of that dark opening, seen only inside it and below its sill, so it appears from the real door; with
- *  none it walks out from behind the building's foot. */
+ *  it steps out of that dark opening, seen only inside it and below its sill, so it appears from the real door; an
+ *  open-air building has no doorway and no OutOfDoor (spec 24). */
 function OutOfDoor({ b, p, S, O = S, B, onOrk }) {
+  const d = p.file ? doorwayOf(p.file) : null;
+  if (!d) return null;
   const click = onOrk ? (e) => { e.stopPropagation(); onOrk(b); } : undefined;
   const file = orkSprite(b.ork_name), s = sizeOf(file);
   if (!s) return null;
-  const w = dev(s[0] * O), h = dev(s[1] * O), d = p.file ? doorwayOf(p.file) : null;
-  // the opening in world px; without one, a slot at the building's foot (nothing of the ork shows above it)
-  const R = d ? { x: p.x + d[0] * B, y: p.y + d[1] * B, w: d[2] * B, h: d[3] * B } : { x: p.door.x - w / 2, y: p.feet, w, h: 0 };
+  const w = dev(s[0] * O), h = dev(s[1] * O);
+  // the opening in world px
+  const R = { x: p.x + d[0] * B, y: p.y + d[1] * B, w: d[2] * B, h: d[3] * B };
   const side = w, W = R.w + 2 * side, H = h + R.h + 24 * O, sill = h + R.h;
-  const out = Math.round((d ? 14 : 18) * O + (d ? 0 : h * 0.6));   // how far it steps out, a pixel a step
+  const out = Math.round(14 * O);   // how far it steps out, a pixel a step
   const clip = `polygon(${side}px ${h}px, ${side + R.w}px ${h}px, ${side + R.w}px ${sill}px, ${W}px ${sill}px, ${W}px ${H}px, 0 ${H}px, 0 ${sill}px, ${side}px ${sill}px)`;
   return html`<span class="gui-camp__exit" role="button" title=${say(`${b.ork_name}: its terminal`)} onClick=${click}
       style=${`left:${Math.round(R.x - side)}px;top:${Math.round(R.y - h)}px;width:${Math.round(W)}px;height:${Math.round(H)}px;clip-path:${clip}`}>
-    <span class=${cls("gui-camp__ork is-out", { "is-behind": !d, "is-hd": orkFile(file, O).hd })} style=${`left:${Math.round(side + R.w / 2 - w / 2)}px;top:${Math.round(sill - h)}px;`
+    <span class=${cls("gui-camp__ork is-out", { "is-hd": orkFile(file, O).hd })} style=${`left:${Math.round(side + R.w / 2 - w / 2)}px;top:${Math.round(sill - h)}px;`
       + `width:${w}px;height:${h}px;--out:${out}px;--n:${out};background:url(${orkFile(file, O).url}) 0 0 / auto ${h}px no-repeat`}></span>
   </span>`;
 }
@@ -112,9 +114,12 @@ export function StewardOut({ b, p, L, grown, seen, onOrk = null, onBubble = null
   // the mouse on the steward out of its door, its bubble or its scroll still means its building: hovered stays, no flicker
   const keep = (e) => { if (e.pointerType === "mouse" && hovered.value !== b.id && !grown) hovered.value = b.id; };
   const gone = () => { if (hovered.value === b.id && !grown) hovered.value = null; };
+  const d = p.file ? doorwayOf(p.file) : null;
+  const east = !p.stop || p.stop.x >= p.cx;
+  const bubbleX = d ? p.door.x + 6 * B : Math.round(east ? p.x + p.w + 14 * B : p.x - 14 * B);
   return html`<div class="gui-camp__layer is-out" onPointerOver=${keep} onPointerLeave=${gone}>
     <${OutOfDoor} b=${b} p=${p} S=${S} O=${O} B=${B} onOrk=${onOrk} />
-    ${!grown && html`<${Bubble} x=${p.door.x + 6 * B} y=${head - 4} text=${thought(b)} through=${true}
+    ${!grown && html`<${Bubble} x=${bubbleX} y=${head - 4} text=${thought(b)} through=${true}
       onClick=${onBubble ? () => onBubble(b) : null} />`}
     <${Scroll} b=${b} p=${p} grown=${grown} seen=${seen} />
   </div>`;

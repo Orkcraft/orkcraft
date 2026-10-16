@@ -218,7 +218,8 @@ def test_the_mouse_brings_the_steward_out_a_click_grows_its_scroll_and_a_second_
     scroll.wait_for(state="visible", timeout=WAIT_MS)
     assert "Task board" in scroll.inner_text() and "is-grown" not in scroll.get_attribute("class")
     assert pg.locator(".gui-camp__bubble").first.inner_text().strip()       # its thought, in a few words
-    assert pg.locator(".gui-camp__door, .gui-camp__ork.is-out").count() == 1   # its steward out of the door
+    assert pg.locator(".gui-camp__exit").count() == 0                        # open-air: no exit (spec 24)
+    assert pg.locator('.gui-camp__layer.is-orks .gui-camp__ork[aria-label="Taskmaster"]').is_visible()
     pg.mouse.move(2, 400)
     scroll.wait_for(state="detached", timeout=WAIT_MS)
     house.click()                                                            # selected: the scroll grows
@@ -236,6 +237,58 @@ def test_the_mouse_brings_the_steward_out_a_click_grows_its_scroll_and_a_second_
     pg.keyboard.press("Escape")
     house.wait_for(state="visible", timeout=WAIT_MS)
     _call(pg, "town.demolish", {"id": board})
+
+
+def test_open_air_buildings_and_doorway_stewards(camp_look):
+    """Spec 24: a Task board (no doorway) shows its ork standing beside it and no .gui-camp__exit; a building with a
+    doorway (forge) still shows its ork in the doorway; a click on either opens its terminal."""
+    pg = camp_look
+    _clear(pg)
+    board = _call(pg, "town.build", {"type": "fields"})
+    forge = _call(pg, "town.build", {"type": "forge"})
+    pg.keyboard.press("Escape")
+    b_board = _building(pg, board)
+    b_forge = _building(pg, forge)
+    b_board.wait_for(state="visible", timeout=WAIT_MS)
+    b_forge.wait_for(state="visible", timeout=WAIT_MS)
+
+    # 1. Task board (no doorway): hover shows thought bubble, no .gui-camp__exit, ork stands beside it
+    b_board.hover()
+    pg.locator(f'.gui-camp__scroll[data-id="{board}"]').wait_for(state="visible", timeout=WAIT_MS)
+    assert pg.locator(".gui-camp__exit").count() == 0
+    board_ork = pg.locator('.gui-camp__layer.is-orks .gui-camp__ork[aria-label="Taskmaster"]').first
+    assert board_ork.is_visible()
+    shots = os.environ.get("ORKCRAFT_SHOTS")
+    if shots:
+        pg.screenshot(path=str(Path(shots) / "spec24-open-air-board.png"))
+    # click on the standing ork opens its terminal
+    board_ork.click()
+    console = pg.locator(".gui-camp__steward")
+    console.wait_for(state="visible", timeout=WAIT_MS)
+    console.get_by_text("This week").wait_for(timeout=WAIT_MS)
+    assert "Taskmaster" in console.inner_text()
+    pg.keyboard.press("Escape")
+    console.wait_for(state="detached", timeout=WAIT_MS)
+
+    # 2. Forge (with doorway): hover shows ork in doorway (.gui-camp__exit)
+    b_forge.hover()
+    pg.locator(f'.gui-camp__scroll[data-id="{forge}"]').wait_for(state="visible", timeout=WAIT_MS)
+    exit_el = pg.locator(".gui-camp__exit")
+    exit_el.wait_for(state="visible", timeout=WAIT_MS)
+    assert exit_el.locator(".gui-camp__ork.is-out").count() == 1
+    if shots:
+        pg.screenshot(path=str(Path(shots) / "spec24-doorway-forge.png"))
+    # click on the stepped-out ork opens its terminal
+    exit_el.evaluate("e => e.click()")
+    console = pg.locator(".gui-camp__steward")
+    console.wait_for(state="visible", timeout=WAIT_MS)
+    console.get_by_text("This week").wait_for(timeout=WAIT_MS)
+    assert "Smith" in console.inner_text()
+    pg.keyboard.press("Escape")
+    console.wait_for(state="detached", timeout=WAIT_MS)
+
+    for bid in (board, forge):
+        _call(pg, "town.demolish", {"id": bid})
 
 
 def test_the_task_board_is_entered_its_cards_move_between_boards_and_exit_goes_back(camp_look, gui):
