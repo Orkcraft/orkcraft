@@ -28,7 +28,7 @@ function Line({ m }) {
       ${m.commit && html`<code class="board-commit" title=${m.commit}>${m.commit.slice(0, 7)}</code>`}</div>
     <span class="board-merged__subject">${m.subject}</span>
     <span class="board-merged__meta ok-tone-muted">${cost(m)}</span>
-    ${sure ? html`<div class="board-row board-merged__sure"><span>Revert “${m.subject}” on main?</span>
+    ${sure ? html`<div class="board-row board-merged__sure"><span>Revert “${m.subject}” on ${m.branch || "dev"}?</span>
         <button class="ok-btn danger" onClick=${revert}>Revert it</button><button class="ok-btn" onClick=${() => setSure(false)}>Keep it</button></div>`
       : html`<div class="board-row">
         ${m.reverted ? html`<span class="board-chip kit-well">reverted</span>`

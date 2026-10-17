@@ -191,7 +191,7 @@ export function makeBoard(ctx) {
   }
   function askRevert(m) {
     pending = m;
-    revertAsk.textContent = `Revert “${m.subject}” on main?`;
+    revertAsk.textContent = `Revert “${m.subject}” on ${m.branch || "dev"}?`;
     revertSheet.open();
   }
   function mergedGroup(t) {
@@ -432,7 +432,7 @@ export function makeBoard(ctx) {
   const askSend = h("button", { class: "ok-btn", type: "button" }, "Send");
   const ask = h("div", { class: "ask" }, askAbout, h("div", { class: "row" }, askField, askSend));
   function drawAsk() {
-    askField.placeholder = section ? `About ${section}…` : "Ask or answer the Taskmaster…";
+    askField.placeholder = section ? `About ${section}…` : "Ask the Taskmaster…";
     askAbout.hidden = !section;
     askAbout.textContent = section ? `${section} ✕` : "";
   }

@@ -342,7 +342,7 @@ def test_merged_without_your_eyes_looked_revert_and_looked_at_all(gui, look):
         assert "Merged without your eyes · 1" in group.locator("h3").text_content()
         line = group.locator(".board-merged")                        # Revert asks once; nothing is sent before the yes
         line.get_by_role("button", name="Revert", exact=True).click()
-        assert line.inner_text().count("Revert “Read the sync code” on main?") == 1
+        assert line.inner_text().count("Revert “Read the sync code” on dev?") == 1
         assert not [c for c in host.log if c[0] == "ideas.revert"]
         line.get_by_role("button", name="Keep it").click()
         assert not [c for c in host.log if c[0] == "ideas.revert"]

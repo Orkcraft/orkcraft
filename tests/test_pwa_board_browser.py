@@ -459,7 +459,7 @@ async def test_phone_merged_group_looked_and_revert_only_behind_a_menu(fake_repo
         assert not await page.locator("dialog[open]").count()
         await line.get_by_role("button", name="More for Read the sync code").click()                 # ⋯ → the one confirm
         sheet = page.locator("dialog[open]")
-        assert "Revert “Read the sync code” on main?" in await sheet.inner_text()
+        assert "Revert “Read the sync code” on dev?" in await sheet.inner_text()
         assert not [c for c in stub.calls if c[0] == "ideas.revert"]
         await sheet.get_by_role("button", name="Revert it").click()
         await _wait_call(page, stub, ("ideas.revert", {"idea": "sync", "task": "k1"}))
