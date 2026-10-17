@@ -19,6 +19,9 @@ pytestmark = pytest.mark.browser
 
 SHOTS = Path(__file__).resolve().parent.parent / "docs" / "design" / "img" / "board"
 V4_SHOTS = SHOTS.parent / "board-v4"
+SHOTS_29C = SHOTS.parent / "board-29c"
+SILENCE = ("The orks ask you when a question, a plan, a red gate twice, a conflict or a spent window needs you. "
+           "Otherwise they work and merge.")
 SECTIONS = ["Gist", "Why", "In", "Out", "Risks", "Open questions", "Estimate", "Stages", "Decisions"]
 PLAN = {"idea": "dark-mode", "made_at": "2026-10-17T10:00:00", "passed_at": None,
         "estimate": {"tasks": 2, "usd_low": 0.6, "usd_high": 1.8},
@@ -43,6 +46,7 @@ class StubHost:
         self.ideas = {"dark-mode": {"slug": "dark-mode", "title": "Dark mode", "track": "general", "order": 0, "state": "ready",
                                     "size": "M", "asks": 0, "updated": "2026-10-17T09:00:00", "plan": None, "talk": []}}
         self.ws = None
+        self.merged: list[dict] = []                       # part A's merged.jsonl (29c §1): unseen lines, newest first
 
     def snapshot(self):
         return {"t": "state", "state": {
@@ -52,9 +56,11 @@ class StubHost:
 
     def page(self, slug):
         i = self.ideas[slug]
-        secs = [{"name": n, "thesis": f"{n} in one line", "text": f"{n}: the longer text of this section."} for n in SECTIONS]
+        # 29c §3: for size S only Gist, In, Out and Stages are shown (the others when they hold text; here they do)
+        secs = [{"name": n, "thesis": f"{n} in one line", "text": f"{n}: the longer text of this section.",
+                 "shown": i["size"] != "S" or n in ("Gist", "In", "Out", "Stages")} for n in SECTIONS]
         return {"slug": slug, "title": i["title"], "track": i["track"], "state": i["state"], "size": i["size"], "sections": secs,
-                "talk": i["talk"][-30:], "plan": i["plan"], "busy": False}
+                "talk": i["talk"][-30:], "plan": i["plan"], "busy": False, "questions": i.get("questions", [])}
 
     def handle(self, name, a):
         self.log.append((name, a))
@@ -68,8 +74,12 @@ class StubHost:
                      for i in self.ideas.values() if i["plan"] and i["plan"]["passed_at"] for t in i["plan"]["todos"]]
             needs = [{"idea": i["slug"], "kind": "plan", "title": i["title"], "text": "Plan ready"}
                      for i in self.ideas.values() if i["state"] == "plan"]
+            needs += [{"idea": i["slug"], "kind": "asks", "title": i["title"], "text": f"{len(i['questions'])} questions"}
+                      for i in self.ideas.values() if i.get("questions")]
+            unseen = [m for m in self.merged if not m["seen"]]
             return {"tracks": [t | {"count": sum(i["track"] == t["slug"] for i in self.ideas.values())} for t in self.tracks],
-                    "ideas": ideas, "today": {"todos": todos, "needs_you": needs}, "batch_next": "", "rev": self.rev}
+                    "ideas": ideas, "today": {"todos": todos, "needs_you": needs, "merged": unseen[:20], "merged_more": max(0, len(unseen) - 20)},
+                    "batch_next": "", "rev": self.rev}
         if name == "ideas.page":
             return self.page(a["slug"])
         if name == "ideas.add":
@@ -90,6 +100,27 @@ class StubHost:
             self.ideas[a["slug"]]["state"] = "failed"
         elif name == "ideas.drop":
             self.ideas.pop(a["slug"], None)
+        elif name == "ideas.seen":
+            for m in self.merged:
+                m["seen"] = m["seen"] or not a or (m["idea"] == a.get("idea") and m["task"] == a.get("task"))
+        elif name == "ideas.revert":
+            line = next(m for m in self.merged if m["idea"] == a["idea"] and m["task"] == a["task"])
+            if line["subject"].startswith("Conflict"):
+                return {"error": "The revert conflicts with a later change: main is untouched."}
+            line["reverted"] = line["seen"] = True
+        elif name == "ideas.answer":
+            qs = self.ideas[a["slug"]]["questions"]
+            q = next(q for q in qs if q["id"] == a["id"])
+            q["answer"] = a["text"] if "text" in a else q["options"][a["choice"]]
+            left = sum(q["answer"] is None for q in qs)
+            if not left:
+                self.ideas[a["slug"]]["questions"] = []
+                self.ideas[a["slug"]]["talk"] += [{"who": "you", "text": "\n".join(f"{q['text']} → {q['answer']}" for q in qs),
+                                                   "section": None, "at": ""}]
+            self.rev += 1
+            if self.ws:
+                self.ws.send(json.dumps(self.snapshot()))
+            return {"ok": True, "left": left}
         elif name == "halt":
             return {}
         else:
@@ -118,9 +149,24 @@ class StubHost:
                                                       ("Retry on a lost signal", "running"), ("Test it offline", "waiting"),
                                                       ("Write the notes", "waiting")], 1)]
         idea("sync", "Sync ideas between the phone and the town", "working", 3, work, track="phone")
+        self.merge_and_ask()
         self.ideas["dark-mode"]["talk"] = [{"who": "you", "text": "Does it follow the system's setting?", "section": "Risks", "at": ""},
                                            {"who": "keeper", "text": "Yes: it reads prefers-color-scheme and keeps your choice.",
                                             "section": "Risks", "at": ""}]
+
+    def merge_and_ask(self):
+        """29c: lines merged without a look, the Taskmaster's questions on an idea that asks, and an S idea."""
+        def line(task, goal, subject, tests, cost, est, commit):
+            self.merged.append({"idea": "sync", "task": task, "title": goal, "goal": goal, "subject": subject, "commit": commit,
+                                "tests": tests, "cost": cost, "estimate": est, "at": "2026-10-17T11:00:00", "seen": False, "reverted": False})
+        line("k2", "Add the queue", "Queue ideas while the phone has no signal", "14 passed", 0.42, [0.3, 0.9], "9f2c41d7e0a1")
+        line("k1", "Read the sync code", "Read the sync code", "9 passed", 0.18, [0.2, 0.4], "3b7a90c5d2e8")
+        self.ideas["export"]["questions"] = [
+            {"id": "q1", "text": "Which format should the weekly report take?", "options": ["PDF", "Markdown", "Both"], "recommended": 1,
+             "why": "The Wiki is Markdown already, so the report can live beside the pages.", "answer": None},
+            {"id": "q2", "text": "Who reads it?", "options": ["Only me", "The team"], "recommended": 0, "why": "You asked for a Monday call.",
+             "answer": None}]
+        self.ideas["offline"]["size"] = "S"
 
     def on_socket(self, ws):
         self.ws = ws
@@ -260,6 +306,166 @@ def test_board_v4_shots(gui, look):
         pg.get_by_role("button", name="Stop", exact=True).wait_for(timeout=WAIT_MS)
         pg.mouse.move(0, 0)
         pg.screenshot(path=str(V4_SHOTS / f"desktop-{look}-working.png"))
+    finally:
+        pg.close()
+    assert not errors, "\n".join(errors)
+
+
+# -- 29c: after the merge, decisions in one tap (docs/specs/29c-after-the-merge.md §1–§3, §5) -------------------------
+
+def _wait_log(pg, host, entry):
+    pg.wait_for_function("() => true")
+    for _ in range(50):
+        if entry in host.log:
+            return
+        pg.wait_for_timeout(100)
+    assert entry in host.log, host.log[-5:]
+
+
+@pytest.mark.parametrize("look", ["camp", "office"])
+def test_merged_without_your_eyes_looked_revert_and_looked_at_all(gui, look):
+    pg, host, errors = _open(gui, look, seed=True)
+    try:
+        group = pg.locator(".board-merged-group")
+        group.wait_for(timeout=WAIT_MS)
+        assert "Merged without your eyes · 2" in group.locator("h3").text_content()
+        first = group.locator(".board-merged").first                 # newest first: the goal bold, the subject, tests · cost, the sha
+        text = first.inner_text()
+        assert "Add the queue" in text and "Queue ideas while the phone has no signal" in text
+        assert "14 passed · $0.42 (est. $0.3–0.9)" in text and "9f2c41d" in text
+        assert first.locator(".board-merged__goal").evaluate("e => getComputedStyle(e).fontWeight") in ("700", "bold")
+        assert pg.locator(".board-need").count() >= 1 and pg.evaluate(     # under Needs you, above the to-dos
+            "() => document.querySelector('.board-merged-group').compareDocumentPosition(document.querySelector('.board-todo, .board-today')) > 0")
+        first.get_by_role("button", name="Looked").click()           # Looked clears one line
+        _wait_log(pg, host, ("ideas.seen", {"idea": "sync", "task": "k2"}))
+        pg.wait_for_function("() => document.querySelectorAll('.board-merged').length === 1")
+        assert "Merged without your eyes · 1" in group.locator("h3").text_content()
+        line = group.locator(".board-merged")                        # Revert asks once; nothing is sent before the yes
+        line.get_by_role("button", name="Revert", exact=True).click()
+        assert line.inner_text().count("Revert “Read the sync code” on main?") == 1
+        assert not [c for c in host.log if c[0] == "ideas.revert"]
+        line.get_by_role("button", name="Keep it").click()
+        assert not [c for c in host.log if c[0] == "ideas.revert"]
+        line.get_by_role("button", name="Revert", exact=True).click()
+        pg.get_by_role("button", name="Revert it").click()
+        _wait_log(pg, host, ("ideas.revert", {"idea": "sync", "task": "k1"}))
+        pg.wait_for_function("() => !document.querySelector('.board-merged-group')")
+        host.merged += [dict(host.merged[0], task=f"x{n}", seen=False, reverted=False) for n in range(2)]
+        host.rev += 1
+        host.ws.send(json.dumps(host.snapshot()))
+        group.get_by_role("button", name="Looked at all").click()
+        _wait_log(pg, host, ("ideas.seen", {}))
+        pg.wait_for_function("() => !document.querySelector('.board-merged-group')")
+    finally:
+        pg.close()
+    assert not errors, "\n".join(errors)
+
+
+def test_a_revert_that_fails_leaves_the_line(gui):
+    pg, host, errors = _open(gui, "office", seed=True)
+    try:
+        host.merged[0]["subject"] = "Conflict with the later change"
+        host.rev += 1
+        host.ws.send(json.dumps(host.snapshot()))
+        line = pg.locator(".board-merged", has_text="Conflict with the later change")
+        line.wait_for(timeout=WAIT_MS)
+        line.get_by_role("button", name="Revert", exact=True).click()
+        pg.get_by_role("button", name="Revert it").click()
+        pg.get_by_text("main is untouched").first.wait_for(timeout=WAIT_MS)       # the host's plain-words error
+        assert pg.locator(".board-merged").count() == 2
+    finally:
+        pg.close()
+    assert not errors, "\n".join(errors)
+
+
+@pytest.mark.parametrize("look", ["camp", "office"])
+def test_questions_are_chips_on_the_needs_you_card_and_on_the_idea(gui, look):
+    pg, host, errors = _open(gui, look, seed=True)
+    try:
+        card = pg.locator(".board-today li", has=pg.locator(".board-need[data-kind=asks]"))
+        card.wait_for(timeout=WAIT_MS)
+        q1 = card.locator(".board-q[data-id=q1]")
+        assert q1.locator(".board-opt").all_inner_texts()[:3] == ["PDF", "Markdown\nrecommended", "Both"] or \
+            [t.replace("\n", " ") for t in q1.locator(".board-opt").all_inner_texts()] == ["PDF", "Markdown recommended", "Both", "Other…"]
+        assert q1.locator(".board-opt.is-rec").count() == 1 and "Markdown" in q1.locator(".board-opt.is-rec").inner_text()
+        why = q1.locator(".board-why")                               # its why on hover
+        assert not why.is_visible()
+        q1.locator(".board-opt.is-rec").hover()
+        assert why.is_visible() and "The Wiki is Markdown already" in why.inner_text()
+        pg.mouse.move(0, 0)
+        assert pg.evaluate("() => [...document.querySelectorAll('.board-opt')].every((b) => b.getBoundingClientRect().height >= 24)")
+        q1.get_by_role("button", name="Markdown").click()            # one tap answers
+        _wait_log(pg, host, ("ideas.answer", {"slug": "export", "id": "q1", "choice": 1}))
+        q2 = card.locator(".board-q[data-id=q2]")
+        q2.get_by_role("button", name="Other…").click()              # Other…: one line of its own
+        q2.get_by_label("Your answer to: Who reads it?").fill("Me and Dana")
+        q2.get_by_role("button", name="Answer", exact=True).click()
+        _wait_log(pg, host, ("ideas.answer", {"slug": "export", "id": "q2", "text": "Me and Dana"}))
+        pg.wait_for_function("() => !document.querySelector('.board-need[data-kind=asks]')")     # all answered: the questions are cleared
+        assert host.ideas["export"]["questions"] == [] and "Markdown" in host.ideas["export"]["talk"][-1]["text"]
+        host.ideas["export"]["questions"] = [{"id": "q3", "text": "Which week?", "options": ["This", "Last"], "recommended": 1, "why": "Mondays.",
+                                              "answer": None}]
+        host.rev += 1
+        host.ws.send(json.dumps(host.snapshot()))
+        pg.locator(".board-card", has_text="Export the week").click()          # and on the idea itself
+        on_idea = pg.locator(".board-idea .board-q[data-id=q3]")
+        on_idea.wait_for(timeout=WAIT_MS)
+        on_idea.get_by_role("button", name="Last").click()
+        _wait_log(pg, host, ("ideas.answer", {"slug": "export", "id": "q3", "choice": 1}))
+    finally:
+        pg.close()
+    assert not errors, "\n".join(errors)
+
+
+@pytest.mark.parametrize("look", ["camp", "office"])
+def test_hidden_sections_wait_behind_more_sections(gui, look):
+    pg, host, errors = _open(gui, look, seed=True)
+    try:
+        pg.locator(".board-card", has_text="Offline mode").click()         # size S: Gist, In, Out and Stages
+        pg.locator(".board-idea .board-sec").first.wait_for(timeout=WAIT_MS)
+        assert pg.locator(".board-idea .board-sec").evaluate_all("els => els.map((e) => e.dataset.name)") == ["Gist", "In", "Out", "Stages"]
+        more = pg.get_by_role("button", name="More sections")
+        assert more.is_visible() and pg.evaluate("() => document.querySelector('.board-more').previousElementSibling.classList.contains('board-sec')")
+        more.click()
+        assert pg.locator(".board-idea .board-sec").count() == len(SECTIONS)
+        pg.get_by_role("button", name="Fewer sections").click()
+        assert pg.locator(".board-idea .board-sec").count() == 4
+        pg.locator(".board-card", has_text="Export the week").click()      # size M: all, no link
+        pg.locator(".board-idea .board-sec").nth(8).wait_for(timeout=WAIT_MS)
+        assert pg.get_by_role("button", name="More sections").count() == 0
+    finally:
+        pg.close()
+    assert not errors, "\n".join(errors)
+
+
+def test_the_silence_line_stands_at_the_foot_of_today(board):
+    pg, _ = board
+    line = pg.locator(".board-silence")
+    assert line.inner_text().replace("\n", " ") == SILENCE
+    assert pg.evaluate("() => { const l = document.querySelector('.board-silence'), t = document.querySelector('.board-today');"
+                       " return t.lastElementChild === l; }")
+
+
+@pytest.mark.skipif(not os.environ.get("BOARD_29C_SHOTS"), reason="the 29c shots are taken on demand")
+@pytest.mark.parametrize("look", ["camp", "office"])
+def test_board_29c_shots(gui, look):
+    """docs/design/img/board-29c/desktop-<look>-*.png at 1400 × 860, density 2: Today with merged lines and a question's
+    chips (the why on hover), and an S idea with More sections."""
+    SHOTS_29C.mkdir(parents=True, exist_ok=True)
+    pg, host, errors = _open(gui, look, seed=True, viewport={"width": 1400, "height": 860}, scale=2)
+    try:
+        pg.locator(".board-merged-group").wait_for(timeout=WAIT_MS)
+        pg.locator(".board-q[data-id=q1] .board-opt.is-rec").hover()
+        pg.screenshot(path=str(SHOTS_29C / f"desktop-{look}-today.png"))
+        pg.mouse.move(0, 0)
+        pg.locator(".board-card", has_text="Offline mode").click()
+        pg.get_by_role("button", name="More sections").wait_for(timeout=WAIT_MS)
+        pg.mouse.move(0, 0)
+        pg.screenshot(path=str(SHOTS_29C / f"desktop-{look}-s-idea.png"))
+        pg.locator(".board-card", has_text="Export the week").click()
+        pg.locator(".board-idea .board-q").first.wait_for(timeout=WAIT_MS)
+        pg.mouse.move(0, 0)
+        pg.screenshot(path=str(SHOTS_29C / f"desktop-{look}-questions.png"))
     finally:
         pg.close()
     assert not errors, "\n".join(errors)

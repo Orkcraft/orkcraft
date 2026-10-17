@@ -8,6 +8,7 @@ export const opened = signal("");           // slug of the open idea
 export const page = signal(null);           // ideas.page of the open idea
 export const track = signal("");            // the track shown ("" = all)
 export const adding = signal(false);        // the Drop it field is up
+export const asked = signal({});            // slug → the open questions of an idea that asks (its Needs you card shows them)
 
 export const BUSY = ["reading", "planning", "working"];
 
@@ -27,7 +28,12 @@ export async function refresh() {
   try {
     const b = await ask("ideas.board");
     const p = opened.value ? await ask("ideas.page", { slug: opened.value }) : null;
-    batch(() => { if (b) board.value = b; if (opened.value) page.value = p; });
+    const qs = {};
+    for (const n of b ? b.today.needs_you.filter((x) => x.kind === "asks") : []) {
+      const got = n.questions || (n.idea === opened.value && p ? p.questions : (await ask("ideas.page", { slug: n.idea }))?.questions);
+      if (got && got.length) qs[n.idea] = got;
+    }
+    batch(() => { if (b) { board.value = b; asked.value = qs; } if (opened.value) page.value = p; });
   } finally { loading = false; }
 }
 

@@ -184,3 +184,44 @@
 [data-look="camp"] .board .ok-btn.danger { color: var(--kit-ink); }
 [data-look="camp"] .board .ok-btn.danger::before { content: ""; width: 8px; height: 8px; flex: none; background: var(--signal-fire);
   box-shadow: 0 0 0 2px var(--art-outline); }
+
+/* -- 29c: the questions as chips, what merged without your eyes, the silence line -------------------------------- */
+.board-qs { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-2) 0 0; }
+.board-q { display: flex; flex-direction: column; gap: var(--space-1); }
+.board-q__text { margin: 0; font-weight: 700; }
+.board-q__got { margin: 0; font-size: .85em; }
+.board-opts { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.board-optwrap { position: relative; display: inline-flex; }
+.board-opt { gap: var(--space-2); }
+.board-opt__rec { font-size: .75em; opacity: .8; text-transform: none; }
+.board-opt.is-rec { font-weight: 700; }
+.board-opt[aria-pressed="true"] { background: var(--selection); }
+.board-why { display: none; position: absolute; z-index: 5; left: 0; top: calc(100% + 4px); width: max-content; max-width: 280px;
+  padding: var(--space-2) var(--space-3); background: var(--panel-raised); color: var(--ink); border: 1px solid var(--frame);
+  border-radius: var(--radius-sm, 0); font-size: .85em; font-weight: 400; text-transform: none; box-shadow: var(--shadow-window); }
+.board-optwrap:hover .board-why, .board-optwrap:focus-within .board-why { display: block; }
+.board-other .ok-input { flex: 1; min-width: 0; }
+
+.board-merged-group { display: flex; flex-direction: column; gap: var(--space-2); }
+.board-merged { display: flex; flex-direction: column; gap: 2px; padding: var(--space-2); background: var(--panel);
+  border: 1px solid var(--frame); border-radius: var(--radius-sm, 0); list-style: none; }
+.board-merged__head { display: flex; align-items: baseline; gap: var(--space-2); }
+.board-merged__goal { flex: 1; min-width: 0; }
+.board-merged__meta { font-size: .85em; font-variant-numeric: tabular-nums; }
+.board-merged .board-row { margin-top: var(--space-1); }
+.board-merged__all { margin-left: auto; text-transform: none; }
+.board-silence { margin: var(--space-3) 0 0; font-size: .85em; }
+.board-more { align-self: flex-start; padding: var(--space-2) 0; }
+
+[data-look="camp"] .board-merged { border-radius: 0; background-color: var(--panel-inset); color: var(--parchment-ink); padding: 6px 10px 8px;
+  border: 4px solid transparent; image-rendering: pixelated; background-clip: padding-box;
+  border-image: image-set(url("/ds/sprites/v4/ui/well.png") 1x, url("/ds/sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat; }
+[data-look="camp"] .board-merged__goal { font: var(--type-camp-body); font-weight: 700; }
+[data-look="camp"] .board-merged__meta { font: var(--type-camp-caption); }
+[data-look="camp"] .board-q__text { font: var(--type-camp-body); font-weight: 700; }
+[data-look="camp"] .board-opt__rec { font: var(--type-camp-caption); }
+[data-look="camp"] .board-why { border-radius: 0; background: var(--parchment); color: var(--parchment-ink); font: var(--type-camp-label); }
+[data-look="camp"] .board-silence { font: var(--type-camp-caption); }
+.board-merged-group > h3 { display: flex; align-items: center; gap: var(--space-2); }
+.board-need + .board-qs { margin: 0 0 var(--space-2) var(--space-3); padding: 0 0 0 var(--space-3); border-left: 2px solid var(--frame); }
+[data-look="camp"] .board-need + .board-qs { border-left: 4px solid var(--kit-parchment-rule); }
