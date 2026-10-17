@@ -22,6 +22,9 @@ from orkcraft.realm import lexicon, modes
 _LEVEL = {"warn": "is near its limit", "over": "is over its limit"}
 
 
+_IDEA = {"asks": "the Taskmaster asks you", "plan": "plan ready", "failed": "needs you", "held": "waits for the limit",
+         "done": "done"}
+
 class Notifier:
     def __init__(self, host, listener) -> None:
         self.host, self.listener = host, listener
@@ -38,6 +41,12 @@ class Notifier:
         if item["kind"] == "episode":                  # an Audio briefing's episode to download (audio-briefing.md §8)
             minutes = max(1, round((item.get("seconds") or 0) / 60))
             return {**item, "line": f"{lexicon.term('gramophone')}: {item['title']} ({minutes} min) is ready"}
+        if item["kind"] == "idea":                     # the board in focus (spec 29a §6, 29c §4): only what blocks
+            state = _IDEA.get(item.get("state", ""), item.get("state", ""))
+            return {**item, "line": f"{modes.strip_emoji(item.get('title') or 'An idea')}: {state}".rstrip(": ")}
+        if item["kind"] == "digest":                   # merged and done, at the hours the person set (spec 29c §4)
+            parts = [f"{item.get('merged', 0)} merged", f"{item.get('done', 0)} done", str(item.get("spent") or "")]
+            return {**item, "line": " · ".join(p for p in parts if p)}
         word = words.get("gold" if item["kind"] == "gold" else "quota") or item["kind"].title()
         return {**item, "line": f"{word} {_LEVEL.get(item['level'], item['level'])}: {item.get('text', '')}".rstrip(": ")}
 

@@ -278,3 +278,15 @@ def test_the_phone_says_once_quietly_when_the_computer_is_on_battery_and_may_sle
     assert again["portrait"]["sleep"] == "" and again["rev"] != snap["rev"]
     host.away.power, host.away._power_at = (lambda: None), -1e9                    # a desktop that tells nothing
     assert host.command("mobile.snapshot")["portrait"]["sleep"] == ""
+
+
+def test_the_notifier_says_an_idea_and_a_digest_in_one_line(fake_repo):
+    from orkcraft.gui import notify
+    n = notify.Notifier(_host(fake_repo), _Listener())
+    snap = {"resources": {"gold": "Spend", "quota": "Quota"}}
+    assert n.line({"kind": "idea", "slug": "dark", "title": "Dark mode", "state": "plan"}, snap)["line"] \
+        == "Dark mode: plan ready"
+    assert n.line({"kind": "idea", "slug": "x", "title": "Sync", "state": "asks"}, snap)["line"] \
+        == "Sync: the Taskmaster asks you"
+    assert n.line({"kind": "digest", "merged": 3, "done": 1, "spent": "$1.20"}, snap)["line"] \
+        == "3 merged · 1 done · $1.20"
