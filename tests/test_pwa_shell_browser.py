@@ -58,7 +58,7 @@ class Stub:
 
     def commands(self) -> dict:
         names = ("board", "page", "review_list", "agents", "task", "diff", "merge", "back", "drop_task", "stop_task", "into", "todo", "say",
-                 "plan", "start", "stop", "move", "add", "drop")
+                 "plan", "start", "stop", "move", "add", "drop", "log", "logs")
         return {f"ideas.{n}": (lambda a, n=n: self.run(f"ideas.{n}", a)) for n in names}
 
     def results(self):
@@ -73,6 +73,9 @@ class Stub:
         return result
 
     def run(self, name, a):
+        device = a.get("device")                      # the listener adds it to every board command (mobile.guard)
+        assert device == "phone"
+        a = {k: v for k, v in a.items() if k != "device" or name == "ideas.log"}
         self.calls.append((name, dict(a)))
         if name == "ideas.board":
             ideas = [i | {"thesis": "Gist in one line", "asks": 0, "updated": "", "progress": {"done": 1, "total": 5} if i["slug"] == "sync" else {"done": 0, "total": 0}}
@@ -119,6 +122,11 @@ class Stub:
             return self.bump({"ok": True})
         if name == "ideas.add":
             return self.bump({"slug": "new"})
+        if name == "ideas.logs":
+            import base64
+            return {"name": "orkline-logs.zip", "data": base64.b64encode(b"PK-not-a-real-zip").decode()}
+        if name == "ideas.log":
+            return {"ok": True}
         return self.bump({"ok": True})
 
 
@@ -233,6 +241,7 @@ async def test_an_idea_a_todo_a_chip_and_a_result_each_open_on_their_own_screen_
         bar = await screen.locator(".screen-bar").bounding_box()
         assert abs(bar["y"] + bar["height"] - 844) < 2                                                 # the actions pinned at the foot
         assert "Start · 5 tasks" in await screen.locator(".screen-bar").inner_text() or "Start" in await screen.locator(".screen-bar").inner_text()
+        assert await _called(stub, "ideas.log", {"event": "opened", "what": "idea", "ref": "dark", "device": "phone"})
         await page.get_by_role("button", name="Back", exact=True).click()
         await page.locator(".screen").wait_for(state="hidden", timeout=WAIT_MS)
         assert (await page.locator(".board-tab.is-active").inner_text()).startswith("Board")                     # back on the tab it came from
@@ -318,3 +327,19 @@ async def test_a_secret_todo_is_entered_over_the_paired_link_on_the_board(fake_r
         await page.get_by_label("The idea").fill("Offline mode")
         await page.get_by_role("button", name="Drop it").click()
         assert await _called(stub, "ideas.add", {"text": "Offline mode", "track": "general"})
+
+
+@pytest.mark.asyncio
+async def test_the_gear_downloads_the_days_logs_on_the_phone_and_tabs_are_logged(fake_repo, monkeypatch):
+    async with _phone(fake_repo, monkeypatch) as (stub, page):
+        await page.get_by_role("tab", name="Agents").click()
+        assert await _called(stub, "ideas.log", {"event": "opened", "what": "tab", "ref": "agents", "device": "phone"})
+        await page.get_by_role("button", name="Settings").click()
+        sheet = page.get_by_role("dialog", name="Settings")
+        await sheet.wait_for(timeout=WAIT_MS)
+        assert "Download today's logs" in await sheet.inner_text()
+        async with page.expect_download() as got:
+            await sheet.get_by_role("button", name="Today", exact=True).click()
+        download = await got.value
+        assert download.suggested_filename == "orkline-logs.zip"
+        assert await _called(stub, "ideas.logs", {"days": 1})

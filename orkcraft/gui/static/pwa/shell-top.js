@@ -41,10 +41,27 @@ export function makeTop(core, ctx) {
   const limitsSheet = sheet("What is left", limitsBody);
   chip.addEventListener("click", () => limitsSheet.open());
 
+  // The analytics zip (gui/ideas.py `ideas.logs`), handed over the paired link and saved as a file on this phone.
+  async function download(days) {
+    const got = await core.call("ideas.logs", { days });
+    if (!got?.data) return;
+    const bytes = Uint8Array.from(atob(got.data), (c) => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: "application/zip" }));
+    const a = h("a", { href: url, download: got.name || "orkline-logs.zip" });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    ctx.flash("The logs are downloaded.");
+  }
+
   const pushBox = h("input", { type: "checkbox", id: "push-after" });
   const gearSheet = sheet("Settings",
     h("label", { class: "check-line", for: "push-after" }, pushBox, h("span", {}, "Push after merging (sends your code to origin)")),
-    h("p", { class: "muted" }, "Off by default. The colours follow your phone's light or dark setting."));
+    h("h3", {}, "Download today's logs"),
+    h("div", { class: "row" }, h("button", { class: "ok-btn", type: "button", onclick: () => download(1) }, "Today"),
+      h("button", { class: "ok-btn", type: "button", onclick: () => download(7) }, "The last 7 days")),
+    h("p", { class: "muted" }, "What you did and what the orks did, kept on the computer. Off by default. The colours follow your phone's light or dark setting."));
   gear.addEventListener("click", () => { pushBox.checked = Boolean(core.st.review?.push); gearSheet.open(); });
   pushBox.addEventListener("change", async () => { await core.call("ideas.into", { push: pushBox.checked }); core.refresh(); });
 

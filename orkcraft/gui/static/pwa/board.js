@@ -53,7 +53,22 @@ export function makeBoard(ctx) {
   }
   const el = h("div", { class: "board v1" }, top.el, ...Object.values(panes), tabBar, preview.el);
 
+  /** What the person opened, for the day's analysis (docs/specs/33-v1-shell.md §9): the host's one loggable event. The listener
+   *  allows a device only a few commands a second, so the lines go out one at a time, a moment apart, behind the ones that matter. */
+  const opened = [];
+  let draining = 0;
+  function logOpened(what, ref) {
+    opened.push({ event: "opened", what, ref: String(ref || ""), device: "phone" });
+    if (!draining) draining = setTimeout(drain, 800);
+  }
+  async function drain() {
+    const next = opened.shift();
+    if (next) await ctx.send("ideas.log", next);
+    draining = opened.length ? setTimeout(drain, 800) : 0;
+  }
+
   function go(id) {
+    logOpened("tab", id);
     st.tab = id;
     drawPanes();
     window.scrollTo(0, 0);
@@ -88,6 +103,7 @@ export function makeBoard(ctx) {
 
   // -- the preview on its own screen: opened over the tab, Back (or the system gesture) to it -----------------------
   function open(p) {
+    logOpened(p.kind === "plan" && p.todo ? "todo" : p.kind, p.task ? `${p.slug}/${p.task}` : p.todo ? `${p.slug}/${p.todo}` : p.slug);
     if (!st.preview) {
       try { history.pushState({ preview: true }, ""); pushed = true; } catch { pushed = false; }
     }
