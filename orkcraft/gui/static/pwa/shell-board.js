@@ -3,9 +3,11 @@
 // plan scrolled to the to-do, on its own screen. A secret is entered only over this paired link (29a).
 import { h, sheet } from "./util.js";
 import { steady } from "./shell-util.js";
+import { field, foot } from "./shell-forms.js";
+import { makeGoalSheet, GOAL_STATE, PRIORITY_WORDS } from "./shell-goal.js";
 
 const HOLD_MS = 450;                    // a card held this long can be dragged
-const NEEDS = { asks: "❓", plan: "📋", failed: "⚠️", held: "⏳" };
+const NEEDS = { asks: "❓", plan: "📋", failed: "⚠️", held: "⏳", goal: "🎯" };
 const STATE_WORDS = { raw: "new", reading: "the Taskmaster is reading", asks: "asks you", ready: "ready", planning: "the Taskmaster is planning",
   plan: "plan ready", working: "working", done: "done", failed: "needs you" };
 export const BUSY = new Set(["reading", "planning", "working"]);
@@ -23,41 +25,71 @@ export function makeBoardTab(core, ctx) {
   const tracks = () => st.board?.tracks || [];
   const mine = () => (st.board?.ideas || []).filter((i) => !st.track || i.track === st.track).sort((a, b) => a.order - b.order);
 
-  // -- New idea: one field in a sheet, kept with no signal as the bar's Idea is ---------------------------------
-  const field = h("textarea", { class: "ok-input", rows: "5", maxlength: "20000", enterkeyhint: "done", "aria-label": "The idea", placeholder: "An idea…" });
-  const where = h("p", { class: "muted hint" });
-  const dropBtn = h("button", { class: "ok-btn primary big", type: "button" }, "Drop it");
-  const addSheet = sheet("New idea", field, where, dropBtn);
-  dropBtn.addEventListener("click", async () => {
-    const text = field.value.trim();
-    if (!text) return;
-    dropBtn.disabled = true;
+  // -- New idea: one short text and its goal in a sheet (spec 34 §2): Process now (the Taskmaster reads it at once) or Later (the
+  // batch does). Closing the sheet with text in it saves it as Later; closing it empty saves nothing. -------------------------
+  const field_ = h("textarea", { class: "ok-input", rows: "5", maxlength: "20000", enterkeyhint: "done", "aria-label": "The idea", placeholder: "An idea…" });
+  const goalPick = h("select", { class: "ok-input", "aria-label": "Goal" });
+  const hint = h("p", { class: "muted hint" }, "Process now: the Taskmaster reads it at once. Later: it waits for the next round. Closing this with text in it saves it as Later. Speak it with the keyboard’s microphone.");
+  const nowBtn = h("button", { class: "ok-btn primary big", type: "button" }, "Process now");
+  const laterBtn = h("button", { class: "ok-btn big", type: "button" }, "Later");
+  const addSheet = sheet("New idea", field("The idea", field_), field("Belongs to goal", goalPick), hint, foot(laterBtn, nowBtn));
+  let saved = false;                                 // a button saved it: closing the sheet after it saves nothing more
+  async function drop(now) {
+    const text = field_.value.trim();
+    if (!text) return null;
+    saved = true;
+    nowBtn.disabled = laterBtn.disabled = true;
     const short = text.length > 40 ? `${text.slice(0, 40)}…` : text;
-    const args = { text };
-    if (st.track) args.track = st.track;
+    const args = { text, now };
+    if (goalPick.value) args.track = goalPick.value;
     const r = await ctx.deliver("ideas.add", args, `the idea “${short}”`);
-    dropBtn.disabled = false;
-    if (!r.ok || r.result?.error) { ctx.flash(r.error || r.result?.error); return; }
-    field.value = "";
+    nowBtn.disabled = laterBtn.disabled = false;
+    if (!r.ok || r.result?.error) { saved = false; ctx.flash(r.error || r.result?.error); return null; }
+    field_.value = "";
+    return r;
+  }
+  nowBtn.addEventListener("click", async () => {
+    const r = await drop(true);
+    if (!r) return;
     addSheet.close();
-    ctx.flash(r.kept ? "No signal: the idea is kept and goes when the town answers." : "Dropped.");
+    ctx.flash(r.kept ? "No signal: the idea is kept and goes when the town answers." : "Dropped: the Taskmaster reads it now.");
     if (!r.kept) core.refresh();
   });
+  laterBtn.addEventListener("click", async () => {
+    const r = await drop(false);
+    if (!r) return;
+    addSheet.close();
+    ctx.flash(r.kept ? "No signal: the idea is kept and goes when the town answers." : "Kept: the Taskmaster reads it in the next round.");
+    if (!r.kept) core.refresh();
+  });
+  addSheet.el.addEventListener("close", async () => {      // × · Esc · the backdrop: text in it is saved as Later, never lost
+    if (saved) { saved = false; return; }
+    const r = field_.value.trim() ? await drop(false) : null;
+    saved = false;
+    if (r) { ctx.flash("Kept as Later."); if (!r.kept) core.refresh(); }
+  });
   const newIdea = h("button", { class: "ok-btn primary", type: "button", onclick: () => {
-    const t = tracks().find((x) => x.slug === st.track);
-    where.textContent = `Into ${t ? t.title : "General"}. It costs nothing: the Taskmaster reads it later. Speak it with the keyboard’s microphone.`;
+    saved = false;
+    goalPick.replaceChildren(...tracks().map((t) => h("option", { value: t.slug }, t.title)),
+      ...(tracks().some((t) => t.slug === "general") ? [] : [h("option", { value: "general" }, "General")]));
+    goalPick.value = tracks().some((t) => t.slug === st.track) ? st.track : "general";
     addSheet.open();
-    field.focus();
+    field_.focus();
   } }, "New idea");
 
-  // -- the goal ------------------------------------------------------------------------------------------------
+  // -- goals (spec 34 §7): each with its priority and state in words; a tap opens the goal and shows its ideas, Edit changes it ------
+  const goalSheet = makeGoalSheet(core);
+  const newGoal = h("button", { class: "ok-btn", type: "button", onclick: () => goalSheet.open() }, "New goal");
   function goals() {
     const list = tracks();
-    if (list.length <= 1) return h("p", { class: "goal" }, h("span", { class: "muted" }, "Your goal: "), list[0]?.title || "General");
-    return h("div", { class: "track-switch", role: "tablist", "aria-label": "Goal" },
-      ...[{ slug: "", title: "All goals" }, ...list].map((t) => h("button", { class: `track${t.slug === st.track ? " is-active" : ""}`, type: "button",
-        role: "tab", "aria-selected": String(t.slug === st.track), onclick: () => { st.track = t.slug; core.draw(); } },
-      t.title, t.slug ? h("small", {}, ` ${(st.board.ideas || []).filter((i) => i.track === t.slug).length}`) : null)));
+    return h("div", { class: "goals" }, h("h3", {}, "Goals"), ...list.map((g) => h("div", { class: `card goal-card${g.slug === st.track ? " is-on" : ""}`, "data-goal": g.slug },
+      h("button", { class: "goal-open", type: "button", "aria-pressed": String(g.slug === st.track),
+        onclick: () => { st.track = st.track === g.slug ? "" : g.slug; core.draw(); core.open({ kind: "goal", slug: g.slug }); } },
+      h("b", {}, g.title),
+      h("span", { class: "goal-meta" }, h("span", { class: `prio prio-${g.priority}` }, PRIORITY_WORDS[g.priority] || "Normal"),
+        GOAL_STATE[g.state] ? h("span", { class: `state-word ${g.state === "reading" ? "work" : g.state}` }, GOAL_STATE[g.state]) : null,
+        h("span", { class: "muted" }, `${g.count} idea${g.count === 1 ? "" : "s"}`))),
+    h("button", { class: "linkish", type: "button", "aria-label": `Edit goal ${g.title}`, onclick: () => goalSheet.open(g.slug) }, "Edit"))));
   }
 
   // -- Today ---------------------------------------------------------------------------------------------------
@@ -109,7 +141,7 @@ export function makeBoardTab(core, ctx) {
     const kids = [h("h3", {}, "Needs you")];
     if (!t.needs_you.length) kids.push(h("p", { class: "muted" }, "Nothing waits on you."));
     for (const n of t.needs_you) {
-      kids.push(h("button", { class: `card need need-${n.kind}`, type: "button", onclick: () => core.open({ kind: "idea", slug: n.idea }) },
+      kids.push(h("button", { class: `card need need-${n.kind}`, type: "button", onclick: () => core.open(n.goal ? { kind: "goal", slug: n.goal } : { kind: "idea", slug: n.idea }) },
         h("span", { class: "need-mark", "aria-hidden": "true" }, NEEDS[n.kind] || "•"),
         h("span", { class: "need-text" }, h("b", {}, n.title), n.text ? h("small", {}, n.text) : null),
         h("span", { class: "chev", "aria-hidden": "true" }, "›")));
@@ -128,7 +160,10 @@ export function makeBoardTab(core, ctx) {
         idea.thesis ? h("span", { class: "idea-thesis" }, idea.thesis) : null,
         h("span", { class: "idea-meta" },
           idea.size ? h("span", { class: "size", title: "Size" }, idea.size) : null,
-          h("span", { class: `state-word ${BUSY.has(idea.state) ? "work" : idea.state}` }, stateWords(idea)))));
+          h("span", { class: `prio prio-${idea.priority || "normal"}` }, PRIORITY_WORDS[idea.priority] || "Normal"),
+          h("span", { class: `state-word ${BUSY.has(idea.state) ? "work" : idea.state}` }, stateWords(idea)))),
+      idea.state === "raw" ? h("button", { class: "ok-btn now", type: "button", "aria-label": `Process now: ${idea.title}`,
+        onclick: async () => { if (await core.call("ideas.read_now", { slug: idea.slug })) core.refresh(); } }, "Process now") : null);
   }
 
   // Long-press, then drag: the held card lifts and follows the finger, the others make room; letting go says where
@@ -191,12 +226,13 @@ export function makeBoardTab(core, ctx) {
 
   return {
     el: pane,
-    sheets: [addSheet.el],
+    editGoal: (slug) => goalSheet.open(slug),
+    sheets: [addSheet.el, goalSheet.el],
     draw() {
       if (!fresh(JSON.stringify([st.board, st.track]))) return;
       if (!st.board) { pane.replaceChildren(h("h2", {}, "Board"), h("p", { class: "muted" }, "Loading…")); return; }
-      if (!tracks().some((t) => t.slug === st.track)) st.track = tracks().length > 1 ? "" : (tracks()[0]?.slug || "");
-      pane.replaceChildren(h("div", { class: "pane-head" }, h("h2", {}, "Board"), newIdea), goals(), ...today(), ...ideas(),
+      if (st.track && !tracks().some((t) => t.slug === st.track)) st.track = "";
+      pane.replaceChildren(h("div", { class: "pane-head" }, h("h2", {}, "Board"), h("div", { class: "row" }, newGoal, newIdea)), goals(), ...today(), ...ideas(),
         h("p", { class: "muted foot-line" }, h("button", { class: "linkish", type: "button", onclick: () => ctx.unpair() }, "Unpair this phone")));
     },
   };

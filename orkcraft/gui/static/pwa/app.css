@@ -652,3 +652,59 @@ p { margin: 0 0 8px; }
 .board.v1 .board-spend { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .board.v1 .board-bar .ok-btn, .board.v1 .limit-chip { flex: none; }
 .board.v1 .board-bar .ok-btn.board-stop { padding-left: 10px; padding-right: 10px; }
+
+/* -- round 2 (docs/specs/34-v1-round-2.md): goals and ideas by sheet, agents by task type, the top bar's two lines ---------------- */
+/* no band above the top bar: the bar is the top of the page (its own safe-area padding), and it holds today's spend whole on a line of its own */
+.focus-board .app { padding-top: 0; }
+.status:empty, .focus-board .app > div:empty { display: none; }          /* the empty status line was the grey band above the bar */
+.board.v1 .board-bar { flex-wrap: wrap; border-radius: 0; border-width: 0 0 1px; margin: 0 -16px; padding: max(8px, env(safe-area-inset-top)) 12px 8px; }
+.board.v1 .board-name { flex: 1 1 auto; }
+.board.v1 .board-spend { flex: 1 0 100%; margin: 0; order: 9; overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.board.v1 .board-spend b { color: var(--ink); }
+.board.v1 .board-spend[hidden] { display: none; }
+.pane-head .row { margin-top: 0; flex-wrap: nowrap; }
+.sheet-form { display: flex; flex-direction: column; gap: 12px; }
+.sheet .field, .sheet .list-editor { display: flex; flex-direction: column; gap: 4px; }
+.field-label { font-size: 0.8125rem; font-weight: 700; color: var(--muted); }
+.sheet .ok-input { width: 100%; box-sizing: border-box; min-height: 44px; }
+.list-rows { display: flex; flex-direction: column; gap: 6px; }
+.list-row { display: flex; gap: 6px; align-items: center; }
+.list-row .ok-input { flex: 1 1 0; min-width: 0; }
+.list-row .ok-input.narrow { flex: 0 0 28%; }
+.list-row .ok-btn { flex: none; min-width: 44px; min-height: 44px; }
+.pills { display: flex; gap: 8px; }
+.pill { flex: 1 1 0; min-height: 44px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--frame); border-radius: 999px;
+  color: var(--muted); cursor: pointer; position: relative; }
+.pill input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.pill.is-on { color: var(--on-action); background: var(--action); border-color: var(--action); font-weight: 600; }
+.pill:focus-within { outline: 2px solid var(--frame-focus); outline-offset: 2px; }
+/* a sheet's buttons stay at its foot while the form scrolls */
+.sheet { overflow-y: auto; }
+.sheet-foot { position: sticky; bottom: 0; margin: 4px -16px 0; display: flex; gap: 8px;
+  padding: 10px 16px 10px; background: var(--panel); border-top: 1px solid var(--frame); z-index: 1; }
+.sheet-foot .ok-btn { flex: 1 1 0; width: auto; }
+.sheet-foot .ok-btn.primary { flex: 2 1 0; }
+.sheet .sure { display: flex; flex-direction: column; gap: 8px; }
+.goals { display: flex; flex-direction: column; gap: 8px; }
+.goal-card { display: flex; align-items: center; gap: 8px; padding: 0 8px 0 0; }
+.goal-card.is-on { border-color: var(--action); }
+.goal-open { all: unset; box-sizing: border-box; flex: 1 1 auto; min-width: 0; min-height: 56px; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+.goal-open b { overflow-wrap: anywhere; }
+.goal-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.75rem; }
+.prio { font-size: 0.75rem; color: var(--muted); }
+.prio-high { color: var(--alert); font-weight: 700; }
+.idea-card .now { margin: 0 12px 10px; align-self: flex-start; }
+.idea-card { display: flex; flex-direction: column; }
+.goal-sec { display: flex; flex-direction: column; gap: 6px; }
+.goal-sec h3 { margin: 6px 0 0; }
+.metrics { display: flex; flex-direction: column; gap: 6px; }
+.metric { display: flex; flex-direction: column; gap: 2px; }
+.metric b, .metric small, .links li { overflow-wrap: anywhere; }
+.links { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 4px; }
+.doc { max-height: none; }
+.role-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+.role-head h3 { margin: 0; }
+.role-facts { flex: 1 0 100%; }
+.kinds { gap: 6px; }
+.kind-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; }
+.kind-row .ok-input { flex: 0 0 55%; width: auto; min-height: 44px; }

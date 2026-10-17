@@ -20,7 +20,7 @@ export { price } from "./shell-preview.js";
 
 /** `ctx`: {send, deliver, flash, unpair}. Returns {el, sheets, content(), render(snapshot), dispose()}. */
 export function makeBoard(ctx) {
-  const st = { board: null, review: null, agents: null, snap: null, tab: "board", track: "", preview: null };
+  const st = { board: null, review: null, agents: null, roles: null, snap: null, tab: "board", track: "", preview: null };
   let poll = 0;
   let seenRev;                          // the snapshot's ideas_rev read last
   let loading = false;
@@ -35,6 +35,7 @@ export function makeBoard(ctx) {
       return r.result ?? {};
     },
     refresh, open, close, back,
+    editGoal(slug) { boardTab.editGoal(slug); },
     draw() { drawAll(); },
   };
 
@@ -103,7 +104,8 @@ export function makeBoard(ctx) {
 
   // -- the preview on its own screen: opened over the tab, Back (or the system gesture) to it -----------------------
   function open(p) {
-    logOpened(p.kind === "plan" && p.todo ? "todo" : p.kind, p.task ? `${p.slug}/${p.task}` : p.todo ? `${p.slug}/${p.todo}` : p.slug);
+    if (p.kind !== "doc") logOpened(p.kind === "goal" ? "idea" : p.kind === "plan" && p.todo ? "todo" : p.kind,
+      p.kind === "goal" ? `goal:${p.slug}` : p.task ? `${p.slug}/${p.task}` : p.todo ? `${p.slug}/${p.todo}` : p.slug);
     if (!st.preview) {
       try { history.pushState({ preview: true }, ""); pushed = true; } catch { pushed = false; }
     }
@@ -122,11 +124,12 @@ export function makeBoard(ctx) {
 
   // -- reading the town ------------------------------------------------------------------------------------------
   async function refresh() {
-    const [b, r, a] = await Promise.all([ctx.send("ideas.board"), ctx.send("ideas.review_list"), ctx.send("ideas.agents")]);
+    const [b, r, a, ro] = await Promise.all([ctx.send("ideas.board"), ctx.send("ideas.review_list"), ctx.send("ideas.agents"), ctx.send("ideas.roles")]);
     const ok = (x) => x.ok && x.result && !x.result.error;
     if (ok(b)) st.board = b.result;
     if (ok(r)) st.review = r.result;
     if (ok(a)) st.agents = a.result;
+    if (ok(ro)) st.roles = ro.result;
     if (!st.board && !ok(b)) boardTab.el.replaceChildren(h("p", { class: "muted" }, b.error || "Loading…"));
     else drawAll();
     if (st.preview) preview.reload();
@@ -135,7 +138,7 @@ export function makeBoard(ctx) {
 
   function schedule() {
     clearTimeout(poll);
-    const busy = (st.board?.ideas || []).some((i) => BUSY.has(i.state))
+    const busy = (st.board?.ideas || []).some((i) => BUSY.has(i.state)) || (st.board?.tracks || []).some((t) => t.state === "reading")
       || (st.agents?.roles || []).some((r) => (r.chips || []).some((c) => LIVE.has(c.state)));
     if (busy) poll = setTimeout(refresh, POLL_MS);
   }
@@ -145,7 +148,7 @@ export function makeBoard(ctx) {
 
   return {
     el,
-    sheets: [...top.sheets, ...boardTab.sheets, ...review.sheets],
+    sheets: [...top.sheets, ...boardTab.sheets, ...review.sheets, ...agents.sheets],
     // What is acted on only while the town answers: not the bar's Stop all, nor New idea (kept with no signal).
     content: () => [panes.board, panes.agents, panes.review, preview.el],
     render(s) {

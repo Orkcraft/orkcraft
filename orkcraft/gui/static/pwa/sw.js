@@ -1,8 +1,8 @@
 // The app's worker (gui/pwa.py): the shell opens without the network, the town never does. Every file is
 // asked of the town first, so a new version arrives the next time it is reachable; the cache is only for
 // when it is not. The socket is never cached: what the town is comes live or not at all.
-const CACHE = "orkcraft-app-v14";
-const SHELL = ["./", "app.js", "util.js", "dock.js", "town.js", "fields.js", "icons.js", "links.js", "ground.js", "camp.js", "look.js", "slots.js", "board.js", "shell-top.js", "shell-board.js", "shell-agents.js", "shell-review.js", "shell-preview.js", "shell-util.js", "camp/ork-walk.png",
+const CACHE = "orkcraft-app-v15";
+const SHELL = ["./", "app.js", "util.js", "dock.js", "town.js", "fields.js", "icons.js", "links.js", "ground.js", "camp.js", "look.js", "slots.js", "board.js", "shell-top.js", "shell-board.js", "shell-agents.js", "shell-review.js", "shell-preview.js", "shell-util.js", "shell-forms.js", "shell-goal.js", "shell-agent.js", "camp/ork-walk.png",
   "camp/layout.js", "camp/track.js", "camp/services.js", "camp/ground.js",
   "tokens.css", "components.css", "app.css",
   "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "fonts/fonts.css",

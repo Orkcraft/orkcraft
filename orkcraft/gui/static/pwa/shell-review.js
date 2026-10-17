@@ -3,6 +3,7 @@
 // green and nothing conflicts), Send back / Fix (one line, required), Drop (quiet, apart, asks first).
 import { h, sheet } from "./util.js";
 import { steady } from "./shell-util.js";
+import { foot } from "./shell-forms.js";
 
 const usd = (n) => (n == null ? "" : `$${n < 10 ? n.toFixed(2) : Math.round(n)}`);
 export const isRed = (r) => r.tests.failed > 0 || r.tests.green === false;
@@ -41,7 +42,21 @@ export function factsOf(r) {
 // What the person has half done on a result — the open line and what is typed, the Drop confirm — kept apart from the DOM, so a
 // redraw (the town changed something) puts it back as it was.
 const half = new Map();
-const halfOf = (r) => { const k = `${r.idea}/${r.task}`; if (!half.has(k)) half.set(k, { line: null, sure: false }); return half.get(k); };
+const halfOf = (r) => { const k = `${r.idea}/${r.task}`; if (!half.has(k)) half.set(k, { line: null }); return half.get(k); };
+
+// Drop's confirm is one sheet for every result (spec 34 §5): it names the result and drops it only at the second press.
+const dropText = h("p", {});
+const dropYes = h("button", { class: "ok-btn danger big", type: "button" }, "Drop it");
+const dropNo = h("button", { class: "ok-btn big", type: "button" }, "Keep it");
+export const dropSheet = sheet("Drop this result?", dropText, foot(dropNo, dropYes));
+let onDrop = () => {};
+dropNo.addEventListener("click", () => dropSheet.close());
+dropYes.addEventListener("click", () => { dropSheet.close(); onDrop(); });
+function askDrop(r, run) {
+  dropText.replaceChildren(h("b", {}, r.title), " will not be merged. Its worktree goes; its branch stays.");
+  onDrop = run;
+  dropSheet.open();
+}
 
 /** Merge · Send back / Fix · Drop for one result. `done()` runs after an answer that took (the screen closes). */
 export function resultActions(core, r, done = () => {}) {
@@ -57,10 +72,7 @@ export function resultActions(core, r, done = () => {}) {
     placeholder: "One line: what should change?", maxlength: "1000", enterkeyhint: "send" });
   const go = h("button", { class: "ok-btn primary", type: "submit", disabled: true }, fix ? "Fix" : "Send back");
   const form = h("form", { class: "row back-line", hidden: mine.line === null }, line, go);
-  const sure = h("div", { class: "row sure", hidden: !mine.sure }, h("span", {}, "Drop this result?"),
-    h("button", { class: "ok-btn danger", type: "button" }, "Drop it"), h("button", { class: "ok-btn", type: "button" }, "Keep it"));
   if (mine.line !== null) { line.value = mine.line; go.disabled = !line.value.trim(); back.setAttribute("aria-expanded", "true"); }
-  drop.hidden = mine.sure;
   line.addEventListener("input", () => { mine.line = line.value; go.disabled = !line.value.trim(); });
   back.addEventListener("click", () => {
     form.hidden = !form.hidden;
@@ -82,14 +94,12 @@ export function resultActions(core, r, done = () => {}) {
     if (got?.ok) { mine.line = null; done(); } else go.disabled = false;
     core.refresh();
   });
-  drop.addEventListener("click", () => { mine.sure = true; sure.hidden = false; drop.hidden = true; });
-  sure.children[2].addEventListener("click", () => { mine.sure = false; sure.hidden = true; drop.hidden = false; });
-  sure.children[1].addEventListener("click", async () => {
+  drop.addEventListener("click", () => askDrop(r, async () => {
     const got = await core.call("ideas.drop_task", key);
     if (got?.ok) done();
     core.refresh();
-  });
-  return h("div", { class: "result-actions", "data-task": r.task }, why, merge, h("div", { class: "row between" }, back, drop), form, sure);
+  }));
+  return h("div", { class: "result-actions", "data-task": r.task }, why, merge, h("div", { class: "row between" }, back, drop), form);
 }
 
 export function makeReview(core) {
@@ -128,7 +138,7 @@ export function makeReview(core) {
 
   return {
     el,
-    sheets: [branchSheet.el],
+    sheets: [branchSheet.el, dropSheet.el],
     draw() {
       const rv = core.st.review;
       if (!fresh(JSON.stringify(rv))) return;
