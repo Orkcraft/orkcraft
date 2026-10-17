@@ -20,6 +20,9 @@ from tests.test_pwa_browser import CHROMIUM, WAIT_MS, _spki  # noqa: E402
 
 SHOTS = os.environ.get("BOARD_SHOTS", "")
 V4_SHOTS = Path(__file__).resolve().parent.parent / "docs" / "design" / "img" / "board-v4"
+SHOTS_29C = V4_SHOTS.parent / "board-29c"
+SILENCE = ("The orks ask you when a question, a plan, a red gate twice, a conflict or a spent window needs you. "
+           "Otherwise they work and merge.")
 SECTIONS = ["Gist", "Why", "In", "Out", "Risks", "Open questions", "Estimate", "Stages", "Decisions"]
 
 
@@ -37,6 +40,8 @@ class Stub:
             {"idea": "seed", "id": "t4", "title": "Open the console", "kind": "instructions", "why": "", "choices": [], "steps": ["Log in", "Copy the id"], "done": False},
         ]
         self.needs = [{"idea": "seed", "kind": "asks", "title": "Seed idea", "text": "2 questions"}]
+        self.merged: list[dict] = []                       # part A's merged.jsonl (29c §1)
+        self.questions: dict[str, list[dict]] = {}
         self.add_idea("seed", "Seed idea", "ready", "A seed\nMore about the seed.")
 
     def add_idea(self, slug: str, title: str, state: str, gist: str) -> None:
@@ -51,7 +56,8 @@ class Stub:
 
     def commands(self) -> dict:
         return {"ideas.board": self.board, "ideas.page": self.page, "ideas.add": self.add, "ideas.say": self.say, "ideas.plan": self.plan,
-                "ideas.start": self.start, "ideas.move": self.move, "ideas.todo": self.todo, "ideas.stop": self.stop}
+                "ideas.start": self.start, "ideas.move": self.move, "ideas.todo": self.todo, "ideas.stop": self.stop,
+                "ideas.seen": self.seen, "ideas.revert": self.revert, "ideas.answer": self.answer}
 
     def logged(self, name: str, args: dict) -> None:
         self.calls.append((name, dict(args)))
@@ -63,7 +69,8 @@ class Stub:
                 "ideas": [{"slug": i["slug"], "title": i["title"], "track": i["track"], "order": i["order"], "state": i["state"],
                            "size": i["size"], "thesis": thesis(i), "asks": 0, "progress": self.progress(i), "updated": ""}
                           for i in self.ordered()],
-                "today": {"todos": self.todos, "needs_you": self.needs}, "batch_next": "", "rev": self.rev}
+                "today": {"todos": self.todos, "needs_you": self.needs, "merged": [m for m in self.merged if not m["seen"]],
+                          "merged_more": 0}, "batch_next": "", "rev": self.rev}
 
     @staticmethod
     def progress(i: dict) -> dict:
@@ -72,10 +79,11 @@ class Stub:
 
     def page(self, args):
         i = self.ideas[args["slug"]]
-        sections = [{"name": n, "thesis": (i["gist"].splitlines()[0] if n == "Gist" else f"{n} in a line"),
+        small = i["size"] == "S"
+        sections = [{"shown": not small or n in ("Gist", "In", "Out", "Stages"), "name": n, "thesis": (i["gist"].splitlines()[0] if n == "Gist" else f"{n} in a line"),
                      "text": i["gist"] if n == "Gist" else f"{n} in a line\nAnd the {n} at length."} for n in SECTIONS]
         return {"slug": i["slug"], "title": i["title"], "track": i["track"], "state": i["state"], "size": i["size"], "sections": sections,
-                "talk": i["talk"], "plan": i["plan"], "busy": False}
+                "talk": i["talk"], "plan": i["plan"], "busy": False, "questions": self.questions.get(i["slug"], [])}
 
     def add(self, args):
         self.logged("ideas.add", args)
@@ -119,6 +127,34 @@ class Stub:
             self.ideas[slug]["order"] = n
         self.bump()
         return {"ok": True}
+
+    def seen(self, args):
+        self.logged("ideas.seen", args)
+        for m in self.merged:
+            m["seen"] = m["seen"] or not args or (m["idea"], m["task"]) == (args.get("idea"), args.get("task"))
+        self.bump()
+        return {"ok": True}
+
+    def revert(self, args):
+        self.logged("ideas.revert", args)
+        m = next(m for m in self.merged if (m["idea"], m["task"]) == (args["idea"], args["task"]))
+        if m["subject"].startswith("Conflict"):
+            return {"error": "The revert conflicts with a later change: main is untouched."}
+        m["seen"] = m["reverted"] = True
+        self.bump()
+        return {"ok": True}
+
+    def answer(self, args):
+        self.logged("ideas.answer", args)
+        qs = self.questions[args["slug"]]
+        q = next(q for q in qs if q["id"] == args["id"])
+        q["answer"] = args["text"] if "text" in args else q["options"][args["choice"]]
+        left = sum(q["answer"] is None for q in qs)
+        if not left:
+            self.questions[args["slug"]] = []
+            self.needs = [n for n in self.needs if n["kind"] != "asks"]
+        self.bump()
+        return {"ok": True, "left": left}
 
     def todo(self, args):
         self.logged("ideas.todo", args)
@@ -302,8 +338,24 @@ def _seed(stub: Stub) -> None:
     stub.add_idea("offline", "Offline mode for the field days", "raw", "Work with no signal")
     stub.ideas["dark"]["talk"] = [{"who": "you", "text": "Does it follow the system's setting?", "section": "Risks", "at": ""},
                                   {"who": "keeper", "text": "Yes: it reads prefers-color-scheme and keeps your choice.", "section": "Risks", "at": ""}]
+    _seed_29c(stub)
     stub.calls.clear()
     stub.bump()
+
+
+def _seed_29c(stub: Stub) -> None:
+    """Lines merged without a look, the Taskmaster's questions on the idea that asks, an S idea."""
+    for task, goal, subject, tests, cost, est, commit in [
+            ("k2", "Add the queue", "Queue ideas while the phone has no signal", "14 passed", 0.42, [0.3, 0.9], "9f2c41d7e0a1"),
+            ("k1", "Read the sync code", "Read the sync code", "9 passed", 0.18, [0.2, 0.4], "3b7a90c5d2e8")]:
+        stub.merged.append({"idea": "sync", "task": task, "title": goal, "goal": goal, "subject": subject, "commit": commit, "tests": tests,
+                            "cost": cost, "estimate": est, "at": "2026-10-17T11:00:00", "seen": False, "reverted": False})
+    stub.needs = [{"idea": "export", "kind": "asks", "title": "Export the week as a report", "text": "2 questions"}] + stub.needs
+    stub.questions["export"] = [
+        {"id": "q1", "text": "Which format should the weekly report take?", "options": ["PDF", "Markdown", "Both"], "recommended": 1,
+         "why": "The Wiki is Markdown already, so the report can live beside the pages.", "answer": None},
+        {"id": "q2", "text": "Who reads it?", "options": ["Only me", "The team"], "recommended": 0, "why": "You asked for a Monday call.", "answer": None}]
+    stub.ideas["offline"]["size"] = "S"
 
 
 KIT = """() => {
@@ -363,3 +415,146 @@ async def test_phone_board_v4_shots(fake_repo, monkeypatch, look):
         await page.get_by_role("button", name="Back to the board").click()
         await page.locator(".board-tabs").get_by_role("button", name="Drop an idea").click()
         await page.screenshot(path=str(V4_SHOTS / f"phone-{look}-drop.png"))
+
+
+# -- 29c: after the merge, decisions in one tap (docs/specs/29c-after-the-merge.md §1–§3, §5) -------------------------
+
+async def _wait_call(page, stub, entry):
+    for _ in range(50):
+        if entry in stub.calls:
+            return
+        await page.wait_for_timeout(100)
+    assert entry in stub.calls, stub.calls[-5:]
+
+
+async def _count(page, selector, n):
+    for _ in range(50):
+        if await page.locator(selector).count() == n:
+            return
+        await page.wait_for_timeout(100)
+    assert await page.locator(selector).count() == n, selector
+
+
+async def _small(page):
+    return await page.evaluate("""() => [...document.querySelectorAll('.board button, .board input, .board textarea')]
+        .filter((b) => b.offsetParent).map((b) => [b.textContent || b.getAttribute('aria-label'), b.getBoundingClientRect().height])
+        .filter(([, h]) => h < 44)""")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("look", ["camp", "office"])
+async def test_phone_merged_group_looked_and_revert_only_behind_a_menu(fake_repo, monkeypatch, look):
+    async with _board(fake_repo, monkeypatch, look) as (stub, page):
+        _seed(stub)
+        await page.locator(".merged").first.wait_for(timeout=WAIT_MS)
+        assert "Merged without your eyes · 2" in await page.locator(".merged-head h2").text_content()
+        text = await page.locator(".merged").first.inner_text()
+        assert "Add the queue" in text and "14 passed · $0.42 (est. $0.3–0.9)" in text and "9f2c41d" in text
+        assert await page.locator(".merged").get_by_role("button", name="Revert").count() == 0      # no Revert on a line
+        await page.locator(".merged").first.get_by_role("button", name="Looked").click()
+        await _wait_call(page, stub, ("ideas.seen", {"idea": "sync", "task": "k2"}))
+        await _count(page, ".merged", 1)
+        line = page.locator(".merged")
+        await line.click()                                                                            # a tap does nothing
+        assert not await page.locator("dialog[open]").count()
+        await line.get_by_role("button", name="More for Read the sync code").click()                 # ⋯ → the one confirm
+        sheet = page.locator("dialog[open]")
+        assert "Revert “Read the sync code” on main?" in await sheet.inner_text()
+        assert not [c for c in stub.calls if c[0] == "ideas.revert"]
+        await sheet.get_by_role("button", name="Revert it").click()
+        await _wait_call(page, stub, ("ideas.revert", {"idea": "sync", "task": "k1"}))
+        await _count(page, ".merged", 0)
+        stub.merged.append(dict(stub.merged[0], task="x1", seen=False, reverted=False, subject="Conflict with a later change"))
+        stub.merged.append(dict(stub.merged[0], task="x2", seen=False, reverted=False, subject="Second"))
+        stub.bump()
+        await page.locator(".merged", has_text="Conflict").wait_for(timeout=WAIT_MS)
+        box = await page.locator(".merged", has_text="Conflict").bounding_box()                       # a long press opens the same menu
+        await page.mouse.move(box["x"] + 20, box["y"] + 20)
+        await page.mouse.down()
+        await page.wait_for_timeout(700)
+        await page.mouse.up()
+        await page.locator("dialog[open]").get_by_role("button", name="Revert it").click()
+        await page.get_by_text("main is untouched").first.wait_for(timeout=WAIT_MS)                    # the host's error; the line stays
+        assert await page.locator(".merged").count() == 2
+        await page.get_by_role("button", name="Looked at all").click()
+        await _wait_call(page, stub, ("ideas.seen", {}))
+        await _count(page, ".merged", 0)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("look", ["camp", "office"])
+async def test_phone_questions_are_chips_on_the_card_and_on_the_idea(fake_repo, monkeypatch, look):
+    async with _board(fake_repo, monkeypatch, look) as (stub, page):
+        _seed(stub)
+        q1 = page.locator(".need ~ .qs .q[data-id=q1]").first
+        await q1.wait_for(timeout=WAIT_MS)
+        assert [t.replace("\n", " ") for t in await q1.locator(".chip").all_inner_texts()] == ["PDF", "Markdown recommended", "Both", "ⓘ", "Other…"]
+        assert await q1.locator(".chip.is-rec").count() == 1
+        assert await q1.locator(".why").count() == 0
+        await q1.get_by_role("button", name="Why this one").click()                                   # ⓘ shows the why
+        assert "The Wiki is Markdown already" in await page.locator(".q[data-id=q1] .why").first.inner_text()
+        assert await _small(page) == []
+        await page.get_by_role("button", name="Markdown").first.click()
+        await _wait_call(page, stub, ("ideas.answer", {"slug": "export", "id": "q1", "choice": 1}))
+        q2 = page.locator(".q[data-id=q2]").first
+        await q2.get_by_role("button", name="Other…").click()
+        await q2.get_by_label("Your answer to: Who reads it?").fill("Me and Dana")
+        await q2.get_by_role("button", name="Answer", exact=True).click()
+        await _wait_call(page, stub, ("ideas.answer", {"slug": "export", "id": "q2", "text": "Me and Dana"}))
+        await _count(page, ".qs", 0)                                  # all answered: cleared
+        stub.questions["export"] = [{"id": "q3", "text": "Which week?", "options": ["This", "Last"], "recommended": 1, "why": "Mondays.", "answer": None}]
+        stub.needs.append({"idea": "export", "kind": "asks", "title": "Export", "text": "1 question"})
+        stub.bump()
+        await page.locator(".board-tabs").get_by_role("button", name="Ideas").click()
+        await page.locator(".idea-card", has_text="Export the week").get_by_role("button").click()     # and on the idea itself
+        await page.locator(".idea-page .q[data-id=q3]").wait_for(timeout=WAIT_MS)
+        await page.locator(".idea-page .q[data-id=q3]").get_by_role("button", name="Last").click()
+        await _wait_call(page, stub, ("ideas.answer", {"slug": "export", "id": "q3", "choice": 1}))
+        assert await _small(page) == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("look", ["camp", "office"])
+async def test_phone_hidden_sections_and_the_silence_line(fake_repo, monkeypatch, look):
+    async with _board(fake_repo, monkeypatch, look) as (stub, page):
+        _seed(stub)
+        assert (await page.locator(".silence").inner_text()).replace("\n", " ") == SILENCE
+        assert await page.evaluate("document.querySelector('.silence').nextElementSibling.classList.contains('foot-line')")
+        await page.locator(".board-tabs").get_by_role("button", name="Ideas").click()
+        await page.locator(".idea-card", has_text="Offline mode").get_by_role("button").click()
+        await page.locator(".idea-page .sec").first.wait_for(timeout=WAIT_MS)
+        assert await page.locator(".idea-page .sec").evaluate_all("els => els.map((e) => e.dataset.section)") == ["Gist", "In", "Out", "Stages"]
+        await page.get_by_role("button", name="More sections").click()
+        assert await page.locator(".idea-page .sec").count() == len(SECTIONS)
+        await page.get_by_role("button", name="Fewer sections").click()
+        assert await page.locator(".idea-page .sec").count() == 4
+        assert await _small(page) == []
+        assert await page.evaluate("document.documentElement.scrollWidth <= 390")
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(not os.environ.get("BOARD_29C_SHOTS"), reason="the 29c shots are taken on demand")
+@pytest.mark.parametrize("look", ["camp", "office"])
+async def test_phone_board_29c_shots(fake_repo, monkeypatch, look):
+    """docs/design/img/board-29c/phone-<look>-*.png at 390 × 844, density 2: Today with the questions and the merged lines,
+    the silence line, an S idea with More sections, an idea's chips."""
+    async with _board(fake_repo, monkeypatch, look) as (stub, page):
+        _seed(stub)
+        await page.wait_for_function(f"document.documentElement.dataset.look === '{look}'", timeout=WAIT_MS)
+        await page.locator(".merged").first.wait_for(timeout=WAIT_MS)
+        SHOTS_29C.mkdir(parents=True, exist_ok=True)
+        await page.evaluate("document.querySelector('.qs').scrollIntoView({ block: 'start' })")
+        await page.screenshot(path=str(SHOTS_29C / f"phone-{look}-today.png"))
+        await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        await page.screenshot(path=str(SHOTS_29C / f"phone-{look}-silence.png"))
+        await page.locator(".merged").first.get_by_role("button", name="More for Add the queue").click()
+        await page.screenshot(path=str(SHOTS_29C / f"phone-{look}-revert.png"))
+        await page.locator("dialog[open]").get_by_role("button", name="Close").click()
+        await page.locator(".board-tabs").get_by_role("button", name="Ideas").click()
+        await page.locator(".idea-card", has_text="Offline mode").get_by_role("button").click()
+        await page.get_by_role("button", name="More sections").wait_for(timeout=WAIT_MS)
+        await page.screenshot(path=str(SHOTS_29C / f"phone-{look}-s-idea.png"))
+        await page.get_by_role("button", name="Back to the board").click()
+        await page.locator(".idea-card", has_text="Export the week").get_by_role("button").click()
+        await page.locator(".idea-page .q").first.wait_for(timeout=WAIT_MS)
+        await page.screenshot(path=str(SHOTS_29C / f"phone-{look}-questions.png"))

@@ -9,6 +9,7 @@ import { h, sheet } from "./util.js";
 const POLL_MS = 10000;
 const HOLD_MS = 450;                    // a card held this long can be dragged
 const TALK_SHOWN = 6;                   // turns of the talk under a spec
+const PRESS_MS = 500;                   // a merged line held this long opens its menu (Revert is never a single tap)
 const BUSY = new Set(["reading", "planning", "working"]);
 
 const STATE_WORDS = { raw: "new", reading: "the Taskmaster is reading", asks: "asks you", ready: "ready", planning: "the Taskmaster is planning",
@@ -41,6 +42,10 @@ export function makeBoard(ctx) {
   let poll = 0;
   let seenRev;                          // the snapshot's ideas_rev read last
   let loading = false;
+  let asked = {};                       // slug → the open questions of an idea that asks (its Needs you card shows them)
+  let more = false;                     // the opened idea's hidden sections are shown
+  const whyOpen = new Set();            // "slug:id" of the questions whose why is shown
+  const otherOpen = new Map();          // "slug:id" → the draft of an *Other…* answer being written
 
   // -- the frame: the bar at the top (name, spend, Stop all), the panes, the tabs at the foot -----------------------
   const title = h("h1", {}, "Orkline");
@@ -59,6 +64,22 @@ export function makeBoard(ctx) {
     tabBar.append(tabs[id]);
   }
   const el = h("div", { class: "board" }, bar, paneToday, paneIdeas, paneAdd, paneIdea, tabBar);
+
+  // Revert: never a single tap. The ⋯ of a line (or a long press on it) opens this sheet, which asks once.
+  let pending = null;                   // the merged line the sheet is about
+  const revertAsk = h("p", {});
+  const revertYes = h("button", { class: "ok-btn danger", type: "button" }, "Revert it");
+  const revertSheet = sheet("Revert", revertAsk, revertYes);
+  revertYes.addEventListener("click", async () => {
+    const m = pending;
+    revertSheet.close();
+    if (!m) return;
+    const r = await ctx.send("ideas.revert", { idea: m.idea, task: m.task });
+    if (!r.ok || r.result?.error) ctx.flash(r.error || r.result?.error);
+    else ctx.flash(`Reverted “${m.subject}” on main.`);
+    await load();
+    await loadPage();
+  });
 
   // Stop all: a tap asks first (the confirm is a sheet whose button sits away from this one), as the town's does.
   const really = h("button", { class: "ok-btn danger", type: "button" }, "Stop every ork");
@@ -94,6 +115,12 @@ export function makeBoard(ctx) {
     const r = await ctx.send("ideas.board");
     if (!r.ok || !r.result) { if (!boardData) paneToday.replaceChildren(h("p", { class: "muted" }, r.error || "Loading…")); return; }
     boardData = r.result;
+    const next = {};
+    for (const n of (boardData.today?.needs_you || []).filter((x) => x.kind === "asks")) {
+      const qs = n.questions || (n.idea === openSlug && open ? open.questions : (await ctx.send("ideas.page", { slug: n.idea })).result?.questions);
+      if (qs && qs.length) next[n.idea] = qs;
+    }
+    asked = next;
     if (!tracks().some((t) => t.slug === track)) track = tracks()[0]?.slug || "";
     drawToday();
     drawIdeas();
@@ -139,12 +166,92 @@ export function makeBoard(ctx) {
         h("span", { class: "need-mark", "aria-hidden": "true" }, NEEDS[n.kind] || "•"),
         h("span", { class: "need-text" }, h("b", {}, n.title), n.text ? h("small", {}, n.text) : null),
         h("span", { class: "chev", "aria-hidden": "true" }, "›")));
+      if (n.kind === "asks" && asked[n.idea]) kids.push(questionsBlock(n.idea, asked[n.idea]));
     }
+    kids.push(...mergedGroup(t));
     kids.push(h("h2", {}, "To-dos"));
     if (!t.todos.length) kids.push(h("p", { class: "muted" }, "No to-dos: a task asks for one only when it cannot start without."));
     for (const todo of t.todos) kids.push(todoCard(todo));
+    kids.push(h("p", { class: "muted silence" }, "The orks ask you when a question, a plan, a red gate twice, a conflict or a spent window needs you. Otherwise they work and merge."));
     kids.push(h("p", { class: "muted foot-line" }, h("button", { class: "linkish", type: "button", onclick: () => ctx.unpair() }, "Unpair this phone")));
     paneToday.replaceChildren(...kids);
+  }
+
+  // -- merged without your eyes (29c §1) ----------------------------------------------------------------------------
+  const usd1 = (n) => (Number(n) < 10 ? Number(n).toFixed(2).replace(/0$/, "") : String(Math.round(Number(n))));
+  function costLine(m) {
+    const est = Array.isArray(m.estimate) && m.estimate.length === 2 ? `est. $${usd1(m.estimate[0])}–${usd1(m.estimate[1])}` : "";
+    const spent = m.cost != null ? `$${usd1(m.cost)}${est ? ` (${est})` : ""}` : est ? `(${est})` : "";
+    return [m.tests, spent].filter(Boolean).join(" · ");
+  }
+  async function seen(args) {
+    const r = await ctx.send("ideas.seen", args);
+    if (!r.ok || r.result?.error) { ctx.flash(r.error || r.result?.error); return; }
+    await load();
+  }
+  function askRevert(m) {
+    pending = m;
+    revertAsk.textContent = `Revert “${m.subject}” on main?`;
+    revertSheet.open();
+  }
+  function mergedGroup(t) {
+    const list = t.merged || [];
+    if (!list.length) return [];
+    const n = list.length + (t.merged_more || 0);
+    const kids = [h("div", { class: "merged-head" }, h("h2", {}, `Merged without your eyes · ${n}`),
+      h("button", { class: "ok-btn", type: "button", onclick: () => seen({}) }, "Looked at all"))];
+    for (const m of list) {
+      let timer = 0;
+      const card = h("div", { class: "card merged", "data-task": m.task },
+        h("div", { class: "merged-text" }, h("b", {}, m.goal || m.title), h("span", {}, m.subject),
+          h("small", {}, costLine(m)), m.commit ? h("code", { class: "sha" }, m.commit.slice(0, 7)) : null),
+        h("div", { class: "merged-acts" },
+          h("button", { class: "ok-btn", type: "button", onclick: () => seen({ idea: m.idea, task: m.task }) }, "Looked"),
+          m.reverted ? h("span", { class: "muted" }, "reverted")
+            : h("button", { class: "ok-btn", type: "button", "aria-label": `More for ${m.goal || m.title}`, onclick: () => askRevert(m) }, "⋯")));
+      const stop = () => { clearTimeout(timer); timer = 0; };
+      if (!m.reverted) {
+        card.addEventListener("pointerdown", (e) => { if (e.target.closest("button")) return; timer = setTimeout(() => { timer = 0; navigator.vibrate?.(30); askRevert(m); }, PRESS_MS); });
+        for (const ev of ["pointerup", "pointercancel", "pointermove", "pointerleave"]) card.addEventListener(ev, stop);
+        card.addEventListener("contextmenu", (e) => e.preventDefault());
+      }
+      kids.push(card);
+    }
+    if (t.merged_more) kids.push(h("p", { class: "muted" }, `${t.merged_more} more not shown.`));
+    return kids;
+  }
+
+  // -- the Taskmaster's questions as chips (29c §2) ----------------------------------------------------------------
+  async function answer(slug, id, args) {
+    const r = await ctx.send("ideas.answer", { slug, id, ...args });
+    if (!r.ok || r.result?.error) { ctx.flash(r.error || r.result?.error); return; }
+    otherOpen.delete(`${slug}:${id}`);
+    await load();
+    await loadPage();
+  }
+  function questionsBlock(slug, questions) {
+    const redraw = () => { drawToday(); if (open) drawIdea(); };
+    return h("div", { class: "qs", "aria-label": "The Taskmaster asks" }, ...questions.map((q) => {
+      const key = `${slug}:${q.id}`;
+      const given = typeof q.answer === "string" ? q.answer : q.answer ? (q.answer.text ?? q.options?.[q.answer.choice] ?? "") : "";
+      const chips = (q.options || []).map((o, n) => h("button", { class: `ok-btn chip${q.recommended === n ? " is-rec" : ""}`, type: "button",
+        "aria-pressed": String(given === o), onclick: () => answer(slug, q.id, { choice: n }) },
+        o, q.recommended === n ? h("small", {}, "recommended") : null));
+      const info = q.why ? h("button", { class: "ok-btn chip info", type: "button", "aria-label": "Why this one", "aria-expanded": String(whyOpen.has(key)),
+        onclick: () => { if (whyOpen.has(key)) whyOpen.delete(key); else whyOpen.add(key); redraw(); } }, "ⓘ") : null;
+      const drafting = otherOpen.has(key) || !(q.options || []).length;
+      const draft = h("input", { class: "ok-input", value: otherOpen.get(key) || "", "aria-label": `Your answer to: ${q.text}`, placeholder: "Your answer, in a line",
+        enterkeyhint: "send", oninput: (e) => { otherOpen.set(key, e.target.value); } });
+      const send = h("button", { class: "ok-btn primary", type: "button", onclick: () => { if (draft.value.trim()) answer(slug, q.id, { text: draft.value.trim() }); } }, "Answer");
+      return h("div", { class: "q", "data-id": q.id },
+        h("p", { class: "q-text" }, q.text),
+        (q.options || []).length ? h("div", { class: "answers" }, ...chips, info,
+          h("button", { class: "ok-btn chip", type: "button", "aria-expanded": String(otherOpen.has(key)),
+            onclick: () => { if (otherOpen.has(key)) otherOpen.delete(key); else otherOpen.set(key, ""); redraw(); } }, "Other…")) : null,
+        whyOpen.has(key) && q.why ? h("p", { class: "muted why" }, q.why) : null,
+        drafting ? h("div", { class: "row" }, draft, send) : null,
+        given ? h("p", { class: "muted" }, `Answered: ${given}`) : null);
+    }));
   }
 
   function todoCard(todo) {
@@ -310,6 +417,7 @@ export function makeBoard(ctx) {
   async function openIdea(slug) {
     openSlug = slug;
     open = null;
+    more = false;
     section = "";
     unfolded = new Set();
     paneIdea.replaceChildren(h("p", { class: "muted" }, "Loading…"));
@@ -363,7 +471,12 @@ export function makeBoard(ctx) {
     const word = p.busy && BUSY.has(p.state) ? STATE_WORDS[p.state] : (STATE_WORDS[p.state] || p.state);
     const kids = [head, h("h2", { class: "idea-name" }, p.title),
       h("p", { class: "muted" }, [p.size ? `Size ${p.size} · ` : "", word.charAt(0).toUpperCase() + word.slice(1)].join(""))];
-    for (const s of p.sections || []) kids.push(sectionBlock(s));
+    if (p.questions?.length) kids.push(questionsBlock(p.slug, p.questions));
+    for (const s of (p.sections || []).filter((x) => x.shown !== false || more)) kids.push(sectionBlock(s));
+    if ((p.sections || []).some((x) => x.shown === false)) {
+      kids.push(h("button", { class: "linkish more-sections", type: "button", "aria-expanded": String(more),
+        onclick: () => { more = !more; drawIdea(); } }, more ? "Fewer sections" : "More sections"));
+    }
     if (p.plan && ["plan", "working", "failed", "done"].includes(p.state)) kids.push(planBlock(p));
     const talk = (p.talk || []).slice(-TALK_SHOWN);
     if (talk.length) {
@@ -438,7 +551,7 @@ export function makeBoard(ctx) {
 
   return {
     el,
-    sheets: [stopSheet.el],
+    sheets: [stopSheet.el, revertSheet.el],
     // What is acted on only while the town answers: not the + tab (an idea is kept with no signal), not the bar.
     content: () => [paneToday, paneIdeas, paneIdea],
     render(s) {

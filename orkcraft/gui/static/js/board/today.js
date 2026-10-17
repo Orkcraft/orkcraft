@@ -2,7 +2,9 @@
 // password field, a choice offers its choices, instructions show their steps.
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
-import { board, run, open } from "./store.js";
+import { board, asked, run, open } from "./store.js";
+import { Questions } from "./questions.js";
+import { Merged } from "./merged.js";
 
 function Todo({ t }) {
   const [value, setValue] = useState("");
@@ -32,10 +34,14 @@ export function Today() {
     <h3 class="board-sub kit-band">Needs you ${today.needs_you.length ? html`<span class="board-count kit-well">${today.needs_you.length}</span>` : ""}</h3>
     ${today.needs_you.length ? html`<ul class="board-list">${today.needs_you.map((n) => html`<li key=${n.idea + n.kind}>
       <button class="board-need" data-kind=${n.kind} onClick=${() => open(n.idea)}>
-        <b>${n.title}</b><span class="ok-tone-muted">${n.text}</span></button></li>`)}</ul>`
+        <b>${n.title}</b><span class="ok-tone-muted">${n.text}</span></button>
+      ${n.kind === "asks" && html`<${Questions} slug=${n.idea} questions=${asked.value[n.idea]} />`}</li>`)}</ul>`
       : html`<p class="ok-tone-muted">Nothing waits for you.</p>`}
+    <${Merged} />
     <h3 class="board-sub kit-band">To-dos ${open_.length ? html`<span class="board-count kit-well">${open_.length}</span>` : ""}</h3>
     ${shown.length ? html`<ul class="board-list">${shown.map((t) => html`<${Todo} key=${t.idea + t.id} t=${t} />`)}</ul>`
       : html`<p class="ok-tone-muted">No to-dos from a plan yet.</p>`}
+    <p class="board-silence ok-tone-muted">The orks ask you when a question, a plan, a red gate twice, a conflict or a spent window needs you.
+      Otherwise they work and merge.</p>
   </section>`;
 }

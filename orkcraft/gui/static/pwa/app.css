@@ -553,3 +553,29 @@ p { margin: 0 0 8px; }
   font: 400 1rem/1 var(--font-kit); color: var(--parchment-ink); background: var(--parchment); box-shadow: 0 0 0 2px var(--art-outline); border-radius: 0; }
 :root[data-look="camp"] .ask .row .ok-btn { flex: none; padding: 8px 10px; }
 :root[data-look="camp"] .ask textarea.ok-input { padding: 8px 6px; }
+
+/* -- 29c: merged without your eyes, the questions as chips, the silence line ------------------------------------- */
+.merged-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.merged-head h2 { flex: 1 1 auto; min-width: 0; }
+.merged { display: flex; align-items: center; gap: 10px; user-select: none; -webkit-touch-callout: none; }
+.merged-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.merged-text small { color: var(--muted); font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.merged-text .sha { font-size: 0.75rem; color: var(--muted); }
+.merged-acts { flex: none; display: flex; flex-direction: column; gap: 6px; }
+.merged-acts .ok-btn { min-width: 44px; }
+.qs { display: flex; flex-direction: column; gap: 12px; margin: 0 0 4px 10px; padding-left: 10px; border-left: 3px solid var(--frame-strong); }
+.q { display: flex; flex-direction: column; gap: 8px; }
+.q-text { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.q .chip { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; gap: 6px; }
+.q .chip.is-rec { font-weight: 700; }
+.q .chip small { font-size: 0.6875rem; font-weight: 400; opacity: .8; text-transform: none; }
+.q .why { margin: 0; }
+.q .row { flex-wrap: nowrap; }
+.q .row .ok-input { flex: 1 1 auto; min-width: 0; }
+.more-sections { align-self: flex-start; }
+.silence { font-size: 0.8125rem; text-align: center; margin: 8px 0 0; }
+:root[data-look="camp"] .board .chip[aria-pressed="true"] { background: var(--accent-teal); }
+:root[data-look="camp"] .board .qs { border-left-color: var(--kit-parchment-rule); }
+.merged-head .ok-btn { flex: none; white-space: nowrap; }
+.merged-head h2 { font-size: 0.8125rem; }
+:root[data-look="camp"] .board .merged-head h2 { font: var(--kit-head); color: var(--parchment-ink); letter-spacing: 0; text-transform: none; }

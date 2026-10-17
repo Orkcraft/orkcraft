@@ -4,6 +4,7 @@ import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { say } from "../link.js";
 import { page, opened, open, run, stateWords } from "./store.js";
+import { Questions } from "./questions.js";
 
 // Section → [colour role, line icon, kit icon]. The role is a design-system token in board.css (`[data-sec]`); the line
 // icon (16px) is Office's, the kit's pixel icon (tools/ui_kit.py) Camp's.
@@ -111,6 +112,7 @@ export function Idea() {
   const p = page.value;
   const [section, setSection] = useState("");
   const [sure, setSure] = useState(false);
+  const [more, setMore] = useState(false);
   if (!p) return html`<aside class="board-idea board-col kit-frame kit-paper"><div class="board-col__body"><p class="ok-tone-muted">Opening…</p></div></aside>`;
   const drop = async () => { await run("ideas.drop", { slug: p.slug }); open(""); };
   return html`<aside class="board-idea board-col kit-frame kit-paper" aria-label=${p.title}>
@@ -121,7 +123,10 @@ export function Idea() {
       ${p.size && html`<span class="board-size kit-well">${p.size}</span>`}
       <button class="ok-btn" aria-label="Close" onClick=${() => open("")}>Close</button></div>
     <${Actions} p=${p} />
-    <div class="board-secs">${p.sections.map((s) => html`<${Block} key=${s.name} s=${s} asked=${section === s.name} onAsk=${setSection} />`)}</div>
+    <${Questions} slug=${p.slug} questions=${p.questions} />
+    <div class="board-secs">${p.sections.filter((s) => s.shown !== false || more).map((s) => html`<${Block} key=${s.name} s=${s} asked=${section === s.name} onAsk=${setSection} />`)}
+      ${p.sections.some((s) => s.shown === false) && html`<button class="board-link board-more" aria-expanded=${String(more)}
+        onClick=${() => setMore(!more)}>${more ? "Fewer sections" : "More sections"}</button>`}</div>
     <${Say} p=${p} section=${section} setSection=${setSection} />
     <${Talk} turns=${p.talk || []} />
     <div class="board-row">${sure ? html`<span>Drop this idea and its page?</span>
