@@ -412,7 +412,13 @@ class Ideas:
 
     def review_list(self, args: dict) -> dict:
         m = self.town.machine.ideas or {}
-        return {"into": self._into(), "push": bool(m.get("push", settings.IDEAS["push"])), "results": self.results()}
+        try:
+            branches = IdeaGit(Path(self.town.repo_root)).branches()
+        except Exception:                       # not a git folder yet: the picker offers only the current branch
+            branches = []
+        into = self._into()
+        return {"into": into, "push": bool(m.get("push", settings.IDEAS["push"])),
+                "branches": branches if into in branches else [into, *branches], "results": self.results()}
 
     def _task(self, args: dict) -> tuple[str, str, dict, dict]:
         slug, tid = _text(args, "slug", 100), _text(args, "task", 40)

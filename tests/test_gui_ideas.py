@@ -266,7 +266,8 @@ def _review(host, slug="r", tests=None, state="review", **more):
 
 def test_review_list_has_the_spec_shape_and_the_phones_may_call_it(host):
     empty = host.command("ideas.review_list")
-    assert empty == {"into": "dev", "push": False, "results": []}
+    assert {k: empty[k] for k in ("into", "push", "results")} == {"into": "dev", "push": False, "results": []}
+    assert "dev" in empty["branches"]                       # the branch it merges into is always offered
     slug = _review(host)
     got = host.command("ideas.review_list")
     json.dumps(got)
