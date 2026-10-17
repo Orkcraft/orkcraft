@@ -79,3 +79,12 @@ def test_the_digest_hours_are_cleaned_like_the_other_ideas_keys():
     a, b = settings.MachineSettings(), settings.MachineSettings()
     a.ideas["digest_hours"].append(20)
     assert b.ideas["digest_hours"] == [9, 13, 18] and settings.IDEAS["digest_hours"] == [9, 13, 18]
+
+
+def test_the_night_gates_settings_are_cleaned():
+    s = settings.MachineSettings()
+    assert s.gate == {"night_hour": 3, "check_tier": "warrior", "night_budget_usd": 2.0}
+    back = settings.MachineSettings.from_dict({"gate": {"night_hour": 25, "check_tier": "elder", "night_budget_usd": 0.5}})
+    assert back.gate == {"night_hour": 3, "check_tier": "elder", "night_budget_usd": 0.5}
+    assert settings.clean_gate({"night_hour": True, "check_tier": "king", "night_budget_usd": -1}) == settings.GATE
+    assert settings.MachineSettings.from_dict(back.to_dict()).gate == back.gate

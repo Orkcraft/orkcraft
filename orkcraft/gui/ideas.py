@@ -5,6 +5,7 @@
     ideas.tick(now)                            # the host's clock: the keeper's batch, the runner's tick
     ideas.snapshot()                           # focus, ideas_rev, needs_you, the digest: in the page's snapshot
     ideas.stop_all()                           # Stop all
+    ideas.night                                # the night gate's face: gate.* commands, the Night report (gui/night_gate.py)
 
 The pages live in the Wiki joined to the board (`realm/ideas.py`), what runs on them in `.orkcraft/ideas/`. The
 keeper (`core/idea_keeper.py`) reads, talks and plans in the background; the runner (`core/idea_runner.py`, spec 29a
@@ -21,6 +22,7 @@ from typing import Any, Callable
 
 from orkcraft import settings
 from orkcraft.core import idea_keeper
+from orkcraft.gui import night_gate
 from orkcraft.realm import catalog, idea_merged, idea_secrets, ideas, wiki
 
 RUNNER_TICK_S = 3.0               # how often the runner looks at its tasks
@@ -63,6 +65,8 @@ class Ideas:
             self.town.repo_root, self.state_dir, self.root, lambda: self.town.machine.ideas, self._publish,
             demo=bool(self.town.demo), budget_ok=lambda: self.town.budget_ok())
         self.town.bus.subscribe(idea_keeper.CHANGED, self._changed)
+        self.hop = _Hop(self.town)
+        self.night = night_gate.Night(self)       # `dev` tested every night, `main` by one press (spec 32)
 
     # -- where the pages are --------------------------------------------------------------------------------
 
@@ -104,7 +108,7 @@ class Ideas:
         if self._runner is None and not self._runner_error:
             try:
                 from orkcraft.core.idea_runner import IdeaRunner
-                self._runner = IdeaRunner(self.town.repo_root, self.state_dir, self.town.machine, _Hop(self.town))
+                self._runner = IdeaRunner(self.town.repo_root, self.state_dir, self.town.machine, self.hop)
             except ImportError:
                 self._runner_error = "The runner is not in this build yet: plans cannot start"
             except Exception as e:              # a runner that cannot start never stops the board
@@ -119,6 +123,10 @@ class Ideas:
             self.keeper.tick()
         except Exception as e:                  # the keeper's batch never stops the clock
             self.town.toast(f"{type(e).__name__}: {e}", title="The keeper", severity="error")
+        try:
+            self.night.tick(now)
+        except Exception as e:                  # the night gate's clock never stops the host's
+            self.town.toast(f"{type(e).__name__}: {e}", title="The night gate", severity="error")
         if now - self._runner_at >= RUNNER_TICK_S:
             self._runner_at = now
             runner = self.runner() if self._ever_passed() else self._runner
@@ -134,6 +142,7 @@ class Ideas:
 
     def stop_all(self) -> None:
         self.keeper.stop_all()
+        self.night.stop_all()
         if self._runner is not None:
             try:
                 self._runner.stop_all()
@@ -149,12 +158,15 @@ class Ideas:
             try:
                 b = self.board(make=False)
                 held = {n["idea"] for n in b["today"]["needs_you"] if n["kind"] == "held"}
-                data = {"needs_you": len(b["today"]["needs_you"]),
+                night = b["today"]["night"]
+                data = {"needs_you": len(b["today"]["needs_you"]) + (1 if self.night.red(night) else 0),
+                        "night": {"date": night["date"], "green": night["green"], "running": night["running"],
+                                  "passed": bool(night["passed_at"]), "count": night["count"]} if night else None,
                         "idea_states": [{"slug": i["slug"], "title": i["title"],
                                          "state": "held" if i["state"] == "working" and i["slug"] in held
                                          else i["state"]} for i in b["ideas"]]}
             except Exception:                   # a broken page never breaks the town's snapshot
-                data = {"needs_you": 0, "idea_states": []}
+                data = {"needs_you": 0, "idea_states": [], "night": None}
             self._cache = (self.rev, now, data)
         try:
             digest = idea_merged.due(self.state_dir, self.town.machine.ideas.get("digest_hours") or [])
@@ -202,7 +214,8 @@ class Ideas:
         busy = self._runner.reverting() if self._runner is not None else set()
         merged = [{**m, "reverting": (m["idea"], m["task"]) in busy} for m in merged]
         return {"tracks": tracks, "ideas": out,
-                "today": {"todos": todos, "needs_you": needs, "merged": merged, "merged_more": more},
+                "today": {"todos": todos, "needs_you": needs, "merged": merged, "merged_more": more,
+                          "night": self.night.card()},
                 "batch_next": self.keeper.batch_next(), "rev": self.rev, "demo": bool(self.town.demo)}
 
     def page(self, slug: str) -> dict[str, Any]:
@@ -404,7 +417,7 @@ class Ideas:
                  "ideas.move": self.move, "ideas.edit": self.edit, "ideas.track_add": self.track_add,
                  "ideas.track_set": self.track_set, "ideas.todo": self.todo, "ideas.drop": self.drop,
                  "ideas.stop": self.stop, "ideas.seen": self.seen, "ideas.revert": self.revert,
-                 "ideas.answer": self.answer}
+                 "ideas.answer": self.answer, **self.night.commands()}
         return {name: guarded(fn) for name, fn in table.items()}
 
 

@@ -579,3 +579,36 @@ p { margin: 0 0 8px; }
 .merged-head .ok-btn { flex: none; white-space: nowrap; }
 .merged-head h2 { font-size: 0.8125rem; }
 :root[data-look="camp"] .board .merged-head h2 { font: var(--kit-head); color: var(--parchment-ink); letter-spacing: 0; text-transform: none; }
+
+/* -- 32: the Night report (pwa/night.js) — red in Needs you, green right under it -------------------------------- */
+.night { display: flex; flex-direction: column; gap: 6px; border-left: 4px solid var(--success); }
+.night-red { border-left-color: var(--danger); }
+.night-running { border-left-color: var(--action); }
+.night-passed { border-left-color: var(--frame-strong); }
+.night-head { display: flex; align-items: baseline; gap: 8px; }
+.night-head b { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.night-chip { flex: none; font-size: 0.75rem; color: var(--muted); border: 1px solid var(--frame); border-radius: 999px; padding: 0 8px; }
+.night-lead { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.night-red .night-lead { color: var(--danger); }
+.night-step { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.night-step small, .night-notfixed small, .night-cost { color: var(--muted); font-size: 0.8125rem; overflow-wrap: anywhere; }
+.night-mark { width: 1rem; color: var(--success); font-weight: 700; }
+.night-step[data-ok="false"] .night-mark { color: var(--danger); }
+.night-notfixed { display: flex; flex-direction: column; gap: 2px; padding-left: 8px; border-left: 2px solid var(--danger); }
+.night-stale { margin: 0; color: var(--warning); }
+.night-acts { gap: 8px; flex-wrap: wrap; }
+.night-acts .ok-btn { min-height: 44px; }
+.night-details { display: flex; flex-direction: column; gap: 4px; padding-top: 6px; border-top: 1px solid var(--frame); }
+.night-details h3 { margin: 4px 0 0; font-size: 0.8125rem; color: var(--muted); }
+.night-commit { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; font-size: 0.875rem; }
+.night-commit .sha, .night-failed { font-size: 0.75rem; overflow-wrap: anywhere; }
+.night-commit small { color: var(--muted); }
+:root[data-look="camp"] .board .night { position: relative; padding-left: 14px; border-left-width: 4px; }
+:root[data-look="camp"] .board .night::before { content: ""; position: absolute; left: 2px; top: 8px; bottom: 8px; width: 4px;
+  background: var(--accent-teal); box-shadow: 0 0 0 2px var(--art-outline); }
+:root[data-look="camp"] .board .night-red::before { background: var(--signal-fire); }
+:root[data-look="camp"] .board .night-passed::before { background: var(--frame-strong); }
+:root[data-look="camp"] .board .night-head b { font: var(--kit-head); color: var(--parchment-ink); }
+:root[data-look="camp"] .board .night-chip { border-radius: 0; border: 2px solid var(--kit-parchment-rule); background: var(--kit-parchment-deep); }
+:root[data-look="camp"] .board .night-notfixed { border-left: 4px solid var(--kit-parchment-rule); }
+:root[data-look="camp"] .board .night-details { border-top: 2px solid var(--kit-parchment-rule); }

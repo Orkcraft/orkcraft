@@ -60,6 +60,9 @@ COMMANDS: dict[str, Any] = {
     # the board in focus (spec 29a §6): every board command, the phone first (decisions §43.10)
     **{f"ideas.{c}": None for c in ("board", "page", "add", "say", "plan", "start", "move", "edit", "track_add",
                                     "track_set", "todo", "drop", "stop", "seen", "revert", "answer")},
+    # the night gate (spec 32 §2): Pass to main (the phone asks once) and Run now
+    "gate.pass_night": None,
+    "gate.run_night": None,
     # an Agent pool: its ork's question answered (A2's, pinned on its task) and one ork stopped from the 🥩 list
     "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",), "fields": ("add",), "barracks": ("answer", "stop_ork")},
 }
@@ -389,6 +392,7 @@ def compact(full: dict[str, Any], last_look: dict[str, Any] | None = None) -> di
         "idea_states": [{k: str(i.get(k, "")) for k in ("slug", "title", "state")}
                         for i in full.get("idea_states") or []],
         "digest": _digest(full.get("digest")),
+        "night": _night(full.get("night")),
     }
     out["rev"] = hashlib.sha256(json.dumps(out, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
     return out
@@ -400,6 +404,14 @@ def _digest(d: object) -> dict[str, Any] | None:
         return None
     return {"at": str(d["at"]), "merged": int(d.get("merged") or 0), "done": int(d.get("done") or 0),
             "spent": str(d.get("spent") or "$0.00")}
+
+
+def _night(n: object) -> dict[str, Any] | None:
+    """The newest Night report in a word (spec 32 §3): its date, green or red, running, passed, how many changes."""
+    if not isinstance(n, dict) or not n.get("date"):
+        return None
+    return {"date": str(n["date"]), "green": bool(n.get("green")), "running": bool(n.get("running")),
+            "passed": bool(n.get("passed")), "count": int(n.get("count") or 0)}
 
 
 def phone_snapshot(host) -> dict[str, Any]:
@@ -438,6 +450,13 @@ def news(before: dict[str, Any] | None, after: dict[str, Any]) -> list[dict[str,
     for i in after.get("idea_states") or []:
         if i["state"] in IDEA_NEWS and was_in.get(i["slug"]) != i["state"]:
             out.append({"kind": "idea", "slug": i["slug"], "title": i["title"], "state": i["state"]})
+    night, was = after.get("night"), before.get("night") or {}
+    if night and not night["green"] and not night["running"] and not night["passed"] and \
+            (was.get("date") != night["date"] or was.get("running") or was.get("green")):
+        # a red night pushes, as a failed idea does (its line: "Night report · <date>: needs you"); green waits for
+        # the morning's digest (spec 32 §3, decisions §44.4)
+        out.append({"kind": "idea", "slug": f"night/{night['date']}", "title": f"Night report · {night['date']}",
+                    "state": "failed"})
     digest = after.get("digest")
     if digest and (before.get("digest") or {}).get("at") != digest["at"]:
         out.append({"kind": "digest", **{k: digest[k] for k in ("merged", "done", "spent")}})

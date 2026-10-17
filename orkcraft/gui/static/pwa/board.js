@@ -5,6 +5,7 @@
 // `send`), and reads again when the snapshot's `ideas_rev` changes (and every POLL_MS while the Taskmaster or a task works).
 
 import { h, sheet } from "./util.js";
+import { makeNight, isRed, shown } from "./night.js";
 
 const POLL_MS = 10000;
 const HOLD_MS = 450;                    // a card held this long can be dragged
@@ -93,6 +94,8 @@ export function makeBoard(ctx) {
     ctx.flash(r.ok ? `Stopped: ${r.result} session(s)` : r.error);
   });
 
+  const night = makeNight(ctx, () => load());     // the Night report's card and its Pass sheet (spec 32 §3)
+
   function go(id) {
     tab = id;
     open = null;
@@ -149,7 +152,8 @@ export function makeBoard(ctx) {
   }
 
   function drawTabs() {
-    const n = (boardData?.today?.needs_you || []).length + (boardData?.today?.todos || []).filter((t) => !t.done).length;
+    const n = (boardData?.today?.needs_you || []).length + (boardData?.today?.todos || []).filter((t) => !t.done).length
+      + (isRed(boardData?.today?.night) ? 1 : 0);
     const dot = tabs.today.querySelector(".q-dot");
     dot.hidden = !n;
     dot.textContent = String(n);
@@ -160,7 +164,9 @@ export function makeBoard(ctx) {
     const t = boardData?.today || { todos: [], needs_you: [] };
     const kids = [];
     kids.push(h("h2", {}, "Needs you"));
-    if (!t.needs_you.length) kids.push(h("p", { class: "muted" }, "Nothing waits on you."));
+    const red = isRed(t.night);              // a red night stands in Needs you; a green one right under it
+    if (red) kids.push(night.card(t.night));
+    if (!t.needs_you.length && !red) kids.push(h("p", { class: "muted" }, "Nothing waits on you."));
     for (const n of t.needs_you) {
       kids.push(h("button", { class: `card need need-${n.kind}`, type: "button", onclick: () => openIdea(n.idea) },
         h("span", { class: "need-mark", "aria-hidden": "true" }, NEEDS[n.kind] || "•"),
@@ -168,6 +174,7 @@ export function makeBoard(ctx) {
         h("span", { class: "chev", "aria-hidden": "true" }, "›")));
       if (n.kind === "asks" && asked[n.idea]) kids.push(questionsBlock(n.idea, asked[n.idea]));
     }
+    if (!red && shown(t.night)) kids.push(night.card(t.night));
     kids.push(...mergedGroup(t));
     kids.push(h("h2", {}, "To-dos"));
     if (!t.todos.length) kids.push(h("p", { class: "muted" }, "No to-dos: a task asks for one only when it cannot start without."));
@@ -551,7 +558,7 @@ export function makeBoard(ctx) {
 
   return {
     el,
-    sheets: [stopSheet.el, revertSheet.el],
+    sheets: [stopSheet.el, revertSheet.el, ...night.sheets],
     // What is acted on only while the town answers: not the + tab (an idea is kept with no signal), not the bar.
     content: () => [paneToday, paneIdeas, paneIdea],
     render(s) {

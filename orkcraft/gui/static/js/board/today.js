@@ -5,6 +5,7 @@ import { html, cls } from "../html.js";
 import { board, asked, run, open } from "./store.js";
 import { Questions } from "./questions.js";
 import { Merged } from "./merged.js";
+import { NightCard, isRed, shown } from "./night.js";
 
 function Todo({ t }) {
   const [value, setValue] = useState("");
@@ -29,17 +30,21 @@ function Todo({ t }) {
 
 export function Today() {
   const today = board.value.today;
-  const open_ = today.todos.filter((t) => !t.done), shown = [...open_, ...today.todos.filter((t) => t.done)];
+  const open_ = today.todos.filter((t) => !t.done), list = [...open_, ...today.todos.filter((t) => t.done)];
+  // The Night report (spec 32 §3): red stands in Needs you; green (or running) right under it.
+  const night = today.night, red = isRed(night), needs = today.needs_you.length + (red ? 1 : 0);
   return html`<section class="board-today" aria-label="Today">
-    <h3 class="board-sub kit-band">Needs you ${today.needs_you.length ? html`<span class="board-count kit-well">${today.needs_you.length}</span>` : ""}</h3>
+    <h3 class="board-sub kit-band">Needs you ${needs ? html`<span class="board-count kit-well">${needs}</span>` : ""}</h3>
+    ${red ? html`<${NightCard} n=${night} />` : ""}
     ${today.needs_you.length ? html`<ul class="board-list">${today.needs_you.map((n) => html`<li key=${n.idea + n.kind}>
       <button class="board-need" data-kind=${n.kind} onClick=${() => open(n.idea)}>
         <b>${n.title}</b><span class="ok-tone-muted">${n.text}</span></button>
       ${n.kind === "asks" && html`<${Questions} slug=${n.idea} questions=${asked.value[n.idea]} />`}</li>`)}</ul>`
-      : html`<p class="ok-tone-muted">Nothing waits for you.</p>`}
+      : red ? "" : html`<p class="ok-tone-muted">Nothing waits for you.</p>`}
+    ${!red && shown(night) ? html`<${NightCard} n=${night} />` : ""}
     <${Merged} />
     <h3 class="board-sub kit-band">To-dos ${open_.length ? html`<span class="board-count kit-well">${open_.length}</span>` : ""}</h3>
-    ${shown.length ? html`<ul class="board-list">${shown.map((t) => html`<${Todo} key=${t.idea + t.id} t=${t} />`)}</ul>`
+    ${list.length ? html`<ul class="board-list">${list.map((t) => html`<${Todo} key=${t.idea + t.id} t=${t} />`)}</ul>`
       : html`<p class="ok-tone-muted">No to-dos from a plan yet.</p>`}
     <p class="board-silence ok-tone-muted">The orks ask you when a question, a plan, a red gate twice, a conflict or a spent window needs you.
       Otherwise they work and merge.</p>

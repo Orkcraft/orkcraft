@@ -2,7 +2,7 @@
 // asked of the town first, so a new version arrives the next time it is reachable; the cache is only for
 // when it is not. The socket is never cached: what the town is comes live or not at all.
 const CACHE = "orkcraft-app-v13";
-const SHELL = ["./", "app.js", "util.js", "dock.js", "town.js", "fields.js", "icons.js", "links.js", "ground.js", "camp.js", "look.js", "slots.js", "board.js", "camp/ork-walk.png",
+const SHELL = ["./", "app.js", "util.js", "dock.js", "town.js", "fields.js", "icons.js", "links.js", "ground.js", "camp.js", "look.js", "slots.js", "board.js", "night.js", "camp/ork-walk.png",
   "camp/layout.js", "camp/track.js", "camp/services.js", "camp/ground.js",
   "tokens.css", "components.css", "app.css",
   "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "fonts/fonts.css",

@@ -225,3 +225,47 @@
 .board-merged-group > h3 { display: flex; align-items: center; gap: var(--space-2); }
 .board-need + .board-qs { margin: 0 0 var(--space-2) var(--space-3); padding: 0 0 0 var(--space-3); border-left: 2px solid var(--frame); }
 [data-look="camp"] .board-need + .board-qs { border-left: 4px solid var(--kit-parchment-rule); }
+
+/* -- 32: the Night report (js/board/night.js) — in Today, and the same card in the Review gate's window --------------- */
+.board-night { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-2) var(--space-3);
+  background: var(--panel); color: var(--ink); border: 1px solid var(--frame); border-left: 4px solid var(--success);
+  border-radius: var(--radius-sm, 0); }
+.board-night.is-red { border-left-color: var(--danger); }
+.board-night[data-state="running"] { border-left-color: var(--info); }
+.board-night[data-state="passed"] { border-left-color: var(--frame); }
+.board-night__head { display: flex; align-items: baseline; gap: var(--space-2); }
+.board-night__title { flex: 1; min-width: 0; }
+.board-night__lead { margin: 0; font-weight: 700; }
+.board-night.is-red .board-night__lead { color: var(--danger); }
+.board-night__steps, .board-night__commits, .board-night__failed, .board-night__notfixed ul { list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 2px; }
+.board-night__steps li { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+.board-night__mark { width: 1em; color: var(--success); font-weight: 700; }
+.board-night__steps li[data-ok="false"] .board-night__mark { color: var(--danger); }
+.board-night__notfixed { display: flex; flex-direction: column; gap: 2px; padding: var(--space-1) var(--space-2);
+  border-left: 2px solid var(--danger); }
+.board-night__cost { margin: 0; font-size: .85em; font-variant-numeric: tabular-nums; }
+.board-night__stale { margin: 0; color: var(--alert); }
+.board-night__details { display: flex; flex-direction: column; gap: var(--space-1); padding-top: var(--space-1);
+  border-top: 1px solid var(--frame); }
+.board-night__h { margin: var(--space-1) 0 0; font-size: .85em; color: var(--ink-muted); }
+.board-night__commits li { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1); }
+.board-night .board-row { margin-top: var(--space-1); }
+.board-night__sure > span { font-weight: 700; }
+.board-night-panel { display: flex; flex-direction: column; margin: 0 0 var(--space-2); }
+
+[data-look="camp"] .board-night { position: relative; border-radius: 0; background-color: var(--panel-inset); color: var(--parchment-ink);
+  padding: 6px 10px 8px 18px; border: 4px solid transparent; image-rendering: pixelated; background-clip: padding-box;
+  border-image: image-set(url("/ds/sprites/v4/ui/well.png") 1x, url("/ds/sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat; }
+[data-look="camp"] .board-night::before { content: ""; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 6px;
+  background: var(--success); box-shadow: 0 0 0 2px var(--art-outline); }
+[data-look="camp"] .board-night.is-red::before { background: var(--danger); }
+[data-look="camp"] .board-night[data-state="running"]::before { background: var(--accent-teal); }
+[data-look="camp"] .board-night[data-state="passed"]::before { background: var(--kit-wood-light); }
+[data-look="camp"] .board-night__title { font: var(--type-kit-heading); }
+[data-look="camp"] .board-night__lead { font: var(--type-camp-body); font-weight: 700; }
+[data-look="camp"] .board-night__steps li, [data-look="camp"] .board-night__commits li,
+[data-look="camp"] .board-night__notfixed { font: var(--type-camp-label); }
+[data-look="camp"] .board-night__cost, [data-look="camp"] .board-night__h { font: var(--type-camp-caption); }
+[data-look="camp"] .board-night__notfixed { border-left: 4px solid var(--kit-parchment-rule); }
+[data-look="camp"] .board-night__details { border-top: 2px solid var(--kit-parchment-rule); }

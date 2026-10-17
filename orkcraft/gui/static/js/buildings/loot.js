@@ -19,6 +19,7 @@ import { Dialog } from "../dialog.js";
 import { openInLake } from "../lake.js";
 import { KeeperDialog } from "../keeper.js";
 import { usePeek } from "../windows.js";
+import { NightPanel } from "../board/night.js";   // the night's report, the board's same card (spec 32 §3)
 
 const sheet = new URL("./loot.css", import.meta.url).href;
 if (!document.querySelector(`link[href="${sheet}"]`)) {
@@ -300,7 +301,7 @@ function Large({ id }) {
   const keep = (e) => e.stopPropagation();
   if (!data || !data.counts) return html`<p class="ok-tone-muted">${say("Opening…")}</p>`;
   return html`<div class="loot-large" onPointerDown=${keep} onClick=${keep} onDblClick=${keep}>
-    <${Head} id=${id} data=${data} /><${QueuePane} id=${id} data=${data} /></div>`;
+    <${Head} id=${id} data=${data} /><${NightPanel} /><${QueuePane} id=${id} data=${data} /></div>`;
 }
 
 /** Which tab the list shows: the one picked, else the carts — the changed files when no cart is there. */

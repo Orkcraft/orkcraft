@@ -16,6 +16,7 @@
     s.dnd_until                      # Do not disturb: "" off, "on" until turned off, else an ISO time (disturb.py)
     s.focus                          # "board": the window and the phone show only the board (spec 29a §1); "" the town
     s.ideas                          # the board's keeper and runner: batch_minutes, idle_hours, max_parallel, … (IDEAS)
+    s.gate                           # the night gate (spec 32): night_hour, check_tier, night_budget_usd (GATE)
     settings.save(s)
 
 The tools the operator leads and how each is paid for, and the quiet hours of their day (design:
@@ -74,6 +75,10 @@ def shift(s: "MachineSettings") -> Span:
 # the digest of what merged and finished (spec 29c §4: only what blocks pushes at once).
 IDEAS = {"batch_minutes": 30, "idle_hours": 24, "max_parallel": 1, "merge_into": "dev", "push": True,
          "digest_hours": [9, 13, 18]}
+# The night gate (spec 32; decisions §45.6): the local hour the deep checks run on `dev`'s head, the tier of the daily
+# check's Claude session and what that session may spend a night (said in the report; it stops there).
+GATE = {"night_hour": 3, "check_tier": "warrior", "night_budget_usd": 2.0}
+GATE_TIERS = ("elder", "warrior", "laborer")
 FOCUSES = ("", "board")
 RECENT_FOLDERS = 8                       # the recent folders a Wiki's picker offers               # the GUI's two looks; camp the default
 
@@ -117,6 +122,7 @@ class MachineSettings:
     tier_models: dict = field(default_factory=dict)
     focus: str = "board"          # FOCUSES: "board" shows only the board (alpha's default), "" the whole town
     ideas: dict = field(default_factory=lambda: clean_ideas(IDEAS))   # the board's keeper and runner (IDEAS)
+    gate: dict = field(default_factory=lambda: clean_gate(GATE))      # the night gate: its hour, tier, budget (GATE)
 
     def to_dict(self) -> dict:
         return {
@@ -144,6 +150,7 @@ class MachineSettings:
             "tier_models": {t: dict(m) for t, m in self.tier_models.items()},
             "focus": self.focus,
             "ideas": dict(self.ideas),
+            "gate": dict(self.gate),
         }
 
     @classmethod
@@ -183,6 +190,7 @@ class MachineSettings:
         s.tier_models = clean_tier_models(data.get("tier_models"))
         s.focus = data["focus"] if data.get("focus") in FOCUSES else "board"
         s.ideas = clean_ideas(data.get("ideas"))
+        s.gate = clean_gate(data.get("gate"))
         install_id = usage.get("id")
         if s.usage:                   # a broken id is drawn again: the stats never carry what was in the file
             ok = isinstance(install_id, str) and re.fullmatch(r"[0-9a-f]{32}", install_id)
@@ -222,6 +230,21 @@ def clean_ideas(raw: object) -> dict:
         kept = sorted({h for h in hours if isinstance(h, int) and not isinstance(h, bool) and 0 <= h <= 23})
         if kept or not hours:                    # [] is no digest; a list of nothing valid is the default
             out["digest_hours"] = kept
+    return out
+
+
+def clean_gate(raw: object) -> dict:
+    """The night gate's settings: every key of GATE, a broken value as its default."""
+    raw = raw if isinstance(raw, dict) else {}
+    out = dict(GATE)
+    hour = raw.get("night_hour")
+    if isinstance(hour, int) and not isinstance(hour, bool) and 0 <= hour <= 23:
+        out["night_hour"] = hour
+    if raw.get("check_tier") in GATE_TIERS:
+        out["check_tier"] = raw["check_tier"]
+    budget = raw.get("night_budget_usd")
+    if isinstance(budget, (int, float)) and not isinstance(budget, bool) and 0 <= budget <= 100:
+        out["night_budget_usd"] = round(float(budget), 2)
     return out
 
 

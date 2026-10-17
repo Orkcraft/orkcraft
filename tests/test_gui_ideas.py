@@ -64,7 +64,7 @@ def test_drop_an_idea_and_read_the_board_and_its_page(host):
     assert i["slug"] == slug and i["state"] == "raw" and i["thesis"] == "Dark mode" and i["track"] == "general"
     assert i["progress"] == {"done": 0, "total": 0} and i["updated"]
     assert set(i) == {"slug", "title", "track", "order", "state", "size", "thesis", "asks", "progress", "updated"}
-    assert board["today"] == {"todos": [], "needs_you": [], "merged": [], "merged_more": 0} and board["batch_next"] and board["rev"] > rev
+    assert board["today"] == {"todos": [], "needs_you": [], "merged": [], "merged_more": 0, "night": None} and board["batch_next"] and board["rev"] > rev
     page = host.command("ideas.page", {"slug": slug})
     assert [s["name"] for s in page["sections"]] == list(ideas.SECTIONS)
     assert page["sections"][0] == {"name": "Gist", "thesis": "Dark mode", "text": "Dark mode\nfor the night",
@@ -345,3 +345,46 @@ def test_only_what_blocks_pushes_and_the_rest_waits_for_the_digest(host, monkeyp
     assert mobile.news(digest, mobile.phone_snapshot(host)) == []            # once an hour
     host.town.machine.ideas["digest_hours"] = [(hour + 1) % 24]
     assert mobile.phone_snapshot(host)["digest"] is None
+
+
+# -- the night gate (spec 32): its two commands, its card on the board, a red night in Needs you -------------------
+
+def _report(host, **fields):
+    folder = host.ideas.state_dir / "gate" / "night"
+    folder.mkdir(parents=True, exist_ok=True)
+    rep = {"date": "2026-10-17", "dev": "abc", "main": "def", "commits": [{"sha": "abc", "subject": "s", "idea": ""}],
+           "steps": [{"name": "Full suite", "ok": True, "summary": "4 passed", "failed": []}], "fixed": [],
+           "not_fixed": [], "cost": 0.4, "budget": 2.0, "green": True, "started": "2026-10-17T03:00:00",
+           "finished": "2026-10-17T03:20:00", "running": False, **fields}
+    (folder / "2026-10-17.json").write_text(json.dumps(rep))
+    host.ideas.changed("")
+
+
+def test_the_night_gates_commands_are_the_hosts_and_a_phones(host):
+    for name in ("gate.pass_night", "gate.run_night"):
+        assert name in host.commands and name in mobile.COMMANDS and mobile.allowed(host, name, {})
+
+
+def test_the_board_carries_the_night_report_and_a_red_one_needs_you(host):
+    assert host.command("ideas.board")["today"]["night"] is None
+    _report(host)
+    night = host.command("ideas.board")["today"]["night"]
+    assert night["green"] and night["count"] == 1 and night["cost"] == 0.4 and night["stale"] is True
+    assert host.snapshot()["needs_you"] == 0
+    _report(host, green=False, steps=[{"name": "Full suite", "ok": False, "summary": "1 failed", "failed": ["t::x"]}])
+    snap = host.snapshot()
+    assert snap["needs_you"] == 1 and snap["night"] == {"date": "2026-10-17", "green": False, "running": False,
+                                                       "passed": False, "count": 1}
+    assert mobile.compact(snap)["night"]["green"] is False
+
+
+def test_pass_to_main_refuses_a_red_night_and_one_whose_dev_moved(host):
+    _report(host, green=False)
+    assert "red night" in host.command("gate.pass_night", {"date": "2026-10-17"})["error"]
+    _report(host)
+    assert host.command("gate.pass_night", {"date": "2026-10-17"})["error"] == "dev moved since the night; run again"
+    assert "date" in host.command("gate.pass_night", {})["error"]
+
+
+def test_run_now_needs_a_dev_branch(host):
+    assert "no `dev` branch" in host.command("gate.run_night", {})["error"]

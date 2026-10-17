@@ -5,6 +5,8 @@
     g.commits(path, base) / g.touched(path, base)        # what the task committed since it left the base
     ok, tail = g.gate(path, cancel)                      # the critical tests + the test files of touched modules
     commit, subjects, note = g.land(path, branch, "main", push=True)   # rebase, fast-forward main, push
+    g.worktree("night/2026-10-17", "dev", "night-2026-10-17")   # a worktree on any branch (the night gate's)
+    code, out = g.pytest(path, ["-m", "not browser"], cancel)  # any pytest run, ended by Stop all
     g.revert(slug, task_id, commit, since, "main", push=True, cancel=cancel)   # undo a landed task the same way
     read_secret(state_dir, slug, todo_id)                # a `secret` to-do's value, from where part A stored it
 
@@ -96,15 +98,19 @@ class IdeaGit:
         """A fresh worktree on branch `idea/<slug>/<task id>`, cut from the local `base` (a leftover of an
         earlier try is removed, and its branch cut anew)."""
         branch = branch_of(slug, task_id)
+        return self.worktree(branch, base, _worktree_id(slug, task_id)), branch
+
+    def worktree(self, branch: str, base: str, wid: str) -> Path:
+        """A fresh worktree `wid` on `branch`, cut from the local `base` (made when missing, as `ensure_branch`)."""
         if not worktrees.valid_branch(self.root, branch):
             raise RuntimeError(f"{branch!r} is not a valid branch name")
         with self.lock:
             self.ensure_branch(base)
-            path = worktrees.worktree_path(self.root, _worktree_id(slug, task_id))
+            path = worktrees.worktree_path(self.root, wid)
             self.remove(path)
             path.parent.mkdir(parents=True, exist_ok=True)
             _ok(_git(self.root, "worktree", "add", "-B", branch, str(path), base))
-        return path, branch
+        return path
 
     def ensure_branch(self, base: str) -> None:
         """`base` as a local branch: as it is; else from `origin/<base>`; else cut from `main` (or HEAD) — the first
@@ -131,6 +137,9 @@ class IdeaGit:
 
     def head(self, path: Path) -> str:
         return _ok(_git(path, "rev-parse", "HEAD"))
+
+    def is_ancestor(self, old: str, new: str) -> bool:
+        return _git(self.root, "merge-base", "--is-ancestor", old, new).returncode == 0
 
     def rev(self, ref: str) -> str:
         """The commit a ref names in the repository, "" when none."""
@@ -167,18 +176,23 @@ class IdeaGit:
         files = test_files(self.touched(path, base), path)
         if not files:
             return True, "no test files to run"
+        code, out = self.pytest(path, files, cancel, timeout_s)
+        return code == 0, f"$ python -m pytest -q {' '.join(files)}\n{out[-TEST_TAIL:]}"
+
+    def pytest(self, path: Path, args: list[str], cancel: threading.Event, timeout_s: int = jobs.TEST_TIMEOUT_S,
+               who: str = "ideas/gate") -> tuple[int, str]:
+        """(exit code, the whole output) of `python -m pytest -q <args>` in `path`; Stop all ends it (halt)."""
         # No cache, no bytecode: the gate leaves the worktree as the session left it (land checks it is clean).
-        argv = [self.python(), "-m", "pytest", "-q", "-p", "no:cacheprovider", *files]
+        argv = [self.python(), "-m", "pytest", "-q", "-p", "no:cacheprovider", *args]
         proc = subprocess.Popen(argv, cwd=path, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                                 start_new_session=True, env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
         out_box: list[str] = []
         reader = threading.Thread(target=lambda: out_box.append(proc.stdout.read() if proc.stdout else ""),
                                   daemon=True)
         reader.start()
-        jobs._wait(proc, cancel, timeout_s, "ideas/gate")
+        jobs._wait(proc, cancel, timeout_s, who)
         reader.join(5)
-        out = out_box[0] if out_box else ""
-        return proc.returncode == 0, f"$ python -m pytest -q {' '.join(files)}\n{out[-TEST_TAIL:]}"
+        return proc.returncode, out_box[0] if out_box else ""
 
     def python(self) -> str:
         """The repository's own Python when it has one (`.venv`, where its test tools are), else Orkline's."""
@@ -212,7 +226,7 @@ class IdeaGit:
             subjects = [s for s in _git(self.root, "log", "--reverse", "--format=%s", f"{old}..{new}")
                         .stdout.splitlines() if s.strip()]
             if old != new:
-                self._fast_forward(into, old, new)
+                self.fast_forward(into, old, new)
             note = self.push(into) if push else ""
         return new, subjects, note
 
@@ -242,7 +256,9 @@ class IdeaGit:
         finally:
             self.remove(path)
 
-    def _fast_forward(self, into: str, old: str, new: str) -> None:
+    def fast_forward(self, into: str, old: str, new: str) -> None:
+        """Move the local `into` from `old` to `new` (a descendant): in the root checkout by `merge --ff-only` when it
+        is checked out there and the paths it changes are clean, else by its ref only. Under the repository lock."""
         if self._checked_out_in_root(into):
             touched = [ln for ln in _git(self.root, "diff", "--name-only", old, new).stdout.splitlines() if ln]
             busy = [ln for ln in _git(self.root, "status", "--porcelain", "--", *touched).stdout.splitlines()
