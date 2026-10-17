@@ -348,8 +348,9 @@ function layout(focus = false) {
   return parts;
 }
 
-// In focus the phone shows only the board (board.js; docs/specs/29a-board-focus.md §1): its own top bar with Stop all,
-// the three tabs at the foot. The snapshot's `focus` chooses; `""` gives the town as it was.
+// In focus the phone is the v1 shell (board.js, shell-*.js; docs/specs/33-v1-shell.md §8): a top bar with Stop all, the three
+// tabs Board · Agents · Review at the foot, the preview on its own screen. The snapshot's `focus` chooses; `""` gives the
+// town as it was.
 function boardLayout() {
   const parts = {
     focus: true,
@@ -393,7 +394,7 @@ function flash(text) {
 // Office calm and plain on its office theme, dark or light as the phone is. Only how things are drawn changes,
 // never a word (CLAUDE.md: one vocabulary, two looks).
 function applyLook(look) {
-  const camp = look !== "office";
+  const camp = look !== "office" && !ui?.focus;         // in focus (docs/specs/33-v1-shell.md §1) the phone is always Office's calm look
   document.documentElement.dataset.look = camp ? "camp" : "office";
   document.documentElement.dataset.theme = camp ? "camp" : "office";
 }
@@ -402,7 +403,7 @@ LIGHT.addEventListener?.("change", () => { if (town) ground(town); });
 // The page stands on the ground of the orkspace it shows, as the desktop's town does (ground.js), and the bar the
 // system draws over the app takes that ground, so Office in light is light there too.
 function ground(s) {
-  const camp = s.look !== "office";
+  const camp = s.look !== "office" && !ui?.focus;
   const tint = wearGround(chosenSpace(s)?.biome || "dirt", camp);
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content",
     camp ? tint : LIGHT.matches ? "#f4f4f4" : "#1a1813");
