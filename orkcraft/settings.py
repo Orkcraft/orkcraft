@@ -14,6 +14,8 @@
     s.phones, s.phone_port           # the paired phones (only their tokens' hashes) and their listener's port (gui/pairing.py)
     s.look                           # camp | office: how the GUI draws the town for this person (docs/design/portrait.md)
     s.dnd_until                      # Do not disturb: "" off, "on" until turned off, else an ISO time (disturb.py)
+    s.focus                          # "board": the window and the phone show only the board (spec 29a §1); "" the town
+    s.ideas                          # the board's keeper and runner: batch_minutes, idle_hours, max_parallel, … (IDEAS)
     settings.save(s)
 
 The tools the operator leads and how each is paid for, and the quiet hours of their day (design:
@@ -67,6 +69,10 @@ def look_now(s: "MachineSettings", now=None) -> str:
 def shift(s: "MachineSettings") -> Span:
     """The work day the look follows: the person's working hours once set, else 09:00–17:00."""
     return s.work or Span(SHIFT[0], SHIFT[1] - SHIFT[0])
+# The board's keeper and runner (spec 29a): how often the batch reads new ideas, when a talk's session is
+# compacted, how many tasks run at once, which branch they merge into and whether it is pushed.
+IDEAS = {"batch_minutes": 30, "idle_hours": 24, "max_parallel": 1, "merge_into": "main", "push": True}
+FOCUSES = ("", "board")
 RECENT_FOLDERS = 8                       # the recent folders a Wiki's picker offers               # the GUI's two looks; camp the default
 
 
@@ -107,6 +113,8 @@ class MachineSettings:
     # The model a tier runs on, per tool, chosen in Settings → AI tools: {"agy": {"elder": "gemini-3.1-pro-high"}}.
     # A family (`gemini-flash-high`) is its newest model; absent, the tier's own family (realm/harnesses.py `pick`).
     tier_models: dict = field(default_factory=dict)
+    focus: str = "board"          # FOCUSES: "board" shows only the board (alpha's default), "" the whole town
+    ideas: dict = field(default_factory=lambda: dict(IDEAS))   # the board's keeper and runner (IDEAS)
 
     def to_dict(self) -> dict:
         return {
@@ -132,6 +140,8 @@ class MachineSettings:
             "dnd_until": self.dnd_until,
             "recent_folders": list(self.recent_folders),
             "tier_models": {t: dict(m) for t, m in self.tier_models.items()},
+            "focus": self.focus,
+            "ideas": dict(self.ideas),
         }
 
     @classmethod
@@ -169,6 +179,8 @@ class MachineSettings:
         s.recent_folders = [str(x)[:1000] for x in recent if isinstance(x, str) and x.strip()][:RECENT_FOLDERS] \
             if isinstance(recent, list) else []
         s.tier_models = clean_tier_models(data.get("tier_models"))
+        s.focus = data["focus"] if data.get("focus") in FOCUSES else "board"
+        s.ideas = clean_ideas(data.get("ideas"))
         install_id = usage.get("id")
         if s.usage:                   # a broken id is drawn again: the stats never carry what was in the file
             ok = isinstance(install_id, str) and re.fullmatch(r"[0-9a-f]{32}", install_id)
@@ -186,6 +198,22 @@ def clean_tier_models(raw: object) -> dict[str, dict[str, str]]:
                 if tier in harnesses.TIERS and isinstance(model, str) and re.fullmatch(r"[\w.:/@\[\]()][\w.:/@\[\]() -]{0,99}", model.strip())}
         if kept:
             out[tool] = kept
+    return out
+
+
+def clean_ideas(raw: object) -> dict:
+    """The board's keeper and runner settings: every key of IDEAS, a broken value as its default."""
+    raw = raw if isinstance(raw, dict) else {}
+    out = dict(IDEAS)
+    for k, lo, hi in (("batch_minutes", 1, 24 * 60), ("idle_hours", 1, 24 * 14), ("max_parallel", 1, 8)):
+        v = raw.get(k)
+        if isinstance(v, int) and not isinstance(v, bool) and lo <= v <= hi:
+            out[k] = v
+    branch = raw.get("merge_into")
+    if isinstance(branch, str) and re.fullmatch(r"[\w./-]{1,100}", branch) and ".." not in branch:
+        out["merge_into"] = branch
+    if isinstance(raw.get("push"), bool):
+        out["push"] = raw["push"]
     return out
 
 

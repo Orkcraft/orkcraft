@@ -1048,3 +1048,57 @@ with §39's daily batch. "A product keeper that prioritises" is a hypothesis aft
    before each release**. The fix lists the PM writes say which look a finding was seen in.
 Both improve existing mechanics (§27). Item 1 joins §39's spec (gate-kinds); track 1, P1.
 
+
+## 43. The Task board holds the work from a track to an ork: tracks, ideas as specs, to-dos, tasks (17 October, the owner)
+
+Why: the most productive work is on the spec first: talk it through, read it by eye, then build, and look at the
+result in the product (the interview of 16 October, the owner's own sessions). So the Task board becomes the centre of
+the scheme: the project's tracks, the ideas, the person's to-dos and the orks' tasks in one place. This makes §39's
+"the plan passed before the work" the core, and replaces §41.2–4; §41.1 (one keeper with stages), §41.5 (the person
+never waits on the card) and §41.6 (the keeper reads only its own Wiki) stay.
+
+1. **The hierarchy:** orkspace (the person's project: a repository, a Claude / Antigravity / Codex project) →
+   **track** → **idea** → the person's **to-dos** and the orks' **tasks**. `track` is a new word in `TERMS` (a
+   building's Goal is taken: thrift · balance · quality); the charter (spec 03) stays the town's one line above the
+   tracks. A track has a short description, **success criteria** and, if wanted, a deadline. One track, **General**,
+   exists by itself: Mission 1's drill and External listeners' cards go there, so the first day needs no track.
+2. **Priority is set in two places only:** the order of the tracks and the order of the ideas in a track, by drag. No
+   P0/P1 fields. Tasks and to-dos inherit their idea's place, and the pool's queue follows it. The keeper may propose an
+   order against the track's success criteria; the person accepts or moves the cards.
+3. **An idea is a spec under discussion.** Dropping one costs nothing (no model). A light model (laborer) reads the new
+   ideas **in a batch, every few hours**: it proposes the track, a size (S / M / L), the number of stages, and two or
+   three questions; the idea goes to **Needs you** with ❓. The spec is talked through on the heavy tier (elder), and
+   only when the person opens the idea. The page has fixed sections: **Gist · Why** (which success criterion it moves)
+   **· In · Out · Risks · Open questions · Estimate · Stages**. Each turn the keeper edits the section the turn was
+   about, never rewrites the page. The preview shows every section in its own colour role and icon, its first line as
+   a bold thesis, the rest folded; a question can be asked on a section.
+4. **An idea lives in the Wiki.** The Wiki is already Markdown in the repository, and it already reads the
+   repository's structure into a page per module. The Wiki joined to the board (§41.6) gets two sections:
+   `pages/tracks/<slug>.md` and `pages/ideas/<slug>.md`, front matter `owner: board` (the librarian reads them and
+   never rewrites them; only the board's keeper and the person edit them). An idea links the module pages it touches;
+   those links and `wiki_search` are its context. The file is the truth; the board shows it.
+5. **A session per idea, and the session is disposable.** It compacts when its context passes 60 % (as the pool's
+   orks, spec 28) or after a day without a turn (by then the prompt cache is cold and a long talk is paid in full
+   again). The next session starts from the page, a short **decisions log** (what was decided and why, kept on the
+   page) and the open questions. The raw talk is archived on disk and never read back into the context.
+6. **Take it to work** is the person passing the plan. One heavy call turns the spec into to-dos and tasks, each task
+   with its tier (elder / warrior / laborer) and *in parallel* or *after X*. The button says how many tasks and the
+   price range before the press. The plan is checked against the tool's window left before it starts: *3 of 5 now, the
+   rest after 18:00, or continue on Codex?* A tool is never switched silently; a board setting may allow a named one.
+7. **The pool stops planning what comes from the board:** the board's plan is the plan (no triage or plan call on the
+   way in). The pool keeps the order, the limits (`barracks_limits.py`) and the review of each result. Cards from
+   elsewhere (External listeners, a road) keep today's path.
+8. **To-dos are few.** Made only for what a task cannot start without (a key, an access, a decision), and when an ork
+   hits a wall on the way. Never a long list up front. Kinds: **secret**, **choice**, **confirm**, **instructions**
+   (steps, today's 🧭 Plan). Ticking one hands its value to the task that waits for it, which then starts. **A secret
+   never goes into a file or to a model:** it goes to the machine's secret store, and the task gets a reference.
+9. **Tasks are not cards on the board.** Under its idea, progress (*working 3/5*); the details on the map and in the
+   pool (§41.4). The board: **Today** (the to-dos that block something now, and Needs you), the tracks, the ideas.
+10. **The phone first.** The board is used from the phone often, so every screen of these specs is designed at 390 px
+    first and the desktop second. On the phone: drop an idea (text, voice); Today; answer the keeper's questions; read a
+    spec by its sections; ask on a section; Take it to work with its price; tick to-dos; reorder the ideas. A secret
+    to-do is entered on the phone only over the paired link (`gui/phones.py`), else *At the computer*. A push when the
+    batch's questions are ready.
+11. **Three specs, in this order** (track 1, P1; they replace the row *idea-to-plan*): **29** tracks and idea pages in
+    the Wiki, the board and the phone show them, no model; **30** the keeper: the batch, the spec talk, a session per
+    idea; **31** Take it to work: to-dos and tasks to the pool, with the limits (it changes the pool).

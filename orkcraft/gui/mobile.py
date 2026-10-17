@@ -11,6 +11,7 @@ host's own command table, so the GUI's page and tests reach it today the same wa
     host.command("mobile.look_done")                 # the person read "since your last look" on the phone
     host.command("audio.fetch", {"building": "g", "episode": "1a2b3c4d", "offset": 0})   # an episode, in chunks
     news(before, after)                              # what a push would say between two snapshots
+    host.command("ideas.board")                      # the board in focus: every `ideas.*` (gui/ideas.py)
 
 The compact snapshot is derived from the page's (`Host.snapshot`, gui/state.py), never from the
 town directly, so the two cannot disagree. Text that may carry emoji comes twice, as it is and
@@ -56,12 +57,16 @@ COMMANDS: dict[str, Any] = {
     "ork.console": None,
     "info": None,
     "cart.waybill": None,
+    # the board in focus (spec 29a §6): every board command, the phone first (decisions §43.10)
+    **{f"ideas.{c}": None for c in ("board", "page", "add", "say", "plan", "start", "move", "edit", "track_add",
+                                    "track_set", "todo", "drop", "stop")},
     # an Agent pool: its ork's question answered (A2's, pinned on its task) and one ork stopped from the 🥩 list
     "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",), "fields": ("add",), "barracks": ("answer", "stop_ork")},
 }
 _BY_BUILDING = {"act", "building.input"}    # the commands `allowed` checks against the building they name
 
 _LEVELS = {"ok": 0, "warn": 1, "over": 2}
+IDEA_NEWS = ("asks", "plan", "failed", "done")    # an idea that enters one of these states: a push
 
 # Quick actions a phone never presses: they read the computer (its clipboard, a path on it).
 QUICK_NEVER = frozenset({"pit.paste", "knowledge.add"})
@@ -375,6 +380,13 @@ def compact(full: dict[str, Any], last_look: dict[str, Any] | None = None) -> di
         "slots": _slots(full),
         "pool_questions": _pool_questions(full),
         "last_look": _last_look(last_look),
+        # the board in focus (spec 29a §6): the focus, the board's rev (look again when it moves), how many ideas
+        # need the person, and each idea's state (what `news` pushes when it changes)
+        "focus": full.get("focus", ""),
+        "ideas_rev": int(full.get("ideas_rev") or 0),
+        "needs_you": int(full.get("needs_you") or 0),
+        "idea_states": [{k: str(i.get(k, "")) for k in ("slug", "title", "state")}
+                        for i in full.get("idea_states") or []],
     }
     out["rev"] = hashlib.sha256(json.dumps(out, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
     return out
@@ -412,6 +424,10 @@ def news(before: dict[str, Any] | None, after: dict[str, Any]) -> list[dict[str,
         if (e["building"], e["id"]) not in had:
             out.append({"kind": "episode", "building": e["building"], "id": e["id"], "title": e.get("title", ""),
                         "seconds": e.get("seconds", 0)})
+    was_in = {i["slug"]: i["state"] for i in before.get("idea_states") or []}
+    for i in after.get("idea_states") or []:
+        if i["state"] in IDEA_NEWS and was_in.get(i["slug"]) != i["state"]:
+            out.append({"kind": "idea", "slug": i["slug"], "title": i["title"], "state": i["state"]})
     old, new = before.get("hud") or {}, after.get("hud") or {}
     for key in ("gold_level", "quota_level"):
         was, now = _LEVELS.get(old.get(key) or "ok", 0), _LEVELS.get(new.get(key) or "ok", 0)

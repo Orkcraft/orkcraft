@@ -1,0 +1,186 @@
+/* The board in focus (js/board/): tracks on the left, Today and the ideas in the middle, the opened idea on the right.
+   Tokens and roles only (design-system/tokens.css, docs/design-system.md): no raw colours. The first part is both
+   looks' (Office draws it as it is); the part under "Camp" puts the board in v4's kit (docs/design/design-system-v4.md):
+   the columns parchment in the wooden frame, their headings on teal plates, Today's groups split by bands. */
+.board { display: flex; flex-direction: column; height: 100vh; background: var(--canvas); color: var(--ink); }
+.board-top { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3);
+  background: var(--panel); border-bottom: 1px solid var(--frame); }
+.board-top__brand { font-weight: 700; color: var(--ink-gold); }
+.board-top__spacer { flex: 1; }
+.board-top__spend { display: inline-flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; color: var(--ink-muted); }
+.board-main { flex: 1; min-height: 0; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3); }
+.board-main.has-idea { grid-template-columns: 220px minmax(280px, 1fr) minmax(360px, 1.2fr); }
+.board-col { min-height: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.board-col__body { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-2); }
+.board-mid > .board-col__body { gap: var(--space-4); }
+.board-today, .board-ideas { display: flex; flex-direction: column; gap: var(--space-2); }
+.board-h { margin: 0; font-size: 1.05em; }
+.board-sub { margin: var(--space-2) 0 0; font-size: .9em; color: var(--ink-muted); text-transform: uppercase; letter-spacing: .04em; }
+.board-bar { display: flex; align-items: center; gap: var(--space-2); }
+.board-bar .board-h { flex: 1; }
+.board-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.board-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.board-count { margin-left: auto; padding: 0 6px; border-radius: 999px; background: var(--panel-raised); font-size: .8em; font-variant-numeric: tabular-nums; }
+.board-link { background: none; border: 0; padding: 0; color: var(--info); cursor: pointer; font: inherit; }
+.board-chip { padding: 0 6px; border: 1px solid var(--frame); border-radius: var(--radius-sm, 0); font-size: .8em; color: var(--ink-muted); }
+
+.board-track { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2); text-align: left; cursor: pointer;
+  background: var(--panel); color: var(--ink); border: 1px solid transparent; border-radius: var(--radius-sm, 0); font: inherit; }
+.board-track.is-on { border-color: var(--frame-focus); background: var(--selection); }
+.board-track.is-over, .board-card.is-over { outline: 2px dashed var(--frame-focus); }
+
+.board-card { width: 100%; display: flex; flex-direction: column; gap: 2px; padding: var(--space-2) var(--space-3); text-align: left; cursor: grab;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--frame); border-radius: var(--radius-sm, 0); font: inherit; }
+.board-card.is-on { border-color: var(--frame-focus); background: var(--selection); }
+.board-card__thesis { color: var(--ink-muted); }
+.board-card__meta { display: flex; gap: var(--space-2); font-size: .85em; }
+.board-size { padding: 0 6px; background: var(--panel-raised); border-radius: var(--radius-sm, 0); font-size: .8em; }
+.board-state { color: var(--ink-muted); }
+.board-state[data-state="asks"], .board-state[data-state="plan"], .board-state[data-state="failed"] { color: var(--alert); font-weight: 700; }
+.board-state[data-state="working"] { color: var(--info); }
+.board-state[data-state="done"] { color: var(--success); }
+
+.board-need { width: 100%; display: flex; flex-direction: column; text-align: left; cursor: pointer; padding: var(--space-2) var(--space-3);
+  background: var(--panel); color: var(--ink); border: 1px solid var(--alert); border-radius: var(--radius-sm, 0); font: inherit; }
+.board-need[data-kind="failed"] { border-color: var(--danger); }
+.board-todo { padding: var(--space-2); background: var(--panel); border: 1px solid var(--frame); border-radius: var(--radius-sm, 0); }
+.board-todo.is-done b { text-decoration: line-through; color: var(--ink-muted); }
+.board-todo__head { display: flex; align-items: center; gap: var(--space-2); }
+.board-todo__head b { flex: 1; }
+.board-todo__why { margin: 2px 0 0 24px; }
+.board-steps { margin: var(--space-1) 0 0 28px; padding: 0; }
+
+.board-drop { display: flex; flex-direction: column; gap: var(--space-2); }
+.board-drop textarea, .board-say textarea, .board-sec textarea { width: 100%; box-sizing: border-box; resize: vertical; }
+
+.board-idea { padding-left: var(--space-3); border-left: 1px solid var(--frame); }
+.board-idea .board-bar { justify-content: flex-end; }
+.board-sec__mark { display: none; }
+.board-actions { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+.board-secs { display: flex; flex-direction: column; gap: var(--space-2); }
+.board-sec { --sec: var(--ink-muted); border-left: 4px solid var(--sec); background: var(--panel); border-radius: var(--radius-sm, 0); }
+.board-sec[data-sec="info"] { --sec: var(--info); }
+.board-sec[data-sec="accent"] { --sec: var(--ink-gold); }
+.board-sec[data-sec="ok"] { --sec: var(--success); }
+.board-sec[data-sec="fire"] { --sec: var(--alert-hot); }
+.board-sec[data-sec="wait"] { --sec: var(--alert); }
+.board-sec.is-asked { outline: 1px solid var(--frame-focus); }
+.board-sec summary { display: flex; align-items: baseline; gap: var(--space-2); padding: var(--space-2) var(--space-3); cursor: pointer; }
+.board-sec__icon { flex: none; align-self: center; fill: none; stroke: var(--sec); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.board-sec__name { color: var(--sec); font-size: .8em; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.board-sec__thesis { flex: 1; min-width: 0; }
+.board-sec__body { padding: 0 var(--space-3) var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+.board-sec__text { margin: 0; white-space: pre-wrap; }
+
+.board-say { display: flex; flex-direction: column; gap: var(--space-2); }
+.board-talk { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.board-talk li { display: flex; flex-direction: column; padding: var(--space-1) var(--space-2); border-left: 2px solid var(--frame); }
+.board-talk li[data-who="keeper"] { border-color: var(--info); }
+.board-talk__who { font-size: .8em; color: var(--ink-muted); }
+.board-tasks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); }
+.board-tasks li { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+.board-task__state { min-width: 64px; font-size: .8em; text-transform: uppercase; color: var(--ink-muted); }
+.board-task__state[data-state="running"], .board-task__state[data-state="testing"] { color: var(--info); }
+.board-task__state[data-state="merged"] { color: var(--success); }
+.board-task__state[data-state="failed"] { color: var(--danger); }
+.board-task__state[data-state="held"] { color: var(--alert); }
+
+/* -- Camp: the kit (design-system/kit.css draws .kit-frame, .kit-plate, .kit-band, .kit-well; these are the board's
+   own sizes and states). Every rule is Camp's; Office keeps the rules above. ---------------------------------------- */
+[data-look="camp"] .board { background: var(--canvas) var(--terrain-image, none) repeat; }
+[data-look="camp"] .board-top { min-height: var(--kit-hud-h); padding: 0 var(--space-2); gap: var(--space-2); color: var(--parchment-ink); }
+[data-look="camp"] .board-top__brand { font: var(--type-kit-title); color: var(--parchment-ink); }
+[data-look="camp"] .board-top__spend { display: inline-flex; align-items: baseline; gap: 6px; height: 36px; padding: 2px 10px 0; color: var(--parchment-ink); }
+[data-look="camp"] .board-top__word { font: var(--type-camp-label); }
+[data-look="camp"] .board-top__num { font: var(--type-kit-number); font-weight: 400; font-variant-numeric: tabular-nums; }
+[data-look="camp"] .board-top .gui-hud__stop { height: 36px; padding: 0 12px; }
+
+[data-look="camp"] .board-main { padding: calc(var(--space-3) + 18px) var(--space-3) var(--space-3); gap: var(--space-3); }
+[data-look="camp"] .board-main.has-idea { grid-template-columns: 240px minmax(300px, 1fr) minmax(380px, 1.25fr); }
+[data-look="camp"] .board-main:not(.has-idea) { grid-template-columns: 240px minmax(0, 1fr); }
+[data-look="camp"] .board-col { padding: 0 var(--space-1) var(--space-2); overflow: visible; }
+[data-look="camp"] .board-col__body { padding: 0 var(--space-1); }
+/* the column's heading on its plate, riding the frame's top edge (as the building panel's name) */
+[data-look="camp"] .board-col__plate { align-self: flex-start; flex: none; max-width: calc(100% - 16px); margin: -30px 0 0 6px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; line-height: 24px; }
+[data-look="camp"] .board-idea { padding-left: var(--space-1); }
+
+/* bands: Today's two groups and the ideas' head; their words in the kit's heading, the count in a chip */
+[data-look="camp"] .board-sub.kit-band { justify-content: flex-start; gap: var(--space-2); margin: 0 calc(-1 * var(--space-1));
+  font: var(--type-kit-heading); color: var(--kit-ink); letter-spacing: 0; text-transform: none; }
+[data-look="camp"] .board-bar.kit-band { justify-content: flex-start; margin: 0 calc(-1 * var(--space-1)); padding: 2px 4px 2px 12px; }
+[data-look="camp"] .board-bar.kit-band .board-h { font: var(--type-kit-heading); color: var(--kit-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[data-look="camp"] .board-h { font: var(--type-kit-heading); }
+[data-look="camp"] .board-count { display: inline-flex; align-items: center; height: 24px; padding: 0 6px; border-radius: 0;
+  font: var(--type-kit-small); font-variant-numeric: tabular-nums; color: var(--parchment-ink); }
+[data-look="camp"] .board-size { display: inline-flex; align-items: center; height: 22px; padding: 0 5px; border-radius: 0;
+  font: var(--type-kit-small); color: var(--parchment-ink); }
+[data-look="camp"] .board-chip { border-radius: 0; padding: 0 5px; font: var(--type-camp-caption); color: var(--ink-muted); }
+[data-look="camp"] .kit-legend.board-sub { font: var(--type-kit-heading); color: var(--parchment-ink); text-transform: none; letter-spacing: 0;
+  margin: var(--space-1) 0 var(--space-1); }
+[data-look="camp"] .kit-legend.board-sub .ok-tone-muted { font: var(--type-camp-label); }
+
+/* tracks: slot rows sunk into the parchment, the open one with its teal rim */
+[data-look="camp"] .board-track { min-height: 44px; padding: 4px 6px 4px 10px; border: var(--kit-bevel) solid transparent; border-radius: 0;
+  background: var(--kit-parchment-deep); color: var(--parchment-ink); font: var(--type-camp-body); image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/slot.png") 1x, url("/ds/sprites/v4/ui/slot@2x.png") 2x) 6 fill / var(--kit-bevel) repeat; }
+[data-look="camp"] .board-track:hover {
+  border-image-source: image-set(url("/ds/sprites/v4/ui/slot-hover.png") 1x, url("/ds/sprites/v4/ui/slot-hover@2x.png") 2x); }
+[data-look="camp"] .board-track.is-on { background: var(--kit-parchment-deep); font-weight: 700;
+  border-image-source: image-set(url("/ds/sprites/v4/ui/slot-on.png") 1x, url("/ds/sprites/v4/ui/slot-on@2x.png") 2x); }
+[data-look="camp"] .board-track > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[data-look="camp"] .board-tracks .board-col__body > .ok-btn { align-self: flex-start; }
+
+/* cards: parchment with an engraved rule; the opened one's rule teal */
+[data-look="camp"] .board-card, [data-look="camp"] .board-need, [data-look="camp"] .board-todo {
+  border-radius: 0; background-color: var(--panel-inset); color: var(--parchment-ink); padding: 6px 10px 8px; }
+[data-look="camp"] .board-card { gap: 4px; }
+[data-look="camp"] .board-card:hover { background-color: var(--panel); }
+[data-look="camp"] .board-card.is-on { background-color: var(--selection);
+  border-image-source: image-set(url("/ds/sprites/v4/ui/well-on.png") 1x, url("/ds/sprites/v4/ui/well-on@2x.png") 2x); }
+[data-look="camp"] .board-card__title { font: var(--type-camp-body); font-weight: 700; }
+[data-look="camp"] .board-card__thesis { font: var(--type-camp-label); }
+[data-look="camp"] .board-card__meta { align-items: center; font: var(--type-camp-caption); }
+[data-look="camp"] .board-track.is-over, [data-look="camp"] .board-card.is-over { outline: 2px dashed var(--accent-teal); outline-offset: 2px; }
+/* what needs you: an engraved card with the signal's colour as a mark at its left, never as its frame */
+[data-look="camp"] .board-need { position: relative; padding-left: 18px; border: 4px solid transparent; image-rendering: pixelated;
+  border-image: image-set(url("/ds/sprites/v4/ui/well.png") 1x, url("/ds/sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat; background-clip: padding-box; }
+[data-look="camp"] .board-need::before { content: ""; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 6px;
+  background: var(--alert); box-shadow: 0 0 0 2px var(--art-outline); }
+[data-look="camp"] .board-need[data-kind="failed"]::before { background: var(--danger); }
+[data-look="camp"] .board-need[data-kind="plan"]::before { background: var(--accent-teal); }
+[data-look="camp"] .board-need > b { font: var(--type-camp-body); font-weight: 700; }
+[data-look="camp"] .board-todo { border: 4px solid transparent; image-rendering: pixelated; background-clip: padding-box;
+  border-image: image-set(url("/ds/sprites/v4/ui/well.png") 1x, url("/ds/sprites/v4/ui/well@2x.png") 2x) 4 / 4px repeat; }
+[data-look="camp"] .board-todo input[type="checkbox"] { accent-color: var(--accent-teal); width: 18px; height: 18px; }
+[data-look="camp"] .board-link { color: var(--info); text-decoration: underline; }
+
+/* the opened idea: its state and size, the sections as blocks each with its role's mark and the kit's icon */
+[data-look="camp"] .board-state { font: var(--type-camp-label); font-weight: 700; }
+[data-look="camp"] .board-sec { border-radius: 0; background-color: var(--panel-inset); color: var(--parchment-ink); }
+[data-look="camp"] .board-sec[open] { background-color: var(--panel); }
+[data-look="camp"] .board-sec.is-asked { outline: 2px solid var(--accent-teal); outline-offset: 0; }
+[data-look="camp"] .board-sec summary { align-items: center; min-height: 40px; padding: 4px 8px; list-style: none; }
+[data-look="camp"] .board-sec summary::-webkit-details-marker { display: none; }
+[data-look="camp"] .board-sec__icon { display: none; }
+[data-look="camp"] .board-sec__mark { display: grid; place-items: center; flex: none; width: 32px; height: 32px; background: var(--sec);
+  box-shadow: inset 0 0 0 2px var(--art-outline), inset 2px 2px 0 2px color-mix(in srgb, var(--kit-ink) 25%, var(--sec)); }
+[data-look="camp"] .board-sec__mark > img { width: 24px; height: 24px; image-rendering: pixelated; }
+[data-look="camp"] .board-sec[data-sec="muted"] { --sec: var(--kit-wood-light); }
+[data-look="camp"] .board-sec[data-sec="accent"] { --sec: var(--kit-wood); }
+[data-look="camp"] .board-sec__name { flex: none; width: 128px; font: var(--type-kit-heading); color: var(--sec); letter-spacing: 0; text-transform: none; }
+[data-look="camp"] .board-sec[data-sec="muted"] .board-sec__name { color: var(--ink-muted); }
+[data-look="camp"] .board-sec__thesis { font: var(--type-camp-body); font-weight: 700; }
+[data-look="camp"] .board-sec__body { padding: 0 10px 10px 48px; }
+[data-look="camp"] .board-sec__text { font: var(--type-camp-body); }
+[data-look="camp"] .board-plan { align-self: stretch; padding: 8px 10px; background-color: var(--panel-inset); }
+[data-look="camp"] .board-task__state { font: var(--type-camp-caption); font-weight: 700; text-transform: none; }
+[data-look="camp"] .board-commit { background: var(--chip); color: var(--chip-ink); padding: 0 4px; }
+[data-look="camp"] .board-talk li { background: var(--panel-inset); border-left: 4px solid var(--kit-parchment-rule); padding: 6px 10px; }
+[data-look="camp"] .board-talk li[data-who="keeper"] { border-left-color: var(--accent-teal); }
+[data-look="camp"] .board-talk__who { font: var(--type-camp-caption); font-weight: 700; }
+[data-look="camp"] .board-chip > .board-link { color: var(--parchment-ink); text-decoration: none; }
+/* a button that destroys (Delete idea, Stop): the kit's wooden button with the signal's red as a mark, not a face */
+[data-look="camp"] .board .ok-btn.danger { color: var(--kit-ink); }
+[data-look="camp"] .board .ok-btn.danger::before { content: ""; width: 8px; height: 8px; flex: none; background: var(--signal-fire);
+  box-shadow: 0 0 0 2px var(--art-outline); }
