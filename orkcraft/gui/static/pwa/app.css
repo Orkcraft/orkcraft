@@ -423,3 +423,133 @@ p { margin: 0 0 8px; }
 .about { all: unset; align-self: flex-start; cursor: pointer; font-size: 0.8125rem; padding: 4px 12px; min-height: 44px;
   border: 1px solid var(--action); border-radius: 999px; color: var(--ink); box-sizing: border-box; display: inline-flex; align-items: center; }
 .ask textarea.ok-input { resize: none; min-height: 44px; max-height: 8rem; }
+.sec-kit { display: none; }
+
+/* -- the board in Camp: v4's kit (docs/design/design-system-v4.md) at a phone's size. The pieces are tools/ui_kit.py's,
+   served as ui/<piece>.png (gui/pwa.py), drawn pixelated at whole multiples; the pixel face (Jersey 15) only for
+   headings, numbers and buttons, every sentence in the body face. Office keeps the rules above. ------------------- */
+:root[data-look="camp"] .board { --kit-face: 400 1.25rem/1.2 var(--font-kit); --kit-head: 400 1.375rem/1.1 var(--font-kit); }
+/* the top bar: the bar's wood round parchment, the spend in a framed chip, Stop all a teal button */
+:root[data-look="camp"] .board-bar { border: var(--kit-bar) solid transparent; border-radius: 0; padding: 2px 4px 2px 8px; image-rendering: pixelated;
+  border-image: image-set(url("ui/bar.png") 1x, url("ui/bar@2x.png") 2x) 10 / var(--kit-bar) round;
+  background: var(--parchment) image-set(url("ui/parchment.png") 1x, url("ui/parchment@2x.png") 2x) repeat; background-clip: padding-box;
+  color: var(--parchment-ink); }
+:root[data-look="camp"] .board-bar h1 { font: var(--kit-head); color: var(--parchment-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+:root[data-look="camp"] .board-name { align-items: flex-start; gap: 2px; }
+:root[data-look="camp"] .board-spend:not(:empty) { flex: none; display: inline-flex; align-items: baseline; gap: 4px; padding: 2px 8px 0;
+  color: var(--parchment-ink); font-size: 0.75rem; line-height: 1.1; border: 4px solid transparent; image-rendering: pixelated;
+  border-image: image-set(url("ui/well.png") 1x, url("ui/well@2x.png") 2x) 4 / 4px repeat;
+  background: var(--kit-parchment-deep); background-clip: padding-box; }
+:root[data-look="camp"] .board-spend b { font: var(--kit-face); font-variant-numeric: tabular-nums; }
+
+/* buttons: the kit's wood, the one primary teal, pressed in when down, flat parchment when off; a button that
+   destroys keeps the wood and carries the signal's red as a mark */
+:root[data-look="camp"] .board .ok-btn { border-radius: 0; box-shadow: none; filter: none; color: var(--kit-ink); font: var(--kit-face);
+  letter-spacing: .02em; text-transform: none; background: var(--kit-wood); border: var(--kit-bevel) solid transparent; image-rendering: pixelated;
+  border-image: image-set(url("ui/btn-wood.png") 1x, url("ui/btn-wood@2x.png") 2x) 6 fill / var(--kit-bevel) repeat; }
+:root[data-look="camp"] .board .ok-btn:active { padding: 10px 14px 6px;
+  border-image-source: image-set(url("ui/btn-wood-down.png") 1x, url("ui/btn-wood-down@2x.png") 2x); }
+:root[data-look="camp"] .board .ok-btn.primary, :root[data-look="camp"] .board .ok-btn.board-stop { background: var(--accent-teal);
+  border-image-source: image-set(url("ui/btn-teal.png") 1x, url("ui/btn-teal@2x.png") 2x); }
+:root[data-look="camp"] .board .ok-btn.primary:active, :root[data-look="camp"] .board .ok-btn.board-stop:active {
+  border-image-source: image-set(url("ui/btn-teal-down.png") 1x, url("ui/btn-teal-down@2x.png") 2x); }
+:root[data-look="camp"] .board .ok-btn:disabled { color: var(--parchment-ink); padding: 8px 14px; background: var(--kit-parchment-rule);
+  border-image-source: image-set(url("ui/btn-wood-off.png") 1x, url("ui/btn-wood-off@2x.png") 2x); }
+:root[data-look="camp"] .board .ok-btn.danger:not(.board-stop) { gap: 8px; }
+:root[data-look="camp"] .board .ok-btn.danger:not(.board-stop)::before { content: ""; width: 8px; height: 8px; flex: none;
+  background: var(--signal-fire); box-shadow: 0 0 0 2px var(--art-outline); }
+:root[data-look="camp"] .board .ok-btn:focus-visible { outline: 2px solid var(--parchment-ink); outline-offset: 0; box-shadow: 0 0 0 4px var(--kit-ink); }
+:root[data-look="camp"] .board .ok-input { border-radius: 0; box-shadow: none; color: var(--parchment-ink); background: var(--panel-inset);
+  border: 4px solid transparent; background-clip: padding-box; image-rendering: pixelated;
+  border-image: image-set(url("ui/well.png") 1x, url("ui/well@2x.png") 2x) 4 / 4px repeat; }
+:root[data-look="camp"] .board .ok-input:focus { outline: 2px solid var(--accent-teal); outline-offset: 0; }
+
+/* the panes: parchment in the wooden frame; the colour roles read dark on cream (as design-system/kit.css .kit-paper) */
+:root[data-look="camp"] .board .pane, :root[data-look="camp"] .board-tabs, :root[data-look="camp"] .idea-foot {
+  --ink: var(--parchment-ink); --muted: var(--ink-muted); --ink-muted: var(--kit-wood); --panel: var(--parchment); --inset: var(--kit-parchment-deep);
+  --panel-inset: var(--parchment); --frame: var(--kit-parchment-rule); --frame-strong: var(--kit-wood-light); --action: var(--accent-teal);
+  --success: var(--kit-teal-dark); --accent: var(--kit-teal-dark); --gold: var(--kit-wood); --warning: var(--kit-wood-dark); --warn: var(--kit-wood-dark);
+  --danger: var(--kit-wood-dark); color: var(--parchment-ink); }
+:root[data-look="camp"] .board .pane { gap: 8px; padding: 6px 4px 10px; border: var(--kit-frame) solid transparent; image-rendering: pixelated;
+  border-image: image-set(url("ui/frame.png") 1x, url("ui/frame@2x.png") 2x) 14 / var(--kit-frame) round;
+  background: var(--parchment) image-set(url("ui/parchment.png") 1x, url("ui/parchment@2x.png") 2x) repeat; background-clip: padding-box; }
+/* Today's two groups split by bands; a pane's other headings in the kit's heading */
+:root[data-look="camp"] .board .pane > h2 { display: flex; align-items: center; min-height: 36px; margin: 0 -4px; padding: 0 12px;
+  font: var(--kit-head); color: var(--kit-ink); letter-spacing: 0; text-transform: none; border: 4px solid transparent; border-left: 0; border-right: 0;
+  image-rendering: pixelated; background: var(--kit-wood);
+  border-image: image-set(url("ui/band.png") 1x, url("ui/band@2x.png") 2x) 4 0 fill / 4px 0 repeat; }
+:root[data-look="camp"] .board .pane h3 { font: var(--kit-head); color: var(--parchment-ink); }
+:root[data-look="camp"] .board .muted { color: var(--kit-wood); }
+/* cards: parchment with an engraved rule; what needs you carries its signal as a mark at its left */
+:root[data-look="camp"] .board .card, :root[data-look="camp"] .idea-card, :root[data-look="camp"] .sec, :root[data-look="camp"] .turn {
+  border-radius: 0; box-shadow: none; background: var(--panel-inset); color: var(--parchment-ink); border: 4px solid transparent;
+  image-rendering: pixelated; background-clip: padding-box;
+  border-image: image-set(url("ui/well.png") 1x, url("ui/well@2x.png") 2x) 4 / 4px repeat; }
+:root[data-look="camp"] .board .need { position: relative; padding-left: 10px; }
+:root[data-look="camp"] .board .need::before { content: ""; position: absolute; left: 2px; top: 8px; bottom: 8px; width: 4px;
+  background: var(--frame-strong); box-shadow: 0 0 0 2px var(--art-outline); }
+:root[data-look="camp"] .board .need-asks::before { background: var(--signal-ask); }
+:root[data-look="camp"] .board .need-failed::before { background: var(--signal-fire); }
+:root[data-look="camp"] .board .need-plan::before { background: var(--accent-teal); }
+:root[data-look="camp"] .board .check { border-radius: 0; border-color: var(--kit-wood); background: var(--parchment); color: var(--kit-ink); }
+:root[data-look="camp"] .board .check.is-on { background: var(--accent-teal); border-color: var(--kit-teal-dark); }
+/* the track switch: slots sunk into the parchment, the open one with its teal rim; its count in the pixel face */
+:root[data-look="camp"] .board .track { border-radius: 0; color: var(--parchment-ink); background: var(--kit-parchment-deep);
+  border: var(--kit-bevel) solid transparent; image-rendering: pixelated; padding: 0 10px;
+  border-image: image-set(url("ui/slot.png") 1x, url("ui/slot@2x.png") 2x) 6 fill / var(--kit-bevel) repeat; }
+:root[data-look="camp"] .board .track.is-active { font-weight: 700;
+  border-image-source: image-set(url("ui/slot-on.png") 1x, url("ui/slot-on@2x.png") 2x); }
+:root[data-look="camp"] .board .track small { font: var(--kit-face); }
+/* an idea's card; held for a drag, its rule turns teal */
+:root[data-look="camp"] .idea-card.is-dragging { box-shadow: 0 6px 0 color-mix(in srgb, var(--art-outline) 30%, transparent);
+  border-image-source: image-set(url("ui/well-on.png") 1x, url("ui/well-on@2x.png") 2x); }
+:root[data-look="camp"] .board .size { border-radius: 0; font: 400 1rem/1 var(--font-kit); padding: 2px 5px 0; border: 2px solid var(--kit-parchment-rule);
+  background: var(--kit-parchment-deep); }
+:root[data-look="camp"] .board .state-word { border-radius: 0; border: 0; padding: 0; font-weight: 700; }
+:root[data-look="camp"] .board .state-word.asks { color: var(--kit-wood-dark); }
+:root[data-look="camp"] .board .state-word.asks::before, :root[data-look="camp"] .board .state-word.failed::before { content: ""; display: inline-block;
+  width: 6px; height: 6px; margin-right: 5px; vertical-align: 1px; background: var(--signal-ask); box-shadow: 0 0 0 2px var(--art-outline); }
+:root[data-look="camp"] .board .state-word.failed::before { background: var(--signal-fire); }
+:root[data-look="camp"] .board .state-word.work, :root[data-look="camp"] .board .state-word.plan { color: var(--accent-teal); }
+
+/* an opened idea: its name on the teal plate, the sections as blocks with their role's mark and the kit's icon */
+:root[data-look="camp"] .idea-page .idea-name { align-self: flex-start; max-width: 100%; box-sizing: border-box; height: 40px; padding: 0 12px;
+  display: block; line-height: 28px; font: var(--kit-head); line-height: 28px; color: var(--kit-ink); white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; border: var(--kit-bevel) solid transparent; image-rendering: pixelated; background: var(--accent-teal);
+  border-image: image-set(url("ui/plate.png") 1x, url("ui/plate@2x.png") 2x) 6 fill / var(--kit-bevel) repeat; }
+:root[data-look="camp"] .sec { --role: var(--kit-wood-light); }
+:root[data-look="camp"] .sec-action { --role: var(--accent-teal); } :root[data-look="camp"] .sec-gold { --role: var(--kit-wood); }
+:root[data-look="camp"] .sec-success { --role: var(--kit-teal-dark); }
+/* Risks and Open questions keep the signals' colours, as a mark on their icon only */
+:root[data-look="camp"] .sec-danger { --role: var(--signal-fire); } :root[data-look="camp"] .sec-warning { --role: var(--signal-ask); }
+:root[data-look="camp"] .sec.is-open { background: var(--parchment); }
+:root[data-look="camp"] .sec-icon { width: 32px; height: 32px; display: grid; place-items: center; background: var(--role);
+  box-shadow: inset 0 0 0 2px var(--art-outline); }
+:root[data-look="camp"] .sec-glyph { display: none; }
+:root[data-look="camp"] .sec-kit { display: block; width: 24px; height: 24px; image-rendering: pixelated; }
+:root[data-look="camp"] .sec-name { font: var(--kit-face); color: var(--parchment-ink); letter-spacing: 0; text-transform: none; }
+:root[data-look="camp"] .sec-text { padding-left: 54px; }
+:root[data-look="camp"] .board .plan { background: var(--parchment); }
+:root[data-look="camp"] .task.t-merged .task-title { color: var(--kit-teal-dark); }
+:root[data-look="camp"] .turn { padding: 6px 10px; }
+:root[data-look="camp"] .turn.you { border-left: 4px solid var(--kit-wood-light); border-image: none; }
+:root[data-look="camp"] .turn.keeper { border-left: 4px solid var(--accent-teal); border-image: none; }
+:root[data-look="camp"] .about { border-radius: 0; border: 2px solid var(--accent-teal); color: var(--parchment-ink); background: var(--parchment); }
+
+/* the thumb's end: the tabs and an idea's foot stand on the bar's wood at the screen's foot */
+:root[data-look="camp"] .board-tabs, :root[data-look="camp"] .idea-foot { border: 0; border-top: var(--kit-bar) solid transparent; image-rendering: pixelated;
+  border-image: image-set(url("ui/bar.png") 1x, url("ui/bar@2x.png") 2x) 10 10 0 / var(--kit-bar) 0 0 round;
+  background: var(--parchment) image-set(url("ui/parchment.png") 1x, url("ui/parchment@2x.png") 2x) repeat; background-clip: padding-box; }
+:root[data-look="camp"] .board-tabs { gap: 6px; padding-top: 0; }
+:root[data-look="camp"] .idea-foot { padding-top: 8px; }
+/* Today, Ideas and + as the kit's tabs, hanging under the bar's edge; the open one teal; the count in the pixel face */
+:root[data-look="camp"] .board-tab { min-height: 48px; border-radius: 0; color: var(--kit-ink); font: var(--kit-face); background: var(--kit-wood);
+  border: 8px solid transparent; border-top-width: 0; image-rendering: pixelated;
+  border-image: image-set(url("ui/tab-foot.png") 1x, url("ui/tab-foot@2x.png") 2x) 0 8 8 8 fill / 0 8px 8px 8px repeat; }
+:root[data-look="camp"] .board-tab.is-active { color: var(--kit-ink); background: var(--accent-teal);
+  border-image-source: image-set(url("ui/tab-foot-on.png") 1x, url("ui/tab-foot-on@2x.png") 2x); }
+:root[data-look="camp"] .board-tab:focus-visible { outline: 2px solid var(--parchment-ink); outline-offset: -2px; box-shadow: inset 0 0 0 4px var(--kit-ink); }
+:root[data-look="camp"] .board-tab .q-dot { position: static; min-width: 22px; height: 22px; padding: 2px 4px 0; box-sizing: border-box;
+  font: 400 1rem/1 var(--font-kit); color: var(--parchment-ink); background: var(--parchment); box-shadow: 0 0 0 2px var(--art-outline); border-radius: 0; }
+:root[data-look="camp"] .ask .row .ok-btn { flex: none; padding: 8px 10px; }
+:root[data-look="camp"] .ask textarea.ok-input { padding: 8px 6px; }

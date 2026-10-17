@@ -13,10 +13,13 @@ The pieces (a nine-slice unless said):
 - `frame`: a panel's thick wooden frame with the teal inner border and teal caps at its corners (the target's side
   panel); `frame-thin`: the same without caps, for a window inside a window and the toasts.
 - `bar`: the top bar's and the command bar's frame: walnut and wood round a parchment strip.
-- `well`: a counter's chip and any parchment field, engraved into the parchment.
+- `well`: a counter's chip and any parchment field, engraved into the parchment; `well-on`: the same rule in teal, the
+  card picked (the Task board's opened idea).
 - `btn-wood`, `btn-teal` and their `-hover`, `-down`, `-off`: a bevelled button; teal is the primary and the active.
 - `plate`: a tab header's teal plate.
 - `tab`, `tab-hover`, `tab-on`: an icon tab at a panel's left side, open on its right where it meets the frame.
+- `tab-foot`, `tab-foot-hover`, `tab-foot-on`: a tab of a bar at the screen's foot (the phone's), open at its top
+  where it meets the bar's edge.
 - `slot`, `slot-hover`, `slot-on`: an inventory slot, sunk into the parchment.
 - `band`: a section's wooden strip inside a panel ("Items").
 - `parchment`: a 32 × 32 tile of the panels' parchment with a few fibres (not a nine-slice: a background).
@@ -24,7 +27,8 @@ The pieces (a nine-slice unless said):
   nine-slice: an image under the notice).
 
 And the icons of the icon buttons and tabs, 12 × 12 in `kit-ink` with an outline, from the grids in `ICONS`, into
-`icons/<name>.png` (`work`, `info`, `close`, `whole`, `more`, `copy`, `items`, `quest`).
+`icons/<name>.png` (`work`, `info`, `close`, `whole`, `more`, `copy`, `items`, `quest`, and an idea's sections on the
+Task board: `gist`, `why`, `in`, `out`, `risk`, `ask`, `estimate`, `stages`, `decide`).
 
 Needs `pip install pillow`.
 """
@@ -148,6 +152,14 @@ def well() -> tuple[Grid, int]:
     return g, 2
 
 
+def well_on() -> tuple[Grid, int]:
+    """The well with its rule in teal and a lit ring inside: the card picked. 2 px in."""
+    g = Grid(8, 8)
+    g.ring(0, C["accent-teal"])
+    g.ring(1, C["kit-teal-light"], C["kit-teal-light"], C["kit-teal-light"], C["kit-teal-light"])
+    return g, 2
+
+
 BUTTONS = {"wood": ("kit-wood", "kit-wood-light", "kit-wood-dark", "kit-wood-hover"),
            "teal": ("accent-teal", "kit-teal-light", "kit-teal-dark", "kit-teal-hover")}
 
@@ -197,6 +209,26 @@ def tab(state: str = "") -> tuple[Grid, int]:
     g.rect(1, 1, 1, g.h - 2, light)
     g.rect(1, g.h - 2, g.w - 1, g.h - 2, dark)
     g.rect(2, g.h - 3, g.w - 1, g.h - 3, dark)
+    return g, 4
+
+
+def tab_foot(state: str = "") -> tuple[Grid, int]:
+    """A tab of a bar at the screen's foot: the side tab turned to stand under the bar's edge, outline on the left,
+    the right and the bottom, open at its top. 4 px in."""
+    face, light, dark = C["kit-wood"], C["kit-wood-light"], C["kit-wood-dark"]
+    if state == "hover":
+        face = C["kit-wood-hover"]
+    if state == "on":
+        face, light, dark = C["accent-teal"], C["kit-teal-light"], C["kit-teal-dark"]
+    g = Grid(12, 12, face)
+    o = C["art-outline"]
+    g.rect(0, 0, 0, g.h - 1, o)
+    g.rect(g.w - 1, 0, g.w - 1, g.h - 1, o)
+    g.rect(0, g.h - 1, g.w - 1, g.h - 1, o)
+    g.rect(1, 0, 1, g.h - 2, light)
+    g.rect(g.w - 2, 0, g.w - 2, g.h - 2, dark)
+    g.rect(1, g.h - 2, g.w - 2, g.h - 2, dark)
+    g.rect(2, g.h - 3, g.w - 3, g.h - 3, dark)
     return g, 4
 
 
@@ -253,6 +285,25 @@ ICONS = {
               "#........#", "##########", ".........."],
     "quest": ["########..", "#......#..", "#.####.#..", "#......#..", "#.####.#..", "#......#..", "#.###..#..",
               "#......###", "#........#", "##########"],
+    # an idea's sections (the Task board, js/board/idea.js and pwa/board.js)
+    "gist": ["#######...", "#.....##..", "#.....###.", "#.###...#.", "#.......#.", "#.#####.#.", "#.......#.",
+             "#.#####.#.", "#.......#.", "#########."],
+    "why": ["...####...", "..#....#..", ".#......#.", ".#......#.", ".#......#.", "..#....#..", "...#..#...",
+            "...####...", "...####...", "....##...."],
+    "in": ["##########", "#........#", "#...##...#", "#...##...#", "#.######.#", "#.######.#", "#...##...#",
+           "#...##...#", "#........#", "##########"],
+    "out": ["##########", "#........#", "#........#", "#........#", "#.######.#", "#.######.#", "#........#",
+            "#........#", "#........#", "##########"],
+    "risk": ["....##....", "....##....", "...#..#...", "...#..#...", "..#.##.#..", "..#.##.#..", ".#..##..#.",
+             ".#......#.", "#...##...#", "##########"],
+    "ask": ["...####...", "..##..##..", "..##..##..", "......##..", ".....##...", "....##....", "....##....",
+            "..........", "....##....", "....##...."],
+    "estimate": ["..######..", ".#......#.", "#...##...#", "#...##...#", "#...##...#", "#...####.#", "#........#",
+                 "#........#", ".#......#.", "..######.."],
+    "stages": ["..........", "......####", "......#..#", "......#..#", "...####..#", "...#.....#", "...#.....#",
+               "####.....#", "#........#", "##########"],
+    "decide": ["#.........", "########..", "#######...", "######....", "#######...", "########..", "#.........",
+               "#.........", "#.........", "#........."],
 }
 
 
@@ -289,7 +340,7 @@ def notice_tail() -> tuple[Grid, int]:
 
 
 def pieces() -> dict[str, tuple[Grid, int]]:
-    out = {"notice-tail": notice_tail(), "frame": frame(), "frame-thin": frame(caps=False), "bar": bar(), "well": well(), "plate": plate(),
+    out = {"notice-tail": notice_tail(), "frame": frame(), "frame-thin": frame(caps=False), "bar": bar(), "well": well(), "well-on": well_on(), "plate": plate(),
            "band": band(), "parchment": parchment()}
     for kind in BUTTONS:
         for state in ("", "hover", "down", "off"):
@@ -297,6 +348,7 @@ def pieces() -> dict[str, tuple[Grid, int]]:
     for state in ("", "hover", "on"):
         out["tab" + (f"-{state}" if state else "")] = tab(state)
         out["slot" + (f"-{state}" if state else "")] = slot(state)
+        out["tab-foot" + (f"-{state}" if state else "")] = tab_foot(state)
     return out
 
 

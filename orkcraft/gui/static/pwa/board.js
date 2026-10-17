@@ -15,9 +15,10 @@ const STATE_WORDS = { raw: "new", reading: "the Taskmaster is reading", asks: "a
   plan: "plan ready", working: "working", done: "done", failed: "needs you" };
 const TASK_WORDS = { waiting: "waiting", ready: "ready", running: "running", testing: "testing", merged: "merged", failed: "failed", held: "held" };
 const NEEDS = { asks: "❓", plan: "📋", failed: "⚠️", held: "⏳" };
-// A section's colour role (app.css `.sec-*`) and mark.
-const SECTIONS = { Gist: ["action", "✦"], Why: ["gold", "❖"], In: ["success", "＋"], Out: ["muted", "－"], Risks: ["danger", "⚠"],
-  "Open questions": ["warning", "❓"], Estimate: ["gold", "≈"], Stages: ["action", "☰"], Decisions: ["muted", "✎"] };
+// A section's colour role (app.css `.sec-*`), its mark (Office) and its kit icon (Camp; tools/ui_kit.py, served as ui/icons/).
+const SECTIONS = { Gist: ["action", "✦", "gist"], Why: ["gold", "❖", "why"], In: ["success", "＋", "in"], Out: ["muted", "－", "out"],
+  Risks: ["danger", "⚠", "risk"], "Open questions": ["warning", "❓", "ask"], Estimate: ["gold", "≈", "estimate"],
+  Stages: ["action", "☰", "stages"], Decisions: ["muted", "✎", "decide"] };
 
 export function stateWords(idea) {
   const p = idea.progress;
@@ -320,7 +321,7 @@ export function makeBoard(ctx) {
   const askField = h("textarea", { class: "ok-input", rows: "1", maxlength: "20000", "aria-label": "Ask or answer the Taskmaster" });
   const askAbout = h("button", { class: "about", type: "button", hidden: true, "aria-label": "Ask about the whole idea instead",
     onclick: () => { section = ""; drawAsk(); } });
-  const askSend = h("button", { class: "ok-btn primary", type: "button" }, "Send");
+  const askSend = h("button", { class: "ok-btn", type: "button" }, "Send");
   const ask = h("div", { class: "ask" }, askAbout, h("div", { class: "row" }, askField, askSend));
   function drawAsk() {
     askField.placeholder = section ? `About ${section}…` : "Ask or answer the Taskmaster…";
@@ -376,14 +377,16 @@ export function makeBoard(ctx) {
   }
 
   function sectionBlock(s) {
-    const [role, icon] = SECTIONS[s.name] || ["muted", "•"];
+    const [role, icon, kit] = SECTIONS[s.name] || ["muted", "•", "gist"];
     const on = unfolded.has(s.name);
     const more = s.text && s.text.trim() !== (s.thesis || "").trim();
     const block = h("div", { class: `sec sec-${role}${on ? " is-open" : ""}`, "data-section": s.name },
       h("button", { class: "sec-head", type: "button", "aria-expanded": String(on), onclick: () => {
         if (on) unfolded.delete(s.name); else unfolded.add(s.name);
         drawIdea();
-      } }, h("span", { class: "sec-icon", "aria-hidden": "true" }, icon),
+      } }, h("span", { class: "sec-icon", "aria-hidden": "true" }, h("span", { class: "sec-glyph" }, icon),
+        h("img", { class: "sec-kit", alt: "", width: "24", height: "24", src: `ui/icons/${kit}.png`,
+          srcset: `ui/icons/${kit}.png 1x, ui/icons/${kit}@2x.png 2x` })),
       h("span", { class: "sec-body" }, h("small", { class: "sec-name" }, s.name), h("b", { class: "thesis" }, s.thesis || "—")),
       h("span", { class: "chev", "aria-hidden": "true" }, on ? "⌃" : "⌄")));
     if (on) {
@@ -441,7 +444,7 @@ export function makeBoard(ctx) {
     render(s) {
       title.textContent = s.project || "Orkline";
       const gold = s.hud?.show_gold ? s.hud.gold : "";
-      spend.textContent = gold ? `Spend ${gold}` : "";
+      spend.replaceChildren(...(gold ? [h("span", { class: "word" }, "Spend"), " ", h("b", {}, gold)] : []));
       if (loading || (seenRev !== undefined && s.ideas_rev === seenRev)) return;
       loading = true;
       load().then(() => (openSlug ? loadPage() : null)).finally(() => { loading = false; });

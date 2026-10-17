@@ -25,33 +25,35 @@ export function Tracks() {
     setMaking(null);
     if (title) { const got = await ask("ideas.track_add", { title }); if (got) track.value = got.slug; await run("ideas.board"); }
   };
-  return html`<nav class="board-tracks" aria-label="Tracks">
-    <h2 class="board-h">Tracks</h2>
+  return html`<nav class="board-tracks board-col kit-frame kit-paper" aria-label="Tracks">
+    <h2 class="board-h board-col__plate kit-plate">Tracks</h2>
+    <div class="board-col__body">
     <button class=${cls("board-track", { "is-on": !track.value })} onClick=${() => { track.value = ""; }}>
-      <span>All ideas</span><span class="board-count">${b.ideas.length}</span></button>
+      <span>All ideas</span><span class="board-count kit-well">${b.ideas.length}</span></button>
     ${sorted.map((t) => html`<button key=${t.slug} draggable="true" onDragStart=${drag(t.slug)}
       class=${cls("board-track", { "is-on": track.value === t.slug, "is-over": over === t.slug })}
       onDragOver=${(e) => { if (takes(e)) { e.preventDefault(); setOver(t.slug); } }} onDragLeave=${() => setOver("")}
       onDrop=${drop(t)} onClick=${() => { track.value = t.slug; }} title=${t.about || t.title}>
-      <span>${t.title}</span><span class="board-count">${t.count}</span></button>`)}
+      <span>${t.title}</span><span class="board-count kit-well">${t.count}</span></button>`)}
     ${making === null ? html`<button class="ok-btn" onClick=${() => setMaking("")}>+ Track</button>`
       : html`<form class="board-row" onSubmit=${make}><input class="ok-input" autofocus value=${making} aria-label="Track name"
           placeholder="Track name" onInput=${(e) => setMaking(e.target.value)} onKeyDown=${(e) => e.key === "Escape" && setMaking(null)} />
         <button class="ok-btn primary" disabled=${!making.trim()}>Add</button></form>`}
+    </div>
   </nav>`;
 }
 
 function Card({ i }) {
   const [over, setOver] = useState(false);
   return html`<li><button draggable="true" onDragStart=${drag(i.slug)} data-state=${i.state}
-    class=${cls("board-card", { "is-on": opened.value === i.slug, "is-over": over })}
+    class=${cls("board-card kit-well", { "is-on": opened.value === i.slug, "is-over": over })}
     onDragOver=${(e) => { if (takes(e)) { e.preventDefault(); setOver(true); } }} onDragLeave=${() => setOver(false)}
     onDrop=${(e) => { e.preventDefault(); setOver(false); const s = e.dataTransfer.getData(DRAG);
       if (s && s !== i.slug) run("ideas.move", { slug: s, track: i.track, before: i.slug }); }}
     onClick=${() => open(i.slug)}>
     <b class="board-card__title">${i.title}</b>
     ${i.thesis && html`<span class="board-card__thesis">${i.thesis}</span>`}
-    <span class="board-card__meta">${i.size && html`<span class="board-size">${i.size}</span>`}
+    <span class="board-card__meta">${i.size && html`<span class="board-size kit-well">${i.size}</span>`}
       <span class="board-state" data-state=${i.state}>${stateWords(i)}</span></span>
   </button></li>`;
 }
@@ -78,8 +80,8 @@ export function Ideas() {
   const t = b.tracks.find((x) => x.slug === track.value);
   const ideas = b.ideas.filter((i) => !track.value || i.track === track.value).sort((x, y) => x.order - y.order);
   return html`<section class="board-ideas" aria-label="Ideas">
-    <div class="board-bar"><h2 class="board-h">${t ? t.title : "All ideas"}</h2>
-      ${!adding.value && html`<button class="ok-btn primary" onClick=${() => { adding.value = true; }}>+ Idea</button>`}</div>
+    <div class="board-bar kit-band"><h2 class="board-h">${t ? t.title : "All ideas"}</h2>
+      ${!adding.value && html`<button class="ok-btn" onClick=${() => { adding.value = true; }}>+ Idea</button>`}</div>
     ${t && t.about && html`<p class="ok-tone-muted">${t.about}</p>`}
     ${adding.value && html`<${Drop} />`}
     ${ideas.length ? html`<ul class="board-list">${ideas.map((i) => html`<${Card} key=${i.slug} i=${i} />`)}</ul>`

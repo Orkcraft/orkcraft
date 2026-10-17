@@ -29,13 +29,12 @@ export function Today() {
   const today = board.value.today;
   const open_ = today.todos.filter((t) => !t.done), shown = [...open_, ...today.todos.filter((t) => t.done)];
   return html`<section class="board-today" aria-label="Today">
-    <h2 class="board-h">Today</h2>
-    <h3 class="board-sub">Needs you ${today.needs_you.length ? html`<span class="board-count">${today.needs_you.length}</span>` : ""}</h3>
+    <h3 class="board-sub kit-band">Needs you ${today.needs_you.length ? html`<span class="board-count kit-well">${today.needs_you.length}</span>` : ""}</h3>
     ${today.needs_you.length ? html`<ul class="board-list">${today.needs_you.map((n) => html`<li key=${n.idea + n.kind}>
       <button class="board-need" data-kind=${n.kind} onClick=${() => open(n.idea)}>
         <b>${n.title}</b><span class="ok-tone-muted">${n.text}</span></button></li>`)}</ul>`
       : html`<p class="ok-tone-muted">Nothing waits for you.</p>`}
-    <h3 class="board-sub">To-dos ${open_.length ? html`<span class="board-count">${open_.length}</span>` : ""}</h3>
+    <h3 class="board-sub kit-band">To-dos ${open_.length ? html`<span class="board-count kit-well">${open_.length}</span>` : ""}</h3>
     ${shown.length ? html`<ul class="board-list">${shown.map((t) => html`<${Todo} key=${t.idea + t.id} t=${t} />`)}</ul>`
       : html`<p class="ok-tone-muted">No to-dos from a plan yet.</p>`}
   </section>`;

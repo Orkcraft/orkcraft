@@ -5,28 +5,32 @@ import { html, cls } from "../html.js";
 import { say } from "../link.js";
 import { page, opened, open, run, stateWords } from "./store.js";
 
-// Section → [colour role, icon]. The role is a design-system token in board.css (`[data-sec]`); the icon a 16px line.
+// Section → [colour role, line icon, kit icon]. The role is a design-system token in board.css (`[data-sec]`); the line
+// icon (16px) is Office's, the kit's pixel icon (tools/ui_kit.py) Camp's.
 const SECTIONS = {
-  Gist: ["info", "M3 2.5h7l3 3v8H3zM5.5 8h5M5.5 10.5h5"],
-  Why: ["accent", "M8 1.5a4.5 4.5 0 0 0-2 8.5v1.5h4V10A4.5 4.5 0 0 0 8 1.5zM6.5 14h3"],
-  In: ["ok", "M3 8.5l3.2 3.2L13 4.8"],
-  Out: ["muted", "M4 4l8 8M12 4l-8 8"],
-  Risks: ["fire", "M8 2 14.5 13.5h-13zM8 6.5v3.5M8 11.8v.4"],
-  "Open questions": ["wait", "M6 6a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.2M8 11.8v.4"],
-  Estimate: ["accent", "M8 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM8 4.5V8l2.5 1.5"],
-  Stages: ["info", "M2 4h4v3H2zM10 9h4v3h-4zM6 5.5h2.5V10.5H10"],
-  Decisions: ["ok", "M3 2v12M3 3h9l-2 2.5L12 8H3"],
+  Gist: ["info", "M3 2.5h7l3 3v8H3zM5.5 8h5M5.5 10.5h5", "gist"],
+  Why: ["accent", "M8 1.5a4.5 4.5 0 0 0-2 8.5v1.5h4V10A4.5 4.5 0 0 0 8 1.5zM6.5 14h3", "why"],
+  In: ["ok", "M3 8.5l3.2 3.2L13 4.8", "in"],
+  Out: ["muted", "M4 4l8 8M12 4l-8 8", "out"],
+  Risks: ["fire", "M8 2 14.5 13.5h-13zM8 6.5v3.5M8 11.8v.4", "risk"],
+  "Open questions": ["wait", "M6 6a2 2 0 1 1 2.8 1.8c-.5.3-.8.7-.8 1.2M8 11.8v.4", "ask"],
+  Estimate: ["accent", "M8 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM8 4.5V8l2.5 1.5", "estimate"],
+  Stages: ["info", "M2 4h4v3H2zM10 9h4v3h-4zM6 5.5h2.5V10.5H10", "stages"],
+  Decisions: ["ok", "M3 2v12M3 3h9l-2 2.5L12 8H3", "decide"],
 };
+const KIT_ICONS = "/ds/sprites/v4/ui/icons/";
 
 const usd = (n) => (n < 10 ? n.toFixed(2).replace(/0$/, "") : String(Math.round(n)));
 export const price = (e) => (e ? `~$${usd(e.usd_low)}–${usd(e.usd_high)}` : "");
 
 function Block({ s, onAsk, asked }) {
-  const [role, d] = SECTIONS[s.name] || ["muted", "M3 8h10"];
+  const [role, d, icon] = SECTIONS[s.name] || ["muted", "M3 8h10", "gist"];
   const [editing, setEditing] = useState(null);
   const save = async () => { await run("ideas.edit", { slug: opened.value, section: s.name, text: editing }); setEditing(null); };
-  return html`<details class=${cls("board-sec", { "is-asked": asked })} data-sec=${role} data-name=${s.name} open=${s.name === "Gist"}>
+  return html`<details class=${cls("board-sec kit-well", { "is-asked": asked })} data-sec=${role} data-name=${s.name} open=${s.name === "Gist"}>
     <summary><svg class="board-sec__icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d=${d} /></svg>
+      <span class="board-sec__mark" aria-hidden="true"><img alt="" width="24" height="24" src=${`${KIT_ICONS}${icon}.png`}
+        srcset=${`${KIT_ICONS}${icon}.png 1x, ${KIT_ICONS}${icon}@2x.png 2x`} /></span>
       <span class="board-sec__name">${s.name}</span>
       <b class="board-sec__thesis">${s.thesis}</b></summary>
     ${editing === null ? html`<div class="board-sec__body"><p class="board-sec__text">${s.text}</p>
@@ -53,7 +57,7 @@ function Say({ p, section, setSection }) {
     <textarea class="ok-input" rows="2" value=${text} aria-label=${say("Ask or answer the Taskmaster")}
       placeholder=${section ? `About ${section}…` : say("Ask or answer the Taskmaster…")} onInput=${(e) => setText(e.target.value)}
       onKeyDown=${(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); send(); } }}></textarea>
-    <div class="board-row"><button class="ok-btn primary" disabled=${!text.trim() || p.busy} onClick=${send}>Ask</button>
+    <div class="board-row"><button class="ok-btn" disabled=${!text.trim() || p.busy} onClick=${send}>Ask</button>
       ${p.busy && html`<span class="ok-tone-wait">${say("The Taskmaster is answering…")}</span>`}</div>
   </div>`;
 }
@@ -70,7 +74,7 @@ const TASK_WORDS = { waiting: "waiting", ready: "ready", running: "running", tes
 function Tasks({ plan, working }) {
   return html`<ul class="board-tasks">${plan.tasks.map((k) => html`<li key=${k.id} data-state=${k.state}>
     <span class="board-task__state" data-state=${k.state}>${TASK_WORDS[k.state] || k.state}</span>
-    <b>${k.title}</b><span class="board-chip">${k.tier}</span>
+    <b>${k.title}</b><span class="board-chip kit-well">${k.tier}</span>
     ${k.after?.length ? html`<span class="ok-tone-muted">after ${k.after.join(", ")}</span>` : ""}
     ${k.commit && html`<code class="board-commit" title=${k.branch}>${k.commit.slice(0, 8)}</code>`}
     ${k.state === "held" && k.note && html`<span class="ok-tone-wait">${k.note}</span>`}
@@ -81,10 +85,10 @@ function Tasks({ plan, working }) {
 
 function Plan({ plan }) {
   const e = plan.estimate;
-  return html`<div class="board-plan"><h3 class="board-sub">The plan ${e ? html`<span class="ok-tone-muted">${e.tasks} tasks · ${price(e)}</span>` : ""}</h3>
+  return html`<div class="board-plan kit-well"><h3 class="board-sub kit-legend">The plan ${e ? html`<span class="ok-tone-muted">${e.tasks} tasks · ${price(e)}</span>` : ""}</h3>
     <${Tasks} plan=${plan} />
-    ${plan.todos?.length ? html`<h3 class="board-sub">To-dos before it starts</h3><ul class="board-tasks">${plan.todos.map((t) =>
-      html`<li key=${t.id}><b>${t.title}</b><span class="board-chip">${t.kind}</span><span class="ok-tone-muted">${t.why}</span></li>`)}</ul>` : ""}
+    ${plan.todos?.length ? html`<h3 class="board-sub kit-legend">To-dos before it starts</h3><ul class="board-tasks">${plan.todos.map((t) =>
+      html`<li key=${t.id}><b>${t.title}</b><span class="board-chip kit-well">${t.kind}</span><span class="ok-tone-muted">${t.why}</span></li>`)}</ul>` : ""}
   </div>`;
 }
 
@@ -107,12 +111,14 @@ export function Idea() {
   const p = page.value;
   const [section, setSection] = useState("");
   const [sure, setSure] = useState(false);
-  if (!p) return html`<aside class="board-idea"><p class="ok-tone-muted">Opening…</p></aside>`;
+  if (!p) return html`<aside class="board-idea board-col kit-frame kit-paper"><div class="board-col__body"><p class="ok-tone-muted">Opening…</p></div></aside>`;
   const drop = async () => { await run("ideas.drop", { slug: p.slug }); open(""); };
-  return html`<aside class="board-idea" aria-label=${p.title}>
-    <div class="board-bar"><h2 class="board-h">${p.title}</h2>
+  return html`<aside class="board-idea board-col kit-frame kit-paper" aria-label=${p.title}>
+    <h2 class="board-h board-col__plate kit-plate" title=${p.title}>${p.title}</h2>
+    <div class="board-col__body">
+    <div class="board-bar">
       <span class="board-state" data-state=${p.state}>${stateWords({ state: p.state, progress: planProgress(p.plan) })}</span>
-      ${p.size && html`<span class="board-size">${p.size}</span>`}
+      ${p.size && html`<span class="board-size kit-well">${p.size}</span>`}
       <button class="ok-btn" aria-label="Close" onClick=${() => open("")}>Close</button></div>
     <${Actions} p=${p} />
     <div class="board-secs">${p.sections.map((s) => html`<${Block} key=${s.name} s=${s} asked=${section === s.name} onAsk=${setSection} />`)}</div>
@@ -120,7 +126,8 @@ export function Idea() {
     <${Talk} turns=${p.talk || []} />
     <div class="board-row">${sure ? html`<span>Drop this idea and its page?</span>
         <button class="ok-btn danger" onClick=${drop}>Delete it</button><button class="ok-btn" onClick=${() => setSure(false)}>Keep it</button>`
-      : html`<button class="ok-btn" onClick=${() => setSure(true)}>Delete idea</button>`}</div>
+      : html`<button class="ok-btn danger" onClick=${() => setSure(true)}>Delete idea</button>`}</div>
+    </div>
   </aside>`;
 }
 

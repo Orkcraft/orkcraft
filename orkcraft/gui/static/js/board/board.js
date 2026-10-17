@@ -19,10 +19,11 @@ if (typeof document !== "undefined" && !document.querySelector(`link[href="${she
 function TopBar() {
   const t = town.value, hud = t.hud || {};
   const spend = hud.show_gold ? hud.gold : hud.lumber;
-  return html`<header class="board-top">
+  return html`<header class="board-top kit-bar">
     <span class="board-top__brand">Orkline</span>
     <span class="board-top__spacer"></span>
-    <span class="board-top__spend" title="What was spent today">Spend ${spend ?? "—"}</span>
+    <span class="board-top__spend kit-well" title="What was spent today"><span class="board-top__word">Spend</span>
+      <b class="board-top__num">${spend ?? "—"}</b></span>
     <button class="gui-hud__stop kit-btn is-teal" title=${say("Stop every ork, script and browser at once")}
       onClick=${() => command("halt").catch(() => {})}>Stop all</button>
   </header>`;
@@ -39,7 +40,8 @@ export function Board() {
   return html`<div class="board">
     <${TopBar} />
     ${board.value ? html`<main class=${`board-main${opened.value ? " has-idea" : ""}`}>
-      <${Tracks} /><div class="board-mid"><${Today} /><${Ideas} /></div>${opened.value && html`<${Idea} />`}</main>`
+      <${Tracks} /><div class="board-mid board-col kit-frame kit-paper"><h2 class="board-h board-col__plate kit-plate">Today</h2>
+        <div class="board-col__body"><${Today} /><${Ideas} /></div></div>${opened.value && html`<${Idea} />`}</main>`
       : html`<main class="board-main"><p class="ok-tone-muted">Opening the board…</p></main>`}
   </div>`;
 }

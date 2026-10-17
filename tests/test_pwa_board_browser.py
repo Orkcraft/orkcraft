@@ -1,7 +1,8 @@
 """The board on a phone, in focus (gui/static/pwa/board.js; docs/specs/29a-board-focus.md §7): Chromium at 390 × 844,
 paired over the phone listener, against a stub that answers the spec's §6 commands (the keeper and the runner are
 other parts). What a person sees and taps: only the board, Today's to-dos, an idea dropped from + under General, its
-sections, reordering, Take it to work and Start."""
+sections, reordering, Take it to work and Start. In Camp the board wears v4's kit (docs/design/design-system-v4.md), in
+Office it does not; the v4 shots go to docs/design/img/board-v4/ when BOARD_V4_SHOTS is set."""
 from __future__ import annotations
 
 import asyncio
@@ -18,6 +19,7 @@ from tests.test_phones import _listening, _serve  # noqa: E402
 from tests.test_pwa_browser import CHROMIUM, WAIT_MS, _spki  # noqa: E402
 
 SHOTS = os.environ.get("BOARD_SHOTS", "")
+V4_SHOTS = Path(__file__).resolve().parent.parent / "docs" / "design" / "img" / "board-v4"
 SECTIONS = ["Gist", "Why", "In", "Out", "Risks", "Open questions", "Estimate", "Stages", "Decisions"]
 
 
@@ -59,9 +61,14 @@ class Stub:
         return {"tracks": [{"slug": "general", "title": "General", "about": "", "criteria": [], "deadline": "", "order": 0,
                             "count": len(self.ideas)}],
                 "ideas": [{"slug": i["slug"], "title": i["title"], "track": i["track"], "order": i["order"], "state": i["state"],
-                           "size": i["size"], "thesis": thesis(i), "asks": 0, "progress": {"done": 0, "total": 2}, "updated": ""}
+                           "size": i["size"], "thesis": thesis(i), "asks": 0, "progress": self.progress(i), "updated": ""}
                           for i in self.ordered()],
                 "today": {"todos": self.todos, "needs_you": self.needs}, "batch_next": "", "rev": self.rev}
+
+    @staticmethod
+    def progress(i: dict) -> dict:
+        tasks = (i["plan"] or {}).get("tasks") or []
+        return {"done": sum(k["state"] == "merged" for k in tasks), "total": len(tasks) or 2}
 
     def page(self, args):
         i = self.ideas[args["slug"]]
@@ -123,11 +130,12 @@ class Stub:
 
 
 @asynccontextmanager
-async def _board(repo: Path, monkeypatch):
+async def _board(repo: Path, monkeypatch, look: str = ""):
     stub = Stub()
     real = mobile.phone_snapshot
     monkeypatch.setattr(mobile, "phone_snapshot", lambda host: {**(snap := real(host)), "rev": f"{snap['rev']}-{stub.rev}", "focus": "board",
-                                                                   "ideas_rev": stub.rev, "needs_you": len(stub.needs)})
+                                                                   "ideas_rev": stub.rev, "needs_you": len(stub.needs),
+                                                                   **({"look": look} if look else {})})
     for name in stub.commands():
         monkeypatch.setitem(mobile.COMMANDS, name, None)
     server, task = await _serve(repo)
@@ -277,3 +285,81 @@ async def test_a_long_press_drag_reorders_the_ideas(fake_repo, monkeypatch):
         assert [i["slug"] for i in stub.ordered()] == ["c", "seed", "b"]
         assert stub.calls[-1] == ("ideas.move", {"slug": "c", "before": "seed"})
         assert await page.locator(".idea-page:not([hidden])").count() == 0                         # the drop did not open it
+
+
+def _seed(stub: Stub) -> None:
+    """A few ideas in several states: new, asks you, plan ready with its plan, working 2/5."""
+    stub.add_idea("dark", "Dark mode", "plan", "Follow the phone's light or dark\nAnd keep the choice.")
+    stub.plan({"slug": "dark"})
+    stub.add_idea("export", "Export the week as a report", "asks", "A page of the week\nFor the Monday call.")
+    stub.add_idea("sync", "Sync ideas between the phone and the town", "working", "Ideas follow you\nOver the paired link.")
+    stub.ideas["sync"]["plan"] = {"idea": "sync", "estimate": {"tasks": 5, "usd_low": 1.2, "usd_high": 3.5}, "todos": [],
+                                  "tasks": [{"id": f"k{n}", "title": t, "tier": "warrior", "after": [f"k{n - 1}"] if n > 1 else [], "state": st,
+                                             "commit": "9f2c41d7e0" if st == "merged" else "", "error": ""}
+                                            for n, (t, st) in enumerate([("Read the sync code", "merged"), ("Add the queue", "merged"),
+                                                                         ("Retry on a lost signal", "running"), ("Test it offline", "waiting"),
+                                                                         ("Write the notes", "waiting")], 1)]}
+    stub.add_idea("offline", "Offline mode for the field days", "raw", "Work with no signal")
+    stub.ideas["dark"]["talk"] = [{"who": "you", "text": "Does it follow the system's setting?", "section": "Risks", "at": ""},
+                                  {"who": "keeper", "text": "Yes: it reads prefers-color-scheme and keeps your choice.", "section": "Risks", "at": ""}]
+    stub.calls.clear()
+    stub.bump()
+
+
+KIT = """() => {
+  const cs = (q) => getComputedStyle(document.querySelector(q));
+  return { look: document.documentElement.dataset.look, pane: cs('.board .pane:not([hidden])').borderImageSource,
+    bar: cs('.board-bar').borderImageSource, tab: cs('.board-tab.is-active').borderImageSource, stop: cs('.board-stop').borderImageSource,
+    band: cs('.board .pane:not([hidden]) > h2').borderImageSource, head: cs('.board .pane:not([hidden]) > h2').fontFamily,
+    line: cs('.need-text small').fontFamily };
+}"""
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("look", ["camp", "office"])
+async def test_in_camp_the_phone_board_wears_the_kit_and_in_office_it_does_not(fake_repo, monkeypatch, look):
+    async with _board(fake_repo, monkeypatch, look) as (_, page):
+        await page.locator(".need").first.wait_for(timeout=WAIT_MS)
+        await page.wait_for_function(f"document.documentElement.dataset.look === '{look}'", timeout=WAIT_MS)
+        got = await page.evaluate(KIT)
+        if look == "camp":                     # the frame, the bar, the foot's tabs, the band, the teal Stop all
+            assert "frame" in got["pane"] and "bar" in got["bar"] and "tab-foot-on" in got["tab"] and "btn-teal" in got["stop"]
+            assert "band" in got["band"] and "Jersey 15" in got["head"] and "Jersey" not in got["line"]
+        else:
+            assert got["pane"] == got["bar"] == got["tab"] == got["stop"] == got["band"] == "none"
+            assert "Jersey" not in got["head"]
+        assert await page.evaluate("document.documentElement.scrollWidth <= 390")
+        small = await page.evaluate("""() => [...document.querySelectorAll('.board button, .board input, .board textarea')]
+            .filter((b) => b.offsetParent).map((b) => [b.textContent || b.getAttribute('aria-label'), b.getBoundingClientRect().height])
+            .filter(([, h]) => h < 44)""")
+        assert small == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(not os.environ.get("BOARD_V4_SHOTS"), reason="the v4 shots are taken on demand")
+@pytest.mark.parametrize("look", ["camp", "office"])
+async def test_phone_board_v4_shots(fake_repo, monkeypatch, look):
+    """docs/design/img/board-v4/phone-<look>-*.png at 390 × 844, density 2: Today, the ideas in several states, a plan
+    ready opened with a section unfolded, the work at 2/5."""
+    async with _board(fake_repo, monkeypatch, look) as (stub, page):
+        _seed(stub)
+        await page.wait_for_function(f"document.documentElement.dataset.look === '{look}'", timeout=WAIT_MS)
+        await page.locator(".need").first.wait_for(timeout=WAIT_MS)
+        V4_SHOTS.mkdir(parents=True, exist_ok=True)
+        await page.screenshot(path=str(V4_SHOTS / f"phone-{look}-today.png"))
+        await page.locator(".board-tabs").get_by_role("button", name="Ideas").click()
+        await page.locator(".idea-card", has_text="Sync ideas").wait_for(timeout=WAIT_MS)
+        await page.screenshot(path=str(V4_SHOTS / f"phone-{look}-ideas.png"))
+        await page.locator(".idea-card", has_text="Dark mode").get_by_role("button").click()
+        await page.get_by_role("button", name="Start · 2 tasks · ~$0.6–1.8").wait_for(timeout=WAIT_MS)
+        await page.locator(".sec", has_text="Risks").get_by_role("button").first.click()
+        await page.locator(".sec-text").first.wait_for(timeout=WAIT_MS)
+        await page.screenshot(path=str(V4_SHOTS / f"phone-{look}-plan.png"))
+        await page.get_by_role("button", name="Back to the board").click()
+        await page.locator(".idea-card", has_text="Sync ideas").get_by_role("button").click()
+        await page.get_by_role("button", name="Stop", exact=True).wait_for(timeout=WAIT_MS)
+        await page.evaluate("document.querySelector('.idea-page .plan').scrollIntoView({ block: 'center' })")
+        await page.screenshot(path=str(V4_SHOTS / f"phone-{look}-working.png"))
+        await page.get_by_role("button", name="Back to the board").click()
+        await page.locator(".board-tabs").get_by_role("button", name="Drop an idea").click()
+        await page.screenshot(path=str(V4_SHOTS / f"phone-{look}-drop.png"))

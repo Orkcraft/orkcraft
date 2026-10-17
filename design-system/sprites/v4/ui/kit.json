@@ -37,6 +37,13 @@
    ],
    "inset": 2
   },
+  "well-on": {
+   "size": [
+    8,
+    8
+   ],
+   "inset": 2
+  },
   "plate": {
    "size": [
     10,
@@ -128,6 +135,13 @@
    ],
    "inset": 3
   },
+  "tab-foot": {
+   "size": [
+    12,
+    12
+   ],
+   "inset": 4
+  },
   "tab-hover": {
    "size": [
     12,
@@ -142,6 +156,13 @@
    ],
    "inset": 3
   },
+  "tab-foot-hover": {
+   "size": [
+    12,
+    12
+   ],
+   "inset": 4
+  },
   "tab-on": {
    "size": [
     12,
@@ -155,16 +176,32 @@
     10
    ],
    "inset": 3
+  },
+  "tab-foot-on": {
+   "size": [
+    12,
+    12
+   ],
+   "inset": 4
   }
  },
  "icons": [
+  "ask",
   "close",
   "copy",
+  "decide",
+  "estimate",
+  "gist",
+  "in",
   "info",
   "items",
   "more",
+  "out",
   "quest",
+  "risk",
+  "stages",
   "whole",
+  "why",
   "work"
  ]
 }
