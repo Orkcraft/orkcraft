@@ -129,13 +129,13 @@ then the rest. Everything in the tracks below **waits** unless this table names 
 
 | # | spec | priority | who builds | review |
 |---|---|---|---|---|
-| v1-shell | the three windows (§45.1–7): phone tabs Board · Agents · Review, desktop panes left to right; the top bar (limits left, spend, Stop all); the Review gate's result card (tests, cost, Merge into `dev` only when green, Fix, send back, Drop); testers' defaults (`dev`, no push); first start → the three windows, no Mission 1 (to write) | P0, built Wed 21 – Thu 22 | **Claude** | full |
+| 33 | [v1: three windows, Board · Agents · Review](33-v1-shell.md) (§45; three parts: runner, desktop as an IDE, phone; folds in 32) | P0, built Wed 21 – Thu 22 | **Claude** | full |
 | E1 | [the clean-install check](e1-clean-install.md), on the v1 path | P0, Wed 21 October | owner | — |
 | 05 | [release 0.3.0](05-release-0.3.0.md) | P0, Thu 22 October | agy | light |
 | art | [the five buildings in steampunk, outside and inside](art-steampunk-all.md): goes on, so Camp can be put in quickly later | P1 | agy | the owner picks |
 | 18, 19 | grass, camera: merged if they come back green; nothing more on them | — | agy | light |
 
-**Waiting (§45.8–10):** roles editable (a §27 exception), the Alchemist (image generation), 29–31's rest, 32,
+**Waiting (§45.8–10):** roles editable (a §27 exception), the Alchemist (image generation), 29–31's rest,
 gate-kinds' daily batch, 17b, 20, 22, 23, 16, 14, 02, 03. Their files stay.
 
 ### Before §45: the three tracks (decisions §35, §36)
