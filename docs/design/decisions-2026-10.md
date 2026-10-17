@@ -1102,3 +1102,25 @@ never waits on the card) and §41.6 (the keeper reads only its own Wiki) stay.
 11. **Three specs, in this order** (track 1, P1; they replace the row *idea-to-plan*): **29** tracks and idea pages in
     the Wiki, the board and the phone show them, no model; **30** the keeper: the batch, the spec talk, a session per
     idea; **31** Take it to work: to-dos and tasks to the pool, with the limits (it changes the pool).
+
+## 44. The board after the market study: what merged without your eyes, decisions in one tap (17 October, the owner)
+
+A study of the market (reports/, not in git: spec-first tools, parallel-agent boards, AI backlogs, research on
+supervising agents) **keeps §43 as it is**: no product found runs the whole way from a phone's idea to `main`, and the
+market moves our way (one plan approved before the work, a short "needs a human" queue, triage in the background,
+priority by order). People approve ~93 % of prompts unread (Anthropic), so more gates are not the answer; making a
+check cheap is. One accent moves, four details follow:
+1. **After the merge is a place of its own.** We merge on green tests without a PR, which no competitor does, so the
+   person must see what reached `main` without their eyes and undo it in one gesture: **Merged without your eyes** in
+   Today (a line per task: its goal, the commit, the tests, cost against the estimate; **Revert**; **Looked** clears
+   it). The answer to "green tests, wrong change".
+2. **The Taskmaster's questions are choices**, each with a recommended answer and a short why, plus *Other…*; one tap
+   each. The answers go to the talk together, once all are in (one call, not one per answer).
+3. **A spec weighs as much as the idea.** Size S: Gist, In, Out and one stage; the other sections appear only for M and
+   L, or when written. A study's anecdote: 2 577 lines of Markdown for 689 lines of code.
+4. **Push only what blocks** (asks, plan ready, failed, held); merged and done go to a **digest** at hours the person
+   sets (default 9, 13, 18). A field trial: batches three times a day beat real time and beat silence.
+5. **The silence is a contract, said once** on the board: *The orks ask you when a question, a plan, a red gate twice,
+   a conflict or a spent window needs you. Otherwise they work and merge.*
+Spec 29c. Later, from the same study: a price ceiling per task (held on overrun), plan diffs, In/Out tied to tests,
+voice capture split into ideas, metrics of the gates (approval rate × time to decide).
