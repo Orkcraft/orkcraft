@@ -54,7 +54,7 @@ The state a new product-and-marketing session starts from. Update it when you ha
   merged). Before writing a decision or a spec, `git pull` and read the newest §§ of decisions; number after them.
 - **decisions §45 (17 October, the owner): v1 is three windows.** Task board · Agent pool · Review gate, phone
   tabs Board · Agents · Review, desktop panes left to right (sketch `docs/design/img/v1/phone-sketch.jpg`). External
-  listeners and the Wiki not shown. **The product backlog is paused**: only spec 33 (`docs/specs/33-v1-shell.md`, three Claude parts,
+  listeners and the Wiki not shown. **The product backlog is paused**: only spec 33 (**merged 17 October**, with §9's day logs) (`docs/specs/33-v1-shell.md`, three Claude parts,
   built Wed 21 – Thu 22; desktop as an IDE, Agents under the preview as a terminal; folds in 32) plus E1 and 0.3.0. **Camp frozen, its art goes on in agy.** Dates of §22 stay, Halloween dropped.
   Later, by the owner: roles/models/limits editable (a §27 exception), the Alchemist (image generation, for the owner
   to finish Camp). Testers' defaults: merge into `dev`, no push. specs/README.md "The list" is rewritten for it.
@@ -96,7 +96,8 @@ The state a new product-and-marketing session starts from. Update it when you ha
 - Tonight: start agy tabs 1, 2 and 4 of `2026-10-16-night.md` (grass round 2, camera, the five buildings' art).
 - Delete the old branches on GitHub (list in the PM's reply of 16 October).
 - Test the five buildings on the product and send what gets in the way, building by building.
-- Test the three windows (Board, Agents, Review) once spec 33 is merged; Mission 1 is no longer played (§45).
+- Test the three windows (Board, Agents, Review) on `main` (spec 33 merged 17 October); Mission 1 is no longer played
+  (§45). For his own repository: set `ideas.merge_into` to `main` and `ideas.push` on, if he wants the old way.
 - Test on `main` (phone): the fast first load and install (01, 01b); the building screen (21); open-air buildings (24).
 - Written IP confirmation.
 - E1 clean-install check on Wed 21 October; release 0.3.0 (spec 05) on Thu 22 October; testers after that (timeline: decisions §22;
