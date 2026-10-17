@@ -1102,3 +1102,18 @@ never waits on the card) and §41.6 (the keeper reads only its own Wiki) stay.
 11. **Three specs, in this order** (track 1, P1; they replace the row *idea-to-plan*): **29** tracks and idea pages in
     the Wiki, the board and the phone show them, no model; **30** the keeper: the batch, the spec talk, a session per
     idea; **31** Take it to work: to-dos and tasks to the pool, with the limits (it changes the pool).
+
+## 44. Words: goal, target, track (17 October, the owner)
+
+1. **A goal** is what §43 called a track: the project's line of work, with success criteria (metrics) and a
+   deadline. The person sees *goal / goals*; the code keeps its names (`track` in `TERMS` keys, `realm/ideas.py`,
+   `pages/tracks/`, `kind: track`), as CLAUDE.md asks.
+2. **A target** is what a building's setting called Goal (thrift · balance · quality). The person sees *Target*.
+3. **A track** (later) is a route of the rails: the flow a class of work takes through the buildings, e.g. code
+   (board → pool → gate, merged into `dev` in a daily batch, §39, §42), text for people (board → pool → gate, one by
+   one), research (board → pool → Wiki). **The target moves from the building to the track**: one setting per route
+   instead of one per building, a simplification (§27). Until the testers there is one track, the camp's line, so the
+   first day does not change; tracks per class of work come after the testers (open-questions.md). A new `TERMS` key
+   for it then (`route`), since `track` is taken by goals in code.
+Items 1–2 are wording only: spec 32.
+

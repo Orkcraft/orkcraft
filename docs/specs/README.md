@@ -133,6 +133,7 @@ open-questions.md "After the testers" (§36). Within a track, P0 first.
 |---|---|---|---|---|
 | 26 | [five buildings at the first start; the others hidden](26-five-buildings.md) (merged) | P0 | **Claude** | light |
 | 28 | [the lean Agent pool: fewer tokens for the same parallel work](28-lean-pool.md) (merged) | P1 | **Claude** | full |
+| 32 | [the words goal and target](32-goal-and-target.md) (wording only, §44) | P1 | agy | light |
 | fix lists | one short spec per building from what the owner finds testing it (`docs/specs/fix-<building>.md`) | P0, as they come | agy or Claude | light |
 | 29 | [tracks and ideas: the specs as Wiki pages, the phone first, no model](29-tracks-and-ideas.md) (draft) | P1 | **Claude** | full |
 | 30 | the keeper: the batch reads new ideas (laborer), the spec talk on the heavy tier, a session per idea that compacts (decisions §43) | P1, after 29 | **Claude** | full |

@@ -242,4 +242,5 @@ New mechanics, buildings or systems wait here, one line each, until the concept 
 - **Each building as a product of its own** (the owner, 17 October): the Task board (idea → plan), the Agent pool
   (lean parallel orks) or External listeners released alone, tested alone, then built into Orkline. Checked on the
   testers first: which building would they keep if they could keep one, and per-building use in the (opt-in) stats.
-
+- Tracks per class of work (decisions §44.3): a route of the rails per kind of task (code, text for people, research),
+  the target set per track instead of per building.
