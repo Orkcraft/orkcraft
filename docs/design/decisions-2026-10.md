@@ -1138,3 +1138,9 @@ voice capture split into ideas, metrics of the gates (approval rate × time to d
    gated code while the orks change `dev`.
 5. CLAUDE.md's alpha rule ("merge into `main` on the critical tests") becomes this rule. The gate's dev → main step is
    part of the gate-kinds spec (§39, §42), which this makes P0.
+6. **The night tests by itself** (the owner, same day): whether or not the person looked at the gate, every night at
+   a set hour (default 03:00, a setting of the gate) the gate runs the deep checks on `dev`'s head: the full suite, the
+   browser tests, and §39's daily check (one ork reads the day's merges against their ideas' specs and fixes what
+   fails, on `dev`, within a budget said first). The morning finds one **Night report** at the gate: green or red,
+   what was fixed, what could not be, the cost, and — when green — **Pass to main** (the one press that merges `dev`
+   into `main`). Red is in Needs you. Nothing reaches `main` without that press. Spec 32.

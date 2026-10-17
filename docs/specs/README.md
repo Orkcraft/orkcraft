@@ -138,6 +138,7 @@ open-questions.md "After the testers" (§36). Within a track, P0 first.
 | 29c | [after the merge, decisions in one tap](29c-after-the-merge.md): merged without your eyes + Revert, questions as choices, S specs light, push only what blocks (decisions §44) | P0 | **Claude** | full |
 | 30 | the keeper: the batch reads new ideas (laborer), the spec talk on the heavy tier, a session per idea that compacts (decisions §43) | P1, after 29 | **Claude** | full |
 | 31 | Take it to work: to-dos (secret, choice, confirm, instructions) and tasks with tiers to the pool, the window checked first; the pool stops planning the board's cards (§43) | P1, after 30 | **Claude** | full |
+| 32 | [the night gate: `dev` tested every night, `main` by one press](32-night-gate.md) (decisions §45.6) | **P0** | **Claude** | full |
 | gate-kinds | the Review gate by what the result is: what goes to people one by one, code as one batch a day (decisions §39); code merges into a branch chosen at the gate (default `dev`), tests' status on each result (§42); the spec after the owner's tests | P1 | **Claude** | full |
 | 22 | [the Agent pool's room](22-agent-pool-room.md) (art card + code) | P1, after the art | **Claude** | light + the owner's look |
 | 23 | [the Review gate's room](23-review-gate-room.md) (art card + code) | P1, after the art | **Claude** | light + the owner's look |
