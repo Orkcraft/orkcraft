@@ -5,8 +5,9 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { board, page } from "../board/store.js";
 import { IdeaView, PlanView } from "../board/idea.js";
-import { preview, detail, review, act, closePreview, showIdea, showResult, refreshShell } from "./store.js";
+import { preview, detail, review, goal, act, closePreview, showIdea, showGoal, showResult, refreshShell } from "./store.js";
 import { ResultActions, testsWords, changesWords, isRed } from "./review.js";
+import { GoalView } from "./goalview.js";
 
 const TASK_STATE = { waiting: "waiting", ready: "queued", running: "working", testing: "testing", review: "at Review", merged: "merged",
   failed: "needs you", held: "held" };
@@ -14,7 +15,7 @@ const TASK_STATE = { waiting: "waiting", ready: "queued", running: "working", te
 function Empty() {
   const need = board.value?.today.needs_you[0];
   return html`<div class="shell-empty"><p>Open an idea, a task or a result.</p>
-    ${need && html`<p class="ok-tone-muted">First on your list: <button class="board-link" onClick=${() => showIdea(need.idea)}>${need.title}</button> — ${need.text}</p>`}</div>`;
+    ${need && html`<p class="ok-tone-muted">First on your list: <button class="board-link" onClick=${() => (need.goal ? showGoal(need.goal) : showIdea(need.idea))}>${need.title}</button> — ${need.text}</p>`}</div>`;
 }
 
 function Task({ d }) {
@@ -83,10 +84,18 @@ function Result({ d, p }) {
   </div>`;
 }
 
+function Doc({ d, p }) {
+  return html`<div class="shell-doc"><p><button class="board-link" onClick=${() => showGoal(p.slug)}>← Back to the goal</button></p>
+    ${!d ? html`<p class="ok-tone-muted">Opening…</p>`
+      : d.doc ? html`<pre class="shell-log shell-doc__text" aria-label=${p.path}>${d.doc.text}</pre>${d.doc.truncated ? html`<p class="ok-tone-muted">Cut here: the document is longer.</p>` : ""}`
+      : html`<p class="ok-tone-muted">That document cannot be shown.</p>`}</div>`;
+}
+
 export function Preview() {
   const p = preview.value, pg = page.value, d = detail.value;
-  const title = !p ? "" : p.kind === "task" || p.kind === "result" ? (d?.task?.title || "…") : (pg?.title || "…");
-  const kind = { idea: "Spec", plan: "Plan", task: "Task", result: "Code" }[p?.kind] || "";
+  const title = !p ? "" : p.kind === "task" || p.kind === "result" ? (d?.task?.title || "…") : p.kind === "goal" ? (goal.value?.title || "…")
+    : p.kind === "doc" ? p.path : (pg?.title || "…");
+  const kind = { idea: "Spec", plan: "Plan", task: "Task", result: "Code", goal: "Goal", doc: "Document" }[p?.kind] || "";
   const sub = (p?.kind === "task" || p?.kind === "result") ? d?.task?.idea_title : "";
   return html`<section class=${cls("shell-preview", { "is-open": !!p })} aria-label="Preview">
     ${p && html`<header class="shell-pane__head"><button class="ok-btn shell-back" aria-label="Back" onClick=${closePreview}>← Back</button>
@@ -96,6 +105,8 @@ export function Preview() {
       ${!p ? html`<${Empty} />`
         : p.kind === "idea" ? (pg ? html`<${IdeaView} p=${pg} />` : html`<p class="ok-tone-muted">Opening…</p>`)
         : p.kind === "plan" ? (pg ? html`<${PlanView} p=${pg} todo=${p.todo} />` : html`<p class="ok-tone-muted">Opening…</p>`)
+        : p.kind === "goal" ? html`<${GoalView} />`
+        : p.kind === "doc" ? html`<${Doc} d=${d} p=${p} />`
         : p.kind === "task" ? html`<${Task} d=${d} />` : html`<${Result} d=${d} p=${p} />`}
     </div>
   </section>`;

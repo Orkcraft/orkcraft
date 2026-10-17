@@ -8,13 +8,17 @@ import { ask, board, opened, page, BUSY } from "../board/store.js";
 export const preview = signal(null);       // null | {kind: "idea"|"plan"|"task"|"result", slug, task?, todo?}
 export const review = signal(null);        // ideas.review_list
 export const agents = signal(null);        // ideas.agents
-export const detail = signal(null);        // the preview's own data: {task} (ideas.task) · {task, diff} (a result)
+export const detail = signal(null);        // the preview's own data: {task} (ideas.task) · {task, diff} (a result) · {goal} · {doc}
+export const goal = signal(null);          // ideas.goal of the goal in the preview
+export const roles = signal(null);         // ideas.roles: the agents, the task types and their agent, the models
 export const tab = signal("board");        // the narrow layout's tab (below 1 024 px the shell is the phone's layout)
 
 const LIVE = ["running", "testing"];
 
-/** What the open preview reads besides the idea's page: a task, or a result's task and its code. */
+/** What the open preview reads besides the idea's page: a task, a result's task and its code, a goal, a linked document. */
 async function detailFor(p) {
+  if (p?.kind === "goal") return { goal: await ask("ideas.goal", { slug: p.slug }) };
+  if (p?.kind === "doc") return { doc: await ask("ideas.doc", { path: p.path }) };
   if (!p || (p.kind !== "task" && p.kind !== "result")) return null;
   const [task, diff] = await Promise.all([ask("ideas.task", { slug: p.slug, task: p.task }),
     p.kind === "result" ? ask("ideas.diff", { slug: p.slug, task: p.task }) : null]);
@@ -27,13 +31,14 @@ export async function refreshShell() {
   loading = true;
   try {
     const p = preview.value;
-    const [b, r, a, d, pg] = await Promise.all([ask("ideas.board"), ask("ideas.review_list"), ask("ideas.agents"), detailFor(p),
-      p && (p.kind === "idea" || p.kind === "plan") ? ask("ideas.page", { slug: p.slug }) : null]);
+    const [b, r, a, d, pg, ro] = await Promise.all([ask("ideas.board"), ask("ideas.review_list"), ask("ideas.agents"), detailFor(p),
+      p && (p.kind === "idea" || p.kind === "plan") ? ask("ideas.page", { slug: p.slug }) : null, ask("ideas.roles")]);
     batch(() => {
       if (b) board.value = b;
       if (r) review.value = r;
       if (a) agents.value = a;
-      if (preview.value === p) { if (p) detail.value = d; if (pg) page.value = pg; }
+      if (ro) roles.value = ro;
+      if (preview.value === p) { if (p) detail.value = d; if (pg) page.value = pg; if (p?.kind === "goal" && d?.goal) goal.value = d.goal; }
     });
   } finally { loading = false; }
 }
@@ -51,11 +56,13 @@ export function logOpened(what, ref) {
 }
 
 export function show(p) {
-  if (p) logOpened(p.kind === "plan" && p.todo ? "todo" : p.kind, p.task ? `${p.slug}/${p.task}` : p.todo ? `${p.slug}/${p.todo}` : p.slug);
+  if (p && p.kind !== "doc") logOpened(p.kind === "goal" ? "idea" : p.kind === "plan" && p.todo ? "todo" : p.kind,
+    p.kind === "goal" ? `goal:${p.slug}` : p.task ? `${p.slug}/${p.task}` : p.todo ? `${p.slug}/${p.todo}` : p.slug);
   batch(() => {
     preview.value = p;
     detail.value = null;
     page.value = null;
+    goal.value = null;
     opened.value = p && (p.kind === "idea" || p.kind === "plan") ? p.slug : "";
   });
   if (p) refreshShell();
@@ -63,13 +70,15 @@ export function show(p) {
 export const showIdea = (slug) => show({ kind: "idea", slug });
 export const showPlan = (slug, todo = "") => show({ kind: "plan", slug, todo });
 export const showTask = (slug, task) => show({ kind: "task", slug, task });
+export const showGoal = (slug) => show({ kind: "goal", slug });
+export const showDoc = (slug, path) => show({ kind: "doc", slug, path });
 export const showResult = (slug, task) => show({ kind: "result", slug, task });
 export const closePreview = () => show(null);
 
 /** Something a model or a task does now: the shell looks again every 10 s. */
 export function busy() {
   const b = board.value, a = agents.value;
-  return !!(b && b.ideas.some((i) => BUSY.includes(i.state))) || !!(a && a.roles.some((r) => (r.chips || []).some((c) => LIVE.includes(c.state))));
+  return !!(b && (b.ideas.some((i) => BUSY.includes(i.state)) || b.tracks.some((t) => t.state === "reading"))) || !!(a && a.roles.some((r) => (r.chips || []).some((c) => LIVE.includes(c.state) || (c.goal && c.state === "reading"))));
 }
 
 // The Agents pane's size and whether it is hidden are kept per machine; the layout works without storage.

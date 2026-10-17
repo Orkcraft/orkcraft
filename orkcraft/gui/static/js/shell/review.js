@@ -4,6 +4,7 @@
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { review, preview, act, showResult, closePreview } from "./store.js";
+import { Modal, openDialog, closeDialog } from "./modals.js";
 
 const usd = (n) => (n == null ? "" : `$${n < 10 ? n.toFixed(2) : Math.round(n)}`);
 
@@ -37,7 +38,6 @@ export function fixLine(r, into) {
 export function ResultActions({ r, pinned = false }) {
   const into = review.value?.into || "dev";
   const [line, setLine] = useState(null);       // null: the one-line box is closed
-  const [sure, setSure] = useState(false);
   const [working, setWorking] = useState(false);
   const reason = mergeReason(r, into), fix = isRed(r) || !!r.conflict;
   const key = { slug: r.idea, task: r.task };
@@ -51,15 +51,12 @@ export function ResultActions({ r, pinned = false }) {
     setWorking(false);
     if (got?.ok) { setLine(null); done(); }
   };
-  const drop = async () => { const got = await act("ideas.drop_task", key); if (got?.ok) done(); };
   return html`<div class=${cls("shell-actions", { "is-pinned": pinned })} onClick=${(e) => e.stopPropagation()}>
     <div class="shell-actions__main">
       <button class="ok-btn primary" disabled=${!!reason || working} title=${reason || `Merge into ${into}`}
         onClick=${merge}>Merge into ${into}</button>
       <button class="ok-btn" aria-expanded=${line !== null} onClick=${() => setLine(line === null ? fixLine(r, into) : null)}>${fix ? "Fix" : "Send back"}</button>
-      ${sure ? html`<span class="shell-actions__sure">Drop this result?
-          <button class="ok-btn danger" onClick=${drop}>Drop it</button><button class="ok-btn" onClick=${() => setSure(false)}>Keep it</button></span>`
-        : html`<button class="shell-quiet" onClick=${() => setSure(true)}>Drop…</button>`}
+      <button class="shell-quiet" onClick=${() => openDialog("drop", { r })}>Drop…</button>
     </div>
     ${reason && html`<p class="shell-actions__why ok-tone-error" role="status">${reason}</p>`}
     ${line !== null && html`<form class="shell-actions__line" onSubmit=${back}>
@@ -89,21 +86,41 @@ function Card({ r, selected }) {
 
 function Into() {
   const rv = review.value;
-  const [open, setOpen] = useState(false);
+  if (!rv) return null;
+  return html`<div class="shell-into">
+    <button class="ok-btn" aria-haspopup="dialog" onClick=${() => openDialog("into")}>Merge into <b>${rv.into}</b> ▾</button>
+  </div>`;
+}
+
+/** Merge into ▾ : the branch the results land in, from the local branches, or a new one. */
+export function IntoDialog() {
+  const rv = review.value;
   const [making, setMaking] = useState(null);
   if (!rv) return null;
-  const pick = async (branch) => { setOpen(false); setMaking(null); if (branch !== rv.into) await act("ideas.into", { branch }); };
-  return html`<div class="shell-into" onKeyDown=${(e) => e.key === "Escape" && (e.stopPropagation(), setOpen(false))}>
-    <button class="ok-btn" aria-haspopup="menu" aria-expanded=${open} onClick=${() => setOpen(!open)}>Merge into <b>${rv.into}</b> ▾</button>
-    ${open && html`<div class="shell-menu ok-win" role="menu" aria-label="Merge into">
+  const pick = async (branch) => { if (branch !== rv.into) await act("ideas.into", { branch }); closeDialog(); };
+  return html`<${Modal} title="Merge into" onClose=${closeDialog}>
+    <div class="shell-menu__list" role="menu" aria-label="Merge into">
       ${(rv.branches || [rv.into]).map((b) => html`<button key=${b} class="shell-menu__item" role="menuitemradio"
         aria-checked=${b === rv.into} onClick=${() => pick(b)}>${b === rv.into ? "✓" : ""} ${b}</button>`)}
       ${making === null ? html`<button class="shell-menu__item" role="menuitem" onClick=${() => setMaking("")}>New branch…</button>`
         : html`<form class="shell-menu__new" onSubmit=${(e) => { e.preventDefault(); if (making.trim()) pick(making.trim()); }}>
           <input class="ok-input" autofocus value=${making} aria-label="Name of the new branch" placeholder="Name of the new branch"
             onInput=${(e) => setMaking(e.target.value)} /><button class="ok-btn primary" disabled=${!making.trim()}>Make it</button></form>`}
-    </div>`}
-  </div>`;
+    </div>
+  <//>`;
+}
+
+/** Drop's confirm: the result's task fails ("dropped by you"), its branch stays. */
+export function DropDialog({ r }) {
+  const drop = async () => {
+    const got = await act("ideas.drop_task", { slug: r.idea, task: r.task });
+    if (got?.ok) { if (preview.value?.task === r.task && preview.value?.slug === r.idea) closePreview(); closeDialog(); }
+  };
+  return html`<${Modal} title="Drop this result?" onClose=${closeDialog}
+    foot=${html`<button type="button" class="ok-btn" onClick=${closeDialog}>Keep it</button>
+      <button type="button" class="ok-btn danger" onClick=${drop}>Drop it</button>`}>
+    <p class="ok-dialog__text"><b>${r.title}</b> will not be merged. Its worktree goes; its branch stays.</p>
+  <//>`;
 }
 
 export function ReviewPane() {

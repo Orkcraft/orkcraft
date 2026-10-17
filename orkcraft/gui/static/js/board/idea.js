@@ -111,7 +111,8 @@ function Actions({ p }) {
   const s = p.state, plan = p.plan, slug = p.slug;
   const e = plan?.estimate;
   if (s === "reading" || s === "planning") return html`<p class="ok-tone-wait" role="status">${say(`The Taskmaster is ${s === "reading" ? "reading" : "planning"}…`)}</p>`;
-  if (s === "raw") return html`<p class="ok-tone-muted">${say("New: the Taskmaster reads it at the next round.")}</p>`;
+  if (s === "raw") return html`<div class="board-row"><p class="ok-tone-muted">${say("New: the Taskmaster reads it at the next round.")}</p>
+    <button class="ok-btn" onClick=${() => run("ideas.read_now", { slug })}>Process now</button></div>`;
   return html`<div class="board-actions">
     ${(s === "ready" || s === "asks") && html`<button class="ok-btn primary" onClick=${() => run("ideas.plan", { slug })}>Take it to work</button>`}
     ${plan && html`<${Plan} plan=${plan} />`}

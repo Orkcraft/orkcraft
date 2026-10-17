@@ -4,7 +4,7 @@
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { board } from "./store.js";
-import { act as run, showIdea, showPlan } from "../shell/store.js";
+import { act as run, showGoal, showIdea, showPlan } from "../shell/store.js";
 
 function Todo({ t }) {
   const [value, setValue] = useState("");
@@ -32,8 +32,8 @@ export function Today() {
   const open_ = today.todos.filter((t) => !t.done), shown = [...open_, ...today.todos.filter((t) => t.done)];
   return html`<section class="board-today" aria-label="Today">
     <h3 class="board-sub kit-band">Needs you ${today.needs_you.length ? html`<span class="board-count kit-well">${today.needs_you.length}</span>` : ""}</h3>
-    ${today.needs_you.length ? html`<ul class="board-list">${today.needs_you.map((n) => html`<li key=${n.idea + n.kind}>
-      <button class="board-need" data-kind=${n.kind} onClick=${() => showIdea(n.idea)}>
+    ${today.needs_you.length ? html`<ul class="board-list">${today.needs_you.map((n) => html`<li key=${(n.goal || n.idea) + n.kind}>
+      <button class="board-need" data-kind=${n.kind} onClick=${() => (n.goal ? showGoal(n.goal) : showIdea(n.idea))}>
         <b>${n.title}</b><span class="ok-tone-muted">${n.text}</span></button></li>`)}</ul>`
       : html`<p class="ok-tone-muted">Nothing waits for you.</p>`}
     <h3 class="board-sub kit-band">To-dos ${open_.length ? html`<span class="board-count kit-well">${open_.length}</span>` : ""}</h3>

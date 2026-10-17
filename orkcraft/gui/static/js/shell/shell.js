@@ -11,6 +11,7 @@ import { BoardPane } from "./boardpane.js";
 import { ReviewPane } from "./review.js";
 import { AgentsPane } from "./agents.js";
 import { Preview } from "./preview.js";
+import { Dialogs } from "./dialogs.js";
 import { preview, review, tab, agentsLayout, setLayout, refreshShell, closePreview, busy, logOpened } from "./store.js";
 
 const sheet = new URL("./shell.css", import.meta.url).href;
@@ -105,5 +106,6 @@ export function Shell() {
       <${ReviewPane} />
     </div>
     ${narrow && html`<${Tabs} />`}
+    <${Dialogs} />
   </div>`;
 }
