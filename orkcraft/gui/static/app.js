@@ -32,6 +32,7 @@ import { Portrait } from "./js/portrait.js";
 import { watchErrors } from "./js/crashes.js";
 import { CommentLayer, FixesDialog } from "./js/fixes.js";
 import { LastLook } from "./js/lastlook.js";
+import { Board } from "./js/board/board.js";
 
 function App() {
   const t = town.value;
@@ -42,6 +43,8 @@ function App() {
   const look = t.look === "office" ? "office" : "camp";
   const root = document.documentElement;
   if (root.dataset.look !== look) { root.dataset.look = look; root.dataset.theme = look; }
+  // In focus (docs/specs/29a-board-focus.md §1) the window is the board and a thin top bar: no town, no map.
+  if (t.focus === "board") return html`<div class="gui gui-board"><${Board} /><${Toasts} /></div>`;
   const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
   // The town's ground is the open orkspace's biome, its colour and its glyphs (docs/design/war-map.md §3).
   wearGround(space ? space.biome : "dirt", look);
