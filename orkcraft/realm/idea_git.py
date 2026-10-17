@@ -98,12 +98,26 @@ class IdeaGit:
         if not worktrees.valid_branch(self.root, branch):
             raise RuntimeError(f"{branch!r} is not a valid branch name")
         with self.lock:
-            _ok(_git(self.root, "rev-parse", "--verify", f"refs/heads/{base}"))
+            self.ensure_branch(base)
             path = worktrees.worktree_path(self.root, _worktree_id(slug, task_id))
             self.remove(path)
             path.parent.mkdir(parents=True, exist_ok=True)
             _ok(_git(self.root, "worktree", "add", "-B", branch, str(path), base))
         return path, branch
+
+    def ensure_branch(self, base: str) -> None:
+        """`base` as a local branch: as it is; else from `origin/<base>`; else cut from `main` (or HEAD) — the first
+        task of a town creates `dev` (decisions §45). Under the repository lock."""
+        if _git(self.root, "rev-parse", "--verify", "-q", f"refs/heads/{base}").returncode == 0:
+            return
+        if not worktrees.valid_branch(self.root, base):
+            raise RuntimeError(f"{base!r} is not a valid branch name")
+        _git(self.root, "fetch", "-q", "origin", base)
+        for start in (f"refs/remotes/origin/{base}", "refs/heads/main", "HEAD"):
+            if _git(self.root, "rev-parse", "--verify", "-q", start).returncode == 0:
+                _ok(_git(self.root, "branch", base, start))
+                return
+        raise RuntimeError(f"no branch to cut {base!r} from")
 
     def remove(self, path: Path) -> None:
         with self.lock:

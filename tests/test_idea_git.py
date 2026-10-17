@@ -110,3 +110,18 @@ def test_the_env_name_comes_from_the_todos_title():
     assert idea_git.env_name("The STRIPE token: STRIPE_SECRET") == "STRIPE_SECRET"
     assert idea_git.env_name("GITHUB token") == "GITHUB"
     assert idea_git.env_name("a key") == ""
+
+
+def test_a_missing_base_is_cut_from_main_once(tmp_path):
+    r = tmp_path / "r"
+    r.mkdir()
+    git(r, "init", "-b", "main")
+    (r / "a.txt").write_text("a\n")
+    git(r, "add", ".")
+    git(r, "-c", "user.name=T", "-c", "user.email=t@x", "commit", "-qm", "first")
+    g = IdeaGit(r)
+    path, _branch = g.prepare("demo", "k1", "dev")
+    assert git(r, "rev-parse", "dev") == git(r, "rev-parse", "main")
+    assert (path / "a.txt").exists()
+    g.ensure_branch("dev")                                  # once: an existing dev stays as it is
+    assert git(r, "rev-parse", "dev") == git(r, "rev-parse", "main")

@@ -1,5 +1,5 @@
 """The runner of a passed plan (docs/specs/29a-board-focus.md §5): each task its own Claude session in a worktree,
-tested, rebased and fast-forwarded into `ideas.merge_into` (default `main`), pushed.
+tested, rebased and fast-forwarded into `ideas.merge_into` (default `dev`; `main` takes `dev` through the Review gate, decisions §45), pushed.
 
     runner = IdeaRunner(repo_root, state_dir, settings, bus)
     runner.start(slug)        # after `ideas.start` set the plan's `passed_at`
@@ -29,7 +29,7 @@ from orkcraft.realm.idea_git import CRITICAL_TESTS, Conflict, IdeaGit, env_name,
 CHANGED = "ideas.changed"          # slug: an idea's state or one of its tasks changed
 HARNESS = "claude"
 LIMITS_EVERY_S = 600               # how often the runner reads the quota itself, when nobody hands it one
-DEFAULTS = {"max_parallel": 1, "merge_into": "main", "push": True}
+DEFAULTS = {"max_parallel": 1, "merge_into": "dev", "push": True}
 STOPPED = "stopped"
 LIVE = ("running", "testing")
 PAGE_KEEP = 20000
@@ -336,7 +336,7 @@ class IdeaRunner:
         try:
             plan = self.plan(slug) or {"tasks": []}
             task = next(t for t in plan["tasks"] if t.get("id") == tid)
-            base = str(setting(self.settings, "merge_into") or "main")
+            base = str(setting(self.settings, "merge_into") or "dev")
             path, branch = self.git.prepare(slug, tid, base)
             start_sha = self.git.head(path)
             h = harnesses.need(HARNESS)
@@ -451,7 +451,7 @@ class IdeaRunner:
         secrets = [n for n in self._env(slug, task.get("id"), plan) if n != "ORKCRAFT_ORC"]
         parts = [
             f"You do one task of the idea `{slug}` in this repository: a git worktree on branch "
-            f"`idea/{slug}/{task.get('id')}`, cut from `{setting(self.settings, 'merge_into') or 'main'}`. "
+            f"`idea/{slug}/{task.get('id')}`, cut from `{setting(self.settings, 'merge_into') or 'dev'}`. "
             "Work only here.",
             "# The idea\n\n" + (self._page(slug) or "(its page was not found)"),
             f"# Your task: {task.get('title', '')}\n\n{task.get('brief', '')}",

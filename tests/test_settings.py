@@ -62,10 +62,10 @@ def test_the_old_look_and_office_hours_load_and_are_not_written_again(tmp_path: 
 def test_the_board_is_in_focus_by_default_and_its_settings_are_cleaned():
     s = settings.MachineSettings()
     assert s.focus == "board" and s.ideas == {"batch_minutes": 30, "idle_hours": 24, "max_parallel": 1,
-                                              "merge_into": "main", "push": True}
+                                              "merge_into": "dev", "push": True}
     back = settings.MachineSettings.from_dict({"focus": "", "ideas": {"batch_minutes": 0, "max_parallel": 2,
                                                                       "merge_into": "../x", "push": "yes"}})
     assert back.focus == "" and back.ideas["max_parallel"] == 2 and back.ideas["batch_minutes"] == 30
-    assert back.ideas["merge_into"] == "main" and back.ideas["push"] is True
+    assert back.ideas["merge_into"] == "dev" and back.ideas["push"] is True
     assert settings.MachineSettings.from_dict({"focus": "town"}).focus == "board"
     assert settings.MachineSettings.from_dict(back.to_dict()).ideas == back.ideas

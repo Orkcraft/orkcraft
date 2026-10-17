@@ -369,5 +369,5 @@ def test_a_restart_goes_on_with_working_ideas(town):
 def test_settings_are_read_however_they_are_carried():
     assert idea_runner.setting(SimpleNamespace(ideas={"max_parallel": 3}), "max_parallel") == 3
     assert idea_runner.setting({"ideas": {"push": False}}, "push") is False
-    assert idea_runner.setting(SimpleNamespace(), "merge_into") == "main"
+    assert idea_runner.setting(SimpleNamespace(), "merge_into") == "dev"
     assert idea_runner.setting(SimpleNamespace(ideas_max_parallel=2), "max_parallel") == 2

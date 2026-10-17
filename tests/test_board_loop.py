@@ -1,5 +1,6 @@
 """The whole loop of the board in focus (docs/specs/29a-board-focus.md): an idea dropped, read by the batch, talked
-through, planned, started, its task a Claude session whose commit lands on `main` and on origin. A real Host on a
+through, planned, started, its task a Claude session whose commit lands on `dev` (made from `main` by the first task) and on origin; `main`
+waits for the Review gate (decisions §45). A real Host on a
 temp repository with a bare origin; `claude` is a stub on PATH that answers each kind of call."""
 from __future__ import annotations
 
@@ -78,7 +79,7 @@ def _until(host, check, what, seconds=60.0):
     raise AssertionError(f"never: {what}")
 
 
-def test_an_idea_goes_from_the_phone_to_a_commit_on_main_and_origin(town):
+def test_an_idea_goes_from_the_phone_to_a_commit_on_dev_and_origin_and_main_waits(town):
     host, repo, origin = town
     state = lambda slug: ideas.state(host.ideas.state_dir, slug)["state"]   # noqa: E731
     slug = host.command("ideas.add", {"text": "a feature file"})["slug"]
@@ -102,9 +103,10 @@ def test_an_idea_goes_from_the_phone_to_a_commit_on_main_and_origin(town):
     _until(host, lambda: state(slug) == "done", "the idea is done", seconds=120)
     task = ideas.plan(host.ideas.state_dir, slug)["tasks"][0]
     assert task["state"] == "merged" and task["commit"]
-    assert _git(repo, "log", "-1", "--format=%s", "main") == "Add the feature"
-    assert _git(origin, "log", "-1", "--format=%s", "main") == "Add the feature"
-    assert (repo / "feature.txt").read_text() == "built by the stub\n"   # main is checked out: fast-forwarded
+    assert _git(repo, "log", "-1", "--format=%s", "dev") == "Add the feature"
+    assert _git(origin, "log", "-1", "--format=%s", "dev") == "Add the feature"
+    assert _git(repo, "log", "-1", "--format=%s", "main") == "critical tests"     # main waits for the gate
+    assert not (repo / "feature.txt").exists()                                    # main is checked out, untouched
     board = host.command("ideas.board")
     assert next(i for i in board["ideas"] if i["slug"] == slug)["progress"] == {"done": 1, "total": 1}
 

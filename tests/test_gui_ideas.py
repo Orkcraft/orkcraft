@@ -166,7 +166,7 @@ def test_start_passes_the_plan_to_the_runner_and_stop_all_reaches_it(host, monke
     slug = host.command("ideas.add", {"text": "x"})["slug"]
     _plan(host, slug)
     host.command("ideas.start", {"slug": slug})
-    assert seen[:2] == [("made", "main"), ("start", slug)]
+    assert seen[:2] == [("made", "dev"), ("start", slug)]
     assert ideas.plan(host.ideas.state_dir, slug)["passed_at"]
     assert host.command("ideas.page", {"slug": slug})["state"] == "working"
     host.ideas.tick(1000.0)
