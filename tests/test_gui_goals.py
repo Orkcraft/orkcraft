@@ -14,7 +14,7 @@ from orkcraft.gui.host import CommandError, Host
 from orkcraft.realm import checkpoint, event_log, ideas, jobs
 
 NEW_COMMANDS = {"ideas.goal_save", "ideas.goal", "ideas.read_now", "ideas.roles", "ideas.role_save", "ideas.role_drop",
-                "ideas.kind_set"}
+                "ideas.kind_set", "ideas.doc"}
 GOAL = {"title": "Grow installs", "about": "More people try Orkline.", "priority": "high", "deadline": "2026-12-01",
         "metrics": [{"name": "weekly installs", "target": "50"}, {"name": "", "target": "x"}],
         "links": ["docs/specs/34-v1-round-2.md", "https://example.com/post", "docs/specs/34-v1-round-2.md"]}
@@ -232,3 +232,14 @@ def test_the_keepers_talk_and_plans_run_on_the_taskmasters_model(host, model):
     host.command("ideas.say", {"slug": slug, "text": "again"})
     _wait(host, slug)
     assert "haiku" in model.seen[-1]["model"]
+
+
+def test_a_linked_document_is_read_from_the_repository_or_the_wiki_only(host):
+    repo = Path(host.town.repo_root)
+    (repo / "notes.md").write_text("# Notes\nhello\n")
+    assert host.command("ideas.doc", {"path": "notes.md"}) == {"path": "notes.md", "text": "# Notes\nhello\n", "truncated": False}
+    slug = host.command("ideas.add", {"text": "an idea"})["slug"]
+    assert "an idea" in host.command("ideas.doc", {"path": f"pages/ideas/{slug}.md"})["text"]       # a Wiki page
+    for bad in ("../outside.md", "/etc/passwd", "nope.md", "https://example.com/x"):
+        with pytest.raises(CommandError):
+            host.command("ideas.doc", {"path": bad})

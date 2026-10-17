@@ -563,7 +563,7 @@ class Ideas(LimitsMixin, GoalsMixin, RolesMixin):
                  "ideas.merge": self.merge, "ideas.back": self.back, "ideas.drop_task": self.drop_task,
                  "ideas.stop_task": self.stop_task, "ideas.agents": self.agents, "ideas.task": self.task,
                  "ideas.into": self.into, "ideas.log": self.log, "ideas.logs": self.logs, "ideas.goal_save": self.goal_save,
-                 "ideas.goal": self.goal, "ideas.read_now": self.read_now, "ideas.roles": self.roles,
+                 "ideas.goal": self.goal, "ideas.read_now": self.read_now, "ideas.doc": self.doc, "ideas.roles": self.roles,
                  "ideas.role_save": self.role_save, "ideas.role_drop": self.role_drop, "ideas.kind_set": self.kind_set}
         return {name: guarded(fn) for name, fn in table.items()}
 

@@ -5,11 +5,15 @@ beside its page (`<state_dir>/goals/<slug>/`). Split from ideas.py to keep it un
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from orkcraft.core import idea_keeper
 from orkcraft.gui.ideas_args import IdeasError, _device, _opt, _text
 from orkcraft.realm import event_log, ideas
+
+
+DOC_CHARS = 100_000
 
 
 class GoalsMixin:
@@ -70,6 +74,22 @@ class GoalsMixin:
             raise IdeasError(str(e)) from None
         self.changed(slug)
         return {"ok": True}
+
+    def doc(self, args: dict) -> dict:
+        """A document a goal links, to show in the preview: a path in the repository or a page of the Wiki, read only,
+        cut at DOC_CHARS. Nothing outside those two folders; a URL is never fetched (the page opens it in the browser)."""
+        link = _text(args, "path", 300).split("#")[0]
+        if "://" in link:
+            raise IdeasError("A web link opens in the browser")
+        for base in (Path(self.town.repo_root), self.root()):
+            path = (base / link.lstrip("/")).resolve()
+            if path.is_file() and base.resolve() in path.parents:
+                try:
+                    text = path.read_text(encoding="utf-8")
+                except (OSError, UnicodeDecodeError):
+                    raise IdeasError("That file cannot be read as text") from None
+                return {"path": link, "text": text[:DOC_CHARS], "truncated": len(text) > DOC_CHARS}
+        raise IdeasError("That document is not in the repository or the Wiki")
 
     def goal_event(self, slug: str) -> None:
         """`goal_read` when a goal's reading ends (asks, ready, or raw: it could not)."""

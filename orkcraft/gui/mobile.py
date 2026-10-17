@@ -61,7 +61,7 @@ COMMANDS: dict[str, Any] = {
     **{f"ideas.{c}": None for c in ("board", "page", "add", "say", "plan", "start", "move", "edit", "track_add",
                                     "track_set", "todo", "drop", "stop", "review_list", "diff", "merge", "back", "drop_task",
                                     "stop_task", "agents", "task", "into", "log", "logs", "goal_save", "goal", "read_now", "roles",
-                                    "role_save", "role_drop", "kind_set")},
+                                    "role_save", "role_drop", "kind_set", "doc")},
     # an Agent pool: its ork's question answered (A2's, pinned on its task) and one ork stopped from the 🥩 list
     "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",), "fields": ("add",), "barracks": ("answer", "stop_ork")},
 }
