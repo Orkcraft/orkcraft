@@ -32,7 +32,7 @@ import { Portrait } from "./js/portrait.js";
 import { watchErrors } from "./js/crashes.js";
 import { CommentLayer, FixesDialog } from "./js/fixes.js";
 import { LastLook } from "./js/lastlook.js";
-import { Board } from "./js/board/board.js";
+import { Shell } from "./js/shell/shell.js";
 
 function App() {
   const t = town.value;
@@ -40,11 +40,15 @@ function App() {
   // Two looks, the person's (docs/design/portrait.md §3): Camp on the camp theme, Office, calm, on the office
   // theme (town.css draws both, office.css only Office). Camp's town is v3's rows and loop (js/camp/), Office's its
   // cards (js/town.js): one town, two drawings. The words are the same in both.
-  const look = t.look === "office" ? "office" : "camp";
+  // In focus (docs/specs/33-v1-shell.md §1) the window is always Office's calm look, whatever the person's `look` setting.
+  const look = t.focus === "board" || t.look === "office" ? "office" : "camp";
   const root = document.documentElement;
   if (root.dataset.look !== look) { root.dataset.look = look; root.dataset.theme = look; }
-  // In focus (docs/specs/29a-board-focus.md §1) the window is the board and a thin top bar: no town, no map.
-  if (t.focus === "board") return html`<div class="gui gui-board"><${Board} /><${Toasts} /></div>`;
+  // In focus (docs/specs/33-v1-shell.md §1) the window is the v1 shell: Board, Review, the preview and Agents — no town, no
+  // map. The first start shows the onboarding's first screen over it (js/onboarding.js), then the shell.
+  if (t.focus === "board") {
+    return html`<div class="gui gui-board">${t.onboarding ? html`<${Onboarding} />` : html`<${Shell} />`}<${ProjectAsked} /><${Toasts} /></div>`;
+  }
   const space = t.orkspaces.find((o) => o.id === t.active_orkspace);
   // The town's ground is the open orkspace's biome, its colour and its glyphs (docs/design/war-map.md §3).
   wearGround(space ? space.biome : "dirt", look);
