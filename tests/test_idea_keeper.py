@@ -178,3 +178,71 @@ def test_a_plan_with_no_task_goes_back_and_a_passed_plan_is_never_rewritten(keep
 def test_first_json_reads_through_prose():
     assert idea_keeper.first_json('x {bad} y {"a": 1} z') == {"a": 1}
     assert idea_keeper.first_json("[1, 2]") is None and idea_keeper.first_json("") is None
+
+
+def test_questions_as_choices_are_parsed_strictly():
+    parse = idea_keeper.parse_questions
+    out = parse([{"text": "Every screen?", "options": ["Yes", "Board only"], "recommended": 1, "why": "Smaller"},
+                 {"text": "Too many?", "options": ["a", "b", "c", "d", "e"], "recommended": 0, "why": "x"},
+                 {"text": "Long?", "options": ["ok", "x" * 200], "recommended": 0},
+                 {"text": "Bad index?", "options": ["a", "b"], "recommended": 7}])
+    assert out[0] == {"text": "Every screen?", "options": ["Yes", "Board only"], "recommended": 1, "why": "Smaller"}
+    assert out[1] == {"text": "Too many?", "options": [], "recommended": None, "why": ""}      # a free answer
+    assert out[2]["options"] == [] and len(out) == 3                                          # at most three
+    assert parse([{"text": "Bad index?", "options": ["a", "b"], "recommended": True}])[0]["recommended"] is None
+    assert parse(["A plain one?", {"text": ""}, 3, None, {"options": ["a", "b"]}]) == [
+        {"text": "A plain one?", "options": [], "recommended": None, "why": ""}]
+    assert parse("not a list") == [] and parse({"text": "x"}) == []
+
+
+def test_the_batch_stores_its_questions_as_choices_and_an_s_idea_gets_no_why(keeper):
+    slug = ideas.add_idea(keeper.root, "a csv export", state_dir=keeper.state)
+    keeper.call = model = Model({"gist": "Export the board as CSV.", "why": "Not for S", "size": "S", "track": "",
+                                 "questions": [{"text": "Which delimiter?", "options": ["Comma", "Semicolon"],
+                                                "recommended": 0, "why": "Most tools read it"}]})
+    keeper.read_one(slug)
+    assert '"options"' in model.asked[0]["prompt"] and "size S" in model.asked[0]["prompt"]
+    page = ideas.idea_page(keeper.root, slug)
+    assert page.section("Why") == "" and ideas.items(page.section("Open questions")) == ["Which delimiter?"]
+    assert ideas.questions(keeper.state, slug) == [{"id": "q1", "text": "Which delimiter?",
+                                                    "options": ["Comma", "Semicolon"], "recommended": 0,
+                                                    "why": "Most tools read it", "answer": None}]
+    assert ideas.state(keeper.state, slug)["state"] == "asks"
+
+
+def test_all_answers_go_to_the_talk_in_one_say_and_the_questions_are_cleared(keeper):
+    slug = ideas.add_idea(keeper.root, "a csv export", state_dir=keeper.state)
+    ideas.save_questions(keeper.state, slug, idea_keeper.parse_questions(
+        [{"text": "Which delimiter?", "options": ["Comma", "Semicolon"], "recommended": 0, "why": "w"},
+         "Where does the file go?"]))
+    keeper.call = model = Model({"reply": "Got both.", "sections": {"In": "CSV, comma, to Downloads."},
+                                 "decisions": ["Comma"], "questions": []})
+    assert keeper.answer(slug, "q1", choice=0) == 1
+    assert model.asked == [] and ideas.questions(keeper.state, slug)[0]["answer"] == "Comma"
+    assert keeper.answer(slug, "q2", text="Downloads") == 0
+    _wait(keeper, slug)
+    assert len(model.asked) == 1
+    assert "Which delimiter? → Comma\nWhere does the file go? → Downloads" in model.asked[0]["prompt"]
+    assert ideas.questions(keeper.state, slug) == []
+    assert ideas.idea_page(keeper.root, slug).section("In") == "CSV, comma, to Downloads."
+
+
+def test_a_refused_say_keeps_the_answers(keeper):
+    keeper.demo = True
+    slug = ideas.add_idea(keeper.root, "x", state_dir=keeper.state)
+    ideas.save_questions(keeper.state, slug, idea_keeper.parse_questions(["Q?"]))
+    with pytest.raises(KeeperError, match="demo"):
+        keeper.answer(slug, "q1", text="A")
+    assert [q["answer"] for q in ideas.questions(keeper.state, slug)] == ["A"]
+
+
+def test_the_talk_asks_an_s_idea_for_its_four_sections_only(keeper):
+    slug = ideas.add_idea(keeper.root, "tiny", state_dir=keeper.state)
+    ideas.set_meta(keeper.root, slug, size="S")
+    ideas.set_section(keeper.root, slug, "Risks", "One written already")
+    prompt = keeper.talk_prompt(keeper.root, slug, "go", "", True)
+    names = prompt.rsplit("Section names: ", 1)[1].split(".")[0]
+    assert names == "Gist, In, Out, Risks, Stages" and "size S" in prompt
+    ideas.set_meta(keeper.root, slug, size="M")
+    names = keeper.talk_prompt(keeper.root, slug, "go", "", True).rsplit("Section names: ", 1)[1].split(".")[0]
+    assert names == "Gist, Why, In, Out, Risks, Estimate, Stages"

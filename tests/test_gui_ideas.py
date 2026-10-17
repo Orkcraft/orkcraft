@@ -13,10 +13,11 @@ from orkcraft.core import idea_keeper
 from orkcraft.gui import ideas as gui_ideas
 from orkcraft.gui import mobile
 from orkcraft.gui.host import CommandError, Host
-from orkcraft.realm import checkpoint, idea_secrets, ideas, jobs
+from orkcraft.realm import checkpoint, idea_merged, idea_secrets, ideas, jobs
 
 BOARD_COMMANDS = {"ideas.board", "ideas.page", "ideas.add", "ideas.say", "ideas.plan", "ideas.start", "ideas.move",
-                  "ideas.edit", "ideas.track_add", "ideas.track_set", "ideas.todo", "ideas.drop", "ideas.stop"}
+                  "ideas.edit", "ideas.track_add", "ideas.track_set", "ideas.todo", "ideas.drop", "ideas.stop",
+                  "ideas.seen", "ideas.revert", "ideas.answer"}
 
 
 @pytest.fixture
@@ -63,10 +64,12 @@ def test_drop_an_idea_and_read_the_board_and_its_page(host):
     assert i["slug"] == slug and i["state"] == "raw" and i["thesis"] == "Dark mode" and i["track"] == "general"
     assert i["progress"] == {"done": 0, "total": 0} and i["updated"]
     assert set(i) == {"slug", "title", "track", "order", "state", "size", "thesis", "asks", "progress", "updated"}
-    assert board["today"] == {"todos": [], "needs_you": []} and board["batch_next"] and board["rev"] > rev
+    assert board["today"] == {"todos": [], "needs_you": [], "merged": [], "merged_more": 0} and board["batch_next"] and board["rev"] > rev
     page = host.command("ideas.page", {"slug": slug})
     assert [s["name"] for s in page["sections"]] == list(ideas.SECTIONS)
-    assert page["sections"][0] == {"name": "Gist", "thesis": "Dark mode", "text": "Dark mode\nfor the night"}
+    assert page["sections"][0] == {"name": "Gist", "thesis": "Dark mode", "text": "Dark mode\nfor the night",
+                                   "shown": True}
+    assert all(s["shown"] for s in page["sections"]) and page["questions"] == []
     assert page["talk"][0]["who"] == "you" and page["plan"] is None and page["busy"] is False
     assert (Path(host.town.repo_root) / "llm-wiki/general/pages/ideas" / f"{slug}.md").exists()
     with pytest.raises(CommandError, match="gone"):
@@ -242,3 +245,103 @@ def test_a_lost_reading_shows_as_new(host):
 def test_the_snapshot_writes_nothing_into_a_town_that_has_no_board_yet(host):
     host.snapshot()
     assert not (Path(host.town.repo_root) / "llm-wiki").exists()
+
+
+def _merged(host, slug, n, cost=0.1):
+    idea_merged.add(host.ideas.state_dir, {"idea": slug, "task": f"k{n}", "title": f"Task {n}", "goal": "Goal",
+                                           "subject": f"Subject {n}", "commit": f"{n:07x}", "tests": "3 passed",
+                                           "cost": cost, "estimate": [0.1, 0.3], "at": "2026-10-17T09:00:00"})
+
+
+def test_the_board_lists_what_merged_unseen_and_looked_clears_it(host):
+    slug = host.command("ideas.add", {"text": "x"})["slug"]
+    for n in range(1, 23):
+        _merged(host, slug, n)
+    today = host.command("ideas.board")["today"]
+    assert len(today["merged"]) == 20 and today["merged_more"] == 2 and today["merged"][0]["task"] == "k22"
+    line = today["merged"][0]
+    assert {k: line[k] for k in ("goal", "subject", "tests", "cost", "estimate", "seen", "reverted", "reverting")} == {
+        "goal": "Goal", "subject": "Subject 22", "tests": "3 passed", "cost": 0.1, "estimate": [0.1, 0.3],
+        "seen": False, "reverted": False, "reverting": False}
+    rev = host.ideas.rev
+    assert host.command("ideas.seen", {"idea": slug, "task": "k22"}) == {"ok": True} and host.ideas.rev > rev
+    assert host.command("ideas.board")["today"]["merged"][0]["task"] == "k21"
+    assert host.command("ideas.seen", {}) == {"ok": True}
+    assert host.command("ideas.board")["today"]["merged"] == []
+
+
+def test_revert_runs_on_its_own_thread_and_a_failure_is_a_toast(host, monkeypatch):
+    slug = host.command("ideas.add", {"text": "x"})["slug"]
+    with pytest.raises(CommandError, match="Nothing of that task"):
+        host.command("ideas.revert", {"idea": slug, "task": "k1"})
+    _merged(host, slug, 1)
+    done, toasts = [], []
+
+    class Runner:
+        def working(self, slug):
+            return False
+
+        def reverting(self):
+            return set()
+
+        def revert(self, slug, task):
+            done.append((slug, task))
+            return {"error": "Not reverted, main is as it was: conflicts"}
+
+    host.ideas._runner = Runner()
+    host.town.call = lambda fn, *a: fn()
+    monkeypatch.setattr(host.town, "toast", lambda text, **kw: toasts.append((text, kw)))
+    assert host.command("ideas.revert", {"idea": slug, "task": "k1"}) == {"ok": True}
+    for _ in range(200):
+        if toasts:
+            break
+        time.sleep(0.01)
+    assert done == [(slug, "k1")] and "conflicts" in toasts[0][0] and toasts[0][1]["severity"] == "error"
+
+
+def test_answers_through_the_host_and_the_page_carries_questions_and_shown_sections(host, monkeypatch):
+    slug = host.command("ideas.add", {"text": "tiny thing"})["slug"]
+    ideas.set_meta(host.ideas.root(), slug, size="S")
+    ideas.save_questions(host.ideas.state_dir, slug, idea_keeper.parse_questions(
+        [{"text": "Which?", "options": ["A", "B"], "recommended": 1, "why": "B is smaller"}, "Name?"]))
+    page = host.command("ideas.page", {"slug": slug})
+    assert [s["name"] for s in page["sections"] if s["shown"]] == ["Gist", "In", "Out", "Stages"]
+    assert page["questions"][0] == {"id": "q1", "text": "Which?", "options": ["A", "B"], "recommended": 1,
+                                    "why": "B is smaller", "answer": None}
+    said = []
+    monkeypatch.setattr(host.ideas.keeper, "say", lambda slug, text, section="": said.append(text))
+    assert host.command("ideas.answer", {"slug": slug, "id": "q1", "choice": 1}) == {"ok": True, "left": 1}
+    with pytest.raises(CommandError, match="not a number"):
+        host.command("ideas.answer", {"slug": slug, "id": "q2", "choice": "1"})
+    with pytest.raises(CommandError, match="a choice or a few words"):
+        host.command("ideas.answer", {"slug": slug, "id": "q2"})
+    assert host.command("ideas.answer", {"slug": slug, "id": "q2", "text": "Zed"}) == {"ok": True, "left": 0}
+    assert said == ["My answers to your questions:\nWhich? → B\nName? → Zed"]
+    assert host.command("ideas.page", {"slug": slug})["questions"] == []
+
+
+def test_only_what_blocks_pushes_and_the_rest_waits_for_the_digest(host, monkeypatch):
+    import datetime as dt
+    slug = host.command("ideas.add", {"text": "phone idea"})["slug"]
+    _plan(host, slug)
+    before = mobile.phone_snapshot(host)
+    ideas.save_state(host.ideas.state_dir, slug, state="done")
+    host.ideas.changed(slug)
+    done = mobile.phone_snapshot(host)
+    assert mobile.news(before, done) == []                                   # done waits for the digest
+    ideas.save_state(host.ideas.state_dir, slug, state="working")
+    ideas.edit_plan(host.ideas.state_dir, slug, lambda p: p["tasks"][0].update(state="held", note="after 18:00"))
+    host.ideas.changed(slug)
+    held = mobile.phone_snapshot(host)
+    assert mobile.news(done, held) == [{"kind": "idea", "slug": slug, "title": "phone idea", "state": "held"}]
+    hour = dt.datetime.now().hour
+    host.town.machine.ideas["digest_hours"] = [hour]
+    _merged(host, slug, 1, cost=0.5)
+    ideas.save_state(host.ideas.state_dir, slug, state="done")
+    host.ideas.changed(slug)
+    digest = mobile.phone_snapshot(host)
+    assert digest["digest"]["merged"] == 1 and digest["digest"]["done"] == 1
+    assert mobile.news(held, digest) == [{"kind": "digest", "merged": 1, "done": 1, "spent": "$0.50"}]
+    assert mobile.news(digest, mobile.phone_snapshot(host)) == []            # once an hour
+    host.town.machine.ideas["digest_hours"] = [(hour + 1) % 24]
+    assert mobile.phone_snapshot(host)["digest"] is None

@@ -11,7 +11,8 @@ is read as it is, and a write keeps every section and front matter key it does n
     move(root, slug, track="ux", before="other-idea")
 
 What runs on an idea lives beside the page, never in it: `<state_dir>/ideas/<slug>/` holds `state.json` (its
-state, the keeper's session), `talk.jsonl` (every turn, the archive: never read back into a model) and `plan.json`.
+state, the keeper's session), `talk.jsonl` (every turn, the archive: never read back into a model), `plan.json` and
+`questions.json` (the keeper's questions as choices, and the person's answers: spec 29c §2).
 
 No face, no model.
 """
@@ -29,6 +30,7 @@ SECTIONS = ("Gist", "Why", "In", "Out", "Risks", "Open questions", "Estimate", "
 TRACK_SECTIONS = ("About", "Success criteria")
 STATES = ("raw", "reading", "asks", "ready", "planning", "plan", "working", "done", "failed")
 SIZES = ("S", "M", "L")
+SMALL = ("Gist", "In", "Out", "Stages")   # what a size S idea shows; its other sections only when written (29c §3)
 GENERAL, GENERAL_TITLE = "general", "General"
 TRACKS, IDEAS = "pages/tracks", "pages/ideas"
 OWNER = "board"
@@ -139,6 +141,11 @@ def thesis(text: str) -> str:
         if line:
             return line[:200]
     return ""
+
+
+def shown(size: str, name: str, text: str) -> bool:
+    """Whether the page shows a section at once (29c §3): a size S idea its four, the others only when written."""
+    return size != "S" or name in SMALL or bool((text or "").strip())
 
 
 def items(text: str) -> list[str]:
@@ -511,11 +518,61 @@ def edit_plan(state_dir: Path, slug: str, change) -> dict:
     return data
 
 
+def questions(state_dir: Path, slug: str) -> list[dict]:
+    """The keeper's open questions as choices: `[{"id", "text", "options", "recommended", "why", "answer"}]`."""
+    try:
+        data = json.loads((state_folder(state_dir, slug) / "questions.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    out = []
+    for q in data if isinstance(data, list) else []:
+        if not isinstance(q, dict) or not isinstance(q.get("text"), str) or not isinstance(q.get("id"), str):
+            continue
+        options = [o for o in q.get("options") or [] if isinstance(o, str)] if isinstance(q.get("options"), list) else []
+        rec = q.get("recommended")
+        out.append({"id": q["id"], "text": q["text"], "options": options,
+                    "recommended": rec if isinstance(rec, int) and not isinstance(rec, bool)
+                    and 0 <= rec < len(options) else None,
+                    "why": str(q.get("why") or ""),
+                    "answer": q["answer"] if isinstance(q.get("answer"), str) else None})
+    return out
+
+
+def save_questions(state_dir: Path, slug: str, asked: list[dict]) -> list[dict]:
+    """The questions anew (ids q1…, no answers yet): from the keeper's parsed answer, or [] to clear them."""
+    rows = [{"id": f"q{n}", "text": q["text"], "options": list(q.get("options") or []),
+             "recommended": q.get("recommended"), "why": q.get("why") or "", "answer": None}
+            for n, q in enumerate(asked, start=1)]
+    with LOCK:
+        _write(state_folder(state_dir, slug) / "questions.json", json.dumps(rows, indent=2, ensure_ascii=False) + "\n")
+    return rows
+
+
+def answer(state_dir: Path, slug: str, qid: str, choice: object = None, text: object = None) -> list[dict]:
+    """The person's answer to one question: one of its options (`choice`, an index) or their own words (`text`).
+    The questions as they are now."""
+    with LOCK:
+        asked = questions(state_dir, slug)
+        q = next((q for q in asked if q["id"] == qid), None)
+        if q is None:
+            raise ValueError("That question is gone")
+        if isinstance(choice, int) and not isinstance(choice, bool):
+            if not 0 <= choice < len(q["options"]):
+                raise ValueError("Pick one of its answers")
+            q["answer"] = q["options"][choice]
+        elif isinstance(text, str) and text.strip():
+            q["answer"] = " ".join(text.split())[:500]
+        else:
+            raise ValueError("An answer needs a choice or a few words")
+        _write(state_folder(state_dir, slug) / "questions.json", json.dumps(asked, indent=2, ensure_ascii=False) + "\n")
+    return asked
+
+
 def touched_at(root: Path, state_dir: Path, slug: str) -> str:
     """When the idea last changed: its page or its state, whichever is newer."""
     paths = [root / IDEAS / f"{slug}.md"]
     folder = state_dir / "ideas" / slug
-    paths += [folder / n for n in ("state.json", "talk.jsonl", "plan.json")]
+    paths += [folder / n for n in ("state.json", "talk.jsonl", "plan.json", "questions.json")]
     times = [p.stat().st_mtime for p in paths if p.exists()]
     return dt.datetime.fromtimestamp(max(times)).isoformat(timespec="seconds") if times else ""
 

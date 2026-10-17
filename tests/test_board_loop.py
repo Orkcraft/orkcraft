@@ -108,3 +108,18 @@ def test_an_idea_goes_from_the_phone_to_a_commit_on_main_and_origin(town):
     board = host.command("ideas.board")
     assert next(i for i in board["ideas"] if i["slug"] == slug)["progress"] == {"done": 1, "total": 1}
 
+
+    # after the merge (spec 29c §1): it is on the board unseen, and one Revert undoes it on main and origin
+    (line,) = board["today"]["merged"]
+    assert line["idea"] == slug and line["task"] == "k1" and line["subject"] == "Add the feature"
+    assert line["goal"] == "Write feature.txt and commit it." and line["tests"] == "3 passed"
+    assert host.command("ideas.revert", {"idea": slug, "task": "k1"}) == {"ok": True}
+    _until(host, lambda: state(slug) == "failed", "the revert lands", seconds=120)
+    assert _git(repo, "log", "-1", "--format=%s", "main") == 'Revert "Add the feature"'
+    assert _git(origin, "log", "-1", "--format=%s", "main") == 'Revert "Add the feature"'
+    assert not (repo / "feature.txt").exists()
+    board = host.command("ideas.board")
+    assert board["today"]["merged"] == []
+    assert {"idea": slug, "kind": "failed", "title": board["ideas"][0]["title"],
+            "text": "Reverted: Add the feature"} in board["today"]["needs_you"]
+    assert ideas.plan(host.ideas.state_dir, slug)["tasks"][0]["state"] == "reverted"

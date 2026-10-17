@@ -59,14 +59,15 @@ COMMANDS: dict[str, Any] = {
     "cart.waybill": None,
     # the board in focus (spec 29a §6): every board command, the phone first (decisions §43.10)
     **{f"ideas.{c}": None for c in ("board", "page", "add", "say", "plan", "start", "move", "edit", "track_add",
-                                    "track_set", "todo", "drop", "stop")},
+                                    "track_set", "todo", "drop", "stop", "seen", "revert", "answer")},
     # an Agent pool: its ork's question answered (A2's, pinned on its task) and one ork stopped from the 🥩 list
     "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",), "fields": ("add",), "barracks": ("answer", "stop_ork")},
 }
 _BY_BUILDING = {"act", "building.input"}    # the commands `allowed` checks against the building they name
 
 _LEVELS = {"ok": 0, "warn": 1, "over": 2}
-IDEA_NEWS = ("asks", "plan", "failed", "done")    # an idea that enters one of these states: a push
+# an idea that enters one of these states: a push; what merged and finished waits for the digest (spec 29c §4)
+IDEA_NEWS = ("asks", "plan", "failed", "held")
 
 # Quick actions a phone never presses: they read the computer (its clipboard, a path on it).
 QUICK_NEVER = frozenset({"pit.paste", "knowledge.add"})
@@ -387,9 +388,18 @@ def compact(full: dict[str, Any], last_look: dict[str, Any] | None = None) -> di
         "needs_you": int(full.get("needs_you") or 0),
         "idea_states": [{k: str(i.get(k, "")) for k in ("slug", "title", "state")}
                         for i in full.get("idea_states") or []],
+        "digest": _digest(full.get("digest")),
     }
     out["rev"] = hashlib.sha256(json.dumps(out, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
     return out
+
+
+def _digest(d: object) -> dict[str, Any] | None:
+    """The board's digest of this hour (spec 29c §4): what merged and finished unseen, what it cost."""
+    if not isinstance(d, dict) or not d.get("at"):
+        return None
+    return {"at": str(d["at"]), "merged": int(d.get("merged") or 0), "done": int(d.get("done") or 0),
+            "spent": str(d.get("spent") or "$0.00")}
 
 
 def phone_snapshot(host) -> dict[str, Any]:
@@ -428,6 +438,9 @@ def news(before: dict[str, Any] | None, after: dict[str, Any]) -> list[dict[str,
     for i in after.get("idea_states") or []:
         if i["state"] in IDEA_NEWS and was_in.get(i["slug"]) != i["state"]:
             out.append({"kind": "idea", "slug": i["slug"], "title": i["title"], "state": i["state"]})
+    digest = after.get("digest")
+    if digest and (before.get("digest") or {}).get("at") != digest["at"]:
+        out.append({"kind": "digest", **{k: digest[k] for k in ("merged", "done", "spent")}})
     old, new = before.get("hud") or {}, after.get("hud") or {}
     for key in ("gold_level", "quota_level"):
         was, now = _LEVELS.get(old.get(key) or "ok", 0), _LEVELS.get(new.get(key) or "ok", 0)

@@ -148,3 +148,28 @@ def test_a_secret_goes_to_the_store_never_to_the_plan(tmp_path):
     assert idea_secrets.get(state, "idea", "t1") is None
     with pytest.raises(ValueError):
         idea_secrets.put(state, "../x", "t1", "v")
+
+
+def test_questions_are_kept_beside_the_page_and_answered_by_a_choice_or_words(tmp_path):
+    asked = [{"text": "Every screen?", "options": ["Yes", "Board only"], "recommended": 1, "why": "Smaller"},
+             {"text": "Name?", "options": [], "recommended": None, "why": ""}]
+    rows = ideas.save_questions(tmp_path, "demo", asked)
+    assert [q["id"] for q in rows] == ["q1", "q2"] and all(q["answer"] is None for q in rows)
+    assert ideas.questions(tmp_path, "demo") == rows
+    ideas.answer(tmp_path, "demo", "q1", choice=1)
+    with pytest.raises(ValueError, match="Pick one"):
+        ideas.answer(tmp_path, "demo", "q1", choice=5)
+    with pytest.raises(ValueError, match="a choice or a few words"):
+        ideas.answer(tmp_path, "demo", "q2", text="  ")
+    with pytest.raises(ValueError, match="gone"):
+        ideas.answer(tmp_path, "demo", "q9", text="x")
+    out = ideas.answer(tmp_path, "demo", "q2", text="  call it   csv ")
+    assert [q["answer"] for q in out] == ["Board only", "call it csv"]
+    ideas.save_questions(tmp_path, "demo", [])
+    assert ideas.questions(tmp_path, "demo") == [] and ideas.questions(tmp_path, "none") == []
+
+
+def test_a_size_s_idea_shows_its_four_sections_and_the_others_only_when_written():
+    assert [n for n in ideas.SECTIONS if ideas.shown("S", n, "")] == ["Gist", "In", "Out", "Stages"]
+    assert ideas.shown("S", "Risks", "It may glare") and not ideas.shown("S", "Risks", "  \n")
+    assert all(ideas.shown(size, n, "") for size in ("M", "L", "") for n in ideas.SECTIONS)
