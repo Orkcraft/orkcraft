@@ -19,9 +19,10 @@ own folder (default `llm-wiki/<topic>/`) with its own rules:
                        (committed): the fingerprint of every source the wiki has taken in
 
 Pages are shared: a page whose front matter says `owner: human` (or that carries
-`<!-- manual -->`) is the people's — the orc reads it and suggests in proposals.md, the harness
-puts it back if the orc touched it anyway. A page with edits not yet committed is treated the
-same for that run. Everything the orc writes is committed with the librarian as its author.
+`<!-- manual -->`) is the people's, and one that says `owner: board` the Task board's (its tracks
+and ideas) — the orc reads it and suggests in proposals.md, the harness puts it back if the orc
+touched it anyway. A page with edits not yet committed is treated the same for that run.
+Everything the orc writes is committed with the librarian as its author.
 Pure module, no Textual.
 """
 from __future__ import annotations
@@ -48,7 +49,8 @@ MAX_ITEMS = 60                  # sources per ingest: the rest wait for the next
 RAW_CHARS = 200_000
 CONTEXT_CHARS = 6000
 AUTHOR = "Scroll Scrapper (orkcraft) <librarian@orkcraft.local>"
-_MANUAL = re.compile(r"^owner:\s*[\"']?human[\"']?\s*$|<!--\s*manual\s*-->", re.M | re.I)
+# a page people own, or the board's (its tracks and ideas: spec 29 §2): the librarian reads it, never rewrites it
+_MANUAL = re.compile(r"^owner:\s*[\"']?(?:human|board)[\"']?\s*$|<!--\s*manual\s*-->", re.M | re.I)
 
 # -- the rules of each topic ------------------------------------------------------------------------
 

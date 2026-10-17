@@ -164,13 +164,17 @@ def context_of(harness: str, session: str, workdir: Path) -> int:
 def run_read(harness: str, prompt: str, workdir: Path, cancel: threading.Event, model: str = "",
              env: dict | None = None, resume: str = "",
              timeout_s: int = WORK_TIMEOUT_S) -> tuple[str, float | None, int | None, str]:
-    """(text, cost, tokens, "") of an agent that only reads, in `workdir` (harness mode `read`: no terminal, no
-    file edits) — an Agent pool's reply (docs/design/barracks-flows.md §7). It starts fresh: no session."""
+    """(text, cost, tokens, session) of an agent that only reads, in `workdir` (harness mode `read`: no terminal, no
+    file edits) — an Agent pool's reply (docs/design/barracks-flows.md §7). It starts fresh unless `resume` names a
+    session of a tool that can reopen one (the board's keeper: one session per idea, spec 29a §4); `session` is
+    the one it ran in, "" when the tool does not say."""
     harness = roads.resolve(harness)
     h = harnesses.get(harness)
     if h is None:
         raise RuntimeError(f"harness {harness!r} cannot read")
     cmd = h.read(prompt, workdir, model, False)
+    if resume and h.read_session:
+        cmd = cmd + h.read_session(resume, True)
     run_env = {**os.environ, **h.env("read", workdir), **(env or {})}
     start = time.monotonic()
     code, out, err = call_log.answer("read", prompt) or road_agents.run_proc(
@@ -179,15 +183,15 @@ def run_read(harness: str, prompt: str, workdir: Path, cancel: threading.Event, 
     if code != 0:
         call_log.record(env, "read", harness, model, prompt, out, err, code, time.monotonic() - start, workdir=workdir)
         raise roads.failure(harness, code, out, err)
-    text, cost, tokens, _session = roads.result_of(harness, out, 0, model)
+    text, cost, tokens, session = roads.result_of(harness, out, 0, model)
     call_log.record(env, "read", harness, model, prompt, out, err, code, time.monotonic() - start, cost, tokens,
-                    workdir=workdir)
+                    session, workdir)
     what = dict(tokens=tokens, building=telemetry.building_of(run_env), model=model)
     if not telemetry.charged(run_env):
         telemetry.charge(cost, f"{harness} reader", **what)
     else:
         telemetry.noted(cost, f"{harness} reader", **what)
-    return text, cost, tokens, ""
+    return text, cost, tokens, session
 
 
 class Log:

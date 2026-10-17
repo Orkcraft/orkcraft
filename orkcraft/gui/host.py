@@ -29,7 +29,7 @@ from orkcraft.core.sessions import Sessions
 from orkcraft.core.town import Town
 from orkcraft.core.treasury import Treasury
 from orkcraft.design import ui
-from orkcraft.gui import (accounts, awake, away, bench, builder, console, day_logs, day_review, failures, fixes, github, growth, history, mission, mobile, nightly, onboarding, projects,
+from orkcraft.gui import (accounts, awake, away, bench, builder, console, day_logs, day_review, failures, fixes, github, growth, history, ideas, mission, mobile, nightly, onboarding, projects,
                           state, town_settings, updates, views, waybill, you)
 from orkcraft.gui.views import lake as lake_view
 from orkcraft import schedule
@@ -146,6 +146,8 @@ class Host:
         self.commands.update(self.onboarding.commands())
         self.mission = mission.MissionFace(self)        # Mission 1's quest log (gui/mission.py, core/mission.py)
         self.commands.update(self.mission.commands())
+        self.ideas = ideas.Ideas(self)                  # the board in focus: tracks, ideas, the keeper (gui/ideas.py)
+        self.commands.update(self.ideas.commands())
         # "Since your last look" (core/last_look.py): the page beats while it is in front of the person
         self.last_look = last_look.LastLook(self.town, self.muster, self.limits,
                                             lambda: treasury.subscriptions(self.town.machine))
@@ -183,6 +185,7 @@ class Host:
         snap["onboarding"] = self.onboarding.snapshot()    # the first run's steps and the town going up (js/onboarding.js)
         snap["mission"] = self.mission.snapshot()          # Mission 1's quest under way (js/mission.js)
         snap["last_look"] = self.last_look.snapshot()      # what greets the person back (js/lastlook.js)
+        snap.update(self.ideas.snapshot())                 # focus, ideas_rev, needs_you (gui/ideas.py)
         return snap
 
     def limits(self) -> list:
@@ -291,6 +294,7 @@ class Host:
         self.updates.tick(now)
         self.onboarding.tick(now)
         self.mission.tick()
+        self.ideas.tick(now)
 
     def _wakes(self, now: float) -> None:
         """A script-first building's ork wakes on an error or a 👎 (core/wakes.py), as its keeper's job."""
@@ -413,7 +417,7 @@ class Host:
             result = fn(args)
         except (console.ConsoleError, growth.GrowthError, updates.UpdateError, onboarding.OnboardingError,
                 you.YouError, accounts.AccountsError, github.GithubCommandError, bench.BenchError, projects.ProjectCommandError,
-                history.HistoryError, fixes.FixError, mission.MissionError) as e:
+                history.HistoryError, fixes.FixError, mission.MissionError, ideas.IdeasError) as e:
             raise CommandError(str(e)) from None
         self._used(name, args, result)
         return result
@@ -593,6 +597,7 @@ class Host:
     def _halt(self, args: dict) -> int:
         """🛑 Halt All: every session interrupted, every agent process killed, the buildings' work stopped."""
         buildings = self.town.halt()               # first: nothing that ends below starts its next step
+        self.ideas.stop_all()
         stopped = self.sessions.interrupt_all() + max(halt.halt_all(), buildings)
         self.town.toast(f"Stopped {stopped} building{'s' if stopped != 1 else ''}" if stopped
                         else "Nothing was running", title="Halt All")
