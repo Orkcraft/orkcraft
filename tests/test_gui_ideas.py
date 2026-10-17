@@ -18,7 +18,7 @@ from orkcraft.realm import checkpoint, idea_secrets, ideas, jobs
 BOARD_COMMANDS = {"ideas.board", "ideas.page", "ideas.add", "ideas.say", "ideas.plan", "ideas.start", "ideas.move",
                   "ideas.edit", "ideas.track_add", "ideas.track_set", "ideas.todo", "ideas.drop", "ideas.stop",
                   "ideas.review_list", "ideas.diff", "ideas.merge", "ideas.back", "ideas.drop_task",
-                  "ideas.stop_task", "ideas.agents", "ideas.task", "ideas.into"}
+                  "ideas.stop_task", "ideas.agents", "ideas.task", "ideas.into", "ideas.log", "ideas.logs"}
 
 
 @pytest.fixture
@@ -148,7 +148,7 @@ def test_start_passes_the_plan_to_the_runner_and_stop_all_reaches_it(host, monke
     seen = []
 
     class FakeRunner:
-        def __init__(self, repo_root, state_dir, settings, bus):
+        def __init__(self, repo_root, state_dir, settings, bus, **kw):
             seen.append(("made", settings.ideas["merge_into"]))
             self.bus = bus
 
@@ -336,20 +336,20 @@ def test_the_answers_at_review_reach_the_runner_and_its_refusals_are_plain_words
     seen = []
 
     class FakeRunner:
-        def __init__(self, *a):
+        def __init__(self, *a, **k):
             pass
 
-        def merge(self, slug, tid):
+        def merge(self, slug, tid, device=""):
             seen.append(("merge", slug, tid))
             return "abc123"
 
-        def back(self, slug, tid, why):
+        def back(self, slug, tid, why, device=""):
             seen.append(("back", slug, tid, why))
 
-        def drop_task(self, slug, tid):
+        def drop_task(self, slug, tid, device=""):
             seen.append(("drop", slug, tid))
 
-        def stop_task(self, slug, tid):
+        def stop_task(self, slug, tid, device=""):
             seen.append(("stop", slug, tid))
 
         def log(self, slug, tid):
@@ -368,7 +368,7 @@ def test_the_answers_at_review_reach_the_runner_and_its_refusals_are_plain_words
         host.command("ideas.back", a)
 
     class Refusing(FakeRunner):
-        def merge(self, slug, tid):
+        def merge(self, slug, tid, device=""):
             raise type("RunnerError", (Exception,), {})("Its tests are red: send it back")
 
     host.ideas._runner = Refusing()
@@ -391,3 +391,99 @@ def test_into_sets_the_branch_made_when_missing_and_the_push_switch(host):
         host.command("ideas.into", {"branch": "bad name"})
     with pytest.raises(CommandError, match="branch is missing"):
         host.command("ideas.into", {})
+
+
+# -- spec 33 §9: every action logged ----------------------------------------------------------------------------
+
+import io
+import zipfile
+
+from orkcraft.realm import event_log
+
+
+def _events(host, *names):
+    return [r for r in event_log.read(Path(host.town.repo_root)) if not names or r["event"] in names]
+
+
+def test_each_action_writes_its_event_with_its_fields_and_the_device(host):
+    slug = host.command("ideas.add", {"text": "Dark mode for the night", "track": "general"})["slug"]
+    (e,) = _events(host, "idea_added")
+    assert e["idea"] == slug and e["track"] == "general" and e["chars"] == 23 and e["device"] == "desktop"
+    host.command("ideas.say", {"slug": slug, "text": "Does it follow the system?", "section": "Risks", "device": "phone"})
+    _wait(host, slug)
+    (e,) = _events(host, "idea_said")
+    assert e["section"] == "Risks" and e["text"] == "Does it follow the system?" and e["chars"] == 26 and e["device"] == "phone"
+    assert e["device"] == "phone"                                   # the phone listener puts it there (mobile.guard)
+    assert mobile.guard("ideas.say", {"slug": "x", "device": "desktop"}, {"id": "p", "name": "P"})["device"] == "phone"
+    host.command("ideas.into", {"push": True})
+    (e,) = _events(host, "into_changed")
+    assert e["branch"] == "dev" and e["push"] is True and e["device"] == "desktop"
+
+
+def test_the_keepers_states_and_the_plan_are_logged_and_a_secret_never(host, monkeypatch):
+    slug = host.command("ideas.add", {"text": "x"})["slug"]
+    todos = [{"id": "t1", "title": "API_KEY", "kind": "secret", "why": "", "choices": [], "steps": [], "for": ["k1"], "done": False, "value": None}]
+    _plan(host, slug, todos)
+    host.ideas.changed(slug)
+    (made,) = _events(host, "plan_made")
+    assert made["idea"] == slug and made["tasks"] == 1 and made["todos"] == 1 and made["usd_low"] == 0.15
+    states = [(r["state"], r["was"]) for r in _events(host, "keeper_state")]
+    assert ("plan", "raw") in states or states[-1][0] == "plan"
+
+    class Runner:
+        def __init__(self, *a, **k):
+            pass
+
+        def start(self, slug):
+            pass
+
+        def stop_all(self):
+            pass
+    monkeypatch.setitem(sys.modules, "orkcraft.core.idea_runner", types.SimpleNamespace(IdeaRunner=Runner))
+    host.command("ideas.todo", {"idea": slug, "id": "t1", "done": True, "value": "s3cr3t-value"})
+    (done,) = _events(host, "todo_done")
+    assert done["todo"] == "t1" and done["kind"] == "secret" and done["seconds"] is not None
+    host.command("ideas.start", {"slug": slug})
+    (passed,) = _events(host, "plan_passed")
+    assert passed["idea"] == slug and passed["tasks"] == 1 and passed["seconds"] is not None
+    host.command("halt")
+    (stop,) = _events(host, "stop_all")
+    assert stop["device"] == "desktop"
+    assert "s3cr3t-value" not in event_log.path(Path(host.town.repo_root)).read_text()
+
+
+def test_opened_goes_through_ideas_log_and_nothing_else_does(host):
+    assert host.command("ideas.log", {"event": "opened", "what": "result", "ref": "sync/k2"}) == {"ok": True}
+    (e,) = _events(host, "opened")
+    assert (e["what"], e["ref"], e["device"]) == ("result", "sync/k2", "desktop")
+    for bad in ({"event": "idea_added", "what": "idea"}, {"event": "stop_all"}, {"event": "nope"}, {"event": "opened", "what": "elsewhere"}):
+        with pytest.raises(CommandError):
+            host.command("ideas.log", bad)
+    assert len(_events(host)) == 1
+
+
+def test_the_logs_zip_holds_the_events_the_ideas_and_no_secret(host):
+    slug = host.command("ideas.add", {"text": "Logs idea"})["slug"]
+    _plan(host, slug)
+    (host.ideas.state_dir / "ideas" / slug / "k1.log").write_text("== round 1\nthe key was ••••\n")
+    host.command("ideas.log", {"event": "opened", "what": "tab", "ref": "review"})
+    name, data = host.day_logs.pack_period(1)
+    z = zipfile.ZipFile(io.BytesIO(data))
+    names = z.namelist()
+    assert "events.jsonl" in names and f"ideas/{slug}/plan.json" in names and f"ideas/{slug}/state.json" in names
+    assert f"ideas/{slug}/k1.log" in names
+    assert b'"event": "opened"' in z.read("events.jsonl")
+    got = host.command("ideas.logs", {"days": 1})
+    assert got["name"].endswith(".zip") and zipfile.ZipFile(io.BytesIO(__import__("base64").b64decode(got["data"]))).namelist()
+
+
+def test_a_keeper_calls_record_names_its_idea_so_the_two_logs_join(tmp_path):
+    from orkcraft.realm import call_log
+    call_log.keep_days(tmp_path)
+    try:
+        call_log.record({"ORKCRAFT_ORC": "board/keeper", "ORKCRAFT_IDEA": "dark-mode"}, "read", "claude", "m", "p", "o", "", 0, 1.0)
+        call_log.record({"ORKCRAFT_ORC": "ideas/dark-mode-k1", "ORKCRAFT_IDEA": "dark-mode", "ORKCRAFT_TASK": "k1"}, "work", "claude", "m", "p", "o", "", 0, 1.0)
+        lines = [x for b in (tmp_path / call_log.DAYS).rglob(call_log.LINES) for x in call_log.read(b.parent)]
+    finally:
+        call_log.keep_days(None)
+    assert {(x.get("idea"), x.get("task")) for x in lines} == {("dark-mode", None), ("dark-mode", "k1")}

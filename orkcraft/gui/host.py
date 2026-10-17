@@ -597,7 +597,7 @@ class Host:
     def _halt(self, args: dict) -> int:
         """🛑 Halt All: every session interrupted, every agent process killed, the buildings' work stopped."""
         buildings = self.town.halt()               # first: nothing that ends below starts its next step
-        self.ideas.stop_all()
+        self.ideas.stop_all(device="phone" if args.get("device") == "phone" else "desktop")
         stopped = self.sessions.interrupt_all() + max(halt.halt_all(), buildings)
         self.town.toast(f"Stopped {stopped} building{'s' if stopped != 1 else ''}" if stopped
                         else "Nothing was running", title="Halt All")

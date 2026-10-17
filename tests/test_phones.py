@@ -105,7 +105,7 @@ def test_a_phones_drop_is_never_read_as_paths_on_this_machine(fake_repo, tmp_pat
     secret.write_text("PRIVATE KEY")
     args = mobile.guard("act", {"id": "pit", "act": "drop", "args": {"text": str(secret), "paths": True}})
     assert args["args"] == {"text": str(secret), "paths": False}
-    assert mobile.guard("halt", {}) == {}
+    assert mobile.guard("halt", {}) == {"device": "phone"}          # the event log says which window stopped it (spec 33 §9)
     from orkcraft.realm import pit
     (item,) = pit.sort(fake_repo, str(secret), paths=False)
     assert item.kind == "text" and "PRIVATE KEY" not in (fake_repo / item.value).read_text()
