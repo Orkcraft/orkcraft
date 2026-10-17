@@ -38,6 +38,11 @@ class Notifier:
         if item["kind"] == "episode":                  # an Audio briefing's episode to download (audio-briefing.md §8)
             minutes = max(1, round((item.get("seconds") or 0) / 60))
             return {**item, "line": f"{lexicon.term('gramophone')}: {item['title']} ({minutes} min) is ready"}
+        if item["kind"] == "idea":                     # an idea that needs you, or is done (spec 29a §6)
+            said = {"asks": "asks you", "plan": "has a plan to pass", "failed": "needs you", "done": "is done"}
+            return {**item, "line": f"“{item['title']}” {said.get(item['state'], item['state'])}"}
+        if item["kind"] == "result":                   # a result reached Review (spec 33 §8)
+            return {**item, "line": f"A result waits at Review: {item['title']}"}
         word = words.get("gold" if item["kind"] == "gold" else "quota") or item["kind"].title()
         return {**item, "line": f"{word} {_LEVEL.get(item['level'], item['level'])}: {item.get('text', '')}".rstrip(": ")}
 

@@ -56,6 +56,11 @@ elif mode == "conflict":
     open(os.path.join(root, "shared.txt"), "w").write("main's line\n")
     subprocess.run(["git", "-C", root, "-c", "user.name=O", "-c", "user.email=o@x", "commit", "-am", "main moved"],
                    check=True, capture_output=True)
+elif mode == "fix_conflict":                        # the conflict of a send back is resolved by editing, no git
+    if resume:
+        open(f"{tid}.txt", "w").write("resolved\n")
+    else:
+        commit(f"{tid}.txt", f"done by {tid}\n", f"{tid}: add {tid}.txt")
 elif mode == "nocommit":
     pass
 elif mode == "uncommitted":                         # edits a file, runs no git (acceptEdits allows no Bash)
@@ -127,7 +132,7 @@ def plan_of(town, tasks: list[dict], todos: list[dict] | None = None, slug: str 
 def runner_of(town, limits=None, **ideas) -> tuple[IdeaRunner, list]:
     events = []
     bus = SimpleNamespace(publish=lambda topic, **data: events.append((topic, data)))
-    settings = SimpleNamespace(ideas={"max_parallel": 1, "merge_into": "main", "push": True, **ideas})
+    settings = SimpleNamespace(ideas={"max_parallel": 1, "merge_into": "main", "push": True, "review": False, **ideas})
     return IdeaRunner(town.repo, town.state, settings, bus, limits=limits or (lambda: [])), events
 
 
@@ -369,5 +374,222 @@ def test_a_restart_goes_on_with_working_ideas(town):
 def test_settings_are_read_however_they_are_carried():
     assert idea_runner.setting(SimpleNamespace(ideas={"max_parallel": 3}), "max_parallel") == 3
     assert idea_runner.setting({"ideas": {"push": False}}, "push") is False
-    assert idea_runner.setting(SimpleNamespace(), "merge_into") == "main"
+    assert idea_runner.setting(SimpleNamespace(), "merge_into") == "dev"
     assert idea_runner.setting(SimpleNamespace(ideas_max_parallel=2), "max_parallel") == 2
+
+
+# -- spec 33: Review ---------------------------------------------------------------------------------
+
+from orkcraft.core.idea_runner import RunnerError
+
+
+def reviewing(town, **ideas):
+    return runner_of(town, review=True, merge_into="dev", push=False, **ideas)
+
+
+def wait_task(runner: IdeaRunner, tid: str, state: str, slug: str = "demo", timeout: float = 90) -> dict:
+    end = time.time() + timeout
+    while time.time() < end:
+        runner.tick()
+        task = next(t for t in runner.plan(slug)["tasks"] if t["id"] == tid)
+        if task["state"] == state and (slug, tid) not in runner._runs:
+            return task
+        time.sleep(0.1)
+    raise AssertionError(f"{tid} did not reach {state}: {runner.plan(slug)['tasks']}")
+
+
+def test_green_tests_wait_at_review_and_nothing_is_merged(town):
+    plan_of(town, [{"id": "k1"}, {"id": "k2", "after": ["k1"]}])
+    runner, _ = reviewing(town)
+    runner.start("demo")
+    task = wait_task(runner, "k1", "review")
+    assert task["tests"]["green"] is True and task["tests"]["failed"] == 0 and task["tests"]["passed"] >= 3
+    assert task["diff"] == {"files": 1, "added": 1, "removed": 0} and task["round"] == 1 and task["conflict"] == ""
+    assert git(town.repo, "branch", "--list", "dev") and git(town.repo, "rev-parse", "dev") == git(town.repo, "rev-parse", "main")
+    assert (town.state / "ideas" / "demo" / "k1.log").exists() and "done" in runner.log("demo", "k1")
+    time.sleep(0.5)
+    runner.tick()
+    assert tasks_of(town)["k2"]["state"] == "waiting"               # its dependant waits until k1 is merged
+    assert json.loads((town.state / "ideas" / "demo" / "state.json").read_text())["state"] == "working"
+    assert len(calls(town)) == 1
+
+
+def test_merge_lands_into_dev_made_from_main_and_does_not_push_by_default(town):
+    plan_of(town, [{"id": "k1"}, {"id": "k2", "after": ["k1"]}])
+    main_before = git(town.repo, "rev-parse", "main")
+    runner, _ = reviewing(town)
+    runner.start("demo")
+    wait_task(runner, "k1", "review")
+    commit = runner.merge("demo", "k1")
+    assert git(town.repo, "rev-parse", "dev") == commit
+    assert git(town.repo, "rev-parse", "main") == main_before
+    assert subprocess.run(["git", "rev-parse", "--verify", "dev"], cwd=town.origin, capture_output=True).returncode != 0
+    assert tasks_of(town)["k1"]["state"] == "merged" and tasks_of(town)["k1"]["commit"] == commit
+    wait_task(runner, "k2", "review")
+    runner.merge("demo", "k2")
+    assert wait_idle(runner)["state"] == "done"
+    assert git(town.repo, "show", "dev:k2.txt") == "done by k2"
+    assert git(town.repo, "branch", "--list", "idea/demo/k1")        # the branch stays
+    assert not list((town.repo / ".orkcraft" / "worktrees").glob("*"))
+
+
+def test_merge_pushes_only_when_asked(town):
+    plan_of(town, [{"id": "k1"}])
+    runner, _ = runner_of(town, review=True, merge_into="dev", push=True)
+    runner.start("demo")
+    wait_task(runner, "k1", "review")
+    commit = runner.merge("demo", "k1")
+    assert git(town.origin, "rev-parse", "dev") == commit
+
+
+def test_red_after_the_one_retry_waits_at_review_with_its_counts_and_cannot_merge(town, monkeypatch):
+    monkeypatch.setenv("STUB_MODE", "k1=fail_always")
+    plan_of(town, [{"id": "k1"}])
+    runner, _ = reviewing(town)
+    runner.start("demo")
+    task = wait_task(runner, "k1", "review")
+    assert len(calls(town)) == 2
+    assert task["tests"]["green"] is False and task["tests"]["failed"] == 1 and task["tests"]["passed"] >= 3
+    assert "tests/test_thing.py::test_value" in task["tests"]["failing"] and "test_value" in task["tests"]["tail"]
+    assert json.loads((town.state / "ideas" / "demo" / "state.json").read_text())["state"] == "working"
+    before = git(town.repo, "rev-parse", "dev")
+    with pytest.raises(RunnerError, match="red"):
+        runner.merge("demo", "k1")
+    assert git(town.repo, "rev-parse", "dev") == before and tasks_of(town)["k1"]["state"] == "review"
+
+
+def test_a_gate_without_pytest_says_no_counts():
+    from orkcraft.realm.idea_git import parse_tests
+    assert parse_tests("no test files to run") == {"passed": 0, "failed": 0, "failing": [], "tail": "no test files to run"}
+    got = parse_tests("FAILED tests/a.py::t1 - assert 1\nFAILED tests/a.py::t2\n2 failed, 18 passed in 1.2s")
+    assert got["passed"] == 18 and got["failed"] == 2 and got["failing"] == ["tests/a.py::t1", "tests/a.py::t2"]
+    many = "\n".join(f"FAILED tests/a.py::t{i}" for i in range(30)) + "\n30 failed in 2s"
+    assert len(parse_tests(many)["failing"]) == 20 and len(parse_tests("x\n" * 100)["tail"].splitlines()) == 40
+
+
+def test_send_back_resumes_the_session_with_the_line_and_counts_the_round(town, monkeypatch):
+    monkeypatch.setenv("STUB_MODE", "k1=fix_conflict")           # on a resume it edits the file again
+    plan_of(town, [{"id": "k1"}])
+    runner, _ = reviewing(town)
+    runner.start("demo")
+    wait_task(runner, "k1", "review")
+    with pytest.raises(RunnerError):
+        runner.back("demo", "k1", "   ")
+    runner.back("demo", "k1", "name it better")
+    task = wait_task(runner, "k1", "review")
+    assert task["round"] == 2 and task["why"] == "name it better" and task["session"] == "s-k1"
+    assert [c["resume"] for c in calls(town)] == [False, True]
+    assert "name it better" in runner.log("demo", "k1")
+
+
+def test_a_conflict_found_at_merge_stays_at_review_and_fix_resolves_it(town, monkeypatch):
+    monkeypatch.setenv("STUB_MODE", "k1=fix_conflict")
+    plan_of(town, [{"id": "k1"}])
+    runner, _ = reviewing(town)
+    runner.start("demo")
+    wait_task(runner, "k1", "review")
+    git(town.repo, "checkout", "-q", "dev")
+    (town.repo / "k1.txt").write_text("dev's line\n")
+    git(town.repo, "add", "-A")
+    git(town.repo, "commit", "-m", "dev moved")
+    git(town.repo, "checkout", "-q", "main")
+    with pytest.raises(RunnerError, match="conflicts with dev in k1.txt"):
+        runner.merge("demo", "k1")
+    task = tasks_of(town)["k1"]
+    assert task["state"] == "review" and "k1.txt" in task["conflict"]
+    with pytest.raises(RunnerError, match="conflicts"):
+        runner.merge("demo", "k1")
+    runner.back("demo", "k1", "resolve it")
+    task = wait_task(runner, "k1", "review")
+    assert task["conflict"] == "" and task["round"] == 2
+    runner.merge("demo", "k1")
+    assert git(town.repo, "show", "dev:k1.txt") == "resolved"
+
+
+def test_drop_fails_the_task_removes_its_worktree_and_keeps_its_branch(town):
+    plan_of(town, [{"id": "k1"}])
+    runner, _ = reviewing(town)
+    runner.start("demo")
+    wait_task(runner, "k1", "review")
+    assert list((town.repo / ".orkcraft" / "worktrees").glob("*"))
+    runner.drop_task("demo", "k1")
+    task = tasks_of(town)["k1"]
+    assert task["state"] == "failed" and task["error"] == "dropped by you"
+    assert not list((town.repo / ".orkcraft" / "worktrees").glob("*"))
+    assert git(town.repo, "branch", "--list", "idea/demo/k1")
+    state = json.loads((town.state / "ideas" / "demo" / "state.json").read_text())
+    assert state["state"] == "failed" and "dropped by you" in state["error"]
+
+
+def test_stop_task_stops_one_and_the_others_go_on(town, monkeypatch):
+    monkeypatch.setenv("STUB_MODE", "k1=slow")
+    plan_of(town, [{"id": "k1"}, {"id": "k2"}])
+    runner, _ = reviewing(town, max_parallel=2)
+    runner.start("demo")
+    end = time.time() + 30
+    while time.time() < end and tasks_of(town)["k1"]["state"] not in ("running", "testing"):
+        time.sleep(0.1)
+    runner.stop_task("demo", "k1")
+    wait_task(runner, "k2", "review")
+    k1 = wait_task(runner, "k1", "ready")
+    assert k1["note"] == "stopped by you" and k1["error"] == ""
+    runner.tick()
+    assert tasks_of(town)["k1"]["state"] == "ready"                  # it waits for Start
+    with pytest.raises(RunnerError):
+        runner.stop_task("demo", "k2")
+
+
+def test_the_log_is_cut_to_its_last_lines_and_masks_a_secret(town):
+    plan_of(town, [{"id": "k1"}])
+    runner, _ = reviewing(town)
+    runner._log("demo", "k1", "".join(f"line {i}\n" for i in range(2500)))
+    path = town.state / "ideas" / "demo" / "k1.log"
+    assert len(path.read_text().splitlines()) == 2000 and path.read_text().splitlines()[-1] == "line 2499"
+    assert len(runner.log("demo", "k1").splitlines()) == 200
+    runner._log("demo", "k1", "the key is s3cr3t-value here\n", {"API_KEY": "s3cr3t-value", "ORKCRAFT_ORC": "ideas/x"})
+    assert "s3cr3t-value" not in runner.log("demo", "k1") and "••••" in runner.log("demo", "k1")
+
+
+def test_the_testers_defaults(town):
+    from orkcraft import settings
+    assert settings.IDEAS["merge_into"] == "dev" and settings.IDEAS["push"] is False and settings.IDEAS["review"] is True
+    assert settings.clean_ideas({"merge_into": "main", "push": True})["merge_into"] == "main"
+    assert settings.clean_ideas({"merge_into": "main", "push": True})["push"] is True
+
+
+def test_the_runner_writes_its_events_to_the_event_log(town):
+    from orkcraft.realm import event_log
+    plan_of(town, [{"id": "k1"}])
+    runner, _ = reviewing(town)
+    runner.start("demo")
+    wait_task(runner, "k1", "review")
+    rows = event_log.read(town.repo)
+    states = [(r["state"], r["was"]) for r in rows if r["event"] == "task_state"]
+    assert ("running", "waiting") in states and ("review", "testing") in states
+    (ready,) = [r for r in rows if r["event"] == "result_ready"]
+    assert ready["idea"] == "demo" and ready["task"] == "k1" and ready["round"] == 1 and ready["passed"] >= 3 and ready["failed"] == 0
+    assert ready["files"] == 1 and ready["added"] == 1 and ready["removed"] == 0 and ready["cost"] == 0.01
+    first = next(r for r in rows if r["event"] == "task_state" and r["state"] == "running")
+    assert first["tier"] == "laborer" and first["round"] == 1
+    runner.merge("demo", "k1", device="phone")
+    (d,) = [r for r in event_log.read(town.repo) if r["event"] == "result_decided"]
+    assert d["decision"] == "merge" and d["into"] == "dev" and d["pushed"] is False and d["device"] == "phone" and d["seconds"] >= 0
+
+
+def test_back_and_drop_are_decisions_with_their_line_and_a_stop_is_a_task_stopped(town, monkeypatch):
+    from orkcraft.realm import event_log
+    monkeypatch.setenv("STUB_MODE", "k1=fix_conflict,k2=slow")
+    plan_of(town, [{"id": "k1"}, {"id": "k2"}])
+    runner, _ = reviewing(town, max_parallel=2)
+    runner.start("demo")
+    wait_task(runner, "k1", "review")
+    runner.back("demo", "k1", "rename it")
+    wait_task(runner, "k1", "review")
+    runner.stop_task("demo", "k2", device="phone")
+    wait_task(runner, "k2", "ready")
+    runner.drop_task("demo", "k1")
+    rows = event_log.read(town.repo)
+    decided = [(r["decision"], r.get("why")) for r in rows if r["event"] == "result_decided"]
+    assert decided == [("back", "rename it"), ("drop", None)] or decided == [("back", "rename it"), ("drop", "")]
+    (stop,) = [r for r in rows if r["event"] == "task_stopped"]
+    assert stop["task"] == "k2" and stop["device"] == "phone"

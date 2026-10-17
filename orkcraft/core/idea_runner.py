@@ -1,16 +1,20 @@
-"""The runner of a passed plan (docs/specs/29a-board-focus.md §5): each task its own Claude session in a worktree,
-tested, rebased and fast-forwarded into `ideas.merge_into` (default `main`), pushed.
+"""The runner of a passed plan (docs/specs/29a-board-focus.md §5, 33 §2–§3): each task its own Claude session in a
+worktree, tested, then judged at Review by the person, who merges it into `ideas.merge_into` (default `dev`; rebased
+and fast-forwarded, pushed only when `ideas.push`), sends it back with a line, or drops it.
 
     runner = IdeaRunner(repo_root, state_dir, settings, bus)
     runner.start(slug)        # after `ideas.start` set the plan's `passed_at`
     runner.tick()             # every few seconds from the host: never blocks, the work runs on threads
     runner.stop(slug) / runner.stop_all()
+    runner.merge(slug, tid) / runner.back(slug, tid, why) / runner.drop_task(slug, tid) / runner.stop_task(slug, tid)
+    runner.log(slug, tid)     # the task's session output, last 200 lines (kept in <state_dir>/ideas/<slug>/<tid>.log)
 
 The plan's tasks live in `<state_dir>/ideas/<slug>/plan.json` (the runner owns them once the plan is passed; it
 re-reads the file before each write, so the keeper's to-dos stay as the keeper wrote them). A task waits for its
 `after` tasks to be merged and for the to-dos `for` it to be done, starts when a slot is free (`ideas.max_parallel`)
 and its tool's window is not nearly spent (else `held`, "after HH:MM"), works, passes the gate (once more on the
-same session when red), and lands. Every task change publishes `ideas.changed`. All git: realm/idea_git.py.
+same session when red) and waits at `review`, green or red, holding its worktree and branch (`ideas.review` false:
+green lands by itself, as before). Every task change publishes `ideas.changed`. All git: realm/idea_git.py.
 """
 from __future__ import annotations
 
@@ -23,13 +27,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from orkcraft.realm import halt, harnesses, jobs, status, tool_errors
-from orkcraft.realm.idea_git import CRITICAL_TESTS, Conflict, IdeaGit, env_name, read_secret
+from orkcraft.core.idea_review import BACK, STOP_ONE, STOPPED_NOTE, ReviewMixin, RunnerError  # noqa: F401
+from orkcraft.realm import event_log, halt, harnesses, jobs, status, tool_errors
+from orkcraft.realm.idea_git import CRITICAL_TESTS, Conflict, IdeaGit, env_name, parse_tests, read_secret
 
 CHANGED = "ideas.changed"          # slug: an idea's state or one of its tasks changed
 HARNESS = "claude"
 LIMITS_EVERY_S = 600               # how often the runner reads the quota itself, when nobody hands it one
-DEFAULTS = {"max_parallel": 1, "merge_into": "main", "push": True}
+DEFAULTS = {"max_parallel": 1, "merge_into": "dev", "push": False, "review": True}
 STOPPED = "stopped"
 LIVE = ("running", "testing")
 PAGE_KEEP = 20000
@@ -87,10 +92,12 @@ class Run:
     why: str = ""                  # set when someone stopped it
 
 
-class IdeaRunner:
+class IdeaRunner(ReviewMixin):
     def __init__(self, repo_root: Path, state_dir: Path, settings: Any, bus: Any = None, *,
-                 limits: Callable[[], list] | None = None) -> None:
-        """`limits`: the quota readers' last read (the town's `limits`); without it the runner reads it itself."""
+                 limits: Callable[[], list] | None = None, events: bool = True,
+                 on_held: Callable[[], None] | None = None) -> None:
+        """`limits`: the quota readers' last read (the town's `limits`); without it the runner reads it itself.
+        `events`: write the task's events to the local event log (spec 33 §9); `on_held`: a task was held (the limits are read)."""
         self.repo_root, self.state_dir = Path(repo_root), Path(state_dir)
         self.settings, self.bus = settings, bus
         self.git = IdeaGit(self.repo_root)
@@ -101,6 +108,8 @@ class IdeaRunner:
         self._runs: dict[tuple[str, str], Run] = {}
         self._active: list[str] = []
         self._until: dict[tuple[str, str], float] = {}
+        self.events, self.on_held = events, on_held
+        self._since: dict[tuple[str, str], float] = {}     # when a task entered the state it is in (the event log)
         self._resume_working()
 
     # -- files -----------------------------------------------------------------------------------
@@ -130,8 +139,37 @@ class IdeaRunner:
     def _save_tasks(self, slug: str, tasks: list[dict]) -> None:
         """Write the tasks into the plan as it is on disk now (the to-dos and the rest stay as they are there)."""
         plan = self.plan(slug) or {"idea": slug, "todos": []}
+        was = {t.get("id"): t.get("state") for t in plan.get("tasks") or []}
         plan["tasks"] = tasks
         self._write(self._dir(slug) / "plan.json", plan)
+        self._note(slug, was, tasks)
+
+    def _emit(self, event: str, **fields: Any) -> None:
+        if self.events:
+            event_log.record(self.repo_root, event, **fields)
+
+    def _note(self, slug: str, was: dict, tasks: list[dict]) -> None:
+        """The event log's lines for the tasks whose state changed (spec 33 §9): `task_state`, and `result_ready` at Review."""
+        now = time.time()
+        for t in tasks:
+            tid, new, old = t.get("id"), t.get("state"), was.get(t.get("id"))
+            if new == old or old is None:
+                continue
+            since = self._since.get((slug, tid))
+            self._since[(slug, tid)] = now
+            self._emit(event_log.TASK_STATE, idea=slug, task=tid, state=new, was=old, round=int(t.get("round") or 1),
+                       tier=t.get("tier") or "", seconds=round(now - since, 1) if since else None, tokens=t.get("tokens"),
+                       cost=t.get("cost"))
+            if new == "review":
+                tests, diff = t.get("tests") or {}, t.get("diff") or {}
+                self._emit(event_log.RESULT_READY, idea=slug, task=tid, round=int(t.get("round") or 1), passed=tests.get("passed"),
+                           failed=tests.get("failed"), files=diff.get("files"), added=diff.get("added"),
+                           removed=diff.get("removed"), cost=t.get("cost"))
+            if new == "held" and self.on_held is not None:
+                try:
+                    self.on_held()
+                except Exception:               # a log never stops the work
+                    pass
 
     def _set_task(self, slug: str, task_id: str, **fields: Any) -> None:
         with self._lock:
@@ -164,8 +202,8 @@ class IdeaRunner:
             if (self._read(state_file) or {}).get("state") != "working" or (plan := self.plan(slug)) is None:
                 continue
             for t in plan["tasks"]:
-                if t.get("state") in LIVE:
-                    t.update(state="ready", note="")
+                if t.get("state") in LIVE:       # cut off in a send back: back to Review, its work is on the branch
+                    t.update(state="review", note="") if t.get("tests") else t.update(state="ready", note="")
             self._save_tasks(slug, plan["tasks"])
             self._active.append(slug)
 
@@ -180,7 +218,7 @@ class IdeaRunner:
             for t in plan["tasks"]:
                 if (slug, t.get("id")) in self._runs:
                     continue
-                if t.get("state") != "merged":
+                if t.get("state") not in ("merged", "review"):
                     t.update(state="waiting", error="", note="")
                 self._until.pop((slug, t.get("id")), None)
             self._save_tasks(slug, plan["tasks"])
@@ -247,7 +285,7 @@ class IdeaRunner:
                 for t in tasks:
                     if slots <= 0:
                         break
-                    if t.get("state") != "ready":
+                    if t.get("state") != "ready" or t.get("note") == STOPPED_NOTE:
                         continue
                     until = status.reset_of(limits, HARNESS, now, status.NEARLY)
                     if until is not None:
@@ -324,48 +362,93 @@ class IdeaRunner:
         tid = task.get("id")
         cancel = threading.Event()
         task.update(state="running", started=now_iso(), finished="", error="", note="",
-                    branch=f"idea/{slug}/{tid}", commit="", session="", cost=None, tokens=None)
-        thread = threading.Thread(target=self._work, args=(slug, tid, cancel), daemon=True,
+                    branch=f"idea/{slug}/{tid}", commit="", session="", cost=None, tokens=None,
+                    tests=None, diff=None, round=1, conflict="", why="", base="")
+        self._clear_log(slug, tid)
+        self._spawn(slug, tid, cancel, None)
+
+    def _spawn(self, slug: str, tid: str, cancel: threading.Event, again: dict | None) -> None:
+        thread = threading.Thread(target=self._work, args=(slug, tid, cancel, again), daemon=True,
                                   name=f"idea-{slug}-{tid}")
         self._runs[(slug, tid)] = Run(thread, cancel)
         thread.start()
 
-    def _work(self, slug: str, tid: str, cancel: threading.Event) -> None:
+    def _work(self, slug: str, tid: str, cancel: threading.Event, again: dict | None = None) -> None:
+        """One try of a task: the session, the gate (once more on the same session when red), then Review (or, with
+        `ideas.review` off, the merge). `again`: a send back, {"why", "files"} (files: the conflict being fixed)."""
         path: Path | None = None
         spent = {"cost": None, "tokens": None}
         try:
             plan = self.plan(slug) or {"tasks": []}
             task = next(t for t in plan["tasks"] if t.get("id") == tid)
-            base = str(setting(self.settings, "merge_into") or "main")
-            path, branch = self.git.prepare(slug, tid, base)
-            start_sha = self.git.head(path)
+            base = str(setting(self.settings, "merge_into") or "dev")
+            env = self._env(slug, tid, plan)
             h = harnesses.need(HARNESS)
             model = h.pick(task.get("tier") or "warrior")
-            env = self._env(slug, tid, plan)
-            session = self._session(slug, tid, path, cancel, model, env, self._prompt(slug, plan, task), "", spent)
+            rnd = int(task.get("round") or 1)
+            if again is None:
+                self.git.ensure_branch(base)
+                path, branch = self.git.prepare(slug, tid, base)
+                start_sha = self.git.head(path)
+                self._set_task(slug, tid, base=start_sha)
+                prompt, resume = self._prompt(slug, plan, task), ""
+            else:
+                path, branch = self.git.reopen(slug, tid), str(task.get("branch") or f"idea/{slug}/{tid}")
+                start_sha = str(task.get("base") or "") or self.git.head(path)
+                spent.update(cost=task.get("cost"), tokens=task.get("tokens"))
+                extra = ""
+                tests = task.get("tests") or {}
+                if again["files"]:
+                    extra += (f"Your branch conflicted with `{base}` in {', '.join(again['files'])}. The merge of "
+                              f"`{base}` into your branch is open in this worktree: rebase onto {base} and resolve "
+                              "it by editing those files until no conflict marker is left (keep what both sides "
+                              "meant). Do not abort the merge.\n\n")
+                if tests and not tests.get("green", not tests.get("failed")):
+                    extra += f"The tests were red:\n{tests.get('tail', '')}\n\n"
+                prompt, resume = BACK.format(why=again["why"], extra=extra), str(task.get("session") or "")
+                if not resume:
+                    prompt = self._prompt(slug, plan, task) + "\n\n" + prompt
+            self._log(slug, tid, f"== round {rnd} · {now_iso()} · {model}\n{prompt}\n", env)
+            session = self._session(slug, tid, path, cancel, model, env, prompt, resume, spent)
+            problem, out = None, ""
             for attempt in (1, 2):
                 self._set_task(slug, tid, state="testing")
-                problem = self._check(path, start_sha, cancel, str(task.get("title") or ""))
+                problem, out = self._check(path, start_sha, cancel, str(task.get("title") or ""))
+                self._log(slug, tid, f"== the gate, try {attempt}\n{out or problem}\n", env)
                 if problem is None:
                     break
                 if attempt == 2:
+                    if out and setting(self.settings, "review"):    # red after the one fix: the person decides
+                        break
                     raise RuntimeError(f"the gate is still red after one fix: {problem[-600:]}")
                 self._set_task(slug, tid, state="running")
                 session = self._session(slug, tid, path, cancel, model, env, FIX.format(problem=problem), session,
                                         spent)
+            tests = parse_tests(out)
+            tests["green"] = problem is None
+            diff = self.git.stats(path, start_sha)
+            if setting(self.settings, "review"):
+                self._set_task(slug, tid, state="review", tests=tests, diff=diff, conflict="", finished=now_iso(),
+                               error="" if problem is None else "the tests are red", note="")
+                self._log(slug, tid, f"== at Review · {now_iso()}\n", env)
+                return
             commit, subjects, note = self.git.land(path, branch, base, bool(setting(self.settings, "push")))
-            self._set_task(slug, tid, state="merged", commit=commit, subjects=subjects, note=note,
-                           finished=now_iso(), error="")
+            self._set_task(slug, tid, state="merged", commit=commit, subjects=subjects, note=note, tests=tests,
+                           diff=diff, finished=now_iso(), error="")
             self.git.remove(path)
         except Held as e:
             with self._lock:
                 self._until[(slug, tid)] = e.until
-            self._set_task(slug, tid, state="held", note=f"after {dt.datetime.fromtimestamp(e.until):%H:%M}",
-                           finished="")
+            self._set_task(slug, tid, state="held" if again is None else "review",
+                           note=f"after {dt.datetime.fromtimestamp(e.until):%H:%M}", finished="")
         except (InterruptedError, halt.Halted) as e:
             run = self._runs.get((slug, tid))
             why = (run.why if run else "") or (str(e) if isinstance(e, halt.Halted) else STOPPED)
-            self._set_task(slug, tid, state="failed", error=why, finished=now_iso())
+            if why == STOP_ONE:
+                self._set_task(slug, tid, state="review" if again is not None else "ready",
+                               note="" if again is not None else STOPPED_NOTE, error="", finished="")
+            else:
+                self._set_task(slug, tid, state="failed", error=why, finished=now_iso())
         except Conflict as e:
             self._set_task(slug, tid, state="failed", error=str(e), finished=now_iso())
         except Exception as e:             # a task's failure is said on its card, never a crash of the host
@@ -396,23 +479,26 @@ class IdeaRunner:
             if value is not None:
                 spent[key] = (spent[key] or 0) + value
         session = session or resume
+        self._log(slug, tid, f"== the session answered\n{_text}\n", env)
         self._set_task(slug, tid, session=session, cost=spent["cost"], tokens=spent["tokens"])
         return session
 
-    def _check(self, path: Path, start_sha: str, cancel: threading.Event, title: str = "") -> str | None:
-        """None when the task's work passes; else what is wrong, in words the session can act on. What the session
-        left uncommitted is committed first, under the task's title: its session may edit files but not run git."""
+    def _check(self, path: Path, start_sha: str, cancel: threading.Event, title: str = "") -> tuple[str | None, str]:
+        """(None, the gate's run) when the task's work passes; else (what is wrong, in words the session can act on,
+        the gate's run: "" when the gate did not run). What the session left uncommitted is committed first, under
+        the task's title: its session may edit files but not run git."""
         self.git.commit_left(path, title)
         if not self.git.commits(path, start_sha):
-            return "You changed no file. Make the change the task asks for in this worktree."
+            return "You changed no file. Make the change the task asks for in this worktree.", ""
         if self.git.dirty(path):
-            return "You left uncommitted changes: `git status` shows them. Commit them (or remove what is not work)."
-        ok, tail = self.git.gate(path, start_sha, cancel)
-        return None if ok else f"The tests failed:\n{tail}"
+            return ("You left uncommitted changes: `git status` shows them. Commit them (or remove what is not "
+                    "work)."), ""
+        ok, out = self.git.gate_run(path, start_sha, cancel)
+        return (None if ok else f"The tests failed:\n{out[-3000:]}"), out
 
     def _env(self, slug: str, tid: str, plan: dict) -> dict[str, str]:
         """The task's environment: who runs (for the town's counts) and the values of its `secret` to-dos."""
-        env = {"ORKCRAFT_ORC": f"ideas/{slug}-{tid}"}
+        env = {"ORKCRAFT_ORC": f"ideas/{slug}-{tid}", "ORKCRAFT_IDEA": slug, "ORKCRAFT_TASK": tid}
         for todo in plan.get("todos") or []:
             if not isinstance(todo, dict) or todo.get("kind") != "secret" or tid not in (todo.get("for") or []):
                 continue
@@ -448,7 +534,7 @@ class IdeaRunner:
             rules = (self.repo_root / "CLAUDE.md").read_text(encoding="utf-8")[:CLAUDE_KEEP]
         except OSError:
             rules = ""
-        secrets = [n for n in self._env(slug, task.get("id"), plan) if n != "ORKCRAFT_ORC"]
+        secrets = [n for n in self._env(slug, task.get("id"), plan) if n not in ("ORKCRAFT_ORC", "ORKCRAFT_IDEA", "ORKCRAFT_TASK")]
         parts = [
             f"You do one task of the idea `{slug}` in this repository: a git worktree on branch "
             f"`idea/{slug}/{task.get('id')}`, cut from `{setting(self.settings, 'merge_into') or 'main'}`. "

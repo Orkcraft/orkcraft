@@ -6,6 +6,9 @@
     ok, tail = g.gate(path, cancel)                      # the critical tests + the test files of touched modules
     commit, subjects, note = g.land(path, branch, "main", push=True)   # rebase, fast-forward main, push
     read_secret(state_dir, slug, todo_id)                # a `secret` to-do's value, from where part A stored it
+    g.ensure_branch("dev") / g.branches()                # the branch results merge into (made when missing)
+    g.stats(path, base) / g.diff(branch, base)           # what a task changed, counted / with its patches (Review)
+    parse_tests(output)                                  # pytest's summary line → {"passed","failed","failing","tail"}
 
 Every call runs git with fixed arguments (no shell). One lock per repository (`lock_of`) holds every change
 of refs and worktrees, so two tasks never rebase or fast-forward at once. A task that fails or conflicts never
@@ -28,6 +31,10 @@ GIT_TIMEOUT_S = 60
 PUSH_TIMEOUT_S = 120
 CRITICAL_TESTS = ("tests/test_architecture.py", "tests/test_cli.py", "tests/test_updates.py")
 TEST_TAIL = 3000
+GATE_KEEP = 60000
+PATCH_FILE = 60 * 1024               # a file's patch shown up to this, else "too large to show"
+PATCH_ALL = 300 * 1024               # … and all of a result's patches up to this
+BRANCH_NAME = re.compile(r"[\w./-]{1,100}")
 SECRETS_FILE = "secrets.json"
 KEYRING_SERVICE = "orkline"
 
@@ -144,6 +151,12 @@ class IdeaGit:
     def gate(self, path: Path, base: str, cancel: threading.Event,
              timeout_s: int = jobs.TEST_TIMEOUT_S) -> tuple[bool, str]:
         """(passed, the output's tail) of `python -m pytest -q` on the critical tests and the touched modules'."""
+        ok, out = self.gate_run(path, base, cancel, timeout_s)
+        return ok, out[-TEST_TAIL - 200:] if len(out) > TEST_TAIL + 200 else out
+
+    def gate_run(self, path: Path, base: str, cancel: threading.Event,
+                 timeout_s: int = jobs.TEST_TIMEOUT_S) -> tuple[bool, str]:
+        """(passed, the whole run: the command, then pytest's output up to GATE_KEEP) of the gate."""
         files = test_files(self.touched(path, base), path)
         if not files:
             return True, "no test files to run"
@@ -158,7 +171,7 @@ class IdeaGit:
         jobs._wait(proc, cancel, timeout_s, "ideas/gate")
         reader.join(5)
         out = out_box[0] if out_box else ""
-        return proc.returncode == 0, f"$ python -m pytest -q {' '.join(files)}\n{out[-TEST_TAIL:]}"
+        return proc.returncode == 0, f"$ python -m pytest -q {' '.join(files)}\n{out[-GATE_KEEP:]}"
 
     def python(self) -> str:
         """The repository's own Python when it has one (`.venv`, where its test tools are), else Orkline's."""
@@ -166,6 +179,103 @@ class IdeaGit:
             if (self.root / rel).is_file():
                 return str(self.root / rel)
         return sys.executable
+
+    # -- the branch results merge into ------------------------------------------------------------
+
+    def branches(self) -> list[str]:
+        """The local branches, the task branches (idea/…) left out."""
+        out = _git(self.root, "for-each-ref", "--format=%(refname:short)", "refs/heads").stdout.split()
+        return [b for b in out if not b.startswith("idea/")]
+
+    def default_branch(self) -> str:
+        """The repository's default branch: origin's HEAD, else main or master, else the one checked out."""
+        ref = _git(self.root, "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD").stdout.strip()
+        names = [ref.split("/", 1)[1]] if "/" in ref else []
+        names += ["main", "master", _git(self.root, "symbolic-ref", "-q", "--short", "HEAD").stdout.strip()]
+        return next((n for n in names if n and worktrees.branch_exists(self.root, n)), "")
+
+    def ensure_branch(self, name: str) -> bool:
+        """`name` exists locally: made from the default branch's head when missing (True when made)."""
+        if not BRANCH_NAME.fullmatch(name or "") or ".." in name or not worktrees.valid_branch(self.root, name):
+            raise RuntimeError(f"{name!r} is not a branch name")
+        with self.lock:
+            if worktrees.branch_exists(self.root, name):
+                return False
+            base = self.default_branch()
+            if not base:
+                raise RuntimeError("the repository has no commit to start the branch from")
+            _ok(_git(self.root, "branch", name, base))
+        return True
+
+    def reopen(self, slug: str, task_id: str) -> Path:
+        """The task's worktree on its branch: as it is, else made again from the branch (a held result)."""
+        branch = branch_of(slug, task_id)
+        path = worktrees.worktree_path(self.root, _worktree_id(slug, task_id))
+        with self.lock:
+            if (path / ".git").exists():
+                return path
+            if not worktrees.branch_exists(self.root, branch):
+                raise RuntimeError("the task's branch is gone")
+            self.remove(path)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            _ok(_git(self.root, "worktree", "add", str(path), branch))
+        return path
+
+    def merge_in(self, path: Path, into: str) -> list[str]:
+        """Merge `into` into the task's branch to fix a conflict: the files still in conflict (the merge stays
+        open for the session to resolve them), [] when it merged cleanly."""
+        with self.lock:
+            done = _git(path, "-c", "user.name=Orkline", "-c", "user.email=orkline@localhost", "merge", "--no-edit",
+                        into, timeout=PUSH_TIMEOUT_S)
+            if done.returncode == 0:
+                return []
+            files = _git(path, "diff", "--name-only", "--diff-filter=U").stdout.split()
+            if not files:
+                _git(path, "merge", "--abort")
+                raise RuntimeError((done.stderr or done.stdout).strip()[:300] or "the merge failed")
+            return files
+
+    def merging(self, path: Path) -> bool:
+        return _git(path, "rev-parse", "-q", "--verify", "MERGE_HEAD").returncode == 0
+
+    # -- what a task changed -----------------------------------------------------------------------
+
+    def stats(self, path: Path, base: str) -> dict:
+        """{"files", "added", "removed"} of what the branch changed since `base`."""
+        files = added = removed = 0
+        for ln in _git(path, "diff", "--numstat", f"{base}...HEAD").stdout.splitlines():
+            a, _, r = ln.split("\t", 2)[:3] if ln.count("\t") >= 2 else ("0", "0", "")
+            files += 1
+            added += int(a) if a.isdigit() else 0
+            removed += int(r) if r.isdigit() else 0
+        return {"files": files, "added": added, "removed": removed}
+
+    def diff(self, branch: str, base: str) -> dict:
+        """The commits and the files a branch changed since `base`, each file's patch (a file's up to PATCH_FILE
+        and all of them up to PATCH_ALL; the rest None: too large to show)."""
+        rng = f"{base}...{branch}"
+        commits = []
+        for ln in _git(self.root, "log", "--reverse", "--format=%H%x09%s", f"{base}..{branch}").stdout.splitlines():
+            sha, _, subject = ln.partition("\t")
+            commits.append({"sha": sha[:10], "subject": subject})
+        counts = {}
+        for ln in _git(self.root, "diff", "--numstat", "--no-renames", rng).stdout.splitlines():
+            a, r, name = (ln.split("\t", 2) + ["", "", ""])[:3]
+            counts[name] = (int(a) if a.isdigit() else 0, int(r) if r.isdigit() else 0)
+        patches: dict[str, str] = {}
+        whole = _git(self.root, "diff", "--no-renames", "--no-color", rng, timeout=PUSH_TIMEOUT_S).stdout
+        for chunk in re.split(r"(?m)^(?=diff --git )", whole):
+            m = re.match(r"diff --git a/(.*?) b/(.*)\n", chunk)
+            if m:
+                patches[m.group(2)] = chunk
+        files, used, truncated = [], 0, False
+        for name, (added, removed) in counts.items():
+            patch: str | None = patches.get(name, "")
+            if patch is not None and (len(patch) > PATCH_FILE or used + len(patch) > PATCH_ALL):
+                patch, truncated = None, True
+            used += len(patch or "")
+            files.append({"path": name, "added": added, "removed": removed, "patch": patch})
+        return {"base": base, "branch": branch, "commits": commits, "files": files, "truncated": truncated}
 
     # -- the merge -------------------------------------------------------------------------------
 
@@ -180,8 +290,10 @@ class IdeaGit:
         with self.lock:
             if self.dirty(path):
                 raise RuntimeError("the task left uncommitted changes")
-            rebase = _git(path, "rebase", into, timeout=PUSH_TIMEOUT_S)
-            if rebase.returncode != 0:
+            # a branch that already holds `into` (a conflict fixed by merging it in) is fast-forwarded as it is
+            held = _git(path, "merge-base", "--is-ancestor", into, "HEAD").returncode == 0
+            rebase = None if held else _git(path, "rebase", into, timeout=PUSH_TIMEOUT_S)
+            if rebase is not None and rebase.returncode != 0:
                 files = _git(path, "diff", "--name-only", "--diff-filter=U").stdout.split()
                 _git(path, "rebase", "--abort")
                 raise Conflict("conflicts with " + into + (" in " + ", ".join(files) if files else ""))
@@ -266,3 +378,29 @@ def env_name(title: str) -> str:
     """The environment variable a `secret` to-do's title names (`Add API_KEY` → `API_KEY`), else ""."""
     names = ENV_NAME.findall(title or "")
     return next((n for n in names if "_" in n), names[0] if names else "")
+
+
+_SUMMARY = re.compile(r"(\d+) (passed|failed|error|errors)\b")
+_FAILED_LINE = re.compile(r"^(?:FAILED|ERROR) (\S+)")
+
+
+def parse_tests(output: str, keep_lines: int = 40) -> dict:
+    """The gate's run in the shape Review shows: pytest's summary line (`2 failed, 18 passed in 1.2s`) gives the
+    counts, its `FAILED path::name` lines the names (at most 20). A run without pytest's summary counts nothing."""
+    passed = failed = 0
+    lines = (output or "").splitlines()
+    for ln in reversed(lines):
+        found = _SUMMARY.findall(ln)
+        if found and (" in " in ln or ln.strip().startswith("=")):
+            for n, what in found:
+                if what == "passed":
+                    passed = int(n)
+                else:
+                    failed += int(n)
+            break
+    names: list[str] = []
+    for ln in lines:
+        m = _FAILED_LINE.match(ln.strip())
+        if m and m.group(1) not in names:
+            names.append(m.group(1))
+    return {"passed": passed, "failed": failed, "failing": names[:20], "tail": "\n".join(lines[-keep_lines:])}

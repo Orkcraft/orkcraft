@@ -4,7 +4,7 @@
 // card in a corner. Every answer goes to the host at once; the host decides the next step and the page draws
 // what the snapshot's `onboarding` says. The card over the map offers Connect Google (js/accounts.js) only with ORKCRAFT_GOOGLE=1.
 import { signal } from "@preact/signals";
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { html, cls } from "./html.js";
 import { command, openLink, say, town } from "./link.js";
 import { Dialog } from "./dialog.js";
@@ -16,6 +16,11 @@ import { googleOpen, googleShown } from "./accounts.js";
 const asking = signal(false);          // the Request a tool dialog
 
 const send = (name, args = {}) => command(name, args).catch(() => {});
+
+// In focus (docs/specs/33-v1-shell.md §1) the onboarding is its first screen — trust said plainly, the AI tools found — and
+// then the shell opens: no class, no town to choose, no Mission 1. The host's own steps (gui/onboarding.py) are untouched:
+// the first screen's button is its Skip (an empty town, the tools found kept on), and the raising closes by itself.
+const inFocus = () => town.value?.focus === "board";
 
 const GLYPHS = new Set(["github", "gitlab", "gmail", "discord", "jira", "confluence", "figma"]);
 
@@ -36,10 +41,10 @@ function Ground({ biome, children, className = "" }) {
 
 function Head({ o, title, lead, tagline }) {
   return html`<header class="gui-onb__head">
-    <div class="gui-onb__steps" aria-label=${say(`Step ${o.n + 1} of ${o.steps.length}`)}>
+    ${!inFocus() && html`<div class="gui-onb__steps" aria-label=${say(`Step ${o.n + 1} of ${o.steps.length}`)}>
       ${o.steps.map((s, i) => html`<span key=${s} class=${cls("gui-onb__pip", { "is-done": i <= o.n })}></span>`)}
       <span class="ok-font-status ok-tone-muted">${say(`Setting up · step ${o.n + 1} of ${o.steps.length}`)}</span>
-    </div>
+    </div>`}
     <h1 class="gui-onb__title">${title}</h1>
     ${tagline && html`<p class="gui-onb__lead gui-onb__tagline ok-font-body">${tagline}</p>`}
     ${lead && html`<p class="gui-onb__lead ok-font-body ok-tone-muted">${lead}</p>`}
@@ -138,7 +143,8 @@ function ToolsStep({ o }) {
   const none = t.ready && t.rows.length === 0;
   return html`<section class="gui-onb__card">
     <${Head} o=${o} title=${none ? "No AI tool here yet" : "Your AI tools"}
-      tagline="A camp where work rides from the board through the orks to the Review gate, and nothing passes without you."
+      tagline=${inFocus() ? "An idea becomes a spec and a plan; your orks do the work; nothing is merged without you."
+        : "A camp where work rides from the board through the orks to the Review gate, and nothing passes without you."}
       lead=${none ? "Nothing was found on this computer that orks can run on. Install one, or open the town without AI."
         : "Orks run on the ones you check. Found on this machine: nothing was run and no key was read. Check sends one short request to its lightest model."} />
     ${!t.ready ? html`<p class="ok-font-body ok-tone-muted">Looking for your AI tools…</p>` : none ? html`<${NoTools} t=${t} />` : html`
@@ -172,15 +178,15 @@ function ToolsStep({ o }) {
           none ? "" : t.missing.length ? say(`Not found: ${t.missing.join(", ")}.`) : ""].filter(Boolean).join(" ")}</span>
         <button class="ok-btn" onClick=${() => { asking.value = true; }}>Request a tool</button>
       </div>
-      ${!o.again && !none && html`<label class="ok-check gui-onb__warder">
+      ${!o.again && !none && !inFocus() && html`<label class="ok-check gui-onb__warder">
         <input type="checkbox" class="gui-onb__hide" checked=${t.warder} onChange=${() => send("onboarding.tools", { warder: !t.warder })} />
         <i>${t.warder ? "✓" : ""}</i>
         <span><b>Guard this project with the Security reviewer</b> (recommended)<br />
           <span class="ok-font-status ok-tone-muted">Adds hooks to .claude/settings.json that stop risky commands and secrets before an ork runs them.</span>
           ${t.warder_agy && html`<br /><span class="ok-font-status ok-tone-wait gui-onb__warder-agy">${say(t.warder_agy)}</span>`}</span>
       </label>`}`}
-    <${Foot} back=${false} next=${t.ready ? () => send("onboarding.tools", { next: true }) : null}
-      nextLabel=${none ? "Go on without AI" : "Next"} />
+    <${Foot} back=${false} skip=${!inFocus()} next=${t.ready ? () => send(inFocus() ? "onboarding.skip" : "onboarding.tools", inFocus() ? {} : { next: true }) : null}
+      nextLabel=${inFocus() ? (none ? "Open the board without AI" : "Open the board") : none ? "Go on without AI" : "Next"} />
     ${asking.value && html`<${RequestTool} />`}
   </section>`;
 }
@@ -530,10 +536,27 @@ export function Ghost({ g, spot, biome, bare = false }) {
 
 const STEPS = { tools: ToolsStep, who: WhoStep, mcp: McpStep, town: TownStep, survey: SurveyStep };
 
+/** A step the shell does not offer (a setup left half-way): skip to the end. */
+function Skipping() {
+  useEffect(() => { send("onboarding.skip"); }, []);
+  return null;
+}
+
+/** In focus the town is raised behind the scenes: this says so and closes the onboarding when it stands. */
+function Opening({ o }) {
+  const done = o.raising && (o.raising.phase === "done" || o.raising.phase === "failed");
+  useEffect(() => { if (done) send("onboarding.close"); }, [done]);
+  return html`<div class="gui-onb__over"><section class="gui-onb__setup ok-win" aria-live="polite">
+    <span class="ok-font-label">Opening the board…</span>
+    ${o.raising?.error && html`<p class="ok-font-status ok-tone-error">${o.raising.error}</p>`}
+  </section></div>`;
+}
+
 export function Onboarding() {
   const t = town.value;
   const o = t && t.onboarding;
   if (!o) return null;
+  if (inFocus() && o.step !== "tools") return o.step === "raising" ? html`<${Opening} o=${o} />` : html`<${Skipping} />`;
   if (o.step !== "town" && o.step !== "survey") townReady.value = false;
   if (o.step === "raising") return o.raising ? html`<${Raising} o=${o} />` : null;
   const Step = STEPS[o.step];

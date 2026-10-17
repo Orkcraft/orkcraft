@@ -1,9 +1,11 @@
-// An opened idea (§7): its sections as blocks (each its own colour role and icon, the thesis bold, the text folded),
-// the question box, the talk, and the actions by state — Take it to work · Start · task states with Stop · Start again.
+// An opened idea (29a §7), as the v1 shell's preview shows it (docs/specs/33-v1-shell.md §6): its sections as blocks (each
+// its own colour role and icon, the thesis bold, the text folded), the question box, the talk, and the actions by state —
+// Take it to work · Start · task states with Stop · Start again. `PlanView` is the same idea's plan, scrolled to a to-do.
 import { useState } from "preact/hooks";
 import { html, cls } from "../html.js";
 import { say } from "../link.js";
-import { page, opened, open, run, stateWords } from "./store.js";
+import { stateWords } from "./store.js";
+import { act as run, showTask, showIdea, closePreview } from "../shell/store.js";
 
 // Section → [colour role, line icon, kit icon]. The role is a design-system token in board.css (`[data-sec]`); the line
 // icon (16px) is Office's, the kit's pixel icon (tools/ui_kit.py) Camp's.
@@ -69,12 +71,14 @@ function Talk({ turns }) {
     <span>${t.text}</span></li>`)}</ol>`;
 }
 
-const TASK_WORDS = { waiting: "waiting", ready: "ready", running: "running", testing: "testing", merged: "merged", failed: "failed", held: "held" };
+const TASK_WORDS = { waiting: "waiting", ready: "ready", running: "running", testing: "testing", review: "at Review", merged: "merged",
+  failed: "failed", held: "held" };
 
 function Tasks({ plan, working }) {
   return html`<ul class="board-tasks">${plan.tasks.map((k) => html`<li key=${k.id} data-state=${k.state}>
     <span class="board-task__state" data-state=${k.state}>${TASK_WORDS[k.state] || k.state}</span>
-    <b>${k.title}</b><span class="board-chip kit-well">${k.tier}</span>
+    <button class="board-link board-task__title" onClick=${() => showTask(plan.idea, k.id)}><b>${k.title}</b></button>
+    <span class="board-chip kit-well">${k.tier}</span>
     ${k.after?.length ? html`<span class="ok-tone-muted">after ${k.after.join(", ")}</span>` : ""}
     ${k.commit && html`<code class="board-commit" title=${k.branch}>${k.commit.slice(0, 8)}</code>`}
     ${k.state === "held" && k.note && html`<span class="ok-tone-wait">${k.note}</span>`}
@@ -83,12 +87,23 @@ function Tasks({ plan, working }) {
   </li>`)}</ul>`;
 }
 
-function Plan({ plan }) {
+/** "tasks k2 and k3 wait for it": the tasks a to-do holds back. */
+export function unblocks(todo) {
+  const ids = todo.for || [];
+  if (!ids.length) return "";
+  const list = ids.length === 1 ? ids[0] : `${ids.slice(0, -1).join(", ")} and ${ids[ids.length - 1]}`;
+  return `${ids.length === 1 ? "task" : "tasks"} ${list} ${ids.length === 1 ? "waits" : "wait"} for it`;
+}
+
+function Plan({ plan, todo = "" }) {
   const e = plan.estimate;
   return html`<div class="board-plan kit-well"><h3 class="board-sub kit-legend">The plan ${e ? html`<span class="ok-tone-muted">${e.tasks} tasks · ${price(e)}</span>` : ""}</h3>
     <${Tasks} plan=${plan} />
     ${plan.todos?.length ? html`<h3 class="board-sub kit-legend">To-dos before it starts</h3><ul class="board-tasks">${plan.todos.map((t) =>
-      html`<li key=${t.id}><b>${t.title}</b><span class="board-chip kit-well">${t.kind}</span><span class="ok-tone-muted">${t.why}</span></li>`)}</ul>` : ""}
+      html`<li key=${t.id} data-todo=${t.id} class=${cls("board-plan__todo", { "is-target": t.id === todo })}
+        ref=${(el) => { if (el && t.id === todo) el.scrollIntoView({ block: "center" }); }}>
+        <b>${t.title}</b><span class="board-chip kit-well">${t.kind}</span><span class="ok-tone-muted">${t.why}</span>
+        ${t.id === todo && unblocks(t) && html`<span class="board-plan__line">${unblocks(t)}</span>`}</li>`)}</ul>` : ""}
   </div>`;
 }
 
@@ -107,19 +122,25 @@ function Actions({ p }) {
   </div>`;
 }
 
-export function Idea() {
-  const p = page.value;
+/** The idea's plan with the to-do it was opened from highlighted and said what it unblocks; Start stays here. */
+export function PlanView({ p, todo }) {
+  const plan = p.plan, e = plan?.estimate;
+  if (!plan) return html`<p class="ok-tone-muted">This idea has no plan yet.</p>`;
+  return html`<div class="board-actions">
+    <${Plan} plan=${plan} todo=${todo} />
+    ${p.state === "plan" && e && html`<button class="ok-btn primary" onClick=${() => run("ideas.start", { slug: p.slug })}>Start · ${e.tasks} tasks · ${price(e)}</button>`}
+    <button class="board-link" onClick=${() => showIdea(p.slug)}>Open the spec</button>
+  </div>`;
+}
+
+export function IdeaView({ p }) {
   const [section, setSection] = useState("");
   const [sure, setSure] = useState(false);
-  if (!p) return html`<aside class="board-idea board-col kit-frame kit-paper"><div class="board-col__body"><p class="ok-tone-muted">Opening…</p></div></aside>`;
-  const drop = async () => { await run("ideas.drop", { slug: p.slug }); open(""); };
-  return html`<aside class="board-idea board-col kit-frame kit-paper" aria-label=${p.title}>
-    <h2 class="board-h board-col__plate kit-plate" title=${p.title}>${p.title}</h2>
-    <div class="board-col__body">
+  const drop = async () => { await run("ideas.drop", { slug: p.slug }); closePreview(); };
+  return html`<div class="board-ideaview">
     <div class="board-bar">
       <span class="board-state" data-state=${p.state}>${stateWords({ state: p.state, progress: planProgress(p.plan) })}</span>
-      ${p.size && html`<span class="board-size kit-well">${p.size}</span>`}
-      <button class="ok-btn" aria-label="Close" onClick=${() => open("")}>Close</button></div>
+      ${p.size && html`<span class="board-size kit-well">${p.size}</span>`}</div>
     <${Actions} p=${p} />
     <div class="board-secs">${p.sections.map((s) => html`<${Block} key=${s.name} s=${s} asked=${section === s.name} onAsk=${setSection} />`)}</div>
     <${Say} p=${p} section=${section} setSection=${setSection} />
@@ -127,10 +148,9 @@ export function Idea() {
     <div class="board-row">${sure ? html`<span>Drop this idea and its page?</span>
         <button class="ok-btn danger" onClick=${drop}>Delete it</button><button class="ok-btn" onClick=${() => setSure(false)}>Keep it</button>`
       : html`<button class="ok-btn danger" onClick=${() => setSure(true)}>Delete idea</button>`}</div>
-    </div>
-  </aside>`;
+  </div>`;
 }
 
-function planProgress(plan) {
+export function planProgress(plan) {
   return plan ? { done: plan.tasks.filter((k) => k.state === "merged").length, total: plan.tasks.length } : { done: 0, total: 0 };
 }
