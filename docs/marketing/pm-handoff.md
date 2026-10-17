@@ -52,6 +52,9 @@ The state a new product-and-marketing session starts from. Update it when you ha
 ## State on 16 October (~11:00 Berlin)
 - **The owner also runs his own sessions** (e.g. `claude/lucid-gates`, 17 October: decisions §43, specs 29a/29b
   merged). Before writing a decision or a spec, `git pull` and read the newest §§ of decisions; number after them.
+- **Hold (17 October):** the owner is deciding in a product session (`session_01KJuWeaLnwNW5x61qQf3nGs`) whether v1
+  becomes Office with a few windows (no camp map, no animation). Until that decision is in decisions-2026-10.md, start
+  no new Camp/art work: not 17b, 20, 22, 23 or a new art run. Merging what already came back (18, 19, art) is fine.
 - **Decisions §44 (17 October):** goal (was §43's track), target (was the building's Goal), track = a route of the
   rails per class of work (after the testers). Spec 32 (wording, agy) waits for a batch.
 - **Specs 26, 27 and 28 merged** (16 October afternoon and evening). Next Claude spec: 17b (after 19 is merged).
