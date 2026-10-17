@@ -45,3 +45,4 @@ prompts, paths or names. The first real work (quest 4) only reads your repositor
    own, and why?
 5. Would you be disappointed if you couldn't use it any more? (very / somewhat / not)
 6. What one thing would make you use it every day?
+7. If you could keep only one building, which one, and why?
