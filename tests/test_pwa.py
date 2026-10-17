@@ -382,7 +382,7 @@ def test_the_workers_install_fills_its_cache_past_the_http_cache():
 
 def test_service_worker_names_cache_version_and_cache_first_prefixes():
     sw = (pwa.ROOT / "sw.js").read_text(encoding="utf-8")
-    assert "orkcraft-app-v14" in sw
+    assert "orkcraft-app-v15" in sw
     for prefix in ("v3/", "sprites/", "icons/", "fence/", "fonts/", "ui/"):
         assert prefix in sw
 

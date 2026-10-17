@@ -2,6 +2,7 @@
 // of all of them, a tap opens each tool's windows with when they reset — · today's Spend · Stop all · the gear (Push after
 // merging). Roles only: warning at 20 % or less left, danger at 5 % or less.
 import { h, sheet } from "./util.js";
+import { foot } from "./shell-forms.js";
 
 const MARKS = { claude: "✱", agy: "∩", codex: "◇", hermes: "☿", pi: "π", cursor: "▷" };
 export const WARN = 0.2, DANGER = 0.05;
@@ -20,10 +21,10 @@ export function resetWords(iso, now = new Date()) {
 export function makeTop(core, ctx) {
   const title = h("h1", {}, "Orkline");
   const chip = h("button", { class: "limit-chip", type: "button", hidden: true, "aria-haspopup": "dialog" });
-  const spend = h("span", { class: "board-spend muted" });
+  const spend = h("p", { class: "board-spend muted" });
   const stop = h("button", { class: "ok-btn danger board-stop", type: "button" }, "Stop all");
   const gear = h("button", { class: "ok-btn gear", type: "button", "aria-label": "Settings" }, "⚙");
-  const el = h("header", { class: "board-bar" }, h("div", { class: "board-name" }, title, spend), chip, stop, gear);
+  const el = h("header", { class: "board-bar" }, h("div", { class: "board-name" }, title), chip, stop, gear, spend);
 
   // Stop all: a tap asks first (the confirm is a sheet whose button sits away from this one), as the town's does.
   const really = h("button", { class: "ok-btn danger", type: "button" }, "Stop every ork");
@@ -55,9 +56,24 @@ export function makeTop(core, ctx) {
     ctx.flash("The logs are downloaded.");
   }
 
+  // Pair a phone: a phone does not pair another one (the listener refuses `phones.*` to a phone, docs/design/mobile.md §2): this sheet says
+  // where it is done and how the phone will reach the computer.
+  const pairSheet = sheet("Pair a phone",
+    h("p", {}, "A phone is paired from the computer, never from another phone: that keeps a lost phone from adding more."),
+    h("ol", { class: "steps" },
+      h("li", {}, "On the computer, open the gear → Pair a phone: it shows a QR code and says how long the code lasts."),
+      h("li", {}, "Scan the code with this phone’s camera: Orkline opens in the browser and pairs.")),
+    h("h3", {}, "How the phone reaches the computer"),
+    h("ul", { class: "steps" },
+      h("li", {}, "On the same Wi-Fi as the computer."),
+      h("li", {}, "Anywhere on your tailnet, when Tailscale runs on the computer and the phone."),
+      h("li", {}, "Away from home? Install Tailscale on the computer and the phone.")),
+    foot(h("button", { class: "ok-btn primary big", type: "button", onclick: () => pairSheet.close() }, "Done")));
   const pushBox = h("input", { type: "checkbox", id: "push-after" });
   const gearSheet = sheet("Settings",
     h("label", { class: "check-line", for: "push-after" }, pushBox, h("span", {}, "Push after merging (sends your code to origin)")),
+    h("h3", {}, "Your phone"),
+    h("div", { class: "row" }, h("button", { class: "ok-btn", type: "button", onclick: () => pairSheet.open() }, "Pair a phone")),
     h("h3", {}, "Download today's logs"),
     h("div", { class: "row" }, h("button", { class: "ok-btn", type: "button", onclick: () => download(1) }, "Today"),
       h("button", { class: "ok-btn", type: "button", onclick: () => download(7) }, "The last 7 days")),
@@ -67,10 +83,11 @@ export function makeTop(core, ctx) {
 
   return {
     el,
-    sheets: [stopSheet.el, limitsSheet.el, gearSheet.el],
+    sheets: [stopSheet.el, limitsSheet.el, gearSheet.el, pairSheet.el],
     render(s) {
       const gold = s.hud?.show_gold ? s.hud.gold : "";
-      spend.replaceChildren(...(gold ? [h("span", { class: "word" }, "Spend"), " ", h("b", {}, gold)] : []));
+      spend.replaceChildren(...(gold ? [h("span", { class: "word" }, "Spend today"), " ", h("b", {}, gold)] : []));
+      spend.hidden = !gold;
       const tools = (s.limits || []).filter((l) => typeof l.left === "number");
       chip.hidden = !tools.length;
       if (!tools.length) return;

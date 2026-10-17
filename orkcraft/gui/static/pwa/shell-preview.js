@@ -7,6 +7,7 @@ import { steady } from "./shell-util.js";
 import { stateWords } from "./shell-board.js";
 import { resultActions, factsOf, mergeReason } from "./shell-review.js";
 import { gruntWords } from "./shell-agents.js";
+import { goalBody } from "./shell-goal.js";
 
 const TALK_SHOWN = 6;
 const LOG_MS = 5000;
@@ -47,17 +48,20 @@ export function makePreview(core, ctx) {
   const failed = (r) => !r.ok || r.result?.error;
   async function read(p) {
     const mine = ++seq;
-    const names = p.kind === "task" || p.kind === "result" ? [["ideas.task", { slug: p.slug, task: p.task }]] : [["ideas.page", { slug: p.slug }]];
+    const names = p.kind === "task" || p.kind === "result" ? [["ideas.task", { slug: p.slug, task: p.task }]]
+      : p.kind === "goal" ? [["ideas.goal", { slug: p.slug }]] : p.kind === "doc" ? [["ideas.doc", { path: p.path }]] : [["ideas.page", { slug: p.slug }]];
     if (p.kind === "result") names.push(["ideas.diff", { slug: p.slug, task: p.task }]);
     const got = await Promise.all(names.map(([n, a]) => ctx.send(n, a)));
     if (mine !== seq || !st.preview) return;
-    if (failed(got[0])) { ctx.flash(got[0].error || got[0].result?.error); return; }
-    data = p.kind === "task" ? { task: got[0].result } : p.kind === "result" ? { task: got[0].result, diff: got[1].ok && !got[1].result?.error ? got[1].result : null }
+    if (failed(got[0])) { ctx.flash(got[0].error || got[0].result?.error); if (p.kind === "doc") data = { doc: null }; else return; }
+    else if (p.kind === "goal") data = { goal: got[0].result };
+    else if (p.kind === "doc") data = { doc: got[0].result };
+    else data = p.kind === "task" ? { task: got[0].result } : p.kind === "result" ? { task: got[0].result, diff: got[1].ok && !got[1].result?.error ? got[1].result : null }
       : { page: got[0].result };
     draw(false);
     clearTimeout(timer);
     const live = data.task && (data.task.state === "running" || data.task.state === "testing");
-    if (live || data.page?.busy || BUSY.has(data.page?.state)) timer = setTimeout(() => st.preview && read(st.preview), live ? LOG_MS : 10000);
+    if (live || data.page?.busy || BUSY.has(data.page?.state) || data.goal?.busy) timer = setTimeout(() => st.preview && read(st.preview), live ? LOG_MS : 10000);
   }
 
   async function act(name, args, done) {
@@ -164,6 +168,20 @@ export function makePreview(core, ctx) {
       onclick: () => act("ideas.start", { slug: p.slug }, "Started.").then(() => read(cur)) }, `Start · ${n} tasks · ${price(p.plan.estimate)}`)] : [];
   }
 
+  // -- a goal, and a document it links ------------------------------------------------------------------------
+  function goalScreen(g, cur) {
+    title.replaceChildren(h("span", { class: "muted" }, "Goal "), g.title);
+    body.replaceChildren(...goalBody(g, core, act, asked, (v) => { asked = v; }));
+    return [h("button", { class: "ok-btn big", type: "button", onclick: () => core.editGoal(g.slug) }, "Edit goal")];
+  }
+  function docScreen(d, cur) {
+    title.replaceChildren(h("span", { class: "muted" }, "Document "), cur.path);
+    body.replaceChildren(h("p", {}, h("button", { class: "linkish", type: "button", onclick: () => core.open({ kind: "goal", slug: cur.slug }) }, "← Back to the goal")),
+      d ? h("pre", { class: "log doc", "aria-label": cur.path }, d.text) : h("p", { class: "muted" }, "That document cannot be shown."),
+      d?.truncated ? h("p", { class: "muted" }, "Cut here: the document is longer.") : null);
+    return [];
+  }
+
   // -- a task -------------------------------------------------------------------------------------------------
   function taskScreen(t, cur) {
     title.replaceChildren(h("span", { class: "muted" }, "Task "), t.title);
@@ -217,6 +235,8 @@ export function makePreview(core, ctx) {
     let actions = [];
     if (cur.kind === "idea") actions = ideaScreen(data.page, cur);
     else if (cur.kind === "plan") actions = planScreen(data.page, cur);
+    else if (cur.kind === "goal") actions = goalScreen(data.goal, cur);
+    else if (cur.kind === "doc") actions = docScreen(data.doc, cur);
     else if (cur.kind === "task") actions = taskScreen(data.task, cur);
     else actions = resultScreen(data.task, data.diff, cur);
     bar.replaceChildren(...actions.filter(Boolean));
