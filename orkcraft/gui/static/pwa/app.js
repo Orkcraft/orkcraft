@@ -13,6 +13,7 @@ import { wearGround } from "./ground.js";
 import { makeFields } from "./fields.js";
 import { makeLook } from "./look.js";
 import { makeSlots } from "./slots.js";
+import { makeBoard } from "./board.js";
 
 const PROTOCOL = "orkcraft.v1";
 const API = 1;
@@ -175,7 +176,7 @@ function connect() {
   clearTimeout(retryTimer);
   if (!device?.token) { unpaired(); return; }
   if (ws && ws.readyState <= 1) return;
-  ui = ui || layout();
+  ui = ui || layout(kept.get()?.state?.focus === "board");
   banner();
   status("Connecting…");
   if (!town) {                                   // the town as it was last seen, greyed, until it answers
@@ -322,7 +323,9 @@ async function precacheCamp() {
   }
 }
 
-function layout() {
+function layout(focus = false) {
+  document.documentElement.classList.toggle("focus-board", focus);
+  if (focus) return boardLayout();
   const parts = {
     status: h("p", { class: "status", role: "status" }),
     precache: h("p", { class: "precache muted", role: "status" }),
@@ -345,6 +348,21 @@ function layout() {
   return parts;
 }
 
+// In focus the phone shows only the board (board.js; docs/specs/29a-board-focus.md §1): its own top bar with Stop all,
+// the three tabs at the foot. The snapshot's `focus` chooses; `""` gives the town as it was.
+function boardLayout() {
+  const parts = {
+    focus: true,
+    status: h("p", { class: "status", role: "status" }),
+    install: h("div"),
+    news: h("div", { class: "news", "aria-live": "polite" }),
+  };
+  parts.board = makeBoard({ send, deliver, flash, unpair: unpairHere });
+  parts.content = () => parts.board.content();
+  show(parts.status, parts.install, parts.news, parts.board.el, ...parts.board.sheets);
+  return parts;
+}
+
 // The town's version, quiet in the footer (mobile.hello): the one the computer runs, which this app is.
 async function hello() {
   const r = await send("mobile.hello");
@@ -355,7 +373,7 @@ async function hello() {
 
 let version = "";
 function phoneLine() {
-  ui.dock.phone(version);
+  ui.dock?.phone(version);
 }
 
 function status(text) {
@@ -416,11 +434,17 @@ function resource(icon, word, value, level) {
 function render(s, keptAt = 0) {
   const first = !town;
   town = s;
+  if (ui && Boolean(ui.focus) !== (s.focus === "board")) {
+    ui.board?.dispose();
+    ui = layout(s.focus === "board");
+    banner();
+  }
   seenAt = keptAt || Date.now();
   if (!keptAt) kept.set(s);
   badge((s.alerts || []).length + (s.pool_questions || []).length);
   applyLook(s.look);
   ground(s);
+  if (ui.focus) { ui.board.render(s); return; }
   const camp = s.look !== "office";
   const hud = s.hud || {};
   const words = s.resources || {};
