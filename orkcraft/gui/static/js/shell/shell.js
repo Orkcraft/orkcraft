@@ -11,7 +11,7 @@ import { BoardPane } from "./boardpane.js";
 import { ReviewPane } from "./review.js";
 import { AgentsPane } from "./agents.js";
 import { Preview } from "./preview.js";
-import { preview, review, tab, agentsLayout, setLayout, refreshShell, closePreview, busy } from "./store.js";
+import { preview, review, tab, agentsLayout, setLayout, refreshShell, closePreview, busy, logOpened } from "./store.js";
 
 const sheet = new URL("./shell.css", import.meta.url).href;
 const boardSheet = new URL("../board/board.css", import.meta.url).href;
@@ -47,7 +47,7 @@ function Tabs() {
     agents: 0, review: rv ? rv.results.length : 0 };
   return html`<nav class="shell-tabs" role="tablist" aria-label="Board, Agents, Review">
     ${[["board", "Board"], ["agents", "Agents"], ["review", "Review"]].map(([id, name]) => html`<button key=${id} role="tab"
-      aria-selected=${tab.value === id} class=${cls("shell-tab", { "is-on": tab.value === id })} onClick=${() => { tab.value = id; closePreview(); }}>
+      aria-selected=${tab.value === id} class=${cls("shell-tab", { "is-on": tab.value === id })} onClick=${() => { tab.value = id; closePreview(); logOpened("tab", id); }}>
       ${name}${counts[id] > 0 && html`<span class="shell-count">${counts[id]}</span>`}</button>`)}
   </nav>`;
 }

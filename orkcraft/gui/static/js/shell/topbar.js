@@ -36,6 +36,9 @@ export function Limits() {
   return html`<span class="shell-limits" aria-label="What is left of your AI tools">${limits.map((l) => html`<${Limit} key=${l.provider} l=${l} />`)}</span>`;
 }
 
+/** The analytics zip of the last `days` days (gui/server.py `/api/analytics`): the model calls, the event log, each idea's plan and logs. */
+const logsHref = (days) => `/api/analytics?days=${days}&t=${encodeURIComponent(new URLSearchParams(location.search).get("t") || "")}`;
+
 function Gear() {
   const [open, setOpen] = useState(false);
   const push = !!review.value?.push;
@@ -45,7 +48,9 @@ function Gear() {
       <label class="ok-check">
         <input type="checkbox" class="gui-onb__hide" checked=${push} onChange=${(e) => act("ideas.into", { push: e.target.checked })} />
         <i>${push ? "✓" : ""}</i><span>Push after merging (sends your code to origin)</span></label>
-      <p class="ok-font-status ok-tone-muted">Off by default. The colours follow your system's light or dark setting.</p>
+      <div class="shell-gear__logs"><span class="ok-font-label">Download today's logs</span>
+        <a class="ok-btn" href=${logsHref(1)} download>Today</a><a class="ok-btn" href=${logsHref(7)} download>The last 7 days</a></div>
+      <p class="ok-font-status ok-tone-muted">What you did and what the orks did, on this machine only. Off by default. The colours follow your system's light or dark setting.</p>
     </div>`}
   </span>`;
 }

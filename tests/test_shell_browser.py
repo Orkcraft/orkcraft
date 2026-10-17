@@ -215,6 +215,9 @@ def test_the_top_bar_limits_spend_stop_all_and_the_push_switch(shell):
     pg.get_by_text("Push after merging (sends your code to origin)").click()
     pg.wait_for_function("() => true")
     assert ("ideas.into", {"push": True}) in host.log
+    links = pg.locator(".shell-gear__pop a[download]")                              # the day's logs, today and the last 7 days
+    assert links.all_inner_texts() == ["Today", "The last 7 days"]
+    assert "/api/analytics?days=1" in links.nth(0).get_attribute("href") and "days=7" in links.nth(1).get_attribute("href")
 
 
 def test_agents_resize_hide_and_remember(shell, gui):
@@ -239,6 +242,7 @@ def test_agents_resize_hide_and_remember(shell, gui):
 def test_a_click_on_an_idea_a_todo_a_chip_and_a_result_opens_the_right_preview(shell):
     pg, host = shell
     pg.locator(".board-card", has_text="Sync ideas").click()                      # an idea → its spec: the nine sections
+    assert ("ideas.log", {"event": "opened", "what": "idea", "ref": "sync", "device": "desktop"}) in host.log
     pg.locator(".shell-preview .board-sec").first.wait_for(timeout=WAIT_MS)
     assert pg.locator(".shell-preview .board-sec").count() == len(SECTIONS)
     assert "Spec" in pg.locator(".shell-preview > header").inner_text()
@@ -248,11 +252,13 @@ def test_a_click_on_an_idea_a_todo_a_chip_and_a_result_opens_the_right_preview(s
     target.wait_for(timeout=WAIT_MS)
     assert "tasks k2 and k3 wait for it" in target.inner_text()
     assert pg.locator(".shell-preview > header").inner_text().startswith("Plan")
+    assert ("ideas.log", {"event": "opened", "what": "todo", "ref": "sync/t1", "device": "desktop"}) in host.log
 
     pg.locator(".shell-chip", has_text="Retry on a lost signal").click()          # a chip → the task: brief, log, Stop
     pg.locator(".shell-task").wait_for(timeout=WAIT_MS)
     text = pg.locator(".shell-task").inner_text()
     assert "Brief of Retry on a lost signal" in text and "reading sync.py" in text and "idea/sync/k3" in text and "working" in text
+    assert ("ideas.log", {"event": "opened", "what": "task", "ref": "sync/k3", "device": "desktop"}) in host.log
     pg.get_by_role("button", name="Stop", exact=True).click()
     pg.wait_for_function("() => true")
     assert ("ideas.stop_task", {"slug": "sync", "task": "k3"}) in host.log
@@ -260,6 +266,7 @@ def test_a_click_on_an_idea_a_todo_a_chip_and_a_result_opens_the_right_preview(s
     pg.locator(".shell-card", has_text="Add the queue").click()                   # a result → its code
     pg.locator(".shell-result .shell-commits").wait_for(timeout=WAIT_MS)
     assert "k2: add the queue" in pg.locator(".shell-commits").inner_text()
+    assert ("ideas.log", {"event": "opened", "what": "result", "ref": "sync/k2", "device": "desktop"}) in host.log
     pg.locator(".shell-file", has_text="sync.py").locator("summary").click()
     pg.locator(".shell-patch__line.is-add").first.wait_for(timeout=WAIT_MS)
     assert pg.locator(".shell-patch__line.is-add").count() == 2 and pg.locator(".shell-patch__line.is-del").count() == 1
@@ -357,6 +364,8 @@ def test_below_1024_the_phones_layout_three_tabs_and_the_preview_on_its_own_scre
         assert tabs.get_by_role("tab", name="Review").inner_text().replace("\n", "") == "Review2"
         assert pg.locator(".shell-review").is_hidden() and pg.locator(".shell-board").is_visible()
         tabs.get_by_role("tab", name="Review").click()
+        pg.wait_for_function("() => true")
+        assert ("ideas.log", {"event": "opened", "what": "tab", "ref": "review", "device": "desktop"}) in host.log
         pg.locator(".shell-card", has_text="Add the queue").click()
         pg.locator(".shell-preview.is-open").wait_for(timeout=WAIT_MS)
         box_ = box(pg, ".shell-preview")

@@ -2,6 +2,7 @@
 // Review and of Agents, and which one thing the preview shows. A refresh runs when the town says the ideas changed and
 // every 10 s while a model or a task runs; the open task's log is read again every 5 s while it runs.
 import { signal, batch } from "@preact/signals";
+import { command } from "../link.js";
 import { ask, board, opened, page, BUSY } from "../board/store.js";
 
 export const preview = signal(null);       // null | {kind: "idea"|"plan"|"task"|"result", slug, task?, todo?}
@@ -44,7 +45,13 @@ export async function act(name, args) {
   return got;
 }
 
+/** What the person opened, for the day's analysis (docs/specs/33-v1-shell.md §9): the host's one loggable event. */
+export function logOpened(what, ref) {
+  command("ideas.log", { event: "opened", what, ref: String(ref || ""), device: "desktop" }).catch(() => {});
+}
+
 export function show(p) {
+  if (p) logOpened(p.kind === "plan" && p.todo ? "todo" : p.kind, p.task ? `${p.slug}/${p.task}` : p.todo ? `${p.slug}/${p.todo}` : p.slug);
   batch(() => {
     preview.value = p;
     detail.value = null;
