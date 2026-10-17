@@ -1170,3 +1170,13 @@ the core, drawn plainly, and the owner tests it before anything else is built. A
     result**; the second stays (**at least 2 come back within 7 days** unasked). After a week each tester is shown a
     screenshot of Camp and asked whether they would want it to look so: **two or more saying yes on their own** brings
     Camp back as the look over the working core.
+
+## 46. v1 round 2: goals and ideas by dialog, straight to the model; agents by task type (17 October, the owner)
+
+From the owner's test of spec 33: (1) **a goal** is made in a dialog with metrics, a priority, links to documents and a
+deadline, and **goes to the keeper at once** on saving; (2) **an idea** is a short text with **Process now** or
+**Later**; closing the dialog with text saves it as Later; the keeper then fills its priority from the goal and the
+rest; (3) **agents**: a role is a model and an instruction (and a limit), and each **task type** (code, tests, docs,
+text for people, research) is assigned a role, or a new one is made from there; this brings §45.8's roles into v1 now;
+(4) every dialog and menu opens on a dimmed backdrop; (5) a phone is paired from the shell (QR, Tailscale said
+plainly). Spec 34. Improvements of v1's existing mechanics; the roles are §45.8's named exception to §27.
