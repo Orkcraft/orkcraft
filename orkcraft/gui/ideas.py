@@ -3,27 +3,36 @@
     ideas = Ideas(host)
     host.commands.update(ideas.commands())     # ideas.board, ideas.page, ideas.add, … (the phone may call them all)
     ideas.tick(now)                            # the host's clock: the keeper's batch, the runner's tick
-    ideas.snapshot()                           # focus, ideas_rev, needs_you: in the page's snapshot
+    ideas.snapshot()                           # focus, ideas_rev, needs_you, review_count, limits: in the snapshot
     ideas.stop_all()                           # Stop all
 
 The pages live in the Wiki joined to the board (`realm/ideas.py`), what runs on them in `.orkcraft/ideas/`. The
 keeper (`core/idea_keeper.py`) reads, talks and plans in the background; the runner (`core/idea_runner.py`, spec 29a
 part B) carries a passed plan's tasks to `main`. Every change bumps `ideas_rev`, so the board and the phone know to
 look again.
+
+Spec 33 adds Review: the results waiting for the person (`ideas.review_list`, `ideas.diff`), their three answers
+(`ideas.merge`, `ideas.back`, `ideas.drop_task`), `ideas.stop_task`, the Agents window (`ideas.agents`), one task
+with its log (`ideas.task`) and the branch results merge into (`ideas.into`).
 """
 from __future__ import annotations
 
+import datetime as dt
 import os
+import threading
 import time
 from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft import settings
 from orkcraft.core import idea_keeper
-from orkcraft.realm import catalog, idea_secrets, ideas, wiki
+from orkcraft.realm import catalog, harnesses, idea_secrets, ideas, wiki
+from orkcraft.realm.idea_git import IdeaGit
 
 RUNNER_TICK_S = 3.0               # how often the runner looks at its tasks
 SNAPSHOT_S = 10.0                 # the most a cached Needs you count is kept without a change
+LIMITS_S = 300.0                  # how often the AI tools' limits are read for the top bar (spec 33 §5)
+WINDOWS = {"session": "5h", "weekly": "week"}      # the quota readers' window names → the top bar's
 NEEDS_KIND = {"asks": "asks", "plan": "plan", "failed": "failed"}
 
 
@@ -58,6 +67,9 @@ class Ideas:
         self._runner: Any = None
         self._runner_error = ""
         self._runner_at = 0.0
+        self._limits: list[dict] = []
+        self._limits_at = float("-inf")
+        self._limits_busy = False
         self.keeper = idea_keeper.IdeaKeeper(
             self.town.repo_root, self.state_dir, self.root, lambda: self.town.machine.ideas, self._publish,
             demo=bool(self.town.demo), budget_ok=lambda: self.town.budget_ok())
@@ -146,12 +158,53 @@ class Ideas:
         if self._cache is None or self._cache[0] != self.rev or now - self._cache[1] > SNAPSHOT_S:
             try:
                 b = self.board(make=False)
+                waiting = self.results()
                 data = {"needs_you": len(b["today"]["needs_you"]),
-                        "idea_states": [{"slug": i["slug"], "title": i["title"], "state": i["state"]} for i in b["ideas"]]}
+                        "idea_states": [{"slug": i["slug"], "title": i["title"], "state": i["state"]} for i in b["ideas"]],
+                        "review_count": len(waiting),
+                        "review_results": [{k: r[k] for k in ("idea", "task", "title")} for r in waiting]}
             except Exception:                   # a broken page never breaks the town's snapshot
-                data = {"needs_you": 0, "idea_states": []}
+                data = {"needs_you": 0, "idea_states": [], "review_count": 0, "review_results": []}
             self._cache = (self.rev, now, data)
-        return {"focus": focus_of(self.town.machine), "ideas_rev": self.rev, **self._cache[2]}
+        return {"focus": focus_of(self.town.machine), "ideas_rev": self.rev, **self._cache[2],
+                "limits": self.limits()}
+
+    def limits(self) -> list[dict]:
+        """What is left of each installed AI tool, for the top bar: `[{"provider","name","left","rows":[{"window",
+        "left","reset"}]}]`, `left` the smallest `remaining` of the tool's rows (decisions §45.3). The Town Hall's
+        last read when it has one, else read here in a thread every LIMITS_S."""
+        rows = list(self.host.limits() or [])
+        if not rows:
+            now = time.monotonic()
+            if now - self._limits_at >= LIMITS_S and not self._limits_busy:
+                self._limits_busy, self._limits_at = True, now
+                threading.Thread(target=self._read_limits, daemon=True, name="ideas-limits").start()
+            return self._limits
+        return self._limits_of(rows)
+
+    def _read_limits(self) -> None:
+        try:
+            from orkcraft.sources.limits import fetch_limits
+            self._limits = self._limits_of(fetch_limits(Path(self.town.repo_root)))
+        except Exception:                       # a quota never breaks the top bar
+            pass
+        finally:
+            self._limits_busy = False
+
+    def _limits_of(self, rows: list) -> list[dict]:
+        by: dict[str, list] = {}
+        for lim in rows:
+            if getattr(lim, "remaining", None) is not None and harnesses.get(getattr(lim, "provider", "")):
+                by.setdefault(lim.provider, []).append(lim)
+        out = []
+        for provider, mine in by.items():
+            out.append({"provider": provider, "name": harnesses.title(provider).split()[0],
+                        "left": round(min(x.remaining for x in mine), 4),
+                        "rows": [{"window": WINDOWS.get(x.window, x.window) or x.group or "limit",
+                                  "left": round(x.remaining, 4),
+                                  "reset": x.reset.isoformat(timespec="minutes") if isinstance(x.reset, dt.datetime)
+                                  else ""} for x in mine]})
+        return out
 
     # -- reading -------------------------------------------------------------------------------------------
 
@@ -330,6 +383,142 @@ class Ideas:
         self.changed(slug)
         return {"ok": True}
 
+    # -- Review, Agents, one task (spec 33 §5) -------------------------------------------------------------
+
+    def _into(self) -> str:
+        return str((self.town.machine.ideas or {}).get("merge_into") or settings.IDEAS["merge_into"])
+
+    def _plans(self) -> list[tuple[str, str, dict]]:
+        """(slug, title, plan) of every idea that has a plan, in the board's order."""
+        out = []
+        for i in ideas.ideas(self.root()):
+            plan = ideas.plan(self.state_dir, i["slug"])
+            if plan:
+                out.append((i["slug"], i["title"], plan))
+        return out
+
+    def results(self) -> list[dict]:
+        """The results waiting at Review, oldest first."""
+        out = []
+        for slug, title, plan in self._plans():
+            for t in plan.get("tasks") or []:
+                if t.get("state") == "review":
+                    out.append({"idea": slug, "idea_title": title, "task": t.get("id"), "title": t.get("title", ""),
+                                "round": int(t.get("round") or 1), "tests": t.get("tests") or _NO_TESTS,
+                                "diff": t.get("diff") or {"files": 0, "added": 0, "removed": 0},
+                                "cost": t.get("cost"), "conflict": t.get("conflict") or "",
+                                "finished": t.get("finished") or ""})
+        return sorted(out, key=lambda r: r["finished"])
+
+    def review_list(self, args: dict) -> dict:
+        m = self.town.machine.ideas or {}
+        return {"into": self._into(), "push": bool(m.get("push", settings.IDEAS["push"])), "results": self.results()}
+
+    def _task(self, args: dict) -> tuple[str, str, dict, dict]:
+        slug, tid = _text(args, "slug", 100), _text(args, "task", 40)
+        plan = ideas.plan(self.state_dir, slug)
+        task = next((t for t in (plan or {}).get("tasks") or [] if t.get("id") == tid), None)
+        if task is None:
+            raise IdeasError("That task is gone")
+        return slug, tid, task, plan
+
+    def diff(self, args: dict) -> dict:
+        _slug, _tid, task, _plan = self._task(args)
+        branch = str(task.get("branch") or "")
+        if not branch:
+            raise IdeasError("That task has no code yet")
+        git = IdeaGit(Path(self.town.repo_root))
+        try:
+            got = git.diff(branch, str(task.get("base") or self._into()))
+        except Exception as e:
+            raise IdeasError("Its code cannot be read: " + " ".join(str(e).split())[:200]) from None
+        return {**got, "base": self._into()}
+
+    def merge(self, args: dict) -> dict:
+        slug, tid, _task, _plan = self._task(args)
+        commit = self.runner(need=True).merge(slug, tid)
+        self.changed(slug)
+        return {"ok": True, "commit": commit}
+
+    def back(self, args: dict) -> dict:
+        slug, tid, _task, _plan = self._task(args)
+        self.runner(need=True).back(slug, tid, _text(args, "why", 1000))
+        self.changed(slug)
+        return {"ok": True}
+
+    def drop_task(self, args: dict) -> dict:
+        slug, tid, _task, _plan = self._task(args)
+        self.runner(need=True).drop_task(slug, tid)
+        self.changed(slug)
+        return {"ok": True}
+
+    def stop_task(self, args: dict) -> dict:
+        slug, tid, _task, _plan = self._task(args)
+        self.runner(need=True).stop_task(slug, tid)
+        self.changed(slug)
+        return {"ok": True}
+
+    def task(self, args: dict) -> dict:
+        slug, tid, task, plan = self._task(args)
+        page = ideas.idea_page(self.root(), slug)
+        runner = self._runner
+        return {**task, "idea": slug, "idea_title": (page.title if page else "") or slug,
+                "log": runner.log(slug, tid) if runner is not None else "",
+                "after": task.get("after") or [], "round": int(task.get("round") or 1)}
+
+    def into(self, args: dict) -> dict:
+        """The branch results merge into (made from the default branch when missing) and whether it is pushed."""
+        branch, push = args.get("branch"), args.get("push")
+        if branch is None and not isinstance(push, bool):
+            raise IdeasError("branch is missing")
+        mine = dict(self.town.machine.ideas or settings.IDEAS)
+        if branch is not None:
+            name = _text(args, "branch", 100)
+            if settings.clean_ideas({"merge_into": name})["merge_into"] != name:
+                raise IdeasError(f"{name!r} is not a branch name")
+            try:
+                IdeaGit(Path(self.town.repo_root)).ensure_branch(name)
+            except RuntimeError as e:
+                raise IdeasError(str(e)) from None
+            mine["merge_into"] = name
+        if isinstance(push, bool):
+            mine["push"] = push
+        self.town.machine.ideas = settings.clean_ideas(mine)
+        settings.save(self.town.machine)
+        self.changed("")
+        return {"ok": True}
+
+    def agents(self, args: dict) -> dict:
+        """The Agents window: the Taskmaster (the keeper) and the Grunts (a chip per live task)."""
+        board = self.board(make=False)
+        titles = {i["slug"]: i["title"] for i in board["ideas"]}
+        chips, waits, mode = [], None, "waiting"
+        for i in board["ideas"]:
+            busy = self.keeper.busy(i["slug"])
+            if i["state"] in ("reading", "planning") or busy:
+                state = "planning" if i["state"] == "planning" else ("reading" if i["state"] == "reading" else "talking")
+                chips.append({"idea": i["slug"], "title": i["title"], "state": state})
+            elif i["state"] == "asks":
+                chips.append({"idea": i["slug"], "title": i["title"], "state": "waiting"})
+                waits = waits or {"idea": i["slug"], "text": f"waiting for your answers on \u201c{i['title']}\u201d"}
+        for rank in ("planning", "reading", "talking"):
+            if any(c["state"] == rank for c in chips):
+                mode = rank
+                break
+        grunts, done, today = [], [], dt.date.today().isoformat()
+        for slug, title, plan in self._plans():
+            for t in plan.get("tasks") or []:
+                state = t.get("state")
+                if state == "merged" and str(t.get("finished") or "").startswith(today):
+                    done.append({"idea": slug, "task": t.get("id"), "title": t.get("title", "")})
+                elif state in ("running", "testing", "review", "ready", "held", "failed"):
+                    grunts.append({"idea": slug, "idea_title": titles.get(slug, title), "task": t.get("id"),
+                                   "title": t.get("title", ""), "state": state, "tier": t.get("tier", ""),
+                                   "note": t.get("note") or (t.get("error") if state == "failed" else "") or ""})
+        return {"roles": [{"role": "taskmaster", "name": "Taskmaster", "state": mode, "waits_on": waits,
+                           "chips": chips},
+                          {"role": "grunt", "name": "Grunts", "chips": grunts}], "done_today": done}
+
     def commands(self) -> dict[str, Callable[[dict], Any]]:
         def guarded(fn):
             def run(args: dict) -> Any:
@@ -337,14 +526,24 @@ class Ideas:
                     return fn(args)
                 except (ValueError, idea_keeper.KeeperError) as e:
                     raise IdeasError(str(e)) from None
+                except Exception as e:
+                    if type(e).__name__ != "RunnerError":      # the runner is loaded on demand: no import here
+                        raise
+                    raise IdeasError(str(e)) from None
             return run
 
         table = {"ideas.board": lambda a: self.board(), "ideas.page": lambda a: self.page(_text(a, "slug", 100)),
                  "ideas.add": self.add, "ideas.say": self.say, "ideas.plan": self.plan, "ideas.start": self.start,
                  "ideas.move": self.move, "ideas.edit": self.edit, "ideas.track_add": self.track_add,
                  "ideas.track_set": self.track_set, "ideas.todo": self.todo, "ideas.drop": self.drop,
-                 "ideas.stop": self.stop}
+                 "ideas.stop": self.stop, "ideas.review_list": self.review_list, "ideas.diff": self.diff,
+                 "ideas.merge": self.merge, "ideas.back": self.back, "ideas.drop_task": self.drop_task,
+                 "ideas.stop_task": self.stop_task, "ideas.agents": self.agents, "ideas.task": self.task,
+                 "ideas.into": self.into}
         return {name: guarded(fn) for name, fn in table.items()}
+
+
+_NO_TESTS = {"passed": 0, "failed": 0, "failing": [], "tail": ""}
 
 
 def _str(args: dict, key: str, limit: int) -> str:

@@ -70,8 +70,9 @@ def shift(s: "MachineSettings") -> Span:
     """The work day the look follows: the person's working hours once set, else 09:00–17:00."""
     return s.work or Span(SHIFT[0], SHIFT[1] - SHIFT[0])
 # The board's keeper and runner (spec 29a): how often the batch reads new ideas, when a talk's session is
-# compacted, how many tasks run at once, which branch they merge into and whether it is pushed.
-IDEAS = {"batch_minutes": 30, "idle_hours": 24, "max_parallel": 1, "merge_into": "main", "push": True}
+# compacted, how many tasks run at once, which branch they merge into (`dev`: the testers' default, spec 33 §4),
+# whether it is pushed (off), and whether a result waits for the person at Review (on; off merges by itself).
+IDEAS = {"batch_minutes": 30, "idle_hours": 24, "max_parallel": 1, "merge_into": "dev", "push": False, "review": True}
 FOCUSES = ("", "board")
 RECENT_FOLDERS = 8                       # the recent folders a Wiki's picker offers               # the GUI's two looks; camp the default
 
@@ -212,8 +213,9 @@ def clean_ideas(raw: object) -> dict:
     branch = raw.get("merge_into")
     if isinstance(branch, str) and re.fullmatch(r"[\w./-]{1,100}", branch) and ".." not in branch:
         out["merge_into"] = branch
-    if isinstance(raw.get("push"), bool):
-        out["push"] = raw["push"]
+    for k in ("push", "review"):
+        if isinstance(raw.get(k), bool):
+            out[k] = raw[k]
     return out
 
 

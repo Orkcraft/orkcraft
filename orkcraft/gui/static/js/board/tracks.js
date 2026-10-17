@@ -25,8 +25,8 @@ export function Tracks() {
     setMaking(null);
     if (title) { const got = await ask("ideas.track_add", { title }); if (got) track.value = got.slug; await run("ideas.board"); }
   };
-  return html`<nav class="board-tracks board-col kit-frame kit-paper" aria-label="Tracks">
-    <h2 class="board-h board-col__plate kit-plate">Tracks</h2>
+  return html`<nav class="board-tracks board-col kit-frame kit-paper" aria-label="Goals">
+    <h2 class="board-h board-col__plate kit-plate">Goals</h2>
     <div class="board-col__body">
     <button class=${cls("board-track", { "is-on": !track.value })} onClick=${() => { track.value = ""; }}>
       <span>All ideas</span><span class="board-count kit-well">${b.ideas.length}</span></button>
@@ -35,9 +35,9 @@ export function Tracks() {
       onDragOver=${(e) => { if (takes(e)) { e.preventDefault(); setOver(t.slug); } }} onDragLeave=${() => setOver("")}
       onDrop=${drop(t)} onClick=${() => { track.value = t.slug; }} title=${t.about || t.title}>
       <span>${t.title}</span><span class="board-count kit-well">${t.count}</span></button>`)}
-    ${making === null ? html`<button class="ok-btn" onClick=${() => setMaking("")}>+ Track</button>`
-      : html`<form class="board-row" onSubmit=${make}><input class="ok-input" autofocus value=${making} aria-label="Track name"
-          placeholder="Track name" onInput=${(e) => setMaking(e.target.value)} onKeyDown=${(e) => e.key === "Escape" && setMaking(null)} />
+    ${making === null ? html`<button class="ok-btn" onClick=${() => setMaking("")}>+ New goal</button>`
+      : html`<form class="board-row" onSubmit=${make}><input class="ok-input" autofocus value=${making} aria-label="Name of the goal"
+          placeholder="Name of the goal" onInput=${(e) => setMaking(e.target.value)} onKeyDown=${(e) => e.key === "Escape" && setMaking(null)} />
         <button class="ok-btn primary" disabled=${!making.trim()}>Add</button></form>`}
     </div>
   </nav>`;

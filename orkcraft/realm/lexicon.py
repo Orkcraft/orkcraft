@@ -138,7 +138,8 @@ TERMS: tuple[Term, ...] = (
     _t("council_word", "Review board", "", "Council"),
     # the Task Fields' other two parts (one board: the orks' kanban, the person's checklist, the notes)
     _t("chore", "to-do", "to-dos", "chore", "chores"),             # a to-do of the person's own
-    _t("track", "track", "tracks"),                                # the project's line of work: ideas in order (spec 29)
+    _t("track", "goal", "goals", "track", "tracks"),               # the project's line of work: ideas in order (spec 29, 32)
+    _t("steward_goal", "Target", "", "Goal"),                      # the Steward's setting: what the retros improve it towards (spec 32)
     _t("idea", "idea", "ideas"),                                   # a spec under discussion, a page in the Wiki (spec 29)
     _t("scribble", "note", "notes", "scribble", "scribbles"),       # an idea or a note on the board
     _t("card_context", "context"),                                 # a card's wiki pages, 📜 (realm/cardlore.py)

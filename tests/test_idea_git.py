@@ -110,3 +110,33 @@ def test_the_env_name_comes_from_the_todos_title():
     assert idea_git.env_name("The STRIPE token: STRIPE_SECRET") == "STRIPE_SECRET"
     assert idea_git.env_name("GITHUB token") == "GITHUB"
     assert idea_git.env_name("a key") == ""
+
+
+def test_the_review_branch_is_made_from_the_default_branch_when_missing(repo):
+    g = IdeaGit(repo)
+    assert g.branches() == ["main"] and g.default_branch() == "main"
+    assert g.ensure_branch("dev") is True and g.ensure_branch("dev") is False
+    assert git(repo, "rev-parse", "dev") == git(repo, "rev-parse", "main") and g.branches() == ["dev", "main"]
+    for bad in ("", "bad name", "a..b", "-x"):
+        with pytest.raises(RuntimeError):
+            g.ensure_branch(bad)
+
+
+def test_the_diff_has_commits_files_and_patches_and_cuts_what_is_too_large(repo, monkeypatch):
+    g = IdeaGit(repo)
+    base = git(repo, "rev-parse", "HEAD")
+    path, branch = g.prepare("i", "k1", "main")
+    commit_in(path, "a.txt", "a\nb\n")
+    commit_in(path, "big.txt", "x" * 100 + "\n")
+    got = g.diff(branch, base)
+    assert [c["subject"] for c in got["commits"]] == ["edit a.txt", "edit big.txt"] and len(got["commits"][0]["sha"]) == 10
+    by = {f["path"]: f for f in got["files"]}
+    assert by["a.txt"]["added"] == 1 and by["a.txt"]["removed"] == 0 and "+b" in by["a.txt"]["patch"]
+    assert got["truncated"] is False and g.stats(path, base) == {"files": 2, "added": 2, "removed": 0}
+    monkeypatch.setattr(idea_git, "PATCH_FILE", 150)
+    cut = {f["path"]: f for f in g.diff(branch, base)["files"]}
+    assert cut["a.txt"]["patch"] is not None and cut["big.txt"]["patch"] is None
+    assert g.diff(branch, base)["truncated"] is True
+    monkeypatch.setattr(idea_git, "PATCH_FILE", 10_000)
+    monkeypatch.setattr(idea_git, "PATCH_ALL", 250)                 # all of them together
+    assert sum(f["patch"] is None for f in g.diff(branch, base)["files"]) == 1

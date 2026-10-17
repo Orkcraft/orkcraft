@@ -59,7 +59,8 @@ COMMANDS: dict[str, Any] = {
     "cart.waybill": None,
     # the board in focus (spec 29a §6): every board command, the phone first (decisions §43.10)
     **{f"ideas.{c}": None for c in ("board", "page", "add", "say", "plan", "start", "move", "edit", "track_add",
-                                    "track_set", "todo", "drop", "stop")},
+                                    "track_set", "todo", "drop", "stop", "review_list", "diff", "merge", "back", "drop_task",
+                                    "stop_task", "agents", "task", "into")},
     # an Agent pool: its ork's question answered (A2's, pinned on its task) and one ork stopped from the 🥩 list
     "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",), "fields": ("add",), "barracks": ("answer", "stop_ork")},
 }
@@ -387,6 +388,12 @@ def compact(full: dict[str, Any], last_look: dict[str, Any] | None = None) -> di
         "needs_you": int(full.get("needs_you") or 0),
         "idea_states": [{k: str(i.get(k, "")) for k in ("slug", "title", "state")}
                         for i in full.get("idea_states") or []],
+        # Review (spec 33 §5): how many results wait, which (what `news` pushes), and what is left of each AI tool
+        "review_count": int(full.get("review_count") or 0),
+        "review_results": [{k: str(r.get(k, "")) for k in ("idea", "task", "title")}
+                           for r in full.get("review_results") or []],
+        "limits": [{"provider": str(x.get("provider", "")), "name": str(x.get("name", "")), "left": x.get("left"),
+                    "rows": [dict(r) for r in x.get("rows") or []]} for x in full.get("limits") or []],
     }
     out["rev"] = hashlib.sha256(json.dumps(out, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
     return out
@@ -428,6 +435,10 @@ def news(before: dict[str, Any] | None, after: dict[str, Any]) -> list[dict[str,
     for i in after.get("idea_states") or []:
         if i["state"] in IDEA_NEWS and was_in.get(i["slug"]) != i["state"]:
             out.append({"kind": "idea", "slug": i["slug"], "title": i["title"], "state": i["state"]})
+    seen_results = {(r["idea"], r["task"]) for r in before.get("review_results") or []}
+    for r in after.get("review_results") or []:
+        if (r["idea"], r["task"]) not in seen_results:
+            out.append({"kind": "result", "slug": r["idea"], "task": r["task"], "title": r["title"]})
     old, new = before.get("hud") or {}, after.get("hud") or {}
     for key in ("gold_level", "quota_level"):
         was, now = _LEVELS.get(old.get(key) or "ok", 0), _LEVELS.get(new.get(key) or "ok", 0)
