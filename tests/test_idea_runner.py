@@ -58,6 +58,8 @@ elif mode == "conflict":
                    check=True, capture_output=True)
 elif mode == "nocommit":
     pass
+elif mode == "uncommitted":                         # edits a file, runs no git (acceptEdits allows no Bash)
+    open(f"{tid}.txt", "w").write(f"done by {tid}\n")
 else:
     time.sleep(float(os.environ.get("STUB_SLEEP", "0")))
     commit(f"{tid}.txt", f"done by {tid}\n", f"{tid}: add {tid}.txt")
@@ -228,7 +230,18 @@ def test_no_commit_is_a_red_gate(town, monkeypatch):
     runner, _ = runner_of(town)
     runner.start("demo")
     assert wait_idle(runner)["state"] == "failed"
-    assert "no commit" in tasks_of(town)["k1"]["error"]
+    assert "changed no file" in tasks_of(town)["k1"]["error"]
+
+
+def test_what_the_session_left_uncommitted_is_committed_under_the_tasks_title_and_lands(town, monkeypatch):
+    monkeypatch.setenv("STUB_MODE", "k1=uncommitted")
+    plan_of(town, [{"id": "k1"}])
+    runner, _ = runner_of(town)
+    runner.start("demo")
+    assert wait_idle(runner)["state"] == "done"
+    assert tasks_of(town)["k1"]["state"] == "merged"
+    assert git(town.origin, "log", "-1", "--format=%an", "main") == "Orkline"
+    assert git(town.origin, "show", "main:k1.txt") == "done by k1"
 
 
 def test_a_rebase_conflict_fails_and_main_keeps_its_own_line(town, monkeypatch):

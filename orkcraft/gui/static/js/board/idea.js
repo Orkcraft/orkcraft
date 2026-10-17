@@ -50,18 +50,18 @@ function Say({ p, section, setSection }) {
   return html`<div class="board-say">
     ${section && html`<span class="board-chip">About ${section} <button class="board-link" aria-label="Ask about the whole idea"
       onClick=${() => setSection("")}>×</button></span>`}
-    <textarea class="ok-input" rows="2" value=${text} aria-label=${say("Ask or answer the keeper")}
-      placeholder=${section ? `About ${section}…` : say("Ask or answer the keeper…")} onInput=${(e) => setText(e.target.value)}
+    <textarea class="ok-input" rows="2" value=${text} aria-label=${say("Ask or answer the Taskmaster")}
+      placeholder=${section ? `About ${section}…` : say("Ask or answer the Taskmaster…")} onInput=${(e) => setText(e.target.value)}
       onKeyDown=${(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); send(); } }}></textarea>
     <div class="board-row"><button class="ok-btn primary" disabled=${!text.trim() || p.busy} onClick=${send}>Ask</button>
-      ${p.busy && html`<span class="ok-tone-wait">${say("The keeper is answering…")}</span>`}</div>
+      ${p.busy && html`<span class="ok-tone-wait">${say("The Taskmaster is answering…")}</span>`}</div>
   </div>`;
 }
 
 function Talk({ turns }) {
   if (!turns.length) return "";
   return html`<ol class="board-talk" aria-label="The talk">${turns.slice(-8).map((t, n) => html`<li key=${n} data-who=${t.who}>
-    <span class="board-talk__who">${t.who === "you" ? "You" : say("The keeper")}${t.section ? ` · ${t.section}` : ""}</span>
+    <span class="board-talk__who">${t.who === "you" ? "You" : say("The Taskmaster")}${t.section ? ` · ${t.section}` : ""}</span>
     <span>${t.text}</span></li>`)}</ol>`;
 }
 
@@ -91,8 +91,8 @@ function Plan({ plan }) {
 function Actions({ p }) {
   const s = p.state, plan = p.plan, slug = p.slug;
   const e = plan?.estimate;
-  if (s === "reading" || s === "planning") return html`<p class="ok-tone-wait" role="status">${say(`The keeper is ${s === "reading" ? "reading" : "planning"}…`)}</p>`;
-  if (s === "raw") return html`<p class="ok-tone-muted">${say("New: the keeper reads it at the next round.")}</p>`;
+  if (s === "reading" || s === "planning") return html`<p class="ok-tone-wait" role="status">${say(`The Taskmaster is ${s === "reading" ? "reading" : "planning"}…`)}</p>`;
+  if (s === "raw") return html`<p class="ok-tone-muted">${say("New: the Taskmaster reads it at the next round.")}</p>`;
   return html`<div class="board-actions">
     ${(s === "ready" || s === "asks") && html`<button class="ok-btn primary" onClick=${() => run("ideas.plan", { slug })}>Take it to work</button>`}
     ${plan && html`<${Plan} plan=${plan} />`}

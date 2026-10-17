@@ -15,6 +15,7 @@ a fast-forward to a commit that already holds it.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -128,6 +129,16 @@ class IdeaGit:
     def dirty(self, path: Path) -> bool:
         return bool(_git(path, "status", "--porcelain").stdout.strip())
 
+    def commit_left(self, path: Path, message: str) -> bool:
+        """Commit what the session left uncommitted (a session in `acceptEdits` edits files but may not run git):
+        True when it made a commit. Orkline is its author; ignored files stay out, as `git add -A` leaves them."""
+        if not self.dirty(path):
+            return False
+        _ok(_git(path, "add", "-A"))
+        _ok(_git(path, "-c", "user.name=Orkline", "-c", "user.email=orkline@localhost", "commit", "-q", "-m",
+                 message.strip()[:200] or "Orkline: the task's work"))
+        return True
+
     # -- the gate --------------------------------------------------------------------------------
 
     def gate(self, path: Path, base: str, cancel: threading.Event,
@@ -136,9 +147,10 @@ class IdeaGit:
         files = test_files(self.touched(path, base), path)
         if not files:
             return True, "no test files to run"
-        argv = [self.python(), "-m", "pytest", "-q", *files]
+        # No cache, no bytecode: the gate leaves the worktree as the session left it (land checks it is clean).
+        argv = [self.python(), "-m", "pytest", "-q", "-p", "no:cacheprovider", *files]
         proc = subprocess.Popen(argv, cwd=path, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                                start_new_session=True)
+                                start_new_session=True, env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
         out_box: list[str] = []
         reader = threading.Thread(target=lambda: out_box.append(proc.stdout.read() if proc.stdout else ""),
                                   daemon=True)

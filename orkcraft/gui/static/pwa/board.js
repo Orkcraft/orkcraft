@@ -2,7 +2,7 @@
 // snapshot's `focus` is "board". Three tabs: Today (what needs you, the to-dos), Ideas (a track's ideas in order) and
 // + (drop an idea, kept with no signal as the bar's Idea is); an opened idea is a page over them: its sections, the
 // talk and what the state allows. It speaks the commands of the spec's §6 through the phone's protocol (app.js
-// `send`), and reads again when the snapshot's `ideas_rev` changes (and every POLL_MS while the keeper or a task works).
+// `send`), and reads again when the snapshot's `ideas_rev` changes (and every POLL_MS while the Taskmaster or a task works).
 
 import { h, sheet } from "./util.js";
 
@@ -11,7 +11,7 @@ const HOLD_MS = 450;                    // a card held this long can be dragged
 const TALK_SHOWN = 6;                   // turns of the talk under a spec
 const BUSY = new Set(["reading", "planning", "working"]);
 
-const STATE_WORDS = { raw: "new", reading: "the keeper is reading", asks: "asks you", ready: "ready", planning: "the keeper is planning",
+const STATE_WORDS = { raw: "new", reading: "the Taskmaster is reading", asks: "asks you", ready: "ready", planning: "the Taskmaster is planning",
   plan: "plan ready", working: "working", done: "done", failed: "needs you" };
 const TASK_WORDS = { waiting: "waiting", ready: "ready", running: "running", testing: "testing", merged: "merged", failed: "failed", held: "held" };
 const NEEDS = { asks: "❓", plan: "📋", failed: "⚠️", held: "⏳" };
@@ -197,7 +197,7 @@ export function makeBoard(ctx) {
     const list = h("ol", { class: "ideas" }, ...mine().map(card));
     wireDrag(list);
     paneIdeas.replaceChildren(switcher, list.children.length ? list
-      : h("p", { class: "muted" }, "No ideas here yet. Drop one with +: it costs nothing, the keeper reads it later."));
+      : h("p", { class: "muted" }, "No ideas here yet. Drop one with +: it costs nothing, the Taskmaster reads it later."));
     drawAdd();
   }
 
@@ -302,7 +302,7 @@ export function makeBoard(ctx) {
   });
   function drawAdd() {
     const t = tracks().find((x) => x.slug === track);
-    where.textContent = `Into ${t ? t.title : "General"}. It costs nothing: the keeper reads it later. Speak it with the keyboard’s microphone.`;
+    where.textContent = `Into ${t ? t.title : "General"}. It costs nothing: the Taskmaster reads it later. Speak it with the keyboard’s microphone.`;
   }
 
   // -- an idea ------------------------------------------------------------------------------------------------------
@@ -317,13 +317,13 @@ export function makeBoard(ctx) {
     await loadPage();
   }
 
-  const askField = h("textarea", { class: "ok-input", rows: "1", maxlength: "20000", "aria-label": "Ask or answer the keeper" });
+  const askField = h("textarea", { class: "ok-input", rows: "1", maxlength: "20000", "aria-label": "Ask or answer the Taskmaster" });
   const askAbout = h("button", { class: "about", type: "button", hidden: true, "aria-label": "Ask about the whole idea instead",
     onclick: () => { section = ""; drawAsk(); } });
   const askSend = h("button", { class: "ok-btn primary", type: "button" }, "Send");
   const ask = h("div", { class: "ask" }, askAbout, h("div", { class: "row" }, askField, askSend));
   function drawAsk() {
-    askField.placeholder = section ? `About ${section}…` : "Ask or answer the keeper…";
+    askField.placeholder = section ? `About ${section}…` : "Ask or answer the Taskmaster…";
     askAbout.hidden = !section;
     askAbout.textContent = section ? `${section} ✕` : "";
   }
@@ -337,7 +337,7 @@ export function makeBoard(ctx) {
     askSend.disabled = false;
     if (!r.ok || r.result?.error) { ctx.flash(r.error || r.result?.error); return; }
     askField.value = "";
-    ctx.flash("Sent: the keeper answers in a moment.");
+    ctx.flash("Sent: the Taskmaster answers in a moment.");
     await loadPage();
   });
 
@@ -367,7 +367,7 @@ export function makeBoard(ctx) {
     const talk = (p.talk || []).slice(-TALK_SHOWN);
     if (talk.length) {
       kids.push(h("h3", {}, "The talk"), h("div", { class: "talk" }, ...talk.map((t) =>
-        h("div", { class: `turn ${t.who}` }, h("span", { class: "who" }, t.who === "you" ? "You" : "The keeper", t.section ? ` · ${t.section}` : ""),
+        h("div", { class: `turn ${t.who}` }, h("span", { class: "who" }, t.who === "you" ? "You" : "The Taskmaster", t.section ? ` · ${t.section}` : ""),
           h("p", {}, t.text)))));
     }
     const actions = actionsFor(p);
@@ -413,7 +413,7 @@ export function makeBoard(ctx) {
     const btn = (label, onclick, cls = "primary") => h("button", { class: `ok-btn ${cls} big`, type: "button", onclick }, label);
     switch (p.state) {
       case "ready": case "asks":
-        return btn("Take it to work", () => act("ideas.plan", { slug: p.slug }, "The keeper is planning."));
+        return btn("Take it to work", () => act("ideas.plan", { slug: p.slug }, "The Taskmaster is planning."));
       case "plan":
         return btn(`Start · ${n} tasks · ${price(p.plan?.estimate)}`, () => act("ideas.start", { slug: p.slug }, "Started."));
       case "working":

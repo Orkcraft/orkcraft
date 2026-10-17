@@ -52,6 +52,6 @@ export function busy() {
 /** An idea's state in the person's words (§7). */
 export function stateWords(i) {
   const p = i.progress || { done: 0, total: 0 };
-  return say({ raw: "new", reading: "the keeper is reading", asks: "asks you", ready: "ready", planning: "the keeper is planning",
+  return say({ raw: "new", reading: "the Taskmaster is reading", asks: "asks you", ready: "ready", planning: "the Taskmaster is planning",
     plan: "plan ready", working: `working ${p.done}/${p.total}`, done: "done", failed: "needs you" }[i.state] || i.state);
 }

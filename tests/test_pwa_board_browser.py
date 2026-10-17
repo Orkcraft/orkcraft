@@ -224,7 +224,7 @@ async def test_drop_an_idea_open_it_reorder_take_it_to_work_and_start(fake_repo,
         await page.locator(".sec-text", has_text="And the Risks at length.").wait_for(timeout=WAIT_MS)
         await _shot(page, "idea-section")
         await page.get_by_role("button", name="Ask about Risks").click()
-        ask = page.get_by_label("Ask or answer the keeper")
+        ask = page.get_by_label("Ask or answer the Taskmaster")
         assert await ask.get_attribute("placeholder") == "About Risks…"
         await ask.fill("What if it scrolls?")
         await page.get_by_role("button", name="Send").click()

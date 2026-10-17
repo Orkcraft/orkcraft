@@ -149,7 +149,7 @@ def test_an_idea_dropped_opened_asked_taken_to_work_and_started(board):
 
     pg.locator(".board-sec[data-name=Risks] summary").click()         # a block opens from its thesis
     pg.get_by_role("button", name="Ask about Risks").click()          # the question box, on a section
-    box = pg.get_by_label("Ask or answer the keeper")
+    box = pg.get_by_label("Ask or answer the Taskmaster")
     assert box.get_attribute("placeholder") == "About Risks…"
     box.fill("What if it flickers?")
     pg.get_by_role("button", name="Ask", exact=True).click()

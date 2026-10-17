@@ -13,16 +13,25 @@ look again.
 """
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 from typing import Any, Callable
 
+from orkcraft import settings
 from orkcraft.core import idea_keeper
 from orkcraft.realm import catalog, idea_secrets, ideas, wiki
 
 RUNNER_TICK_S = 3.0               # how often the runner looks at its tasks
 SNAPSHOT_S = 10.0                 # the most a cached Needs you count is kept without a change
 NEEDS_KIND = {"asks": "asks", "plan": "plan", "failed": "failed"}
+
+
+def focus_of(machine) -> str:
+    """The focus the window and the phone show: `ORKCRAFT_FOCUS` when set ("" the whole town, "board"), else the
+    machine's setting. Tests set it to "" (tests/conftest.py), so the town's own suites see the town."""
+    env = os.environ.get("ORKCRAFT_FOCUS")
+    return env if env in settings.FOCUSES else machine.focus
 
 
 class IdeasError(Exception):
@@ -142,7 +151,7 @@ class Ideas:
             except Exception:                   # a broken page never breaks the town's snapshot
                 data = {"needs_you": 0, "idea_states": []}
             self._cache = (self.rev, now, data)
-        return {"focus": self.town.machine.focus, "ideas_rev": self.rev, **self._cache[2]}
+        return {"focus": focus_of(self.town.machine), "ideas_rev": self.rev, **self._cache[2]}
 
     # -- reading -------------------------------------------------------------------------------------------
 

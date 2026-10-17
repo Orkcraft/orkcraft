@@ -39,7 +39,7 @@ FIX = """The gate after your work said no:
 
 {problem}
 
-Fix it in this same worktree and commit the fix (every change committed). Then stop."""
+Fix it in this same worktree. Then stop: what you leave changed is committed for you, and the gate runs again."""
 
 
 def now_iso() -> str:
@@ -345,7 +345,7 @@ class IdeaRunner:
             session = self._session(slug, tid, path, cancel, model, env, self._prompt(slug, plan, task), "", spent)
             for attempt in (1, 2):
                 self._set_task(slug, tid, state="testing")
-                problem = self._check(path, start_sha, cancel)
+                problem = self._check(path, start_sha, cancel, str(task.get("title") or ""))
                 if problem is None:
                     break
                 if attempt == 2:
@@ -399,10 +399,12 @@ class IdeaRunner:
         self._set_task(slug, tid, session=session, cost=spent["cost"], tokens=spent["tokens"])
         return session
 
-    def _check(self, path: Path, start_sha: str, cancel: threading.Event) -> str | None:
-        """None when the task's work passes; else what is wrong, in words the session can act on."""
+    def _check(self, path: Path, start_sha: str, cancel: threading.Event, title: str = "") -> str | None:
+        """None when the task's work passes; else what is wrong, in words the session can act on. What the session
+        left uncommitted is committed first, under the task's title: its session may edit files but not run git."""
+        self.git.commit_left(path, title)
         if not self.git.commits(path, start_sha):
-            return "You made no commit. Commit your work with git (clear messages); uncommitted work is lost."
+            return "You changed no file. Make the change the task asks for in this worktree."
         if self.git.dirty(path):
             return "You left uncommitted changes: `git status` shows them. Commit them (or remove what is not work)."
         ok, tail = self.git.gate(path, start_sha, cancel)
@@ -458,9 +460,10 @@ class IdeaRunner:
             parts.append("# The tasks before yours\n\n" + "\n".join(done))
         if rules:
             parts.append("# The repository's rules (CLAUDE.md)\n\n" + rules)
-        finish = ("# When you are done\n\nCommit your work with git, with clear messages: what is not committed is "
-                  f"lost. The gate runs `python -m pytest -q {' '.join(CRITICAL_TESTS)}` and the test files of the "
-                  "modules you touch; run them before you stop.")
+        finish = ("# When you are done\n\nCommit your work with git if you can, with clear messages; what you leave "
+                  "changed is committed for you under the task's title. Then the gate runs "
+                  f"`python -m pytest -q {' '.join(CRITICAL_TESTS)}` and the test files of the modules you touch, and "
+                  "a red gate comes back to you once, in this session.")
         if secrets:
             finish += (" The environment holds " + ", ".join(secrets) + ": use them from the environment, never "
                        "print them, write them to a file or commit them.")
