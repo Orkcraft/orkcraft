@@ -52,9 +52,12 @@ The state a new product-and-marketing session starts from. Update it when you ha
 ## State on 16 October (~11:00 Berlin)
 - **The owner also runs his own sessions** (e.g. `claude/lucid-gates`, 17 October: decisions §43, specs 29a/29b
   merged). Before writing a decision or a spec, `git pull` and read the newest §§ of decisions; number after them.
-- **Hold (17 October):** the owner is deciding in a product session (`session_01KJuWeaLnwNW5x61qQf3nGs`) whether v1
-  becomes Office with a few windows (no camp map, no animation). Until that decision is in decisions-2026-10.md, start
-  no new Camp/art work: not 17b, 20, 22, 23 or a new art run. Merging what already came back (18, 19, art) is fine.
+- **decisions §45 (17 October, the owner): v1 is three windows.** Task board · Agent pool · Review gate, phone
+  tabs Board · Agents · Review, desktop panes left to right (sketch `docs/design/img/v1/phone-sketch.jpg`). External
+  listeners and the Wiki not shown. **The product backlog is paused**: only spec v1-shell (to write, Claude, built
+  Wed 21 – Thu 22) plus E1 and 0.3.0. **Camp frozen, its art goes on in agy.** Dates of §22 stay, Halloween dropped.
+  Later, by the owner: roles/models/limits editable (a §27 exception), the Alchemist (image generation, for the owner
+  to finish Camp). Testers' defaults: merge into `dev`, no push. specs/README.md "The list" is rewritten for it.
 - **Decisions §44 (17 October):** goal (was §43's track), target (was the building's Goal), track = a route of the
   rails per class of work (after the testers). Spec 32 (wording, agy) waits for a batch.
 - **Specs 26, 27 and 28 merged** (16 October afternoon and evening). Next Claude spec: 17b (after 19 is merged).
@@ -93,11 +96,11 @@ The state a new product-and-marketing session starts from. Update it when you ha
 - Tonight: start agy tabs 1, 2 and 4 of `2026-10-16-night.md` (grass round 2, camera, the five buildings' art).
 - Delete the old branches on GitHub (list in the PM's reply of 16 October).
 - Test the five buildings on the product and send what gets in the way, building by building.
-- Play Mission 1 → fill spec 02 (Mission 1 blockers). P0 before the testers.
+- Test the three windows (Board, Agents, Review) once v1-shell is merged; Mission 1 is no longer played (§45).
 - Test on `main` (phone): the fast first load and install (01, 01b); the building screen (21); open-air buildings (24).
 - Written IP confirmation.
-- E1 clean-install check on Wed 21 October; release 0.3.0 (spec 05) on Thu 22 October; Halloween decor (spec 04)
-  before 31 October; testers after that (timeline: decisions §22).
+- E1 clean-install check on Wed 21 October; release 0.3.0 (spec 05) on Thu 22 October; testers after that (timeline: decisions §22;
+  Halloween dropped, §45).
 
 ## Marketing next (P1)
 - Only what the testers need (track 3): the tester invite and guide are written; refresh their screenshots once the

@@ -1117,3 +1117,56 @@ never waits on the card) and §41.6 (the keeper reads only its own Wiki) stay.
    for it then (`route`), since `track` is taken by goals in code.
 Items 1–2 are wording only: spec 32.
 
+
+## 45. v1 is three buildings in plain windows; Camp waits, its art goes on (17 October, the owner)
+
+Why: the AgentCraft study (§37) shows a game image brings views (320k at launch) but not a habit (~200 npm installs a
+week, 309 in Discord eight months on). Without the core working, a fun UI does not get far. So the first version is
+the core, drawn plainly, and the owner tests it before anything else is built. A simplification (§27).
+
+1. **v1 is three buildings:** the **Task board**, the **Agent pool** and the **Review gate**, shown as plain windows
+   (Office's calm look, no camp map, no road graph, no animation). The person's path: an idea → the keeper's questions
+   → the spec → the plan, passed on the board → the orks' work → the result, judged at the gate before it goes.
+   External listeners and the Wiki are **not shown** in v1 (the idea pages still live in the Wiki, as §43.4 says).
+2. **The phone first: three tabs, Board · Agents · Review** (the owner's sketch,
+   [img/v1/phone-sketch.jpg](img/v1/phone-sketch.jpg), drawn as Board / Agents / Check). **The desktop shows the
+   three at once as panes on one screen, left to right, as an IDE does:** Board | Agents | Review.
+3. **The top bar, on every tab and pane:** what is left of the AI tools' limits, **the smaller of the window and the
+   week** for each tool (Claude, Antigravity); a tap or hover shows both and when they reset. Beside it today's
+   spend and **Stop all** (money and safety always visible).
+4. **Board:** the goal (§44) at the top, **New idea**, the ideas in order, the person's to-dos. An idea's state is
+   said in words (*new · reading · asks you · plan ready · working 2/5 · needs you*), not a badge. **A click on an
+   idea opens its spec; a click on a to-do opens the plan the model wrote, scrolled to that to-do**, with one line on
+   what it unblocks. **The plan is passed here, on the board** (§43.6). A secret to-do is entered only over the
+   paired link, else *At the computer* (§43.8).
+5. **Agents:** the orks grouped by role, each role with its tasks as chips: working · needs you · queued · done, in
+   words beside the icon. A chip opens its task (what it does, its log, its spend, **Stop**). A waiting ork says what
+   it waits on and leads to that idea. Roles keep **orkish names** (CLAUDE.md): the keeper is the **Taskmaster**, a
+   worker is a **Grunt**, an image maker the **Alchemist**; a role the person makes keeps the name they give it.
+6. **Review: only the results of work, before they go** (the plan is not here). Each result shows what changed, its
+   tests (passed / failed, how many), what it cost, and its tasks. **Merge into `<branch>`** (default `dev`, the
+   branch on the button) only when tests are green and nothing conflicts; red tests offer **Fix** (back to its task
+   with the failure) and **Drop**, never a merge (§42). ✗ means **send back with one line why**; dropping is a
+   separate button. Images are judged one by one (§39). The tab shows how many results wait.
+7. **The testers' defaults:** a result merges into `dev`, never `main`, and nothing is pushed by itself (spec 29a's
+   runner today merges into `main` and pushes: that stays the owner's setting only). The first start opens the three
+   windows after the trust screen and the repository; **Mission 1 is not offered** (its code stays).
+8. **Kept for later, by the owner's answers (not built until the three are tested):**
+   - **Roles, models and limits are fully editable** (add an agent, edit a role: its model or tier, its parallel limit,
+     its instructions). A new mechanic, so **a named exception to §27**. Each role a small file in the repository (seen
+     in git, undone for free); three lean roles by default (§40); the waybill shows spend by role, so every experiment
+     is measured.
+   - **Image generation in the product (the Alchemist):** the owner uses it to finish the full Orkline, the camp and
+     its orks drawn by Orkline itself. Off for testers by default. Cut by CLAUDE.md "Art" (once from the source, never
+     re-pixelated).
+9. **The product backlog is paused** (the owner): only what the three windows need is built; the owner tests them,
+   then the rest. Everything else in specs/README.md waits, written specs included.
+10. **Camp is frozen, not dropped; its art goes on.** The camp, the look switch and Mission 1 stay in the code (the
+    full town behind `focus = ""`) and get no work: specs 17b, 20, 22, 23, 16, 14, 02 and 03 wait. **agy keeps
+    making the art now** (the five buildings' sheets, the room kit), so Camp can be put in quickly once the core holds.
+    18 and 19 are merged if they come back green.
+11. **Dates stay (§22)**; **Halloween is dropped** (no decor, no Halloween post). Because Mission 1 leaves the first
+    day, §27's first measure becomes: **of 3–5 testers, at least 3 take an idea of their own through to a merged
+    result**; the second stays (**at least 2 come back within 7 days** unasked). After a week each tester is shown a
+    screenshot of Camp and asked whether they would want it to look so: **two or more saying yes on their own** brings
+    Camp back as the look over the working core.
