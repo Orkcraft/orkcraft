@@ -1,5 +1,6 @@
-"""The whole loop of the board in focus (docs/specs/29a-board-focus.md): an idea dropped, read by the batch, talked
-through, planned, started, its task a Claude session whose commit lands on `main` and on origin. A real Host on a
+"""The whole loop of the board in focus (docs/specs/29a-board-focus.md, 33 §2–§4): an idea dropped, read by the batch, talked
+through, planned, started, its task a Claude session whose commit waits at Review; the person merges it into `dev`, which
+is made, and nothing is pushed. A real Host on a
 temp repository with a bare origin; `claude` is a stub on PATH that answers each kind of call."""
 from __future__ import annotations
 
@@ -78,7 +79,7 @@ def _until(host, check, what, seconds=60.0):
     raise AssertionError(f"never: {what}")
 
 
-def test_an_idea_goes_from_the_phone_to_a_commit_on_main_and_origin(town):
+def test_an_idea_goes_from_the_phone_through_review_to_a_commit_on_dev(town):
     host, repo, origin = town
     state = lambda slug: ideas.state(host.ideas.state_dir, slug)["state"]   # noqa: E731
     slug = host.command("ideas.add", {"text": "a feature file"})["slug"]
@@ -98,13 +99,22 @@ def test_an_idea_goes_from_the_phone_to_a_commit_on_main_and_origin(town):
     _until(host, lambda: state(slug) == "plan", "the plan is ready")
     assert host.command("ideas.page", {"slug": slug})["plan"]["estimate"]["tasks"] == 1
 
+    main, pushed = _git(repo, "rev-parse", "main"), _git(origin, "rev-parse", "main")
     host.command("ideas.start", {"slug": slug})
+    _until(host, lambda: host.command("ideas.review_list")["results"], "the result waits at Review", seconds=120)
+    (result,) = host.command("ideas.review_list")["results"]
+    assert result["idea"] == slug and result["task"] == "k1" and result["tests"]["green"] is True and result["tests"]["failed"] == 0
+    assert result["diff"] == {"files": 1, "added": 1, "removed": 0} and state(slug) == "working"
+    assert _git(repo, "rev-parse", "main") == main and _git(origin, "rev-parse", "main") == pushed   # nothing merged yet
+    assert ideas.plan(host.ideas.state_dir, slug)["tasks"][0]["state"] == "review"
+
+    commit = host.command("ideas.merge", {"slug": slug, "task": "k1"})["commit"]
     _until(host, lambda: state(slug) == "done", "the idea is done", seconds=120)
     task = ideas.plan(host.ideas.state_dir, slug)["tasks"][0]
-    assert task["state"] == "merged" and task["commit"]
-    assert _git(repo, "log", "-1", "--format=%s", "main") == "Add the feature"
-    assert _git(origin, "log", "-1", "--format=%s", "main") == "Add the feature"
-    assert (repo / "feature.txt").read_text() == "built by the stub\n"   # main is checked out: fast-forwarded
+    assert task["state"] == "merged" and task["commit"] == commit
+    assert _git(repo, "rev-parse", "dev") == commit and _git(repo, "log", "-1", "--format=%s", "dev") == "Add the feature"
+    assert _git(repo, "rev-parse", "main") == main and not (repo / "feature.txt").exists()      # main and its files untouched
+    assert subprocess.run(["git", "rev-parse", "--verify", "dev"], cwd=str(origin), capture_output=True).returncode != 0   # not pushed
+    assert _git(origin, "rev-parse", "main") == pushed
     board = host.command("ideas.board")
     assert next(i for i in board["ideas"] if i["slug"] == slug)["progress"] == {"done": 1, "total": 1}
-
