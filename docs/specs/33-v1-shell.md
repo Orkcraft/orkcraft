@@ -15,7 +15,7 @@ orks by their orkish names, today's words; tests check the same words).
 
 | part | branch | builds | files (only these, plus their tests) |
 |---|---|---|---|
-| **A. Review in the runner** | `spec/33-runner` | §2–§5: the `review` state, merge / send back / drop at the person's press, the testers' defaults, the diff, the task log, the commands, the snapshot's limits and counts, spec 32's `TERMS` | `core/idea_runner.py`, `realm/idea_git.py`, `gui/ideas.py`, `gui/mobile.py` (allowlist, compact snapshot), `gui/state.py` (snapshot keys only), `gui/host.py` (wiring only), `settings.py` (the keys below), `realm/lexicon.py` |
+| **A. Review in the runner** | `spec/33-runner` | §2–§5: the `review` state, merge / send back / drop at the person's press, the testers' defaults, the diff, the task log, the commands, the snapshot's limits and counts, spec 32's `TERMS` | `core/idea_runner.py`, `realm/idea_git.py`, `gui/ideas.py`, `gui/mobile.py` (allowlist, compact snapshot), `gui/state.py` (snapshot keys only), `gui/host.py` (wiring only), `settings.py` (the keys below), `realm/lexicon.py`, `realm/event_log.py`, `realm/analytics.py` (§9) |
 | **B. Desktop** | `spec/33-desktop` | §6–§7: the IDE-like window | `gui/static/js/board/*` (moved or reused freely), new `gui/static/js/shell/*`, the focus switch in `gui/static/app.js`, their CSS |
 | **C. Phone** | `spec/33-phone` | §6, §8: three tabs, the preview on its own screen | `gui/static/pwa/board.js`, new `gui/static/pwa/shell/*` or files beside it, the switch in `pwa/app.js`, `pwa/sw.js` (cache list), `app.css` |
 
@@ -73,6 +73,7 @@ Today a task goes `running → testing → merged` by itself (29a §5). From now
 | `ideas.agents` | — | `{"roles": [{"role": "taskmaster", "name": "Taskmaster", "state": "waiting\|reading\|talking\|planning", "waits_on": {"idea","text"} or null, "chips": [{"idea","title","state"}]}, {"role": "grunt", "name": "Grunts", "chips": [{"idea","idea_title","task","title","state","tier","note"}]}], "done_today": [{"idea","task","title"}]}` |
 | `ideas.task` | `{"slug","task"}` | the task's fields from `plan.json`, its idea's title, and `"log": "last 200 lines"` |
 | `ideas.into` | `{"branch"}` | `{"ok": true}` (sets `ideas.merge_into`; creates the branch when missing) |
+| `ideas.log` | `{"event": "opened", "what", "ref", "device"}` | `{"ok": true}` (§9; any other event is refused) |
 
 - **The log:** the runner keeps each task's session output in `<state_dir>/ideas/<slug>/<task>.log` (append, cut to the
   last 2 000 lines), shown, never fed back to a model. A secret never appears in it (the env var's value is masked).
@@ -145,6 +146,35 @@ actions stay pinned at its foot.
   never does.
 - Designed at 390 × 844 first (§43.10); the paired-link rule for secret to-dos stays (29a).
 - A push when a result reaches Review (`mobile.news` `{"kind": "result", "slug", "task", "title"}`), as for ideas.
+
+## 9. Every action logged, for the day's analysis (the owner, same day; part A, with B and C sending their events)
+The owner downloads the day's logs at the end of the working day and analyses them. Reuse what exists, add no new log:
+- **Events** go to the local event log (`realm/event_log.py`, `.orkcraft/usage/events.jsonl`, never leaves the
+  machine). Part A adds to its closed list `EVENTS` (and may edit that file):
+  | event | fields |
+  |---|---|
+  | `idea_added` | idea, track, chars, device |
+  | `idea_said` | idea, section, chars, device (the person's turn to the keeper) |
+  | `keeper_state` | idea, state (`reading` · `asks` · `ready` · `planning` · `plan` …), seconds in the previous state |
+  | `plan_made` | idea, tasks, todos, usd_low, usd_high |
+  | `plan_passed` | idea, tasks, device, seconds from `plan_made` |
+  | `todo_done` | idea, todo, kind, device, seconds since the plan |
+  | `task_state` | idea, task, state, round, tier, seconds in the previous state, tokens, cost |
+  | `result_ready` | idea, task, round, passed, failed, files, added, removed, cost |
+  | `result_decided` | idea, task, round, decision (`merge` · `back` · `fix` · `drop`), why (the line), into, pushed, conflict, device, **seconds from `result_ready`** (§37.3: how long a decision took) |
+  | `task_stopped` / `stop_all` | idea, task (or how many), device |
+  | `into_changed` | branch, device |
+  | `opened` | what (`idea` · `plan` · `todo` · `task` · `result` · `tab`), ref, device — every preview and tab the person opens (B and C send it through one command, `ideas.log {"event": "opened", …}`, which accepts only this event) |
+  | `limits_read` | provider, left, window (once an hour at most, and whenever a task is held) |
+  `device` is `desktop` or `phone`. The texts the person wrote are kept (cut at `TEXT_MAX`); **a secret's value never**.
+- **Model calls** are already kept by `realm/call_log.py` (every keeper and Grunt call, through `realm/jobs.py`): check
+  that the keeper's and the runner's calls carry the idea and the task in their record so the two logs join; add them if not.
+- **The download:** the gear gets **Download today's logs** (and *the last 7 days*): the existing analytics zip
+  (`/api/analytics?days=`, `realm/analytics.py`) with the event log's lines of those days added as `events.jsonl`,
+  and each idea's `state.json`, `plan.json` and task logs (`<task>.log`, secrets masked). On the phone the same item
+  in its menu (the file is downloaded on the phone).
+- Tests: each action writes its event with its fields; an unknown event through `ideas.log` is refused; the zip holds
+  `events.jsonl` for the days asked and no secret value.
 
 ## Not in this spec
 Roles, models and limits editable (§45.8, next); the Alchemist; the daily batch at Review (§39); External listeners and
