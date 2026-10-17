@@ -49,8 +49,25 @@ BUILT = "result_built"            # building, kind ("passed" | "launched" | "don
 CART_MOVED = "cart_moved"         # source, target, title: a cart delivered along a road
 LOOKED = "look"                   # started, seconds: the GUI in front of the person (looks a day, their length)
 
+# The board (docs/specs/33-v1-shell.md §9): every action of the v1 shell, for the day's analysis. `device` is "desktop" or "phone".
+IDEA_ADDED = "idea_added"         # idea, track, chars, device
+IDEA_SAID = "idea_said"           # idea, section, chars, text, device (the person's turn to the Taskmaster)
+KEEPER_STATE = "keeper_state"     # idea, state, was, seconds in the previous state
+PLAN_MADE = "plan_made"           # idea, tasks, todos, usd_low, usd_high
+PLAN_PASSED = "plan_passed"       # idea, tasks, device, seconds from plan_made
+TODO_DONE = "todo_done"           # idea, todo, kind, device, seconds since the plan (a secret's value never)
+TASK_STATE = "task_state"         # idea, task, state, was, round, tier, seconds in the previous state, tokens, cost
+RESULT_READY = "result_ready"     # idea, task, round, passed, failed, files, added, removed, cost
+RESULT_DECIDED = "result_decided"  # idea, task, round, decision, why, into, pushed, conflict, device, seconds from result_ready
+TASK_STOPPED = "task_stopped"     # idea, task, device
+STOP_ALL = "stop_all"             # count, device
+INTO_CHANGED = "into_changed"     # branch, push, device
+OPENED = "opened"                 # what (idea · plan · todo · task · result · tab), ref, device
+LIMITS_READ = "limits_read"       # provider, left, window
+
 EVENTS = (ASKED, ASSUMED, ANSWERED, STOPPED, WAIT_SKIPPED, HELD_AT_WORK, CAMP_LEFT, CAMP_BACK, QUEST_STARTED,
-          QUEST_DONE, QUEST_SKIPPED, BUILT, CART_MOVED, LOOKED)
+          QUEST_DONE, QUEST_SKIPPED, BUILT, CART_MOVED, LOOKED, IDEA_ADDED, IDEA_SAID, KEEPER_STATE, PLAN_MADE, PLAN_PASSED,
+          TODO_DONE, TASK_STATE, RESULT_READY, RESULT_DECIDED, TASK_STOPPED, STOP_ALL, INTO_CHANGED, OPENED, LIMITS_READ)
 
 _LOCK = threading.Lock()
 

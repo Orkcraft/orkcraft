@@ -138,6 +138,9 @@ def record(env: dict | None, mode: str, harness: str, model: str, prompt: str, s
             "purpose": purpose or telemetry.purpose_now(), "mode": mode, "tool": harness, "model": model,
             "seconds": round(seconds, 1), "code": code, "cost": cost, "tokens": tokens, "usage": usage_of(stdout),
             "session": session, "prompt_chars": len(prompt or ""), "output_chars": len(stdout or ""), "raw": raw}
+    for key, name in (("idea", "ORKCRAFT_IDEA"), ("task", "ORKCRAFT_TASK")):     # the board's calls join the event log
+        if (env or {}).get(name):
+            line[key] = str(env[name])
     try:
         folder.mkdir(parents=True, exist_ok=True)
         with gzip.open(folder / raw, "wt", encoding="utf-8") as f:

@@ -60,7 +60,7 @@ COMMANDS: dict[str, Any] = {
     # the board in focus (spec 29a §6): every board command, the phone first (decisions §43.10)
     **{f"ideas.{c}": None for c in ("board", "page", "add", "say", "plan", "start", "move", "edit", "track_add",
                                     "track_set", "todo", "drop", "stop", "review_list", "diff", "merge", "back", "drop_task",
-                                    "stop_task", "agents", "task", "into")},
+                                    "stop_task", "agents", "task", "into", "log", "logs")},
     # an Agent pool: its ork's question answered (A2's, pinned on its task) and one ork stopped from the 🥩 list
     "act": {"pit": ("drop", "drop_file"), "town_hall": ("ask",), "fields": ("add",), "barracks": ("answer", "stop_ork")},
 }
@@ -134,6 +134,8 @@ def guard(name: str, args: dict, device: dict | None = None) -> dict:
         args["device"], args["device_id"] = (device or {}).get("name", ""), (device or {}).get("id", "")
     if name == "act" and args.get("act") == "drop":
         args["args"] = {**(args.get("args") if isinstance(args.get("args"), dict) else {}), "paths": False}
+    if name.startswith("ideas.") or name == "halt":
+        args["device"] = "phone"               # the event log says which window it was (spec 33 §9), whatever the page sends
     if name == "building.input":
         args["by"] = "person"                  # the person, on their phone: never a bench
     return args

@@ -65,6 +65,16 @@ def summary(root: Path, days: list[str], titles: dict[str, str],
                                                               for b, c in per.items()}}
 
 
+def _board_files(root: Path) -> list[Path]:
+    """Each idea's `state.json`, `plan.json` and task logs (`<task>.log`: written with a secret's value masked; a plan keeps
+    only "stored" for a secret)."""
+    folder = Path(root) / ".orkcraft" / "ideas"
+    if not folder.is_dir():
+        return []
+    return [p for d in sorted(folder.iterdir()) if d.is_dir() for p in sorted(d.iterdir())
+            if p.is_file() and (p.name in ("state.json", "plan.json") or p.suffix == ".log")]
+
+
 def _after(day: str) -> str:
     """The day after `day` (ISO), where a period that ends on `day` stops."""
     return (day_log._day(day) + dt.timedelta(days=1)).isoformat() if day_log._day(day) else day
@@ -132,4 +142,6 @@ def pack(root: Path, days: list[str], titles: dict[str, str],
                     (folder / day_log.ASKED).touch()
         if days and (events := event_log.read(root, min(days), _after(max(days)))):
             z.writestr("events.jsonl", jsonl(events))
+        for path in _board_files(root):         # the board's ideas: their state, plan and each task's log (spec 33 §9)
+            z.write(path, f"ideas/{path.parent.name}/{path.name}")
     return buf.getvalue()

@@ -8,7 +8,7 @@ from __future__ import annotations
 import dataclasses
 import datetime as dt
 
-from orkcraft.realm import analytics, call_log, day_log, day_review, fastpath, feedback
+from orkcraft.realm import analytics, call_log, day_log, day_review, event_log, fastpath, feedback
 
 
 class DayLogs:
@@ -56,8 +56,10 @@ class DayLogs:
         days = max(1, min(int(days), day_log.KEEP_ANALYSIS))
         since = (today - dt.timedelta(days=days - 1)).isoformat()
         kept = [d for d in analytics.days_kept(self.root) if since <= d <= today.isoformat()]
-        if not kept:
-            return None
+        if not kept:       # no model call kept, but the board's events and ideas may be there (spec 33 §9)
+            if not event_log.read(self.root, since) and not analytics._board_files(self.root):
+                return None
+            kept = [(today - dt.timedelta(days=n)).isoformat() for n in range(days)]
         titles = {b.id: b.title for b in self.town.scroll.buildings}
         titles.setdefault(call_log.TOWN, "The town (no building)")
         rows = feedback.incidents(self.root, 5000)

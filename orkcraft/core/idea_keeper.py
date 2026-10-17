@@ -83,6 +83,7 @@ class IdeaKeeper:
         self.demo, self.budget_ok = demo, budget_ok
         self.call: Call = self._claude                # tests swap the model call here
         self.cancel = threading.Event()
+        self._tls = threading.local()               # the idea a model call is for (its record in realm/call_log.py names it)
         self._lock = threading.Lock()
         self._busy: dict[str, str] = {}             # slug → reading | talking | planning
         self._batching = False
@@ -97,7 +98,7 @@ class IdeaKeeper:
         purpose = {"laborer": "sort", "elder": "plan"}.get(tier, "plan")
         with telemetry.tagged(purpose, "board"):
             return jobs.run_read(HARNESS, prompt, self.repo_root, self.cancel, h.pick(tier) if h else tier,
-                                 env={"ORKCRAFT_ORC": "board/keeper"}, resume=resume)
+                                 env={"ORKCRAFT_ORC": "board/keeper", "ORKCRAFT_IDEA": getattr(self._tls, "slug", "")}, resume=resume)
 
     def _context(self, session: str, tokens) -> int:
         from orkcraft.realm import jobs
@@ -222,6 +223,7 @@ Answer with one JSON object and nothing else:
         ideas.save_state(self.state_dir, slug, state="reading", error="")
         self.publish(slug)
         try:
+            self._tls.slug = slug
             text, _cost, _tokens, _session = self.call("laborer", self.batch_prompt(root, slug), "")
             answer = first_json(text)
             if answer is None:
@@ -311,6 +313,7 @@ The idea's page now:
         st = ideas.state(self.state_dir, slug)
         fresh = self.fresh(st)
         try:
+            self._tls.slug = slug
             out, _cost, tokens, session = self.call("elder", self.talk_prompt(root, slug, text, section, fresh),
                                                     "" if fresh else st["session"])
         except Exception as e:
@@ -385,6 +388,7 @@ Answer with one JSON object and nothing else:
         root = self.wiki_root()
         back = was if was in ("raw", "asks", "ready", "plan", "failed") else "ready"
         try:
+            self._tls.slug = slug
             text, _cost, _tokens, _session = self.call("elder", self.plan_prompt(root, slug), "")
             data = make_plan(slug, first_json(text))
             ideas.save_plan(self.state_dir, slug, data)
