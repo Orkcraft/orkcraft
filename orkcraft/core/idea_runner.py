@@ -1,5 +1,5 @@
 """The runner of a passed plan (docs/specs/29a-board-focus.md §5): each task its own Claude session in a worktree,
-tested, rebased and fast-forwarded into `ideas.merge_into` (default `main`), pushed.
+tested, rebased and fast-forwarded into `ideas.merge_into` (default `dev`; `main` takes `dev` through the Review gate, decisions §45), pushed.
 
     runner = IdeaRunner(repo_root, state_dir, settings, bus)
     runner.start(slug)        # after `ideas.start` set the plan's `passed_at`
@@ -31,7 +31,7 @@ from orkcraft.realm.idea_git import CRITICAL_TESTS, Conflict, IdeaGit, env_name,
 CHANGED = "ideas.changed"          # slug: an idea's state or one of its tasks changed
 HARNESS = "claude"
 LIMITS_EVERY_S = 600               # how often the runner reads the quota itself, when nobody hands it one
-DEFAULTS = {"max_parallel": 1, "merge_into": "main", "push": True}
+DEFAULTS = {"max_parallel": 1, "merge_into": "dev", "push": True}
 STOPPED = "stopped"
 LIVE = ("running", "testing")
 PAGE_KEEP = 20000
@@ -339,7 +339,7 @@ class IdeaRunner:
         try:
             plan = self.plan(slug) or {"tasks": []}
             task = next(t for t in plan["tasks"] if t.get("id") == tid)
-            base = str(setting(self.settings, "merge_into") or "main")
+            base = str(setting(self.settings, "merge_into") or "dev")
             path, branch = self.git.prepare(slug, tid, base)
             start_sha = self.git.head(path)
             h = harnesses.need(HARNESS)
@@ -360,7 +360,7 @@ class IdeaRunner:
             commit, subjects, note = self.git.land(path, branch, base, bool(setting(self.settings, "push")))
             self._set_task(slug, tid, state="merged", commit=commit, subjects=subjects, note=note,
                            finished=now_iso(), error="")
-            self._merged(slug, plan, task, commit, subjects, spent["cost"], gate.get("tail", ""))
+            self._merged(slug, plan, task, commit, subjects, spent["cost"], gate.get("tail", ""), base)
             self.git.remove(path)
         except Held as e:
             with self._lock:
@@ -421,7 +421,7 @@ class IdeaRunner:
     # -- after the merge (spec 29c §1) ------------------------------------------------------------
 
     def _merged(self, slug: str, plan: dict, task: dict, commit: str, subjects: list[str], cost: Any,
-                tail: str) -> None:
+                tail: str, branch: str) -> None:
         """The task's line in merged.jsonl: what reached `merge_into` without the person's eyes."""
         if not subjects:
             return
@@ -433,15 +433,15 @@ class IdeaRunner:
             idea_merged.add(self.state_dir, {
                 "idea": slug, "task": task.get("id"), "title": task.get("title") or task.get("id"),
                 "goal": next((ln.strip() for ln in brief.splitlines() if ln.strip()), "")[:300],
-                "subject": subjects[-1], "commit": commit, "tests": idea_merged.tests_line(tail),
+                "subject": subjects[-1], "commit": commit, "branch": branch, "tests": idea_merged.tests_line(tail),
                 "cost": cost, "estimate": idea_merged.share(plan.get("estimate"), weights, index), "at": now_iso(),
                 "base": self.git.rev(f"{commit}~{len(subjects)}")})
         except Exception:                  # the log never undoes a merge
             pass
 
     def revert(self, slug: str, task_id: str, cancel: threading.Event | None = None) -> dict:
-        """Undo a merged task on `merge_into` (spec 29c §1): `git revert` in a worktree off it, the gate, a
-        fast-forward and a push, as a task lands. Done: its line is `reverted`, its task too, and the idea needs the
+        """Undo a merged task on the branch it landed on, its line's `branch` (spec 29c §1): `git revert` in a
+        worktree off it, the gate, a fast-forward and a push, as a task lands. Done: its line is `reverted`, its task too, and the idea needs the
         person (*Reverted: subject*). Failed (a conflict, a red gate): `{"error": …}` and `merge_into` untouched.
         It blocks while the gate runs: the face calls it from a thread of its own."""
         key = (slug, task_id)
@@ -456,7 +456,7 @@ class IdeaRunner:
             if key in self._reverting:
                 return {"error": "It is being reverted"}
             self._reverting.add(key)
-        base = str(setting(self.settings, "merge_into") or "main")
+        base = line["branch"] or str(setting(self.settings, "merge_into") or "dev")   # where it landed
         try:
             self.git.revert(slug, task_id, line["commit"], line.get("base", ""), base,
                             bool(setting(self.settings, "push")), cancel or threading.Event())
@@ -521,7 +521,7 @@ class IdeaRunner:
         secrets = [n for n in self._env(slug, task.get("id"), plan) if n != "ORKCRAFT_ORC"]
         parts = [
             f"You do one task of the idea `{slug}` in this repository: a git worktree on branch "
-            f"`idea/{slug}/{task.get('id')}`, cut from `{setting(self.settings, 'merge_into') or 'main'}`. "
+            f"`idea/{slug}/{task.get('id')}`, cut from `{setting(self.settings, 'merge_into') or 'dev'}`. "
             "Work only here.",
             "# The idea\n\n" + (self._page(slug) or "(its page was not found)"),
             f"# Your task: {task.get('title', '')}\n\n{task.get('brief', '')}",

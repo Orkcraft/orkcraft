@@ -22,7 +22,8 @@ from orkcraft.realm import ideas
 FILE = "merged.jsonl"
 DIGEST_FILE = "digest.json"
 SHOWN = 20                     # of the unseen, the most the board lists
-KEYS = ("idea", "task", "title", "goal", "subject", "commit", "tests", "cost", "estimate", "at", "seen", "reverted")
+KEYS = ("idea", "task", "title", "goal", "subject", "commit", "branch", "tests", "cost", "estimate", "at", "seen",
+        "reverted")
 
 
 def _path(state_dir: Path) -> Path:
@@ -51,7 +52,7 @@ def share(estimate: dict | None, weights: list[float], index: int) -> list[float
 def _clean(row: dict) -> dict:
     out = {k: row.get(k) for k in KEYS}
     out["seen"], out["reverted"] = bool(row.get("seen")), bool(row.get("reverted"))
-    for k in ("idea", "task", "title", "goal", "subject", "commit", "tests", "at"):
+    for k in ("idea", "task", "title", "goal", "subject", "commit", "branch", "tests", "at"):
         out[k] = str(out[k] or "")
     est = row.get("estimate")
     out["estimate"] = est if isinstance(est, list) and len(est) == 2 else [0.0, 0.0]

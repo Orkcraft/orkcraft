@@ -369,7 +369,7 @@ def test_a_restart_goes_on_with_working_ideas(town):
 def test_settings_are_read_however_they_are_carried():
     assert idea_runner.setting(SimpleNamespace(ideas={"max_parallel": 3}), "max_parallel") == 3
     assert idea_runner.setting({"ideas": {"push": False}}, "push") is False
-    assert idea_runner.setting(SimpleNamespace(), "merge_into") == "main"
+    assert idea_runner.setting(SimpleNamespace(), "merge_into") == "dev"
     assert idea_runner.setting(SimpleNamespace(ideas_max_parallel=2), "max_parallel") == 2
 
 
@@ -387,6 +387,7 @@ def test_each_merged_task_is_a_line_of_merged_jsonl(town):
     assert first["idea"] == "demo" and first["task"] == "k1" and first["title"] == "k1"
     assert first["goal"] == "Add the k1 file" and first["subject"] == "k1: add k1.txt"
     assert first["commit"] == tasks_of(town)["k1"]["commit"] and first["tests"] == "3 passed"
+    assert first["branch"] == "main"                         # the merge_into it landed on
     assert first["cost"] == pytest.approx(0.01) and first["at"] and not first["seen"] and not first["reverted"]
     w = idea_runner.plans.DEFAULT_COST
     part = w["warrior"] / (w["warrior"] + w["laborer"])

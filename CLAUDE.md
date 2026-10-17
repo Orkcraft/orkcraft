@@ -58,11 +58,16 @@
 - `"critical": true` only for a security fix or a bug that loses work: it installs on every machine
   without asking. Its `notes` say plainly what it fixes.
 
-## Alpha: merge fast, with the critical tests
+## Two branches: `dev` takes everything, `main` takes `dev` through the Review gate (decisions §45)
 
-- While Orkline is in alpha, a change is merged into `main` as soon as the **critical tests** pass;
-  the full suite and the browser tests are not waited for. A red full CI after the merge is fixed by
-  the next commit to `main`.
+- Every change — a session's, an agent's (the board's runner, `ideas.merge_into`), a builder's — is merged into
+  **`dev`** as soon as the **critical tests** pass; the full suite and the browser tests are not waited for there.
+  A red full suite on `dev` is fixed by the next commit to `dev`.
+- **`main` takes `dev` only through the Review gate:** the full suite and the browser tests green on `dev`'s head,
+  the deep checks the gate runs (decisions §39's daily check), and the owner's pass. Then `dev` is merged into
+  `main` (a fast-forward when it can). Installed copies update from `main`, so nothing reaches a user without the gate.
+- A fix that must reach users at once (a `"critical": true` release) goes to `main` with the full suite green, and
+  `main` is merged back into `dev` the same day.
 - The critical tests: `tests/test_architecture.py`, `tests/test_cli.py`, `tests/test_updates.py`, and
   the test files of the modules the change touches.
 - This section is removed when the project leaves alpha.

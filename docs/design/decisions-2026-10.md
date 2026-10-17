@@ -1124,3 +1124,23 @@ check cheap is. One accent moves, four details follow:
    a conflict or a spent window needs you. Otherwise they work and merge.*
 Spec 29c. Later, from the same study: a price ceiling per task (held on overrun), plan diffs, In/Out tied to tests,
 voice capture split into ideas, metrics of the gates (approval rate × time to decide).
+
+## 45. Two branches: everything into `dev`, `main` through the Review gate (17 October, the owner)
+
+1. **Every change merges into `dev` by default** on its critical tests: the board's runner (`ideas.merge_into`
+   defaults to `dev`; the first task cuts `dev` from `main` when it is missing), the builders' sessions and the PM's
+   merges. Fast, as the alpha was.
+2. **`main` takes `dev` only through the Review gate and deep testing:** the full suite and the browser tests green on
+   `dev`'s head, the gate's deep checks (§39's daily check), and the owner's pass; then `dev` merges into `main`.
+   Installed copies update from `main` (`updates.json`), so users only ever get what passed the gate.
+3. **A Revert on the board** (§44.1) undoes a task on `dev`; what reached `main` is undone by the gate's own path.
+4. A side effect wanted for dogfooding: a town running Orkline on its own repository from `main` keeps running the
+   gated code while the orks change `dev`.
+5. CLAUDE.md's alpha rule ("merge into `main` on the critical tests") becomes this rule. The gate's dev → main step is
+   part of the gate-kinds spec (§39, §42), which this makes P0.
+6. **The night tests by itself** (the owner, same day): whether or not the person looked at the gate, every night at
+   a set hour (default 03:00, a setting of the gate) the gate runs the deep checks on `dev`'s head: the full suite, the
+   browser tests, and §39's daily check (one ork reads the day's merges against their ideas' specs and fixes what
+   fails, on `dev`, within a budget said first). The morning finds one **Night report** at the gate: green or red,
+   what was fixed, what could not be, the cost, and — when green — **Pass to main** (the one press that merges `dev`
+   into `main`). Red is in Needs you. Nothing reaches `main` without that press. Spec 32.

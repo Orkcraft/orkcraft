@@ -72,7 +72,7 @@ def shift(s: "MachineSettings") -> Span:
 # The board's keeper and runner (spec 29a): how often the batch reads new ideas, when a talk's session is
 # compacted, how many tasks run at once, which branch they merge into and whether it is pushed; the local hours of
 # the digest of what merged and finished (spec 29c §4: only what blocks pushes at once).
-IDEAS = {"batch_minutes": 30, "idle_hours": 24, "max_parallel": 1, "merge_into": "main", "push": True,
+IDEAS = {"batch_minutes": 30, "idle_hours": 24, "max_parallel": 1, "merge_into": "dev", "push": True,
          "digest_hours": [9, 13, 18]}
 FOCUSES = ("", "board")
 RECENT_FOLDERS = 8                       # the recent folders a Wiki's picker offers               # the GUI's two looks; camp the default

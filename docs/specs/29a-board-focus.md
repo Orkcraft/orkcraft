@@ -77,7 +77,7 @@ task's session as an environment variable named in the todo's title (`API_KEY` โ
 `passed_at`), `stop(slug)`, `tick()` (the host calls it every few seconds; it never blocks), `stop_all()` (wired to the
 town's Stop all / `realm/halt`).
 - Runs `ready` tasks in order, at most `ideas.max_parallel` at once (default 1).
-- **Each task:** a worktree off the local `ideas.merge_into` branch (default **`main`**; `realm/worktrees.py` /
+- **Each task:** a worktree off the local `ideas.merge_into` branch (default **`dev`**, decisions ยง45; `realm/worktrees.py` /
   `jobs.add_worktree`), branch `idea/<slug>/<task id>`; one Claude session, **work** mode (`jobs.run_work`), model
   `h.pick(task.tier)`; the prompt: the idea page, the task's brief, the briefs of the tasks before it and what they
   merged (their commit subjects), and CLAUDE.md's rules; it must commit its work.

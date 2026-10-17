@@ -170,3 +170,18 @@ def test_a_red_gate_after_the_revert_leaves_main(repo):
     assert git(repo, "rev-parse", "main") == commit and (repo / "b.txt").exists()
     with pytest.raises(RuntimeError, match="no commit"):
         g.revert("demo", "k1", "--evil", "", "main", False, threading.Event())
+
+
+def test_a_missing_base_is_cut_from_main_once(tmp_path):
+    r = tmp_path / "r"
+    r.mkdir()
+    git(r, "init", "-b", "main")
+    (r / "a.txt").write_text("a\n")
+    git(r, "add", ".")
+    git(r, "-c", "user.name=T", "-c", "user.email=t@x", "commit", "-qm", "first")
+    g = IdeaGit(r)
+    path, _branch = g.prepare("demo", "k1", "dev")
+    assert git(r, "rev-parse", "dev") == git(r, "rev-parse", "main")
+    assert (path / "a.txt").exists()
+    g.ensure_branch("dev")                                  # once: an existing dev stays as it is
+    assert git(r, "rev-parse", "dev") == git(r, "rev-parse", "main")
