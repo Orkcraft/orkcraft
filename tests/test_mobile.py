@@ -193,6 +193,19 @@ def test_the_notifier_says_each_new_question_once_in_one_line(fake_repo):
     assert len(listener.sent) == 1
 
 
+def test_the_notifier_says_an_idea_that_needs_you_and_a_result_that_waits_at_review(fake_repo):
+    from orkcraft.gui import notify
+    host = _host(fake_repo)
+    listener = _Listener()
+    n = notify.Notifier(host, listener)
+    base = {"resources": {}, "alerts": [], "hud": {}, "idea_states": [], "review_results": []}
+    n.after(base)
+    n.after({**base, "idea_states": [{"slug": "i", "title": "Dark mode", "state": "plan"}],
+             "review_results": [{"idea": "i", "task": "k1", "title": "Add the switch"}]})
+    (msg,) = listener.sent
+    assert [x["line"] for x in msg["news"]] == ["“Dark mode” has a plan to pass", "A result waits at Review: Add the switch"]
+
+
 def test_the_notifier_says_an_error_by_its_title_only_and_a_session_that_ended(fake_repo):
     from orkcraft.core import bus
     from orkcraft.gui import notify
