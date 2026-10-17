@@ -50,6 +50,10 @@ The state a new product-and-marketing session starts from. Update it when you ha
   Discord, places).
 
 ## State on 16 October (~11:00 Berlin)
+- **The owner also runs his own sessions** (e.g. `claude/lucid-gates`, 17 October: decisions §43, specs 29a/29b
+  merged). Before writing a decision or a spec, `git pull` and read the newest §§ of decisions; number after them.
+- **Decisions §44 (17 October):** goal (was §43's track), target (was the building's Goal), track = a route of the
+  rails per class of work (after the testers). Spec 32 (wording, agy) waits for a batch.
 - **Specs 26, 27 and 28 merged** (16 October afternoon and evening). Next Claude spec: 17b (after 19 is merged).
 - Flaky browser tests seen in full runs, passing alone: `test_every_type_built_draws_three_ways[watchtower]`,
   `test_a_building_is_copied_to_another_orkspace_from_its_menu`. Not fixed; watch them.
