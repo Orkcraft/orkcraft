@@ -26,7 +26,11 @@ import unicodedata
 from pathlib import Path
 
 SECTIONS = ("Gist", "Why", "In", "Out", "Risks", "Open questions", "Estimate", "Stages", "Decisions")
-TRACK_SECTIONS = ("About", "Success criteria")
+TRACK_SECTIONS = ("Description", "Summary", "Metrics", "Open questions")
+OLD_TRACK_SECTIONS = ("About", "Success criteria")      # a goal written before spec 34 keeps them, read as Description
+PRIORITIES = ("high", "normal", "low")
+GOAL_STATES = ("raw", "reading", "asks", "ready")
+MAX_METRICS, MAX_LINKS = 12, 12
 STATES = ("raw", "reading", "asks", "ready", "planning", "plan", "working", "done", "failed")
 SIZES = ("S", "M", "L")
 GENERAL, GENERAL_TITLE = "general", "General"
@@ -225,10 +229,35 @@ def _reindex(root: Path) -> None:
 
 # -- tracks -----------------------------------------------------------------------------------------
 
+def _json_list(text: str) -> list:
+    try:
+        got = json.loads(text) if text.strip() else []
+    except ValueError:
+        return []
+    return got if isinstance(got, list) else []
+
+
+def _priority(value: object) -> str:
+    value = str(value or "").strip().lower()
+    return value if value in PRIORITIES else "normal"
+
+
+def _metrics(page: Page) -> list[dict]:
+    out = []
+    for m in _json_list(page.get("metrics")):
+        if isinstance(m, dict) and str(m.get("name") or "").strip():
+            out.append({k: " ".join(str(m.get(k) or "").split())[:300] for k in ("name", "target", "how")})
+    return out[:MAX_METRICS]
+
+
 def _track(slug: str, page: Page, count: int = 0) -> dict:
-    return {"slug": slug, "title": page.title or slug, "about": page.section("About"),
+    about = page.section("Description") or page.section("About")
+    return {"slug": slug, "title": page.title or page.get("title") or slug, "about": about,
             "criteria": items(page.section("Success criteria")), "deadline": page.get("deadline"),
-            "order": _int(page.get("order")), "count": count}
+            "order": _int(page.get("order")), "count": count, "priority": _priority(page.get("priority")),
+            "metrics": _metrics(page), "summary": page.section("Summary"),
+            "links": [str(x)[:300] for x in _json_list(page.get("links")) if str(x).strip()][:MAX_LINKS],
+            "questions": items(page.section("Open questions"))}
 
 
 def track_page(root: Path, slug: str) -> Page | None:
@@ -244,7 +273,7 @@ def tracks(root: Path, make: bool = True) -> list[dict]:
         t = page.get("track") or GENERAL
         counts[t] = counts.get(t, 0) + 1
     out = [_track(s, p, counts.get(s, 0)) for s, p in _pages(root / TRACKS)]
-    return sorted(out, key=lambda t: (t["order"], t["slug"]))
+    return sorted(out, key=lambda t: (PRIORITIES.index(t["priority"]), t["order"], t["slug"]))
 
 
 def add_track(root: Path, title: str) -> str:
@@ -257,7 +286,7 @@ def add_track(root: Path, title: str) -> str:
             root / TRACKS, slugify(title))
         order = max((_int(p.get("order")) for _s, p in _pages(root / TRACKS)), default=0) + 1
         page = Page([("owner", OWNER), ("kind", "track"), ("order", str(order))], title, "",
-                    [("About", ""), ("Success criteria", "")])
+                    [(name, "") for name in TRACK_SECTIONS])
         _write(root / TRACKS / f"{slug}.md", page.text())
         _reindex(root)
     return slug
@@ -270,15 +299,93 @@ def set_track(root: Path, slug: str, about: str | None = None, criteria: list | 
         if page is None:
             raise ValueError(f"No track {slug!r}")
         if about is not None:
-            page.set_section("About", about, TRACK_SECTIONS)
+            page.set_section("About" if any(n == "About" for n, _t in page.sections) else "Description", about,
+                             TRACK_SECTIONS)
         if criteria is not None:
             lines = [" ".join(str(c).split())[:300] for c in criteria if str(c).strip()][:20]
-            page.set_section("Success criteria", "\n".join(f"- {c}" for c in lines), TRACK_SECTIONS)
+            page.set_section("Success criteria", "\n".join(f"- {c}" for c in lines), OLD_TRACK_SECTIONS)
         if deadline is not None:
             deadline = str(deadline).strip()
             if deadline and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", deadline):
                 raise ValueError("A deadline is a date: YYYY-MM-DD")
             page.set("deadline", deadline)
+        _write(root / TRACKS / f"{slug}.md", page.text())
+        _reindex(root)
+
+
+def _date(value: object) -> str:
+    value = str(value or "").strip()
+    if value and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        raise ValueError("A deadline is a date: YYYY-MM-DD")
+    return value
+
+
+def _metric_lines(metrics: list[dict]) -> str:
+    return "\n".join(f"- {m['name']} · target {m['target'] or '—'}" + (f" · counted: {m['how']}" if m.get("how") else "")
+                     for m in metrics)
+
+
+def save_goal(root: Path, slug: str | None, title: str, about: str = "", metrics: object = (), priority: str = "normal",
+              links: object = (), deadline: str = "") -> tuple[str, bool]:
+    """A goal made or edited in its dialog (spec 34 §1): (its slug, whether it is new). What the keeper wrote (Summary,
+    Open questions, how a metric is counted) is kept; Description, Metrics, Priority, Links and Deadline are the person's."""
+    title = " ".join(str(title or "").split())[:TITLE_CHARS]
+    if not title:
+        raise ValueError("A goal needs a title")
+    if not isinstance(metrics, (list, tuple)) or not isinstance(links, (list, tuple)):
+        raise ValueError("Metrics and links are lists")
+    if str(priority or "normal").lower() not in PRIORITIES:
+        raise ValueError("Priority is High, Normal or Low")
+    deadline = _date(deadline)
+    with LOCK:
+        new = not slug
+        if new:
+            slug = add_track(root, title)
+        page = track_page(root, slug)
+        if page is None:
+            raise ValueError(f"No goal {slug!r}")
+        had = {m["name"].lower(): m.get("how", "") for m in _metrics(page)}
+        kept = []
+        for m in metrics:
+            if not isinstance(m, dict) or not str(m.get("name") or "").strip():
+                continue
+            name = " ".join(str(m["name"]).split())[:300]
+            kept.append({"name": name, "target": " ".join(str(m.get("target") or "").split())[:300],
+                         "how": had.get(name.lower(), "")})
+        kept = kept[:MAX_METRICS]
+        urls = list(dict.fromkeys(" ".join(str(x).split())[:300] for x in links if str(x).strip()))[:MAX_LINKS]
+        page.title = title
+        page.set("title", title)
+        page.set("priority", _priority(priority))
+        page.set("deadline", deadline)
+        page.set("metrics", json.dumps(kept, ensure_ascii=False))
+        page.set("links", json.dumps(urls, ensure_ascii=False))
+        page.sections = [(n, t) for n, t in page.sections if n != "About" or not page.section("Description")]
+        if any(n == "About" for n, _t in page.sections):          # an older goal: About becomes Description
+            page.sections = [("Description" if n == "About" else n, t) for n, t in page.sections]
+        page.set_section("Description", about, TRACK_SECTIONS)
+        page.set_section("Metrics", _metric_lines(kept), TRACK_SECTIONS)
+        for name in TRACK_SECTIONS:
+            if not any(n == name for n, _t in page.sections):
+                page.set_section(name, "", TRACK_SECTIONS)
+        _write(root / TRACKS / f"{slug}.md", page.text())
+        _reindex(root)
+    return slug, new
+
+
+def write_goal_reading(root: Path, slug: str, summary: str, how: dict, questions: list[str]) -> None:
+    """What the keeper's reading of a goal writes: Summary, how each metric is counted, the open questions."""
+    with LOCK:
+        page = track_page(root, slug)
+        if page is None:
+            raise ValueError(f"No goal {slug!r}")
+        metrics = _metrics(page)
+        for i, m in enumerate(metrics):
+            m["how"] = " ".join(str(how.get(m["name"]) or how.get(str(i)) or m.get("how") or "").split())[:300]
+        page.set("metrics", json.dumps(metrics, ensure_ascii=False))
+        page.set_section("Metrics", _metric_lines(metrics), TRACK_SECTIONS)
+        page.set_section("Summary", summary, TRACK_SECTIONS)
+        page.set_section("Open questions", "\n".join(f"- {' '.join(q.split())}" for q in questions), TRACK_SECTIONS)
         _write(root / TRACKS / f"{slug}.md", page.text())
         _reindex(root)
 
@@ -299,7 +406,8 @@ def idea_page(root: Path, slug: str) -> Page | None:
 def _idea(slug: str, page: Page) -> dict:
     return {"slug": slug, "title": page.title or slug, "track": page.get("track") or GENERAL,
             "order": _int(page.get("order")), "size": page.get("size") if page.get("size") in SIZES else "",
-            "thesis": thesis(page.section("Gist"))}
+            "thesis": thesis(page.section("Gist")), "priority": _priority(page.get("priority")),
+            "placed": page.get("placed")}
 
 
 def ideas(root: Path, track: str | None = None) -> list[dict]:
@@ -383,8 +491,9 @@ def update(root: Path, slug: str, sections: dict[str, str], decisions: list[str]
     return done
 
 
-def move(root: Path, slug: str, track: str | None = None, before: str | None = None) -> None:
-    """An idea to another track and/or before another idea (else last); `order` renumbered only where needed."""
+def move(root: Path, slug: str, track: str | None = None, before: str | None = None, by: str = "") -> None:
+    """An idea to another track and/or before another idea (else last); `order` renumbered only where needed.
+    `by="person"` marks the place as the person's (`placed: person`): the keeper's proposal never undoes it."""
     with LOCK:
         page = idea_page(root, slug)
         if page is None:
@@ -402,6 +511,9 @@ def move(root: Path, slug: str, track: str | None = None, before: str | None = N
             changed = _int(p.get("order")) != n or (s == slug and p.get("track") != to)
             if s == slug:
                 p.set("track", to)
+                if by == "person" and p.get("placed") != "person":
+                    p.set("placed", "person")
+                    changed = True
             if changed:
                 p.set("order", n)
                 _write(root / IDEAS / f"{s}.md", p.text())
@@ -460,20 +572,41 @@ def save_state(state_dir: Path, slug: str, **changes: object) -> dict:
     return data
 
 
-def add_turn(state_dir: Path, slug: str, who: str, text: str, section: str = "") -> dict:
+def goal_folder(state_dir: Path, slug: str) -> Path:
+    if not re.fullmatch(r"[a-z0-9-]+", slug or ""):
+        raise ValueError(f"No goal {slug!r}")
+    return state_dir / "goals" / slug
+
+
+def goal_state(state_dir: Path, slug: str) -> dict:
+    """A goal's state beside its page: `raw` (not read), `reading`, `asks`, `ready`; the last error."""
+    data = _json(goal_folder(state_dir, slug) / "state.json") or {}
+    return {"state": data.get("state") if data.get("state") in GOAL_STATES else "raw", "error": str(data.get("error") or ""),
+            "read_at": str(data.get("read_at") or "")}
+
+
+def save_goal_state(state_dir: Path, slug: str, **changes: object) -> dict:
+    with LOCK:
+        path = goal_folder(state_dir, slug) / "state.json"
+        data = {**(_json(path) or {}), **changes}
+        _write_json(path, data)
+    return data
+
+
+def add_turn(state_dir: Path, slug: str, who: str, text: str, section: str = "", goal: bool = False) -> dict:
     turn = {"who": who, "text": str(text)[:SECTION_CHARS], "section": section, "at": _now()}
     with LOCK:
-        path = state_folder(state_dir, slug) / "talk.jsonl"
+        path = (goal_folder(state_dir, slug) if goal else state_folder(state_dir, slug)) / "talk.jsonl"
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(turn, ensure_ascii=False) + "\n")
     return turn
 
 
-def talk(state_dir: Path, slug: str, last: int = TALK_SHOWN) -> list[dict]:
+def talk(state_dir: Path, slug: str, last: int = TALK_SHOWN, goal: bool = False) -> list[dict]:
     """The last turns, to show only: the archive is never read back into a model."""
     try:
-        lines = (state_folder(state_dir, slug) / "talk.jsonl").read_text(encoding="utf-8").splitlines()[-last:]
+        lines = ((goal_folder(state_dir, slug) if goal else state_folder(state_dir, slug)) / "talk.jsonl").read_text(encoding="utf-8").splitlines()[-last:]
     except OSError:
         return []
     out = []

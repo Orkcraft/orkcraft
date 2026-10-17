@@ -18,7 +18,8 @@ from orkcraft.realm import checkpoint, idea_secrets, ideas, jobs
 BOARD_COMMANDS = {"ideas.board", "ideas.page", "ideas.add", "ideas.say", "ideas.plan", "ideas.start", "ideas.move",
                   "ideas.edit", "ideas.track_add", "ideas.track_set", "ideas.todo", "ideas.drop", "ideas.stop",
                   "ideas.review_list", "ideas.diff", "ideas.merge", "ideas.back", "ideas.drop_task",
-                  "ideas.stop_task", "ideas.agents", "ideas.task", "ideas.into", "ideas.log", "ideas.logs"}
+                  "ideas.stop_task", "ideas.agents", "ideas.task", "ideas.into", "ideas.log", "ideas.logs", "ideas.goal_save",
+                  "ideas.goal", "ideas.read_now", "ideas.roles", "ideas.role_save", "ideas.role_drop", "ideas.kind_set"}
 
 
 @pytest.fixture
@@ -64,7 +65,9 @@ def test_drop_an_idea_and_read_the_board_and_its_page(host):
     (i,) = board["ideas"]
     assert i["slug"] == slug and i["state"] == "raw" and i["thesis"] == "Dark mode" and i["track"] == "general"
     assert i["progress"] == {"done": 0, "total": 0} and i["updated"]
-    assert set(i) == {"slug", "title", "track", "order", "state", "size", "thesis", "asks", "progress", "updated"}
+    assert set(i) == {"slug", "title", "track", "order", "state", "size", "thesis", "asks", "progress", "updated",
+                      "priority"}                 # spec 34 §4: ideas gain a priority
+    assert i["priority"] == "normal" and board["tracks"][0]["priority"] == "normal" and board["tracks"][0]["state"] == "raw"
     assert board["today"] == {"todos": [], "needs_you": []} and board["batch_next"] and board["rev"] > rev
     page = host.command("ideas.page", {"slug": slug})
     assert [s["name"] for s in page["sections"]] == list(ideas.SECTIONS)
@@ -305,15 +308,17 @@ def test_the_limits_are_the_smallest_remaining_of_each_installed_tools_rows(host
 
 
 def test_agents_shows_the_taskmaster_and_a_chip_per_live_task(host):
-    assert host.command("ideas.agents") == {"roles": [
-        {"role": "taskmaster", "name": "Taskmaster", "state": "waiting", "waits_on": None, "chips": []},
-        {"role": "grunt", "name": "Grunts", "chips": []}], "done_today": []}
+    first = host.command("ideas.agents")
+    assert first["done_today"] == [] and [r["role"] for r in first["roles"]] == ["taskmaster", "grunt"]
+    assert {k: first["roles"][0][k] for k in ("name", "state", "waits_on", "chips")} == {
+        "name": "Taskmaster", "state": "waiting", "waits_on": None, "chips": []}
+    assert first["roles"][1]["name"] == "Grunts" and first["roles"][1]["chips"] == []      # spec 34: a block per role
     slug = _review(host)
     ideas.save_state(host.ideas.state_dir, slug, state="working")
     other = host.command("ideas.add", {"text": "asking idea"})["slug"]
     ideas.save_state(host.ideas.state_dir, other, state="asks")
     got = host.command("ideas.agents")
-    tm, grunts = got["roles"]
+    tm, grunts = got["roles"][:2]
     assert tm["state"] == "waiting" and tm["waits_on"]["idea"] == other and "asking idea" in tm["waits_on"]["text"]
     assert tm["chips"] == [{"idea": other, "title": "asking idea", "state": "waiting"}]
     (chip,) = grunts["chips"]
@@ -321,7 +326,7 @@ def test_agents_shows_the_taskmaster_and_a_chip_per_live_task(host):
     ideas.edit_plan(host.ideas.state_dir, slug, lambda p: p["tasks"][0].update(
         state="merged", finished=dt.datetime.now().isoformat(timespec="seconds")))
     got = host.command("ideas.agents")
-    assert got["roles"][1]["chips"] == [] and got["done_today"] == [{"idea": slug, "task": "k1", "title": "Do it"}]
+    assert got["roles"][1]["chips"] == [] and got["done_today"] == [{"idea": slug, "task": "k1", "title": "Do it", "role": "grunt"}]
 
 
 def test_task_returns_its_fields_idea_title_and_log(host):

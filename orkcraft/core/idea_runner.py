@@ -12,7 +12,8 @@ and fast-forwarded, pushed only when `ideas.push`), sends it back with a line, o
 The plan's tasks live in `<state_dir>/ideas/<slug>/plan.json` (the runner owns them once the plan is passed; it
 re-reads the file before each write, so the keeper's to-dos stay as the keeper wrote them). A task waits for its
 `after` tasks to be merged and for the to-dos `for` it to be done, starts when a slot is free (`ideas.max_parallel`)
-and its tool's window is not nearly spent (else `held`, "after HH:MM"), works, passes the gate (once more on the
+and its tool's window is not nearly spent (else `held`, "after HH:MM"), works as its task type's role (that role's
+model and instruction; its `max_parallel` is held besides `ideas.max_parallel`, spec 34 §3), passes the gate (once more on the
 same session when red) and waits at `review`, green or red, holding its worktree and branch (`ideas.review` false:
 green lands by itself, as before). Every task change publishes `ideas.changed`. All git: realm/idea_git.py.
 """
@@ -28,7 +29,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft.core.idea_review import BACK, STOP_ONE, STOPPED_NOTE, ReviewMixin, RunnerError  # noqa: F401
-from orkcraft.realm import event_log, halt, harnesses, jobs, status, tool_errors
+from orkcraft.realm import event_log, halt, harnesses, jobs, roles, status, tool_errors
 from orkcraft.realm.idea_git import CRITICAL_TESTS, Conflict, IdeaGit, env_name, parse_tests, read_secret
 
 CHANGED = "ideas.changed"          # slug: an idea's state or one of its tasks changed
@@ -90,6 +91,7 @@ class Run:
     thread: threading.Thread
     cancel: threading.Event
     why: str = ""                  # set when someone stopped it
+    role: str = ""                 # the role it runs as (spec 34 §3): its `max_parallel` is held
 
 
 class IdeaRunner(ReviewMixin):
@@ -158,13 +160,13 @@ class IdeaRunner(ReviewMixin):
             since = self._since.get((slug, tid))
             self._since[(slug, tid)] = now
             self._emit(event_log.TASK_STATE, idea=slug, task=tid, state=new, was=old, round=int(t.get("round") or 1),
-                       tier=t.get("tier") or "", seconds=round(now - since, 1) if since else None, tokens=t.get("tokens"),
+                       tier=t.get("tier") or "", role=t.get("role") or "", seconds=round(now - since, 1) if since else None, tokens=t.get("tokens"),
                        cost=t.get("cost"))
             if new == "review":
                 tests, diff = t.get("tests") or {}, t.get("diff") or {}
                 self._emit(event_log.RESULT_READY, idea=slug, task=tid, round=int(t.get("round") or 1), passed=tests.get("passed"),
                            failed=tests.get("failed"), files=diff.get("files"), added=diff.get("added"),
-                           removed=diff.get("removed"), cost=t.get("cost"))
+                           removed=diff.get("removed"), cost=t.get("cost"), role=t.get("role") or "")
             if new == "held" and self.on_held is not None:
                 try:
                     self.on_held()
@@ -287,6 +289,9 @@ class IdeaRunner(ReviewMixin):
                         break
                     if t.get("state") != "ready" or t.get("note") == STOPPED_NOTE:
                         continue
+                    role = self._role(t)
+                    if self._running_as(role["slug"]) >= role["max_parallel"]:
+                        continue                     # this role's own limit (spec 34 §3): the task waits its turn
                     until = status.reset_of(limits, HARNESS, now, status.NEARLY)
                     if until is not None:
                         self._hold(slug, t, until)
@@ -297,6 +302,12 @@ class IdeaRunner(ReviewMixin):
                 if changed:
                     self._save_tasks(slug, tasks)
                     self._changed(slug)
+
+    def _role(self, task: dict) -> dict:
+        return roles.role_for(self.state_dir, str(task.get("kind") or ""))
+
+    def _running_as(self, slug: str) -> int:
+        return sum(1 for r in self._runs.values() if r.role == slug)
 
     def _advance(self, slug: str, plan: dict, now: float) -> bool:
         tasks = plan["tasks"]
@@ -363,14 +374,15 @@ class IdeaRunner(ReviewMixin):
         cancel = threading.Event()
         task.update(state="running", started=now_iso(), finished="", error="", note="",
                     branch=f"idea/{slug}/{tid}", commit="", session="", cost=None, tokens=None,
-                    tests=None, diff=None, round=1, conflict="", why="", base="")
+                    tests=None, diff=None, round=1, conflict="", why="", base="", role=self._role(task)["slug"])
         self._clear_log(slug, tid)
         self._spawn(slug, tid, cancel, None)
 
     def _spawn(self, slug: str, tid: str, cancel: threading.Event, again: dict | None) -> None:
         thread = threading.Thread(target=self._work, args=(slug, tid, cancel, again), daemon=True,
                                   name=f"idea-{slug}-{tid}")
-        self._runs[(slug, tid)] = Run(thread, cancel)
+        task = next((t for t in (self.plan(slug) or {}).get("tasks") or [] if t.get("id") == tid), {})
+        self._runs[(slug, tid)] = Run(thread, cancel, role=self._role(task)["slug"])
         thread.start()
 
     def _work(self, slug: str, tid: str, cancel: threading.Event, again: dict | None = None) -> None:
@@ -384,7 +396,8 @@ class IdeaRunner(ReviewMixin):
             base = str(setting(self.settings, "merge_into") or "dev")
             env = self._env(slug, tid, plan)
             h = harnesses.need(HARNESS)
-            model = h.pick(task.get("tier") or "warrior")
+            role = self._role(task)
+            model = h.pick(role["model"] or task.get("tier") or "warrior")      # the role's model, else the tier's
             rnd = int(task.get("round") or 1)
             if again is None:
                 self.git.ensure_branch(base)
@@ -535,7 +548,10 @@ class IdeaRunner(ReviewMixin):
         except OSError:
             rules = ""
         secrets = [n for n in self._env(slug, task.get("id"), plan) if n not in ("ORKCRAFT_ORC", "ORKCRAFT_IDEA", "ORKCRAFT_TASK")]
-        parts = [
+        parts = []
+        if (instruction := str(self._role(task).get("instruction") or "").strip()):
+            parts.append(f"# Your role: {self._role(task)['name']}\n\n{instruction}")
+        parts += [
             f"You do one task of the idea `{slug}` in this repository: a git worktree on branch "
             f"`idea/{slug}/{task.get('id')}`, cut from `{setting(self.settings, 'merge_into') or 'main'}`. "
             "Work only here.",

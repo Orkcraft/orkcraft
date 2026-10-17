@@ -148,3 +148,17 @@ def test_a_secret_goes_to_the_store_never_to_the_plan(tmp_path):
     assert idea_secrets.get(state, "idea", "t1") is None
     with pytest.raises(ValueError):
         idea_secrets.put(state, "../x", "t1", "v")
+
+
+def test_a_goal_written_before_spec_34_is_read_and_saved_as_description(tmp_path):
+    slug = ideas.add_track(tmp_path, "Old goal")
+    page = ideas.track_page(tmp_path, slug)
+    page.sections = [("About", "What it was."), ("Success criteria", "- fewer clicks")]
+    ideas._write(tmp_path / ideas.TRACKS / f"{slug}.md", page.text())
+    (g,) = [t for t in ideas.tracks(tmp_path) if t["slug"] == slug]
+    assert g["about"] == "What it was." and g["criteria"] == ["fewer clicks"] and g["priority"] == "normal"
+    ideas.save_goal(tmp_path, slug, "Old goal", "Now described.", [{"name": "m", "target": "1"}], "low", ["a/b.md"])
+    names = [n for n, _t in ideas.track_page(tmp_path, slug).sections]
+    assert "About" not in names and names[0] == "Description" and "Success criteria" in names
+    (g,) = [t for t in ideas.tracks(tmp_path) if t["slug"] == slug]
+    assert g["about"] == "Now described." and g["priority"] == "low" and g["links"] == ["a/b.md"]

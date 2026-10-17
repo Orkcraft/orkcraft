@@ -69,7 +69,7 @@ else:
     time.sleep(float(os.environ.get("STUB_SLEEP", "0")))
     commit(f"{tid}.txt", f"done by {tid}\n", f"{tid}: add {tid}.txt")
 with open(os.environ["STUB_LOG"], "a") as f:
-    f.write(json.dumps({"tid": tid, "resume": resume, "start": start, "end": time.time()}) + "\n")
+    f.write(json.dumps({"tid": tid, "resume": resume, "start": start, "end": time.time(), "argv": argv}) + "\n")
 print(json.dumps({"result": "done", "session_id": f"s-{tid}", "total_cost_usd": 0.01,
                   "usage": {"input_tokens": 10, "output_tokens": 5}}))
 '''
@@ -121,7 +121,7 @@ def plan_of(town, tasks: list[dict], todos: list[dict] | None = None, slug: str 
     d = town.state / "ideas" / slug
     d.mkdir(parents=True, exist_ok=True)
     full = [{"id": t["id"], "title": t.get("title", t["id"]), "brief": t.get("brief", "do " + t["id"]),
-             "tier": t.get("tier", "laborer"), "after": t.get("after", []), "state": "waiting", "branch": "",
+             "tier": t.get("tier", "laborer"), "kind": t.get("kind", "code"), "after": t.get("after", []), "state": "waiting", "branch": "",
              "commit": "", "session": "", "cost": None, "tokens": None, "started": "", "finished": "", "error": "",
              "note": ""} for t in tasks]
     (d / "plan.json").write_text(json.dumps({"idea": slug, "made_at": "x", "passed_at": "y", "todos": todos or [],
@@ -593,3 +593,43 @@ def test_back_and_drop_are_decisions_with_their_line_and_a_stop_is_a_task_stoppe
     assert decided == [("back", "rename it"), ("drop", None)] or decided == [("back", "rename it"), ("drop", "")]
     (stop,) = [r for r in rows if r["event"] == "task_stopped"]
     assert stop["task"] == "k2" and stop["device"] == "phone"
+
+
+def test_a_task_runs_as_its_types_role_with_that_roles_model_and_instruction(town):
+    from orkcraft.realm import roles
+    slug = roles.save(town.state, "Scribe", "laborer", 2, "Write like a patient scribe.")
+    roles.set_kind(town.state, "docs", slug)
+    plan_of(town, [{"id": "k1", "kind": "docs", "tier": "elder"}, {"id": "k2", "tier": "elder"}])
+    runner, events = runner_of(town)
+    runner.start("demo")
+    assert wait_idle(runner)["state"] == "done"
+    by = {c["tid"]: c for c in calls(town)}
+    flat = lambda c: " ".join(c["argv"])                                  # noqa: E731
+    assert "haiku" in flat(by["k1"]) and "Write like a patient scribe." in flat(by["k1"])      # the role's model, not the tier's
+    assert "opus" in flat(by["k2"]) and "patient scribe" not in flat(by["k2"])                 # code: Grunt, the task's tier
+    tasks = tasks_of(town)
+    assert tasks["k1"]["role"] == slug and tasks["k2"]["role"] == "grunt"
+
+
+def test_a_roles_max_parallel_is_held_besides_the_ideas(town, monkeypatch):
+    from orkcraft.realm import roles
+    monkeypatch.setenv("STUB_SLEEP", "1.0")
+    slug = roles.save(town.state, "Solo", "laborer", 1, "")
+    roles.set_kind(town.state, "tests", slug)
+    plan_of(town, [{"id": "k1", "kind": "tests"}, {"id": "k2", "kind": "tests"}, {"id": "k3"}])
+    runner, _ = runner_of(town, max_parallel=3)
+    runner.start("demo")
+    assert wait_idle(runner)["state"] == "done"
+    spans = {c["tid"]: (c["start"], c["end"]) for c in calls(town)}
+    assert spans["k2"][0] >= spans["k1"][1] - 0.05 or spans["k1"][0] >= spans["k2"][1] - 0.05   # the two Solo tasks never overlap
+
+
+def test_the_events_carry_the_role(town):
+    plan_of(town, [{"id": "k1"}])
+    runner, _ = reviewing(town)
+    runner.events = True
+    runner.start("demo")
+    wait_task(runner, "k1", "review")
+    from orkcraft.realm import event_log
+    rows = [r for r in event_log.read(town.repo) if r["event"] in ("task_state", "result_ready")]
+    assert rows and all(r.get("role") == "grunt" for r in rows if r["event"] == "result_ready" or r["state"] in ("testing", "review"))

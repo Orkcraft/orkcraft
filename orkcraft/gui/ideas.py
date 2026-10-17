@@ -27,7 +27,10 @@ from typing import Any, Callable
 from orkcraft import settings
 from orkcraft.core import idea_keeper
 from orkcraft.realm import catalog, event_log, idea_secrets, ideas, wiki
+from orkcraft.gui.ideas_args import IdeasError, _device, _opt, _str, _text
+from orkcraft.gui.ideas_goals import GoalsMixin
 from orkcraft.gui.ideas_limits import LimitsMixin
+from orkcraft.gui.ideas_roles import RolesMixin
 from orkcraft.realm.idea_git import IdeaGit
 
 RUNNER_TICK_S = 3.0               # how often the runner looks at its tasks
@@ -44,10 +47,6 @@ def focus_of(machine) -> str:
     return env if env in settings.FOCUSES else machine.focus
 
 
-class IdeasError(Exception):
-    """A board command the host refuses, in plain words."""
-
-
 class _Hop:
     """The bus as the runner gets it: a publish from its thread is made on the host's (town.call)."""
 
@@ -58,7 +57,7 @@ class _Hop:
         self.town.call(lambda: self.town.publish(topic, **data))
 
 
-class Ideas(LimitsMixin):
+class Ideas(LimitsMixin, GoalsMixin, RolesMixin):
     def __init__(self, host) -> None:
         self.host = host
         self.town = host.town
@@ -112,7 +111,10 @@ class Ideas(LimitsMixin):
         slug = str((getattr(event, "data", None) or {}).get("slug") or "")
         if slug:
             try:
-                self._state_event(slug)
+                if slug.startswith("goal:"):
+                    self.goal_event(slug[5:])
+                else:
+                    self._state_event(slug)
             except Exception:                   # a log never stops the board
                 pass
 
@@ -221,15 +223,15 @@ class Ideas(LimitsMixin):
     def board(self, make: bool = True) -> dict[str, Any]:
         """`make`: General (and the Wiki) written when missing; the snapshot only reads."""
         root = self.root()
-        tracks = ideas.tracks(root, make=make)
-        out, todos, needs = [], [], []
+        tracks = [self._goal_row(g) for g in ideas.tracks(root, make=make)]
+        out, todos, needs = [], [], self.goal_needs(tracks)
         for i in ideas.ideas(root):
             slug = i["slug"]
             st, plan, page = self._state(slug), ideas.plan(self.state_dir, slug), ideas.idea_page(root, slug)
             tasks = (plan or {}).get("tasks") or []
             asks = ideas.items(page.section("Open questions")) if page else []
             out.append({"slug": slug, "title": i["title"], "track": i["track"], "order": i["order"],
-                        "state": st["state"], "size": i["size"], "thesis": i["thesis"], "asks": len(asks),
+                        "state": st["state"], "size": i["size"], "thesis": i["thesis"], "asks": len(asks), "priority": i["priority"],
                         "progress": {"done": sum(1 for t in tasks if t.get("state") == "merged"), "total": len(tasks)},
                         "updated": ideas.touched_at(root, self.state_dir, slug)})
             kind = NEEDS_KIND.get(st["state"])
@@ -270,13 +272,26 @@ class Ideas(LimitsMixin):
         text = _text(args, "text", ideas.SECTION_CHARS)
         slug = ideas.add_idea(self.root(), text, _opt(args, "track") or ideas.GENERAL, self.state_dir)
         ideas.add_turn(self.state_dir, slug, "you", text, "Gist")     # the person's own words, kept
-        self._ev(event_log.IDEA_ADDED, args, idea=slug, track=_opt(args, "track") or ideas.GENERAL, chars=len(text))
+        now = args.get("now") is True
+        self._ev(event_log.IDEA_ADDED, args, idea=slug, track=_opt(args, "track") or ideas.GENERAL, chars=len(text), now=now)
+        out = {"slug": slug}
+        if now:                                 # Process now: the keeper reads it at once (else the batch does)
+            try:
+                self.keeper.read_now(slug)
+            except idea_keeper.KeeperError as e:
+                ideas.save_state(self.state_dir, slug, error=str(e))
+                out["error"] = str(e)
         self.changed(slug)
-        return {"slug": slug}
+        return out
 
     def say(self, args: dict) -> dict:
         slug = _text(args, "slug", 100)
         text = _text(args, "text", ideas.SECTION_CHARS)
+        if args.get("goal") is True or (ideas.idea_page(self.root(), slug) is None and ideas.track_page(self.root(), slug)):
+            self._read_goal(slug, text)         # the answer to a goal's questions: the same talk, on the goal
+            self._ev(event_log.IDEA_SAID, args, idea=f"goal:{slug}", section="", chars=len(text), text=text)
+            self.changed(f"goal:{slug}")
+            return {"ok": True}
         self.keeper.say(slug, text, _opt(args, "section"))
         self._ev(event_log.IDEA_SAID, args, idea=slug, section=_opt(args, "section"), chars=len(text), text=text)
         self.changed(slug)
@@ -315,7 +330,7 @@ class Ideas(LimitsMixin):
 
     def move(self, args: dict) -> dict:
         slug = _text(args, "slug", 100)
-        ideas.move(self.root(), slug, _opt(args, "track") or None, _opt(args, "before") or None)
+        ideas.move(self.root(), slug, _opt(args, "track") or None, _opt(args, "before") or None, by="person")
         self.changed(slug)
         return {"ok": True}
 
@@ -527,37 +542,6 @@ class Ideas(LimitsMixin):
             raise IdeasError("The logs are too large for the phone: download them on the computer")
         return {"name": name, "data": base64.b64encode(data).decode("ascii")}
 
-    def agents(self, args: dict) -> dict:
-        """The Agents window: the Taskmaster (the keeper) and the Grunts (a chip per live task)."""
-        board = self.board(make=False)
-        titles = {i["slug"]: i["title"] for i in board["ideas"]}
-        chips, waits, mode = [], None, "waiting"
-        for i in board["ideas"]:
-            busy = self.keeper.busy(i["slug"])
-            if i["state"] in ("reading", "planning") or busy:
-                state = "planning" if i["state"] == "planning" else ("reading" if i["state"] == "reading" else "talking")
-                chips.append({"idea": i["slug"], "title": i["title"], "state": state})
-            elif i["state"] == "asks":
-                chips.append({"idea": i["slug"], "title": i["title"], "state": "waiting"})
-                waits = waits or {"idea": i["slug"], "text": f"waiting for your answers on \u201c{i['title']}\u201d"}
-        for rank in ("planning", "reading", "talking"):
-            if any(c["state"] == rank for c in chips):
-                mode = rank
-                break
-        grunts, done, today = [], [], dt.date.today().isoformat()
-        for slug, title, plan in self._plans():
-            for t in plan.get("tasks") or []:
-                state = t.get("state")
-                if state == "merged" and str(t.get("finished") or "").startswith(today):
-                    done.append({"idea": slug, "task": t.get("id"), "title": t.get("title", "")})
-                elif state in ("running", "testing", "review", "ready", "held", "failed"):
-                    grunts.append({"idea": slug, "idea_title": titles.get(slug, title), "task": t.get("id"),
-                                   "title": t.get("title", ""), "state": state, "tier": t.get("tier", ""),
-                                   "note": t.get("note") or (t.get("error") if state == "failed" else "") or ""})
-        return {"roles": [{"role": "taskmaster", "name": "Taskmaster", "state": mode, "waits_on": waits,
-                           "chips": chips},
-                          {"role": "grunt", "name": "Grunts", "chips": grunts}], "done_today": done}
-
     def commands(self) -> dict[str, Callable[[dict], Any]]:
         def guarded(fn):
             def run(args: dict) -> Any:
@@ -578,32 +562,10 @@ class Ideas(LimitsMixin):
                  "ideas.stop": self.stop, "ideas.review_list": self.review_list, "ideas.diff": self.diff,
                  "ideas.merge": self.merge, "ideas.back": self.back, "ideas.drop_task": self.drop_task,
                  "ideas.stop_task": self.stop_task, "ideas.agents": self.agents, "ideas.task": self.task,
-                 "ideas.into": self.into, "ideas.log": self.log, "ideas.logs": self.logs}
+                 "ideas.into": self.into, "ideas.log": self.log, "ideas.logs": self.logs, "ideas.goal_save": self.goal_save,
+                 "ideas.goal": self.goal, "ideas.read_now": self.read_now, "ideas.roles": self.roles,
+                 "ideas.role_save": self.role_save, "ideas.role_drop": self.role_drop, "ideas.kind_set": self.kind_set}
         return {name: guarded(fn) for name, fn in table.items()}
 
 
 _NO_TESTS = {"passed": 0, "failed": 0, "failing": [], "tail": ""}
-
-
-def _device(args: dict) -> str:
-    """"phone" when the listener says so (gui/mobile.py `guard`), else the computer's own window."""
-    return "phone" if args.get("device") == "phone" else "desktop"
-
-
-def _str(args: dict, key: str, limit: int) -> str:
-    value = args.get(key, "")
-    if not isinstance(value, str):
-        raise IdeasError(f"{key} is not text")
-    return value[:limit]
-
-
-def _text(args: dict, key: str, limit: int) -> str:
-    value = _str(args, key, limit).strip()
-    if not value:
-        raise IdeasError(f"{key} is missing")
-    return value
-
-
-def _opt(args: dict, key: str) -> str:
-    value = args.get(key)
-    return value.strip()[:100] if isinstance(value, str) else ""

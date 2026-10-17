@@ -9,6 +9,8 @@ the person, and turns a spec into a plan.
 
 - **Batch** (laborer): each `raw` idea, read-only in the repository, given the Wiki's `index.md` and the tracks: it
   fills Gist and Why, the size, proposes a track (only for an idea in General) and writes 1–3 Open questions.
+- **Goal** (warrior, read-only): a goal saved (or answered) is read at once: its Summary, how each metric is counted,
+  0–3 questions; the goal is `reading`, then `asks` or `ready`. `read_now` reads one idea at once, as the batch would.
 - **Talk** (elder): one Claude session per idea (`--resume` its session). A new session when the last turn is older
   than `idle_hours` or its context passed 60 % of the window; the new one starts from the page only (its Decisions
   and Open questions with it). The talk is archived in `talk.jsonl` and never read back into a model.
@@ -28,7 +30,8 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
-from orkcraft.realm import ideas, plans
+from orkcraft.core.idea_goals import GoalMixin
+from orkcraft.realm import ideas, plans, roles
 
 CHANGED = "ideas.changed"          # the bus's topic: slug
 HARNESS = "claude"
@@ -74,11 +77,14 @@ def _bullets(lines: list[str]) -> str:
     return "\n".join(f"- {' '.join(q.split())}" for q in lines)
 
 
-class IdeaKeeper:
+class IdeaKeeper(GoalMixin):
     def __init__(self, repo_root: Path, state_dir: Path, wiki_root: Callable[[], Path],
                  settings: Callable[[], dict], publish: Callable[[str], None] = lambda slug: None,
-                 demo: bool = False, budget_ok: Callable[[], bool] = lambda: True) -> None:
+                 demo: bool = False, budget_ok: Callable[[], bool] = lambda: True,
+                 taskmaster: Callable[[], str] | None = None) -> None:
         self.repo_root, self.state_dir = Path(repo_root), Path(state_dir)
+        self.taskmaster = taskmaster or (lambda: (roles.role(self.state_dir, roles.TASKMASTER) or {}).get("model") or "elder")
+        self._again: set[str] = set()                # a busy key asked again while it ran
         self.wiki_root, self.settings, self.publish = wiki_root, settings, publish
         self.demo, self.budget_ok = demo, budget_ok
         self.call: Call = self._claude                # tests swap the model call here
@@ -95,7 +101,7 @@ class IdeaKeeper:
         from orkcraft.realm import harnesses, jobs
         from orkcraft.sources import telemetry
         h = harnesses.get(HARNESS)
-        purpose = {"laborer": "sort", "elder": "plan"}.get(tier, "plan")
+        purpose = {"laborer": "sort", "elder": "plan"}.get(tier, "plan")      # the Taskmaster's own model is a plan
         with telemetry.tagged(purpose, "board"):
             return jobs.run_read(HARNESS, prompt, self.repo_root, self.cancel, h.pick(tier) if h else tier,
                                  env={"ORKCRAFT_ORC": "board/keeper", "ORKCRAFT_IDEA": getattr(self._tls, "slug", "")}, resume=resume)
@@ -119,6 +125,9 @@ class IdeaKeeper:
     def busy(self, slug: str) -> str:
         """What the keeper does on this idea now ("" nothing)."""
         return self._busy.get(slug, "")
+
+    def busy_goal(self, slug: str) -> str:
+        return self._busy.get(f"goal:{slug}", "")
 
     def stop_all(self) -> None:
         """Stop all: what runs is stopped (its call raises), the next calls run again."""
@@ -148,19 +157,21 @@ class IdeaKeeper:
         threading.Thread(target=self._batch, args=(raw,), daemon=True, name="idea-batch").start()
         return True
 
-    def _start(self, slug: str, what: str, fn: Callable[[], None]) -> None:
+    def _start(self, slug: str, what: str, fn: Callable[[], None], key: str = "") -> None:
+        """`key`: the busy key (a goal's is `goal:<slug>`); what is published is the key, or the idea's slug."""
+        key = key or slug
         with self._lock:
-            if self._busy.get(slug):
+            if self._busy.get(key):
                 raise KeeperError("The keeper is busy with this idea: a moment")
-            self._busy[slug] = what
+            self._busy[key] = what
 
         def run() -> None:
             try:
                 fn()
             finally:
                 with self._lock:
-                    self._busy.pop(slug, None)
-                self.publish(slug)
+                    self._busy.pop(key, None)
+                self.publish(key)
 
         threading.Thread(target=run, daemon=True, name=f"idea-{what}").start()
 
@@ -191,31 +202,47 @@ class IdeaKeeper:
             index = (root / "index.md").read_text(encoding="utf-8")[:INDEX_CHARS]
         except OSError:
             index = "(no index yet)"
-        lines = "\n".join(f"- {t['slug']}: {t['title']}" + (f" — {ideas.thesis(t['about'])}" if t["about"] else "")
-                          + (f" (success: {'; '.join(t['criteria'])})" if t["criteria"] else "") for t in tracks)
+        lines = "\n".join(f"- {t['slug']}: {t['title']} (priority {t['priority']})" + (f" — {ideas.thesis(t['about'])}" if t["about"] else "")
+                          + (f" (success: {'; '.join(t['criteria'])})" if t["criteria"] else "")
+                          + (f" (metrics: {'; '.join(m['name'] + ' → ' + m['target'] for m in t['metrics'])})" if t["metrics"] else "")
+                          for t in tracks)
         track = page.get("track") or ideas.GENERAL
+        mine = next((t for t in tracks if t["slug"] == track), None)
+        goal = ""
+        if mine is not None:
+            goal = (f"\nIts goal, {mine['title']} (priority {mine['priority']}):\n{mine['about'][:2000]}\n"
+                    f"Summary: {mine['summary'][:1500]}\n"
+                    + "".join(f"Metric: {m['name']} → {m['target']}" + (f" (counted: {m['how']})" if m.get("how") else "") + "\n"
+                              for m in mine["metrics"])
+                    + "The goal's ideas, in order:\n"
+                    + "\n".join(f"- {i['slug']}: {i['title']} (priority {i['priority']})"
+                                for i in ideas.ideas(root, track) if i["slug"] != slug) + "\n")
         return f"""You are the keeper of this project's Task board. A person dropped a new idea; read it and get it
 ready to be talked through as a spec. You may read the repository (read only) to understand what it touches.
 
 The project's Wiki, its map (index.md):
 {index}
 
-The tracks:
+The goals:
 {lines}
-
-The idea (track: {track}):
+{goal}
+The idea (goal: {track}):
 {page.section("Gist")[:PAGE_CHARS]}
 
 Answer with one JSON object and nothing else:
 {{"gist": "the idea rewritten clearly: its first line one sentence, the thesis; then a few lines if needed",
- "why": "which success criterion of its track it moves, and why it matters",
+ "why": "which of its goal's metrics it moves, and why it matters",
  "size": "S, M or L",
- "track": "the slug of the listed track it belongs to{'' if track == ideas.GENERAL else ' (leave empty)'}",
+ "priority": "high, normal or low: from its goal's priority and how much the idea moves the goal's metrics",
+ "priority_why": "one line: why that priority",
+ "before": "the slug of the goal's idea this one should stand before, or empty to leave its place",
+ "track": "the slug of the listed goal it belongs to{'' if track == ideas.GENERAL else ' (leave empty)'}",
  "questions": ["one to three questions the person must answer before it can be planned"]}}
 """
 
     def read_one(self, slug: str) -> None:
-        """One raw idea read by the laborer: Gist, Why, size, a proposed track, its questions; then asks or ready."""
+        """One raw idea read by the laborer: Gist, Why, size, priority, its place, a proposed goal, its questions;
+        then asks or ready."""
         root = self.wiki_root()
         page = ideas.idea_page(root, slug)
         if page is None:
@@ -234,7 +261,11 @@ Answer with one JSON object and nothing else:
         sections = {}
         if gist := _words(answer.get("gist"), ideas.SECTION_CHARS):
             sections["Gist"] = gist
-        if why := _words(answer.get("why"), ideas.SECTION_CHARS):
+        priority = _words(answer.get("priority"), 10).lower()
+        why = _words(answer.get("why"), ideas.SECTION_CHARS)
+        if priority in ideas.PRIORITIES and (line := _words(answer.get("priority_why"), 300)):
+            why = (why + "\n\n" if why else "") + f"Priority: {priority.capitalize()} — {line}"
+        if why:
             sections["Why"] = why
         questions = _strings(answer.get("questions"), MAX_QUESTIONS)
         if questions:
@@ -244,14 +275,37 @@ Answer with one JSON object and nothing else:
         size = _words(answer.get("size"), 2).upper()
         if size in ideas.SIZES:
             meta["size"] = size
+        if priority in ideas.PRIORITIES:
+            meta["priority"] = priority
         track = _words(answer.get("track"), 60)
         if (page.get("track") or ideas.GENERAL) == ideas.GENERAL and track and track != ideas.GENERAL \
                 and track in {t["slug"] for t in ideas.tracks(root)}:
             meta["proposed_track"] = track
         if meta:
             ideas.set_meta(root, slug, **meta)
+        self._place(root, slug, _words(answer.get("before"), 60))
         ideas.save_state(self.state_dir, slug, state="asks" if questions else "ready", error="",
                          batch_at=dt.datetime.now().isoformat(timespec="seconds"))
+
+    def _place(self, root: Path, slug: str, before: str) -> None:
+        """The keeper's proposal of an idea's place among its goal's ideas; the person's own drag is never undone."""
+        page = ideas.idea_page(root, slug)
+        if not before or page is None or page.get("placed") == "person":
+            return
+        target = ideas.idea_page(root, before)
+        if target is None or before == slug or target.get("track") != page.get("track"):
+            return
+        ideas.move(root, slug, before=before)
+
+    def read_now(self, slug: str) -> None:
+        """Read a `raw` idea at once (the card's Process now, or New idea's), in the background."""
+        if ideas.idea_page(self.wiki_root(), slug) is None:
+            raise KeeperError("That idea is gone")
+        if ideas.state(self.state_dir, slug)["state"] != "raw":
+            raise KeeperError("The keeper has read this idea already")
+        if why := self._may_run():
+            raise KeeperError(why)
+        self._start(slug, "reading", lambda: self.read_one(slug))
 
     # -- the talk: one session per idea, on the elder tier -----------------------------------------------
 
@@ -314,7 +368,7 @@ The idea's page now:
         fresh = self.fresh(st)
         try:
             self._tls.slug = slug
-            out, _cost, tokens, session = self.call("elder", self.talk_prompt(root, slug, text, section, fresh),
+            out, _cost, tokens, session = self.call(self.taskmaster(), self.talk_prompt(root, slug, text, section, fresh),
                                                     "" if fresh else st["session"])
         except Exception as e:
             ideas.add_turn(self.state_dir, slug, "keeper", f"I could not answer: {_why(e)}", section)
@@ -374,13 +428,14 @@ The spec:
 Rules:
 - At most {MAX_TASKS} tasks. Each is a brief another Claude session can do alone, in a worktree of the repository:
   what to change, where, and how it is tested. `after` only where a task needs another's result.
+- Each task's type (`kind`): "code", "tests", "docs", "text" (text for people), or "research"; ordinary work is "code".
 - Each task's tier: "elder" (hard design or a wide change), "warrior" (ordinary code), "laborer" (small, mechanical).
 - To-dos only for what a task cannot start without: a key ("secret": its title is the environment variable's name,
   e.g. API_KEY), a decision ("choice", with its choices), a yes ("confirm"), steps a person does ("instructions").
   Most plans need none. `for`: the tasks that wait for it.
 
 Answer with one JSON object and nothing else:
-{{"tasks": [{{"id": "k1", "title": "…", "brief": "…", "tier": "warrior", "after": []}}],
+{{"tasks": [{{"id": "k1", "title": "…", "brief": "…", "kind": "code", "tier": "warrior", "after": []}}],
  "todos": [{{"id": "t1", "title": "…", "kind": "confirm", "why": "…", "choices": [], "steps": [], "for": ["k1"]}}]}}
 """
 
@@ -389,7 +444,7 @@ Answer with one JSON object and nothing else:
         back = was if was in ("raw", "asks", "ready", "plan", "failed") else "ready"
         try:
             self._tls.slug = slug
-            text, _cost, _tokens, _session = self.call("elder", self.plan_prompt(root, slug), "")
+            text, _cost, _tokens, _session = self.call(self.taskmaster(), self.plan_prompt(root, slug), "")
             data = make_plan(slug, first_json(text))
             ideas.save_plan(self.state_dir, slug, data)
         except Exception as e:
@@ -415,7 +470,8 @@ def make_plan(slug: str, answer: dict | None, made_at: str = "") -> dict:
         after = [names[a] for a in _strings(raw.get("after"), MAX_TASKS, 20) if a in names]
         names[_words(raw.get("id"), 20) or tid] = tid
         tier = raw.get("tier") if raw.get("tier") in TIERS else "warrior"
-        tasks.append({"id": tid, "title": title, "brief": brief, "tier": tier, "after": list(dict.fromkeys(after)),
+        kind = raw.get("kind") if raw.get("kind") in roles.TASK_KINDS else roles.DEFAULT_KIND
+        tasks.append({"id": tid, "title": title, "brief": brief, "kind": kind, "tier": tier, "after": list(dict.fromkeys(after)),
                       "state": "waiting", "branch": "", "commit": "", "session": "", "cost": None, "tokens": None,
                       "started": "", "finished": "", "error": "", "note": ""})
     if not tasks:
