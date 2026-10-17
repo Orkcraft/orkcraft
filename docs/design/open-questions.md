@@ -239,3 +239,7 @@ New mechanics, buildings or systems wait here, one line each, until the concept 
     the Build menu.
 - ~~A product keeper on the Task board that prioritises the ideas~~: decided by §43.2 (the keeper proposes the order
   against the track's success criteria, the person accepts).
+- **Each building as a product of its own** (the owner, 17 October): the Task board (idea → plan), the Agent pool
+  (lean parallel orks) or External listeners released alone, tested alone, then built into Orkline. Checked on the
+  testers first: which building would they keep if they could keep one, and per-building use in the (opt-in) stats.
+
