@@ -233,9 +233,9 @@ New mechanics, buildings or systems wait here, one line each, until the concept 
   - devlog 02 (HD orks before/after) and other posts before the testers;
   - the other 18 building types back in the Build menu (hidden by spec 26), one by one, if testers ask.
 - **From the interview of 16 October (docs/marketing/interviews/2026-10-16-d-agentcraft.md), to check on testers:**
-  - the Review gate before the work: the person passes an ork's plan or spec before it starts, not only the result;
+  - ~~the Review gate before the work~~: decided by §43 (the person passes the idea's spec: Take it to work);
   - the Review gate in a batch: results gather, the person passes them once a day with one look at the whole;
   - deterministic buildings without a model (Script, Test bench, UX bench: perf, logs, visual regression) back in
     the Build menu.
-- A product keeper on the Task board that prioritises the ideas against a stated goal (decisions §41: the person orders
-  the cards for now).
+- ~~A product keeper on the Task board that prioritises the ideas~~: decided by §43.2 (the keeper proposes the order
+  against the track's success criteria, the person accepts).

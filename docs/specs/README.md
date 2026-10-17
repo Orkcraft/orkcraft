@@ -134,7 +134,9 @@ open-questions.md "After the testers" (§36). Within a track, P0 first.
 | 26 | [five buildings at the first start; the others hidden](26-five-buildings.md) (merged) | P0 | **Claude** | light |
 | 28 | [the lean Agent pool: fewer tokens for the same parallel work](28-lean-pool.md) (merged) | P1 | **Claude** | full |
 | fix lists | one short spec per building from what the owner finds testing it (`docs/specs/fix-<building>.md`) | P0, as they come | agy or Claude | light |
-| idea-to-plan | an idea on the Task board → the keeper's questions → to-dos for the person + ork cards under the idea, *parallel* / *after X* → the person passes the plan → the pool; the board without In progress / Done, one **Needs you** lane (decisions §41); spec after 28 | P1 | **Claude** | full |
+| 29 | [tracks and ideas: the specs as Wiki pages, the phone first, no model](29-tracks-and-ideas.md) (draft) | P1 | **Claude** | full |
+| 30 | the keeper: the batch reads new ideas (laborer), the spec talk on the heavy tier, a session per idea that compacts (decisions §43) | P1, after 29 | **Claude** | full |
+| 31 | Take it to work: to-dos (secret, choice, confirm, instructions) and tasks with tiers to the pool, the window checked first; the pool stops planning the board's cards (§43) | P1, after 30 | **Claude** | full |
 | gate-kinds | the Review gate by what the result is: what goes to people one by one, code as one batch a day (decisions §39); code merges into a branch chosen at the gate (default `dev`), tests' status on each result (§42); the spec after the owner's tests | P1 | **Claude** | full |
 | 22 | [the Agent pool's room](22-agent-pool-room.md) (art card + code) | P1, after the art | **Claude** | light + the owner's look |
 | 23 | [the Review gate's room](23-review-gate-room.md) (art card + code) | P1, after the art | **Claude** | light + the owner's look |
