@@ -321,3 +321,105 @@ p { margin: 0 0 8px; }
 .head .score { white-space: nowrap; }
 .head .score .trend { margin-left: 3px; color: var(--success); }
 @media (max-width: 400px) { .head .score img { display: none; } .head .hud { column-gap: 8px; } }
+
+/* -- the board in focus (board.js, docs/specs/29a-board-focus.md §7): designed at 390 px; the thumb's actions at the
+   bottom — the tabs, and on an idea the action and the ask box — over the roles of the design system ------------- */
+:root { --tabs: 3.5rem; }
+.focus-board .app { padding-bottom: calc(var(--tabs) + 16px + env(safe-area-inset-bottom)); }
+.focus-board .news { bottom: calc(var(--tabs) + env(safe-area-inset-bottom)); }
+.board { display: flex; flex-direction: column; gap: 12px; }
+.board-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px;
+  background: var(--panel); border: 1px solid var(--frame); border-radius: var(--ok-radius-lg); }
+.board-name { min-width: 0; display: flex; flex-direction: column; }
+.board-bar .ok-btn.board-stop { flex: none; }
+.board .pane { display: flex; flex-direction: column; gap: 8px; }
+.board h2 { margin: 4px 0 0; }
+.board-tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 3; display: flex; gap: 8px; background: var(--panel);
+  border-top: 2px solid var(--frame); padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); }
+:root[data-theme="office"] .board-tabs { border-top-width: 1px; }
+.board-tab { flex: 1 1 0; min-height: 44px; font: inherit; font-size: 0.9375rem; font-weight: 600; color: var(--muted); background: none;
+  border: 1px solid transparent; border-radius: var(--ok-radius-md); display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+.board-tab.is-active { color: var(--ink); background: var(--inset); border-color: var(--frame-strong); }
+.is-open .board-tabs { display: none; }
+.is-open .board-bar { display: none; }
+.focus-board:has(.board.is-open) .app { padding-bottom: 16px; }
+.focus-board:has(.board.is-open) .news { bottom: 0; }
+
+.need, .todo { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; font: inherit; color: inherit; }
+.need { cursor: pointer; min-height: 56px; }
+.need-asks { border-left: 4px solid var(--warning); }
+.need-plan { border-left: 4px solid var(--action); }
+.need-failed { border-left: 4px solid var(--danger); }
+.need-held { border-left: 4px solid var(--frame-strong); }
+.need-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.need-text small { color: var(--muted); font-size: 0.8125rem; }
+.need-mark { flex: none; font-size: 1.25rem; width: 1.75rem; text-align: center; }
+.todo { flex-direction: column; align-items: stretch; }
+.todo-head { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+.todo.is-done .need-text { text-decoration: line-through; color: var(--muted); }
+.check { flex: none; width: 1.75rem; height: 1.75rem; border: 2px solid var(--frame-strong); border-radius: var(--ok-radius-md);
+  display: grid; place-items: center; color: var(--on-action); font-weight: 700; }
+.check.is-on { background: var(--action); border-color: var(--action); }
+.steps { margin: 0 0 8px; padding-left: 1.4rem; }
+.steps li { margin-bottom: 4px; overflow-wrap: anywhere; }
+.linkish { all: unset; cursor: pointer; text-decoration: underline; min-height: 44px; display: inline-flex; align-items: center; }
+.foot-line { text-align: center; margin-top: 8px; }
+
+.track-switch { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.track { flex: none; min-height: 44px; font: inherit; font-size: 0.875rem; color: var(--muted); background: var(--inset);
+  border: 1px solid var(--frame); border-radius: 999px; padding: 0 14px; cursor: pointer; }
+.track.is-active { color: var(--ink); border-color: var(--action); background: var(--panel); font-weight: 600; }
+.ideas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.idea-card { background: var(--panel); border: 1px solid var(--frame); border-radius: var(--ok-radius-lg); touch-action: pan-y;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+:root[data-theme="camp"] .idea-card { border-width: 2px; }
+.idea-card.is-dragging { position: relative; z-index: 2; box-shadow: var(--shadow-window); border-color: var(--action); touch-action: none; }
+.idea-open { all: unset; box-sizing: border-box; width: 100%; min-height: 56px; padding: 10px 12px; cursor: pointer; display: flex;
+  flex-direction: column; gap: 4px; }
+.idea-title { font-weight: 600; overflow-wrap: anywhere; }
+.idea-thesis { color: var(--muted); font-size: 0.875rem; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden; }
+.idea-meta { display: flex; gap: 8px; align-items: center; font-size: 0.75rem; }
+.size { border: 1px solid var(--frame-strong); border-radius: var(--ok-radius-md); padding: 0 6px; font-weight: 700; }
+.state-word { border: 1px solid currentColor; border-radius: 999px; padding: 1px 8px; color: var(--muted); }
+.state-word.asks, .state-word.plan { color: var(--warning); }
+.state-word.work, .state-word.ready, .state-word.done { color: var(--accent); }
+.state-word.failed { color: var(--danger); }
+
+.idea-head { display: flex; justify-content: space-between; gap: 8px; }
+.idea-nudge { display: flex; gap: 8px; }
+.idea-nudge .ok-btn { min-width: 44px; }
+.idea-name { font-size: 1.125rem; margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+.sec { --role: var(--muted); background: var(--panel); border: 1px solid var(--frame); border-left: 4px solid var(--role);
+  border-radius: var(--ok-radius-md); }
+.sec-action { --role: var(--action); } .sec-gold { --role: var(--gold); } .sec-success { --role: var(--success); }
+.sec-danger { --role: var(--danger); } .sec-warning { --role: var(--warning); } .sec-muted { --role: var(--frame-strong); }
+.sec-head { all: unset; box-sizing: border-box; width: 100%; min-height: 52px; padding: 8px 12px; cursor: pointer; display: flex;
+  align-items: center; gap: 10px; }
+.sec-icon { flex: none; width: 1.5rem; text-align: center; color: var(--role); font-size: 1.125rem; }
+.sec-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.sec-name { color: var(--role); font-size: 0.75rem; text-transform: uppercase; letter-spacing: .05em; }
+.sec-body .thesis { font-weight: 600; overflow-wrap: anywhere; }
+.sec-text { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.sec-text p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.plan .tasks { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.task { display: flex; flex-direction: column; overflow-wrap: anywhere; }
+.task.t-merged .task-title { color: var(--accent); }
+.task.t-failed .task-title { color: var(--danger); }
+.talk { display: flex; flex-direction: column; gap: 6px; }
+.turn { padding: 8px 10px; border-radius: var(--ok-radius-md); background: var(--inset); }
+.turn.you { border-left: 3px solid var(--action); }
+.turn.keeper { border-left: 3px solid var(--gold); }
+.turn .who { font-size: 0.75rem; color: var(--muted); }
+.turn p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.9375rem; }
+/* the thumb's end of an idea: what the state allows, then the ask box, kept at the bottom of the screen */
+.idea-foot { position: sticky; bottom: 0; z-index: 2; margin: 8px -16px 0; padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+  background: var(--panel); border-top: 2px solid var(--frame); display: flex; flex-direction: column; gap: 8px; }
+:root[data-theme="office"] .idea-foot { border-top-width: 1px; }
+.idea-foot:empty { display: none; }
+.idea-foot .big { width: 100%; }
+.idea-foot .row { margin-top: 0; flex-wrap: nowrap; }
+.ask { display: flex; flex-direction: column; gap: 6px; }
+.about { all: unset; align-self: flex-start; cursor: pointer; font-size: 0.8125rem; padding: 4px 12px; min-height: 44px;
+  border: 1px solid var(--action); border-radius: 999px; color: var(--ink); box-sizing: border-box; display: inline-flex; align-items: center; }
+.ask textarea.ok-input { resize: none; min-height: 44px; max-height: 8rem; }
