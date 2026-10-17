@@ -130,7 +130,7 @@ then the rest. Everything in the tracks below **waits** unless this table names 
 | # | spec | priority | who builds | review |
 |---|---|---|---|---|
 | 33 | [v1: three windows, Board · Agents · Review](33-v1-shell.md) (§45; three parts: runner, desktop as an IDE, phone; folds in 32) **(merged 17 October)** | P0 | **Claude** | full |
-| 34 | [v1 round 2: goals and ideas by dialog, straight to the keeper; agents by task type; modals; pairing a phone from the shell](34-v1-round-2.md) (the owner's test of 33) | P0 | **Claude** | full |
+| 34 | [v1 round 2: goals and ideas by dialog, straight to the keeper; agents by task type; modals; pairing a phone from the shell](34-v1-round-2.md) (the owner's test of 33) **(merged 17 October)** | P0 | **Claude** | full |
 | E1 | [the clean-install check](e1-clean-install.md), on the v1 path | P0, Wed 21 October | owner | — |
 | 05 | [release 0.3.0](05-release-0.3.0.md) | P0, Thu 22 October | agy | light |
 | art | [the five buildings in steampunk, outside and inside](art-steampunk-all.md): goes on, so Camp can be put in quickly later | P1 | agy | the owner picks |

@@ -58,6 +58,10 @@ The state a new product-and-marketing session starts from. Update it when you ha
   built Wed 21 – Thu 22; desktop as an IDE, Agents under the preview as a terminal; folds in 32) plus E1 and 0.3.0. **Camp frozen, its art goes on in agy.** Dates of §22 stay, Halloween dropped.
   Later, by the owner: roles/models/limits editable (a §27 exception), the Alchemist (image generation, for the owner
   to finish Camp). Testers' defaults: merge into `dev`, no push. specs/README.md "The list" is rewritten for it.
+- **decisions §46 / spec 34 merged (17 October, ~15:30 UTC):** goal and idea dialogs (goal read at once; idea Process
+  now / Later), roles and task types (`.orkcraft/roles/`), modals on a dimmed backdrop, Pair a phone in the shell's
+  gear (desktop; the phone's sheet only explains, since `phones.*` is refused to a phone: the owner to decide).
+  Flaky under `-n 4`, passing alone: `test_board_loop.py`, `test_shell_browser.py::test_a_click_on_an_idea_a_todo_a_chip_and_a_result_opens_the_right_preview`.
 - **Decisions §44 (17 October):** goal (was §43's track), target (was the building's Goal), track = a route of the
   rails per class of work (after the testers). Spec 32 (wording, agy) waits for a batch.
 - **Specs 26, 27 and 28 merged** (16 October afternoon and evening). Next Claude spec: 17b (after 19 is merged).
