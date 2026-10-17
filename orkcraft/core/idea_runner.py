@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft.core.idea_review import BACK, STOP_ONE, STOPPED_NOTE, ReviewMixin, RunnerError  # noqa: F401
-from orkcraft.realm import halt, harnesses, jobs, status, tool_errors
+from orkcraft.realm import event_log, halt, harnesses, jobs, status, tool_errors
 from orkcraft.realm.idea_git import CRITICAL_TESTS, Conflict, IdeaGit, env_name, parse_tests, read_secret
 
 CHANGED = "ideas.changed"          # slug: an idea's state or one of its tasks changed
@@ -94,8 +94,10 @@ class Run:
 
 class IdeaRunner(ReviewMixin):
     def __init__(self, repo_root: Path, state_dir: Path, settings: Any, bus: Any = None, *,
-                 limits: Callable[[], list] | None = None) -> None:
-        """`limits`: the quota readers' last read (the town's `limits`); without it the runner reads it itself."""
+                 limits: Callable[[], list] | None = None, events: bool = True,
+                 on_held: Callable[[], None] | None = None) -> None:
+        """`limits`: the quota readers' last read (the town's `limits`); without it the runner reads it itself.
+        `events`: write the task's events to the local event log (spec 33 §9); `on_held`: a task was held (the limits are read)."""
         self.repo_root, self.state_dir = Path(repo_root), Path(state_dir)
         self.settings, self.bus = settings, bus
         self.git = IdeaGit(self.repo_root)
@@ -106,6 +108,8 @@ class IdeaRunner(ReviewMixin):
         self._runs: dict[tuple[str, str], Run] = {}
         self._active: list[str] = []
         self._until: dict[tuple[str, str], float] = {}
+        self.events, self.on_held = events, on_held
+        self._since: dict[tuple[str, str], float] = {}     # when a task entered the state it is in (the event log)
         self._resume_working()
 
     # -- files -----------------------------------------------------------------------------------
@@ -135,8 +139,37 @@ class IdeaRunner(ReviewMixin):
     def _save_tasks(self, slug: str, tasks: list[dict]) -> None:
         """Write the tasks into the plan as it is on disk now (the to-dos and the rest stay as they are there)."""
         plan = self.plan(slug) or {"idea": slug, "todos": []}
+        was = {t.get("id"): t.get("state") for t in plan.get("tasks") or []}
         plan["tasks"] = tasks
         self._write(self._dir(slug) / "plan.json", plan)
+        self._note(slug, was, tasks)
+
+    def _emit(self, event: str, **fields: Any) -> None:
+        if self.events:
+            event_log.record(self.repo_root, event, **fields)
+
+    def _note(self, slug: str, was: dict, tasks: list[dict]) -> None:
+        """The event log's lines for the tasks whose state changed (spec 33 §9): `task_state`, and `result_ready` at Review."""
+        now = time.time()
+        for t in tasks:
+            tid, new, old = t.get("id"), t.get("state"), was.get(t.get("id"))
+            if new == old or old is None:
+                continue
+            since = self._since.get((slug, tid))
+            self._since[(slug, tid)] = now
+            self._emit(event_log.TASK_STATE, idea=slug, task=tid, state=new, was=old, round=int(t.get("round") or 1),
+                       tier=t.get("tier") or "", seconds=round(now - since, 1) if since else None, tokens=t.get("tokens"),
+                       cost=t.get("cost"))
+            if new == "review":
+                tests, diff = t.get("tests") or {}, t.get("diff") or {}
+                self._emit(event_log.RESULT_READY, idea=slug, task=tid, round=int(t.get("round") or 1), passed=tests.get("passed"),
+                           failed=tests.get("failed"), files=diff.get("files"), added=diff.get("added"),
+                           removed=diff.get("removed"), cost=t.get("cost"))
+            if new == "held" and self.on_held is not None:
+                try:
+                    self.on_held()
+                except Exception:               # a log never stops the work
+                    pass
 
     def _set_task(self, slug: str, task_id: str, **fields: Any) -> None:
         with self._lock:
@@ -465,7 +498,7 @@ class IdeaRunner(ReviewMixin):
 
     def _env(self, slug: str, tid: str, plan: dict) -> dict[str, str]:
         """The task's environment: who runs (for the town's counts) and the values of its `secret` to-dos."""
-        env = {"ORKCRAFT_ORC": f"ideas/{slug}-{tid}"}
+        env = {"ORKCRAFT_ORC": f"ideas/{slug}-{tid}", "ORKCRAFT_IDEA": slug, "ORKCRAFT_TASK": tid}
         for todo in plan.get("todos") or []:
             if not isinstance(todo, dict) or todo.get("kind") != "secret" or tid not in (todo.get("for") or []):
                 continue
@@ -501,7 +534,7 @@ class IdeaRunner(ReviewMixin):
             rules = (self.repo_root / "CLAUDE.md").read_text(encoding="utf-8")[:CLAUDE_KEEP]
         except OSError:
             rules = ""
-        secrets = [n for n in self._env(slug, task.get("id"), plan) if n != "ORKCRAFT_ORC"]
+        secrets = [n for n in self._env(slug, task.get("id"), plan) if n not in ("ORKCRAFT_ORC", "ORKCRAFT_IDEA", "ORKCRAFT_TASK")]
         parts = [
             f"You do one task of the idea `{slug}` in this repository: a git worktree on branch "
             f"`idea/{slug}/{task.get('id')}`, cut from `{setting(self.settings, 'merge_into') or 'main'}`. "

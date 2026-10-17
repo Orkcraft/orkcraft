@@ -9,7 +9,9 @@ a secret's value never appears in it. Split from the runner to keep both under ~
 """
 from __future__ import annotations
 
+import datetime as dt
 import threading
+import time
 from pathlib import Path
 
 STOP_ONE = "stop-one"                # a Run's `why` when one task is stopped (stop_task)
@@ -52,7 +54,18 @@ class ReviewMixin:
             raise RunnerError("That task is gone")
         return task
 
-    def merge(self, slug: str, tid: str) -> str:
+    def _decided(self, slug: str, task: dict, decision: str, device: str, **more) -> None:
+        """`result_decided` (spec 33 §9): what the person decided, and how long after the result was ready."""
+        try:
+            seconds = round(max(0.0, time.time() - dt.datetime.fromisoformat(str(task.get("finished") or "")).timestamp()), 1)
+        except ValueError:
+            seconds = None
+        tests = task.get("tests") or {}
+        self._emit("result_decided", idea=slug, task=task.get("id"), round=int(task.get("round") or 1), decision=decision,
+                   conflict=str(task.get("conflict") or ""), passed=tests.get("passed"), failed=tests.get("failed"),
+                   device=device or "desktop", seconds=seconds, **more)
+
+    def merge(self, slug: str, tid: str, device: str = "desktop") -> str:
         """Land a task that waits at Review into `ideas.merge_into`; the commit. Refused when its tests are red or
         it conflicts (RunnerError, in plain words); a conflict found now is said on the task and it stays."""
         with self._lock:
@@ -79,6 +92,7 @@ class ReviewMixin:
         finally:
             with self._lock:
                 self._runs.pop((slug, tid), None)
+        self._decided(slug, task, "merge", device, into=base, pushed=bool(_r().setting(self.settings, "push")) and not note)
         self._set_task(slug, tid, state="merged", commit=commit, subjects=subjects, note=note, finished=_r().now_iso(),
                        error="", conflict="")
         self._log(slug, tid, f"== merged into {base} · {commit[:10]}\n")
@@ -102,7 +116,7 @@ class ReviewMixin:
             self._set_idea(slug, "done")
             self._changed(slug)
 
-    def back(self, slug: str, tid: str, why: str) -> None:
+    def back(self, slug: str, tid: str, why: str, device: str = "desktop") -> None:
         """Send a result back with one line: the same session goes on with it (and the failing tests, or the
         conflict), the round counts up, and it comes to Review again."""
         why = " ".join(str(why or "").split())[:1000]
@@ -119,6 +133,9 @@ class ReviewMixin:
                     files = self.git.merge_in(self.git.reopen(slug, tid), base)
                 except Exception as e:
                     raise RunnerError(" ".join(str(e).split())[:300]) from None
+            tests = task.get("tests") or {}
+            red = tests.get("green") is False or bool(tests.get("failed"))
+            self._decided(slug, task, "fix" if red or task.get("conflict") else "back", device, why=why, into=base)
             self._set_task(slug, tid, state="running", round=int(task.get("round") or 1) + 1, why=why, conflict="",
                            error="", note="", finished="")
             if slug not in self._active:
@@ -127,12 +144,14 @@ class ReviewMixin:
             self._spawn(slug, tid, threading.Event(), {"why": why, "files": files})
         self._changed(slug)
 
-    def drop_task(self, slug: str, tid: str) -> None:
+    def drop_task(self, slug: str, tid: str, device: str = "desktop") -> None:
         """Drop a result: the task fails with "dropped by you", its worktree goes, its branch stays."""
         with self._lock:
             task = self._task(slug, tid)
             if task.get("state") not in ("review", "failed", "ready", "waiting", "held") or (slug, tid) in self._runs:
                 raise RunnerError("That task cannot be dropped now")
+            if task.get("state") == "review":
+                self._decided(slug, task, "drop", device, into=str(_r().setting(self.settings, "merge_into") or "dev"))
             self._set_task(slug, tid, state="failed", error="dropped by you", finished=_r().now_iso(), conflict="")
             if slug not in self._active:
                 self._active.append(slug)
@@ -140,7 +159,7 @@ class ReviewMixin:
         self._log(slug, tid, f"== dropped by you · {_r().now_iso()}\n")
         self.tick()
 
-    def stop_task(self, slug: str, tid: str) -> None:
+    def stop_task(self, slug: str, tid: str, device: str = "desktop") -> None:
         """Stop one running task: it goes back to `ready` ("stopped by you") and waits for Start; the idea's other
         tasks go on."""
         with self._lock:
@@ -149,6 +168,7 @@ class ReviewMixin:
                 raise RunnerError("That task is not running")
             run.why = STOP_ONE
             run.cancel.set()
+            self._emit("task_stopped", idea=slug, task=tid, device=device or "desktop")
 
     # -- the task's log (shown, never fed back to a model) -----------------------------------------
 
@@ -164,7 +184,7 @@ class ReviewMixin:
     def _log(self, slug: str, tid: str, text: str, env: dict | None = None) -> None:
         """Append to the task's log, a secret's value masked, cut to its last LOG_KEEP lines."""
         for key, value in (env or {}).items():
-            if key != "ORKCRAFT_ORC" and value:
+            if key not in ("ORKCRAFT_ORC", "ORKCRAFT_IDEA", "ORKCRAFT_TASK") and value:
                 text = text.replace(value, MASK)
         path = self._log_path(slug, tid)
         try:

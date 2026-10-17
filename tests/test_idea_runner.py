@@ -555,3 +555,41 @@ def test_the_testers_defaults(town):
     assert settings.IDEAS["merge_into"] == "dev" and settings.IDEAS["push"] is False and settings.IDEAS["review"] is True
     assert settings.clean_ideas({"merge_into": "main", "push": True})["merge_into"] == "main"
     assert settings.clean_ideas({"merge_into": "main", "push": True})["push"] is True
+
+
+def test_the_runner_writes_its_events_to_the_event_log(town):
+    from orkcraft.realm import event_log
+    plan_of(town, [{"id": "k1"}])
+    runner, _ = reviewing(town)
+    runner.start("demo")
+    wait_task(runner, "k1", "review")
+    rows = event_log.read(town.repo)
+    states = [(r["state"], r["was"]) for r in rows if r["event"] == "task_state"]
+    assert ("running", "waiting") in states and ("review", "testing") in states
+    (ready,) = [r for r in rows if r["event"] == "result_ready"]
+    assert ready["idea"] == "demo" and ready["task"] == "k1" and ready["round"] == 1 and ready["passed"] >= 3 and ready["failed"] == 0
+    assert ready["files"] == 1 and ready["added"] == 1 and ready["removed"] == 0 and ready["cost"] == 0.01
+    first = next(r for r in rows if r["event"] == "task_state" and r["state"] == "running")
+    assert first["tier"] == "laborer" and first["round"] == 1
+    runner.merge("demo", "k1", device="phone")
+    (d,) = [r for r in event_log.read(town.repo) if r["event"] == "result_decided"]
+    assert d["decision"] == "merge" and d["into"] == "dev" and d["pushed"] is False and d["device"] == "phone" and d["seconds"] >= 0
+
+
+def test_back_and_drop_are_decisions_with_their_line_and_a_stop_is_a_task_stopped(town, monkeypatch):
+    from orkcraft.realm import event_log
+    monkeypatch.setenv("STUB_MODE", "k1=fix_conflict,k2=slow")
+    plan_of(town, [{"id": "k1"}, {"id": "k2"}])
+    runner, _ = reviewing(town, max_parallel=2)
+    runner.start("demo")
+    wait_task(runner, "k1", "review")
+    runner.back("demo", "k1", "rename it")
+    wait_task(runner, "k1", "review")
+    runner.stop_task("demo", "k2", device="phone")
+    wait_task(runner, "k2", "ready")
+    runner.drop_task("demo", "k1")
+    rows = event_log.read(town.repo)
+    decided = [(r["decision"], r.get("why")) for r in rows if r["event"] == "result_decided"]
+    assert decided == [("back", "rename it"), ("drop", None)] or decided == [("back", "rename it"), ("drop", "")]
+    (stop,) = [r for r in rows if r["event"] == "task_stopped"]
+    assert stop["task"] == "k2" and stop["device"] == "phone"
