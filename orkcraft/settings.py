@@ -70,8 +70,10 @@ def shift(s: "MachineSettings") -> Span:
     """The work day the look follows: the person's working hours once set, else 09:00–17:00."""
     return s.work or Span(SHIFT[0], SHIFT[1] - SHIFT[0])
 # The board's keeper and runner (spec 29a): how often the batch reads new ideas, when a talk's session is
-# compacted, how many tasks run at once, which branch they merge into and whether it is pushed.
-IDEAS = {"batch_minutes": 30, "idle_hours": 24, "max_parallel": 1, "merge_into": "dev", "push": True}
+# compacted, how many tasks run at once, which branch they merge into and whether it is pushed; the local hours of
+# the digest of what merged and finished (spec 29c §4: only what blocks pushes at once).
+IDEAS = {"batch_minutes": 30, "idle_hours": 24, "max_parallel": 1, "merge_into": "dev", "push": True,
+         "digest_hours": [9, 13, 18]}
 FOCUSES = ("", "board")
 RECENT_FOLDERS = 8                       # the recent folders a Wiki's picker offers               # the GUI's two looks; camp the default
 
@@ -114,7 +116,7 @@ class MachineSettings:
     # A family (`gemini-flash-high`) is its newest model; absent, the tier's own family (realm/harnesses.py `pick`).
     tier_models: dict = field(default_factory=dict)
     focus: str = "board"          # FOCUSES: "board" shows only the board (alpha's default), "" the whole town
-    ideas: dict = field(default_factory=lambda: dict(IDEAS))   # the board's keeper and runner (IDEAS)
+    ideas: dict = field(default_factory=lambda: clean_ideas(IDEAS))   # the board's keeper and runner (IDEAS)
 
     def to_dict(self) -> dict:
         return {
@@ -214,6 +216,12 @@ def clean_ideas(raw: object) -> dict:
         out["merge_into"] = branch
     if isinstance(raw.get("push"), bool):
         out["push"] = raw["push"]
+    hours = raw.get("digest_hours")
+    out["digest_hours"] = list(IDEAS["digest_hours"])
+    if isinstance(hours, list):
+        kept = sorted({h for h in hours if isinstance(h, int) and not isinstance(h, bool) and 0 <= h <= 23})
+        if kept or not hours:                    # [] is no digest; a list of nothing valid is the default
+            out["digest_hours"] = kept
     return out
 
 

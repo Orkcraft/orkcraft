@@ -62,10 +62,20 @@ def test_the_old_look_and_office_hours_load_and_are_not_written_again(tmp_path: 
 def test_the_board_is_in_focus_by_default_and_its_settings_are_cleaned():
     s = settings.MachineSettings()
     assert s.focus == "board" and s.ideas == {"batch_minutes": 30, "idle_hours": 24, "max_parallel": 1,
-                                              "merge_into": "dev", "push": True}
+                                              "merge_into": "dev", "push": True, "digest_hours": [9, 13, 18]}
     back = settings.MachineSettings.from_dict({"focus": "", "ideas": {"batch_minutes": 0, "max_parallel": 2,
                                                                       "merge_into": "../x", "push": "yes"}})
     assert back.focus == "" and back.ideas["max_parallel"] == 2 and back.ideas["batch_minutes"] == 30
     assert back.ideas["merge_into"] == "dev" and back.ideas["push"] is True
     assert settings.MachineSettings.from_dict({"focus": "town"}).focus == "board"
     assert settings.MachineSettings.from_dict(back.to_dict()).ideas == back.ideas
+    assert back.ideas["digest_hours"] == [9, 13, 18]
+
+
+def test_the_digest_hours_are_cleaned_like_the_other_ideas_keys():
+    clean = lambda v: settings.clean_ideas({"digest_hours": v})["digest_hours"]   # noqa: E731
+    assert clean([18, 9, 9, 24, -1, "13", True, 7]) == [7, 9, 18]
+    assert clean([]) == [] and clean(["x", 99]) == [9, 13, 18] and clean("9") == [9, 13, 18]
+    a, b = settings.MachineSettings(), settings.MachineSettings()
+    a.ideas["digest_hours"].append(20)
+    assert b.ideas["digest_hours"] == [9, 13, 18] and settings.IDEAS["digest_hours"] == [9, 13, 18]

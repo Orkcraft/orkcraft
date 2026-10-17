@@ -371,3 +371,75 @@ def test_settings_are_read_however_they_are_carried():
     assert idea_runner.setting({"ideas": {"push": False}}, "push") is False
     assert idea_runner.setting(SimpleNamespace(), "merge_into") == "dev"
     assert idea_runner.setting(SimpleNamespace(ideas_max_parallel=2), "max_parallel") == 2
+
+
+def test_each_merged_task_is_a_line_of_merged_jsonl(town):
+    from orkcraft.realm import idea_merged
+    plan_of(town, [{"id": "k1", "brief": "Add the k1 file\nand nothing more", "tier": "warrior"},
+                   {"id": "k2", "after": ["k1"], "tier": "laborer"}])
+    plan = json.loads((town.state / "ideas" / "demo" / "plan.json").read_text())
+    plan["estimate"] = {"tasks": 2, "usd_low": 1.0, "usd_high": 3.0}
+    (town.state / "ideas" / "demo" / "plan.json").write_text(json.dumps(plan))
+    runner, _ = runner_of(town)
+    runner.start("demo")
+    assert wait_idle(runner)["state"] == "done"
+    first, second = idea_merged.rows(town.state)
+    assert first["idea"] == "demo" and first["task"] == "k1" and first["title"] == "k1"
+    assert first["goal"] == "Add the k1 file" and first["subject"] == "k1: add k1.txt"
+    assert first["commit"] == tasks_of(town)["k1"]["commit"] and first["tests"] == "3 passed"
+    assert first["branch"] == "main"                         # the merge_into it landed on
+    assert first["cost"] == pytest.approx(0.01) and first["at"] and not first["seen"] and not first["reverted"]
+    w = idea_runner.plans.DEFAULT_COST
+    part = w["warrior"] / (w["warrior"] + w["laborer"])
+    assert first["estimate"] == [round(1.0 * part, 2), round(3.0 * part, 2)]
+    assert first["base"] == git(town.repo, "rev-parse", f"{first['commit']}~1")
+    assert second["task"] == "k2" and second["commit"] == git(town.repo, "rev-parse", "main")
+
+
+def test_a_revert_lands_on_main_and_origin_and_the_idea_needs_you(town):
+    from orkcraft.realm import idea_merged
+    plan_of(town, [{"id": "k1"}])
+    runner, events = runner_of(town)
+    runner.start("demo")
+    assert wait_idle(runner)["state"] == "done"
+    assert runner.revert("demo", "nope") == {"error": "Nothing of that task reached the branch"}
+    assert runner.revert("demo", "k1") == {"ok": True}
+    assert not (town.repo / "k1.txt").exists()
+    assert git(town.origin, "log", "-1", "--format=%s", "main") == 'Revert "k1: add k1.txt"'
+    (line,) = idea_merged.rows(town.state)
+    assert line["reverted"] and line["seen"] and tasks_of(town)["k1"]["state"] == "reverted"
+    state = json.loads((town.state / "ideas" / "demo" / "state.json").read_text())
+    assert state == {**state, "state": "failed", "error": "Reverted: k1: add k1.txt"}
+    assert runner.revert("demo", "k1") == {"error": "That task is reverted already"}
+    runner.start("demo")                                      # Start again does the task anew
+    assert wait_idle(runner)["state"] == "done" and (town.repo / "k1.txt").exists()
+
+
+def test_a_conflicting_revert_says_so_and_main_is_untouched(town):
+    from orkcraft.realm import idea_merged
+    plan_of(town, [{"id": "k1"}])
+    runner, _ = runner_of(town)
+    runner.start("demo")
+    wait_idle(runner)
+    (town.repo / "k1.txt").write_text("main changed it\n")
+    git(town.repo, "commit", "-am", "main moved")
+    before = git(town.repo, "rev-parse", "main")
+    out = runner.revert("demo", "k1")
+    assert "error" in out and "conflicts" in out["error"] and "k1.txt" in out["error"]
+    assert git(town.repo, "rev-parse", "main") == before and (town.repo / "k1.txt").read_text() == "main changed it\n"
+    assert not idea_merged.rows(town.state)[0]["reverted"] and tasks_of(town)["k1"]["state"] == "merged"
+    assert json.loads((town.state / "ideas" / "demo" / "state.json").read_text())["state"] == "done"
+
+
+def test_a_working_idea_is_not_reverted(town, monkeypatch):
+    from orkcraft.realm import idea_merged
+    monkeypatch.setenv("STUB_MODE", "k2=slow")
+    plan_of(town, [{"id": "k1"}, {"id": "k2", "after": ["k1"]}])
+    runner, _ = runner_of(town)
+    runner.start("demo")
+    end = time.time() + 60
+    while not idea_merged.find(town.state, "demo", "k1") and time.time() < end:
+        runner.tick()
+        time.sleep(0.1)
+    assert runner.revert("demo", "k1") == {"error": "Its idea is still working: stop it first"}
+    runner.stop_all()

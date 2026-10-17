@@ -35,6 +35,7 @@ HARNESS = "claude"
 WINDOW = 200_000                   # Claude's context window, tokens
 COMPACT_SHARE = 0.6                # a talk's session past this share of the window is compacted
 MAX_TASKS, MAX_TODOS, MAX_QUESTIONS = 8, 5, 3
+OPTION_CHARS, WHY_CHARS = 80, 300
 INDEX_CHARS, PAGE_CHARS, REPLY_CHARS = 6000, 30_000, 4000
 TIERS = ("elder", "warrior", "laborer")
 KINDS = ("secret", "choice", "confirm", "instructions")
@@ -72,6 +73,37 @@ def _strings(value: object, limit: int, each: int = 500) -> list[str]:
 
 def _bullets(lines: list[str]) -> str:
     return "\n".join(f"- {' '.join(q.split())}" for q in lines)
+
+
+def parse_questions(value: object, limit: int = MAX_QUESTIONS) -> list[dict]:
+    """The keeper's questions as choices (spec 29c §2), strictly: `{"text", "options": [2–4 short strings],
+    "recommended": <index>, "why"}`. A question whose options are not that keeps a free answer (no options, nothing
+    recommended); a plain string is a question with a free answer."""
+    out: list[dict] = []
+    for raw in value if isinstance(value, list) else []:
+        if len(out) >= limit:
+            break
+        if isinstance(raw, str):
+            raw = {"text": raw}
+        if not isinstance(raw, dict):
+            continue
+        text = " ".join(_words(raw.get("text"), 500).split())
+        if not text:
+            continue
+        options = list(dict.fromkeys(" ".join(o.split()) for o in raw.get("options") or []
+                                     if isinstance(o, str) and o.strip() and len(o.strip()) <= OPTION_CHARS)) \
+            if isinstance(raw.get("options"), list) else []
+        if not 2 <= len(options) <= 4 or len(options) != len(raw["options"]):
+            options = []
+        rec = raw.get("recommended")
+        rec = rec if isinstance(rec, int) and not isinstance(rec, bool) and 0 <= rec < len(options) else None
+        out.append({"text": text, "options": options, "recommended": rec,
+                    "why": " ".join(_words(raw.get("why"), WHY_CHARS).split()) if options else ""})
+    return out
+
+
+QUESTIONS_SHAPE = ('[{"text": "the question", "options": ["two to four short answers"], '
+                   '"recommended": <the index of the answer you recommend>, "why": "why you recommend it, briefly"}]')
 
 
 class IdeaKeeper:
@@ -207,10 +239,13 @@ The idea (track: {track}):
 
 Answer with one JSON object and nothing else:
 {{"gist": "the idea rewritten clearly: its first line one sentence, the thesis; then a few lines if needed",
- "why": "which success criterion of its track it moves, and why it matters",
+ "why": "which success criterion of its track it moves, and why it matters (leave empty for size S)",
  "size": "S, M or L",
  "track": "the slug of the listed track it belongs to{'' if track == ideas.GENERAL else ' (leave empty)'}",
- "questions": ["one to three questions the person must answer before it can be planned"]}}
+ "questions": {QUESTIONS_SHAPE}}}
+`questions`: one to three questions the person must answer before it can be planned, each with two to four short
+answers to pick from (one tap each) and the one you recommend; [] when none is needed. A spec weighs as much as the
+idea: a size S idea is only its Gist, In, Out and Stages.
 """
 
     def read_one(self, slug: str) -> None:
@@ -232,14 +267,16 @@ Answer with one JSON object and nothing else:
         sections = {}
         if gist := _words(answer.get("gist"), ideas.SECTION_CHARS):
             sections["Gist"] = gist
-        if why := _words(answer.get("why"), ideas.SECTION_CHARS):
+        size = _words(answer.get("size"), 2).upper()
+        if (why := _words(answer.get("why"), ideas.SECTION_CHARS)) and size != "S":
             sections["Why"] = why
-        questions = _strings(answer.get("questions"), MAX_QUESTIONS)
+        asked = parse_questions(answer.get("questions"))
+        questions = [q["text"] for q in asked]
         if questions:
             sections["Open questions"] = _bullets(questions)
         ideas.update(root, slug, sections)
+        ideas.save_questions(self.state_dir, slug, asked)
         meta: dict[str, str] = {}
-        size = _words(answer.get("size"), 2).upper()
         if size in ideas.SIZES:
             meta["size"] = size
         track = _words(answer.get("track"), 60)
@@ -285,6 +322,10 @@ Answer with one JSON object and nothing else:
     def talk_prompt(self, root: Path, slug: str, text: str, section: str, fresh: bool) -> str:
         page = ideas.idea_page(root, slug)
         about = f" (about {section})" if section else ""
+        names = [n for n in ideas.SECTIONS if n not in ("Decisions", "Open questions")]
+        small = page.get("size") == "S"
+        if small:                                    # a spec as heavy as the idea (29c §3)
+            names = [n for n in names if ideas.shown("S", n, page.section(n))]
         ask = f"""The person says{about}:
 {text}
 
@@ -292,8 +333,11 @@ Answer with one JSON object and nothing else:
 {{"reply": "your answer to the person, short and plain",
  "sections": {{"<a section's name>": "its whole new text"}},
  "decisions": ["one line for each thing decided in this turn, and why"],
- "questions": ["the open questions that remain (all of them; [] when none)"]}}
-Put in `sections` only the sections this turn is about; leave the others out. Section names: {", ".join(n for n in ideas.SECTIONS if n != "Decisions")}."""
+ "questions": {QUESTIONS_SHAPE}}}
+`questions`: the open questions that remain (all of them; [] when none), each with two to four short answers to pick
+from and the one you recommend.
+Put in `sections` only the sections this turn is about; leave the others out. Section names: {", ".join(names)}.""" + (
+            "\nThis idea is size S: keep it to its Gist, In, Out and Stages; write no other section." if small else "")
         if not fresh:
             now = page.section(section) if section else ""
             return ask + (f"\n\nThe section {section} reads now:\n{now[:PAGE_CHARS]}" if section else "")
@@ -324,7 +368,9 @@ The idea's page now:
         written = {n: _words(v, ideas.SECTION_CHARS) for n, v in sections.items()
                    if n in ideas.SECTIONS and n != "Decisions" and isinstance(v, str)}
         if isinstance(answer.get("questions"), list):
-            written["Open questions"] = _bullets(_strings(answer["questions"], 10))
+            asked = parse_questions(answer["questions"], 10)
+            written["Open questions"] = _bullets([q["text"] for q in asked])
+            ideas.save_questions(self.state_dir, slug, asked)
         decisions = _strings(answer.get("decisions"), 10)
         if written or decisions:
             ideas.update(root, slug, written, decisions)
@@ -338,6 +384,24 @@ The idea's page now:
             page = ideas.idea_page(root, slug)
             changes["state"] = "asks" if page and ideas.items(page.section("Open questions")) else "ready"
         ideas.save_state(self.state_dir, slug, **changes)
+
+    def answer(self, slug: str, qid: str, choice: object = None, text: object = None) -> int:
+        """The person answers one of the keeper's questions; once all are answered, they go to the talk together
+        (one `say`, "Q → A" lines) and the questions are cleared. How many are left."""
+        if ideas.idea_page(self.wiki_root(), slug) is None:
+            raise KeeperError("That idea is gone")
+        asked = ideas.answer(self.state_dir, slug, qid, choice, text)
+        left = sum(1 for q in asked if q["answer"] is None)
+        if left == 0:
+            lines = "\n".join(f"{q['text']} → {q['answer']}" for q in asked)
+            ideas.save_questions(self.state_dir, slug, [])          # before the talk, which may ask anew
+            try:
+                self.say(slug, f"My answers to your questions:\n{lines}", "Open questions")
+            except KeeperError:                                     # the answers are kept for the next try
+                _restore(self.state_dir, slug, asked)
+                raise
+        self.publish(slug)
+        return left
 
     # -- the plan: the spec → plan.json -------------------------------------------------------------------
 
@@ -451,6 +515,12 @@ def readiness(data: dict) -> None:
     for t in data.get("tasks") or []:
         if t.get("state") in ("waiting", "ready"):
             t["state"] = "ready" if set(t.get("after") or []) <= merged and t["id"] not in blocked else "waiting"
+
+
+def _restore(state_dir: Path, slug: str, asked: list[dict]) -> None:
+    ideas.save_questions(state_dir, slug, asked)
+    for q in asked:
+        ideas.answer(state_dir, slug, q["id"], text=q["answer"])
 
 
 def _why(e: Exception) -> str:

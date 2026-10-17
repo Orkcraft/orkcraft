@@ -3,7 +3,7 @@
     ideas = Ideas(host)
     host.commands.update(ideas.commands())     # ideas.board, ideas.page, ideas.add, … (the phone may call them all)
     ideas.tick(now)                            # the host's clock: the keeper's batch, the runner's tick
-    ideas.snapshot()                           # focus, ideas_rev, needs_you: in the page's snapshot
+    ideas.snapshot()                           # focus, ideas_rev, needs_you, the digest: in the page's snapshot
     ideas.stop_all()                           # Stop all
 
 The pages live in the Wiki joined to the board (`realm/ideas.py`), what runs on them in `.orkcraft/ideas/`. The
@@ -14,13 +14,14 @@ look again.
 from __future__ import annotations
 
 import os
+import threading
 import time
 from pathlib import Path
 from typing import Any, Callable
 
 from orkcraft import settings
 from orkcraft.core import idea_keeper
-from orkcraft.realm import catalog, idea_secrets, ideas, wiki
+from orkcraft.realm import catalog, idea_merged, idea_secrets, ideas, wiki
 
 RUNNER_TICK_S = 3.0               # how often the runner looks at its tasks
 SNAPSHOT_S = 10.0                 # the most a cached Needs you count is kept without a change
@@ -140,18 +141,26 @@ class Ideas:
                 pass
 
     def snapshot(self) -> dict[str, Any]:
-        """What the page's snapshot carries of the board: the focus, the rev, how many ideas need the person, and
-        each idea's state (what a push says when it changes: gui/mobile.py `news`)."""
+        """What the page's snapshot carries of the board: the focus, the rev, how many ideas need the person, each
+        idea's state (what a push says when it changes: gui/mobile.py `news`; `held` when a task of a working idea
+        waits for its tool's window) and the digest of this hour, if one is due (spec 29c §4)."""
         now = time.monotonic()
         if self._cache is None or self._cache[0] != self.rev or now - self._cache[1] > SNAPSHOT_S:
             try:
                 b = self.board(make=False)
+                held = {n["idea"] for n in b["today"]["needs_you"] if n["kind"] == "held"}
                 data = {"needs_you": len(b["today"]["needs_you"]),
-                        "idea_states": [{"slug": i["slug"], "title": i["title"], "state": i["state"]} for i in b["ideas"]]}
+                        "idea_states": [{"slug": i["slug"], "title": i["title"],
+                                         "state": "held" if i["state"] == "working" and i["slug"] in held
+                                         else i["state"]} for i in b["ideas"]]}
             except Exception:                   # a broken page never breaks the town's snapshot
                 data = {"needs_you": 0, "idea_states": []}
             self._cache = (self.rev, now, data)
-        return {"focus": focus_of(self.town.machine), "ideas_rev": self.rev, **self._cache[2]}
+        try:
+            digest = idea_merged.due(self.state_dir, self.town.machine.ideas.get("digest_hours") or [])
+        except Exception:
+            digest = None
+        return {"focus": focus_of(self.town.machine), "ideas_rev": self.rev, **self._cache[2], "digest": digest}
 
     # -- reading -------------------------------------------------------------------------------------------
 
@@ -189,7 +198,11 @@ class Ideas:
                 todos += [{"idea": slug, **{k: td.get(k) for k in ("id", "title", "kind", "why", "choices", "steps",
                                                                     "done")}}
                           for td in plan.get("todos") or [] if not td.get("done")]
-        return {"tracks": tracks, "ideas": out, "today": {"todos": todos, "needs_you": needs},
+        merged, more = idea_merged.unseen(self.state_dir)
+        busy = self._runner.reverting() if self._runner is not None else set()
+        merged = [{**m, "reverting": (m["idea"], m["task"]) in busy} for m in merged]
+        return {"tracks": tracks, "ideas": out,
+                "today": {"todos": todos, "needs_you": needs, "merged": merged, "merged_more": more},
                 "batch_next": self.keeper.batch_next(), "rev": self.rev, "demo": bool(self.town.demo)}
 
     def page(self, slug: str) -> dict[str, Any]:
@@ -199,10 +212,12 @@ class Ideas:
             raise IdeasError("That idea is gone")
         names = list(ideas.SECTIONS) + [n for n, _t in page.sections if n not in ideas.SECTIONS]
         st = self._state(slug)
+        size = page.get("size") if page.get("size") in ideas.SIZES else ""
         return {"slug": slug, "title": page.title or slug, "track": page.get("track") or ideas.GENERAL,
-                "state": st["state"], "size": page.get("size") if page.get("size") in ideas.SIZES else "",
-                "sections": [{"name": n, "thesis": ideas.thesis(page.section(n)), "text": page.section(n)}
-                             for n in names],
+                "state": st["state"], "size": size,
+                "sections": [{"name": n, "thesis": ideas.thesis(page.section(n)), "text": page.section(n),
+                              "shown": ideas.shown(size, n, page.section(n))} for n in names],
+                "questions": ideas.questions(self.state_dir, slug),
                 "talk": ideas.talk(self.state_dir, slug), "plan": ideas.plan(self.state_dir, slug),
                 "busy": bool(self.keeper.busy(slug)) or st["state"] in ("reading", "planning"),
                 "error": st.get("error", ""), "proposed_track": page.get("proposed_track")}
@@ -330,6 +345,51 @@ class Ideas:
         self.changed(slug)
         return {"ok": True}
 
+    # -- after the merge, questions as choices (spec 29c) ------------------------------------------------------
+
+    def seen(self, args: dict) -> dict:
+        """Looked: one merged task (`idea` and `task`), an idea's, or all of them (no args)."""
+        idea_merged.mark(self.state_dir, _opt(args, "idea"), _opt(args, "task"), seen=True)
+        self.changed(_opt(args, "idea"))
+        return {"ok": True}
+
+    def revert(self, args: dict) -> dict:
+        """Revert a merged task on the branch. The gate takes a while and the host has one thread, so it runs on its
+        own: what it refuses at once is the answer's `error`; a revert that fails later (a conflict, a red gate) is
+        said in a toast, the branch untouched; one that lands moves the idea to Needs you (*Reverted: …*)."""
+        slug, task = _text(args, "idea", 100), _text(args, "task", 20)
+        line = idea_merged.find(self.state_dir, slug, task)
+        if line is None:
+            raise IdeasError("Nothing of that task reached the branch")
+        if line["reverted"]:
+            raise IdeasError("That task is reverted already")
+        runner = self.runner(need=True)
+        if runner.working(slug):
+            raise IdeasError("Its idea is still working: stop it first")
+
+        def work() -> None:
+            out = runner.revert(slug, task)
+            if out.get("error"):
+                self.town.call(lambda: self.town.toast(out["error"], title=f"Revert “{line['subject']}”",
+                                                       severity="error"))
+            self._publish(slug)
+
+        threading.Thread(target=work, daemon=True, name=f"idea-revert-{slug}").start()
+        self.changed(slug)
+        return {"ok": True}
+
+    def answer(self, args: dict) -> dict:
+        """The person answers one of the keeper's questions; all answered, they go to the talk at once."""
+        slug, qid = _text(args, "slug", 100), _text(args, "id", 20)
+        choice, text = args.get("choice"), args.get("text")
+        if choice is not None and (not isinstance(choice, int) or isinstance(choice, bool)):
+            raise IdeasError("choice is not a number")
+        if text is not None and not isinstance(text, str):
+            raise IdeasError("text is not text")
+        left = self.keeper.answer(slug, qid, choice, text)
+        self.changed(slug)
+        return {"ok": True, "left": left}
+
     def commands(self) -> dict[str, Callable[[dict], Any]]:
         def guarded(fn):
             def run(args: dict) -> Any:
@@ -343,7 +403,8 @@ class Ideas:
                  "ideas.add": self.add, "ideas.say": self.say, "ideas.plan": self.plan, "ideas.start": self.start,
                  "ideas.move": self.move, "ideas.edit": self.edit, "ideas.track_add": self.track_add,
                  "ideas.track_set": self.track_set, "ideas.todo": self.todo, "ideas.drop": self.drop,
-                 "ideas.stop": self.stop}
+                 "ideas.stop": self.stop, "ideas.seen": self.seen, "ideas.revert": self.revert,
+                 "ideas.answer": self.answer}
         return {name: guarded(fn) for name, fn in table.items()}
 
 

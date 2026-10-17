@@ -5,12 +5,14 @@ tested, rebased and fast-forwarded into `ideas.merge_into` (default `dev`; `main
     runner.start(slug)        # after `ideas.start` set the plan's `passed_at`
     runner.tick()             # every few seconds from the host: never blocks, the work runs on threads
     runner.stop(slug) / runner.stop_all()
+    runner.revert(slug, task_id)     # undo a merged task on `merge_into` (spec 29c §1): {"ok": True} or {"error": …}
 
 The plan's tasks live in `<state_dir>/ideas/<slug>/plan.json` (the runner owns them once the plan is passed; it
 re-reads the file before each write, so the keeper's to-dos stay as the keeper wrote them). A task waits for its
 `after` tasks to be merged and for the to-dos `for` it to be done, starts when a slot is free (`ideas.max_parallel`)
 and its tool's window is not nearly spent (else `held`, "after HH:MM"), works, passes the gate (once more on the
-same session when red), and lands. Every task change publishes `ideas.changed`. All git: realm/idea_git.py.
+same session when red), and lands; each landed task is a line of `merged.jsonl` (realm/idea_merged.py), what reached
+`merge_into` without the person's eyes. Every task change publishes `ideas.changed`. All git: realm/idea_git.py.
 """
 from __future__ import annotations
 
@@ -23,7 +25,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
-from orkcraft.realm import halt, harnesses, jobs, status, tool_errors
+from orkcraft.realm import halt, harnesses, idea_merged, jobs, plans, status, tool_errors
 from orkcraft.realm.idea_git import CRITICAL_TESTS, Conflict, IdeaGit, env_name, read_secret
 
 CHANGED = "ideas.changed"          # slug: an idea's state or one of its tasks changed
@@ -101,6 +103,7 @@ class IdeaRunner:
         self._runs: dict[tuple[str, str], Run] = {}
         self._active: list[str] = []
         self._until: dict[tuple[str, str], float] = {}
+        self._reverting: set[tuple[str, str]] = set()
         self._resume_working()
 
     # -- files -----------------------------------------------------------------------------------
@@ -343,9 +346,10 @@ class IdeaRunner:
             model = h.pick(task.get("tier") or "warrior")
             env = self._env(slug, tid, plan)
             session = self._session(slug, tid, path, cancel, model, env, self._prompt(slug, plan, task), "", spent)
+            gate: dict = {}
             for attempt in (1, 2):
                 self._set_task(slug, tid, state="testing")
-                problem = self._check(path, start_sha, cancel, str(task.get("title") or ""))
+                problem = self._check(path, start_sha, cancel, str(task.get("title") or ""), gate)
                 if problem is None:
                     break
                 if attempt == 2:
@@ -356,6 +360,7 @@ class IdeaRunner:
             commit, subjects, note = self.git.land(path, branch, base, bool(setting(self.settings, "push")))
             self._set_task(slug, tid, state="merged", commit=commit, subjects=subjects, note=note,
                            finished=now_iso(), error="")
+            self._merged(slug, plan, task, commit, subjects, spent["cost"], gate.get("tail", ""), base)
             self.git.remove(path)
         except Held as e:
             with self._lock:
@@ -399,7 +404,8 @@ class IdeaRunner:
         self._set_task(slug, tid, session=session, cost=spent["cost"], tokens=spent["tokens"])
         return session
 
-    def _check(self, path: Path, start_sha: str, cancel: threading.Event, title: str = "") -> str | None:
+    def _check(self, path: Path, start_sha: str, cancel: threading.Event, title: str = "",
+               gate: dict | None = None) -> str | None:
         """None when the task's work passes; else what is wrong, in words the session can act on. What the session
         left uncommitted is committed first, under the task's title: its session may edit files but not run git."""
         self.git.commit_left(path, title)
@@ -408,7 +414,71 @@ class IdeaRunner:
         if self.git.dirty(path):
             return "You left uncommitted changes: `git status` shows them. Commit them (or remove what is not work)."
         ok, tail = self.git.gate(path, start_sha, cancel)
+        if gate is not None:
+            gate["tail"] = tail
         return None if ok else f"The tests failed:\n{tail}"
+
+    # -- after the merge (spec 29c §1) ------------------------------------------------------------
+
+    def _merged(self, slug: str, plan: dict, task: dict, commit: str, subjects: list[str], cost: Any,
+                tail: str, branch: str) -> None:
+        """The task's line in merged.jsonl: what reached `merge_into` without the person's eyes."""
+        if not subjects:
+            return
+        try:
+            tasks = plan.get("tasks") or []
+            weights = [float(plans.DEFAULT_COST.get(t.get("tier"), plans.DEFAULT_COST["warrior"])) for t in tasks]
+            index = next((n for n, t in enumerate(tasks) if t.get("id") == task.get("id")), -1)
+            brief = str(task.get("brief") or "")
+            idea_merged.add(self.state_dir, {
+                "idea": slug, "task": task.get("id"), "title": task.get("title") or task.get("id"),
+                "goal": next((ln.strip() for ln in brief.splitlines() if ln.strip()), "")[:300],
+                "subject": subjects[-1], "commit": commit, "branch": branch, "tests": idea_merged.tests_line(tail),
+                "cost": cost, "estimate": idea_merged.share(plan.get("estimate"), weights, index), "at": now_iso(),
+                "base": self.git.rev(f"{commit}~{len(subjects)}")})
+        except Exception:                  # the log never undoes a merge
+            pass
+
+    def revert(self, slug: str, task_id: str, cancel: threading.Event | None = None) -> dict:
+        """Undo a merged task on the branch it landed on, its line's `branch` (spec 29c §1): `git revert` in a
+        worktree off it, the gate, a fast-forward and a push, as a task lands. Done: its line is `reverted`, its task too, and the idea needs the
+        person (*Reverted: subject*). Failed (a conflict, a red gate): `{"error": …}` and `merge_into` untouched.
+        It blocks while the gate runs: the face calls it from a thread of its own."""
+        key = (slug, task_id)
+        line = idea_merged.find(self.state_dir, slug, task_id)
+        if line is None or not line["commit"]:
+            return {"error": "Nothing of that task reached the branch"}
+        if line["reverted"]:
+            return {"error": "That task is reverted already"}
+        with self._lock:
+            if self.working(slug):
+                return {"error": "Its idea is still working: stop it first"}
+            if key in self._reverting:
+                return {"error": "It is being reverted"}
+            self._reverting.add(key)
+        base = line["branch"] or str(setting(self.settings, "merge_into") or "dev")   # where it landed
+        try:
+            self.git.revert(slug, task_id, line["commit"], line.get("base", ""), base,
+                            bool(setting(self.settings, "push")), cancel or threading.Event())
+        except (Conflict, RuntimeError, InterruptedError, halt.Halted) as e:
+            return {"error": "Not reverted, " + base + " is as it was: " + (" ".join(str(e).split())[:600] or
+                                                                             type(e).__name__)}
+        finally:
+            with self._lock:
+                self._reverting.discard(key)
+        idea_merged.mark(self.state_dir, slug, task_id, reverted=True, seen=True)
+        self._set_task(slug, task_id, state="reverted", note="")
+        self._set_idea(slug, "failed", f"Reverted: {line['subject']}")
+        self._changed(slug)
+        return {"ok": True}
+
+    def working(self, slug: str) -> bool:
+        with self._lock:
+            return slug in self._active or any(k[0] == slug for k in self._runs)
+
+    def reverting(self) -> set[tuple[str, str]]:
+        with self._lock:
+            return set(self._reverting)
 
     def _env(self, slug: str, tid: str, plan: dict) -> dict[str, str]:
         """The task's environment: who runs (for the town's counts) and the values of its `secret` to-dos."""

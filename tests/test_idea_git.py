@@ -112,6 +112,66 @@ def test_the_env_name_comes_from_the_todos_title():
     assert idea_git.env_name("a key") == ""
 
 
+@pytest.fixture
+def origin(repo, tmp_path) -> Path:
+    o = tmp_path / "origin.git"
+    git(tmp_path, "init", "-q", "--bare", "-b", "main", str(o))
+    git(repo, "remote", "add", "origin", str(o))
+    git(repo, "push", "-q", "origin", "main")
+    return o
+
+
+def _landed(g: IdeaGit, name: str, text: str) -> tuple[str, str]:
+    """A task landed on main: (where main stood before, the task's commit)."""
+    before = git(g.root, "rev-parse", "main")
+    path, branch = g.prepare("demo", "k1", "main")
+    commit_in(path, name, text)
+    commit, _subjects, _note = g.land(path, branch, "main", push=True)
+    g.remove(path)
+    return before, commit
+
+
+def test_a_revert_lands_on_main_and_origin_as_a_task_does(repo, origin):
+    import threading
+    g = IdeaGit(repo)
+    since, commit = _landed(g, "b.txt", "b\n")
+    assert g.rev(f"{commit}~1") == since and g.rev("nope") == ""
+    new, subjects, note = g.revert("demo", "k1", commit, since, "main", True, threading.Event())
+    assert note == "" and subjects == ['Revert "edit b.txt"'] and git(repo, "rev-parse", "main") == new
+    assert not (repo / "b.txt").exists()                                # main is checked out: it follows
+    assert git(origin, "log", "-1", "--format=%s", "main") == 'Revert "edit b.txt"'
+    assert "idea-demo-k1-revert" not in git(repo, "worktree", "list")
+
+
+def test_a_conflicting_revert_leaves_main_and_origin(repo, origin):
+    import threading
+    g = IdeaGit(repo)
+    since, commit = _landed(g, "a.txt", "the task's line\n")
+    commit_in(repo, "a.txt", "main moved on\n")
+    git(repo, "push", "-q", "origin", "main")
+    before = git(repo, "rev-parse", "main")
+    with pytest.raises(idea_git.Conflict, match="a.txt"):
+        g.revert("demo", "k1", commit, since, "main", True, threading.Event())
+    assert git(repo, "rev-parse", "main") == before == git(origin, "rev-parse", "main")
+    assert (repo / "a.txt").read_text() == "main moved on\n"
+
+
+def test_a_red_gate_after_the_revert_leaves_main(repo):
+    import threading
+    (repo / "tests").mkdir()
+    for name in idea_git.CRITICAL_TESTS:
+        (repo / name).write_text("import pathlib\n\ndef test_b():\n    assert pathlib.Path('b.txt').exists()\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-m", "tests")
+    g = IdeaGit(repo)
+    since, commit = _landed(g, "b.txt", "b\n")
+    with pytest.raises(RuntimeError, match="gate is red"):
+        g.revert("demo", "k1", commit, since, "main", False, threading.Event())
+    assert git(repo, "rev-parse", "main") == commit and (repo / "b.txt").exists()
+    with pytest.raises(RuntimeError, match="no commit"):
+        g.revert("demo", "k1", "--evil", "", "main", False, threading.Event())
+
+
 def test_a_missing_base_is_cut_from_main_once(tmp_path):
     r = tmp_path / "r"
     r.mkdir()

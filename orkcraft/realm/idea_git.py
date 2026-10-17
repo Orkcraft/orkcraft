@@ -5,6 +5,7 @@
     g.commits(path, base) / g.touched(path, base)        # what the task committed since it left the base
     ok, tail = g.gate(path, cancel)                      # the critical tests + the test files of touched modules
     commit, subjects, note = g.land(path, branch, "main", push=True)   # rebase, fast-forward main, push
+    g.revert(slug, task_id, commit, since, "main", push=True, cancel=cancel)   # undo a landed task the same way
     read_secret(state_dir, slug, todo_id)                # a `secret` to-do's value, from where part A stored it
 
 Every call runs git with fixed arguments (no shell). One lock per repository (`lock_of`) holds every change
@@ -131,6 +132,11 @@ class IdeaGit:
     def head(self, path: Path) -> str:
         return _ok(_git(path, "rev-parse", "HEAD"))
 
+    def rev(self, ref: str) -> str:
+        """The commit a ref names in the repository, "" when none."""
+        done = _git(self.root, "rev-parse", "--verify", "-q", f"{ref}^{{commit}}")
+        return done.stdout.strip() if done.returncode == 0 else ""
+
     def commits(self, path: Path, base: str) -> list[str]:
         """The subjects of what the branch committed since it left `base`, oldest first."""
         out = _git(path, "log", "--reverse", "--format=%s", f"{base}..HEAD").stdout
@@ -209,6 +215,32 @@ class IdeaGit:
                 self._fast_forward(into, old, new)
             note = self.push(into) if push else ""
         return new, subjects, note
+
+    def revert(self, slug: str, task_id: str, commit: str, since: str, into: str, push: bool,
+               cancel: threading.Event) -> tuple[str, list[str], str]:
+        """Undo a landed task (spec 29c §1): `git revert --no-edit` of what it brought (`since..commit`, or the one
+        commit) in a worktree off `into`, the gate, then landed as a task is. Raises Conflict when the revert does
+        not apply, RuntimeError when the gate is red; either way `into` is as it was."""
+        if not re.fullmatch(r"[0-9a-f]{7,40}", commit or "") or (since and not re.fullmatch(r"[0-9a-f]{7,40}", since)):
+            raise RuntimeError("no commit to revert")
+        path, branch = self.prepare(slug, f"{task_id}-revert", into)
+        try:
+            start = self.head(path)
+            span = f"{since}..{commit}" if since else commit
+            done = _git(path, "-c", "user.name=Orkline", "-c", "user.email=orkline@localhost", "revert", "--no-edit",
+                        span, timeout=PUSH_TIMEOUT_S)
+            if done.returncode != 0:
+                files = _git(path, "diff", "--name-only", "--diff-filter=U").stdout.split()
+                _git(path, "revert", "--abort")
+                if not files:
+                    raise RuntimeError((done.stderr or done.stdout).strip()[:300] or "the revert failed")
+                raise Conflict(f"the revert conflicts with {into} in " + ", ".join(files))
+            ok, tail = self.gate(path, start, cancel)
+            if not ok:
+                raise RuntimeError(f"the gate is red after the revert: {tail[-600:]}")
+            return self.land(path, branch, into, push)
+        finally:
+            self.remove(path)
 
     def _fast_forward(self, into: str, old: str, new: str) -> None:
         if self._checked_out_in_root(into):
